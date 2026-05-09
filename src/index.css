@@ -1,0 +1,668 @@
+/* ============================================
+   DeskPet — 岳七 & 沈九 修仙桌面宠物
+   Global Styles — Xianxia Ink-Wash Aesthetic
+   ============================================ */
+
+/* === Typography: Calligraphic display + refined serif body === 
+   Uses local system fonts only — respects CSP (no external font-src)
+   Fallback chain: Ma Shan Zheng → ZCOOL KuaiLe → KaiTi → cursive
+   ================================================================ */
+
+:root {
+  --font-display: 'Ma Shan Zheng', 'ZCOOL KuaiLe', 'KaiTi', cursive;
+  --font-body: 'Noto Serif SC', 'Noto Sans SC', 'Microsoft YaHei', serif;
+
+  /* === Xianxia Ink-Wash Color Palette === */
+  /* Jade — 灵玉 */
+  --color-jade: #6ec6a0;
+  --color-jade-deep: #3d8b6b;
+  --color-jade-glow: rgba(110, 198, 160, 0.45);
+  --color-jade-mist: rgba(110, 198, 160, 0.12);
+  
+  /* Gold — 仙金 */
+  --color-gold: #c9a24d;
+  --color-gold-glow: rgba(201, 162, 77, 0.5);
+  
+  /* Crimson — 丹砂 */
+  --color-crimson: #b5342a;
+  --color-crimson-soft: rgba(181, 52, 42, 0.15);
+  
+  /* Ink — 墨韵 */
+  --color-ink: #1e2a36;
+  --color-ink-light: #546a7b;
+  --color-ink-faint: rgba(30, 42, 54, 0.06);
+  
+  /* Cloud / Glass — 云烟 */
+  --color-cloud: rgba(252, 252, 255, 0.96);
+  --color-mist: rgba(240, 245, 252, 0.88);
+  --color-glass: rgba(255, 255, 255, 0.72);
+  --color-glass-border: rgba(126, 200, 169, 0.25);
+  
+  /* Shadows — 影 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-glow-jade: 0 0 24px rgba(110, 198, 160, 0.3);
+  --shadow-glow-gold: 0 0 20px rgba(201, 162, 77, 0.25);
+
+  /* Stat bar colors — refined gradients */
+  --color-affection: #d94a72;
+  --color-hunger: #d4782a;
+  --color-qi: #7c3aad;
+  --color-mood: #28b463;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#pet-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ============================================
+   Pet Character
+   ============================================ */
+.pet {
+  position: absolute;
+  pointer-events: auto;
+  cursor: grab;
+  transition: none;
+  z-index: 1000;
+}
+
+.pet:active {
+  cursor: grabbing;
+}
+
+.pet-body {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  position: relative;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+}
+
+.pet-body:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.18));
+}
+
+.pet--yueqi .pet-body:not(:has(.pet-image)) {
+  background: linear-gradient(145deg, #b8e4d0 0%, #6ec6a0 60%, #4a9e7a 100%);
+  border: 2px solid var(--color-jade-deep);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), var(--shadow-glow-jade);
+}
+
+.pet--shenjiu .pet-body:not(:has(.pet-image)) {
+  background: linear-gradient(145deg, #d8b0ec 0%, #9b59b6 60%, #6c3483 100%);
+  border: 2px solid #5b2c70;
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), 0 0 24px rgba(155, 89, 182, 0.3);
+}
+
+.pet-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pet-name {
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--color-ink);
+  white-space: nowrap;
+  text-shadow: 
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  letter-spacing: 1px;
+}
+
+/* === Walking bounce — with subtle squash & stretch === */
+.pet--walking .pet-body {
+  animation: walkBounce 0.4s ease-in-out infinite;
+}
+
+@keyframes walkBounce {
+  0%, 100% { transform: translateY(0) scaleX(1) scaleY(1); }
+  30% { transform: translateY(-7px) scaleX(0.97) scaleY(1.03); }
+  60% { transform: translateY(-2px) scaleX(1.02) scaleY(0.98); }
+}
+
+/* === Sleeping — gentle breathing with subtle drift === */
+.pet--sleeping .pet-body {
+  animation: sleepBreath 3s ease-in-out infinite;
+}
+
+@keyframes sleepBreath {
+  0%, 100% { 
+    transform: scale(1) translateY(0);
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+  }
+  50% { 
+    transform: scale(0.96) translateY(2px);
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
+  }
+}
+
+/* === Meditating — ethereal qi glow pulse === */
+.pet--meditating .pet-body {
+  animation: meditateGlow 3s ease-in-out infinite;
+}
+
+@keyframes meditateGlow {
+  0%, 100% { 
+    filter: 
+      drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12))
+      drop-shadow(0 0 6px rgba(110, 198, 160, 0.0));
+  }
+  50% { 
+    filter: 
+      drop-shadow(0 4px 16px rgba(110, 198, 160, 0.5))
+      drop-shadow(0 0 30px rgba(110, 198, 160, 0.35));
+  }
+}
+
+/* === Working — focused sway === */
+.pet--working .pet-body {
+  animation: workPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes workPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-2deg) scale(1.01); }
+  75% { transform: rotate(2deg) scale(1.01); }
+}
+
+/* === Interacting — joyful bounce === */
+.pet--interacting .pet-body {
+  animation: interactJoy 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+
+@keyframes interactJoy {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-12px) scale(1.06); }
+  70% { transform: translateY(-4px) scale(1.02); }
+}
+
+
+/* ============================================
+   Context Menu — Glassmorphism with Ink-Wash
+   ============================================ */
+.context-menu {
+  position: fixed;
+  background: var(--color-mist);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 14px;
+  padding: 6px 0;
+  min-width: 170px;
+  box-shadow: 
+    var(--shadow-lg),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: 9999;
+  pointer-events: auto;
+  overflow: hidden;
+  animation: menuReveal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: top left;
+}
+
+@keyframes menuReveal {
+  from { 
+    opacity: 0; 
+    transform: scale(0.92) translateY(-4px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}
+
+.context-menu.hidden {
+  display: none;
+}
+
+.menu-header {
+  padding: 10px 16px 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--color-jade-deep);
+  border-bottom: 1px solid rgba(110, 198, 160, 0.15);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 1px;
+  /* Subtle ink-wash decoration */
+  background: linear-gradient(90deg, var(--color-jade-mist) 0%, transparent 80%);
+}
+
+.menu-item {
+  padding: 9px 16px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: 
+    background 0.2s ease, 
+    color 0.2s ease,
+    padding-left 0.2s ease;
+  position: relative;
+  letter-spacing: 0.3px;
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--color-jade);
+  border-radius: 0 2px 2px 0;
+  transition: height 0.2s ease;
+}
+
+.menu-item:hover {
+  background: linear-gradient(90deg, var(--color-jade-mist) 0%, rgba(110, 198, 160, 0.04) 100%);
+  color: var(--color-jade-deep);
+  padding-left: 20px;
+}
+
+.menu-item:hover::before {
+  height: 60%;
+}
+
+.menu-item:active {
+  background: rgba(110, 198, 160, 0.2);
+}
+
+.menu-item.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.menu-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(110, 198, 160, 0.2), transparent);
+  margin: 4px 12px;
+}
+
+/* ============================================
+   Status Panel — Floating Jade Tablet
+   ============================================ */
+.status-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-mist);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--color-glass-border);
+  border-radius: 18px;
+  padding: 22px 26px 20px;
+  min-width: 360px;
+  box-shadow: 
+    var(--shadow-lg),
+    var(--shadow-glow-jade),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  z-index: 10000;
+  pointer-events: auto;
+  animation: panelSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.status-panel.hidden {
+  display: none;
+}
+
+@keyframes panelSlideIn {
+  from { 
+    opacity: 0; 
+    transform: translate(-50%, -45%) scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+}
+
+.status-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 19px;
+  color: var(--color-jade-deep);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, var(--color-jade), transparent) 1;
+  letter-spacing: 2px;
+}
+
+.status-close {
+  background: none;
+  border: 1px solid transparent;
+  font-size: 16px;
+  color: var(--color-ink-light);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: 
+    background 0.2s, 
+    border-color 0.2s, 
+    color 0.2s,
+    transform 0.15s;
+  line-height: 1;
+}
+
+.status-close:hover {
+  background: var(--color-crimson-soft);
+  border-color: rgba(181, 52, 42, 0.2);
+  color: var(--color-crimson);
+  transform: scale(1.1);
+}
+
+.pet-status-block {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  background: var(--color-ink-faint);
+  border-radius: 12px;
+  border: 1px solid rgba(110, 198, 160, 0.08);
+  transition: border-color 0.3s ease;
+}
+
+.pet-status-block:hover {
+  border-color: var(--color-glass-border);
+}
+
+.pet-status-block:last-child {
+  margin-bottom: 0;
+}
+
+.pet-status-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--color-ink);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 1px;
+}
+
+.status-pet-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--color-glass-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.stat-label {
+  font-size: 12px;
+  width: 52px;
+  text-align: right;
+  color: var(--color-ink-light);
+  font-family: var(--font-body);
+  letter-spacing: 0.5px;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated shimmer on stat bars */
+.stat-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.25) 50%, 
+    transparent 100%
+  );
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
+}
+
+.stat-bar-fill--affection { 
+  background: linear-gradient(90deg, #d94a72, #f47a98, #d94a72);
+  background-size: 200% 100%;
+  animation: gradientFlow 4s ease infinite;
+}
+
+.stat-bar-fill--hunger { 
+  background: linear-gradient(90deg, #d4782a, #f0a04b, #d4782a);
+  background-size: 200% 100%;
+  animation: gradientFlow 4s ease infinite;
+}
+
+.stat-bar-fill--qi { 
+  background: linear-gradient(90deg, #7c3aad, #a569d4, #7c3aad);
+  background-size: 200% 100%;
+  animation: gradientFlow 4s ease infinite;
+}
+
+.stat-bar-fill--mood { 
+  background: linear-gradient(90deg, #28b463, #5dde8e, #28b463);
+  background-size: 200% 100%;
+  animation: gradientFlow 4s ease infinite;
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.stat-value {
+  font-size: 11px;
+  width: 32px;
+  text-align: left;
+  color: var(--color-ink-light);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-money {
+  font-size: 13px;
+  color: var(--color-gold);
+  margin-top: 4px;
+  text-shadow: 0 0 8px var(--color-gold-glow);
+}
+
+/* ============================================
+   Dialog Bubble — Calligraphic Speech
+   ============================================ */
+.dialog-bubble {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-cloud);
+  border: 1px solid rgba(110, 198, 160, 0.2);
+  border-radius: 14px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  white-space: nowrap;
+  box-shadow: 
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  animation: bubbleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  z-index: 1001;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+  /* Ink-wash border accent */
+  border-left: 2.5px solid var(--color-jade);
+}
+
+.dialog-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: var(--color-cloud);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.04));
+}
+
+.dialog-bubble--fade-out {
+  animation: bubbleOut 0.5s ease-in forwards;
+}
+
+/* Overlay bubbles (kiss, hug, cultivate) — anchored to stage, not pet element */
+.overlay-bubble {
+  bottom: auto !important;   /* override dialog-bubble's bottom: calc(100%+8px) */
+  white-space: nowrap;       /* keep text on one line */
+}
+
+@keyframes bubbleIn {
+  from { 
+    opacity: 0; 
+    transform: translateX(-50%) translateY(8px) scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(-50%) translateY(0) scale(1); 
+  }
+}
+
+@keyframes bubbleOut {
+  from { 
+    opacity: 1; 
+    transform: translateX(-50%) translateY(0) scale(1); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translateX(-50%) translateY(-10px) scale(0.9); 
+  }
+}
+
+/* ============================================
+   Interaction Effects — Floating Particles
+   ============================================ */
+.interaction-effect {
+  position: absolute;
+  pointer-events: none;
+  font-size: 24px;
+  animation: floatUp 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 999;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes floatUp {
+  0% { 
+    opacity: 1; 
+    transform: translateY(0) scale(1) rotate(0deg); 
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-30px) scale(1.1) rotate(-5deg);
+  }
+  100% { 
+    opacity: 0; 
+    transform: translateY(-70px) scale(0.4) rotate(10deg); 
+  }
+}
+
+/* ============================================
+   Low Stat Warning Effects
+   ============================================ */
+/* Hunger — warm pulse with subtle urgency */
+.pet--hungry .pet-body {
+  animation: hungerPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes hungerPulse {
+  0%, 100% { 
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+  }
+  50% { 
+    filter: 
+      drop-shadow(0 4px 14px rgba(212, 120, 42, 0.45))
+      drop-shadow(0 0 20px rgba(212, 120, 42, 0.2));
+  }
+}
+
+/* Low mood — desaturated with gentle opacity pulse */
+.pet--low-mood .pet-body {
+  animation: moodFade 3s ease-in-out infinite;
+}
+
+@keyframes moodFade {
+  0%, 100% { 
+    opacity: 0.8; 
+    filter: saturate(0.7) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12)); 
+  }
+  50% { 
+    opacity: 0.65; 
+    filter: saturate(0.5) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08)); 
+  }
+}

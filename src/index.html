@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Electron Security: 7. Define a Content-Security-Policy -->
+  <!-- Source: https://www.electronjs.org/docs/latest/tutorial/security#7-define-a-content-security-policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+  <title>岳七 & 沈九 桌面宠物</title>
+  <link rel="stylesheet" href="index.css?v=3">
+</head>
+
+<body>
+  <!-- Pet containers will be created dynamically by PetRenderer -->
+  <div id="pet-stage"></div>
+
+  <!-- Context menu (hidden by default) -->
+  <div id="context-menu" class="context-menu hidden">
+    <div class="menu-header" id="menu-header">角色名</div>
+    <div class="menu-item" data-action="feed">🍎 喂食</div>
+    <div class="menu-item" data-action="meditate">🧘🏻‍♂️打坐修炼</div>
+    <div class="menu-item" data-action="pet">🤚 摸头</div>
+    <div class="menu-item" data-action="rest">💤 休息</div>
+    <div class="menu-separator"></div>
+    <div class="menu-item" data-action="status">📊 查看状态</div>
+  </div>
+
+  <!-- Status panel (hidden by default) -->
+  <div id="status-panel" class="status-panel hidden">
+    <div class="status-panel-header">
+      <span>修仙状态</span>
+      <button id="status-close" class="status-close">✕</button>
+    </div>
+    <div id="status-content"></div>
+  </div>
+
+  <script src="data/config.js?v=2"></script>
+  <script src="data/dialogues.js?v=2"></script>
+  <script src="pet/Pet.js?v=2"></script>
+  <script src="pet/PetRenderer.js?v=2"></script>
+  <script src="pet/SpriteView.js?v=1"></script>
+  <script src="systems/MovementSystem.js?v=2"></script>
+  <script src="systems/NurtureSystem.js?v=2"></script>
+  <script src="systems/InteractionSystem.js?v=2"></script>
+  <script src="systems/TimeSystem.js?v=2"></script>
+  <script src="ui/ContextMenu.js?v=2"></script>
+  <script src="ui/StatusBar.js?v=2"></script>
+  <script src="ui/DialogBubble.js?v=2"></script>
+  <script src="app.js?v=2"></script>
+  <script src="debug.js?v=2"></script>
+</body>
+
+</html>
