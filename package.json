@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "dev": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "verify:installer": "node scripts/verify-installer.js"
   },
   "author": "",
   "license": "MIT",
@@ -31,7 +32,8 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "七九爱宠",
-      "uninstallDisplayName": "七九爱宠"
+      "uninstallDisplayName": "七九爱宠",
+      "include": "build/installer.nsh"
     }
   }
 }

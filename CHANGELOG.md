@@ -3,6 +3,21 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [0.1.5] - 2026-05-09
+### Added
+- **`.geminiignore`**：新增 Antigravity AI 工作区索引忽略规则文件，排除 `node_modules/`（8650+ 文件）、`dist/`、`build/` 及各类二进制资产（`.png`、`.exe`、`.asar` 等），修复工作区激活时 AI 助手因索引超时而无法响应的问题。
+
+## [0.1.4] - 2026-05-08
+### Added
+- **安装包验证脚本**：新增 `scripts/verify-installer.js`，可通过 `npm run verify:installer` 在构建后自动检查安装包完整性与关键文件存在性。
+- **NSIS 自定义安装脚本**：新增 `build/installer.nsh`，用于在安装过程中注入自定义 NSIS 指令（如额外快捷方式、注册表写入等）。
+- **AI 工作区上下文文件**：新增 `GEMINI.md`，为 Antigravity AI 助手提供项目结构与开发规范的上下文，确保工作区被正确识别与响应。
+- **macOS 支持规划文档**：将 `plan/macos-support-plan.md` 迁移至 `docs/plan/macos-support-plan.md`，与现有规划文档目录结构对齐。
+
+### Changed
+- **`package.json`**：新增 `verify:installer` npm 脚本；NSIS 配置中新增 `include: "build/installer.nsh"` 钩子，打包时自动引入自定义安装脚本。
+- **`.gitignore`**：将 `build/` 整体忽略规则细化为 `build/*` + `!build/installer.nsh`，使 `installer.nsh` 能被 Git 追踪，同时继续忽略构建产物。
+
 ## [0.1.3] - 2026-05-07
 ### Added
 - **macOS 支持规划**：新增 `plan/macos-support-plan.md`，详细分析了将项目从 Windows 迁移至 macOS 所需的代码改动、打包配置及开发者分发成本。

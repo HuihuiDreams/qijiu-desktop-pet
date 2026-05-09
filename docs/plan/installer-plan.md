@@ -1,7 +1,7 @@
 # 安装包与自动启动 - 功能规划
 
 > 本文档经由 idea-refine -> spec-driven-development -> planning-and-task-breakdown 流程生成。  
-> 状态：待审批，尚未动工实现
+> 状态：已实现核心功能；安装包已构建，仍需最终干净 Windows 环境人工验收
 
 ---
 
@@ -12,13 +12,13 @@
 
 ### 核心假设（在规划前需明确）
 
-| # | 假设 | 风险等级 | 验证方式 |
-|---|------|----------|----------|
-| 1 | 不需要单独安装 Node.js。Electron 打包时已将运行时捆绑进可执行文件，终端用户无需关心 | 低 | 查看 electron-builder 输出 |
-| 2 | 当前目标平台仅 Windows，且 `package.json` 已配置 `win.target: nsis` | 低 | 已确认 |
-| 3 | 自动启动实现使用 Electron 内置 `app.setLoginItemSettings()`，不依赖第三方自启动库 | 低 | 官方文档 |
-| 4 | 自动启动偏好持久化使用 `electron-store`，并以 store 为用户偏好的真源 | 低 | 已有 `initStore` |
-| 5 | 托盘菜单已有基础结构，可在 `main.js` 的 `buildTrayMenu()` 中扩展 | 低 | 已确认 |
+| #   | 假设                                                                                | 风险等级 | 验证方式                   |
+| --- | ----------------------------------------------------------------------------------- | -------- | -------------------------- |
+| 1   | 不需要单独安装 Node.js。Electron 打包时已将运行时捆绑进可执行文件，终端用户无需关心 | 低       | 查看 electron-builder 输出 |
+| 2   | 当前目标平台仅 Windows，且 `package.json` 已配置 `win.target: nsis`                 | 低       | 已确认                     |
+| 3   | 自动启动实现使用 Electron 内置 `app.setLoginItemSettings()`，不依赖第三方自启动库   | 低       | 官方文档                   |
+| 4   | 自动启动偏好持久化使用 `electron-store`，并以 store 为用户偏好的真源                | 低       | 已有 `initStore`           |
+| 5   | 托盘菜单已有基础结构，可在 `main.js` 的 `buildTrayMenu()` 中扩展                    | 低       | 已确认                     |
 
 ### 排除的方向（Not Doing）
 - 不做 macOS / Linux 支持，本次仅面向 Windows。
@@ -50,20 +50,20 @@
 - [ ] 安装完成后，存在桌面快捷方式和开始菜单条目。
 - [ ] 安装后首次运行时，自启动默认为开启。
 - [ ] 重启系统后桌宠可自动启动。
-- [ ] 托盘菜单中显示“开机自动启动”复选框。
-- [ ] 取消勾选后，重启系统时不再自动启动。
-- [ ] `electron-store` 中持久化 `autoLaunch` 键。
+- [x] 托盘菜单中显示“开机自动启动”复选框。
+- [x] 取消勾选后，重启系统时不再自动启动。
+- [x] `electron-store` 中持久化 `autoLaunch` 键。
 
 ### Tech Stack（技术栈）
 
-| 层 | 工具 | 说明 |
-|----|------|------|
-| 打包 | `electron-builder` v25 | 输出 NSIS `.exe` |
-| 安装格式 | NSIS | 已在 `package.json` 中配置 |
-| 自动启动 API | `app.setLoginItemSettings()` | Electron 内置，无需额外依赖 |
-| 自动启动状态读取 | `app.getLoginItemSettings()` | 用于诊断和状态核对 |
-| 设置持久化 | `electron-store` | 保存 `autoLaunch: boolean` |
-| 渲染层桥接 | `preload.js` | 暴露 `setAutoLaunch` / `getAutoLaunch` 等接口 |
+| 层               | 工具                         | 说明                                          |
+| ---------------- | ---------------------------- | --------------------------------------------- |
+| 打包             | `electron-builder` v25       | 输出 NSIS `.exe`                              |
+| 安装格式         | NSIS                         | 已在 `package.json` 中配置                    |
+| 自动启动 API     | `app.setLoginItemSettings()` | Electron 内置，无需额外依赖                   |
+| 自动启动状态读取 | `app.getLoginItemSettings()` | 用于诊断和状态核对                            |
+| 设置持久化       | `electron-store`             | 保存 `autoLaunch: boolean`                    |
+| 渲染层桥接       | `preload.js`                 | 暴露 `setAutoLaunch` / `getAutoLaunch` 等接口 |
 
 ### Commands（命令）
 
@@ -84,7 +84,13 @@ ls dist/
 desktop-pet/
 ├── main.js                <- 修改：自启动逻辑、托盘菜单、IPC handler
 ├── preload.js             <- 修改：向 renderer 暴露自启动相关桥接
-├── package.json           <- 修改：补全 electron-builder / NSIS 配置
+├── package.json           <- 已修改：补全 electron-builder / NSIS 配置
+├── build/
+│   └── installer.nsh      <- 已新增：NSIS 自定义安装 / 卸载宏
+├── scripts/
+│   ├── afterPack.js       <- 已新增：打包后图标处理
+│   ├── set-win-icon.ps1   <- 已新增：Windows 图标资源写入脚本
+│   └── verify-installer.js <- 已新增：安装包环境验证脚本
 ├── src/
 │   └── index.html         <- 通常无需改动
 └── docs/
@@ -135,16 +141,16 @@ desktop-pet/
 **Description：** 在正式实现前，确认图标资源和安装包显示名称，避免中途改构建元数据导致返工。
 
 **Acceptance criteria：**
-- [ ] 提供 `assets/icon.png`，建议至少 256x256，优先 1024x1024。
-- [ ] 确认安装包和应用展示名是否从当前 `DeskPet` 改为 `七九桌面爱宠`。
-- [ ] 若使用中文展示名，确认桌面快捷方式、卸载项和安装器显示名统一。
+- [x] 提供 `src/assets/icon.png` 和 `src/assets/icon.ico`。
+- [x] 确认安装包和应用展示名从当前 `DeskPet` 改为 `七九爱宠`。
+- [x] 中文展示名已在桌面快捷方式、卸载项和安装器显示名中统一。
 
 **Verification：**
-- [ ] 仓库中存在 `assets/icon.png`。
-- [ ] 文档与 `package.json` 的命名保持一致。
+- [x] 仓库中存在 `src/assets/icon.png` 和 `src/assets/icon.ico`。
+- [x] 文档与 `package.json` 的命名保持一致。
 
 **Dependencies：** None  
-**Files:** `assets/icon.png`, `package.json`, `docs/plan/installer-plan.md`  
+**Files:** `src/assets/icon.png`, `src/assets/icon.ico`, `package.json`, `docs/plan/installer-plan.md`  
 **Estimated scope:** XS
 
 ---
@@ -155,18 +161,18 @@ desktop-pet/
 **Description：** 在 `package.json` 的 `build` 字段中补全 NSIS 安装包所需配置，确保可生成可安装的 `setup.exe`。
 
 **Acceptance criteria：**
-- [ ] `build.nsis.oneClick` 设为 `false`。
-- [ ] `build.nsis.allowToChangeInstallationDirectory` 设为 `true`。
-- [ ] `build.nsis.createDesktopShortcut` 设为 `true`。
-- [ ] `build.nsis.createStartMenuShortcut` 设为 `true`。
-- [ ] `build.win.icon` 指向有效图标资源。
-- [ ] `build.productName` 与已确认的展示名一致。
-- [ ] `build.nsis.uninstallDisplayName` 与展示名一致。
-- [ ] 如需卸载时清理注册表残留，补充自定义 NSIS 脚本。
+- [x] `build.nsis.oneClick` 设为 `false`。
+- [x] `build.nsis.allowToChangeInstallationDirectory` 设为 `true`。
+- [x] `build.nsis.createDesktopShortcut` 设为 `true`。
+- [x] `build.nsis.createStartMenuShortcut` 设为 `true`。
+- [x] `build.win.icon` 指向有效图标资源。
+- [x] `build.productName` 与已确认的展示名一致。
+- [x] `build.nsis.uninstallDisplayName` 与展示名一致。
+- [x] 已补充 `build/installer.nsh` 自定义 NSIS 脚本，并在 `package.json` 中通过 `build.nsis.include` 引入。
 
 **Verification：**
-- [ ] `npm run build` 无报错。
-- [ ] `dist/` 目录生成 `.exe` 安装包。
+- [x] `npm run build` 无报错。
+- [x] `dist/` 目录生成 `.exe` 安装包。
 
 **Dependencies：** Task 0  
 **Files:** `package.json`  
@@ -180,16 +186,16 @@ desktop-pet/
 **Description：** 使用 `app.setLoginItemSettings()` 和 `app.getLoginItemSettings()`，在应用启动时根据 `electron-store` 中的偏好同步系统自启动状态。
 
 **Acceptance criteria：**
-- [ ] 启动时读取 `store.get('autoLaunch')`。
-- [ ] 若 `autoLaunch` 不存在，则写入默认值 `true`，并开启系统自启动。
-- [ ] 若 `autoLaunch` 已存在，则以 store 中的值为准同步系统状态。
-- [ ] 添加主进程 IPC handler `set-auto-launch`，接受 `boolean` 参数并完成设置与持久化。
-- [ ] 添加主进程 IPC handler 或辅助方法用于读取当前偏好，供托盘或调试使用。
+- [x] 启动时读取 `store.get('autoLaunch')`。
+- [x] 若 `autoLaunch` 不存在，则写入默认值 `true`，并开启系统自启动。
+- [x] 若 `autoLaunch` 已存在，则以 store 中的值为准同步系统状态。
+- [x] 添加主进程 IPC handler `set-auto-launch`，接受 `boolean` 参数并完成设置与持久化。
+- [x] 添加主进程 IPC handler 或辅助方法用于读取当前偏好，供托盘或调试使用。
 
 **Verification：**
-- [ ] `npm run dev` 下可手动触发 `set-auto-launch(true/false)`，且不会报错。
-- [ ] store 中 `autoLaunch` 值与切换结果一致。
-- [ ] 打包版本中，自启动行为与 store 设定一致。
+- [x] `npm run dev` 下可手动触发 `set-auto-launch(true/false)`，且不会报错。
+- [x] store 中 `autoLaunch` 值与切换结果一致。
+- [x] 打包版本中，自启动行为与 store 设定一致。
 
 **Dependencies：** Task 1  
 **Files:** `main.js`  
@@ -199,13 +205,13 @@ desktop-pet/
 **Description：** 为 renderer / DevTools 调试暴露安全、最小化的桥接接口，避免文档中的验证方式与真实代码结构脱节。
 
 **Acceptance criteria：**
-- [ ] `preload.js` 暴露 `setAutoLaunch(boolean)`。
-- [ ] 如有需要，暴露 `getAutoLaunch()` 或等价查询接口。
-- [ ] 不暴露 Electron 主进程对象本身，仅暴露受控 IPC 方法。
+- [x] `preload.js` 暴露 `setAutoLaunch(boolean)`。
+- [x] 暴露 `getAutoLaunch()` 查询接口。
+- [x] 不暴露 Electron 主进程对象本身，仅暴露受控 IPC 方法。
 
 **Verification：**
-- [ ] DevTools 中可调用 `window.electronAPI.setAutoLaunch(false)`。
-- [ ] 调用后返回结果可用于判断是否设置成功。
+- [x] DevTools 中可调用 `window.electronAPI.setAutoLaunch(false)`。
+- [x] 调用后返回结果可用于判断是否设置成功。
 
 **Dependencies：** Task 2  
 **Files:** `preload.js`  
@@ -219,15 +225,15 @@ desktop-pet/
 **Description：** 在 `buildTrayMenu()` 中增加一个 checkbox 菜单项，点击时切换自启动状态，并在菜单重建时保持勾选状态正确。
 
 **Acceptance criteria：**
-- [ ] 托盘菜单中出现“开机自动启动” checkbox 项。
-- [ ] checkbox 的默认勾选状态与当前期望状态一致。
-- [ ] 点击后立即生效，并持久化到 store。
-- [ ] 菜单重建后仍显示正确勾选状态。
+- [x] 托盘菜单中出现“开机自动启动” checkbox 项。
+- [x] checkbox 的默认勾选状态与当前期望状态一致。
+- [x] 点击后立即生效，并持久化到 store。
+- [x] 菜单重建后仍显示正确勾选状态。
 
 **Verification：**
-- [ ] `npm run dev` 启动后右键托盘图标，可见菜单项。
-- [ ] 点击切换后，store 状态与 UI 同步变化。
-- [ ] 重启应用后，菜单勾选状态与上次保存一致。
+- [x] `npm run dev` 启动后右键托盘图标，可见菜单项。
+- [x] 点击切换后，store 状态与 UI 同步变化。
+- [x] 重启应用后，菜单勾选状态与上次保存一致。
 
 **Dependencies：** Task 2, Task 2.1  
 **Files:** `main.js`  
@@ -237,10 +243,10 @@ desktop-pet/
 
 ### Checkpoint：Phase 1-3 完成标准
 
-- [ ] 开发态下所有功能可联调，不报错。
-- [ ] 自启动开关可在托盘菜单中切换并持久化。
-- [ ] `electron-store` 中的 `autoLaunch` 与 UI 状态一致。
-- [ ] 人工审查通过后，才进入安装包验证。
+- [x] 开发态下所有功能可联调，不报错。
+- [x] 自启动开关可在托盘菜单中切换并持久化。
+- [x] `electron-store` 中的 `autoLaunch` 与 UI 状态一致。
+- [x] 人工审查通过后，已进入安装包验证。
 
 ---
 
@@ -250,12 +256,13 @@ desktop-pet/
 **Description：** 运行 `npm run build` 生成安装包，并在没有开发环境依赖的 Windows 机器或虚拟机上做端到端验证。
 
 **Acceptance criteria：**
-- [ ] 成功生成 `dist/*.exe` 安装包。
+- [x] 成功生成 `dist/*.exe` 安装包。
 - [ ] 安装包在干净 Windows 环境可正常安装。
-- [ ] 安装后存在桌面快捷方式和开始菜单条目。
-- [ ] 首次运行后，自启动默认开启。
-- [ ] 重启系统后，应用自动启动。
-- [ ] 托盘菜单功能完整可用。
+- [x] 安装后存在桌面快捷方式和开始菜单条目。
+- [x] 首次运行后，自启动默认开启。
+- [x] 重启系统后，应用自动启动。
+- [x] 托盘菜单功能完整可用。
+- [x] 新增 `scripts/verify-installer.js`，可通过 `npm run verify:installer` 检查安装包关键文件。
 
 **Verification：**
 - [ ] 在虚拟机或第二台 PC 完成安装测试。
@@ -270,31 +277,31 @@ desktop-pet/
 
 ### 最终验收
 
-- [ ] 所有 Task Acceptance criteria 满足。
+- [x] Phase 0-3 Task Acceptance criteria 满足。
 - [ ] 干净环境测试通过。
-- [ ] 如项目流程要求，更新 `CHANGELOG.md`。
+- [x] 如项目流程要求，更新 `CHANGELOG.md`。
 
 ---
 
 ## 四、风险与缓解
 
-| 风险 | 影响 | 缓解策略 |
-|------|------|----------|
-| Windows Defender / SmartScreen 对未签名 `.exe` 给出警告 | 中 | MVP 阶段属正常现象，可在 README 中说明，后续再接入代码签名 |
-| `app.setLoginItemSettings()` 在开发态与打包态行为不一致 | 中 | 以打包版本验收，不以 `npm run dev` 结果作为最终结论 |
-| 安装路径包含中文字符时出现异常 | 低 | 在 Phase 4 中显式覆盖中文路径测试 |
-| 文档假设和实际桥接接口不一致，导致验证步骤失效 | 中 | 将 `preload.js` 纳入正式改动范围，并把验证步骤与接口定义保持一致 |
-| 图标资源缺失导致构建回退为默认 Electron 图标 | 中 | 将 `assets/icon.png` 设为前置条件，不满足则不进入构建验收 |
+| 风险                                                    | 影响 | 缓解策略                                                         |
+| ------------------------------------------------------- | ---- | ---------------------------------------------------------------- |
+| Windows Defender / SmartScreen 对未签名 `.exe` 给出警告 | 中   | MVP 阶段属正常现象，可在 README 中说明，后续再接入代码签名       |
+| `app.setLoginItemSettings()` 在开发态与打包态行为不一致 | 中   | 以打包版本验收，不以 `npm run dev` 结果作为最终结论              |
+| 安装路径包含中文字符时出现异常                          | 低   | 在 Phase 4 中显式覆盖中文路径测试                                |
+| 文档假设和实际桥接接口不一致，导致验证步骤失效          | 中   | 将 `preload.js` 纳入正式改动范围，并把验证步骤与接口定义保持一致 |
+| 图标资源缺失导致构建回退为默认 Electron 图标            | 中   | 将 `assets/icon.png` 设为前置条件，不满足则不进入构建验收        |
 
 ---
 
 ## 五、开放问题（待确认 / 待落实）
 
-- [ ] 应用图标：当前仓库中尚未发现 `assets/icon.png`，实现前需补齐。
-- [ ] 安装包显示名称：当前 `package.json` 的 `productName` 仍为 `DeskPet`，需确认是否改为 `七九桌面爱宠`。
-- [ ] 卸载时是否必须清理自启动注册项：若要求“卸载即彻底清理”，则需要自定义 NSIS 脚本。
+- [x] 应用图标：已补齐 `src/assets/icon.png` 和 `src/assets/icon.ico`。
+- [x] 安装包显示名称：`package.json` 的 `productName` 已改为 `七九爱宠`。
+- [x] 卸载时是否必须清理自启动注册项：已新增 `build/installer.nsh` 作为自定义 NSIS 扩展入口。
 - [x] 安装模式：使用 `oneClick: false`，允许用户选择安装路径。
 
 ---
 
-*最后更新：2026-05-05*
+*最后更新：2026-05-09*
