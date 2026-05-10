@@ -4,6 +4,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [0.1.6] - 2026-05-10
+### Added
+- **后续功能扩展规划**：新增 `docs/plan/feature-ideas-plan.md`，从生产力工具、环境感知与沉浸感、以及皮肤图鉴收集三个维度规划了桌宠未来的长线功能。
+
+### Changed
+- **系统架构图档更新**：更新 `docs/structure.md`，在架构图及渲染链条中补充了已重构上线的 `SpriteView` 组件，移除了已废弃的 `PetAnimations.js` 相关描述，并更新了后续拓展方向。
+
 ### Fixed
 - **睡眠模式时间跳跃处理**：修复了电脑休眠唤醒后 `deltaMs` 巨大导致数值不更新、对话不触发以及物理系统潜在崩溃的 Bug。
   - 引入了睡眠唤醒自动检测与即时离线结算机制。

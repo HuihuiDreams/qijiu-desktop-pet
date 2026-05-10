@@ -21,6 +21,7 @@ graph TB
         App --> Nurture["NurtureSystem x2"]
         App --> Interact["InteractionSystem"]
         App --> Time["TimeSystem"]
+        App --> Sprite["SpriteView"]
         
         Move --> YQ["Pet: 岳七 (yueqi)"]
         Move --> SJ["Pet: 沈九 (shenjiu)"]
@@ -52,7 +53,7 @@ C:\Users\alexa\desktop-pet\
 │   ├── pet/
 │   │   ├── Pet.js           # 宠物实体类（状态机、位置、四维数值）
 │   │   ├── PetRenderer.js   # 负责生成 DOM 并实时更新坐标，处理鼠标事件和拖曳逻辑
-│   │   └── PetAnimations.js # 处理站立/移动等动画表现
+│   │   └── SpriteView.js    # 负责基于状态的雪碧图(Sprite Sheet)动画帧播放
 │   ├── systems/             # 独立的业务逻辑子系统
 │   │   ├── InteractionSystem.js # 负责检测距离并触发两人的 CP 互动
 │   │   ├── MovementSystem.js    # 负责计算随机走动目标点与步进
@@ -71,7 +72,7 @@ C:\Users\alexa\desktop-pet\
 所有的视觉更新与状态计算均在 `app.js` 的 `gameLoop` 中执行。
 - **保护机制**: 由 `try/catch` 完整包裹，防止某一步骤的局部错误（例如未定义的字典访问）导致整个 `requestAnimationFrame` 链条断裂（详见 [ADR-005](./decisions/ADR-005-gameloop-crash-protection.md)）。
 - **休眠唤醒处理**: 针对系统睡眠导致 `requestAnimationFrame` 挂起的场景，系统会自动检测大于 60s 的时间跳跃（deltaMs），并将其视为“离线时间”进行即时结算，同时触发欢迎对白并对该帧 deltaMs 进行压制，以防止物理系统崩溃（详见 [ADR-019](./decisions/ADR-019-handling-time-jumps-after-system-sleep.md)）。
-- **更新顺序**: Movement (移动) -> Nurture (数值衰减) -> Interaction (碰撞与互动检测) -> Rendering (视觉渲染)。
+- **更新顺序**: Movement (移动) -> Nurture (数值衰减) -> Interaction (碰撞与互动检测) -> Rendering (DOM 坐标更新) -> SpriteView (动画帧更新)。
 
 ### 3.2 鼠标穿透策略 (Click-Through)
 由于窗口是全屏透明的，必须精心管理鼠标事件以保证不影响用户正常使用电脑。
@@ -103,5 +104,5 @@ C:\Users\alexa\desktop-pet\
 - **渲染进程**: `app.js` 接收消息后，不仅通过 `display: none` 隐藏包含宠物的 `#pet-stage`，更重要的是**暂停游戏逻辑 (`isPaused = !visible`)**，避免在不可见状态下继续消耗数值和资源（详见 [ADR-011](./decisions/ADR-011-hide-show-pet-functionality.md)）。
 
 ## 4. 后续建议 (Next Steps)
-1. **扩展美术资产**: 当前已经初步引入了图片资产（`left.png`, `right.png`, 互动专用的 `kiss.png`）。后续可以继续丰富 `PetAnimations.js` 和 `PetRenderer.js`，引入更多的帧动画或完整的精灵图 (Sprite Sheets)，甚至是 Live2D 模型。
+1. **扩展动画资产与状态**: 当前已通过 `SpriteView.js` 引入了雪碧图（Sprite Sheet）渲染机制。后续可以继续丰富现有的动作帧（如增加更流畅的过渡动画），或为不同环境（如天气系统、皮肤系统）扩充更多图集资产和状态图。
 2. **迁移与优化**: 如果未来 Electron 占用的内存（>100MB）让用户困扰，可以参考当前清晰的 `systems/` 与 `ui/` 分层，将前端逻辑完整平移到 **Tauri** (Rust) 框架中以降低包体积和内存占用。
