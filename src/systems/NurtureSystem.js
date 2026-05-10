@@ -58,7 +58,10 @@ class NurtureSystem {
    * 计算离线属性衰减（根据距离上次保存的时间）。
    */
   applyOfflineDecay(pet, offlineMs) {
-    const intervals = Math.floor(offlineMs / CONFIG.DECAY_INTERVAL);
+    const totalElapsedMs = this.decayAccumulator + offlineMs;
+    const intervals = Math.floor(totalElapsedMs / CONFIG.DECAY_INTERVAL);
+    this.decayAccumulator = totalElapsedMs % CONFIG.DECAY_INTERVAL;
+
     for (let i = 0; i < intervals; i++) {
       this.applyDecay(pet);
     }

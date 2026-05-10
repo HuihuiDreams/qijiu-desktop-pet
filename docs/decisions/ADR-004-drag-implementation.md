@@ -1,12 +1,12 @@
-# ADR-004: 拖曳实现方案
+﻿# ADR-004: 拖曳实现方案
 
-## Status
+## 状态 (Status)
 Accepted
 
-## Date
+## 日期 (Date)
 2026-04-28
 
-## Context
+## 背景 (Context)
 初始版本中，宠物角色无法被用户拖曳移动。原因是 `PetRenderer.js` 只实现了 `mouseenter`/`mouseleave` 切换鼠标穿透，但完全缺少拖曳相关的事件处理链。
 
 拖曳在桌面宠物应用中的特殊难点：
@@ -14,7 +14,7 @@ Accepted
 2. 拖曳期间移动系统不能覆盖用户设定的位置
 3. 拖曳结束后需要恢复鼠标穿透状态
 
-## Decision
+## 决策 (Decision)
 在 `PetRenderer.createPetElement()` 中实现完整的拖曳链：
 
 1. `mousedown`（在角色元素上）：
@@ -37,7 +37,7 @@ Accepted
 if (pet.isDragging || pet.isBusy()) return;
 ```
 
-## Alternatives Considered
+## 替代方案 (Alternatives Considered)
 
 ### HTML5 Drag and Drop API
 - Pros: 浏览器原生支持
@@ -49,7 +49,7 @@ if (pet.isDragging || pet.isBusy()) return;
 - Cons: 碰撞检测依赖 `pet.x`/`pet.y` 数值，用 `transform` 需要额外解析
 - Rejected: `left`/`top` 在当前规模下性能足够，且代码更直观
 
-## Consequences
+## 影响 (Consequences)
 - `Pet` 类新增 `isDragging` 属性
 - 每个角色在 `document` 上注册了 `mousemove` 和 `mouseup` 监听器（共 4 个）
 - 未来如果角色数量增加，需要考虑事件监听器的管理和清理

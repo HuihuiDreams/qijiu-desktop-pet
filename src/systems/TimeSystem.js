@@ -14,7 +14,9 @@ class TimeSystem {
   update(deltaMs) {
     this.saveAccumulator += deltaMs;
     if (this.saveAccumulator >= this.saveInterval) {
-      this.saveAccumulator -= this.saveInterval;
+      // 修复睡眠唤醒 bug: 将 '-=' 改为 '%='。如果遭遇极大的时间跳跃，
+      // 取模可以避免 accumulator 残留巨大值，从而防止未来多个帧被连续强制触发存档。
+      this.saveAccumulator %= this.saveInterval;
       return true; // 返回 true 表示需要触发保存
     }
     return false;

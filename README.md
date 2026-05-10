@@ -3,7 +3,7 @@
 基于 Electron 构建的《人渣反派自救系统》主题桌面宠物应用。
 岳清源（岳七）和沈清秋（沈九）将在你的桌面上陪伴你，自由漫步，甚至偶尔触发互动。
 
-## 🚀 快速开始
+## 🚀 快速开始 (Quick Start)
 
 1. 确保安装了 [Node.js](https://nodejs.org/)。
 2. 安装依赖：`npm install`
@@ -16,7 +16,7 @@
 
 ---
 
-## 📊 数值系统与养成攻略
+## 📊 养成系统 (Nurture System)
 
 本游戏有四项核心“修仙”数值。游戏采用了**写实节奏**（每 5 分钟计算一次自然消耗），即使关闭程序，下次打开时也会**计算离线时间的消耗**！
 
@@ -58,7 +58,7 @@
 
 ---
 
-## 🎨 视觉状态与特效说明
+## 🎨 视觉特效 (Visual Effects)
 
 除了属性面板，你还可以通过直接观察桌宠的外观来判断他们的状态：
 
@@ -68,7 +68,7 @@
 
 ---
 
-## 💡 游玩小贴士
+## 💡 游玩提示 (Tips)
 
 1. **不要让他们太饿！** 饥饿会导致无法休息，还会让心情变得极差。
 2. **顺其自然**：他们会在你的屏幕上自己走来走去，时不时闲聊两句。如果你把他们拖到一起（距离 180px 以内），就有机会触发 CP 互动对话和特效。
@@ -77,20 +77,20 @@
 
 ---
 
-## 🛠️ Commands
+## 🛠️ 命令 (Commands)
 
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | 启动开发服务器与 Electron 应用 |
 | `npm install` | 安装项目依赖 |
 
-## 🏗️ Architecture
+## 🏗️ 架构 (Architecture)
 
 整个应用基于 Electron 构建，分为主进程（Main Process）和渲染进程（Renderer Process）。核心逻辑（宠物移动、数值养成、状态机）在前端渲染进程中以 Game Loop 的方式驱动。
 - 详细架构说明见：[docs/structure.md](./docs/structure.md)
 - 重大架构决策见：[docs/decisions/](./docs/decisions/) 目录下的 ADRs。
 
-## 🤝 Contributing
+## 🤝 贡献 (Contributing)
 
 本项目采用严格的主干开发规范。每一次推送都必须更新 `CHANGELOG.md` 并包含原子化的提交信息。
 - 详细提交流程与自动化脚本使用说明见：[docs/git-workflow.md](./docs/git-workflow.md)

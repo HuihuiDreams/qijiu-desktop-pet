@@ -148,11 +148,41 @@
   let statusUpdateTimer = 0;
 
   function gameLoop(currentTime) {
-    const deltaMs = currentTime - lastTime;
+    let deltaMs = currentTime - lastTime;
     lastTime = currentTime;
 
     try {
       if (!isPaused) {
+        // --- 修复: 电脑睡眠模式 / 后台挂机的时间跳跃处理 ---
+        // 在桌面应用中，如果电脑进入休眠，requestAnimationFrame 会被完全挂起。
+        // 当重新唤醒时，这里的 deltaMs（两帧时间差）会变得极其巨大（甚至长达几个小时）。
+        // 如果两帧之间间隔过大（例如超过 60 秒），说明刚刚经历了系统休眠或被系统挂起。
+        if (deltaMs > 60000) {
+          const offlineMs = deltaMs;
+          
+          // 1. 将这段“跳跃的空白时间”视作离线，一次性结算属性的自然衰减
+          nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
+          nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
+
+          // 2. 根据跳跃的时间计算出走掉的“时辰”，触发回归特有的欢迎对白
+          const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
+          if (shichensAway >= 1) {
+            setTimeout(() => {
+              dialogBubble.show(yueqi, `你走了${shichensAway}个时辰…`, 4000);
+            }, 1500);
+            setTimeout(() => {
+              dialogBubble.show(shenjiu, '…哼，终于回来了。', 4000);
+            }, 3000);
+          }
+          
+          // 3. 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
+          // 防止后续系统的物理移动、动画计时器因为接收到巨大的 deltaMs 发生瞬间暴走（如小人飞出屏幕等 bug）。
+          deltaMs = 16;
+          
+          // 4. 唤醒并结算完毕后，立刻存一次档，保护当前已被衰减的数值状态。
+          timeSystem.save(yueqi, shenjiu);
+        }
+
         // 更新移动
         movementSystem.update(yueqi, deltaMs);
         movementSystem.update(shenjiu, deltaMs);

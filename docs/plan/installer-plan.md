@@ -5,7 +5,7 @@
 
 ---
 
-## 一、想法精炼（idea-refine）
+## 一、背景与精炼 (Background & Refinement)
 
 ### 问题陈述（How Might We）
 > HMW: 让普通 Windows 玩家无需任何命令行知识，就能一键安装桌面宠物，并让它随开机自动运行？
@@ -28,7 +28,7 @@
 
 ---
 
-## 二、功能规格（spec-driven-development）
+## 二、功能规格 (Functional Specification)
 
 ### Objective（目标）
 为桌面宠物提供一个 `setup.exe` 安装包，实现：
@@ -115,7 +115,7 @@ desktop-pet/
 
 ---
 
-## 三、任务分解（planning-and-task-breakdown）
+## 三、任务分解 (Task Breakdown)
 
 ### 依赖图
 
@@ -275,7 +275,7 @@ desktop-pet/
 
 ---
 
-### 最终验收
+## 四、验证清单 (Verification)
 
 - [x] Phase 0-3 Task Acceptance criteria 满足。
 - [ ] 干净环境测试通过。
@@ -283,7 +283,7 @@ desktop-pet/
 
 ---
 
-## 四、风险与缓解
+## 五、风险与缓解 (Risks & Mitigation)
 
 | 风险                                                    | 影响 | 缓解策略                                                         |
 | ------------------------------------------------------- | ---- | ---------------------------------------------------------------- |
@@ -295,7 +295,7 @@ desktop-pet/
 
 ---
 
-## 五、开放问题（待确认 / 待落实）
+## 六、开放问题 (Open Questions)
 
 - [x] 应用图标：已补齐 `src/assets/icon.png` 和 `src/assets/icon.ico`。
 - [x] 安装包显示名称：`package.json` 的 `productName` 已改为 `七九爱宠`。

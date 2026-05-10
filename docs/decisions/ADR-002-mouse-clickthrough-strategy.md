@@ -1,19 +1,19 @@
-# ADR-002: 鼠标穿透与交互区域切换策略
+﻿# ADR-002: 鼠标穿透与交互区域切换策略
 
-## Status
+## 状态 (Status)
 Accepted
 
-## Date
+## 日期 (Date)
 2026-04-28
 
-## Context
+## 背景 (Context)
 桌面宠物应用创建了一个覆盖全屏的透明窗口。面临的核心矛盾是：
 - 透明区域必须让鼠标事件穿透到桌面（用户能正常使用电脑）
 - 角色本体、右键菜单、状态面板必须能接收鼠标事件
 
 Electron 提供了 `BrowserWindow.setIgnoreMouseEvents(ignore, options)` API。`{ forward: true }` 选项允许在穿透模式下仍然接收 `mousemove` 事件，使得我们可以检测鼠标是否进入了角色区域。
 
-## Decision
+## 决策 (Decision)
 采用"动态切换"策略：
 
 1. **默认状态**: `setIgnoreMouseEvents(true, { forward: true })` — 全窗口鼠标穿透
@@ -29,7 +29,7 @@ if (!pet.isDragging && !menuOpen && !panelOpen) {
 }
 ```
 
-## Alternatives Considered
+## 替代方案 (Alternatives Considered)
 
 ### 多窗口方案（每个角色一个小窗口）
 - Pros: 天然不需要全屏穿透，每个窗口只包含角色
@@ -41,7 +41,7 @@ if (!pet.isDragging && !menuOpen && !panelOpen) {
 - Cons: `pointer-events: none` 只能阻止网页内的事件传播，不能让事件穿透到桌面
 - Rejected: 无法实现真正的桌面穿透
 
-## Consequences
+## 影响 (Consequences)
 - 所有新增的可交互 UI 元素（菜单、面板、对话框）都必须在 `mouseenter` 时调用 `setIgnoreMouseEvents(false)`，在关闭/隐藏时恢复穿透
 - `mouseleave` 守卫条件需要随 UI 元素增加而更新
 - 拖曳期间必须锁定非穿透状态直到 `mouseup`

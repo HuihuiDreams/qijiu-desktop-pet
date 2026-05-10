@@ -6,7 +6,7 @@
 
 ---
 
-## 🚀 Push 工作流：检查与更新机制
+## 🚀 推送工作流 (Push Workflow)
 
 在执行任何 `git push` 操作前，必须遵循以下步骤：
 
@@ -47,7 +47,7 @@ git push -u origin main
 
 ---
 
-## 🛠️ 自动化工具：一键 Push 脚本
+## 🛠️ 自动化工具 (Automation Tools)
 
 为了方便人类开发者快速执行，我们在项目根目录提供了一个自动化脚本 `push.ps1`（针对 Windows 环境）。
 

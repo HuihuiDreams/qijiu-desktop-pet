@@ -5,7 +5,7 @@
 
 ---
 
-## 一、背景与决策（Context & Decision）
+## 一、背景与精炼 (Background & Refinement)
 
 ### 问题陈述
 目前桌面宠物的视觉展示逻辑分散在两个文件中：
@@ -39,7 +39,7 @@
 
 ---
 
-## 二、功能规格（spec-driven-development）
+## 二、功能规格 (Functional Specification)
 
 ### Objective（目标）
 开发并集成一个独立负责宠物身体视觉表现的组件 `SpriteView`，统一管理资源映射、帧动画驱动、脏标记渲染和现有图片 / emoji 回退。
@@ -127,7 +127,7 @@ class SpriteView {
 
 ---
 
-## 三、任务分解（planning-and-task-breakdown）
+## 三、任务分解 (Task Breakdown)
 
 ### 依赖图
 
@@ -245,7 +245,7 @@ class SpriteView {
 
 ---
 
-## 四、验证清单
+## 四、验证清单 (Verification)
 
 - [x] 启动后两只宠物初始图片正常显示。
 - [x] 行走、打坐、饥饿、睡觉、吃饭、摸头等状态图正常切换。
@@ -256,7 +256,7 @@ class SpriteView {
 
 ---
 
-## 五、风险与缓解
+## 五、风险与缓解 (Risks & Mitigation)
 
 | 风险 | 影响 | 缓解策略 |
 |------|------|----------|
@@ -268,7 +268,7 @@ class SpriteView {
 
 ---
 
-## 六、开放问题（待确认 / 待落实）
+## 六、开放问题 (Open Questions)
 
 - [x] 是否抛弃 Canvas 方案？是，当前维持 DOM 方案。
 - [x] 配置字段命名是否使用 `sprites`，内含 `frames` 和 `fps`？是。

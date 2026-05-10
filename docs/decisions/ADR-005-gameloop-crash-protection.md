@@ -1,12 +1,12 @@
-# ADR-005: 游戏循环异常防护策略
+﻿# ADR-005: 游戏循环异常防护策略
 
-## Status
+## 状态 (Status)
 Accepted
 
-## Date
+## 日期 (Date)
 2026-04-28
 
-## Context
+## 背景 (Context)
 v0.0.1 至 v0.0.3 期间，当两个角色走到一起触发 CP 互动时，应用会完全冻结——角色停止走动，拖曳失效，无任何互动特效。
 
 ### 根因分析
@@ -24,7 +24,7 @@ v0.0.1 至 v0.0.3 期间，当两个角色走到一起触发 CP 互动时，应�
 
 这是一个**单点故障**：游戏循环中任何一行代码抛出未捕获异常，都会导致整个应用冻结。
 
-## Decision
+## 决策 (Decision)
 1. **修复直接原因**：在 `index.html` 中补充引入 `data/dialogues.js`
 2. **防护性修复**：在 `gameLoop` 函数体内用 `try/catch` 包裹所有逻辑，确保 `requestAnimationFrame(gameLoop)` 始终在 `catch` 之后执行
 3. 错误信息通过 `console.error` 输出到 DevTools，不会静默吞掉
@@ -43,7 +43,7 @@ function gameLoop(currentTime) {
 }
 ```
 
-## Alternatives Considered
+## 替代方案 (Alternatives Considered)
 
 ### 不加 try/catch，只修复 dialogues.js 引入
 - Pros: 代码更简洁
@@ -55,7 +55,7 @@ function gameLoop(currentTime) {
 - Cons: 全局处理器无法阻止当前调用栈的中断，`requestAnimationFrame` 仍然不会执行
 - Rejected: 无法解决核心问题
 
-## Consequences
+## 影响 (Consequences)
 - 游戏循环不会再因为单个错误而永久冻结
 - 开发阶段可以通过 DevTools Console 看到所有游戏循环中的错误
 - 需要注意：try/catch 可能掩盖 bug，开发时应关注 Console 中的错误输出

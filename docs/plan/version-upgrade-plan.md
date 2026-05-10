@@ -5,7 +5,7 @@
 
 ---
 
-## 一、背景与目标
+## 一、背景与精炼 (Background & Refinement)
 
 ### 问题陈述
 当前桌面宠物已经计划提供 Windows 安装包，但应用内尚无版本检查与升级入口。用户如果想升级，只能手动获取新版安装包，这对普通用户不够友好。
@@ -29,7 +29,7 @@
 
 ---
 
-## 二、功能规格（spec-driven-development）
+## 二、功能规格 (Functional Specification)
 
 ### 用户体验
 
@@ -105,7 +105,7 @@
 
 ---
 
-## 三、技术方案
+### 技术方案 (Technical Scheme)
 
 ### Tech Stack
 
@@ -280,7 +280,7 @@ desktop-pet/
 
 ---
 
-## 五、任务分解（planning-and-task-breakdown）
+## 三、任务分解 (Task Breakdown)
 
 ### 依赖图
 
@@ -419,7 +419,7 @@ desktop-pet/
 
 ---
 
-## 六、验证清单
+## 四、验证清单 (Verification)
 
 - [ ] `npm run dev` 启动后，托盘菜单显示“检查更新”。
 - [ ] 开发态点击检查更新不会崩溃（`app.isPackaged` guard 生效）。
@@ -437,7 +437,7 @@ desktop-pet/
 
 ---
 
-## 七、风险与缓解
+## 五、风险与缓解 (Risks & Mitigation)
 
 | 风险 | 影响 | 缓解策略 |
 |------|------|----------|
@@ -453,7 +453,7 @@ desktop-pet/
 
 ---
 
-## 八、开放问题（待确认 / 待落实）
+## 六、开放问题 (Open Questions)
 
 - [ ] 更新发布源使用 GitHub Releases 还是 Generic HTTPS Server？**→ 建议 GitHub Releases，项目已托管在 GitHub，配置最少、集成度高。**
 - [ ] 项目是否准备使用公开仓库发布更新？**→ 如果面向外部用户分发，必须公开 repo 或改用 Generic HTTPS Server。**

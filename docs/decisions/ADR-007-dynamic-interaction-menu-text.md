@@ -1,27 +1,27 @@
-# ADR-007: 动态交互菜单名称设计 (Dynamic Interaction Menu Text)
+﻿# ADR-007: 动态交互菜单名称设计 (Dynamic Interaction Menu Text)
 
-## Status
+## 状态 (Status)
 Accepted
 
-## Date
+## 日期 (Date)
 2026-04-28
 
-## Context
+## 背景 (Context)
 最初的交互菜单中，增加好感度的操作被统一命名为“🤚 摸头”。但根据《人渣反派自救系统》的人物设定，沈九性格高傲、防备心强，岳七性格包容、带有愧疚。通用的“摸头”不符合角色关系。
 
-## Decision
+## 决策 (Decision)
 1. **菜单动态化**：在 `ContextMenu.js` 的 `show()` 方法中，根据当前点击的对象 ID 动态修改 `data-action="pet"` 的 DOM 文本。
 2. **文本映射**：
    - 右键 **沈九** 时：显示为 **“🤚 七哥关怀”**。
    - 右键 **岳七** 时：显示为 **“🤚 小九撒娇”**。
 3. **反馈逻辑**：同步修改 `handleAction` 中的气泡对话，沈九回复“谁要你管”，岳七回复“宠溺地笑”，以强化角色性格。
 
-## Alternatives Considered
+## 替代方案 (Alternatives Considered)
 - **硬编码两套菜单**：在 HTML 里写两个完全不同的菜单 DIV。
   - *Rejected*: 会增加 DOM 管理成本和 CSS 冗余，动态修改文本更简洁。
 - **取消玩家交互，仅靠自然互动**：
   - *Rejected*: 用户反馈需要保留一定的“手动肝好感”途径。
 
-## Consequences
+## 影响 (Consequences)
 - 提升了应用的代入感和剧情一致性。
 - 代码逻辑稍微增加了一点 DOM 查询操作，但对性能影响忽略不计。
