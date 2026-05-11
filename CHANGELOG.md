@@ -6,6 +6,7 @@
 ## [Unreleased] - 2026-05-11
 ### Changed
 - **GitHub Actions 兼容性维护**：将安装包 workflow 使用的官方 actions 升级到 Node.js 24 runtime 兼容版本，避免 GitHub Actions 的 Node.js 20 deprecation warning。
+- **Release workflow 修正**：修复手动执行安装包 workflow 时只创建 tag、构建发布 job 被跳过的问题；手动运行现在会在同一次 workflow 中创建/复用 tag 并继续构建发布。
 - **文档路径清理**：将归档 walkthrough 和结构文档中的本机绝对路径替换为仓库相对路径，减少环境绑定。
 
 ## [0.1.6] - 2026-05-10
