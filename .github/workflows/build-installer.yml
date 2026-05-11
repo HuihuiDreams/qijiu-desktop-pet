@@ -44,12 +44,8 @@ jobs:
 
           REMOTE_SHA="$(git ls-remote --tags origin "refs/tags/${TAG}" | awk '{print $1}')"
           if [ -n "${REMOTE_SHA}" ]; then
-            if [ "${REMOTE_SHA}" = "${HEAD_SHA}" ]; then
-              echo "Tag ${TAG} already exists on origin and points to this commit. Continuing."
-              exit 0
-            fi
-            echo "Tag ${TAG} already exists on origin but points to ${REMOTE_SHA}, not ${HEAD_SHA}."
-            exit 1
+            echo "Tag ${TAG} already exists on origin at ${REMOTE_SHA}. Continuing with the existing tag."
+            exit 0
           fi
 
           git config user.name "github-actions[bot]"
@@ -105,7 +101,7 @@ jobs:
 
       - name: Build and publish signed release
         if: env.SIGNING_ENABLED == 'true'
-        run: npx electron-builder -c.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        run: npx electron-builder --config.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
@@ -115,7 +111,7 @@ jobs:
 
       - name: Build and publish unsigned release
         if: env.SIGNING_ENABLED != 'true'
-        run: npx electron-builder -c.win.signAndEditExecutable=false --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        run: npx electron-builder --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
