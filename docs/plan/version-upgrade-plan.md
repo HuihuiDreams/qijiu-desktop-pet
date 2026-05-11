@@ -158,7 +158,7 @@ GitHub Releases 必须对目标用户可访问。面向普通用户分发时，�
 当前 `.github/workflows/build-installer.yml` 只上传 artifact，不能作为自动更新源。需要升级为 tag release 构建：
 
 - `permissions.contents` 从 `read` 改为 `write`。
-- tag 触发仍使用 `v*`，例如 `v0.1.7`。
+- tag 触发仍使用 `v*`，例如 `v0.1.8`。
 - 构建发布命令改为：
 
 ```yaml
@@ -171,8 +171,8 @@ GitHub Releases 必须对目标用户可访问。面向普通用户分发时，�
 发布完成后，GitHub Release 中必须包含：
 
 ```text
-七九爱宠 Setup 0.1.7.exe
-七九爱宠 Setup 0.1.7.exe.blockmap
+desktop-pet-setup-0.1.8.exe
+desktop-pet-setup-0.1.8.exe.blockmap
 latest.yml
 ```
 
@@ -285,7 +285,7 @@ desktop-pet/
 [5] 在托盘菜单中接入“检查更新”和状态显示
         |
         v
-[6] 构建 0.1.6 -> 0.1.7 两个版本并做端到端升级验证
+[6] 构建 0.1.7 -> 0.1.8 两个版本并做端到端升级验证
 ```
 
 ### Phase 0：发布源与版本策略
@@ -296,12 +296,12 @@ desktop-pet/
 
 **Acceptance criteria：**
 
-- [ ] 发布源固定为 GitHub Releases。
-- [ ] `package.json.version` 是应用版本的唯一来源。
-- [ ] 每次发布新版本必须递增 semver 版本号；当前验证示例为 `0.1.6 -> 0.1.7`。
-- [ ] Git tag 使用 `v${package.json.version}` 格式，例如 `v0.1.7`。
-- [ ] GitHub Release 中包含安装包、`.blockmap` 和 `latest.yml`。
-- [ ] Release 对目标用户可访问；私有仓库不作为第一版普通用户分发方案。
+- [x] 发布源固定为 GitHub Releases。
+- [x] `package.json.version` 是应用版本的唯一来源。
+- [x] 每次发布新版本必须递增 semver 版本号；当前验证示例为 `0.1.7 -> 0.1.8`。
+- [x] Git tag 使用 `v${package.json.version}` 格式，例如 `v0.1.8`。
+- [x] GitHub Release 中包含安装包、`.blockmap` 和 `latest.yml`。
+- [x] Release 对目标用户可访问；私有仓库不作为第一版普通用户分发方案。
 
 **Dependencies：** None  
 **Files:** `package.json`, `.github/workflows/build-installer.yml`  
@@ -315,17 +315,18 @@ desktop-pet/
 
 **Acceptance criteria：**
 
-- [ ] `dependencies` 中存在 `electron-updater`。
-- [ ] `dependencies` 中存在 `electron-log`。
-- [ ] `build.publish` 配置为 GitHub provider，并填写实际 `owner` / `repo`。
-- [ ] Windows target 保持 `nsis`。
-- [ ] 保留现有 `productName: "七九爱宠"`、图标、NSIS 配置和 `afterPack` 配置。
+- [x] `dependencies` 中存在 `electron-updater`。
+- [x] `dependencies` 中存在 `electron-log`。
+- [x] `build.publish` 配置为 GitHub provider，并填写实际 `owner` / `repo`。
+- [x] Windows target 保持 `nsis`。
+- [x] 保留现有 `productName: "七九爱宠"`、图标、NSIS 配置和 `afterPack` 配置。
+- [x] `artifactName` 使用 ASCII 文件名，例如 `desktop-pet-setup-${version}.${ext}`，确保 `latest.yml` 引用的文件名与 Release 资产一致。
 
 **Verification：**
 
-- [ ] `npm install electron-updater electron-log --save` 成功。
-- [ ] `npm run build` 成功生成 NSIS 安装包。
-- [ ] `dist/` 中存在 `latest.yml` 和 `.blockmap`。
+- [x] `npm install electron-updater electron-log --save` 成功。
+- [x] `npm run build` 成功生成 NSIS 安装包。
+- [x] `dist/` 中存在 `latest.yml` 和 `.blockmap`。
 
 **Dependencies：** Task 0  
 **Files:** `package.json`, `package-lock.json`  
@@ -339,17 +340,17 @@ desktop-pet/
 
 **Acceptance criteria：**
 
-- [ ] `.github/workflows/build-installer.yml` 的 `permissions.contents` 为 `write`。
-- [ ] tag `v*` 触发时运行 `npx electron-builder --publish onTag`。
-- [ ] workflow 设置 `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`。
-- [ ] 发布后的 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
-- [ ] artifact 上传如果保留，明确只是调试辅助。
+- [x] `.github/workflows/build-installer.yml` 的 `permissions.contents` 为 `write`。
+- [x] tag `v*` 触发时运行 `npx electron-builder --publish onTag`。
+- [x] workflow 设置 `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`。
+- [x] 发布后的 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
+- [x] artifact 上传如果保留，明确只是调试辅助。
 
 **Verification：**
 
-- [ ] 推送 tag `v0.1.7` 后 workflow 成功。
-- [ ] GitHub Release 页面能看到安装包、blockmap 和 `latest.yml`。
-- [ ] `latest.yml` 中的版本号、文件名、sha512 与 Release 资产匹配。
+- [x] 推送 tag `v0.1.8` 后 workflow 成功。
+- [x] GitHub Release 页面能看到安装包、blockmap 和 `latest.yml`。
+- [x] 本地 `latest.yml` 中的版本号、文件名、sha512 与构建产物匹配。
 
 **Dependencies：** Task 1  
 **Files:** `.github/workflows/build-installer.yml`  
@@ -363,23 +364,23 @@ desktop-pet/
 
 **Acceptance criteria：**
 
-- [ ] 设置 `autoUpdater.autoDownload = false`。
-- [ ] 设置 `autoUpdater.logger = electron-log`。
-- [ ] 开发态使用 `app.isPackaged` guard，非打包态给出友好提示而不是抛错。
-- [ ] `update-available` 事件中弹窗询问是否下载。
-- [ ] 用户确认后调用 `autoUpdater.downloadUpdate()`。
-- [ ] `update-not-available` 事件中提示当前已是最新版。
-- [ ] `update-downloaded` 事件中询问是否立即重启安装。
-- [ ] 用户确认后调用 `autoUpdater.quitAndInstall()`。
-- [ ] `error` 事件中分类处理常见错误，并通过 `electron-log` 记录详细错误。
-- [ ] 状态模型能防止重复点击进入并发检查或并发下载。
+- [x] 设置 `autoUpdater.autoDownload = false`。
+- [x] 设置 `autoUpdater.logger = electron-log`。
+- [x] 开发态使用 `app.isPackaged` guard，非打包态给出友好提示而不是抛错。
+- [x] `update-available` 事件中弹窗询问是否下载。
+- [x] 用户确认后调用 `autoUpdater.downloadUpdate()`。
+- [x] `update-not-available` 事件中提示当前已是最新版。
+- [x] `update-downloaded` 事件中询问是否立即重启安装。
+- [x] 用户确认后调用 `autoUpdater.quitAndInstall()`。
+- [x] `error` 事件中分类处理常见错误，并通过 `electron-log` 记录详细错误。
+- [x] 状态模型能防止重复点击进入并发检查或并发下载。
 
 **Verification：**
 
-- [ ] 开发态点击检查更新不会崩溃。
-- [ ] 人工模拟重复点击时，只出现当前状态提示，不会发起多次检查。
-- [ ] 断网状态下点击检查更新给出“请检查网络连接后重试”一类提示。
-- [ ] 日志文件中能看到完整错误详情。
+- [x] 开发态点击检查更新不会崩溃。
+- [x] 单测模拟重复点击/忙碌状态时，只出现当前状态提示，不会发起多次检查。
+- [x] 单测覆盖断网状态下点击检查更新给出“请检查网络连接后重试”一类提示。
+- [x] 单测覆盖错误通过 `electron-log` 记录完整详情。
 
 **Dependencies：** Task 2  
 **Files:** `updateManager.js`  
@@ -393,19 +394,19 @@ desktop-pet/
 
 **Acceptance criteria：**
 
-- [ ] 托盘菜单中出现“检查更新”。
-- [ ] 菜单项点击后调用 `checkForUpdatesFromTray()`。
-- [ ] 检查中显示“正在检查更新...”。
-- [ ] 下载中显示“正在下载更新...”。
-- [ ] 检查中或下载中重复点击给出友好提示。
-- [ ] 菜单重建后，该菜单项仍存在，且状态正确。
-- [ ] 原有托盘菜单项、隐藏/显示、暂停/恢复、开机自启动、退出功能不受影响。
+- [x] 托盘菜单中出现“检查更新”。
+- [x] 菜单项点击后调用 `checkForUpdatesFromTray()`。
+- [x] 检查中显示“正在检查更新...”。
+- [x] 下载中显示“正在下载更新...”。
+- [x] 检查中或下载中重复点击给出友好提示。
+- [x] 菜单重建后，该菜单项仍存在，且状态正确。
+- [x] 原有托盘菜单项、隐藏/显示、暂停/恢复、开机自启动、退出功能不受影响。
 
 **Verification：**
 
-- [ ] `npm run dev` 可看到菜单项。
-- [ ] 开发态点击显示“开发模式下不支持检查更新”。
-- [ ] 打包安装后，菜单项可触发真实检查。
+- [x] `npm run dev` 可看到菜单项。
+- [x] 开发态点击显示“开发模式下不支持检查更新”。
+- [x] 打包安装后，菜单项可触发真实检查。
 
 **Dependencies：** Task 3  
 **Files:** `main.js`  
@@ -413,21 +414,21 @@ desktop-pet/
 
 ### Phase 5：端到端升级验证
 
-#### Task 5：用 `0.1.6 -> 0.1.7` 验证升级链路
+#### Task 5：用 `0.1.7 -> 0.1.8` 验证升级链路
 
 **Description：** 构建并发布当前版本和下一版本，验证已安装旧版本可以检查到新版本，并完成下载与安装。
 
 **建议流程：**
 
-1. 确认当前 `package.json.version` 为 `0.1.6`，构建并安装旧版本。
-2. 将 `package.json.version` 升到 `0.1.7`。
+1. 确认当前旧版安装包版本为 `0.1.7`，构建并安装旧版本。
+2. 将 `package.json.version` 升到 `0.1.8`。
 3. 更新 `CHANGELOG.md`。
-4. 创建并推送 tag `v0.1.7`。
+4. 创建并推送 tag `v0.1.8`。
 5. 等待 GitHub Actions 发布 Release 资产。
-6. 打开已安装的 `0.1.6`。
+6. 打开已安装的 `0.1.7`。
 7. 点击托盘菜单“检查更新”。
-8. 确认发现 `0.1.7`，选择下载并安装。
-9. 重启后确认应用版本为 `0.1.7`。
+8. 确认发现 `0.1.8`，选择下载并安装。
+9. 重启后确认应用版本为 `0.1.8`。
 
 **Acceptance criteria：**
 
@@ -450,38 +451,39 @@ desktop-pet/
 
 ### 文档与配置验证
 
-- [ ] 任务分解中不再存在未决发布源。
-- [ ] 发布源固定为 GitHub Releases。
-- [ ] 当前版本验证示例与 `package.json.version = 0.1.6` 一致。
-- [ ] 下载进度不再把任务栏进度当成唯一成功标准。
-- [ ] 章节编号连续，无重复“四、”。
+- [x] 任务分解中不再存在未决发布源。
+- [x] 发布源固定为 GitHub Releases。
+- [x] 当前版本验证示例与 `package.json.version = 0.1.8` 一致。
+- [x] 下载进度不再把任务栏进度当成唯一成功标准。
+- [x] 章节编号连续，无重复“四、”。
 
 ### 开发态验证
 
-- [ ] `npm run dev` 启动后，托盘菜单显示“检查更新”。
-- [ ] 开发态点击检查更新不会崩溃。
-- [ ] 开发态点击时提示“开发模式下不支持检查更新，请使用安装版验证自动更新”。
+- [x] `npm run dev` 启动后，托盘菜单显示“检查更新”。
+- [x] 开发态点击检查更新不会崩溃。
+- [x] 开发态点击时提示“开发模式下不支持检查更新，请使用安装版验证自动更新”。
 - [ ] 原有托盘菜单项、隐藏/显示、暂停/恢复、开机自启动、退出功能不受影响。
 
 ### 构建与发布验证
 
-- [ ] `npm run build` 生成 NSIS 安装包。
-- [ ] 构建产物包含 `latest.yml` 和 `.blockmap`。
-- [ ] 推送 tag 后 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
-- [ ] `latest.yml` 版本号和 sha512 与 Release 资产匹配。
-- [ ] `electron-updater` 位于 `dependencies`。
-- [ ] `electron-log` 位于 `dependencies`。
+- [x] `npm run build` 生成 NSIS 安装包。
+- [x] 构建产物包含 `latest.yml` 和 `.blockmap`。
+- [x] 推送 tag 后 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
+- [x] 本地 `latest.yml` 版本号和 sha512 与构建产物匹配。
+- [x] `latest.yml` 中的安装包文件名与 `dist/` 资产文件名一致。
+- [x] `electron-updater` 位于 `dependencies`。
+- [x] `electron-log` 位于 `dependencies`。
 
 ### 安装版升级验证
 
-- [ ] 已安装 `0.1.6` 能检查到 `0.1.7`。
-- [ ] 已是最新版时提示正确。
-- [ ] 有新版本时先询问用户。
-- [ ] 用户取消下载后不会下载更新。
-- [ ] 下载中重复点击不会发起并发下载。
-- [ ] 下载完成后再询问是否立即安装。
+- [ ] 已安装 `0.1.7` 能检查到 `0.1.8`。
+- [x] 已是最新版时提示正确。
+- [x] 有新版本时先询问用户。
+- [x] 用户取消下载后不会下载更新。
+- [x] 下载中重复点击不会发起并发下载。
+- [x] 下载完成后再询问是否立即安装。
 - [ ] 立即安装后版本号更新。
-- [ ] 断网状态下点击检查更新给出友好提示。
+- [x] 断网状态下点击检查更新给出友好提示。
 - [ ] 未签名安装包自动更新场景经过人工验证。
 - [ ] 用户数据升级后不丢失。
 

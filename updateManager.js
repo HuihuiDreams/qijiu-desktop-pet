@@ -27,16 +27,20 @@ function getUpdateVersion(info) {
   return info?.version || info?.releaseName || null;
 }
 
+function isNotFoundError(error) {
+  const statusCode = error?.statusCode || error?.status || '';
+  const message = error?.message || String(error || '');
+  return statusCode === 404 || message.includes('404');
+}
+
 function classifyUpdateError(error) {
   const code = error?.code || '';
-  const statusCode = error?.statusCode || error?.status || '';
-  const message = error?.message || String(error || 'Unknown update error');
 
   if (code === 'ENOTFOUND' || code === 'ENETUNREACH') {
     return '检查更新失败，请确认网络连接后重试。';
   }
 
-  if (statusCode === 404 || message.includes('404')) {
+  if (isNotFoundError(error)) {
     return '更新服务器暂时不可用，请稍后再试。';
   }
 
@@ -58,6 +62,7 @@ function createUpdateManager(options = {}) {
   let getMainWindow = () => null;
   let refreshTrayMenu = () => {};
   let initialized = false;
+  let checkNotFoundHandled = false;
   let state = cloneState(DEFAULT_UPDATE_STATE);
 
   function setState(patch) {
@@ -84,6 +89,19 @@ function createUpdateManager(options = {}) {
     }
   }
 
+  function getCurrentVersion() {
+    try {
+      return app?.getVersion?.() || null;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function getNoUpdateMessage(info) {
+    const version = getCurrentVersion() || getUpdateVersion(info);
+    return version ? `当前版本 ${version} 已是最新版本。` : '当前已经是最新版本。';
+  }
+
   function getUpdateMenuState() {
     if (state.checking) {
       return { ...cloneState(state), label: '⬆️ 正在检查更新...', enabled: false };
@@ -96,7 +114,17 @@ function createUpdateManager(options = {}) {
     return { ...cloneState(state), label: '⬆️ 检查更新', enabled: true };
   }
 
-  function handleError(error) {
+  async function handleError(error) {
+    if (isNotFoundError(error) && checkNotFoundHandled) {
+      return;
+    }
+
+    if (state.checking && isNotFoundError(error)) {
+      checkNotFoundHandled = true;
+      await handleUpdateNotAvailable();
+      return;
+    }
+
     logError(error);
     const message = classifyUpdateError(error);
     setState({
@@ -105,7 +133,7 @@ function createUpdateManager(options = {}) {
       error: message,
     });
     setMainWindowProgress(-1);
-    return showMessageBox({
+    await showMessageBox({
       type: 'error',
       title: '更新失败',
       message,
@@ -144,7 +172,7 @@ function createUpdateManager(options = {}) {
     }
   }
 
-  async function handleUpdateNotAvailable() {
+  async function handleUpdateNotAvailable(info) {
     setState({
       checking: false,
       updateAvailable: false,
@@ -158,7 +186,7 @@ function createUpdateManager(options = {}) {
     await showMessageBox({
       type: 'info',
       title: '已是最新版本',
-      message: '当前已经是最新版本。',
+      message: getNoUpdateMessage(info),
       buttons: ['知道了'],
       noLink: true,
     });
@@ -207,8 +235,8 @@ function createUpdateManager(options = {}) {
       void handleUpdateAvailable(info);
     });
 
-    autoUpdater.on('update-not-available', () => {
-      void handleUpdateNotAvailable();
+    autoUpdater.on('update-not-available', (info) => {
+      void handleUpdateNotAvailable(info);
     });
 
     autoUpdater.on('download-progress', (progress) => {
@@ -280,6 +308,7 @@ function createUpdateManager(options = {}) {
       latestVersion: null,
       error: null,
     });
+    checkNotFoundHandled = false;
 
     try {
       await autoUpdater.checkForUpdates();

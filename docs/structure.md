@@ -12,6 +12,8 @@ graph TB
         Main["main.js"] --> Window["Transparent BrowserWindow"]
         Main --> Tray["System Tray (系统托盘)"]
         Main --> IPC["IPC Handlers (事件桥接)"]
+        Main --> Lock["Single Instance Lock"]
+        Main --> Update["updateManager.js"]
     end
     
     subgraph Renderer Process
@@ -41,7 +43,8 @@ graph TB
 
 ```text
 qijiu-desktop-pet\
-├── main.js                  # Electron 主进程入口 (创建窗口、托盘、处理 IPC)
+├── main.js                  # Electron 主进程入口 (单实例锁、创建窗口、托盘、处理 IPC)
+├── updateManager.js         # 更新检查与下载确认逻辑 (GitHub Releases / electron-updater)
 ├── preload.js               # IPC 桥接 (暴露 window.electronAPI)
 ├── src/
 │   ├── index.html           # 渲染进程入口，挂载 UI 与引入脚本
@@ -102,6 +105,18 @@ qijiu-desktop-pet\
 - **主进程**: 维护 `petHidden` 状态，根据状态动态重建托盘菜单标签。
 - **IPC 通信**: 切换状态时，主进程通过 `toggle-pet-visibility` 消息通知渲染进程。
 - **渲染进程**: `app.js` 接收消息后，不仅通过 `display: none` 隐藏包含宠物的 `#pet-stage`，更重要的是**暂停游戏逻辑 (`isPaused = !visible`)**，避免在不可见状态下继续消耗数值和资源（详见 [ADR-011](./decisions/ADR-011-hide-show-pet-functionality.md)）。
+
+### 3.7 单实例启动锁 (Single Instance)
+桌宠在同一用户会话中只允许存在一个主进程实例。
+- **启动早期加锁**: `main.js` 通过 `app.requestSingleInstanceLock()` 获取 Electron 单实例锁。
+- **重复启动处理**: 第二次点击桌面快捷方式时，新进程立即退出，既有实例通过 `second-instance` 事件执行唤起逻辑。
+- **唤起行为**: 既有窗口会恢复/显示、重新置顶，并将隐藏状态复位为可见，避免用户以为应用没有响应（详见 [ADR-021](./decisions/ADR-021-single-instance-launch-lock.md)）。
+
+### 3.8 更新管理 (Update Manager)
+`updateManager.js` 集中封装托盘菜单触发的手动更新检查。
+- **入口**: 托盘菜单调用 `checkForUpdatesFromTray()`，仅打包版本执行真实更新检查。
+- **发布源**: `electron-updater` 读取 GitHub Releases 中的 `latest.yml`、安装包和 `.blockmap`。
+- **友好降级**: 当发布元数据缺失或返回 404 时，手动检查会按“已是最新版本”处理，避免把小范围发布或元数据未上传误报成严重错误。
 
 ## 4. 后续建议 (Next Steps)
 1. **扩展动画资产与状态**: 当前已通过 `SpriteView.js` 引入了雪碧图（Sprite Sheet）渲染机制。后续可以继续丰富现有的动作帧（如增加更流畅的过渡动画），或为不同环境（如天气系统、皮肤系统）扩充更多图集资产和状态图。

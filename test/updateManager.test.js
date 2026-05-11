@@ -15,9 +15,11 @@ function createHarness(options = {}) {
   const mainWindow = options.mainWindow || null;
   let refreshCount = 0;
 
-  updater.checkForUpdates = async () => {
-    updater.checked = true;
-  };
+  updater.checkForUpdates = options.checkForUpdates
+    ? () => options.checkForUpdates(updater)
+    : async () => {
+        updater.checked = true;
+      };
   updater.downloadUpdate = async () => {
     updater.downloaded = true;
   };
@@ -34,7 +36,7 @@ function createHarness(options = {}) {
 
   const responses = [...(options.responses || [])];
   manager.initUpdateManager({
-    app: { isPackaged: options.isPackaged ?? true },
+    app: options.app || { isPackaged: options.isPackaged ?? true },
     dialog: {
       showMessageBox: async (messageOptions) => {
         messages.push(messageOptions);
@@ -96,6 +98,62 @@ test('update-available respects a user cancel', async () => {
 
   assert.equal(messages[0].title, '发现新版本');
   assert.equal(updater.downloaded, undefined);
+});
+
+test('update-not-available shows the current version as latest', async () => {
+  const { updater, messages } = createHarness({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.1.8',
+    },
+  });
+
+  updater.emit('update-not-available');
+  await tick();
+
+  assert.equal(messages[0].title, '已是最新版本');
+  assert.equal(messages[0].message, '当前版本 0.1.8 已是最新版本。');
+});
+
+test('metadata not found while checking is treated as no update available', async () => {
+  const { manager, messages, logErrors } = createHarness({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.1.8',
+    },
+    checkForUpdates: async () => {
+      throw Object.assign(new Error('Cannot find latest.yml, 404'), { statusCode: 404 });
+    },
+  });
+
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(logErrors.length, 0);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].title, '已是最新版本');
+  assert.equal(messages[0].message, '当前版本 0.1.8 已是最新版本。');
+  assert.equal(manager._getState().error, null);
+});
+
+test('metadata not found only shows the latest-version message once', async () => {
+  const notFoundError = Object.assign(new Error('Cannot find latest.yml, 404'), { statusCode: 404 });
+  const { manager, messages, logErrors } = createHarness({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.1.8',
+    },
+    checkForUpdates: async (updater) => {
+      updater.emit('error', notFoundError);
+      throw notFoundError;
+    },
+  });
+
+  await manager.checkForUpdatesFromTray();
+  await tick();
+
+  assert.equal(logErrors.length, 0);
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].title, '已是最新版本');
 });
 
 test('update-downloaded asks before quit and install', async () => {

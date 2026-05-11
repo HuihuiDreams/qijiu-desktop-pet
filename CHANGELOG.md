@@ -2,6 +2,19 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased]
+### 新增
+- **单实例启动决策记录**：新增 `docs/decisions/ADR-021-single-instance-launch-lock.md`，记录使用 Electron single-instance lock 防止重复启动的设计。
+- **发布后更新验证说明**：更新 `docs/release-workflow.md`，补充 GitHub Release 中 `latest.yml`、`.blockmap` 与安装包资产的检查要点。
+
+### 变更
+- **系统架构文档维护**：更新 `docs/structure.md`，补充主进程中的单实例锁与 `updateManager.js` 更新管理器职责。
+- **检查更新提示优化**：手动检查更新时，当前版本提示会包含应用版本；发布元数据缺失或 404 会友好降级为“已是最新版本”，减少小范围发布阶段的误报。
+- **更新资产文件名固定**：安装包发布资产改用 ASCII 文件名，确保 `latest.yml` 中的下载路径与 GitHub Release 资产一致。
+
+### 修复
+- **避免重复启动桌宠进程**：再次点击桌面爱宠图标时，新进程会立即退出，并唤起已存在的桌宠实例，避免多个透明置顶窗口和托盘入口并存。
+
 ## [0.1.8] - 2026-05-11
 ### 新增
 - **托盘手动检查更新**：新增 `updateManager.js` 与托盘菜单入口，打包版本可通过 GitHub Releases 检查并下载更新。
