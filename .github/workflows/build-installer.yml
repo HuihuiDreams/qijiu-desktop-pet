@@ -2,16 +2,55 @@ name: Build Windows Installer
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to tag, for example 0.1.7 or v0.1.7'
+        required: true
+        type: string
   push:
     tags:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  create-release-tag:
+    name: Create release tag
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="${VERSION#v}"
+          TAG="v${TAG}"
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists locally."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists on origin."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${TAG}"
+          git push origin "${TAG}"
+
   build-windows-installer:
     name: Build NSIS installer
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
 
     steps:
@@ -27,13 +66,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build installer
-        run: npm.cmd run build
+      - name: Build and publish release
+        run: npx electron-builder --publish onTag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DeskPet-Windows-Installer
+          name: qijiu-desktop-pet-windows-installer
           path: |
             dist/*.exe
             dist/*.blockmap

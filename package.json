@@ -34,6 +34,13 @@
       "shortcutName": "七九爱宠",
       "uninstallDisplayName": "七九爱宠",
       "include": "build/installer.nsh"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "HuihuiDreams",
+        "repo": "qijiu-desktop-pet"
+      }
+    ]
   }
 }

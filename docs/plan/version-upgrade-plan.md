@@ -1,85 +1,87 @@
 # 版本升级与检查更新 - 实施规划
 
 > 状态：Proposed（已提议，待实施）  
-> 最后更新：2026-05-05
+> 最后更新：2026-05-11
 
 ---
 
-## 一、背景与精炼 (Background & Refinement)
+## 一、背景与目标
 
-### 问题陈述
-当前桌面宠物已经计划提供 Windows 安装包，但应用内尚无版本检查与升级入口。用户如果想升级，只能手动获取新版安装包，这对普通用户不够友好。
+当前桌面宠物已经具备 Windows NSIS 安装包能力，但应用内尚无版本检查与升级入口。用户如果想升级，只能手动获取新版安装包，对普通用户不够友好。
 
-### Objective（目标）
-在系统托盘菜单中增加“检查更新”菜单项。用户点击后，应用主动检查是否存在新版本：
-
-1. 如果当前已经是最新版，提示用户无需升级。
-2. 如果发现新版本，先询问用户是否下载并升级。
-3. 用户确认后下载更新包。
-4. 下载完成后，再询问用户是否立即重启并安装。
-5. 用户拒绝时不自动下载、不自动退出、不打断当前使用。
-
-### 核心决策
-
-- 使用 `electron-updater` 配合 `electron-builder` 的 NSIS 更新能力。
-- 第一版使用“手动检查更新”，不做启动时自动弹窗检查。
-- 设置 `autoUpdater.autoDownload = false`，确保发现新版本后先询问用户。
-- 版本检查和下载逻辑放在 Electron 主进程 `main.js` 中。
-- 托盘菜单只触发检查动作，不在 renderer 中直接调用 updater API。
-
----
-
-## 二、功能规格 (Functional Specification)
-
-### 用户体验
-
-托盘菜单新增：
+本计划为第一版自动更新能力增加一个系统托盘菜单项：
 
 ```text
 检查更新
 ```
 
-交互流程：
+用户点击后，应用主动检查 GitHub Releases 中是否存在新版本：
+
+1. 如果当前已经是最新版，提示用户无需升级。
+2. 如果发现新版本，先询问用户是否下载。
+3. 用户确认后下载更新包。
+4. 下载完成后，再询问用户是否立即重启并安装。
+5. 用户拒绝时不自动下载、不自动退出、不打断当前使用。
+
+### 已确认决策
+
+- 第一版只支持 Windows NSIS 自动更新。
+- 发布源固定为 **GitHub Releases**。
+- 使用 `electron-updater` 配合 `electron-builder` 生成和读取 `latest.yml`。
+- 设置 `autoUpdater.autoDownload = false`，发现新版本后先询问用户。
+- 更新逻辑拆到根目录 `updateManager.js`；`main.js` 只负责初始化、托盘菜单接入和传入必要上下文。
+- 下载反馈固定为 **托盘菜单状态 + 主进程弹窗提示**。
+- 不做 renderer 进度 UI，不在 renderer 中直接调用 updater API。
+- 当前主窗口设置了 `skipTaskbar: true`，因此 `mainWindow.setProgressBar()` 只作为可选增强，不作为第一版验收标准。
+- 第一版不做启动时静默检查，只保留用户手动检查，避免冷启动变慢和打扰用户。
+- `electron-log` 是必需依赖，用于记录用户机器上的更新失败原因。
+
+---
+
+## 二、功能规格
+
+### 用户流程
 
 ```text
-用户点击“检查更新”
+用户点击托盘菜单“检查更新”
         |
         v
-显示“正在检查更新...”
+托盘菜单进入“正在检查更新...”状态，并避免重复触发
         |
         v
 发现新版本？
         |
-        +-- 否 -> 提示“当前已是最新版”
+        +-- 否 -> 弹窗提示“当前已是最新版”
         |
-        +-- 是 -> 弹窗询问“发现新版本 x.y.z，是否下载并安装？”
+        +-- 是 -> 弹窗询问“发现新版本 x.y.z，是否下载？”
                     |
-                    +-- 取消 -> 结束
+                    +-- 取消 -> 结束，恢复菜单状态
                     |
-                    +-- 确认 -> 下载更新
+                    +-- 确认 -> 开始下载，托盘菜单显示“正在下载更新...”
                                   |
                                   v
                               下载完成
                                   |
                                   v
-                      询问“是否立即重启并安装？”
+                      弹窗询问“是否立即重启并安装？”
                                   |
-                                  +-- 稍后 -> 结束
+                                  +-- 稍后 -> 结束，保留已下载更新
                                   |
-                                  +-- 立即安装 -> quitAndInstall()
+                                  +-- 立即安装 -> autoUpdater.quitAndInstall()
 ```
 
-### 成功标准（可测试）
+### 成功标准
 
 - [ ] 托盘菜单中出现“检查更新”菜单项。
-- [ ] 点击后会触发一次更新检查。
+- [ ] 点击后只触发一次更新检查，重复点击不会发起并发检查。
+- [ ] 开发态点击不会因为缺少更新配置导致主流程崩溃。
 - [ ] 已是最新版时，弹窗提示用户当前已是最新版。
 - [ ] 有新版本时，先询问用户是否下载更新。
 - [ ] 用户取消时不会下载更新。
-- [ ] 用户确认后开始下载，并能反馈下载状态。
+- [ ] 用户确认后开始下载，并通过托盘菜单状态和弹窗反馈下载状态。
 - [ ] 下载完成后，询问用户是否立即重启安装。
 - [ ] 用户确认后调用 `autoUpdater.quitAndInstall()`。
-- [ ] 开发态不会因为缺少更新配置导致主流程崩溃。
+- [ ] 断网、404、下载中断等错误会给用户可理解的提示，并写入日志。
 
 ### 状态模型
 
@@ -96,63 +98,47 @@
 }
 ```
 
-规则：
+状态规则：
 
 - `checking` 为 `true` 时，再次点击“检查更新”只提示“正在检查更新”。
 - `downloading` 为 `true` 时，再次点击只提示“更新正在下载”。
-- 下载完成后再次点击可直接询问是否立即安装。
-- 出错时记录错误并给用户一个简短可理解的提示，详细错误写入日志。
+- `downloaded` 为 `true` 时，再次点击可直接询问是否立即安装。
+- 出错时清理检查/下载中的状态，记录错误，并恢复托盘菜单可用状态。
 
 ---
 
-### 技术方案 (Technical Scheme)
+## 三、技术方案
 
 ### Tech Stack
 
 | 层 | 工具 | 说明 |
 |----|------|------|
 | 更新客户端 | `electron-updater` | 检查、下载、安装更新 |
-| 打包 | `electron-builder` | 生成 NSIS 安装包和更新元数据 |
+| 打包 | `electron-builder` | 生成 NSIS 安装包、`.blockmap` 和 `latest.yml` |
+| 发布源 | GitHub Releases | tag 发布后托管安装包和更新元数据 |
 | 安装格式 | NSIS | Windows 下支持自动更新 |
 | 用户提示 | Electron `dialog` | 主进程弹窗确认 |
-| 日志 | `electron-log`（可选） | 记录更新失败原因，便于排查 |
+| 日志 | `electron-log` | 记录更新失败原因，便于排查 |
 
-### 发布源选择
+### 依赖与打包配置
 
-推荐优先选择一种发布源：
-
-- GitHub Releases：适合开源或公开发布；`electron-builder` 可生成并上传安装包与 `latest.yml`。
-- Generic HTTPS Server：适合自己托管；需要手动上传安装包和 `latest.yml`。
-
-第一版建议使用 GitHub Releases，原因是配置少、流程清晰、和 `electron-builder` 集成度高。
-
-### 关键依赖
-
-需要新增**运行时依赖**（必须放在 `dependencies`，不是 `devDependencies`，否则打包后找不到模块）：
+新增运行时依赖，必须放在 `dependencies`，不是 `devDependencies`：
 
 ```bash
-npm install electron-updater --save
+npm install electron-updater electron-log --save
 ```
 
-推荐新增日志依赖（便于排查用户机器上的更新失败）：
-
-```bash
-npm install electron-log --save
-```
-
-### `package.json` 配置方向
-
-需要补充 `publish` 配置，并确认 Windows 目标仍为 NSIS。
-
-GitHub Releases 示例：
+`package.json` 中补充 GitHub Releases 发布配置，并保持 Windows target 为 NSIS。`owner` 和 `repo` 使用实际 GitHub 仓库名：
 
 ```json
 {
   "build": {
     "appId": "com.deskpet.yueqi-shenjiu",
-    "productName": "DeskPet",
+    "productName": "七九爱宠",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "src/assets/icon.ico",
+      "signAndEditExecutable": false
     },
     "publish": [
       {
@@ -165,28 +151,44 @@ GitHub Releases 示例：
 }
 ```
 
-Generic Server 示例：
+GitHub Releases 必须对目标用户可访问。面向普通用户分发时，仓库或 Release 资产应公开；私有仓库更新不作为第一版普通用户分发方案。
 
-```json
-{
-  "build": {
-    "publish": [
-      {
-        "provider": "generic",
-        "url": "https://example.com/desktop-pet/releases/"
-      }
-    ]
-  }
-}
+### CI 发布闭环
+
+当前 `.github/workflows/build-installer.yml` 只上传 artifact，不能作为自动更新源。需要升级为 tag release 构建：
+
+- `permissions.contents` 从 `read` 改为 `write`。
+- tag 触发仍使用 `v*`，例如 `v0.1.7`。
+- 构建发布命令改为：
+
+```yaml
+- name: Build and publish release
+  run: npx electron-builder --publish onTag
+  env:
+    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### 主进程设计
+发布完成后，GitHub Release 中必须包含：
 
-在 `main.js` 中新增更新模块逻辑：
+```text
+七九爱宠 Setup 0.1.7.exe
+七九爱宠 Setup 0.1.7.exe.blockmap
+latest.yml
+```
 
-- 导入 `autoUpdater`。
+如果保留 artifact 上传步骤，只能作为调试辅助，不能替代 Release 发布。
+
+### 更新管理模块
+
+新增根目录 `updateManager.js`，职责如下：
+
+- 导入 `autoUpdater` 和 `electron-log`。
+- 设置 `autoUpdater.logger = log`。
 - 设置 `autoUpdater.autoDownload = false`。
-- 封装 `checkForUpdatesFromTray()`。
+- 维护更新状态对象。
+- 暴露初始化函数，例如 `initUpdateManager({ app, dialog, getMainWindow, refreshTrayMenu })`。
+- 暴露托盘点击函数，例如 `checkForUpdatesFromTray()`。
+- 暴露菜单状态读取函数，例如 `getUpdateMenuState()`，供 `main.js` 构建托盘菜单。
 - 监听 updater 事件：
   - `checking-for-update`
   - `update-available`
@@ -194,65 +196,54 @@ Generic Server 示例：
   - `download-progress`
   - `update-downloaded`
   - `error`
-- 在 `buildTrayMenu()` 中新增“检查更新”菜单项。
 
-第一版可以直接写在 `main.js`，如果后续逻辑变多，再抽到 `src/main/updateManager.js` 或根目录 `updateManager.js`。
+`main.js` 只做接入：
+
+- 引入 `dialog`。
+- 初始化 `updateManager`。
+- 在 `buildTrayMenu()` 中新增“检查更新”菜单项。
+- 根据 `getUpdateMenuState()` 显示“检查更新 / 正在检查更新... / 正在下载更新...”并控制重复点击。
 
 ### 开发态保护
 
-`electron-updater` 在非打包态调用 `checkForUpdates()` 会抛错。必须使用 `app.isPackaged` 判断：
+非打包态不做真实更新检查，避免 `electron-updater` 因缺少打包配置抛错：
 
 ```javascript
 function checkForUpdatesFromTray() {
   if (!app.isPackaged) {
-    dialog.showMessageBox({ message: '开发模式下不支持检查更新' });
+    dialog.showMessageBox({ message: '开发模式下不支持检查更新，请使用安装版验证自动更新。' });
     return;
   }
   autoUpdater.checkForUpdates();
 }
 ```
 
-### 网络错误分类处理
+开发态只验收菜单接入、状态变化和友好提示；真实升级必须使用安装版验证。
 
-`error` 事件中需要区分常见错误场景，给用户可理解的提示：
+### 错误处理
+
+`error` 事件中区分常见错误场景，给用户可理解的提示：
 
 | 错误场景 | 判断方式 | 用户提示 |
 |----------|----------|----------|
-| 网络不可达 | `error.code === 'ENOTFOUND'` 或 `'ENETUNREACH'` | "请检查网络连接后重试" |
-| 服务端 404 | `error.statusCode === 404` | "更新服务暂不可用" |
-| 下载中断 | `error.code === 'ECONNRESET'` 等 | "下载失败，请稍后重试" |
-| 其他未知错误 | fallback | "检查更新失败，详情已记录日志" |
+| 网络不可达 | `error.code === 'ENOTFOUND'` 或 `'ENETUNREACH'` | 请检查网络连接后重试 |
+| 服务端 404 | `error.statusCode === 404` | 更新服务暂不可用 |
+| 下载中断 | `error.code === 'ECONNRESET'` 等 | 下载失败，请稍后重试 |
+| 其他未知错误 | fallback | 检查更新失败，详情已记录日志 |
 
-所有错误都应通过 `electron-log` 记录完整错误信息，便于远程排查。
+所有错误都通过 `electron-log` 记录完整错误信息。
 
-### 用户确认策略
+### 下载反馈
 
-- 检查更新由用户主动触发，不自动弹窗。
-- 发现新版本后，使用 `dialog.showMessageBox()` 询问是否下载。
-- 下载完成后，再使用 `dialog.showMessageBox()` 询问是否立即重启安装。
-- 下载过程中不强制阻塞应用，可用弹窗或菜单状态提示。
+第一版使用托盘菜单状态和弹窗：
 
-### 下载进度展示
+- 检查中：菜单项显示“正在检查更新...”，重复点击只提示当前状态。
+- 下载中：菜单项显示“正在下载更新...”，重复点击只提示当前状态。
+- 下载开始：弹窗提示“开始下载更新”。
+- 下载完成：弹窗询问是否立即重启并安装。
+- 下载失败：弹窗提示失败原因，并写入日志。
 
-第一版推荐方案：
-
-- 使用 `mainWindow.setProgressBar(percent)` 在 Windows 任务栏显示下载进度，成本极低但体验提升明显。
-- 下载开始和下载完成时各弹窗提示一次。
-- 不在渲染进程中嵌入复杂进度 UI。
-
-```javascript
-autoUpdater.on('download-progress', (progress) => {
-  if (mainWindow) {
-    mainWindow.setProgressBar(progress.percent / 100);
-  }
-});
-
-autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) {
-    mainWindow.setProgressBar(-1); // 清除进度条
-  }
-});
-```
+`mainWindow.setProgressBar(progress.percent / 100)` 可以作为可选增强，但当前主窗口 `skipTaskbar: true`，任务栏进度可能不可见，因此不纳入第一版验收标准。
 
 ---
 
@@ -260,215 +251,276 @@ autoUpdater.on('update-downloaded', () => {
 
 ```text
 desktop-pet/
-├── main.js                <- 修改：托盘菜单、更新检查、下载和安装确认
-├── package.json           <- 修改：新增依赖与 publish 配置
-├── package-lock.json      <- 修改：安装依赖后自动更新
-├── CHANGELOG.md           <- 修改：每次发布附带变更说明
-└── docs/
-    └── plan/
-        └── version-upgrade-plan.md
+├── main.js                         <- 修改：初始化更新管理、托盘菜单接入
+├── updateManager.js                <- 新增：更新检查、下载、安装确认、状态与日志
+├── package.json                    <- 修改：新增依赖与 GitHub publish 配置
+├── package-lock.json               <- 修改：安装依赖后自动更新
+├── .github/workflows/build-installer.yml
+│                                    <- 修改：tag release 发布闭环
+├── CHANGELOG.md                    <- 修改：每次发布附带变更说明
+└── docs/plan/version-upgrade-plan.md
 ```
 
-可选 / 后续：
-
-```text
-desktop-pet/
-├── updateManager.js              <- 如果 main.js 逻辑变重，可抽出更新管理模块
-├── preload.js                    <- 如果后续要在渲染进程展示下载进度，需暴露新 IPC channel
-└── .github/workflows/release.yml <- 如果使用 GitHub Releases，CI 自动构建发布是最佳实践
-```
+本次计划不要求修改 `preload.js`，因为第一版不做 renderer 进度 UI。
 
 ---
 
-## 三、任务分解 (Task Breakdown)
+## 五、任务分解
 
 ### 依赖图
 
 ```text
-[1] 确认发布源与版本号策略
+[1] 固定 GitHub Releases 发布策略和版本号策略
         |
         v
-[2] 安装 electron-updater 并补充 package.json publish 配置
+[2] 安装 electron-updater / electron-log 并补充 package.json publish 配置
         |
         v
-[3] 在 main.js 实现更新检查与事件处理
+[3] 升级 GitHub Actions 为 tag release 发布闭环
         |
         v
-[4] 在托盘菜单中加入“检查更新”
+[4] 新增 updateManager.js 实现更新检查与事件处理
         |
         v
-[5] 构建两个版本并做端到端升级验证
+[5] 在托盘菜单中接入“检查更新”和状态显示
+        |
+        v
+[6] 构建 0.1.6 -> 0.1.7 两个版本并做端到端升级验证
 ```
 
----
+### Phase 0：发布源与版本策略
 
-### Phase 0：发布源与版本策略确认
+#### Task 0：确认 GitHub Releases 发布策略
 
-#### Task 0：确认更新发布源
-**Description：** 明确更新包托管在哪里，以及版本号如何递增。
+**Description：** 固定 GitHub Releases 为自动更新发布源，并确认版本号和 tag 规则。
 
 **Acceptance criteria：**
-- [ ] 确认使用 GitHub Releases 或 Generic HTTPS Server。
-- [ ] 确认 `package.json.version` 是唯一版本来源。
-- [ ] 确认每次发布新版本必须递增 semver 版本号，例如 `0.1.0 -> 0.1.1`。
-- [ ] 确认发布产物包含安装包和 `latest.yml`。
+
+- [ ] 发布源固定为 GitHub Releases。
+- [ ] `package.json.version` 是应用版本的唯一来源。
+- [ ] 每次发布新版本必须递增 semver 版本号；当前验证示例为 `0.1.6 -> 0.1.7`。
+- [ ] Git tag 使用 `v${package.json.version}` 格式，例如 `v0.1.7`。
+- [ ] GitHub Release 中包含安装包、`.blockmap` 和 `latest.yml`。
+- [ ] Release 对目标用户可访问；私有仓库不作为第一版普通用户分发方案。
 
 **Dependencies：** None  
-**Files:** `package.json`, 发布平台配置  
+**Files:** `package.json`, `.github/workflows/build-installer.yml`  
 **Estimated scope:** S
 
----
+### Phase 1：依赖与打包配置
 
-### Phase 1：安装依赖与打包配置
+#### Task 1：添加更新依赖与 GitHub publish 配置
 
-#### Task 1：添加 `electron-updater`
-**Description：** 安装更新检查所需依赖，并补充 `electron-builder` 的 `publish` 配置。
+**Description：** 安装更新所需运行时依赖，并让 `electron-builder` 知道默认 auto-update provider。
 
 **Acceptance criteria：**
+
 - [ ] `dependencies` 中存在 `electron-updater`。
-- [ ] `build.publish` 配置与发布源一致。
-- [ ] Windows target 仍为 `nsis`。
-- [ ] 构建后 `dist/` 中存在更新元数据文件，如 `latest.yml`。
+- [ ] `dependencies` 中存在 `electron-log`。
+- [ ] `build.publish` 配置为 GitHub provider，并填写实际 `owner` / `repo`。
+- [ ] Windows target 保持 `nsis`。
+- [ ] 保留现有 `productName: "七九爱宠"`、图标、NSIS 配置和 `afterPack` 配置。
 
 **Verification：**
-- [ ] `npm install electron-updater` 成功。
-- [ ] `npm run build` 成功生成安装包和更新元数据。
+
+- [ ] `npm install electron-updater electron-log --save` 成功。
+- [ ] `npm run build` 成功生成 NSIS 安装包。
+- [ ] `dist/` 中存在 `latest.yml` 和 `.blockmap`。
 
 **Dependencies：** Task 0  
 **Files:** `package.json`, `package-lock.json`  
 **Estimated scope:** S
 
----
+### Phase 2：CI 发布闭环
 
-### Phase 2：实现更新检查逻辑
+#### Task 2：升级 GitHub Actions release 工作流
 
-#### Task 2：在主进程封装更新管理
-**Description：** 在主进程中集成 `autoUpdater`，实现手动检查、用户确认下载、下载完成后确认安装。
+**Description：** 将现有安装包构建 workflow 从 artifact 输出升级为 tag release 发布源，确保自动更新客户端能读取 Release 资产。
 
 **Acceptance criteria：**
-- [ ] `autoUpdater.autoDownload = false`。
-- [ ] 点击检查时调用 `autoUpdater.checkForUpdates()`。
-- [ ] **开发态使用 `app.isPackaged` 判断，非打包态给出友好提示而不是抛错。**
+
+- [ ] `.github/workflows/build-installer.yml` 的 `permissions.contents` 为 `write`。
+- [ ] tag `v*` 触发时运行 `npx electron-builder --publish onTag`。
+- [ ] workflow 设置 `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`。
+- [ ] 发布后的 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
+- [ ] artifact 上传如果保留，明确只是调试辅助。
+
+**Verification：**
+
+- [ ] 推送 tag `v0.1.7` 后 workflow 成功。
+- [ ] GitHub Release 页面能看到安装包、blockmap 和 `latest.yml`。
+- [ ] `latest.yml` 中的版本号、文件名、sha512 与 Release 资产匹配。
+
+**Dependencies：** Task 1  
+**Files:** `.github/workflows/build-installer.yml`  
+**Estimated scope:** S
+
+### Phase 3：更新管理模块
+
+#### Task 3：新增 `updateManager.js`
+
+**Description：** 在主进程侧封装更新状态、事件监听、用户确认、下载和安装逻辑。
+
+**Acceptance criteria：**
+
+- [ ] 设置 `autoUpdater.autoDownload = false`。
+- [ ] 设置 `autoUpdater.logger = electron-log`。
+- [ ] 开发态使用 `app.isPackaged` guard，非打包态给出友好提示而不是抛错。
 - [ ] `update-available` 事件中弹窗询问是否下载。
 - [ ] 用户确认后调用 `autoUpdater.downloadUpdate()`。
 - [ ] `update-not-available` 事件中提示当前已是最新版。
 - [ ] `update-downloaded` 事件中询问是否立即重启安装。
 - [ ] 用户确认后调用 `autoUpdater.quitAndInstall()`。
-- [ ] `error` 事件中**分类处理常见错误**（网络不可达、404、下载中断），并通过 `electron-log` 记录详细错误。
-- [ ] 下载过程中使用 `mainWindow.setProgressBar()` 在任务栏显示进度。
+- [ ] `error` 事件中分类处理常见错误，并通过 `electron-log` 记录详细错误。
+- [ ] 状态模型能防止重复点击进入并发检查或并发下载。
 
 **Verification：**
-- [ ] 开发态点击不会导致应用崩溃（`app.isPackaged` guard 生效）。
-- [ ] 打包态可正确触发更新检查。
-- [ ] 更新状态不会因为重复点击进入并发检查。
-- [ ] 断网状态下点击检查更新给出"请检查网络连接"提示而非未处理异常。
 
-**Dependencies：** Task 1  
-**Files:** `main.js` 或 `updateManager.js`  
-**Estimated scope:** M
-
----
-
-### Phase 3：托盘菜单集成
-
-#### Task 3：新增“检查更新”菜单项
-**Description：** 在 `buildTrayMenu()` 中增加“检查更新”菜单项，点击后触发主进程更新检查。
-
-**Acceptance criteria：**
-- [ ] 托盘菜单中出现“检查更新”。
-- [ ] 菜单项点击后调用 `checkForUpdatesFromTray()`。
-- [ ] 检查中或下载中时，重复点击给出友好提示。
-- [ ] 菜单重建后，该菜单项仍存在。
-
-**Verification：**
-- [ ] `npm run dev` 可看到菜单项。
-- [ ] 打包安装后，菜单项可触发真实检查。
+- [ ] 开发态点击检查更新不会崩溃。
+- [ ] 人工模拟重复点击时，只出现当前状态提示，不会发起多次检查。
+- [ ] 断网状态下点击检查更新给出“请检查网络连接后重试”一类提示。
+- [ ] 日志文件中能看到完整错误详情。
 
 **Dependencies：** Task 2  
+**Files:** `updateManager.js`  
+**Estimated scope:** M
+
+### Phase 4：托盘菜单集成
+
+#### Task 4：新增“检查更新”菜单项与状态显示
+
+**Description：** 在 `buildTrayMenu()` 中增加“检查更新”菜单项，并根据更新状态显示检查中/下载中反馈。
+
+**Acceptance criteria：**
+
+- [ ] 托盘菜单中出现“检查更新”。
+- [ ] 菜单项点击后调用 `checkForUpdatesFromTray()`。
+- [ ] 检查中显示“正在检查更新...”。
+- [ ] 下载中显示“正在下载更新...”。
+- [ ] 检查中或下载中重复点击给出友好提示。
+- [ ] 菜单重建后，该菜单项仍存在，且状态正确。
+- [ ] 原有托盘菜单项、隐藏/显示、暂停/恢复、开机自启动、退出功能不受影响。
+
+**Verification：**
+
+- [ ] `npm run dev` 可看到菜单项。
+- [ ] 开发态点击显示“开发模式下不支持检查更新”。
+- [ ] 打包安装后，菜单项可触发真实检查。
+
+**Dependencies：** Task 3  
 **Files:** `main.js`  
 **Estimated scope:** XS
 
----
+### Phase 5：端到端升级验证
 
-### Phase 4：端到端升级验证
+#### Task 5：用 `0.1.6 -> 0.1.7` 验证升级链路
 
-#### Task 4：用两个版本验证升级链路
-**Description：** 构建并发布旧版本与新版本，验证旧版本可以检查到新版本，并完成下载与安装。
+**Description：** 构建并发布当前版本和下一版本，验证已安装旧版本可以检查到新版本，并完成下载与安装。
 
 **建议流程：**
 
-1. 构建并安装 `0.1.0`。
-2. 将 `package.json.version` 升到 `0.1.1`。
-3. 构建 `0.1.1` 并发布安装包与 `latest.yml`。
-4. 打开已安装的 `0.1.0`。
-5. 点击托盘菜单“检查更新”。
-6. 确认下载并安装。
-7. 重启后确认应用版本为 `0.1.1`。
+1. 确认当前 `package.json.version` 为 `0.1.6`，构建并安装旧版本。
+2. 将 `package.json.version` 升到 `0.1.7`。
+3. 更新 `CHANGELOG.md`。
+4. 创建并推送 tag `v0.1.7`。
+5. 等待 GitHub Actions 发布 Release 资产。
+6. 打开已安装的 `0.1.6`。
+7. 点击托盘菜单“检查更新”。
+8. 确认发现 `0.1.7`，选择下载并安装。
+9. 重启后确认应用版本为 `0.1.7`。
 
 **Acceptance criteria：**
+
 - [ ] 旧版本能发现新版本。
 - [ ] 用户取消时不会下载。
 - [ ] 用户确认后能完成下载。
-- [ ] 下载完成后可选择立即安装。
-- [ ] 安装后版本号更新。
+- [ ] 下载完成后可选择立即安装或稍后安装。
+- [ ] 立即安装后版本号更新。
 - [ ] 用户数据不丢失。
+- [ ] 未签名 Windows 安装包在目标机器上完成自动更新验证，或记录明确失败原因。
+- [ ] SmartScreen / 未签名提示如出现，记录为发布风险并更新 README 或发布说明。
 
-**Dependencies：** Task 3  
-**Files:** 构建产物与发布平台  
+**Dependencies：** Task 4  
+**Files:** 构建产物与 GitHub Release  
 **Estimated scope:** M
 
 ---
 
-## 四、验证清单 (Verification)
+## 六、验证清单
+
+### 文档与配置验证
+
+- [ ] 任务分解中不再存在未决发布源。
+- [ ] 发布源固定为 GitHub Releases。
+- [ ] 当前版本验证示例与 `package.json.version = 0.1.6` 一致。
+- [ ] 下载进度不再把任务栏进度当成唯一成功标准。
+- [ ] 章节编号连续，无重复“四、”。
+
+### 开发态验证
 
 - [ ] `npm run dev` 启动后，托盘菜单显示“检查更新”。
-- [ ] 开发态点击检查更新不会崩溃（`app.isPackaged` guard 生效）。
+- [ ] 开发态点击检查更新不会崩溃。
+- [ ] 开发态点击时提示“开发模式下不支持检查更新，请使用安装版验证自动更新”。
+- [ ] 原有托盘菜单项、隐藏/显示、暂停/恢复、开机自启动、退出功能不受影响。
+
+### 构建与发布验证
+
 - [ ] `npm run build` 生成 NSIS 安装包。
-- [ ] 构建产物包含更新元数据（`latest.yml`）。
-- [ ] 安装版点击“检查更新”可连接发布源。
+- [ ] 构建产物包含 `latest.yml` 和 `.blockmap`。
+- [ ] 推送 tag 后 GitHub Release 包含 `.exe`、`.blockmap`、`latest.yml`。
+- [ ] `latest.yml` 版本号和 sha512 与 Release 资产匹配。
+- [ ] `electron-updater` 位于 `dependencies`。
+- [ ] `electron-log` 位于 `dependencies`。
+
+### 安装版升级验证
+
+- [ ] 已安装 `0.1.6` 能检查到 `0.1.7`。
 - [ ] 已是最新版时提示正确。
 - [ ] 有新版本时先询问用户。
-- [ ] 下载过程中任务栏显示进度条。
+- [ ] 用户取消下载后不会下载更新。
+- [ ] 下载中重复点击不会发起并发下载。
 - [ ] 下载完成后再询问是否立即安装。
 - [ ] 立即安装后版本号更新。
 - [ ] 断网状态下点击检查更新给出友好提示。
-- [ ] 原有托盘菜单项、隐藏/显示、退出功能不受影响。
-- [ ] `electron-updater` 位于 `dependencies`（非 `devDependencies`）。
+- [ ] 未签名安装包自动更新场景经过人工验证。
+- [ ] 用户数据升级后不丢失。
 
 ---
 
-## 五、风险与缓解 (Risks & Mitigation)
+## 七、风险与缓解
 
 | 风险 | 影响 | 缓解策略 |
 |------|------|----------|
-| 没有发布源或缺少 `latest.yml`，导致检查更新失败 | 高 | Phase 0 先确认发布源，Phase 1 验证构建产物包含元数据 |
-| 开发态无法真实模拟自动更新 | 中 | 开发态使用 `app.isPackaged` guard，只验证菜单和错误处理，真实升级必须用安装版验证 |
+| GitHub Release 缺少 `latest.yml` 或 `.blockmap`，导致检查更新失败 | 高 | CI 使用 `electron-builder --publish onTag`，发布后验证 Release 资产完整 |
+| GitHub 仓库或 Release 资产不可访问 | 高 | 第一版要求 Release 对目标用户可访问；私有仓库不作为普通用户分发方案 |
+| 当前 workflow 只上传 artifact，不能作为自动更新源 | 高 | 将 workflow 升级为 tag release 发布，`contents: write` 并设置 `GH_TOKEN` |
+| 开发态无法真实模拟自动更新 | 中 | 开发态只验证菜单和 guard，真实升级必须用安装版验证 |
 | 用户误触导致自动下载或重启 | 中 | 设置 `autoDownload = false`，下载和安装都需要用户确认 |
-| 未签名安装包触发 SmartScreen 或更新校验问题 | 中 | MVP 阶段记录风险，后续考虑代码签名 |
-| GitHub 私有仓库或限流导致更新不可用 | 中 | 若面向普通用户，优先使用公开 Releases 或 Generic HTTPS Server |
+| 当前窗口 `skipTaskbar: true` 导致任务栏进度不可见 | 中 | 第一版使用托盘状态和弹窗反馈，`setProgressBar()` 仅作为可选增强 |
+| 未签名安装包触发 SmartScreen 或更新校验问题 | 中 | Phase 5 必测未签名自动更新；如失败或体验差，记录并后续接入代码签名 |
 | 更新过程中用户数据丢失 | 高 | 升级前后验证 `electron-store` 数据路径和存档兼容性 |
-| `latest.yml` 中 sha512 hash 与安装包不匹配 | 高 | 更新会静默失败；发布时必须确保 `latest.yml` 与安装包同步生成，不手动修改 |
-| `electron-updater` 不支持版本降级 | 中 | 只能检测更高版本；如新版有严重 bug，用户需手动下载旧版覆盖安装。在发布说明中提供历史版本下载链接 |
-| 网络异常导致更新检查/下载失败 | 中 | `error` 事件中分类处理（离线 / 404 / 下载中断），给用户可理解的提示 |
+| `latest.yml` 中 sha512 与安装包不匹配 | 高 | 不手动修改 `latest.yml`；发布后核对版本、文件名和 sha512 |
+| `electron-updater` 不支持版本降级 | 中 | 只能检测更高版本；严重 bug 需发布更高修复版本，历史版本只作为手动下载入口 |
+| 网络异常导致更新检查或下载失败 | 中 | `error` 事件中分类处理离线、404、下载中断，并记录完整日志 |
 
 ---
 
-## 六、开放问题 (Open Questions)
+## 八、已关闭问题
 
-- [ ] 更新发布源使用 GitHub Releases 还是 Generic HTTPS Server？**→ 建议 GitHub Releases，项目已托管在 GitHub，配置最少、集成度高。**
-- [ ] 项目是否准备使用公开仓库发布更新？**→ 如果面向外部用户分发，必须公开 repo 或改用 Generic HTTPS Server。**
-- [ ] 是否需要在“关于/状态”位置显示当前版本号？**→ 建议做，`app.getVersion()` 即可获取，实现成本极低。**
-- [x] ~~是否需要下载进度提示？~~ **→ 第一版使用 `mainWindow.setProgressBar()` 在任务栏显示进度 + 开始/完成弹窗提示。**
-- [x] ~~是否需要启动时静默检查更新？~~ **→ 第一版不做，只保留用户手动检查，避免冷启动变慢和用户反感。**
-- [x] ~~是否引入 `electron-log` 记录更新日志？~~ **→ 引入。更新失败是远程排查最困难的问题之一，日志必不可少。**
+- [x] 更新发布源：使用 GitHub Releases。
+- [x] 下载进度提示：第一版使用托盘菜单状态 + 主进程弹窗，不做 renderer 进度 UI。
+- [x] 启动时静默检查更新：第一版不做。
+- [x] 更新日志：引入 `electron-log`，作为必需依赖。
+- [x] 更新逻辑位置：新增根目录 `updateManager.js`，避免继续膨胀 `main.js`。
 
 ---
 
 ## 九、参考资料
 
 - electron-builder Auto Update: https://www.electron.build/auto-update.html
+- electron-builder Publish: https://www.electron.build/publish.html
 - electron-updater API: https://www.electron.build/electron-updater/
 
 ---
 
-*生成时间：2026-05-05 | 状态：Proposed，待实施*
+*最后更新：2026-05-11 | 状态：Proposed，待实施*
