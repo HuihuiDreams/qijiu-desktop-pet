@@ -7,6 +7,13 @@
   // 等待主进程的屏幕信息
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
+  let pets = [];
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+  const keepPetReachable = (pet) => {
+    const minVisible = Math.min(32, pet.size);
+    pet.x = clamp(pet.x, minVisible - pet.size, screenWidth - minVisible);
+    pet.y = clamp(pet.y, 0, screenHeight - minVisible);
+  };
 
   // === 初始化系统 ===
   const stage = document.getElementById('pet-stage');
@@ -25,11 +32,13 @@
     if (movementSystem) {
       movementSystem.setScreenSize(screenWidth, screenHeight);
     }
+    pets.forEach(keepPetReachable);
   });
 
   // === 创建宠物 ===
   const yueqi = new Pet(CONFIG.PET_A);
   const shenjiu = new Pet(CONFIG.PET_B);
+  pets = [yueqi, shenjiu];
 
   // 初始化时将它们分开一定距离
   yueqi.x = screenWidth * 0.3;

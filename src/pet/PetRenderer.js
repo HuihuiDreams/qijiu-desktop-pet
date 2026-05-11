@@ -34,7 +34,7 @@ class PetRenderer {
 
     // 鼠标事件：切换点击穿透 (防止遮挡后方窗口)
     el.addEventListener('mouseenter', () => {
-      window.electronAPI.setIgnoreMouseEvents(false);
+      window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 4000 });
     });
 
     el.addEventListener('mouseleave', () => {
@@ -49,6 +49,45 @@ class PetRenderer {
     // === 拖拽支持 ===
     let dragOffsetX = 0;
     let dragOffsetY = 0;
+    let dragWatchdogTimer = null;
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const restoreMousePassthrough = () => {
+      window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
+    };
+    const keepPetReachable = () => {
+      const minVisible = Math.min(32, pet.size);
+      pet.x = clamp(pet.x, minVisible - pet.size, window.innerWidth - minVisible);
+      pet.y = clamp(pet.y, 0, window.innerHeight - minVisible);
+    };
+    const clearDragWatchdog = () => {
+      if (dragWatchdogTimer) {
+        clearTimeout(dragWatchdogTimer);
+        dragWatchdogTimer = null;
+      }
+    };
+    const finishDrag = (restoreImmediately = false) => {
+      if (!pet.isDragging) return;
+
+      clearDragWatchdog();
+      pet.isDragging = false;
+      pet.idleTimer = 2000 + Math.random() * 3000;
+      keepPetReachable();
+
+      if (restoreImmediately) {
+        restoreMousePassthrough();
+        return;
+      }
+
+      setTimeout(() => {
+        if (!pet.isDragging) {
+          restoreMousePassthrough();
+        }
+      }, 100);
+    };
+    const refreshDragWatchdog = () => {
+      clearDragWatchdog();
+      dragWatchdogTimer = setTimeout(() => finishDrag(true), 1200);
+    };
 
     el.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return; // 仅支持左键拖拽
@@ -58,26 +97,24 @@ class PetRenderer {
       pet.idleTimer = 3000; // 拖拽放下后暂停行走一段时间
       dragOffsetX = e.clientX - pet.x;
       dragOffsetY = e.clientY - pet.y;
-      window.electronAPI.setIgnoreMouseEvents(false);
+      window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 1000 });
+      refreshDragWatchdog();
     });
 
     document.addEventListener('mousemove', (e) => {
       if (!pet.isDragging) return;
       pet.x = e.clientX - dragOffsetX;
       pet.y = e.clientY - dragOffsetY;
+      window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 1000 });
+      refreshDragWatchdog();
     });
 
     document.addEventListener('mouseup', (e) => {
-      if (!pet.isDragging) return;
-      pet.isDragging = false;
-      pet.idleTimer = 2000 + Math.random() * 3000;
+      finishDrag();
       // 在短暂延迟后恢复点击穿透 (让 mouseleave 能够正常触发)
-      setTimeout(() => {
-        if (!pet.isDragging) {
-          window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
-        }
-      }, 100);
     });
+
+    window.addEventListener('blur', () => finishDrag(true));
 
     this.stage.appendChild(el);
     pet.element = el;
