@@ -1,7 +1,7 @@
 # Windows Code Signing Release Notes
 
 This project uses `electron-builder` to create the Windows NSIS installer. Public
-public release builds should be Authenticode-signed so Windows and Microsoft
+release builds should be Authenticode-signed so Windows and Microsoft
 Edge can show a verified publisher instead of treating the installer as an
 unknown app. Small-group releases can be built unsigned when paying for a code
 signing certificate is not worth it yet.
@@ -55,7 +55,7 @@ signing before building:
 ```powershell
 $env:WIN_CSC_LINK = "C:\path\to\windows-code-signing.pfx"
 $env:WIN_CSC_KEY_PASSWORD = "certificate-password"
-npx electron-builder -c.win.signAndEditExecutable=true
+npx electron-builder --config.win.signAndEditExecutable=true
 npm run verify:signatures
 ```
 

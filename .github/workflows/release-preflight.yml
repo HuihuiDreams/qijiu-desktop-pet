@@ -1,0 +1,111 @@
+name: Release Preflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to validate, for example 0.1.8 or v0.1.8'
+        required: true
+        type: string
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'CHANGELOG.md'
+      - 'build/**'
+      - 'scripts/**'
+      - 'main.js'
+      - 'preload.js'
+      - 'updateManager.js'
+      - 'test/**'
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Validate release readiness
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release metadata
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          $inputVersion = '${{ inputs.version }}'
+          $version = $inputVersion.Trim()
+          if ($version.StartsWith('v')) {
+            $version = $version.Substring(1)
+          }
+
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version must be SemVer without prerelease/build metadata, got '$inputVersion'."
+          }
+
+          $packageVersion = node -p "require('./package.json').version"
+          $lockVersion = node -p "const lock = require('./package-lock.json'); lock.version + ' ' + lock.packages[''].version"
+
+          if ($packageVersion -ne $version) {
+            throw "package.json version $packageVersion does not match requested release $version."
+          }
+
+          if ($lockVersion -ne "$version $version") {
+            throw "package-lock.json versions '$lockVersion' do not match requested release $version."
+          }
+
+          $changelog = Get-Content -LiteralPath CHANGELOG.md -Raw -Encoding UTF8
+          $expectedHeading = "## [$version]"
+          if (-not $changelog.Contains($expectedHeading)) {
+            throw "CHANGELOG.md is missing a '## [$version]' release section."
+          }
+
+          $tag = "v$version"
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ([string]::IsNullOrWhiteSpace($remoteTag)) {
+            Write-Host "Tag $tag does not exist yet. Build Windows Installer will create it."
+          } else {
+            Write-Host "Tag $tag already exists and can be reused by the release workflow."
+          }
+
+      - name: Detect signing mode
+        shell: pwsh
+        run: |
+          $hasSigningSecrets = -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK) -and -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)
+
+          if ($hasSigningSecrets) {
+            Write-Host "Windows signing secrets are configured. Release can be signed."
+          } else {
+            Write-Warning "Windows signing secrets are not configured. Release will be unsigned, which is acceptable for small-group distribution."
+          }
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Verify installer prerequisites
+        run: npm run verify:installer
+
+      - name: Security audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build unsigned Windows smoke package
+        run: npx electron-builder --win --dir --config.win.signAndEditExecutable=false
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
