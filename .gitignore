@@ -5,3 +5,9 @@ build/*
 .DS_Store
 .env
 *.log
+*.cer
+*.crt
+*.der
+*.p12
+*.pfx
+*.pem

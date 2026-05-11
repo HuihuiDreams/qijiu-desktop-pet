@@ -21,6 +21,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Verify Windows signing secrets
+        shell: bash
+        run: |
+          if [ -z "${WIN_CSC_LINK}" ]; then
+            echo "Missing GitHub secret WIN_CSC_LINK. Store the base64-encoded .pfx/.p12 certificate in this secret."
+            exit 1
+          fi
+          if [ -z "${WIN_CSC_KEY_PASSWORD}" ]; then
+            echo "Missing GitHub secret WIN_CSC_KEY_PASSWORD. Store the certificate password in this secret."
+            exit 1
+          fi
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -87,10 +102,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Windows signing secrets
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
+            throw "Missing GitHub secret WIN_CSC_LINK. Store the base64-encoded .pfx/.p12 certificate in this secret."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) {
+            throw "Missing GitHub secret WIN_CSC_KEY_PASSWORD. Store the certificate password in this secret."
+          }
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
       - name: Build and publish release
         run: npx electron-builder --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      - name: Verify generated signatures
+        run: npm run verify:signatures
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
