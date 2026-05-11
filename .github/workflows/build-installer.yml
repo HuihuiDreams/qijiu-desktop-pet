@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to tag, for example 0.1.7 or v0.1.7'
+        description: 'Release version to tag, for example 0.1.8 or v0.1.8'
         required: true
         type: string
   push:
@@ -21,21 +21,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Verify Windows signing secrets
-        shell: bash
-        run: |
-          if [ -z "${WIN_CSC_LINK}" ]; then
-            echo "Missing GitHub secret WIN_CSC_LINK. Store the base64-encoded .pfx/.p12 certificate in this secret."
-            exit 1
-          fi
-          if [ -z "${WIN_CSC_KEY_PASSWORD}" ]; then
-            echo "Missing GitHub secret WIN_CSC_KEY_PASSWORD. Store the certificate password in this secret."
-            exit 1
-          fi
-        env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -102,21 +87,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify Windows signing secrets
+      - name: Detect signing mode
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK)) {
-            throw "Missing GitHub secret WIN_CSC_LINK. Store the base64-encoded .pfx/.p12 certificate in this secret."
-          }
-          if ([string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)) {
-            throw "Missing GitHub secret WIN_CSC_KEY_PASSWORD. Store the certificate password in this secret."
+          $hasSigningSecrets = -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_LINK) -and -not [string]::IsNullOrWhiteSpace($env:WIN_CSC_KEY_PASSWORD)
+
+          if ($hasSigningSecrets) {
+            "SIGNING_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Windows signing secrets found. Building a signed release."
+          } else {
+            "SIGNING_ENABLED=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Warning "Windows signing secrets are not configured. Building an unsigned release for small-group distribution."
           }
         env:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
-      - name: Build and publish release
-        run: npx electron-builder --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+      - name: Build and publish signed release
+        if: env.SIGNING_ENABLED == 'true'
+        run: npx electron-builder -c.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
@@ -124,8 +113,22 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
+      - name: Build and publish unsigned release
+        if: env.SIGNING_ENABLED != 'true'
+        run: npx electron-builder -c.win.signAndEditExecutable=false --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
       - name: Verify generated signatures
+        if: env.SIGNING_ENABLED == 'true'
         run: npm run verify:signatures
+
+      - name: Record unsigned release note
+        if: env.SIGNING_ENABLED != 'true'
+        shell: pwsh
+        run: |
+          "This release was built without Windows Authenticode signing because WIN_CSC_* secrets were not configured." | Out-File -FilePath dist\UNSIGNED-RELEASE.txt -Encoding utf8
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
@@ -135,4 +138,5 @@ jobs:
             dist/*.exe
             dist/*.blockmap
             dist/latest.yml
+            dist/UNSIGNED-RELEASE.txt
           if-no-files-found: error
