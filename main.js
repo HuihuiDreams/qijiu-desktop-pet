@@ -16,6 +16,7 @@ let store = null;
 let petHidden = false; // 桌宠隐藏状态
 let isPaused = false;  // 走动暂停状态
 let keepOnTopTimer = null; // 置顶守卫计时器
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 /**
  * 初始化持久化存储 (electron-store)
@@ -141,6 +142,26 @@ function startKeepOnTopWatcher() {
   keepPetWindowOnTop();
   if (keepOnTopTimer) clearInterval(keepOnTopTimer);
   keepOnTopTimer = setInterval(keepPetWindowOnTop, 3000); // 每3秒检查一次
+}
+
+/**
+ * 第二次点击应用图标时，唤起已存在的实例。
+ */
+function showExistingInstance() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+
+  if (!mainWindow.isVisible()) {
+    mainWindow.showInactive();
+  }
+
+  petHidden = false;
+  mainWindow.webContents.send('toggle-pet-visibility', true);
+  refreshTrayMenu();
+  keepPetWindowOnTop();
 }
 
 /**
@@ -375,25 +396,31 @@ ipcMain.handle('get-auto-launch', async () => {
 
 // --- 应用生命周期 ---
 
-app.whenReady().then(async () => {
-  // 设置权限拦截
-  const { session } = require('electron');
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-    callback(false);
-  });
-
-  await initStore();
-  await syncAutoLaunchPreference();
-  initUpdateManager({
-    app,
-    dialog,
-    getMainWindow: () => mainWindow,
-    refreshTrayMenu,
-  });
-  createWindow();
-  createTray();
-});
-
-app.on('window-all-closed', () => {
+if (!hasSingleInstanceLock) {
   app.quit();
-});
+} else {
+  app.on('second-instance', showExistingInstance);
+
+  app.whenReady().then(async () => {
+    // 设置权限拦截
+    const { session } = require('electron');
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+      callback(false);
+    });
+
+    await initStore();
+    await syncAutoLaunchPreference();
+    initUpdateManager({
+      app,
+      dialog,
+      getMainWindow: () => mainWindow,
+      refreshTrayMenu,
+    });
+    createWindow();
+    createTray();
+  });
+
+  app.on('window-all-closed', () => {
+    app.quit();
+  });
+}

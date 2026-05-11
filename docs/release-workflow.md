@@ -39,7 +39,22 @@ npx electron-builder --win --dir --config.win.signAndEditExecutable=false
 
 如果仓库没有配置 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD`，workflow 会生成未签名安装包，并上传 `UNSIGNED-RELEASE.txt` 说明。小范围分发可以接受这个状态；扩大公开分发时再配置受信任代码签名。
 
-## 4. 失败处理
+## 4. 发布后的更新验证
+
+GitHub Release 应包含这些更新相关资产：
+
+- Windows 安装包 `.exe`，文件名应与 `latest.yml` 中的 `path` / `files[].url` 一致。
+- 安装包 `.blockmap`
+- `latest.yml`
+
+发布完成后，在已安装版本中通过托盘菜单手动执行“检查更新”。预期行为：
+
+- 如果 GitHub Releases 上存在更高版本和完整元数据，应提示可下载更新。
+- 如果当前版本已经是最新版本，应显示当前版本已是最新版本。
+- 如果小范围发布暂时缺少 `latest.yml` 或 GitHub 返回 404，应用会降级为“已是最新版本”提示，避免把元数据缺失展示成用户侧错误；正式公开发布前仍应补齐 `latest.yml`。
+- 本项目保留中文 `productName` 用于应用展示，但发布资产使用 ASCII `artifactName`，避免自动更新元数据引用的文件名与 GitHub Release 资产不一致。
+
+## 5. 失败处理
 
 - 版本不一致：先修 `package.json`、`package-lock.json` 和 `CHANGELOG.md`。
 - tag 已存在：重新运行 `Build Windows Installer` 会复用既有 tag。
