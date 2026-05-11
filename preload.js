@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadData: (key) => ipcRenderer.invoke('load-data', key),
   setAutoLaunch: (enabled) => ipcRenderer.invoke('set-auto-launch', enabled),
   getAutoLaunch: () => ipcRenderer.invoke('get-auto-launch'),
+  showStatusWindow: (data) => ipcRenderer.send('show-status-window', data),
+  hideStatusWindow: () => ipcRenderer.send('hide-status-window'),
+  updateStatusWindow: (data) => ipcRenderer.send('update-status-window', data),
+  closeStatusWindow: () => ipcRenderer.send('hide-status-window'),
+  resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
 
   // 监听来自主进程的消息
   onScreenInfo: (callback) => {
@@ -18,6 +23,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onToggleStatusPanel: (callback) => {
     ipcRenderer.on('toggle-status-panel', () => callback());
+  },
+  onStatusWindowData: (callback) => {
+    ipcRenderer.on('status-window-data', (event, data) => callback(data));
+  },
+  onStatusWindowClosed: (callback) => {
+    ipcRenderer.on('status-window-closed', () => callback());
   },
   onTogglePause: (callback) => {
     ipcRenderer.on('toggle-pause', (event, paused) => callback(paused));

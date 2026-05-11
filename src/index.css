@@ -147,48 +147,50 @@ html, body {
   letter-spacing: 1px;
 }
 
-/* === Walking bounce — with subtle squash & stretch === */
+/* === Walking bounce — slow, rhythmic stride === */
 .pet--walking .pet-body {
-  animation: walkBounce 0.4s ease-in-out infinite;
+  animation: walkBounce 0.8s ease-in-out infinite;
 }
 
 @keyframes walkBounce {
-  0%, 100% { transform: translateY(0) scaleX(1) scaleY(1); }
-  30% { transform: translateY(-7px) scaleX(0.97) scaleY(1.03); }
-  60% { transform: translateY(-2px) scaleX(1.02) scaleY(0.98); }
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  35% { transform: translateY(-8px) scale(0.96, 1.04); } /* Squash & Stretch */
+  70% { transform: translateY(-1px) scale(1.02, 0.98); }
 }
 
-/* === Sleeping — gentle breathing with subtle drift === */
+/* === Sleeping — slow, deep breathing rhythm === */
 .pet--sleeping .pet-body {
-  animation: sleepBreath 3s ease-in-out infinite;
+  animation: sleepBreath 4s ease-in-out infinite;
 }
 
 @keyframes sleepBreath {
   0%, 100% { 
-    transform: scale(1) translateY(0);
+    transform: scale(1) translateY(0) rotate(0deg);
     filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
   }
   50% { 
-    transform: scale(0.96) translateY(2px);
+    transform: scale(0.95) translateY(3px) rotate(1deg); /* Slight tilt adds life */
     filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
   }
 }
 
-/* === Meditating — ethereal qi glow pulse === */
+/* === Meditating — slow rhythmic glow pulse === */
 .pet--meditating .pet-body {
-  animation: meditateGlow 3s ease-in-out infinite;
+  animation: meditateGlow 4.5s ease-in-out infinite;
 }
 
 @keyframes meditateGlow {
   0%, 100% { 
+    transform: scale(1);
     filter: 
       drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12))
-      drop-shadow(0 0 6px rgba(110, 198, 160, 0.0));
+      drop-shadow(0 0 0px rgba(110, 198, 160, 0));
   }
   50% { 
+    transform: scale(1.02);
     filter: 
       drop-shadow(0 4px 16px rgba(110, 198, 160, 0.5))
-      drop-shadow(0 0 30px rgba(110, 198, 160, 0.35));
+      drop-shadow(0 0 35px rgba(110, 198, 160, 0.3));
   }
 }
 
@@ -459,6 +461,7 @@ html, body {
 }
 
 .stat-bar-fill {
+  width: 0;
   height: 100%;
   border-radius: 4px;
   transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);

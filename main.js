@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
+const { getVirtualDisplayBounds } = require('./displayBounds');
 const {
   initUpdateManager,
   checkForUpdatesFromTray,
@@ -11,11 +12,14 @@ const AUTO_LAUNCH_KEY = 'autoLaunch';
 const DEFAULT_AUTO_LAUNCH = true;
 
 let mainWindow = null;
+let statusWindow = null;
+let lastStatusWindowData = null;
 let tray = null;
 let store = null;
 let petHidden = false; // 桌宠隐藏状态
 let isPaused = false;  // 走动暂停状态
 let keepOnTopTimer = null; // 置顶守卫计时器
+let mousePassthroughResetTimer = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 /**
@@ -135,6 +139,28 @@ function keepPetWindowOnTop() {
   mainWindow.moveTop();
 }
 
+function setPetWindowMousePassthrough(ignore, options = {}) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  if (mousePassthroughResetTimer) {
+    clearTimeout(mousePassthroughResetTimer);
+    mousePassthroughResetTimer = null;
+  }
+
+  const { leaseMs, ...electronOptions } = options || {};
+  mainWindow.setIgnoreMouseEvents(ignore, electronOptions);
+
+  if (!ignore) {
+    const timeoutMs = Number.isFinite(leaseMs) ? leaseMs : 2500;
+    mousePassthroughResetTimer = setTimeout(() => {
+      mousePassthroughResetTimer = null;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setIgnoreMouseEvents(true, { forward: true });
+      }
+    }, timeoutMs);
+  }
+}
+
 /**
  * 启动置顶守卫监控器
  */
@@ -142,6 +168,120 @@ function startKeepOnTopWatcher() {
   keepPetWindowOnTop();
   if (keepOnTopTimer) clearInterval(keepOnTopTimer);
   keepOnTopTimer = setInterval(keepPetWindowOnTop, 3000); // 每3秒检查一次
+}
+
+/**
+ * 获取覆盖所有显示器的虚拟桌面边界。
+ */
+function getDesktopWindowBounds() {
+  const virtualBounds = getVirtualDisplayBounds(screen.getAllDisplays());
+  if (virtualBounds.width > 0 && virtualBounds.height > 0) {
+    return virtualBounds;
+  }
+
+  return screen.getPrimaryDisplay().bounds;
+}
+
+function sendScreenInfo() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const { width, height } = mainWindow.getBounds();
+  mainWindow.webContents.send('screen-info', { width, height });
+}
+
+function fitWindowToAllDisplays() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setBounds(getDesktopWindowBounds());
+  sendScreenInfo();
+}
+
+function getInitialStatusWindowBounds() {
+  const width = 400;
+  const height = 460;
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+
+  return {
+    width,
+    height,
+    x: Math.round(x + (areaWidth - width) / 2),
+    y: Math.round(y + (areaHeight - height) / 2),
+  };
+}
+
+function sendStatusWindowData() {
+  if (!statusWindow || statusWindow.isDestroyed() || !lastStatusWindowData) return;
+  statusWindow.webContents.send('status-window-data', lastStatusWindowData);
+}
+
+function createStatusWindow() {
+  if (statusWindow && !statusWindow.isDestroyed()) return statusWindow;
+
+  const bounds = getInitialStatusWindowBounds();
+  statusWindow = new BrowserWindow({
+    ...bounds,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  statusWindow.setAlwaysOnTop(true, 'floating');
+  statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  statusWindow.loadFile(path.join(__dirname, 'src', 'status.html'));
+
+  statusWindow.webContents.on('did-finish-load', sendStatusWindowData);
+  statusWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  statusWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  statusWindow.on('closed', () => {
+    statusWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('status-window-closed');
+    }
+  });
+
+  return statusWindow;
+}
+
+function showStatusWindow(data) {
+  lastStatusWindowData = data;
+  const win = createStatusWindow();
+  if (!win.isVisible()) {
+    win.show();
+  }
+  win.moveTop();
+  sendStatusWindowData();
+}
+
+function updateStatusWindow(data) {
+  lastStatusWindowData = data;
+  sendStatusWindowData();
+}
+
+function hideStatusWindow() {
+  if (statusWindow && !statusWindow.isDestroyed()) {
+    statusWindow.hide();
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('status-window-closed');
+  }
+}
+
+function resizeStatusWindow(size) {
+  if (!statusWindow || statusWindow.isDestroyed()) return;
+
+  const width = Math.min(Math.max(Math.ceil(Number(size?.width) || 400), 360), 520);
+  const height = Math.min(Math.max(Math.ceil(Number(size?.height) || 460), 360), 720);
+  statusWindow.setContentSize(width, height);
 }
 
 /**
@@ -168,14 +308,13 @@ function showExistingInstance() {
  * 创建主渲染窗口
  */
 function createWindow() {
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
+  const { x, y, width, height } = getDesktopWindowBounds();
 
   mainWindow = new BrowserWindow({
     width,
     height,
-    x: 0,
-    y: 0,
+    x,
+    y,
     transparent: true,     // 背景透明
     frame: false,           // 无边框
     alwaysOnTop: true,      // 始终置顶
@@ -197,7 +336,7 @@ function createWindow() {
   });
 
   // 设置鼠标穿透逻辑
-  mainWindow.setIgnoreMouseEvents(true, { forward: true });
+  setPetWindowMousePassthrough(true, { forward: true });
   
   // macOS 特有：全工作区可见
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -207,7 +346,7 @@ function createWindow() {
 
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Renderer loaded successfully');
-    mainWindow.webContents.send('screen-info', { width, height });
+    sendScreenInfo();
     keepPetWindowOnTop();
   });
 
@@ -225,8 +364,19 @@ function createWindow() {
       clearInterval(keepOnTopTimer);
       keepOnTopTimer = null;
     }
+    if (mousePassthroughResetTimer) {
+      clearTimeout(mousePassthroughResetTimer);
+      mousePassthroughResetTimer = null;
+    }
+    if (statusWindow && !statusWindow.isDestroyed()) {
+      statusWindow.close();
+    }
     mainWindow = null;
   });
+
+  screen.on('display-added', fitWindowToAllDisplays);
+  screen.on('display-removed', fitWindowToAllDisplays);
+  screen.on('display-metrics-changed', fitWindowToAllDisplays);
 }
 
 /**
@@ -361,7 +511,23 @@ function createTrayIconBuffer() {
 // --- IPC 通信监听 ---
 
 ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
-  if (mainWindow) mainWindow.setIgnoreMouseEvents(ignore, options || {});
+  setPetWindowMousePassthrough(ignore, options || {});
+});
+
+ipcMain.on('show-status-window', (_event, data) => {
+  showStatusWindow(data);
+});
+
+ipcMain.on('hide-status-window', () => {
+  hideStatusWindow();
+});
+
+ipcMain.on('update-status-window', (_event, data) => {
+  updateStatusWindow(data);
+});
+
+ipcMain.on('resize-status-window', (_event, size) => {
+  resizeStatusWindow(size);
 });
 
 ipcMain.handle('save-data', async (_event, key, value) => {
