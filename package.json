@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "electron .",
     "build": "electron-builder",
-    "verify:installer": "node scripts/verify-installer.js"
+    "verify:installer": "node scripts/verify-installer.js",
+    "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1"
   },
   "author": "",
   "license": "MIT",
@@ -23,7 +24,7 @@
     "win": {
       "target": "nsis",
       "icon": "src/assets/icon.ico",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": true
     },
     "afterPack": "scripts/afterPack.js",
     "nsis": {

@@ -1,7 +1,15 @@
 # Changelog
-
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
+
+## [Unreleased]
+### Added
+- **Windows 代码签名发布流程**：GitHub Actions 现在会在发布构建前检查签名密钥，并将 `WIN_CSC_*` / `CSC_*` 变量传给 `electron-builder`，构建后自动验证安装包签名。
+- **签名验证脚本**：新增 `scripts/verify-signatures.ps1` 和 `npm run verify:signatures`，用于检查安装包的 Authenticode 签名状态。
+
+### Changed
+- **Windows 可执行文件签名**：重新启用 `build.win.signAndEditExecutable`，让打包流程可以对 Windows 应用可执行文件进行签名。
+- **证书文件保护**：`.gitignore` 新增证书和私钥文件类型，降低误提交签名材料的风险。
 
 ## [0.1.7] - 2026-05-11
 ### Changed
