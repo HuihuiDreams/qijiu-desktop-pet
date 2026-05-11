@@ -3,7 +3,7 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased] - 2026-05-11
+## [0.1.7] - 2026-05-11
 ### Changed
 - **GitHub Actions 兼容性维护**：将安装包 workflow 使用的官方 actions 升级到 Node.js 24 runtime 兼容版本，避免 GitHub Actions 的 Node.js 20 deprecation warning。
 - **Release workflow 修正**：修复手动执行安装包 workflow 时只创建 tag、构建发布 job 被跳过的问题；手动运行现在会在同一次 workflow 中创建/复用 tag 并继续构建发布。
