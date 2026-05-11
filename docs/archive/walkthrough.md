@@ -7,13 +7,13 @@ A complete desktop pet application featuring **岳清源（岳七）** and **沈
 ## Project Location
 
 ```
-C:\Users\alexa\.gemini\antigravity\scratch\desktop-pet\
+<repo-root>\
 ```
 
 ## How to Run
 
 ```bash
-cd C:\Users\alexa\.gemini\antigravity\scratch\desktop-pet
+cd <repo-root>
 npm run dev
 ```
 
@@ -106,23 +106,23 @@ When the two pets walk within 130px of each other:
 
 | File | Purpose |
 |---|---|
-| [main.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/main.js) | Electron main process |
-| [preload.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/preload.js) | IPC bridge |
-| [src/index.html](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/index.html) | Entry HTML |
-| [src/index.css](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/index.css) | Xianxia-themed styles |
-| [src/app.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/app.js) | Game loop |
-| [src/data/config.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/data/config.js) | All tunable constants |
-| [src/data/dialogues.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/data/dialogues.js) | Themed dialogue pools |
-| [src/pet/Pet.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/pet/Pet.js) | Pet class |
-| [src/pet/PetRenderer.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/pet/PetRenderer.js) | DOM rendering |
-| [src/pet/PetAnimations.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/pet/PetAnimations.js) | Emoji → sprite placeholder |
-| [src/systems/MovementSystem.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/systems/MovementSystem.js) | Random walking |
-| [src/systems/NurtureSystem.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/systems/NurtureSystem.js) | Stat management |
-| [src/systems/InteractionSystem.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/systems/InteractionSystem.js) | CP interactions |
-| [src/systems/TimeSystem.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/systems/TimeSystem.js) | Save/load/offline |
-| [src/ui/ContextMenu.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/ui/ContextMenu.js) | Right-click menu |
-| [src/ui/StatusBar.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/ui/StatusBar.js) | Stat display panel |
-| [src/ui/DialogBubble.js](file:///C:/Users/alexa/.gemini/antigravity/scratch/desktop-pet/src/ui/DialogBubble.js) | Speech bubbles |
+| [main.js](../../main.js) | Electron main process |
+| [preload.js](../../preload.js) | IPC bridge |
+| [src/index.html](../../src/index.html) | Entry HTML |
+| [src/index.css](../../src/index.css) | Xianxia-themed styles |
+| [src/app.js](../../src/app.js) | Game loop |
+| [src/data/config.js](../../src/data/config.js) | All tunable constants |
+| [src/data/dialogues.js](../../src/data/dialogues.js) | Themed dialogue pools |
+| [src/pet/Pet.js](../../src/pet/Pet.js) | Pet class |
+| [src/pet/PetRenderer.js](../../src/pet/PetRenderer.js) | DOM rendering |
+| [src/pet/SpriteView.js](../../src/pet/SpriteView.js) | Sprite rendering |
+| [src/systems/MovementSystem.js](../../src/systems/MovementSystem.js) | Random walking |
+| [src/systems/NurtureSystem.js](../../src/systems/NurtureSystem.js) | Stat management |
+| [src/systems/InteractionSystem.js](../../src/systems/InteractionSystem.js) | CP interactions |
+| [src/systems/TimeSystem.js](../../src/systems/TimeSystem.js) | Save/load/offline |
+| [src/ui/ContextMenu.js](../../src/ui/ContextMenu.js) | Right-click menu |
+| [src/ui/StatusBar.js](../../src/ui/StatusBar.js) | Stat display panel |
+| [src/ui/DialogBubble.js](../../src/ui/DialogBubble.js) | Speech bubbles |
 
 ## Next Steps
 
