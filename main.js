@@ -1,5 +1,10 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
+const {
+  initUpdateManager,
+  checkForUpdatesFromTray,
+  getUpdateMenuState,
+} = require('./updateManager');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
@@ -207,6 +212,8 @@ function createWindow() {
  * 构建托盘菜单
  */
 function buildTrayMenu() {
+  const updateMenuState = getUpdateMenuState();
+
   return Menu.buildFromTemplate([
     {
       label: '岳清源x沈清秋 桌面爱宠',
@@ -241,6 +248,13 @@ function buildTrayMenu() {
       checked: getStoredAutoLaunchPreference(),
       click: async (menuItem) => {
         await setAutoLaunchPreference(menuItem.checked);
+      },
+    },
+    {
+      label: updateMenuState.label,
+      enabled: updateMenuState.enabled,
+      click: () => {
+        void checkForUpdatesFromTray();
       },
     },
     { type: 'separator' },
@@ -370,6 +384,12 @@ app.whenReady().then(async () => {
 
   await initStore();
   await syncAutoLaunchPreference();
+  initUpdateManager({
+    app,
+    dialog,
+    getMainWindow: () => mainWindow,
+    refreshTrayMenu,
+  });
   createWindow();
   createTray();
 });

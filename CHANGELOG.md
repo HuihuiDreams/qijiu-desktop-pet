@@ -2,13 +2,17 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased]
-### Added
-- **Windows 代码签名发布流程**：GitHub Actions 现在会在发布构建前检查签名密钥，并将 `WIN_CSC_*` / `CSC_*` 变量传给 `electron-builder`，构建后自动验证安装包签名。
+## [0.1.8] - 2026-05-11
+### 新增
+- **托盘手动检查更新**：新增 `updateManager.js` 与托盘菜单入口，打包版本可通过 GitHub Releases 检查并下载更新。
+- **发布决策记录**：新增 `docs/decisions/ADR-020-windows-release-and-code-signing.md`，记录 Windows Release、手动 tag 发布修正与代码签名策略。
+- **Windows 可选代码签名发布流程**：GitHub Actions 可在存在签名密钥时生成签名安装包；没有 `WIN_CSC_*` secrets 时会继续生成未签名安装包，适合小范围分发。
 - **签名验证脚本**：新增 `scripts/verify-signatures.ps1` 和 `npm run verify:signatures`，用于检查安装包的 Authenticode 签名状态。
+- **更新管理器测试**：新增 `node:test` 覆盖更新检查、下载确认、安装确认、进度条和常见失败提示。
 
-### Changed
-- **Windows 可执行文件签名**：重新启用 `build.win.signAndEditExecutable`，让打包流程可以对 Windows 应用可执行文件进行签名。
+### 变更
+- **Windows 可执行文件签名**：默认关闭 `build.win.signAndEditExecutable`，避免小范围发布被付费证书阻塞；CI 在检测到签名 secrets 时可临时启用签名。
+- **NSIS 安装环境初始化**：安装脚本在自定义安装阶段设置输出目录并请求管理员权限，降低中文路径或受限环境下插件目录初始化失败的概率。
 - **证书文件保护**：`.gitignore` 新增证书和私钥文件类型，降低误提交签名材料的风险。
 
 ## [0.1.7] - 2026-05-11
