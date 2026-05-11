@@ -3,6 +3,11 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased] - 2026-05-11
+### Changed
+- **GitHub Actions 兼容性维护**：将安装包 workflow 使用的官方 actions 升级到 Node.js 24 runtime 兼容版本，避免 GitHub Actions 的 Node.js 20 deprecation warning。
+- **文档路径清理**：将归档 walkthrough 和结构文档中的本机绝对路径替换为仓库相对路径，减少环境绑定。
+
 ## [0.1.6] - 2026-05-10
 ### Added
 - **后续功能扩展规划**：新增 `docs/plan/feature-ideas-plan.md`，从生产力工具、环境感知与沉浸感、以及皮肤图鉴收集三个维度规划了桌宠未来的长线功能。

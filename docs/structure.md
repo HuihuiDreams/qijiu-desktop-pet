@@ -40,7 +40,7 @@ graph TB
 ## 2. 目录结构 (Project Structure)
 
 ```text
-C:\Users\alexa\desktop-pet\
+qijiu-desktop-pet\
 ├── main.js                  # Electron 主进程入口 (创建窗口、托盘、处理 IPC)
 ├── preload.js               # IPC 桥接 (暴露 window.electronAPI)
 ├── src/
