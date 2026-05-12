@@ -16,7 +16,8 @@ class Pet {
     this.y = 300 + Math.random() * 200;
     this.targetX = this.x;
     this.targetY = this.y;
-    this.direction = 'right';   // 'left' | 'right' （朝向左或右）
+    this.defaultDirection = config.defaultDirection || 'right';
+    this.direction = this.defaultDirection;   // 'left' | 'right' （朝向左或右）
 
     // 状态机
     this.state = 'idle';        // 当前状态：idle (发呆) | walking (行走) | eating (进食) | sleeping (睡眠) | meditating (打坐) | working (工作) | interacting (互动)

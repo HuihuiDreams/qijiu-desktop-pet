@@ -79,6 +79,7 @@ class InteractionSystem {
         this.currentInteraction = null;
         petA.setState('idle');
         petB.setState('idle');
+        // 互动结束时，可以选恢复到默认朝向，或者是保持看向对方。因为会进行新一轮行走，保持看向对方比较自然。
         petA.idleTimer = 2000;
         petB.idleTimer = 2000;
 
@@ -108,6 +109,15 @@ class InteractionSystem {
 
         petA.setState('interacting');
         petB.setState('interacting');
+
+        // 让双方互相面对面打招呼
+        if (petA.x < petB.x) {
+          petA.direction = 'right';
+          petB.direction = 'left';
+        } else {
+          petA.direction = 'left';
+          petB.direction = 'right';
+        }
 
         // 应用属性增减效果
         this.applyInteraction(petA, petB, interaction);

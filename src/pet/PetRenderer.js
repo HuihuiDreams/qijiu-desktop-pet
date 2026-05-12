@@ -138,12 +138,12 @@ class PetRenderer {
       pet._renderedState = pet.state;
     }
 
-    // 优化：仅当朝向改变时更新类
-    if (pet._renderedDirection !== pet.direction) {
-      if (pet.direction === 'left') {
-        el.classList.add('pet--facing-left');
+    // 优化：仅当朝向或状态改变时更新类
+    if (pet._renderedDirection !== pet.direction || pet._renderedState !== pet.state) {
+      if (pet.direction !== pet.defaultDirection && pet.state !== 'walking') {
+        el.classList.add('pet--flipped');
       } else {
-        el.classList.remove('pet--facing-left');
+        el.classList.remove('pet--flipped');
       }
       pet._renderedDirection = pet.direction;
     }

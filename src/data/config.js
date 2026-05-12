@@ -35,7 +35,7 @@ const CONFIG = {
   // === CP互动效果配置 (Interaction Effects) ===
   INTERACTIONS: {
     greet: { weight: 30, moodA: 5, moodB: 5, affection: 1, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 0 },
-    shareFood: { weight: 20, moodA: 3, moodB: 8, affection: 2, hungerA: -10, hungerB: 15, qiA: 0, qiB: 0, minAffection: 0 },
+    shareFood: { weight: 20, moodA: 8, moodB: 3, affection: 2, hungerA: -5, hungerB: 10, qiA: 0, qiB: 0, minAffection: 0 },
     cultivate: { weight: 25, moodA: 8, moodB: 8, affection: 3, hungerA: 0, hungerB: 0, qiA: 15, qiB: 15, minAffection: 20 },
     kiss: { weight: 15, moodA: 12, moodB: 12, affection: 8, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 70 },
     hug: { weight: 10, moodA: 15, moodB: 15, affection: 12, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 50 },
@@ -48,6 +48,7 @@ const CONFIG = {
     nickname: '岳七',
     emoji: '🗡️',
     image: 'assets/left.png',
+    defaultDirection: 'left',
     sprites: {
       idle:    { frames: ['assets/left.png'], fps: 1 },
       walkingLeft: {
@@ -76,6 +77,7 @@ const CONFIG = {
     nickname: '沈九',
     emoji: '🪭',
     image: 'assets/right.png',
+    defaultDirection: 'right',
     sprites: {
       idle:    { frames: ['assets/right.png'], fps: 1 },
       walkingLeft: {
