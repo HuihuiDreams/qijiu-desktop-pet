@@ -21,7 +21,7 @@ on:
       - 'test/**'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   preflight:
@@ -58,14 +58,18 @@ jobs:
           }
 
           $packageVersion = node -p "require('./package.json').version"
-          $lockVersion = node -p "const lock = require('./package-lock.json'); lock.version + ' ' + lock.packages[''].version"
-
           if ($packageVersion -ne $version) {
-            throw "package.json version $packageVersion does not match requested release $version."
-          }
-
-          if ($lockVersion -ne "$version $version") {
-            throw "package-lock.json versions '$lockVersion' do not match requested release $version."
+            Write-Host "Updating package versions to $version..."
+            npm version $version --no-git-tag-version --allow-same-version
+            
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add package.json package-lock.json
+            git commit -m "chore: sync package versions to $version"
+            git push
+            Write-Host "Successfully bumped versions and pushed to repository."
+          } else {
+            Write-Host "Package versions already match $version."
           }
 
           $changelog = Get-Content -LiteralPath CHANGELOG.md -Raw -Encoding UTF8

@@ -29,12 +29,15 @@ class ContextMenu {
   }
 
   setupEvents() {
-    // 点击菜单项
+    // 点击菜单项（使用 pointerdown 提升数位笔和触摸的响应速度，避免微小抖动丢失事件）
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
-      item.addEventListener('click', (e) => {
-        const action = e.target.dataset.action;
-        this.handleAction(action);
-        this.hide();
+      item.addEventListener('pointerdown', (e) => {
+        // 使用 e.currentTarget 确保无论点击到哪个子元素，都能正确获取 dataset
+        const action = e.currentTarget.dataset.action;
+        if (e.button === 0 || e.pointerType === 'pen' || e.pointerType === 'touch') {
+          this.handleAction(action);
+          this.hide();
+        }
       });
     });
 

@@ -85,6 +85,7 @@ html, body {
 .pet {
   position: absolute;
   pointer-events: auto;
+  touch-action: none;
   cursor: grab;
   transition: none;
   z-index: 1000;
@@ -234,6 +235,7 @@ html, body {
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
   z-index: 9999;
   pointer-events: auto;
+  touch-action: none;
   overflow: hidden;
   animation: menuReveal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: top left;
