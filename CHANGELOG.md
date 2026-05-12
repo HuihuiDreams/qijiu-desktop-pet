@@ -4,7 +4,6 @@
 
 ## [Unreleased]
 ### 新增
-- **多显示器全覆盖支持**：主窗口现在自动计算并覆盖所有显示器的虚拟桌面区域 (`getVirtualDisplayBounds`)，确保桌宠可以在多屏之间无障碍穿梭。
 - **独立状态面板窗口**：重构了状态面板实现方式。现在状态面板拥有独立的、非透明的 Electron 窗口 (`src/status.html`)，支持跨显示器拖拽，彻底解决了原先 DOM 遮罩层无法超出主窗口边界的问题。
 - **UI/UX 改进计划**：新增 `docs/plan/ui-ux-improvement-plan.md`，规划了“水墨仙侠”美学提升路径。
 - **点击穿透租约机制**：在主进程引入 `setPetWindowMousePassthrough`，支持带超时的交互激活，提升了在复杂 UI 交互下的鼠标穿透/拦截切换的稳定性。

@@ -329,20 +329,54 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--color-mist);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid var(--color-glass-border);
-  border-radius: 18px;
-  padding: 22px 26px 20px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)),
+    radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%),
+    var(--color-mist);
+  border: 1px solid rgba(61, 139, 107, 0.3);
+  border-radius: 14px;
+  padding: 24px 26px 20px;
   min-width: 360px;
   box-shadow: 
-    var(--shadow-lg),
-    var(--shadow-glow-jade),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    0 12px 30px rgba(30, 42, 54, 0.16),
+    0 0 16px rgba(110, 198, 160, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    inset 0 -12px 24px rgba(61, 139, 107, 0.06);
   z-index: 10000;
   pointer-events: auto;
   animation: panelSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.status-panel::before,
+.status-panel::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.status-panel::before {
+  inset: 9px;
+  border: 1px solid rgba(61, 139, 107, 0.16);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px),
+    radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px),
+    radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px),
+    radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
+}
+
+.status-panel::after {
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
+}
+
+.status-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .status-panel.hidden {
@@ -369,8 +403,8 @@ html, body {
   color: var(--color-jade-deep);
   margin-bottom: 18px;
   padding-bottom: 12px;
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, var(--color-jade), transparent) 1;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, var(--color-jade), rgba(201, 162, 77, 0.48), transparent) 1;
   letter-spacing: 2px;
 }
 
@@ -400,9 +434,14 @@ html, body {
 .pet-status-block {
   margin-bottom: 18px;
   padding: 12px 14px;
-  background: var(--color-ink-faint);
-  border-radius: 12px;
-  border: 1px solid rgba(110, 198, 160, 0.08);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.38), rgba(110, 198, 160, 0.06)),
+    var(--color-ink-faint);
+  border-radius: 10px;
+  border: 1px solid rgba(110, 198, 160, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 3px 0 0 rgba(110, 198, 160, 0.18);
   transition: border-color 0.3s ease;
 }
 
@@ -453,11 +492,12 @@ html, body {
 .stat-bar {
   flex: 1;
   height: 10px;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(30, 42, 54, 0.07);
   border-radius: 5px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(30, 42, 54, 0.04);
+  box-shadow: inset 0 1px 2px rgba(30, 42, 54, 0.12);
 }
 
 .stat-bar-fill {
@@ -469,56 +509,34 @@ html, body {
   overflow: hidden;
 }
 
-/* Animated shimmer on stat bars */
+/* Static jade highlight; avoids long-running shimmer animation. */
 .stat-bar-fill::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
+  inset: 1px 0 auto;
+  height: 2px;
   background: linear-gradient(
     90deg, 
     transparent 0%, 
-    rgba(255, 255, 255, 0.25) 50%, 
+    rgba(255, 255, 255, 0.48) 50%,
     transparent 100%
   );
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0% { left: -100%; }
-  50% { left: 100%; }
-  100% { left: 100%; }
 }
 
 .stat-bar-fill--affection { 
-  background: linear-gradient(90deg, #d94a72, #f47a98, #d94a72);
-  background-size: 200% 100%;
-  animation: gradientFlow 4s ease infinite;
+  background: linear-gradient(90deg, #c83f66, #e66d8e);
 }
 
 .stat-bar-fill--hunger { 
-  background: linear-gradient(90deg, #d4782a, #f0a04b, #d4782a);
-  background-size: 200% 100%;
-  animation: gradientFlow 4s ease infinite;
+  background: linear-gradient(90deg, #c66c22, #e4973f);
 }
 
 .stat-bar-fill--qi { 
-  background: linear-gradient(90deg, #7c3aad, #a569d4, #7c3aad);
-  background-size: 200% 100%;
-  animation: gradientFlow 4s ease infinite;
+  background: linear-gradient(90deg, #71339f, #9655c7);
 }
 
 .stat-bar-fill--mood { 
-  background: linear-gradient(90deg, #28b463, #5dde8e, #28b463);
-  background-size: 200% 100%;
-  animation: gradientFlow 4s ease infinite;
-}
-
-@keyframes gradientFlow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  background: linear-gradient(90deg, #249e58, #4dca7c);
 }
 
 .stat-value {
