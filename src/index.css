@@ -132,6 +132,10 @@ html, body {
   pointer-events: none;
 }
 
+.pet--flipped .pet-image {
+  transform: scaleX(-1);
+}
+
 .pet-name {
   position: absolute;
   bottom: -24px;
