@@ -213,9 +213,9 @@ class PetRenderer {
     const cx = (petA.x + petB.x) / 2 + petA.size / 2;
     const cy = (petA.y + petB.y) / 2 + petA.size / 2;
 
-    const overlayWidth = 220;
+    const overlayWidth = 176;
     const overlayLeft = cx - overlayWidth / 2;
-    const overlayTop = cy - 80;
+    const overlayTop = cy - 64;
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
