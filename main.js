@@ -20,6 +20,7 @@ let tray = null;
 let store = null;
 let petHidden = false; // 桌宠隐藏状态
 let isPaused = false;  // 走动暂停状态
+let autoLaunchEnabled = false; // 开机自动启动状态
 let keepOnTopTimer = null; // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -112,6 +113,7 @@ async function setAutoLaunchPreference(enabled) {
 
   const preference = Boolean(enabled);
   store.set(AUTO_LAUNCH_KEY, preference);
+  autoLaunchEnabled = preference;
   const loginItem = applyAutoLaunchSetting(preference);
   refreshTrayMenu();
 
@@ -424,11 +426,11 @@ function buildTrayMenu() {
       },
     },
     {
-      label: '🚀 开机自动启动',
-      type: 'checkbox',
-      checked: getStoredAutoLaunchPreference(),
-      click: async (menuItem) => {
-        await setAutoLaunchPreference(menuItem.checked);
+      label: autoLaunchEnabled ? '🚀 禁用开机启动' : '🚀 开机自动启动',
+      click: async () => {
+        autoLaunchEnabled = !autoLaunchEnabled;
+        await setAutoLaunchPreference(autoLaunchEnabled);
+        refreshTrayMenu();
       },
     },
     {
@@ -587,7 +589,8 @@ if (!hasSingleInstanceLock) {
     });
 
     await initStore();
-    await syncAutoLaunchPreference();
+    const syncResult = await syncAutoLaunchPreference();
+    autoLaunchEnabled = syncResult.preference;
     initUpdateManager({
       app,
       dialog,

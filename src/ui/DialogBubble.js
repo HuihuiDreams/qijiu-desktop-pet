@@ -32,13 +32,19 @@ class DialogBubble {
     this.activeBubbles.set(pet.id, bubble);
 
     // 在移除前开始淡出动画
+    const fadeDelay = Math.max(0, duration - 500);
+
     setTimeout(() => {
-      bubble.classList.add('dialog-bubble--fade-out');
-    }, duration - 500);
+      if (this.activeBubbles.get(pet.id) === bubble) {
+        bubble.classList.add('dialog-bubble--fade-out');
+      }
+    }, fadeDelay);
 
     // 显示时间结束后移除气泡
     setTimeout(() => {
-      this.remove(pet.id);
+      if (this.activeBubbles.get(pet.id) === bubble) {
+        this.remove(pet.id);
+      }
     }, duration);
   }
 
@@ -51,6 +57,10 @@ class DialogBubble {
       bubble.remove();
       this.activeBubbles.delete(petId);
     }
+  }
+
+  removeForPets(pets) {
+    pets.forEach((pet) => this.remove(pet.id));
   }
 
   /**
@@ -131,4 +141,8 @@ class DialogBubble {
       this.show(shenjiu, text, CONFIG.INTERACTION_DURATION - 500, offsetB);
     }
   }
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { DialogBubble };
 }
