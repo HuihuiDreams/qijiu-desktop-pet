@@ -80,6 +80,7 @@ class MovementSystem {
         if (pet.idleTimer <= 0) {
           // 发呆结束，设置新目标开始行走
           this.randomTarget(pet);
+          pet.direction = pet.targetX > pet.x ? 'right' : 'left';
           pet.setState('walking');
         }
         break;
@@ -93,4 +94,8 @@ class MovementSystem {
         break;
     }
   }
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { MovementSystem };
 }

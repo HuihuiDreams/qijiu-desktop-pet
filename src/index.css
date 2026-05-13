@@ -635,6 +635,86 @@ html, body {
 /* ============================================
    Interaction Effects — Floating Particles
    ============================================ */
+.qi-aura {
+  position: absolute;
+  pointer-events: none;
+  z-index: 998;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.62);
+  animation: qiAuraGather 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.42), transparent 18%),
+    radial-gradient(circle, var(--qi-aura-core, rgba(110, 198, 160, 0.28)) 0%, transparent 58%);
+  box-shadow:
+    0 0 20px var(--qi-aura-glow, rgba(110, 198, 160, 0.28)),
+    inset 0 0 18px rgba(255, 255, 255, 0.18);
+  will-change: transform, opacity;
+}
+
+.qi-aura::before,
+.qi-aura::after {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  border: 1px solid var(--qi-aura-ring, rgba(110, 198, 160, 0.42));
+  opacity: 0.72;
+}
+
+.qi-aura::before {
+  transform: rotate(-18deg) scaleX(1.22);
+}
+
+.qi-aura::after {
+  inset: 24%;
+  transform: rotate(28deg) scaleX(1.36);
+  opacity: 0.46;
+}
+
+.qi-aura--cultivate,
+.qi-aura--meditate {
+  --qi-aura-core: rgba(110, 198, 160, 0.34);
+  --qi-aura-glow: rgba(110, 198, 160, 0.34);
+  --qi-aura-ring: rgba(110, 198, 160, 0.55);
+}
+
+.qi-aura--feed,
+.qi-aura--shareFood {
+  --qi-aura-core: rgba(201, 162, 77, 0.32);
+  --qi-aura-glow: rgba(201, 162, 77, 0.28);
+  --qi-aura-ring: rgba(201, 162, 77, 0.52);
+}
+
+.qi-aura--pet,
+.qi-aura--hug,
+.qi-aura--kiss {
+  --qi-aura-core: rgba(217, 74, 114, 0.25);
+  --qi-aura-glow: rgba(217, 74, 114, 0.24);
+  --qi-aura-ring: rgba(217, 74, 114, 0.42);
+}
+
+.qi-aura--rest {
+  --qi-aura-core: rgba(126, 151, 190, 0.26);
+  --qi-aura-glow: rgba(126, 151, 190, 0.22);
+  --qi-aura-ring: rgba(126, 151, 190, 0.4);
+}
+
+@keyframes qiAuraGather {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55) rotate(-5deg);
+  }
+  36% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.04) rotate(1deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -54%) scale(1.48) rotate(8deg);
+  }
+}
+
 .interaction-effect {
   position: absolute;
   pointer-events: none;
