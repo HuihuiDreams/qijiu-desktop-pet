@@ -4,14 +4,19 @@
 
 ## [Unreleased]
 ### Added
+- 新增对话气泡替换与多宠物气泡清理的回归测试。
 - 新增交互灵气汇聚动效，在进食、打坐、抚摸、休息和双人互动时显示轻量光晕反馈。
 
 ### Fixed
-- Fix stale `.pet--flipped` class carrying from idle into walking, which could double-flip SpriteView directional walk frames.
+- 修复旧对话气泡的定时器误删同一宠物新气泡的问题。
+- 修复通过 IPC 修改开机启动设置后，托盘开机启动文案没有同步刷新的问题。
+- 修复从待机切换到行走时残留 `.pet--flipped` 类，导致 SpriteView 方向行走帧被二次翻转的问题。
 - 修复开发态运行时可能把 Electron 开发可执行文件注册为 Windows 开机启动项的问题。
 - 修复角色从静止切换到行走时首轮帧图加载和方向延迟导致的短暂闪烁。
 
 ### Changed
+- 调整托盘更新与开机启动菜单文案，让状态表达更清晰。
+- 更新应用图标资源，替换 `icon.png` 与 `icon.ico`。
 - **角色默认朝向与互动转身逻辑**：
   - 为岳七（左侧）和沈九（右侧）设定了符合美术立绘设定的默认侧脸朝向。
   - 优化了两人互动时的身体朝向逻辑：当触发互动时（如打招呼），系统会根据两人的相对坐标使他们自动“面对面”。

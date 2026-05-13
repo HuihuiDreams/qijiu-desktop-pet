@@ -204,6 +204,7 @@
         const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
         if (interaction) {
           const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood'].includes(interaction.key);
+          dialogBubble.removeForPets([yueqi, shenjiu]);
 
           if (isOverlay) {
             // 显示图片覆盖层，并将气泡锁定到图片中角色头顶
