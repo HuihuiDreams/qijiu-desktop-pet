@@ -39,7 +39,8 @@
   - 色彩同步：使用 `--color-jade-deep` 或 `--color-ink` 变量，支持悬停时的色值变换。
   - 理由：符合 `no-emoji-icons` 准则，提升品牌独特性。
 
-#### 2. 交互动效：灵气汇聚 (Qi Aura) 体系
+#### 2. 交互动效：灵气汇聚 (Qi Aura) 体系 [Done] ✅
+- **完成记录**：已落地轻量 DOM 灵气光晕体系，覆盖进食、打坐、抚摸、休息、普通互动与双人覆盖互动；使用 `transform` / `opacity` 驱动，动画结束后自动移除节点。
 - **改动**：~~在执行“喂食”、“打坐”、“修炼”等关键动作时增加粒子反馈。~~ 在关键动作时增加一次性、数量受限的轻量反馈。
 - **技术要求**：
   - **灵气粒子**：~~使用 `backdrop-filter: blur(4px)` 配合 `--color-jade-glow` 的径向渐变小球。~~ 改为复用 1-3 个 DOM 节点或伪元素，仅使用 `transform` 与 `opacity` 做短时反馈。
@@ -71,16 +72,16 @@
   在 `index.css` 中预定义交互状态滤镜，如 `grayscale(0.8)` (疲劳状态) 和 `drop-shadow(0 0 10px var(--color-jade))` (充能状态)。滤镜只用于状态切换后的静态表现，避免放入常驻关键帧动画。
 
 ### Phase 2：动效与反馈优化
-- **Task 3: 动画步频调整 [Done]**
+- **Task 3: 动画步频调整 [Done]✅**
   修改 `index.css` 中的 `@keyframes`，将 `walkBounce` 周期延长至 0.8s，`sleepBreath` 加入微小随机性。
-- **Task 4: 灵气汇聚特效与玉简升级**
+- **Task 4: 灵气汇聚特效与玉简升级 [Done] ✅**
   - **改造 ContextMenu.js**：~~实现“墨迹扩散”悬停效果。~~ 实现低成本悬停反馈，仅使用颜色、透明度和位移。
   - **升级 StatusBar.js (玉简系统) [Done]**：~~增加背景流光 (`shimmer` 增强版) 逻辑及~~ 增加装饰性 SVG 边框图层。已改为静态玉简质感、伪元素云纹、内边框和静态进度条高光。
 
 ### Phase 3：反馈系统与性能微调
-- **Task 5: 粒子系统实现 (InteractionSystem.js)**
+- **Task 5: 粒子系统实现 (InteractionSystem.js) [Done] ✅**
   ~~实现一个轻量级的 CSS/JS 粒子发生器，用于生成“灵气点”。~~ 删除独立粒子发生器方案，改为少量复用节点的一次性反馈，避免频繁创建/销毁 DOM 与动画对象。
-- **Task 6: 性能优化检查**
+- **Task 6: 性能优化检查 [Done] ✅**
   ~~确保大量 `blur` 和粒子动画在 CPU 占用率上保持低位（利用 `will-change: transform`）。~~ 建立性能预算：避免大量 `blur`/粒子，`will-change` 只在动画触发前后短暂启用，验证闲置 CPU、交互峰值和内存稳定性。
 
 ---

@@ -64,8 +64,8 @@
   // === 将 UI 辅助方法附加到宠物实例上 ===
   yueqi._showBubble = (text) => dialogBubble.show(yueqi, text);
   shenjiu._showBubble = (text) => dialogBubble.show(shenjiu, text);
-  yueqi._spawnEffect = (emoji) => renderer.spawnEffect(yueqi, emoji);
-  shenjiu._spawnEffect = (emoji) => renderer.spawnEffect(shenjiu, emoji);
+  yueqi._spawnEffect = (_emoji, tone) => renderer.spawnQiAura(yueqi, tone);
+  shenjiu._spawnEffect = (_emoji, tone) => renderer.spawnQiAura(shenjiu, tone);
 
   // === 右键菜单处理 ===
   [yueqi, shenjiu].forEach(pet => {
@@ -209,6 +209,12 @@
             // 显示图片覆盖层，并将气泡锁定到图片中角色头顶
             interactionOverlayActive = true;
             const overlayPos = renderer.showOverlay(yueqi, shenjiu, interaction.key);
+            renderer.spawnQiAuraAt(
+              overlayPos.x + overlayPos.width / 2,
+              overlayPos.y + 82,
+              overlayPos.width * 1.2,
+              interaction.key
+            );
 
             // 从对话库中取台词：沈九在左，岳七在右
             const pool = DIALOGUES[interaction.key];
@@ -222,9 +228,8 @@
           } else {
             // 非图片叠加层的互动：正常气泡 + 漂浮特效
             dialogBubble.showInteraction(yueqi, shenjiu, interaction.key);
-            const effectEmoji = DIALOGUES.effects[interaction.key] || '✨';
-            renderer.spawnEffect(yueqi, effectEmoji);
-            renderer.spawnEffect(shenjiu, effectEmoji);
+            renderer.spawnQiAura(yueqi, interaction.key);
+            renderer.spawnQiAura(shenjiu, interaction.key);
           }
         }
 

@@ -62,6 +62,26 @@ class SpriteView {
     pet._sv_frameIndex = 0;
     pet._sv_frameTimer = 0;
     pet._sv_lastSpriteKey = null;
+    this._preloadPetSprites(pet);
+  }
+
+  _preloadPetSprites(pet) {
+    if (typeof Image === 'undefined') return;
+
+    const resources = new Set();
+    if (pet.image) resources.add(pet.image);
+
+    Object.values(pet.sprites || {}).forEach((spriteConfig) => {
+      (spriteConfig.frames || []).forEach((frame) => resources.add(frame));
+    });
+
+    Object.values(this.imageMap[pet.id] || {}).forEach((resource) => resources.add(resource));
+
+    pet._sv_preloadedImages = Array.from(resources).map((resource) => {
+      const image = new Image();
+      image.src = resource;
+      return image;
+    });
   }
 
   /**
@@ -184,11 +204,25 @@ class SpriteView {
     if (!body) return;
 
     if (type === 'image') {
-      body.innerHTML = `<img src="${resource}" alt="${pet.nickname || ''}" class="pet-image">`;
+      let image = body.querySelector('.pet-image');
+      if (!image) {
+        body.textContent = '';
+        image = document.createElement('img');
+        image.className = 'pet-image';
+        body.appendChild(image);
+      }
+      if (image.getAttribute('src') !== resource) {
+        image.src = resource;
+      }
+      image.alt = pet.nickname || '';
     } else {
       body.textContent = resource;
     }
 
     pet._sv_lastResource = resource;
   }
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { SpriteView };
 }

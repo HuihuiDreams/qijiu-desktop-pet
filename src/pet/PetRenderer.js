@@ -7,6 +7,24 @@ class PetRenderer {
     this.stage = stage;
   }
 
+  spawnQiAuraAt(x, y, size = 112, tone = 'default') {
+    const aura = document.createElement('div');
+    aura.className = `qi-aura qi-aura--${tone}`;
+    aura.style.left = `${x}px`;
+    aura.style.top = `${y}px`;
+    aura.style.width = `${size}px`;
+    aura.style.height = `${size}px`;
+
+    this.stage.appendChild(aura);
+    aura.addEventListener('animationend', () => aura.remove(), { once: true });
+  }
+
+  spawnQiAura(pet, tone = 'default') {
+    const x = pet.x + pet.size / 2;
+    const y = pet.y + pet.size / 2;
+    this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone);
+  }
+
   /**
    * 为宠物创建 DOM 元素并附加到舞台（stage）上。
    */

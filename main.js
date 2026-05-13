@@ -10,6 +10,8 @@ const {
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
 const DEFAULT_AUTO_LAUNCH = true;
+const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
+const LOGIN_ITEM_NAME = '七九爱宠';
 
 let mainWindow = null;
 let statusWindow = null;
@@ -50,8 +52,14 @@ function getStoredAutoLaunchPreference() {
  */
 function getLoginItemStatus() {
   if (process.platform !== 'win32') return { openAtLogin: false };
+  if (!app.isPackaged) {
+    return { openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [] };
+  }
   try {
-    return app.getLoginItemSettings();
+    return app.getLoginItemSettings({
+      path: process.execPath,
+      args: [],
+    });
   } catch (error) {
     console.error('Failed to read login item settings:', error);
     return { openAtLogin: false };
@@ -63,12 +71,14 @@ function getLoginItemStatus() {
  */
 function applyAutoLaunchSetting(enabled) {
   if (process.platform !== 'win32') return getLoginItemStatus();
+  if (!app.isPackaged) return getLoginItemStatus();
   try {
-    const settings = { openAtLogin: enabled };
-    if (app.isPackaged) {
-      settings.path = process.execPath;
-      settings.args = [];
-    }
+    const settings = {
+      openAtLogin: enabled,
+      path: process.execPath,
+      args: [],
+      name: LOGIN_ITEM_NAME,
+    };
     app.setLoginItemSettings(settings);
   } catch (error) {
     console.error('Failed to update login item settings:', error);
@@ -565,6 +575,8 @@ ipcMain.handle('get-auto-launch', async () => {
 if (!hasSingleInstanceLock) {
   app.quit();
 } else {
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+
   app.on('second-instance', showExistingInstance);
 
   app.whenReady().then(async () => {
