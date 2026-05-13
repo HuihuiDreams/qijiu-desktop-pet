@@ -38,5 +38,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onTogglePetVisibility: (callback) => {
     ipcRenderer.on('toggle-pet-visibility', (event, visible) => callback(visible));
-  }
+  },
+
+  // 皮肤系统
+  getAvailableSkins: () => ipcRenderer.invoke('get-available-skins'),
+  setCurrentSkin: (skinId) => ipcRenderer.send('set-current-skin', skinId),
+  onSwitchSkin: (callback) => {
+    ipcRenderer.on('switch-skin', (event, skinId) => callback(skinId));
+  },
 });

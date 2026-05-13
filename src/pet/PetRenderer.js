@@ -5,6 +5,16 @@
 class PetRenderer {
   constructor(stage) {
     this.stage = stage;
+    /** @type {string} 当前皮肤的路径前缀，用于叠加层图片 */
+    this.skinPrefix = 'assets/default/';
+  }
+
+  /**
+   * 设置皮肤路径前缀（由 SkinManager 调用）。
+   * @param {string} prefix - 如 'assets/qban/'
+   */
+  setSkinPrefix(prefix) {
+    this.skinPrefix = prefix;
   }
 
   spawnQiAuraAt(x, y, size = 112, tone = 'default') {
@@ -238,7 +248,7 @@ class PetRenderer {
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
-    overlay.src = `assets/${type}.png`;
+    overlay.src = `${this.skinPrefix}${type}.png`;
     overlay.alt = type;
     overlay.style.position = 'absolute';
     overlay.style.width = `${overlayWidth}px`;

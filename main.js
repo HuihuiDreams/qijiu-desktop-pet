@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { getVirtualDisplayBounds } = require('./displayBounds');
 const {
   initUpdateManager,
@@ -13,6 +14,13 @@ const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const LOGIN_ITEM_NAME = '七九爱宠';
 
+// 皮肤中文显示名映射表（文件夹名 → 托盘菜单显示名）
+const SKIN_NAMES = {
+  'default': '默认·仙侠水墨',
+  // 新增皮肤时在此添加映射，例如：
+  // 'qban': 'Q版·萌系',
+};
+
 let mainWindow = null;
 let statusWindow = null;
 let lastStatusWindowData = null;
@@ -21,6 +29,7 @@ let store = null;
 let petHidden = false; // 桌宠隐藏状态
 let isPaused = false;  // 走动暂停状态
 let autoLaunchEnabled = false; // 开机自动启动状态
+let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
 let keepOnTopTimer = null; // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -394,8 +403,42 @@ function createWindow() {
 /**
  * 构建托盘菜单
  */
+/**
+ * 扫描 src/assets/ 下的子目录，返回可用皮肤 ID 列表。
+ * 使用 fs.statSync 过滤，仅返回文件夹名，排除非目录文件。
+ */
+function scanAvailableSkins() {
+  try {
+    const assetsDir = path.join(__dirname, 'src', 'assets');
+    const entries = fs.readdirSync(assetsDir);
+    return entries.filter(entry => {
+      try {
+        return fs.statSync(path.join(assetsDir, entry)).isDirectory();
+      } catch {
+        return false;
+      }
+    });
+  } catch (error) {
+    console.error('Failed to scan skins:', error);
+    return ['default'];
+  }
+}
+
 function buildTrayMenu() {
   const updateMenuState = getUpdateMenuState();
+
+  // 构建皮肤切换子菜单
+  const availableSkins = scanAvailableSkins();
+  const skinSubmenu = availableSkins.map(skinId => ({
+    label: SKIN_NAMES[skinId] || skinId,
+    type: 'radio',
+    checked: skinId === currentSkinId,
+    click: () => {
+      currentSkinId = skinId;
+      if (mainWindow) mainWindow.webContents.send('switch-skin', skinId);
+      refreshTrayMenu();
+    },
+  }));
 
   return Menu.buildFromTemplate([
     {
@@ -408,6 +451,10 @@ function buildTrayMenu() {
       click: () => {
         if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
       },
+    },
+    {
+      label: '🎨 切换皮肤',
+      submenu: skinSubmenu,
     },
     {
       label: isPaused ? '🚶 恢复走动' : '⏸️ 暂停走动',
@@ -577,6 +624,15 @@ ipcMain.handle('set-auto-launch', async (_event, enabled) => {
 
 ipcMain.handle('get-auto-launch', async () => {
   return getAutoLaunchPreference();
+});
+
+ipcMain.handle('get-available-skins', () => {
+  return scanAvailableSkins();
+});
+
+ipcMain.on('set-current-skin', (_event, skinId) => {
+  currentSkinId = skinId;
+  refreshTrayMenu();
 });
 
 // --- 应用生命周期 ---

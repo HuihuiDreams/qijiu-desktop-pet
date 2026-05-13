@@ -64,6 +64,16 @@ class Pet {
   }
 
   /**
+   * 运行时更新皮肤资源（由 SkinManager 调用）。
+   * 仅替换 image 和 sprites，不影响任何游戏状态。
+   * @param {{ image: string, sprites: object }} skinPaths
+   */
+  updateSkin(skinPaths) {
+    if (skinPaths.image) this.image = skinPaths.image;
+    if (skinPaths.sprites) this.sprites = skinPaths.sprites;
+  }
+
+  /**
    * 检查宠物是否处于忙碌状态（正在执行有时间限制的动作）。
    */
   isBusy() {

@@ -13,18 +13,18 @@ class SpriteView {
     // 静态图片映射：当宠物处于特定状态时显示的单张图片
     this.imageMap = options.imageMap || {
       shenjiu: {
-        meditating: 'assets/right_cultivate.png',
-        hungry: 'assets/right_hungry.png',
-        sleeping: 'assets/right_sleep.png',
-        eating: 'assets/right_eat.png',
-        patted: 'assets/right_pat.png',
+        meditating: 'assets/default/right_cultivate.png',
+        hungry: 'assets/default/right_hungry.png',
+        sleeping: 'assets/default/right_sleep.png',
+        eating: 'assets/default/right_eat.png',
+        patted: 'assets/default/right_pat.png',
       },
       yueqi: {
-        meditating: 'assets/left_cultivate.png',
-        hungry: 'assets/left_hungry.png',
-        sleeping: 'assets/left_sleep.png',
-        eating: 'assets/left_eat.png',
-        patted: 'assets/left_pat.png',
+        meditating: 'assets/default/left_cultivate.png',
+        hungry: 'assets/default/left_hungry.png',
+        sleeping: 'assets/default/left_sleep.png',
+        eating: 'assets/default/left_eat.png',
+        patted: 'assets/default/left_pat.png',
       },
     };
 
@@ -220,6 +220,65 @@ class SpriteView {
     }
 
     pet._sv_lastResource = resource;
+  }
+  /**
+   * 运行时更新 imageMap（由 SkinManager 调用）。
+   * @param {Object} newMap - 新的 { shenjiu: {...}, yueqi: {...} } 映射
+   */
+  updateImageMap(newMap) {
+    this.imageMap = newMap;
+  }
+
+  /**
+   * 重新附加宠物并异步预加载所有新皮肤图片。
+   * 返回一个 Promise，在所有图片 onload 后 resolve，防止切换时闪烁。
+   * @param {Pet} pet
+   * @returns {Promise<void>}
+   */
+  reattach(pet) {
+    // 清除脏检查缓存，强制下一帧重新渲染
+    pet._sv_lastResource = null;
+    pet._sv_frameIndex = 0;
+    pet._sv_frameTimer = 0;
+    pet._sv_lastSpriteKey = null;
+
+    return this._preloadPetSpritesAsync(pet);
+  }
+
+  /**
+   * 异步预加载宠物的所有图片资源。
+   * @param {Pet} pet
+   * @returns {Promise<void>}
+   */
+  _preloadPetSpritesAsync(pet) {
+    if (typeof Image === 'undefined') return Promise.resolve();
+
+    const resources = new Set();
+    if (pet.image) resources.add(pet.image);
+
+    Object.values(pet.sprites || {}).forEach((spriteConfig) => {
+      (spriteConfig.frames || []).forEach((frame) => resources.add(frame));
+    });
+
+    Object.values(this.imageMap[pet.id] || {}).forEach((resource) => resources.add(resource));
+
+    const promises = Array.from(resources).map((resource) => {
+      return new Promise((resolve) => {
+        const image = new Image();
+        image.onload = resolve;
+        image.onerror = resolve; // 加载失败也 resolve，避免卡住
+        image.src = resource;
+      });
+    });
+
+    // 同时更新同步缓存供 _preloadPetSprites 使用
+    pet._sv_preloadedImages = Array.from(resources).map((r) => {
+      const img = new Image();
+      img.src = r;
+      return img;
+    });
+
+    return Promise.all(promises).then(() => {});
   }
 }
 
