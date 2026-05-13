@@ -104,14 +104,14 @@ function createUpdateManager(options = {}) {
 
   function getUpdateMenuState() {
     if (state.checking) {
-      return { ...cloneState(state), label: '⬆️ 正在检查更新...', enabled: false };
+      return { ...cloneState(state), label: '📦 正在检查更新...', enabled: false };
     }
 
     if (state.downloading) {
-      return { ...cloneState(state), label: '⬆️ 正在下载更新...', enabled: false };
+      return { ...cloneState(state), label: '📦 正在下载更新...', enabled: false };
     }
 
-    return { ...cloneState(state), label: '⬆️ 检查更新', enabled: true };
+    return { ...cloneState(state), label: '📦 检查更新', enabled: true };
   }
 
   async function handleError(error) {

@@ -7,6 +7,24 @@ class PetRenderer {
     this.stage = stage;
   }
 
+  spawnQiAuraAt(x, y, size = 112, tone = 'default') {
+    const aura = document.createElement('div');
+    aura.className = `qi-aura qi-aura--${tone}`;
+    aura.style.left = `${x}px`;
+    aura.style.top = `${y}px`;
+    aura.style.width = `${size}px`;
+    aura.style.height = `${size}px`;
+
+    this.stage.appendChild(aura);
+    aura.addEventListener('animationend', () => aura.remove(), { once: true });
+  }
+
+  spawnQiAura(pet, tone = 'default') {
+    const x = pet.x + pet.size / 2;
+    const y = pet.y + pet.size / 2;
+    this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone);
+  }
+
   /**
    * 为宠物创建 DOM 元素并附加到舞台（stage）上。
    */
@@ -132,14 +150,15 @@ class PetRenderer {
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0)`;
 
     // 优化：仅当状态真正发生改变时才操作 DOM classList，减少重绘与垃圾回收
-    if (pet._renderedState !== pet.state) {
+    const stateChanged = pet._renderedState !== pet.state;
+    if (stateChanged) {
       if (pet._renderedState) el.classList.remove(`pet--${pet._renderedState}`);
       if (pet.state !== 'idle') el.classList.add(`pet--${pet.state}`);
       pet._renderedState = pet.state;
     }
 
     // 优化：仅当朝向或状态改变时更新类
-    if (pet._renderedDirection !== pet.direction || pet._renderedState !== pet.state) {
+    if (pet._renderedDirection !== pet.direction || stateChanged) {
       if (pet.direction !== pet.defaultDirection && pet.state !== 'walking') {
         el.classList.add('pet--flipped');
       } else {
@@ -299,4 +318,8 @@ class PetRenderer {
     if (petA.element) petA.element.querySelector('.pet-body').style.visibility = '';
     if (petB.element) petB.element.querySelector('.pet-body').style.visibility = '';
   }
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { PetRenderer };
 }

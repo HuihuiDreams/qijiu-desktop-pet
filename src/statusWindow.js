@@ -4,8 +4,8 @@ const closeBtn = document.getElementById('status-close');
 const STAT_LABELS = {
   affection: '❤️ 好感',
   hunger: '🍖 饱腹',
-  qi: '✨ 灵力',
-  mood: '🧘🏻‍♂️ 心境',
+  qi: '🧘🏻‍♂️ 灵力',
+  mood: '✨ 心境',
 };
 
 function renderPetStats(pet) {

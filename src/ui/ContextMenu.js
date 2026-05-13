@@ -110,25 +110,25 @@ class ContextMenu {
       case 'feed':
         if (this.nurtureSystem.feed(pet)) {
           if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '（享用中…）' : '…还行吧。');
-          if (pet._spawnEffect) pet._spawnEffect('🍎');
+          if (pet._spawnEffect) pet._spawnEffect('🍎', 'feed');
         }
         break;
       case 'meditate':
         if (this.nurtureSystem.meditate(pet)) {
           if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '入定…' : '（闭目凝神）');
-          if (pet._spawnEffect) pet._spawnEffect('✨');
+          if (pet._spawnEffect) pet._spawnEffect('✨', 'meditate');
         }
         break;
       case 'pet':
         if (this.nurtureSystem.headPat(pet)) {
           if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '（宠溺地笑）' : '…谁要你管。');
-          if (pet._spawnEffect) pet._spawnEffect('💕');
+          if (pet._spawnEffect) pet._spawnEffect('💕', 'pet');
         }
         break;
       case 'rest':
         if (this.nurtureSystem.rest(pet)) {
           if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '稍作休整。' : '（假寐）');
-          if (pet._spawnEffect) pet._spawnEffect('💤');
+          if (pet._spawnEffect) pet._spawnEffect('💤', 'rest');
         } else {
           if (pet._showBubble) pet._showBubble('太饿了，无法休息…');
         }
