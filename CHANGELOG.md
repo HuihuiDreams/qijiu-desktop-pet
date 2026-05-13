@@ -7,6 +7,7 @@
 - 新增交互灵气汇聚动效，在进食、打坐、抚摸、休息和双人互动时显示轻量光晕反馈。
 
 ### Fixed
+- Fix stale `.pet--flipped` class carrying from idle into walking, which could double-flip SpriteView directional walk frames.
 - 修复开发态运行时可能把 Electron 开发可执行文件注册为 Windows 开机启动项的问题。
 - 修复角色从静止切换到行走时首轮帧图加载和方向延迟导致的短暂闪烁。
 
