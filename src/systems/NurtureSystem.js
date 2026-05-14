@@ -116,3 +116,7 @@ class NurtureSystem {
     return true;
   }
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { NurtureSystem };
+}

@@ -129,3 +129,7 @@ class InteractionSystem {
     return null;
   }
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { InteractionSystem };
+}
