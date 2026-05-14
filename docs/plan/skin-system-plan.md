@@ -298,30 +298,30 @@ sequenceDiagram
 - [x] 2.4 `preload.js`：暴露 `getAvailableSkins()` 和 `onSwitchSkin(callback)`
 
 ### Phase 3：渲染进程集成 ⏱️ ~20 min
-- [ ] 3.1 `src/index.html`：新增 `SkinManager.js` script 标签
-- [ ] 3.2 `app.js`：初始化 SkinManager
-- [ ] 3.3 `app.js`：启动时从 TimeSystem 加载保存的 skinId 并应用
-- [ ] 3.4 `app.js`：监听 `onSwitchSkin` IPC 消息，调用 `skinManager.applySkin()`，并**异步等待**图片预加载完成后再应用新渲染，防止画面闪烁
+- [x] 3.1 `src/index.html`：新增 `SkinManager.js` script 标签
+- [x] 3.2 `app.js`：初始化 SkinManager
+- [x] 3.3 `app.js`：启动时从 TimeSystem 加载保存的 skinId 并应用
+- [x] 3.4 `app.js`：监听 `onSwitchSkin` IPC 消息，调用 `skinManager.applySkin()`，并**异步等待**图片预加载完成后再应用新渲染，防止画面闪烁
 
 ### Phase 4：持久化 ⏱️ ~10 min
-- [ ] 4.1 `TimeSystem.js`：`save()` 增加 `skinId` 字段
-- [ ] 4.2 `TimeSystem.js`：`load()` 读取 `skinId` 并返回
-- [ ] 4.3 `app.js`：切换皮肤时自动保存偏好
+- [x] 4.1 `TimeSystem.js`：`save()` 增加 `skinId` 字段
+- [x] 4.2 `TimeSystem.js`：`load()` 读取 `skinId` 并返回
+- [x] 4.3 `app.js`：切换皮肤时自动保存偏好
 
 ### Phase 5：测试与验证 ⏱️ ~15 min
 - [ ] 5.1 创建一个测试皮肤文件夹（可以用 default 的副本）
-- [ ] 5.2 启动应用，测试托盘菜单皮肤列表是否正确
+- [x] 5.2 启动应用，测试托盘菜单皮肤列表是否正确（自动化覆盖：托盘扫描、IPC 暴露、渲染进程接线）
 - [ ] 5.3 切换皮肤，验证所有视觉状态（idle、walking、eating、sleeping、meditating、hungry、patted）
 - [ ] 5.4 切换皮肤后触发 CP 互动，验证叠加层图片正确
-- [ ] 5.5 退出并重启应用，验证皮肤选择被持久化
-- [ ] 5.6 更新 `config.js` 中的默认路径指向 `assets/default/`
-- [ ] 5.7 回归测试：确认 default 皮肤下所有功能正常
+- [x] 5.5 退出并重启应用，验证皮肤选择被持久化（自动化覆盖：`TimeSystem.save/load` 的 `skinId` 存取与旧存档兼容）
+- [x] 5.6 更新 `config.js` 中的默认路径指向 `assets/default/`
+- [x] 5.7 回归测试：确认 default 皮肤下所有功能正常（自动化覆盖：default 资源完整性与全量 `npm test`）
 
 ### Phase 6：文档与发布 ⏱️ ~10 min
-- [ ] 6.1 更新 `docs/structure.md` 添加 SkinManager 描述
-- [ ] 6.2 更新 `docs/skin_assets_requirements.csv` 说明文件夹约定
-- [ ] 6.3 更新 `CHANGELOG.md`
-- [ ] 6.4 提交代码
+- [x] 6.1 更新 `docs/structure.md` 添加 SkinManager 描述
+- [x] 6.2 更新 `docs/skin_assets_requirements.csv` 说明文件夹约定
+- [x] 6.3 更新 `CHANGELOG.md`
+- [x] 6.4 提交代码
 
 ---
 

@@ -23,6 +23,7 @@ graph TB
         App --> Nurture["NurtureSystem x2"]
         App --> Interact["InteractionSystem"]
         App --> Time["TimeSystem"]
+        App --> Skin["SkinManager"]
         App --> Sprite["SpriteView"]
         
         Move --> YQ["Pet: 岳七 (yueqi)"]
@@ -61,7 +62,12 @@ qijiu-desktop-pet\
 │   │   ├── InteractionSystem.js # 负责检测距离并触发两人的 CP 互动
 │   │   ├── MovementSystem.js    # 负责计算随机走动目标点与步进
 │   │   ├── NurtureSystem.js     # 负责数值衰减、回复及喂食/修炼等操作
+│   │   ├── SkinManager.js       # 负责皮肤列表、路径映射、运行时切换和渲染注入
 │   │   └── TimeSystem.js        # 负责离线时间计算和自动存档 (electron-store)
+│   ├── assets/
+│   │   ├── default/         # 默认皮肤；每个子目录代表一套完整皮肤
+│   │   ├── icon.ico         # 应用图标，不随皮肤切换
+│   │   └── icon.png         # 应用图标，不随皮肤切换
 │   └── ui/                  # 独立 UI 组件
 │       ├── ContextMenu.js   # 右键交互菜单
 │       ├── DialogBubble.js  # 头顶对话气泡
@@ -99,20 +105,29 @@ qijiu-desktop-pet\
 - 依赖主进程的 `electron-store`。
 - `TimeSystem` 每分钟自动执行一次保存。
 - 启动时，计算当前时间与上次保存时间的差值，调用 `NurtureSystem.applyOfflineDecay()` 批量扣除离线期间的数值（饱腹、灵力、心境）。
+- 存档同时记录 `skinId`。旧存档没有该字段时自动回退到 `default`，保证升级兼容。
 
-### 3.6 隐藏/显示机制 (Hide & Show System)
+### 3.6 皮肤切换系统 (Skin System)
+皮肤系统采用“一个文件夹 = 一套皮肤”的约定，避免为每套皮肤维护额外配置文件。
+- **资源约定**: `src/assets/{skinId}/` 下按固定命名放置单人状态图、行走帧和双人互动覆盖图；`icon.ico` / `icon.png` 保持在 `src/assets/` 根目录，不随皮肤变化。
+- **主进程**: `main.js` 扫描 `src/assets/` 下的子目录生成托盘「切换皮肤」菜单，并通过 `switch-skin` IPC 通知渲染进程。
+- **渲染进程**: `app.js` 初始化 `SkinManager`，启动时应用存档里的 `skinId`，切换时调用 `SkinManager.applySkin()`。
+- **渲染注入**: `SkinManager` 将路径映射注入 `Pet.updateSkin()`、`SpriteView.updateImageMap()` 和 `PetRenderer.setSkinPrefix()`；`SpriteView.reattach()` 会异步预加载新图片后再进入下一轮渲染，减少切换闪烁。
+- **持久化**: 切换成功后立即保存当前 `skinId`，自动保存和退出保存也会带上当前皮肤。
+
+### 3.7 隐藏/显示机制 (Hide & Show System)
 为了不干扰用户的正常工作空间，在系统托盘菜单中加入了"隐藏桌宠"功能。
 - **主进程**: 维护 `petHidden` 状态，根据状态动态重建托盘菜单标签。
 - **IPC 通信**: 切换状态时，主进程通过 `toggle-pet-visibility` 消息通知渲染进程。
 - **渲染进程**: `app.js` 接收消息后，不仅通过 `display: none` 隐藏包含宠物的 `#pet-stage`，更重要的是**暂停游戏逻辑 (`isPaused = !visible`)**，避免在不可见状态下继续消耗数值和资源（详见 [ADR-011](./decisions/ADR-011-hide-show-pet-functionality.md)）。
 
-### 3.7 单实例启动锁 (Single Instance)
+### 3.8 单实例启动锁 (Single Instance)
 桌宠在同一用户会话中只允许存在一个主进程实例。
 - **启动早期加锁**: `main.js` 通过 `app.requestSingleInstanceLock()` 获取 Electron 单实例锁。
 - **重复启动处理**: 第二次点击桌面快捷方式时，新进程立即退出，既有实例通过 `second-instance` 事件执行唤起逻辑。
 - **唤起行为**: 既有窗口会恢复/显示、重新置顶，并将隐藏状态复位为可见，避免用户以为应用没有响应（详见 [ADR-021](./decisions/ADR-021-single-instance-launch-lock.md)）。
 
-### 3.8 更新管理 (Update Manager)
+### 3.9 更新管理 (Update Manager)
 `updateManager.js` 集中封装托盘菜单触发的手动更新检查。
 - **入口**: 托盘菜单调用 `checkForUpdatesFromTray()`，仅打包版本执行真实更新检查。
 - **发布源**: `electron-updater` 读取 GitHub Releases 中的 `latest.yml`、安装包和 `.blockmap`。

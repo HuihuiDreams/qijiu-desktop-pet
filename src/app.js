@@ -24,6 +24,7 @@
   const nurtureSystemB = new NurtureSystem();
   const interactionSystem = new InteractionSystem();
   const timeSystem = new TimeSystem();
+  const skinManager = new SkinManager();
 
   // 监听主进程的屏幕信息更新事件
   window.electronAPI.onScreenInfo((info) => {
@@ -54,6 +55,54 @@
   const contextMenu = new ContextMenu(null); // 我们将在后续为每个宠物设置养成系统
   const statusBar = new StatusBar();
   const dialogBubble = new DialogBubble();
+  const skinTargets = {
+    petA: yueqi,
+    petB: shenjiu,
+    spriteView,
+    renderer,
+  };
+  let skinSwitchInProgress = false;
+
+  async function refreshAvailableSkins() {
+    try {
+      const skinIds = await window.electronAPI.getAvailableSkins();
+      if (Array.isArray(skinIds) && skinIds.length > 0) {
+        skinManager.setAvailableSkins(skinIds);
+      }
+    } catch (err) {
+      console.warn('读取可用皮肤列表失败，回退到 default:', err);
+    }
+  }
+
+  function saveCurrentState() {
+    return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin());
+  }
+
+  async function applySkinById(skinId, options = {}) {
+    if (skinSwitchInProgress) return;
+    skinSwitchInProgress = true;
+    const shouldPersist = options.persist !== false;
+
+    try {
+      const availableSkinIds = skinManager.getAvailableSkins().map(skin => skin.id);
+      const nextSkinId = availableSkinIds.includes(skinId) ? skinId : 'default';
+
+      if (interactionOverlayActive) {
+        interactionOverlayActive = false;
+        renderer.hideOverlay(yueqi, shenjiu);
+      }
+
+      await skinManager.applySkin(nextSkinId, skinTargets);
+      window.electronAPI.setCurrentSkin(nextSkinId);
+      if (shouldPersist) {
+        await saveCurrentState();
+      }
+    } catch (err) {
+      console.error('切换皮肤失败:', err);
+    } finally {
+      skinSwitchInProgress = false;
+    }
+  }
 
   // === 创建 DOM 元素 ===
   renderer.createPetElement(yueqi);
@@ -123,7 +172,12 @@
     isPaused = !visible;
   });
 
+  window.electronAPI.onSwitchSkin((skinId) => {
+    applySkinById(skinId);
+  });
+
   // === 加载保存的状态 ===
+  await refreshAvailableSkins();
   const savedState = await timeSystem.load();
   if (savedState) {
     timeSystem.deserializePet(yueqi, savedState.petAData);
@@ -146,6 +200,7 @@
       }
     }
   }
+  await applySkinById(savedState?.skinId || 'default', { persist: false });
 
   // === 闲聊计时器 ===
   let chatterTimer = 15000 + Math.random() * 30000;
@@ -189,7 +244,7 @@
           deltaMs = 16;
           
           // 4. 唤醒并结算完毕后，立刻存一次档，保护当前已被衰减的数值状态。
-          timeSystem.save(yueqi, shenjiu);
+          saveCurrentState();
         }
 
         // 更新移动
@@ -269,7 +324,7 @@
 
         // 自动保存
         if (timeSystem.update(deltaMs)) {
-          timeSystem.save(yueqi, shenjiu);
+          saveCurrentState();
         }
       }
 
@@ -297,13 +352,14 @@
 
   // 关闭时保存
   window.addEventListener('beforeunload', () => {
-    timeSystem.save(yueqi, shenjiu);
+    saveCurrentState();
   });
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
   window.__DEBUG_DIALOG = dialogBubble;
   window.__DEBUG_RENDERER = renderer;
+  window.__DEBUG_SKIN_MANAGER = skinManager;
 
   console.log('🗡️🪭 岳七 & 沈九 桌面宠物已启动！');
 })();
