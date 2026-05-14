@@ -27,28 +27,109 @@ function getUpdateVersion(info) {
   return info?.version || info?.releaseName || null;
 }
 
+function collectErrorSignals(error, seen = new Set()) {
+  if (!error || seen.has(error)) {
+    return { codes: [], statuses: [], messages: [] };
+  }
+
+  if (typeof error !== 'object') {
+    return { codes: [], statuses: [], messages: [String(error)] };
+  }
+
+  seen.add(error);
+
+  const signals = {
+    codes: [],
+    statuses: [],
+    messages: [],
+  };
+
+  const append = (key, value) => {
+    if (value === null || value === undefined || value === '') return;
+    if (key === 'codes') signals.codes.push(String(value).toUpperCase());
+    if (key === 'statuses') {
+      const status = Number(value);
+      if (Number.isFinite(status)) signals.statuses.push(status);
+    }
+    if (key === 'messages') signals.messages.push(String(value));
+  };
+
+  append('codes', error.code);
+  append('codes', error.errno);
+  append('statuses', error.statusCode);
+  append('statuses', error.status);
+  append('statuses', error.response?.statusCode);
+  append('statuses', error.response?.status);
+  append('messages', error.message);
+  append('messages', error.stack);
+
+  const nestedErrors = [
+    error.cause,
+    error.error,
+    error.originalError,
+    error.response?.error,
+    error.response?.body,
+  ];
+
+  if (Array.isArray(error.errors)) {
+    nestedErrors.push(...error.errors);
+  }
+
+  nestedErrors.forEach((nestedError) => {
+    const nestedSignals = collectErrorSignals(nestedError, seen);
+    signals.codes.push(...nestedSignals.codes);
+    signals.statuses.push(...nestedSignals.statuses);
+    signals.messages.push(...nestedSignals.messages);
+  });
+
+  return signals;
+}
+
 function isNotFoundError(error) {
-  const statusCode = error?.statusCode || error?.status || '';
-  const message = error?.message || String(error || '');
-  return statusCode === 404 || message.includes('404');
+  const signals = collectErrorSignals(error);
+  const messageText = signals.messages.join('\n');
+  return signals.statuses.includes(404) || /\b404\b/.test(messageText);
 }
 
 function classifyUpdateError(error) {
-  const code = error?.code || '';
+  const signals = collectErrorSignals(error);
+  const codes = new Set(signals.codes);
+  const messageText = signals.messages.join('\n');
+  const messageTextUpper = messageText.toUpperCase();
+  const hasCode = (...values) => values.some((value) => codes.has(value));
 
-  if (code === 'ENOTFOUND' || code === 'ENETUNREACH') {
-    return '检查更新失败，请确认网络连接后重试。';
+  if (
+    hasCode('ENOTFOUND', 'ENETUNREACH', 'EAI_AGAIN') ||
+    messageTextUpper.includes('ERR_INTERNET_DISCONNECTED') ||
+    messageTextUpper.includes('ERR_NAME_NOT_RESOLVED') ||
+    messageTextUpper.includes('GETADDRINFO ENOTFOUND')
+  ) {
+    return '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。';
   }
 
   if (isNotFoundError(error)) {
     return '更新服务器暂时不可用，请稍后再试。';
   }
 
-  if (code === 'ECONNRESET' || code === 'ETIMEDOUT') {
-    return '更新下载中断，请稍后重试。';
+  if (
+    hasCode('ECONNRESET', 'ETIMEDOUT', 'ESOCKETTIMEDOUT', 'ECONNABORTED', 'EPIPE') ||
+    messageTextUpper.includes('ERR_CONNECTION_RESET') ||
+    messageTextUpper.includes('ERR_TIMED_OUT') ||
+    messageTextUpper.includes('SOCKET HANG UP') ||
+    messageTextUpper.includes('ABORTED')
+  ) {
+    return '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。';
   }
 
   return '检查更新失败，详细原因已写入日志。';
+}
+
+function getReadableErrorDetail(error) {
+  const [message] = collectErrorSignals(error).messages
+    .map((text) => text.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  return message ? `原因：${message}` : '原因：未知错误，详情已写入日志。';
 }
 
 function createUpdateManager(options = {}) {
@@ -137,6 +218,7 @@ function createUpdateManager(options = {}) {
       type: 'error',
       title: '更新失败',
       message,
+      detail: getReadableErrorDetail(error),
       buttons: ['知道了'],
       noLink: true,
     });

@@ -20,9 +20,11 @@ function createHarness(options = {}) {
     : async () => {
         updater.checked = true;
       };
-  updater.downloadUpdate = async () => {
-    updater.downloaded = true;
-  };
+  updater.downloadUpdate = options.downloadUpdate
+    ? () => options.downloadUpdate(updater)
+    : async () => {
+        updater.downloaded = true;
+      };
   updater.quitAndInstall = (...args) => {
     updater.quitAndInstallArgs = args;
   };
@@ -191,7 +193,51 @@ test('error event records log details and exposes a user-safe message', async ()
 
   assert.equal(logErrors.length, 1);
   assert.equal(messages[0].title, '更新失败');
-  assert.equal(manager._getState().error, '检查更新失败，请确认网络连接后重试。');
+  assert.equal(
+    manager._getState().error,
+    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+  );
+});
+
+test('error event classifies nested updater network failures', async () => {
+  const { manager, updater, messages, logErrors } = createHarness();
+  const error = new Error('更新请求失败');
+  error.cause = new Error('net::ERR_INTERNET_DISCONNECTED');
+
+  updater.emit('error', error);
+  await tick();
+
+  assert.equal(logErrors.length, 1);
+  assert.equal(
+    messages[0].message,
+    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+  );
+  assert.match(messages[0].detail, /更新请求失败/);
+  assert.equal(
+    manager._getState().error,
+    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+  );
+});
+
+test('download failures show a specific reason and keep full logs', async () => {
+  const downloadError = new Error('Cannot download installer');
+  downloadError.response = { statusCode: 404 };
+  const { manager, updater, messages, logErrors } = createHarness({
+    responses: [{ response: 0 }],
+    downloadUpdate: async () => {
+      throw downloadError;
+    },
+  });
+
+  updater.emit('update-available', { version: '0.1.9' });
+  await tick();
+  await tick();
+
+  assert.equal(logErrors.length, 1);
+  assert.equal(messages.at(-1).title, '更新失败');
+  assert.equal(messages.at(-1).message, '更新服务器暂时不可用，请稍后再试。');
+  assert.equal(messages.at(-1).detail, '原因：Cannot download installer');
+  assert.equal(manager._getState().error, '更新服务器暂时不可用，请稍后再试。');
 });
 
 test('classifyUpdateError covers common updater failures', () => {
@@ -201,7 +247,15 @@ test('classifyUpdateError covers common updater failures', () => {
   );
   assert.equal(
     classifyUpdateError({ code: 'ECONNRESET' }),
-    '更新下载中断，请稍后重试。',
+    '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。',
+  );
+  assert.equal(
+    classifyUpdateError(new Error('net::ERR_INTERNET_DISCONNECTED')),
+    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+  );
+  assert.equal(
+    classifyUpdateError({ cause: { code: 'ETIMEDOUT' } }),
+    '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。',
   );
   assert.equal(
     classifyUpdateError(new Error('boom')),

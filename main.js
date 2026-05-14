@@ -487,13 +487,6 @@ function buildTrayMenu() {
         void checkForUpdatesFromTray();
       },
     },
-    {
-      label: updateMenuState.label,
-      enabled: updateMenuState.enabled,
-      click: () => {
-        void checkForUpdatesFromTray();
-      },
-    },
     { type: 'separator' },
     {
       label: '🔄 重置位置',

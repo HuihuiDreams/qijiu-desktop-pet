@@ -26,9 +26,10 @@ function renderPetStats(pet) {
     `;
   }).join('');
 
+  const displayName = pet.name && pet.nickname ? `${pet.name}（${pet.nickname}）` : pet.nickname || pet.name || '';
   return `
     <article class="pet-status-block">
-      <div class="pet-status-name">${icon} ${pet.nickname || pet.name || ''}</div>
+      <div class="pet-status-name">${icon} ${displayName}</div>
       ${rows}
     </article>
   `;

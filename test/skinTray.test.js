@@ -32,6 +32,13 @@ test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
   assert.ok(skins.includes('default'), 'default 文件夹应该被扫描到');
 });
 
+test('main.js tray menu includes only one update menu item', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+  const updateMenuItemCount = (mainSource.match(/label: updateMenuState\.label/g) || []).length;
+
+  assert.equal(updateMenuItemCount, 1);
+});
+
 test('scanAvailableSkins: 排除非目录文件 (icon.ico, icon.png)', () => {
   const skins = scanAvailableSkins(ASSETS_DIR);
   assert.ok(!skins.includes('icon.ico'), 'icon.ico 不应出现在皮肤列表中');

@@ -72,7 +72,15 @@ qijiu-desktop-pet\
 │       ├── ContextMenu.js   # 右键交互菜单
 │       ├── DialogBubble.js  # 头顶对话气泡
 │       └── StatusBar.js     # 数值状态面板
-└── docs/decisions/          # 架构决策记录 (ADRs)
+└── docs/
+    ├── structure.md         # 当前架构、核心机制与目录说明
+    ├── git-workflow.md      # Git 提交、推送与变更记录规范
+    ├── release-workflow.md  # Windows 安装包发布流程
+    ├── release-code-signing.md # Windows 代码签名与未签名发布说明
+    ├── skin_assets_requirements.csv  # 皮肤资源命名与路径约定
+    ├── decisions/           # 架构决策记录 (ADRs)
+    ├── plan/                # 尚未完成或仍需验证的计划文档
+    └── archive/             # 已完成并归档的计划文档
 ```
 
 ## 3. 核心机制 (Core Mechanisms)
