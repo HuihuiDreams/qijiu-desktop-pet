@@ -2,7 +2,7 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased]
+## [0.2.3] - 2026-05-14
 ### Added
 - **皮肤系统框架 (Skin System)**：新增 `SkinManager` 模块，为桌宠提供多套皮肤支持。
 - **动态资源加载**：重构 `SpriteView` 和 `PetRenderer`，支持运行时通过 `applySkin` 异步预加载并无缝切换角色贴图，消除切换时的闪烁。
