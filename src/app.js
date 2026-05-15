@@ -8,16 +8,15 @@
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
   let pets = [];
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
   const keepPetReachable = (pet) => {
-    const minVisible = Math.min(32, pet.size);
-    pet.x = clamp(pet.x, minVisible - pet.size, screenWidth - minVisible);
-    pet.y = clamp(pet.y, 0, screenHeight - minVisible);
+    if (movementSystem) {
+      movementSystem.clampPetToWalkAreas(pet);
+    }
   };
 
   // === 初始化系统 ===
   const stage = document.getElementById('pet-stage');
-  const renderer = new PetRenderer(stage);
+  const renderer = new PetRenderer(stage, keepPetReachable);
   const spriteView = new SpriteView();
   const movementSystem = new MovementSystem(screenWidth, screenHeight);
   const nurtureSystemA = new NurtureSystem();
@@ -31,7 +30,7 @@
     screenWidth = info.width;
     screenHeight = info.height;
     if (movementSystem) {
-      movementSystem.setScreenSize(screenWidth, screenHeight);
+      movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas);
     }
     pets.forEach(keepPetReachable);
   });
@@ -159,6 +158,7 @@
     yueqi.y = screenHeight * 0.5;
     shenjiu.x = screenWidth * 0.7;
     shenjiu.y = screenHeight * 0.5;
+    pets.forEach(keepPetReachable);
     yueqi.setState('idle');
     shenjiu.setState('idle');
     yueqi.idleTimer = 2000;
@@ -199,6 +199,7 @@
         }, 3000);
       }
     }
+    pets.forEach(keepPetReachable);
   }
   await applySkinById(savedState?.skinId || 'default', { persist: false });
 

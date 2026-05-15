@@ -3,8 +3,9 @@
  * 处理鼠标移入/移出事件以切换点击穿透行为。
  */
 class PetRenderer {
-  constructor(stage) {
+  constructor(stage, keepPetReachable = null) {
     this.stage = stage;
+    this.keepPetReachable = typeof keepPetReachable === 'function' ? keepPetReachable : null;
     /** @type {string} 当前皮肤的路径前缀，用于叠加层图片 */
     this.skinPrefix = 'assets/default/';
   }
@@ -78,14 +79,18 @@ class PetRenderer {
     let dragOffsetX = 0;
     let dragOffsetY = 0;
     let dragWatchdogTimer = null;
-    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
     const restoreMousePassthrough = () => {
       window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
     };
     const keepPetReachable = () => {
+      if (this.keepPetReachable) {
+        this.keepPetReachable(pet);
+        return;
+      }
+
       const minVisible = Math.min(32, pet.size);
-      pet.x = clamp(pet.x, minVisible - pet.size, window.innerWidth - minVisible);
-      pet.y = clamp(pet.y, 0, window.innerHeight - minVisible);
+      pet.x = Math.min(Math.max(pet.x, minVisible - pet.size), window.innerWidth - minVisible);
+      pet.y = Math.min(Math.max(pet.y, 0), window.innerHeight - minVisible);
     };
     const clearDragWatchdog = () => {
       if (dragWatchdogTimer) {

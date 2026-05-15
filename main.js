@@ -205,13 +205,38 @@ function getDesktopWindowBounds() {
 
 function sendScreenInfo() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const { width, height } = mainWindow.getBounds();
-  mainWindow.webContents.send('screen-info', { width, height });
+  const bounds = mainWindow.getBounds();
+  const walkAreas = screen.getAllDisplays()
+    .map((display) => display.workArea || display.bounds)
+    .filter((area) => (
+      area
+      && Number.isFinite(area.x)
+      && Number.isFinite(area.y)
+      && Number.isFinite(area.width)
+      && Number.isFinite(area.height)
+      && area.width > 0
+      && area.height > 0
+    ))
+    .map((area) => ({
+      x: area.x - bounds.x,
+      y: area.y - bounds.y,
+      width: area.width,
+      height: area.height,
+    }));
+
+  mainWindow.webContents.send('screen-info', {
+    width: bounds.width,
+    height: bounds.height,
+    walkAreas,
+  });
 }
 
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.setBounds(getDesktopWindowBounds());
+  const bounds = getDesktopWindowBounds();
+  mainWindow.setMinimumSize(bounds.width, bounds.height);
+  mainWindow.setMaximumSize(bounds.width, bounds.height);
+  mainWindow.setBounds(bounds);
   sendScreenInfo();
 }
 
@@ -341,9 +366,9 @@ function createWindow() {
     alwaysOnTop: true,      // 始终置顶
     skipTaskbar: true,      // 任务栏隐藏
     focusable: false,       // 不可聚焦，防止抢占输入
-    resizable: false,
+    resizable: true,
+    enableLargerThanScreen: true,
     hasShadow: false,
-    type: 'toolbar',        // 设置为工具栏窗口类型
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -358,6 +383,10 @@ function createWindow() {
 
   // 设置鼠标穿透逻辑
   setPetWindowMousePassthrough(true, { forward: true });
+
+  mainWindow.setMinimumSize(width, height);
+  mainWindow.setMaximumSize(width, height);
+  mainWindow.setBounds({ x, y, width, height });
   
   // macOS 特有：全工作区可见
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
