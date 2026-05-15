@@ -26,6 +26,7 @@ class MovementSystem {
         y: Number(area?.y),
         width: Number(area?.width),
         height: Number(area?.height),
+        scaleRatio: Number(area?.scaleRatio),
       }))
       .filter((area) => (
         Number.isFinite(area.x)
@@ -34,7 +35,11 @@ class MovementSystem {
         && Number.isFinite(area.height)
         && area.width > 0
         && area.height > 0
-      ));
+      ))
+      .map((area) => ({
+        ...area,
+        scaleRatio: Number.isFinite(area.scaleRatio) && area.scaleRatio > 0 ? area.scaleRatio : 1,
+      }));
   }
 
   getFallbackWalkArea() {
@@ -90,6 +95,11 @@ class MovementSystem {
       && a.height === b.height;
   }
 
+  findMatchingWalkArea(area) {
+    if (!area) return null;
+    return this.getWalkAreas().find((walkArea) => this.sameArea(walkArea, area)) || null;
+  }
+
   findAreaContainingPoint(x, y) {
     return this.getWalkAreas().find((area) => (
       x >= area.x
@@ -101,6 +111,75 @@ class MovementSystem {
 
   findAreaContainingPet(pet, x = pet.x, y = pet.y) {
     return this.findAreaContainingPoint(x + pet.size / 2, y + pet.size / 2);
+  }
+
+  clampTargetToArea(pet, area) {
+    if (!area) return;
+    const range = this.getTargetRange(area, pet, 0);
+    pet.targetX = this.clampToRange(pet.targetX, range.minX, range.maxX);
+    pet.targetY = this.clampToRange(pet.targetY, range.minY, range.maxY);
+  }
+
+  findAreaContainingPetBounds(pet, x = pet.x, y = pet.y) {
+    return this.getWalkAreas().find((area) => (
+      x >= area.x
+      && y >= area.y
+      && x + pet.size <= area.x + area.width
+      && y + pet.size <= area.y + area.height
+    )) || null;
+  }
+
+  getNearestPositionInWalkAreas(pet, x = pet.x, y = pet.y) {
+    let bestPosition = null;
+    let bestDistance = Infinity;
+
+    for (const area of this.getWalkAreas()) {
+      const minX = area.x;
+      const maxX = area.x + area.width - pet.size;
+      const minY = area.y;
+      const maxY = area.y + area.height - pet.size;
+      const clampedX = this.clampToRange(x, minX, maxX);
+      const clampedY = this.clampToRange(y, minY, maxY);
+      const distance = (clampedX - x) ** 2 + (clampedY - y) ** 2;
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestPosition = {
+          x: clampedX,
+          y: clampedY,
+          area,
+        };
+      }
+    }
+
+    return bestPosition;
+  }
+
+  resolveTargetArea(pet) {
+    const cachedArea = this.findMatchingWalkArea(pet.targetArea);
+    if (cachedArea) {
+      this.clampTargetToArea(pet, cachedArea);
+      return cachedArea;
+    }
+
+    const targetArea = this.findAreaContainingPetBounds(pet, pet.targetX, pet.targetY)
+      || this.findAreaContainingPet(pet, pet.targetX, pet.targetY);
+    if (targetArea) {
+      this.clampTargetToArea(pet, targetArea);
+      pet.targetArea = targetArea;
+      return targetArea;
+    }
+
+    const nearestPosition = this.getNearestPositionInWalkAreas(pet, pet.targetX, pet.targetY);
+    if (nearestPosition) {
+      pet.targetX = nearestPosition.x;
+      pet.targetY = nearestPosition.y;
+      pet.targetArea = nearestPosition.area;
+      return nearestPosition.area;
+    }
+
+    pet.targetArea = null;
+    return null;
   }
 
   bridgeToTargetArea(pet, currentArea, targetArea) {
@@ -147,23 +226,7 @@ class MovementSystem {
   }
 
   clampPetToWalkAreas(pet) {
-    let bestPosition = null;
-    let bestDistance = Infinity;
-
-    for (const area of this.getWalkAreas()) {
-      const minX = area.x;
-      const maxX = area.x + area.width - pet.size;
-      const minY = area.y;
-      const maxY = area.y + area.height - pet.size;
-      const x = this.clampToRange(pet.x, minX, maxX);
-      const y = this.clampToRange(pet.y, minY, maxY);
-      const distance = (x - pet.x) ** 2 + (y - pet.y) ** 2;
-
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestPosition = { x, y };
-      }
-    }
+    const bestPosition = this.getNearestPositionInWalkAreas(pet);
 
     if (bestPosition) {
       pet.x = bestPosition.x;
@@ -204,9 +267,10 @@ class MovementSystem {
     const ny = dy / dist;
     const nextX = pet.x + nx * moveDist;
     const nextY = pet.y + ny * moveDist;
-    const currentArea = this.findAreaContainingPet(pet);
-    const nextArea = this.findAreaContainingPet(pet, nextX, nextY);
-    const targetArea = pet.targetArea || this.findAreaContainingPet(pet, pet.targetX, pet.targetY);
+    const currentArea = this.findAreaContainingPetBounds(pet) || this.findAreaContainingPet(pet);
+    const nextArea = this.findAreaContainingPetBounds(pet, nextX, nextY)
+      || this.findAreaContainingPet(pet, nextX, nextY);
+    const targetArea = this.resolveTargetArea(pet);
     const isCrossDisplayMove = currentArea && targetArea && !this.sameArea(currentArea, targetArea);
     let bridgedDisplayGap = false;
 

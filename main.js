@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { getVirtualDisplayBounds } = require('./displayBounds');
+const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
 const {
   initUpdateManager,
   checkForUpdatesFromTray,
@@ -206,28 +206,24 @@ function getDesktopWindowBounds() {
 function sendScreenInfo() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const bounds = mainWindow.getBounds();
-  const walkAreas = screen.getAllDisplays()
-    .map((display) => display.workArea || display.bounds)
-    .filter((area) => (
-      area
-      && Number.isFinite(area.x)
-      && Number.isFinite(area.y)
-      && Number.isFinite(area.width)
-      && Number.isFinite(area.height)
-      && area.width > 0
-      && area.height > 0
-    ))
-    .map((area) => ({
-      x: area.x - bounds.x,
-      y: area.y - bounds.y,
-      width: area.width,
-      height: area.height,
-    }));
+  const displays = screen.getAllDisplays();
+  const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
+  const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
+  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
 
   mainWindow.webContents.send('screen-info', {
     width: bounds.width,
     height: bounds.height,
     walkAreas,
+    windowScaleFactor,
+    displays: displays.map((display) => ({
+      id: display.id,
+      bounds: display.bounds,
+      workArea: display.workArea,
+      scaleFactor: display.scaleFactor,
+      rotation: display.rotation,
+      internal: display.internal,
+    })),
   });
 }
 

@@ -1,4 +1,4 @@
-文件名,所属角色,状态/动作,皮肤内路径约定,画面说明
+﻿文件名,所属角色,状态/动作,皮肤内路径约定,画面说明
 left.png,岳七,默认/发呆,src/assets/{skinId}/left.png,角色的基础站立形象
 walk_left01.png~04.png,岳七,向左行走,src/assets/{skinId}/yueqi/walk_left01.png~walk_left04.png,角色向左走时的四帧动画（避免左衽）
 walk_right01.png~04.png,岳七,向右行走,src/assets/{skinId}/yueqi/walk_right01.png~walk_right04.png,角色向右走时的四帧动画（避免左衽）
@@ -15,8 +15,7 @@ right_sleep.png,沈九,睡眠,src/assets/{skinId}/right_sleep.png,角色闭眼�
 right_cultivate.png,沈九,打坐,src/assets/{skinId}/right_cultivate.png,角色正在盘腿打坐修炼的状态
 right_hungry.png,沈九,饥饿,src/assets/{skinId}/right_hungry.png,角色肚子饿、虚弱的状态
 right_pat.png,沈九,被七哥关怀,src/assets/{skinId}/right_pat.png,被玩家鼠标右键“七哥关怀”时的 脸红傲娇/实则享受状态
-shareFood.png,双人互动,分享食物,src/assets/{skinId}/shareFood.png,两人分享食物的合体图
-cultivate.png,双人互动,共同打坐(双修),src/assets/{skinId}/cultivate.png,两人一起修炼的合体图
-kiss.png,双人互动,亲吻,src/assets/{skinId}/kiss.png,两人的亲吻合体图
-hug.png,双人互动,拥抱,src/assets/{skinId}/hug.png,两人的拥抱合体图
-icon.png,系统/打包,应用图标,src/assets/icon.png,安装包及程序图标。建议1024x1024 像素，不随皮肤切换。
+shareFood.png,双人互动,分享食物,src/assets/{skinId}/shareFood.png,两人分享食物的合体图。注意：沈九请画在左边（考虑到对话框位置）
+cultivate.png,双人互动,共同打坐(双修),src/assets/{skinId}/cultivate.png,两人一起修炼的合体图。注意：沈九请画在左边（考虑到对话框位置）
+kiss.png,双人互动,亲吻,src/assets/{skinId}/kiss.png,两人的亲吻合体图。注意：沈九请画在左边（考虑到对话框位置）
+hug.png,双人互动,拥抱,src/assets/{skinId}/hug.png,两人的拥抱合体图。注意：沈九请画在左边（考虑到对话框位置）

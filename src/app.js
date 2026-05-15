@@ -7,16 +7,37 @@
   // 等待主进程的屏幕信息
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
+  let screenInfo = {
+    width: screenWidth,
+    height: screenHeight,
+    walkAreas: [],
+    windowScaleFactor: null,
+    displays: [],
+  };
   let pets = [];
   const keepPetReachable = (pet) => {
     if (movementSystem) {
       movementSystem.clampPetToWalkAreas(pet);
     }
   };
+  const getVisualScaleForPoint = (x, y) => {
+    const areas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
+    const area = areas.find((walkArea) => (
+      x >= walkArea.x
+      && x <= walkArea.x + walkArea.width
+      && y >= walkArea.y
+      && y <= walkArea.y + walkArea.height
+    ));
+    const scaleRatio = Number(area?.scaleRatio);
+    return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
+  };
+  const getVisualScaleForPet = (pet) => (
+    getVisualScaleForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
+  );
 
   // === 初始化系统 ===
   const stage = document.getElementById('pet-stage');
-  const renderer = new PetRenderer(stage, keepPetReachable);
+  const renderer = new PetRenderer(stage, keepPetReachable, getVisualScaleForPet);
   const spriteView = new SpriteView();
   const movementSystem = new MovementSystem(screenWidth, screenHeight);
   const nurtureSystemA = new NurtureSystem();
@@ -29,6 +50,13 @@
   window.electronAPI.onScreenInfo((info) => {
     screenWidth = info.width;
     screenHeight = info.height;
+    screenInfo = {
+      width: screenWidth,
+      height: screenHeight,
+      walkAreas: Array.isArray(info.walkAreas) ? info.walkAreas : [],
+      windowScaleFactor: info.windowScaleFactor,
+      displays: Array.isArray(info.displays) ? info.displays : [],
+    };
     if (movementSystem) {
       movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas);
     }
@@ -51,7 +79,7 @@
   shenjiu.idleTimer = 3000 + Math.random() * 3000;
 
   // === 初始化 UI ===
-  const contextMenu = new ContextMenu(null); // 我们将在后续为每个宠物设置养成系统
+  const contextMenu = new ContextMenu(null, getVisualScaleForPoint); // 我们将在后续为每个宠物设置养成系统
   const statusBar = new StatusBar();
   const dialogBubble = new DialogBubble();
   const skinTargets = {
@@ -270,7 +298,8 @@
               overlayPos.x + overlayPos.width / 2,
               overlayPos.y + 82,
               overlayPos.width * 1.2,
-              interaction.key
+              interaction.key,
+              getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
             );
 
             // 从对话库中取台词：沈九在左，岳七在右
@@ -358,6 +387,13 @@
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
+  window.__DEBUG_SCREEN = () => ({
+    ...screenInfo,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+    devicePixelRatio: window.devicePixelRatio,
+    movementWalkAreas: movementSystem.getWalkAreas(),
+  });
   window.__DEBUG_DIALOG = dialogBubble;
   window.__DEBUG_RENDERER = renderer;
   window.__DEBUG_SKIN_MANAGER = skinManager;
