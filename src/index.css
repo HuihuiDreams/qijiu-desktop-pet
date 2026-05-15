@@ -227,6 +227,7 @@ html, body {
    ============================================ */
 .context-menu {
   position: fixed;
+  --display-scale: 1;
   background: var(--color-mist);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
@@ -241,6 +242,7 @@ html, body {
   pointer-events: auto;
   touch-action: none;
   overflow: hidden;
+  transform: scale(var(--display-scale));
   animation: menuReveal 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: top left;
 }
@@ -248,11 +250,11 @@ html, body {
 @keyframes menuReveal {
   from { 
     opacity: 0; 
-    transform: scale(0.92) translateY(-4px); 
+    transform: scale(calc(var(--display-scale) * 0.92)) translateY(-4px); 
   }
   to { 
     opacity: 1; 
-    transform: scale(1) translateY(0); 
+    transform: scale(var(--display-scale)) translateY(0); 
   }
 }
 

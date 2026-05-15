@@ -57,6 +57,18 @@ test('random targets stay inside one visible display area', () => {
   }
 });
 
+test('walk area scale ratios survive normalization', () => {
+  const movementSystem = new MovementSystem(3640, 1920, [
+    { x: 0, y: 0, width: 2560, height: 1392, scaleRatio: 1 },
+    { x: 2560, y: 0, width: 720, height: 1248, scaleRatio: 2 / 3 },
+  ]);
+
+  assert.deepEqual(movementSystem.getWalkAreas(), [
+    { x: 0, y: 0, width: 2560, height: 1392, scaleRatio: 1 },
+    { x: 2560, y: 0, width: 720, height: 1248, scaleRatio: 2 / 3 },
+  ]);
+});
+
 test('pets are clamped back to the nearest visible display area', () => {
   const movementSystem = new MovementSystem(3200, 1080, [
     { x: 0, y: 0, width: 1920, height: 1080 },
@@ -112,6 +124,53 @@ test('movement clamps stale out-of-area targets back inside the visible display'
 
   movementSystem.moveTowardTarget(pet, 16);
 
+  assert.equal(pet.x + pet.size <= 3640, true);
+  assert.equal(pet.y + pet.size <= 1872, true);
+});
+
+test('movement ignores cached target areas that no longer match current displays', () => {
+  const movementSystem = new MovementSystem(3640, 1920, [
+    { x: 0, y: 0, width: 2560, height: 1392 },
+    { x: 2560, y: 0, width: 1080, height: 1392 },
+  ]);
+  const pet = {
+    x: 3000,
+    y: 1200,
+    targetX: 3200,
+    targetY: 1800,
+    targetArea: { x: 2560, y: 0, width: 1080, height: 1872 },
+    size: 96,
+    speed: 100,
+    direction: 'right',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.deepEqual(pet.targetArea, { x: 2560, y: 0, width: 1080, height: 1392, scaleRatio: 1 });
+  assert.equal(pet.targetY + pet.size <= 1392, true);
+  assert.equal(pet.y + pet.size <= 1392, true);
+});
+
+test('movement clamps cached targets to the right and bottom edges of a display', () => {
+  const movementSystem = new MovementSystem(3640, 1920, [
+    { x: 0, y: 0, width: 2560, height: 1392 },
+    { x: 2560, y: 0, width: 1080, height: 1872 },
+  ]);
+  const pet = {
+    x: 3500,
+    y: 1810,
+    targetX: 3700,
+    targetY: 1900,
+    targetArea: { x: 2560, y: 0, width: 1080, height: 1872 },
+    size: 96,
+    speed: 10,
+    direction: 'right',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.equal(pet.targetX, 3544);
+  assert.equal(pet.targetY, 1776);
   assert.equal(pet.x + pet.size <= 3640, true);
   assert.equal(pet.y + pet.size <= 1872, true);
 });

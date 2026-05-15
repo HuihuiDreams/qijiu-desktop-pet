@@ -8,15 +8,17 @@
 
 ```mermaid
 graph TB
-    subgraph Main Process
-        Main["main.js"] --> Window["Transparent BrowserWindow"]
+    subgraph "Main Process"
+        Main["main.js"] --> Window["Transparent MainWindow"]
+        Main --> StatusWin["Independent StatusWindow"]
         Main --> Tray["System Tray (系统托盘)"]
         Main --> IPC["IPC Handlers (事件桥接)"]
         Main --> Lock["Single Instance Lock"]
         Main --> Update["updateManager.js"]
+        Main --> DBounds["displayBounds.js"]
     end
     
-    subgraph Renderer Process
+    subgraph "Renderer Process (Main Window)"
         HTML["index.html / CSS"] --> App["app.js (Game Loop)"]
         
         App --> Move["MovementSystem"]
@@ -34,10 +36,17 @@ graph TB
         
         App --> UI["UI Components"]
         UI --> Menu["ContextMenu"]
-        UI --> Status["StatusBar"]
+        UI --> StatusBar["StatusBar (Embedded)"]
+        
+        App --> Debug["debug.js (DevTools)"]
+    end
+
+    subgraph "Renderer Process (Status Window)"
+        SHTML["status.html / CSS"] --> SApp["statusWindow.js"]
     end
 
     Window -.-> HTML
+    StatusWin -.-> SHTML
 ```
 
 ## 2. 目录结构 (Project Structure)
@@ -46,21 +55,27 @@ graph TB
 qijiu-desktop-pet\
 ├── main.js                  # Electron 主进程入口 (单实例锁、创建窗口、托盘、处理 IPC)
 ├── updateManager.js         # 更新检查与下载确认逻辑 (GitHub Releases / electron-updater)
+├── displayBounds.js         # 多显示器坐标转换与可行走区域计算 (Pure Logic)
 ├── preload.js               # IPC 桥接 (暴露 window.electronAPI)
 ├── src/
 │   ├── index.html           # 渲染进程入口，挂载 UI 与引入脚本
 │   ├── index.css            # 仙侠风样式、布局、基础动画
 │   ├── app.js               # 核心主控逻辑：初始化系统、启动 requestAnimationFrame 游戏循环
+│   ├── debug.js             # 开发调试工具 (提供 testKiss() 等 Console 函数)
+│   ├── status.html          # 独立数值状态窗口 HTML
+│   ├── status.css           # 独立数值状态窗口样式
+│   ├── statusWindow.js      # 独立数值状态窗口逻辑
+│   ├── status.css           # 独立数值状态窗口样式
 │   ├── data/
 │   │   ├── config.js        # 所有的全局配置（数值衰减、移动速度、互动权重与距离等）
 │   │   └── dialogues.js     # 互动与闲聊的台词池
 │   ├── pet/
 │   │   ├── Pet.js           # 宠物实体类（状态机、位置、四维数值）
-│   │   ├── PetRenderer.js   # 负责生成 DOM 并实时更新坐标，处理鼠标事件和拖曳逻辑
-│   │   └── SpriteView.js    # 负责基于状态的雪碧图(Sprite Sheet)动画帧播放
+│   │   ├── PetRenderer.js   # 负责生成 DOM 并实时更新坐标，处理视觉缩放与拖曳
+│   │   └── SpriteView.js    # 负责基于状态的雪碧图动画帧播放、预加载与 DOM 复用
 │   ├── systems/             # 独立的业务逻辑子系统
 │   │   ├── InteractionSystem.js # 负责检测距离并触发两人的 CP 互动
-│   │   ├── MovementSystem.js    # 负责计算随机走动目标点与步进
+│   │   ├── MovementSystem.js    # 负责计算随机走动目标点与步进，处理状态切换时序
 │   │   ├── NurtureSystem.js     # 负责数值衰减、回复及喂食/修炼等操作
 │   │   ├── SkinManager.js       # 负责皮肤列表、路径映射、运行时切换和渲染注入
 │   │   └── TimeSystem.js        # 负责离线时间计算和自动存档 (electron-store)
@@ -69,18 +84,18 @@ qijiu-desktop-pet\
 │   │   ├── icon.ico         # 应用图标，不随皮肤切换
 │   │   └── icon.png         # 应用图标，不随皮肤切换
 │   └── ui/                  # 独立 UI 组件
-│       ├── ContextMenu.js   # 右键交互菜单
+│       ├── ContextMenu.js   # 右键交互菜单 (支持跟随显示器缩放)
 │       ├── DialogBubble.js  # 头顶对话气泡
-│       └── StatusBar.js     # 数值状态面板
+│       └── StatusBar.js     # 数值状态面板 (嵌入式)
+├── test/                    # 单元测试 (Mocha/Chai)，验证移动逻辑与坐标转换
 └── docs/
     ├── structure.md         # 当前架构、核心机制与目录说明
     ├── git-workflow.md      # Git 提交、推送与变更记录规范
     ├── release-workflow.md  # Windows 安装包发布流程
-    ├── release-code-signing.md # Windows 代码签名与未签名发布说明
-    ├── skin_assets_requirements.csv  # 皮肤资源命名与路径约定
     ├── decisions/           # 架构决策记录 (ADRs)
     ├── plan/                # 尚未完成或仍需验证的计划文档
-    └── archive/             # 已完成并归档的计划文档
+    ├── skin_assets_requirements.csv  # 皮肤资源命名与路径约定
+    └── ...
 ```
 
 ## 3. 核心机制 (Core Mechanisms)
@@ -89,6 +104,7 @@ qijiu-desktop-pet\
 所有的视觉更新与状态计算均在 `app.js` 的 `gameLoop` 中执行。
 - **保护机制**: 由 `try/catch` 完整包裹，防止某一步骤的局部错误（例如未定义的字典访问）导致整个 `requestAnimationFrame` 链条断裂（详见 [ADR-005](./decisions/ADR-005-gameloop-crash-protection.md)）。
 - **休眠唤醒处理**: 针对系统睡眠导致 `requestAnimationFrame` 挂起的场景，系统会自动检测大于 60s 的时间跳跃（deltaMs），并将其视为“离线时间”进行即时结算，同时触发欢迎对白并对该帧 deltaMs 进行压制，以防止物理系统崩溃（详见 [ADR-019](./decisions/ADR-019-handling-time-jumps-after-system-sleep.md)）。
+- **状态切换时序**: 在从 `idle` 切换到 `walking` 的当帧立即确定朝向，确保首个渲染帧方向正确，消除“闪眼睛”现象（详见 [ADR-023](./decisions/ADR-023-stabilize-sprite-frame-transition.md)）。
 - **更新顺序**: Movement (移动) -> Nurture (数值衰减) -> Interaction (碰撞与互动检测) -> Rendering (DOM 坐标更新) -> SpriteView (动画帧更新)。
 
 ### 3.2 鼠标穿透策略 (Click-Through)
@@ -107,6 +123,8 @@ qijiu-desktop-pet\
 桌面宠物的核心卖点是双人 CP 互动。
 - `InteractionSystem` 每帧检查两人的直线距离（目前设定为 `< 180px`）。
 - 满足距离后，系统会计算两人的 **平均好感度**，以好感度为门槛解锁 `CONFIG.INTERACTIONS` 中的选项。
+- **动态朝向**: 互动触发时，两人会自动调整朝向，使彼此正对（沈九面向右，岳七面向左）。
+- **资源约定**: 互动覆盖图（Overlay）中，**沈九固定位于左侧**，岳七位于右侧，且坐标与单人行走帧对齐。
 - 采用 **加权随机算法** 选取最终的互动动作，执行后进入全局冷却（目前为 20s）。
 
 ### 3.5 状态持久化 (Persistence)
@@ -120,7 +138,8 @@ qijiu-desktop-pet\
 - **资源约定**: `src/assets/{skinId}/` 下按固定命名放置单人状态图、行走帧和双人互动覆盖图；`icon.ico` / `icon.png` 保持在 `src/assets/` 根目录，不随皮肤变化。
 - **主进程**: `main.js` 扫描 `src/assets/` 下的子目录生成托盘「切换皮肤」菜单，并通过 `switch-skin` IPC 通知渲染进程。
 - **渲染进程**: `app.js` 初始化 `SkinManager`，启动时应用存档里的 `skinId`，切换时调用 `SkinManager.applySkin()`。
-- **渲染注入**: `SkinManager` 将路径映射注入 `Pet.updateSkin()`、`SpriteView.updateImageMap()` 和 `PetRenderer.setSkinPrefix()`；`SpriteView.reattach()` 会异步预加载新图片后再进入下一轮渲染，减少切换闪烁。
+- **渲染注入**: `SkinManager` 将路径映射注入 `Pet.updateSkin()`、`SpriteView.updateImageMap()` 和 `PetRenderer.setSkinPrefix()`。
+- **稳定性**: `SpriteView` 在切换皮肤或初始化时会**预加载**所有相关的 `Image` 对象并保持引用，同时复用 `<img>` DOM 节点仅更新 `src`，以消除资源加载时的白闪（详见 [ADR-023](./decisions/ADR-023-stabilize-sprite-frame-transition.md)）。
 - **持久化**: 切换成功后立即保存当前 `skinId`，自动保存和退出保存也会带上当前皮肤。
 
 ### 3.7 隐藏/显示机制 (Hide & Show System)
@@ -140,6 +159,23 @@ qijiu-desktop-pet\
 - **入口**: 托盘菜单调用 `checkForUpdatesFromTray()`，仅打包版本执行真实更新检查。
 - **发布源**: `electron-updater` 读取 GitHub Releases 中的 `latest.yml`、安装包和 `.blockmap`。
 - **友好降级**: 当发布元数据缺失或返回 404 时，手动检查会按“已是最新版本”处理，避免把小范围发布或元数据未上传误报成严重错误。
+
+### 3.10 多显示器支持 (Multi-Display Support)
+应用支持在混合 DPI 的多显示器环境下无缝运行。
+- **覆盖范围**: 主透明窗口覆盖完整的“虚拟桌面”边界。
+- **坐标转换**: `displayBounds.js` 将每个物理显示器的 `workArea` 转换为相对于主窗口左上角的 CSS 相对坐标（`walkAreas`）。
+- **视觉一致性**: 渲染层（`PetRenderer`、`ContextMenu`）根据元素当前所在的显示器，动态应用 `scaleRatio` (Display Scale / Window Scale)，确保小人与 UI 在不同缩放比例的屏幕上看起来物理大小一致（详见 [ADR-022](./decisions/ADR-022-multi-display-support-boundary.md)）。
+
+### 3.11 调试与测试体系 (Debug & Test)
+- **控制台调试**: `src/debug.js` 提供了 `testKiss()`、`testHungry()` 等函数，方便开发者在控制台手动触发各种互动状态和视觉效果。
+- **运行时监控**: 暴露 `window.__DEBUG_SCREEN()` 供排查多屏边界问题。
+- **单元测试**: `test/` 目录下包含对 `displayBounds.js` 和 `MovementSystem.js` 等纯逻辑模块的测试，确保坐标计算与状态切换的稳定性。
+
+### 3.12 独立状态窗口 (Independent Status Window)
+除了嵌入在宠物旁边的状态条外，应用还提供了一个独立的“详细状态面板”。
+- **架构**: 这是一个独立的 `BrowserWindow` (`status.html`)，由主进程通过 IPC 管理其生命周期。
+- **数据流**: 渲染进程定期通过 `update-status-window` IPC 将最新的数值同步给主进程，再由主进程转发给状态窗口。
+- **自适应**: 状态窗口会根据内容高度动态调整自身窗口尺寸 (`resize-status-window`)。
 
 ## 4. 后续建议 (Next Steps)
 1. **扩展动画资产与状态**: 当前已通过 `SpriteView.js` 引入了雪碧图（Sprite Sheet）渲染机制。后续可以继续丰富现有的动作帧（如增加更流畅的过渡动画），或为不同环境（如天气系统、皮肤系统）扩充更多图集资产和状态图。

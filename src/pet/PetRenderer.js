@@ -3,9 +3,10 @@
  * 处理鼠标移入/移出事件以切换点击穿透行为。
  */
 class PetRenderer {
-  constructor(stage, keepPetReachable = null) {
+  constructor(stage, keepPetReachable = null, getVisualScaleForPet = null) {
     this.stage = stage;
     this.keepPetReachable = typeof keepPetReachable === 'function' ? keepPetReachable : null;
+    this.getVisualScaleForPet = typeof getVisualScaleForPet === 'function' ? getVisualScaleForPet : null;
     /** @type {string} 当前皮肤的路径前缀，用于叠加层图片 */
     this.skinPrefix = 'assets/default/';
   }
@@ -18,22 +19,36 @@ class PetRenderer {
     this.skinPrefix = prefix;
   }
 
-  spawnQiAuraAt(x, y, size = 112, tone = 'default') {
+  getPetVisualScale(pet) {
+    const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
+    return Number.isFinite(visualScale) && visualScale > 0 ? visualScale : 1;
+  }
+
+  getPetVisualCenter(pet) {
+    const visualScale = this.getPetVisualScale(pet);
+    return {
+      x: pet.x + (pet.size * visualScale) / 2,
+      y: pet.y + (pet.size * visualScale) / 2,
+      scale: visualScale,
+    };
+  }
+
+  spawnQiAuraAt(x, y, size = 112, tone = 'default', visualScale = 1) {
+    const scale = Number.isFinite(visualScale) && visualScale > 0 ? visualScale : 1;
     const aura = document.createElement('div');
     aura.className = `qi-aura qi-aura--${tone}`;
     aura.style.left = `${x}px`;
     aura.style.top = `${y}px`;
-    aura.style.width = `${size}px`;
-    aura.style.height = `${size}px`;
+    aura.style.width = `${size * scale}px`;
+    aura.style.height = `${size * scale}px`;
 
     this.stage.appendChild(aura);
     aura.addEventListener('animationend', () => aura.remove(), { once: true });
   }
 
   spawnQiAura(pet, tone = 'default') {
-    const x = pet.x + pet.size / 2;
-    const y = pet.y + pet.size / 2;
-    this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone);
+    const { x, y, scale: visualScale } = this.getPetVisualCenter(pet);
+    this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone, visualScale);
   }
 
   /**
@@ -52,8 +67,10 @@ class PetRenderer {
     // 初始基准点
     el.style.left = '0px';
     el.style.top = '0px';
+    el.style.transformOrigin = 'top left';
     // 初始位置，使用 transform 控制位置以启用 GPU 硬件加速并避免布局重排
-    el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0)`;
+    const visualScale = this.getPetVisualScale(pet);
+    el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
 
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
@@ -162,7 +179,8 @@ class PetRenderer {
     if (!el) return;
 
     // 优化：使用 transform 代替 left/top，极大地减少布局重排 (Layout Thrashing) 的性能开销
-    el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0)`;
+    const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
+    el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
 
     // 优化：仅当状态真正发生改变时才操作 DOM classList，减少重绘与垃圾回收
     const stateChanged = pet._renderedState !== pet.state;
@@ -204,8 +222,8 @@ class PetRenderer {
    */
   spawnEffect(pet, emoji) {
     const count = 3; // 粒子数量
-    const baseX = pet.x + pet.size / 2;
-    const baseY = pet.y - 20;
+    const { x: baseX, scale: visualScale } = this.getPetVisualCenter(pet);
+    const baseY = pet.y - 20 * visualScale;
 
     for (let i = 0; i < count; i++) {
       const effect = document.createElement('div');
@@ -213,7 +231,7 @@ class PetRenderer {
       effect.textContent = emoji;
 
       // 随机水平偏移，形成扇形扩散
-      const offsetX = (Math.random() - 0.5) * 40;
+      const offsetX = (Math.random() - 0.5) * 40 * visualScale;
       effect.style.left = `${baseX + offsetX}px`;
       effect.style.top = `${baseY}px`;
 
@@ -222,7 +240,7 @@ class PetRenderer {
 
       // 随机缩放，增加层次感
       const scale = 0.7 + Math.random() * 0.6;
-      effect.style.fontSize = `${24 * scale}px`;
+      effect.style.fontSize = `${24 * scale * visualScale}px`;
 
       this.stage.appendChild(effect);
 

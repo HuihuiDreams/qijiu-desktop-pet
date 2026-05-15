@@ -2,8 +2,9 @@
  * ContextMenu — 用于宠物互动的自定义右键菜单。
  */
 class ContextMenu {
-  constructor(nurtureSystem) {
+  constructor(nurtureSystem, getVisualScaleForPoint = null) {
     this.nurtureSystem = nurtureSystem;
+    this.getVisualScaleForPoint = typeof getVisualScaleForPoint === 'function' ? getVisualScaleForPoint : null;
     this.menuEl = document.getElementById('context-menu');
     this.headerEl = document.getElementById('menu-header');
     this.currentPet = null;
@@ -79,13 +80,15 @@ class ContextMenu {
     }
 
     // 调整菜单位置 (确保它不会超出屏幕边界)
-    const menuWidth = 170;
-    const menuHeight = 220;
+    const visualScale = this.getVisualScaleForPoint ? this.getVisualScaleForPoint(x, y) : 1;
+    const menuWidth = 170 * visualScale;
+    const menuHeight = 220 * visualScale;
     let posX = Math.min(x, window.innerWidth - menuWidth - 10);
     let posY = Math.min(y, window.innerHeight - menuHeight - 10);
     posX = Math.max(10, posX);
     posY = Math.max(10, posY);
 
+    this.menuEl.style.setProperty('--display-scale', visualScale);
     this.menuEl.style.left = `${posX}px`;
     this.menuEl.style.top = `${posY}px`;
     this.menuEl.classList.remove('hidden');
