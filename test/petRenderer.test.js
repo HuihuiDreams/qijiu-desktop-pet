@@ -145,3 +145,36 @@ test('interaction overlay bubbles follow the overlay visual scale', () => {
   delete global.document;
   global.setTimeout = originalSetTimeout;
 });
+
+test('qi aura size follows the pet visual scale', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  }, null, () => 2 / 3);
+  const pet = {
+    x: 100,
+    y: 100,
+    size: 96,
+  };
+
+  global.document = {
+    createElement() {
+      return {
+        style: {},
+        addEventListener() {},
+      };
+    },
+  };
+
+  renderer.spawnQiAura(pet, 'feed');
+
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].style.left, `${pet.x + (pet.size * (2 / 3)) / 2}px`);
+  assert.equal(appended[0].style.top, `${pet.y + (pet.size * (2 / 3)) / 2}px`);
+  assert.equal(appended[0].style.width, `${Math.max(112, pet.size * 1.45) * (2 / 3)}px`);
+  assert.equal(appended[0].style.height, `${Math.max(112, pet.size * 1.45) * (2 / 3)}px`);
+
+  delete global.document;
+});

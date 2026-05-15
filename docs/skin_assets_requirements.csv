@@ -19,4 +19,3 @@ shareFood.png,双人互动,分享食物,src/assets/{skinId}/shareFood.png,两人
 cultivate.png,双人互动,共同打坐(双修),src/assets/{skinId}/cultivate.png,两人一起修炼的合体图。注意：沈九请画在左边（考虑到对话框位置）
 kiss.png,双人互动,亲吻,src/assets/{skinId}/kiss.png,两人的亲吻合体图。注意：沈九请画在左边（考虑到对话框位置）
 hug.png,双人互动,拥抱,src/assets/{skinId}/hug.png,两人的拥抱合体图。注意：沈九请画在左边（考虑到对话框位置）
-throwup.png,双人互动,吃太撑呕吐,src/assets/{skinId}/throwup.png,两人分享食物但沈九吃太撑而呕吐的合体图。注意：沈九请画在左边（考虑到对话框位置）

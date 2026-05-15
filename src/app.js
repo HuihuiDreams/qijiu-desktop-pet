@@ -3,58 +3,7 @@
  * 初始化所有系统，并通过 requestAnimationFrame 运行游戏主循环。
  */
 
-/**
- * applyI18n() — 遍历所有 [data-i18n] 元素，更新 textContent。
- * 对于 data-i18n-pet 属性，由 ContextMenu.show() 单独处理。
- */
-function getI18nDictionaries() {
-  return typeof I18N !== 'undefined' ? I18N : null;
-}
-
-function translateUi(key, locale = window.__currentLocale) {
-  const dictionaries = getI18nDictionaries();
-  return dictionaries?.[locale]?.ui?.[key] ?? dictionaries?.zh?.ui?.[key] ?? key;
-}
-
-function getI18nUi(locale = window.__currentLocale) {
-  const dictionaries = getI18nDictionaries();
-  return dictionaries?.[locale]?.ui ?? dictionaries?.zh?.ui ?? {};
-}
-
-function applyI18n() {
-  if (!window.t) return;
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = window.t(el.dataset.i18n);
-  });
-  // 更新 <html lang> 属性
-  const locale = window.__currentLocale || 'zh';
-  document.documentElement.lang = locale;
-}
-
 (async function main() {
-  // === 初始化 i18n （必须在其他系统之前）===
-  const locale = await window.electronAPI.getLocale();
-  window.__currentLocale = locale;
-
-  // 建立 window.t() 翻译函数
-  window.t = (key) => translateUi(key);
-
-  // 建立 window.I18N_UI （气泡等需要函数类型字符串的入口）
-  const updateI18nRefs = () => {
-    window.I18N_UI = getI18nUi();
-    if (typeof initDialogues === 'function') {
-      initDialogues(window.__currentLocale);
-    }
-    applyI18n();
-  };
-  
-  updateI18nRefs();
-
-  window.electronAPI.onLocaleChange?.((newLocale) => {
-    window.__currentLocale = newLocale;
-    updateI18nRefs();
-  });
-
   // 等待主进程的屏幕信息
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
@@ -64,7 +13,6 @@ function applyI18n() {
     walkAreas: [],
     windowScaleFactor: null,
     displays: [],
-    adjacentDisplays: null,
   };
   let pets = [];
   const keepPetReachable = (pet) => {
@@ -108,26 +56,11 @@ function applyI18n() {
       walkAreas: Array.isArray(info.walkAreas) ? info.walkAreas : [],
       windowScaleFactor: info.windowScaleFactor,
       displays: Array.isArray(info.displays) ? info.displays : [],
-      adjacentDisplays: info.adjacentDisplays || null,
     };
     if (movementSystem) {
       movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas);
     }
     pets.forEach(keepPetReachable);
-  });
-
-  // macOS: 窗口迁移到新显示器后，调整所有宠物坐标
-  window.electronAPI.onWindowMigrated?.((data) => {
-    const { offset } = data;
-    pets.forEach((pet) => {
-      pet.x += offset.x;
-      pet.y += offset.y;
-      pet.targetX += offset.x;
-      pet.targetY += offset.y;
-      pet.setState('idle');
-      pet.idleTimer = 1000 + Math.random() * 2000;
-    });
-    // keepPetReachable 会在后续的 screen-info 事件中触发
   });
 
   // === 创建宠物 ===
@@ -271,15 +204,6 @@ function applyI18n() {
     applySkinById(skinId);
   });
 
-  // === 语言热切换监听 ===
-  window.electronAPI.onLocaleChange((newLocale) => {
-    window.__currentLocale = newLocale;
-    window.t = (key) => translateUi(key, newLocale);
-    window.I18N_UI = getI18nUi(newLocale);
-    if (typeof initDialogues === 'function') initDialogues(newLocale);
-    applyI18n();
-  });
-
   // === 加载保存的状态 ===
   await refreshAvailableSkins();
   const savedState = await timeSystem.load();
@@ -295,17 +219,11 @@ function applyI18n() {
       // 显示回归欢迎对话气泡
       const shichensAway = Math.round(savedState.offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
       if (shichensAway >= 1) {
-        const returnMsgYueqi = window.I18N_UI?.returnYueqi
-          ? (typeof window.I18N_UI.returnYueqi === 'function'
-            ? window.I18N_UI.returnYueqi(shichensAway)
-            : window.I18N_UI.returnYueqi)
-          : `你走了${shichensAway}个时辰…`;
-        const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
         setTimeout(() => {
-          dialogBubble.show(yueqi, returnMsgYueqi, 4000);
+          dialogBubble.show(yueqi, `你走了${shichensAway}个时辰…`, 4000);
         }, 1500);
         setTimeout(() => {
-          dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
+          dialogBubble.show(shenjiu, '…哼，终于回来了。', 4000);
         }, 3000);
       }
     }
@@ -317,7 +235,6 @@ function applyI18n() {
   let chatterTimer = 15000 + Math.random() * 30000;
   // 状态警告专属计时器（比普通闲聊更频繁，确保低状态能触发对话）
   let statWarningTimer = 8000 + Math.random() * 5000;
-  let migrationCooldown = 0; // macOS: 跨屏迁移冷却时间
 
   // === 游戏主循环 ===
   let lastTime = performance.now();
@@ -343,17 +260,11 @@ function applyI18n() {
           // 2. 根据跳跃的时间计算出走掉的“时辰”，触发回归特有的欢迎对白
           const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
           if (shichensAway >= 1) {
-            const returnMsgYueqi = window.I18N_UI?.returnYueqi
-              ? (typeof window.I18N_UI.returnYueqi === 'function'
-                ? window.I18N_UI.returnYueqi(shichensAway)
-                : window.I18N_UI.returnYueqi)
-              : `你走了${shichensAway}个时辰…`;
-            const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
             setTimeout(() => {
-              dialogBubble.show(yueqi, returnMsgYueqi, 4000);
+              dialogBubble.show(yueqi, `你走了${shichensAway}个时辰…`, 4000);
             }, 1500);
             setTimeout(() => {
-              dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
+              dialogBubble.show(shenjiu, '…哼，终于回来了。', 4000);
             }, 3000);
           }
           
@@ -373,60 +284,32 @@ function applyI18n() {
         nurtureSystemA.update(yueqi, deltaMs);
         nurtureSystemB.update(shenjiu, deltaMs);
 
-        // macOS: 检测宠物是否走到屏幕边缘，触发跨屏迁移
-        if (migrationCooldown > 0) migrationCooldown -= deltaMs;
-        if (window.electronAPI.requestWindowMigration && screenInfo.adjacentDisplays && migrationCooldown <= 0) {
-          const edgeThreshold = 5;
-          for (const pet of pets) {
-            if (pet.isDragging || pet.state !== 'walking') continue;
-            let migrated = false;
-            if (pet.x <= edgeThreshold && screenInfo.adjacentDisplays.left) {
-              window.electronAPI.requestWindowMigration('left');
-              migrated = true;
-            } else if (pet.x + pet.size >= screenWidth - edgeThreshold && screenInfo.adjacentDisplays.right) {
-              window.electronAPI.requestWindowMigration('right');
-              migrated = true;
-            } else if (pet.y <= edgeThreshold && screenInfo.adjacentDisplays.top) {
-              window.electronAPI.requestWindowMigration('top');
-              migrated = true;
-            } else if (pet.y + pet.size >= screenHeight - edgeThreshold && screenInfo.adjacentDisplays.bottom) {
-              window.electronAPI.requestWindowMigration('bottom');
-              migrated = true;
-            }
-            if (migrated) {
-              migrationCooldown = 2000;
-              break;
-            }
-          }
-        }
-
         // 检查 CP (组合) 互动
         const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
         if (interaction) {
-          const overlayKey = interaction.overlayKey || interaction.key;
-          const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'].includes(overlayKey);
+          const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood'].includes(interaction.key);
           dialogBubble.removeForPets([yueqi, shenjiu]);
 
           if (isOverlay) {
             // 显示图片覆盖层，并将气泡锁定到图片中角色头顶
             interactionOverlayActive = true;
-            const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
+            const overlayPos = renderer.showOverlay(yueqi, shenjiu, interaction.key);
             renderer.spawnQiAuraAt(
               overlayPos.x + overlayPos.width / 2,
               overlayPos.y + 82,
-              (overlayPos.baseWidth || overlayPos.width) * 1.2,
-              overlayKey,
+              overlayPos.width * 1.2,
+              interaction.key,
               getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
             );
 
             // 从对话库中取台词：沈九在左，岳七在右
             const pool = DIALOGUES[interaction.key];
-            const shenjuText = interaction.dialogue?.shenjiu || (pool?.shenjiu?.length
+            const shenjuText = pool?.shenjiu?.length
               ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
-              : null);
-            const yueqiText = interaction.dialogue?.yueqi || (pool?.yueqi?.length
+              : null;
+            const yueqiText = pool?.yueqi?.length
               ? pool.yueqi[Math.floor(Math.random() * pool.yueqi.length)]
-              : null);
+              : null;
             renderer.showOverlayBubbles(shenjuText, yueqiText, overlayPos, CONFIG.INTERACTION_DURATION - 500);
           } else {
             // 非图片叠加层的互动：正常气泡 + 漂浮特效
@@ -498,7 +381,9 @@ function applyI18n() {
   requestAnimationFrame(gameLoop);
 
   // 关闭时保存
-  window.electronAPI.onSaveBeforeQuit(saveCurrentState);
+  window.addEventListener('beforeunload', () => {
+    saveCurrentState();
+  });
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
@@ -511,7 +396,6 @@ function applyI18n() {
   });
   window.__DEBUG_DIALOG = dialogBubble;
   window.__DEBUG_RENDERER = renderer;
-  window.__DEBUG_SPRITE_VIEW = spriteView;
   window.__DEBUG_SKIN_MANAGER = skinManager;
 
   console.log('🗡️🪭 岳七 & 沈九 桌面宠物已启动！');

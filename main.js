@@ -1,84 +1,37 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds, findAdjacentDisplay } = require('./displayBounds');
+const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
 const {
   initUpdateManager,
   checkForUpdatesFromTray,
   getUpdateMenuState,
 } = require('./updateManager');
-const { I18N } = require('./src/data/i18n');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
-const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const LOGIN_ITEM_NAME = '七九爱宠';
 
-// 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
-const SKIN_NAME_KEYS = {
-  'default': 'skinDefault',
-  'birds': 'skinBirds',
+// 皮肤中文显示名映射表（文件夹名 → 托盘菜单显示名）
+const SKIN_NAMES = {
+  'default': '默认·仙侠水墨',
   // 新增皮肤时在此添加映射，例如：
-  // 'qban': 'skinQban',
+  // 'qban': 'Q版·萌系',
 };
-
-/**
- * 根据 app.getLocale() 的返回值推断语言代码。
- * 规则：zh-Hans-* / zh-CN → 'zh'；zh-Hant-* / zh-TW / zh-HK → 'zh'；ja-* → 'ja'；其余 → 'en'
- * @returns {'zh'|'en'|'ja'}
- */
-function detectLocale() {
-  const raw = (app.getLocale() || '').toLowerCase();
-  if (raw.startsWith('zh')) return 'zh';
-  if (raw.startsWith('ja')) return 'ja';
-  return 'en';
-}
-
-/** 返回当前语言字典的 UI 节点（主进程用） */
-function trayT(key) {
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh.ui[key]) ?? key;
-}
-
-function trayText(key, fallback) {
-  const value = trayT(key);
-  return value === key ? fallback : value;
-}
-
-function getSkinDisplayName(skinId) {
-  const key = SKIN_NAME_KEYS[skinId];
-  return key ? trayT(key) : skinId;
-}
 
 let mainWindow = null;
 let statusWindow = null;
-let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
 let store = null;
-let petHidden = false;         // 桌宠隐藏状态
-let isPaused = false;          // 走动暂停状态
+let petHidden = false; // 桌宠隐藏状态
+let isPaused = false;  // 走动暂停状态
 let autoLaunchEnabled = false; // 开机自动启动状态
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
-let currentLocale = 'zh';      // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
-let keepOnTopTimer = null;     // 置顶守卫计时器
+let keepOnTopTimer = null; // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
-let allowMainWindowClose = false;
-let finalSaveInProgress = false;
-let finalSaveRequestId = 0;
-let currentPetDisplay = null;  // macOS: 当前宠物窗口所在的显示器
-let dragPollTimer = null;      // macOS: 拖拽时轮询光标位置的计时器
-const FINAL_SAVE_TIMEOUT_MS = 2500;
-
-function configureChromiumMemoryBudget() {
-  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128');
-  app.commandLine.appendSwitch('disable-site-isolation-trials');
-  app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService');
-}
-
-configureChromiumMemoryBudget();
-
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 /**
@@ -105,17 +58,14 @@ function getStoredAutoLaunchPreference() {
 }
 
 /**
- * 获取当前系统的登录启动状态（Windows / macOS）
+ * 获取当前 Windows 系统的登录启动状态
  */
 function getLoginItemStatus() {
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return { openAtLogin: false };
+  if (process.platform !== 'win32') return { openAtLogin: false };
   if (!app.isPackaged) {
     return { openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [] };
   }
   try {
-    if (process.platform === 'darwin') {
-      return app.getLoginItemSettings();
-    }
     return app.getLoginItemSettings({
       path: process.execPath,
       args: [],
@@ -130,23 +80,16 @@ function getLoginItemStatus() {
  * 应用开机启动设置到系统
  */
 function applyAutoLaunchSetting(enabled) {
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return getLoginItemStatus();
+  if (process.platform !== 'win32') return getLoginItemStatus();
   if (!app.isPackaged) return getLoginItemStatus();
   try {
-    if (process.platform === 'darwin') {
-      app.setLoginItemSettings({
-        openAtLogin: enabled,
-        openAsHidden: true,   // 开机后以后台方式启动，不弹到前台
-      });
-    } else {
-      const settings = {
-        openAtLogin: enabled,
-        path: process.execPath,
-        args: [],
-        name: LOGIN_ITEM_NAME,
-      };
-      app.setLoginItemSettings(settings);
-    }
+    const settings = {
+      openAtLogin: enabled,
+      path: process.execPath,
+      args: [],
+      name: LOGIN_ITEM_NAME,
+    };
+    app.setLoginItemSettings(settings);
   } catch (error) {
     console.error('Failed to update login item settings:', error);
   }
@@ -203,7 +146,6 @@ async function getAutoLaunchPreference() {
  */
 function refreshTrayMenu() {
   if (tray) {
-    tray.setToolTip(trayT('trayTitle'));
     tray.setContextMenu(buildTrayMenu());
   }
 }
@@ -253,13 +195,6 @@ function startKeepOnTopWatcher() {
  * 获取覆盖所有显示器的虚拟桌面边界。
  */
 function getDesktopWindowBounds() {
-  // macOS: 单屏窗口模式，只覆盖当前显示器
-  if (process.platform === 'darwin') {
-    const display = currentPetDisplay || screen.getPrimaryDisplay();
-    return display.bounds;
-  }
-
-  // Windows/Linux: 跨所有显示器的虚拟桌面
   const virtualBounds = getVirtualDisplayBounds(screen.getAllDisplays());
   if (virtualBounds.width > 0 && virtualBounds.height > 0) {
     return virtualBounds;
@@ -274,35 +209,13 @@ function sendScreenInfo() {
   const displays = screen.getAllDisplays();
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
-  let walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
-
-  // macOS 单屏窗口模式：过滤掉不在窗口可见范围内的 walkArea
-  if (process.platform === 'darwin') {
-    walkAreas = walkAreas.filter((area) => (
-      area.x + area.width > 0
-      && area.y + area.height > 0
-      && area.x < bounds.width
-      && area.y < bounds.height
-    ));
-  }
-
-  // 计算每个方向是否有相邻屏幕（供渲染进程做边缘检测）
-  let adjacentDisplays = null;
-  if (process.platform === 'darwin' && currentPetDisplay) {
-    adjacentDisplays = {
-      left: Boolean(findAdjacentDisplay(currentPetDisplay, 'left', displays)),
-      right: Boolean(findAdjacentDisplay(currentPetDisplay, 'right', displays)),
-      top: Boolean(findAdjacentDisplay(currentPetDisplay, 'top', displays)),
-      bottom: Boolean(findAdjacentDisplay(currentPetDisplay, 'bottom', displays)),
-    };
-  }
+  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
 
   mainWindow.webContents.send('screen-info', {
     width: bounds.width,
     height: bounds.height,
     walkAreas,
     windowScaleFactor,
-    adjacentDisplays,
     displays: displays.map((display) => ({
       id: display.id,
       bounds: display.bounds,
@@ -316,92 +229,11 @@ function sendScreenInfo() {
 
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-
-  // macOS: 确保 currentPetDisplay 仍有效
-  if (process.platform === 'darwin') {
-    const allDisplays = screen.getAllDisplays();
-    if (currentPetDisplay) {
-      const stillExists = allDisplays.some((d) => d.id === currentPetDisplay.id);
-      if (!stillExists) {
-        currentPetDisplay = screen.getPrimaryDisplay();
-      } else {
-        currentPetDisplay = allDisplays.find((d) => d.id === currentPetDisplay.id)
-          || screen.getPrimaryDisplay();
-      }
-    } else {
-      currentPetDisplay = screen.getPrimaryDisplay();
-    }
-  }
-
   const bounds = getDesktopWindowBounds();
   mainWindow.setMinimumSize(bounds.width, bounds.height);
   mainWindow.setMaximumSize(bounds.width, bounds.height);
   mainWindow.setBounds(bounds);
   sendScreenInfo();
-}
-
-function handleDisplayConfigurationChanged() {
-  fitWindowToAllDisplays();
-  refreshTrayMenu();
-}
-
-/**
- * macOS: 将窗口迁移到目标显示器。
- * @param {object} targetDisplay - 目标 Electron display 对象
- * @returns {{x: number, y: number}|null} 坐标偏移量，或 null（无需迁移）
- */
-function migrateWindowToDisplay(targetDisplay) {
-  if (!mainWindow || mainWindow.isDestroyed()) return null;
-  if (!targetDisplay || !targetDisplay.bounds) return null;
-  if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
-
-  const oldBounds = mainWindow.getBounds();
-  const newBounds = targetDisplay.bounds;
-
-  const offset = {
-    x: oldBounds.x - newBounds.x,
-    y: oldBounds.y - newBounds.y,
-  };
-
-  currentPetDisplay = targetDisplay;
-
-  mainWindow.setMinimumSize(newBounds.width, newBounds.height);
-  mainWindow.setMaximumSize(newBounds.width, newBounds.height);
-  mainWindow.setBounds(newBounds);
-
-  mainWindow.webContents.send('window-migrated', {
-    offset,
-    displayId: targetDisplay.id,
-    displayBounds: newBounds,
-  });
-
-  sendScreenInfo();
-  return offset;
-}
-
-/**
- * macOS: 拖拽期间轮询光标位置，检测跨屏拖拽。
- */
-function startDragPoll() {
-  stopDragPoll();
-  dragPollTimer = setInterval(() => {
-    if (!mainWindow || mainWindow.isDestroyed() || !currentPetDisplay) {
-      stopDragPoll();
-      return;
-    }
-    const cursor = screen.getCursorScreenPoint();
-    const cursorDisplay = screen.getDisplayNearestPoint(cursor);
-    if (cursorDisplay.id !== currentPetDisplay.id) {
-      migrateWindowToDisplay(cursorDisplay);
-    }
-  }, 100);
-}
-
-function stopDragPoll() {
-  if (dragPollTimer) {
-    clearInterval(dragPollTimer);
-    dragPollTimer = null;
-  }
 }
 
 function getInitialStatusWindowBounds() {
@@ -494,60 +326,6 @@ function resizeStatusWindow(size) {
   statusWindow.setContentSize(width, height);
 }
 
-function requestRendererFinalSave(win) {
-  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
-    return Promise.resolve(false);
-  }
-
-  return new Promise((resolve) => {
-    const requestId = ++finalSaveRequestId;
-    let settled = false;
-
-    const cleanup = () => {
-      clearTimeout(timeout);
-      ipcMain.removeListener('save-before-quit-complete', handleComplete);
-    };
-
-    const settle = (success) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(Boolean(success));
-    };
-
-    const handleComplete = (event, completedRequestId, success) => {
-      if (event.sender !== win.webContents || completedRequestId !== requestId) return;
-      settle(success);
-    };
-
-    const timeout = setTimeout(() => {
-      console.warn('Timed out waiting for renderer final save.');
-      settle(false);
-    }, FINAL_SAVE_TIMEOUT_MS);
-
-    ipcMain.on('save-before-quit-complete', handleComplete);
-    win.webContents.send('save-before-quit', requestId);
-  });
-}
-
-function installFinalSaveBeforeClose(win) {
-  win.on('close', (event) => {
-    if (allowMainWindowClose) return;
-
-    event.preventDefault();
-    if (finalSaveInProgress) return;
-
-    finalSaveInProgress = true;
-    requestRendererFinalSave(win).finally(() => {
-      allowMainWindowClose = true;
-      finalSaveInProgress = false;
-      if (!win.isDestroyed()) {
-        win.close();
-      }
-    });
-  });
-}
-
 /**
  * 第二次点击应用图标时，唤起已存在的实例。
  */
@@ -572,11 +350,6 @@ function showExistingInstance() {
  * 创建主渲染窗口
  */
 function createWindow() {
-  // macOS: 初始化当前显示器
-  if (process.platform === 'darwin') {
-    currentPetDisplay = screen.getPrimaryDisplay();
-  }
-
   const { x, y, width, height } = getDesktopWindowBounds();
 
   mainWindow = new BrowserWindow({
@@ -631,7 +404,6 @@ function createWindow() {
   mainWindow.on('show', keepPetWindowOnTop);
   mainWindow.on('restore', keepPetWindowOnTop);
   mainWindow.on('blur', keepPetWindowOnTop);
-  installFinalSaveBeforeClose(mainWindow);
 
   mainWindow.on('closed', () => {
     if (keepOnTopTimer) {
@@ -642,16 +414,15 @@ function createWindow() {
       clearTimeout(mousePassthroughResetTimer);
       mousePassthroughResetTimer = null;
     }
-    stopDragPoll();
     if (statusWindow && !statusWindow.isDestroyed()) {
       statusWindow.close();
     }
     mainWindow = null;
   });
 
-  screen.on('display-added', handleDisplayConfigurationChanged);
-  screen.on('display-removed', handleDisplayConfigurationChanged);
-  screen.on('display-metrics-changed', handleDisplayConfigurationChanged);
+  screen.on('display-added', fitWindowToAllDisplays);
+  screen.on('display-removed', fitWindowToAllDisplays);
+  screen.on('display-metrics-changed', fitWindowToAllDisplays);
 }
 
 /**
@@ -671,10 +442,6 @@ function scanAvailableSkins() {
       } catch {
         return false;
       }
-    }).sort((a, b) => {
-      if (a === 'default') return -1;
-      if (b === 'default') return 1;
-      return a.localeCompare(b);
     });
   } catch (error) {
     console.error('Failed to scan skins:', error);
@@ -688,7 +455,7 @@ function buildTrayMenu() {
   // 构建皮肤切换子菜单
   const availableSkins = scanAvailableSkins();
   const skinSubmenu = availableSkins.map(skinId => ({
-    label: getSkinDisplayName(skinId),
+    label: SKIN_NAMES[skinId] || skinId,
     type: 'radio',
     checked: skinId === currentSkinId,
     click: () => {
@@ -698,45 +465,24 @@ function buildTrayMenu() {
     },
   }));
 
-  // 构建语言切换子菜单
-  const langSubmenu = [
-    { lang: 'zh', key: 'langZh' },
-    { lang: 'en', key: 'langEn' },
-    { lang: 'ja', key: 'langJa' },
-  ].map(({ lang, key }) => ({
-    label: trayT(key),
-    type: 'radio',
-    checked: lang === currentLocale,
-    click: async () => {
-      currentLocale = lang;
-      await initStore();
-      if (store) store.set(LOCALE_KEY, lang);
-      refreshTrayMenu();
-      if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
-      if (statusWindow && !statusWindow.isDestroyed()) {
-        statusWindow.webContents.send('locale-changed', lang);
-      }
-    },
-  }));
-
   return Menu.buildFromTemplate([
     {
-      label: trayT('trayTitle'),
+      label: '岳清源x沈清秋 桌面爱宠',
       enabled: false,
     },
     { type: 'separator' },
     {
-      label: trayT('trayStatusPanel'),
+      label: '📊 显示状态面板',
       click: () => {
         if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
       },
     },
     {
-      label: trayT('traySwitchSkin'),
+      label: '🎨 切换皮肤',
       submenu: skinSubmenu,
     },
     {
-      label: isPaused ? trayT('trayResumeWalk') : trayT('trayPauseWalk'),
+      label: isPaused ? '🚶 恢复走动' : '⏸️ 暂停走动',
       click: () => {
         isPaused = !isPaused;
         if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
@@ -744,7 +490,7 @@ function buildTrayMenu() {
       },
     },
     {
-      label: petHidden ? trayT('trayShowPet') : trayT('trayHidePet'),
+      label: petHidden ? '👻 显示桌宠' : '👻 隐藏桌宠',
       click: () => {
         petHidden = !petHidden;
         if (mainWindow) mainWindow.webContents.send('toggle-pet-visibility', !petHidden);
@@ -752,29 +498,7 @@ function buildTrayMenu() {
       },
     },
     {
-      label: trayT('trayResetPos'),
-      click: () => {
-        if (mainWindow) mainWindow.webContents.send('reset-positions');
-      },
-    },
-    { type: 'separator' },
-    // macOS 多屏时显示"切换屏幕"选项
-    ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
-      label: trayT('traySwitchScreen'),
-      submenu: screen.getAllDisplays().map((display, idx) => ({
-        label: `${trayT('trayScreen')} ${idx + 1}${currentPetDisplay && display.id === currentPetDisplay.id ? ' \u2713' : ''}`,
-        click: () => {
-          migrateWindowToDisplay(display);
-          refreshTrayMenu();
-        },
-      })),
-    }] : []),
-    {
-      label: trayT('trayLanguage'),
-      submenu: langSubmenu,
-    },
-    {
-      label: autoLaunchEnabled ? trayT('trayAutoLaunchOn') : trayT('trayAutoLaunchOff'),
+      label: autoLaunchEnabled ? '🚀 禁用开机启动' : '🚀 开机自动启动',
       click: async () => {
         autoLaunchEnabled = !autoLaunchEnabled;
         await setAutoLaunchPreference(autoLaunchEnabled);
@@ -782,24 +506,28 @@ function buildTrayMenu() {
       },
     },
     {
-      label: updateMenuState.checking ? trayT('trayUpdateChecking') 
-           : updateMenuState.downloading ? trayT('trayUpdateDownloading') 
-           : trayT('trayUpdateCheck'),
+      label: updateMenuState.label,
       enabled: updateMenuState.enabled,
       click: () => {
         void checkForUpdatesFromTray();
       },
     },
-    ...(!app.isPackaged ? [
-      {
-        label: trayT('trayDevTools'),
-        click: () => {
-          if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
-        },
-      },
-    ] : []),
+    { type: 'separator' },
     {
-      label: trayT('trayQuit'),
+      label: '🔄 重置位置',
+      click: () => {
+        if (mainWindow) mainWindow.webContents.send('reset-positions');
+      },
+    },
+    {
+      label: '🛠️ 开发者工具',
+      click: () => {
+        if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '❌ 退出',
       click: () => {
         app.quit();
       },
@@ -816,175 +544,9 @@ function createTray() {
     height: 16,
   });
 
-  if (process.platform === 'darwin') {
-    icon.setTemplateImage(true);
-  }
-
   tray = new Tray(icon);
+  tray.setToolTip('岳七 & 沈九 桌面宠物');
   refreshTrayMenu();
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function getUpdateProgressHtml(payload) {
-  const title = escapeHtml(payload.title);
-  const message = escapeHtml(payload.message);
-  const percent = Number.isFinite(payload.percent) ? Math.max(0, Math.min(100, payload.percent)) : 0;
-  const isChecking = payload.mode === 'checking';
-
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-      color: #202124;
-      background: #fbfbf8;
-      user-select: none;
-    }
-    .wrap {
-      width: 100vw;
-      height: 100vh;
-      padding: 22px 24px;
-      display: grid;
-      align-content: center;
-      gap: 14px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 650;
-      line-height: 1.3;
-    }
-    p {
-      margin: 0;
-      color: #5a5f66;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .bar {
-      position: relative;
-      height: 10px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #e3e6df;
-    }
-    .fill {
-      width: ${isChecking ? '38%' : `${percent}%`};
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #4f9d69, #79b87f);
-      transition: width 160ms ease;
-    }
-    .checking .fill {
-      position: absolute;
-      animation: sweep 1.25s ease-in-out infinite;
-    }
-    .meta {
-      min-height: 18px;
-      color: #6c726e;
-      font-size: 12px;
-      text-align: right;
-    }
-    .checking .meta { visibility: hidden; }
-    @keyframes sweep {
-      0% { left: -40%; }
-      50% { left: 30%; }
-      100% { left: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <main class="wrap ${isChecking ? 'checking' : 'downloading'}">
-    <h1 id="title">${title}</h1>
-    <p id="message">${message}</p>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}">
-      <div id="fill" class="fill"></div>
-    </div>
-    <div id="meta" class="meta">${Math.round(percent)}%</div>
-  </main>
-  <script>
-    window.updateProgress = function(payload) {
-      document.body.querySelector('.wrap').className = 'wrap ' + payload.mode;
-      document.getElementById('title').textContent = payload.title || '';
-      document.getElementById('message').textContent = payload.message || '';
-      const percent = Math.max(0, Math.min(100, Number(payload.percent) || 0));
-      document.getElementById('fill').style.width = payload.mode === 'checking' ? '38%' : percent + '%';
-      document.querySelector('.bar').setAttribute('aria-valuenow', Math.round(percent));
-      document.getElementById('meta').textContent = Math.round(percent) + '%';
-    };
-  </script>
-</body>
-</html>`;
-}
-
-function showUpdateProgressWindow(payload) {
-  const normalizedPayload = {
-    mode: payload.mode,
-    title: payload.title,
-    message: payload.message,
-    percent: payload.percent ?? 0,
-  };
-
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) {
-    updateProgressWindow = new BrowserWindow({
-      width: 380,
-      height: 172,
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      title: normalizedPayload.title,
-      parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    });
-    updateProgressWindow.setMenuBarVisibility(false);
-    updateProgressWindow.on('closed', () => {
-      updateProgressWindow = null;
-    });
-    updateProgressWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getUpdateProgressHtml(normalizedPayload))}`);
-    return;
-  }
-
-  updateProgressWindow.setTitle(normalizedPayload.title);
-  updateProgressWindow.show();
-  updateProgressWindow.focus();
-  updateProgressWindow.webContents.executeJavaScript(
-    `window.updateProgress(${JSON.stringify(normalizedPayload)})`,
-  ).catch(() => {});
-}
-
-function setUpdateProgress(percent) {
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-  updateProgressWindow.webContents.executeJavaScript(
-    `window.updateProgress(${JSON.stringify({
-      mode: 'downloading',
-      title: trayText('updateDownloadingTitle', 'Downloading Update'),
-      message: trayT('updateDownloadingMsg'),
-      percent,
-    })})`,
-  ).catch(() => {});
-}
-
-function closeUpdateProgressWindow() {
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-  updateProgressWindow.close();
-  updateProgressWindow = null;
 }
 
 /**
@@ -1032,25 +594,6 @@ function createTrayIconBuffer() {
 
 // --- IPC 通信监听 ---
 
-// macOS 多显示器迁移
-ipcMain.on('request-window-migration', (_event, direction) => {
-  if (process.platform !== 'darwin' || !currentPetDisplay) return;
-  const allDisplays = screen.getAllDisplays();
-  const adjacent = findAdjacentDisplay(currentPetDisplay, direction, allDisplays);
-  if (adjacent) {
-    migrateWindowToDisplay(adjacent);
-  }
-});
-
-ipcMain.on('drag-started', () => {
-  if (process.platform !== 'darwin') return;
-  startDragPoll();
-});
-
-ipcMain.on('drag-ended', () => {
-  stopDragPoll();
-});
-
 ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   setPetWindowMousePassthrough(ignore, options || {});
 });
@@ -1071,19 +614,7 @@ ipcMain.on('resize-status-window', (_event, size) => {
   resizeStatusWindow(size);
 });
 
-// 允许存储的合法 Key 列表 (安全白名单)
-const ALLOWED_STORE_KEYS = [
-  'autoLaunch',
-  'petState',
-  'locale',
-  // 在这里添加其他合法的保存键值
-];
-
 ipcMain.handle('save-data', async (_event, key, value) => {
-  if (!ALLOWED_STORE_KEYS.includes(key)) {
-    console.warn(`[Security] 拦截到非法的数据保存请求: ${key}`);
-    return false;
-  }
   try {
     await initStore();
     if (!store) return false;
@@ -1096,10 +627,6 @@ ipcMain.handle('save-data', async (_event, key, value) => {
 });
 
 ipcMain.handle('load-data', async (_event, key) => {
-  if (!ALLOWED_STORE_KEYS.includes(key)) {
-    console.warn(`[Security] 拦截到非法的数据读取请求: ${key}`);
-    return null;
-  }
   try {
     await initStore();
     return store ? store.get(key) : null;
@@ -1126,22 +653,6 @@ ipcMain.on('set-current-skin', (_event, skinId) => {
   refreshTrayMenu();
 });
 
-// 多语言系统 IPC
-ipcMain.handle('get-locale', () => currentLocale);
-
-ipcMain.handle('set-locale', async (_event, lang) => {
-  if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
-  currentLocale = lang;
-  await initStore();
-  if (store) store.set(LOCALE_KEY, lang);
-  refreshTrayMenu();
-  if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
-  if (statusWindow && !statusWindow.isDestroyed()) {
-    statusWindow.webContents.send('locale-changed', lang);
-  }
-  return { success: true, locale: lang };
-});
-
 // --- 应用生命周期 ---
 
 if (!hasSingleInstanceLock) {
@@ -1153,11 +664,6 @@ if (!hasSingleInstanceLock) {
   app.on('second-instance', showExistingInstance);
 
   app.whenReady().then(async () => {
-    // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
-    if (process.platform === 'darwin') {
-      app.dock.hide();
-    }
-
     // 设置权限拦截
     const { session } = require('electron');
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
@@ -1165,9 +671,6 @@ if (!hasSingleInstanceLock) {
     });
 
     await initStore();
-    // 加载持久化语言设置，若无则自动检测
-    const storedLocale = store ? store.get(LOCALE_KEY) : null;
-    currentLocale = ['zh', 'en', 'ja'].includes(storedLocale) ? storedLocale : detectLocale();
     const syncResult = await syncAutoLaunchPreference();
     autoLaunchEnabled = syncResult.preference;
     initUpdateManager({
@@ -1175,22 +678,6 @@ if (!hasSingleInstanceLock) {
       dialog,
       getMainWindow: () => mainWindow,
       refreshTrayMenu,
-      updateProgressUi: {
-        showChecking: ({ title, message }) => showUpdateProgressWindow({
-          mode: 'checking',
-          title,
-          message,
-        }),
-        showDownloading: ({ title, message, percent }) => showUpdateProgressWindow({
-          mode: 'downloading',
-          title,
-          message,
-          percent,
-        }),
-        setProgress: setUpdateProgress,
-        close: closeUpdateProgressWindow,
-      },
-      t: trayT,
     });
     createWindow();
     createTray();

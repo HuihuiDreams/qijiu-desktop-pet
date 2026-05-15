@@ -1,24 +1,24 @@
-# 多显示器移动调试交接文档 (Multi-Display Movement Debug Handoff)
+# Multi-Display Movement Debug Handoff
 
-## 当前状态 (Status)
+## Status
 
-进行中。多显示器移动功能已部分工作，但当前实现仍存在一个已知问题：宠物在副显示器上仍可能会移动到不可见的区域。
+In progress. Multi-display movement partially works, but the current implementation still has a known bug: pets can still move to an invisible area on the secondary display.
 
-## 当前已知行为 (Current Known Behavior)
+## Current Known Behavior
 
-- 宠物现在可以被拖拽到副显示器上。
-- 宠物现在可以自动从副显示器走回主显示器。
-- 宠物仍可能在副显示器上走到不可见区域。
-- 用户目前没有简单易用的应用内手段来查看宠物的实时坐标。
+- Pets can now be dragged to the secondary display.
+- Pets can now walk back from the secondary display to the primary display.
+- Pets may still walk into an area on the secondary display where they are not visible.
+- The user does not currently have an easy in-app way to inspect pet coordinates.
 
-## 用户观察到的显示器布局 (User's Observed Display Layout)
+## User's Observed Display Layout
 
-来自开发过程中的 Windows / Electron 诊断数据：
+From Windows / Electron diagnostics during development:
 
-- 主显示器缩放因子（scale factor）：`1.5`
-- 副显示器缩放因子（scale factor）：`1`
-- 主透明窗口已成功跨屏放大，超出了主显示器范围。
-- 观察到的一组 `createWindow bounds` 结果：
+- Primary display scale factor: `1.5`
+- Secondary display scale factor: `1`
+- The main transparent window successfully grew beyond the primary display.
+- One observed `createWindow bounds` result:
 
 ```text
 requested: { x: 0, y: 0, width: 3640, height: 1920 }
@@ -26,47 +26,47 @@ actual:    { x: 0, y: 0, width: 3640, height: 1920 }
 content:   { x: 0, y: 0, width: 3640, height: 1920 }
 ```
 
-早期的 Windows 屏幕数据也显示，主显示器为 `2560x1440`，副显示器为 `1080x1920`，具有不同的缩放因子。下一次调试不应假设两个显示器共享相同的缩放因子或像素坐标系统。
+Earlier Windows screen data also showed a layout where the primary display was `2560x1440` and the secondary display was `1080x1920`, with different scale factors. The next debugging pass should not assume the two displays share the same scale factor or pixel coordinate system.
 
-## 目前已修改的文件 (Files Changed So Far)
+## Files Changed So Far
 
-### `README.md` 与 `readme.txt`
+### `README.md` and `readme.txt`
 
-更新了面向用户的文案，将“小人只能在主屏范围内活动”改为支持多显示器虚拟桌面的描述。
+Updated user-facing wording from "pets only move on the primary display" to multi-display support wording.
 
 ### `main.js`
 
-主宠物窗口相关修改：
+Main pet window changes:
 
-- `sendScreenInfo()` 现在除了发送窗口宽高 `width` 和 `height` 外，还会发送 `walkAreas`（可行走区域列表）。
-- `walkAreas` 是利用 `screen.getAllDisplays()` 中的 `display.workArea || display.bounds` 衍生而来的。
-- 显示器的可用工作区（work areas）被转换为相对于主宠物窗口左上角的坐标。
-- 主宠物窗口属性新增了：
+- `sendScreenInfo()` now sends `walkAreas` in addition to `width` and `height`.
+- `walkAreas` are derived from `screen.getAllDisplays()` using `display.workArea || display.bounds`.
+- Display work areas are converted into coordinates relative to the main pet window.
+- The main pet window now uses:
   - `resizable: true`
   - `enableLargerThanScreen: true`
-- 创建主窗口后，代码调用：
+- After creating the main window, code calls:
   - `mainWindow.setMinimumSize(width, height)`
   - `mainWindow.setMaximumSize(width, height)`
   - `mainWindow.setBounds({ x, y, width, height })`
-- `fitWindowToAllDisplays()` 也会在发送屏幕信息前重新设置最小尺寸、最大尺寸和边界。
+- `fitWindowToAllDisplays()` also resets minimum size, maximum size, and bounds before sending screen info.
 
-这些改动修复了之前“主显示器边缘存在隐形墙”的问题。
+These changes fixed the earlier "invisible wall at the primary display edge" symptom.
 
 ### `src/app.js`
 
-- `onScreenInfo(info)` 现在会将 `info.walkAreas` 传入 `movementSystem.setScreenSize(...)`。
-- `keepPetReachable(pet)` 现在改用调用 `movementSystem.clampPetToWalkAreas(pet)`。
-- 重置位置、保存和加载流程中会调用 `pets.forEach(keepPetReachable)`。
-- `PetRenderer` 构造时传入了 `keepPetReachable` 回调，使得拖拽释放和自动移动能够共享相同的边界修正逻辑。
+- `onScreenInfo(info)` now passes `info.walkAreas` into `movementSystem.setScreenSize(...)`.
+- `keepPetReachable(pet)` now calls `movementSystem.clampPetToWalkAreas(pet)`.
+- Reset-position and save-load flows call `pets.forEach(keepPetReachable)`.
+- `PetRenderer` is constructed with `keepPetReachable` so drag release and automatic movement share the same boundary correction.
 
 ### `src/pet/PetRenderer.js`
 
-- 构造函数现在接收可选的 `keepPetReachable` 回调。
-- 拖拽释放事件在回调可用时会调用它。
+- Constructor accepts an optional `keepPetReachable` callback.
+- Drag release uses the callback when available.
 
 ### `src/systems/MovementSystem.js`
 
-添加了多显示器可行走区域（walk-area）支持：
+Added multi-display walk-area support:
 
 - `normalizeWalkAreas`
 - `getFallbackWalkArea`
@@ -80,48 +80,48 @@ content:   { x: 0, y: 0, width: 3640, height: 1920 }
 - `bridgeToTargetArea`
 - `clampPetToWalkAreas`
 
-具体行为改动：
+Behavior changes:
 
-- `randomTarget(pet)` 现在会从真实的显示器 `walkAreas` 中挑选目标，而不再是虚拟桌面外接矩形的全局随机坐标。
-- `randomTarget(pet)` 记录了当前的 `pet.targetArea`。
-- 移动算法支持桥接跨显示器之间的系统黑洞/不可见区域坐标。
-- 同一屏幕内的移动会将宠物夹回（clamp）至可见的工作区域内。
-- 跨屏移动时在接缝处不会立即触发 clamp，从而保证宠物可以正常从副显示器走回主显示器。
+- `randomTarget(pet)` picks a target from real display `walkAreas` rather than the virtual desktop bounding rectangle.
+- `randomTarget(pet)` stores `pet.targetArea`.
+- Movement can bridge invisible coordinate gaps between displays.
+- Same-display movement clamps the pet back into the visible work area.
+- Cross-display movement does not immediately clamp at the seam, so pets can walk back from secondary display to primary display.
 
 ### `test/movementSystem.test.js`
 
-新增了以下回归测试用例：
+Added regression tests for:
 
-- 随机目标必须落在某个真实的可见显示器区域内。
-- 能将宠物夹回（clamp）至最近的可见显示器区域内。
-- 分离显示器之间存在坐标空洞时，能够正确桥接移动。
-- 当旧目标在可见区域外时，能够将目标夹回。
-- 能够正常从副显示器走回主显示器，在接缝处不会被夹死。
+- Random targets staying inside visible display areas.
+- Clamping pets back to a visible display.
+- Bridging an invisible coordinate gap between separated displays.
+- Clamping stale out-of-area targets.
+- Walking from secondary display back to primary display without being clamped at the seam.
 
-当前最新改动后的测试结果：
+Current test result after the latest changes:
 
 ```text
 npm test
 63 tests passed
 ```
 
-## 当前未解决的问题 (Current Unresolved Problem)
+## Current Unresolved Problem
 
-宠物在副显示器上仍可能移动到视觉上不可见的区域。
+Pets can still walk to a visually invisible area on the secondary display.
 
-建议接下来的排查重点：
+Most likely causes to investigate next:
 
-- Electron `display.workArea` 是以 DIP（设备独立像素）为单位的坐标，而当显示器的 `scaleFactor`（缩放因子）不同时，可见输出与 CSS 渲染坐标可能无法完美对齐。
-- 副显示器可能是竖屏、不同的缩放率，或者存在当前相对坐标转换未完全捕获的偏移量。
-- `pet.size` 设定为 `96`，但由于 hover 放大、投影或者雪碧图本身的空白区域，实际渲染的 Dom 或图像可能会超出设定的逻辑碰撞盒。
-- 在发生屏幕改变、皮肤改变、拖拽操作或读取存档时，`targetArea` 可能会变得陈旧。
-- `clampPetToWalkAreas()` 采用了最近矩形算法，但在跨屏边缘处，最邻近区域选择可能与用户的视觉预期不一致。
+- Electron `display.workArea` is in DIP coordinates, while visible output and CSS rendering may not line up cleanly across displays with different `scaleFactor` values.
+- The secondary display may be portrait, scaled differently, or offset in a way the current relative-coordinate conversion does not fully capture.
+- `pet.size` is `96`, but the visible sprite, animation transform, hover scale, drop shadow, or sprite image content may exceed the assumed logical body box.
+- `targetArea` can become stale after display changes, skin changes, drag operations, or save/load restoration.
+- `clampPetToWalkAreas()` uses the nearest rectangle, but when a pet is near a boundary between displays, nearest-area selection may not match the user's visual expectation.
 
-## 推荐的后续调试步骤 (Recommended Next Debug Steps)
+## Recommended Next Debug Steps
 
-1. 添加一个临时仅限开发态的坐标叠加层（overlay）或控制台日志记录器。
+1. Add a temporary dev-only coordinate overlay or console logger.
 
-有用变量：
+Useful values:
 
 ```js
 window.__DEBUG_PETS.yueqi.x
@@ -136,7 +136,7 @@ window.__DEBUG_PETS.shenjiu.targetY
 window.__DEBUG_PETS.shenjiu.targetArea
 ```
 
-同时暴露或打印：
+Also expose or log:
 
 ```js
 movementSystem.getWalkAreas()
@@ -144,7 +144,9 @@ window.innerWidth
 window.innerHeight
 ```
 
-2. 如果需要，临时重新加入 `main.js` 中的详细诊断日志：
+2. Re-add expanded `main.js` diagnostics temporarily if needed.
+
+Suggested log:
 
 ```js
 console.log('screen-info', JSON.stringify({
@@ -162,22 +164,113 @@ console.log('screen-info', JSON.stringify({
 }, null, 2));
 ```
 
-3. 重现不可见问题，并记录：
-   - 哪一只宠物消失了。
-   - 它的 `x`、`y`、`targetX`、`targetY` 和 `targetArea`。
-   - 当前的 `walkAreas`。
-   - 宠物当时的状态（行走、发呆、正在被拖拽，还是在互动中）。
+3. Reproduce the invisible-area issue and capture:
 
-4. 如果坐标都在 `walkAreas` 内部，但宠物依然不可见，应着重检查显示屏的缩放转换或 CSS 渲染边界。
-5. 如果坐标确实跑到了 `walkAreas` 外部，则修复 `MovementSystem` 的坐标 clamp 和目标选择逻辑。
-6. 如果宠物仅部分可见，或者在副显示器上显得大小不对，检查 `display.scaleFactor` 并考虑按显示器来归一化逻辑宠物大小。
+- Which pet disappeared.
+- Its `x`, `y`, `targetX`, `targetY`, and `targetArea`.
+- The current `walkAreas`.
+- Whether the pet is walking, idle, being dragged, or interacting.
 
-## 重要注意事项 (Important Caution)
+4. If coordinates are inside `walkAreas` but the pet is invisible, investigate display scale conversion or CSS rendering bounds.
 
-请勿盲目回退多显示器的窗口改动，它们修复了之前的“主屏边缘隐形墙”问题：
+5. If coordinates are outside `walkAreas`, fix `MovementSystem` clamping/target selection.
 
-- 主窗口的实际 boundaries 已经与请求值匹配。
-- 拖拽到副显示器的功能已经可以正常工作。
-- 修复接缝 clamp 逻辑后，宠物已经能够从副屏走回主屏。
+6. If the pet is visible only partially or appears resized on the secondary display, inspect `display.scaleFactor` and consider normalizing logical pet size per display.
 
-目前遗留的问题仅仅是宠物在副显示器内的坐标正确性，而不是主窗口覆盖副显示器的能力。
+## Important Caution
+
+Do not revert the multi-display window changes blindly. They fixed the earlier primary-screen wall:
+
+- Main window actual bounds now match requested bounds.
+- Dragging to the secondary display now works.
+- Pets can walk from secondary display back to primary display after the latest seam-clamping fix.
+
+The remaining issue appears to be coordinate correctness within the secondary display, not whether the main window can cover the secondary display.
+
+
+
+今天主要改了这些，方便下一个 agent 接手：
+
+README 文档
+README.md
+readme.txt
+把“小人只能在主屏范围内活动”改成了“支持多显示器虚拟桌面/副屏”。
+
+主窗口跨屏
+main.js
+改动点：
+
+主宠物窗口改为：
+resizable: true
+enableLargerThanScreen: true
+创建后调用：
+setMinimumSize(width, height)
+setMaximumSize(width, height)
+setBounds({ x, y, width, height })
+fitWindowToAllDisplays() 里也会重新设置 minimum/maximum size 和 bounds。
+sendScreenInfo() 不再只发送 { width, height }，还发送 walkAreas。
+walkAreas 来自 screen.getAllDisplays().map(display => display.workArea || display.bounds)，并转换成主窗口内相对坐标。
+渲染进程接收多屏可走区域
+src/app.js
+改动点：
+
+onScreenInfo(info) 里调用：
+movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas)
+keepPetReachable() 改为调用：
+movementSystem.clampPetToWalkAreas(pet)
+重置位置、读取存档后会调用 pets.forEach(keepPetReachable)。
+PetRenderer 初始化时传入 keepPetReachable。
+拖拽边界
+src/pet/PetRenderer.js
+改动点：
+
+构造函数新增第二参数 keepPetReachable。
+拖拽结束后优先调用传入的 keepPetReachable(pet)，让拖拽和自动移动使用同一套多屏边界逻辑。
+移动系统多屏逻辑
+src/systems/MovementSystem.js
+新增/修改内容：
+
+构造函数支持 walkAreas。
+setScreenSize(w, h, walkAreas) 支持更新多屏区域。
+新增：
+normalizeWalkAreas
+getFallbackWalkArea
+getWalkAreas
+clampToRange
+getTargetRange
+pickWalkArea
+sameArea
+findAreaContainingPoint
+findAreaContainingPet
+bridgeToTargetArea
+clampPetToWalkAreas
+randomTarget(pet) 现在会从真实显示器区域中按面积加权选目标，并记录 pet.targetArea。
+moveTowardTarget() 现在：
+支持跨显示器移动。
+如果两块屏幕之间有系统坐标空洞，会桥接到目标屏边缘。
+同屏移动会夹回可见区域。
+跨屏接缝处不会再被强行夹回当前屏，所以能从副屏走回主屏。
+测试
+test/movementSystem.test.js
+新增了多屏相关测试：
+
+随机目标必须落在某块真实显示器区域内。
+小人能被夹回最近可见显示器区域。
+分离显示器之间有空洞时会桥接。
+旧目标在可见区域外时会被夹回。
+从副屏走回主屏时不会被接缝处夹住。
+当前验证：
+
+npm test
+63 tests passed
+当前仍未解决的问题：
+
+小人现在能跨屏、也能从副屏走回主屏。
+但仍可能走到副屏上“看不见的地方”。
+用户不知道如何获取小人坐标。
+下一个 agent 建议优先加临时 debug 能力，例如在开发态暴露/打印：
+window.__DEBUG_PETS.yueqi.x/y
+window.__DEBUG_PETS.shenjiu.x/y
+movementSystem.getWalkAreas()
+当前 pet.targetX/targetY/targetArea
+也建议让 main.js 临时打印展开后的 walkAreas，因为用户副屏可能有缩放/旋转/负坐标/任务栏导致 Electron workArea 和视觉区域不一致。
