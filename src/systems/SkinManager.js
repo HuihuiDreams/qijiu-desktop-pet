@@ -14,7 +14,7 @@ class SkinManager {
    * 若某个皮肤 ID 不在此表中，则直接显示文件夹名（兜底）。
    */
   static SKIN_NAMES = {
-    'default': '默认·仙侠水墨',
+    'default': '默认皮肤·凉拌仓鼠',
     // 新增皮肤时在此添加映射，例如：
     // 'qban': 'Q版·萌系',
   };

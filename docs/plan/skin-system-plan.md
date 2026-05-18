@@ -102,7 +102,7 @@ src/assets/
 ```javascript
 // 在 SkinManager 中维护，或放在 config.js 中
 const SKIN_NAMES = {
-  'default': '默认·仙侠水墨',
+  'default': '默认皮肤·凉拌仓鼠',
   'qban':    'Q版·萌系',
   // 新增皮肤时在此添加映射
 };

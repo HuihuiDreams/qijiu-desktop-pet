@@ -62,7 +62,7 @@ test('scanAvailableSkins: 不存在的目录返回兜底值 [default]', () => {
 
 test('main.js 中包含 SKIN_NAMES 映射且 default 有中文名', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("'default': '默认·仙侠水墨'"), 'SKIN_NAMES 应包含 default 的中文映射');
+  assert.ok(mainSource.includes("'default': '默认皮肤·凉拌仓鼠'"), 'SKIN_NAMES 应包含 default 的中文映射');
 });
 
 // --- 托盘菜单结构验证 ---

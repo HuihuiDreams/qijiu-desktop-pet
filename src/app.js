@@ -297,7 +297,7 @@
             renderer.spawnQiAuraAt(
               overlayPos.x + overlayPos.width / 2,
               overlayPos.y + 82,
-              overlayPos.width * 1.2,
+              (overlayPos.baseWidth || overlayPos.width) * 1.2,
               interaction.key,
               getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
             );
