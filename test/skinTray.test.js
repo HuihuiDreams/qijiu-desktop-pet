@@ -74,6 +74,32 @@ test('main.js 中 buildTrayMenu 包含皮肤切换子菜单', () => {
   assert.ok(mainSource.includes("type: 'radio'"), '皮肤菜单项应使用 radio 类型');
 });
 
+test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+  const resetIndex = mainSource.indexOf("'🔄 重置位置'");
+  const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
+  const autoLaunchIndex = mainSource.indexOf("'🚀 禁用开机启动'", softwareSeparatorIndex);
+  const devToolsIndex = mainSource.indexOf("'🛠️ 开发者工具'", softwareSeparatorIndex);
+  const exitIndex = mainSource.indexOf("'❌ 退出'", softwareSeparatorIndex);
+
+  assert.ok(resetIndex > -1, '桌宠功能组应包含重置位置');
+  assert.ok(softwareSeparatorIndex > resetIndex, '重置位置之后应有分割线');
+  assert.ok(autoLaunchIndex > softwareSeparatorIndex, '软件功能组应从分割线后开始');
+  assert.ok(devToolsIndex > softwareSeparatorIndex, '开发者工具应位于软件功能组');
+  assert.ok(exitIndex > softwareSeparatorIndex, '退出应位于软件功能组');
+});
+
+test('main.js 托盘开发者工具只在开发态显示', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+  const devToolsGuardIndex = mainSource.indexOf("...(!app.isPackaged ? [");
+  const devToolsIndex = mainSource.indexOf("'🛠️ 开发者工具'", devToolsGuardIndex);
+  const devToolsGuardEndIndex = mainSource.indexOf("] : [])", devToolsIndex);
+
+  assert.ok(devToolsGuardIndex > -1, '开发者工具菜单应受 app.isPackaged 保护');
+  assert.ok(devToolsIndex > devToolsGuardIndex, '开发者工具应只在开发态条件块中定义');
+  assert.ok(devToolsGuardEndIndex > devToolsIndex, '开发者工具开发态条件块应完整闭合');
+});
+
 test('main.js 中 switch-skin IPC 消息在菜单点击时发送', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
   assert.ok(mainSource.includes("send('switch-skin'"), '点击皮肤菜单应发送 switch-skin IPC');
