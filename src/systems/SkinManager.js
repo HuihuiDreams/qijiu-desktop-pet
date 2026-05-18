@@ -15,7 +15,6 @@ class SkinManager {
    */
   static SKIN_NAMES = {
     'default': '默认皮肤·凉拌仓鼠',
-    'birds': '鸟塑七九・凉拌仓鼠',
     // 新增皮肤时在此添加映射，例如：
     // 'qban': 'Q版·萌系',
   };
@@ -105,48 +104,48 @@ class SkinManager {
 
     return {
       petA: {
-        image: `${base}/left.webp`,
+        image: `${base}/left.png`,
         sprites: {
-          idle: { frames: [`${base}/left.webp`], fps: 1 },
+          idle: { frames: [`${base}/left.png`], fps: 1 },
           walkingLeft: {
             frames: [
-              `${base}/yueqi/walk_left01.webp`,
-              `${base}/yueqi/walk_left02.webp`,
-              `${base}/yueqi/walk_left03.webp`,
-              `${base}/yueqi/walk_left04.webp`,
+              `${base}/yueqi/walk_left01.png`,
+              `${base}/yueqi/walk_left02.png`,
+              `${base}/yueqi/walk_left03.png`,
+              `${base}/yueqi/walk_left04.png`,
             ],
             fps: 4,
           },
           walkingRight: {
             frames: [
-              `${base}/yueqi/walk_right01.webp`,
-              `${base}/yueqi/walk_right02.webp`,
-              `${base}/yueqi/walk_right03.webp`,
-              `${base}/yueqi/walk_right04.webp`,
+              `${base}/yueqi/walk_right01.png`,
+              `${base}/yueqi/walk_right02.png`,
+              `${base}/yueqi/walk_right03.png`,
+              `${base}/yueqi/walk_right04.png`,
             ],
             fps: 4,
           },
         },
       },
       petB: {
-        image: `${base}/right.webp`,
+        image: `${base}/right.png`,
         sprites: {
-          idle: { frames: [`${base}/right.webp`], fps: 1 },
+          idle: { frames: [`${base}/right.png`], fps: 1 },
           walkingLeft: {
             frames: [
-              `${base}/shenjiu/walk_left01.webp`,
-              `${base}/shenjiu/walk_left02.webp`,
-              `${base}/shenjiu/walk_left03.webp`,
-              `${base}/shenjiu/walk_left04.webp`,
+              `${base}/shenjiu/walk_left01.png`,
+              `${base}/shenjiu/walk_left02.png`,
+              `${base}/shenjiu/walk_left03.png`,
+              `${base}/shenjiu/walk_left04.png`,
             ],
             fps: 4,
           },
           walkingRight: {
             frames: [
-              `${base}/shenjiu/walk_right01.webp`,
-              `${base}/shenjiu/walk_right02.webp`,
-              `${base}/shenjiu/walk_right03.webp`,
-              `${base}/shenjiu/walk_right04.webp`,
+              `${base}/shenjiu/walk_right01.png`,
+              `${base}/shenjiu/walk_right02.png`,
+              `${base}/shenjiu/walk_right03.png`,
+              `${base}/shenjiu/walk_right04.png`,
             ],
             fps: 4,
           },
@@ -154,18 +153,18 @@ class SkinManager {
       },
       imageMap: {
         shenjiu: {
-          meditating: `${base}/right_cultivate.webp`,
-          hungry: `${base}/right_hungry.webp`,
-          sleeping: `${base}/right_sleep.webp`,
-          eating: `${base}/right_eat.webp`,
-          patted: `${base}/right_pat.webp`,
+          meditating: `${base}/right_cultivate.png`,
+          hungry: `${base}/right_hungry.png`,
+          sleeping: `${base}/right_sleep.png`,
+          eating: `${base}/right_eat.png`,
+          patted: `${base}/right_pat.png`,
         },
         yueqi: {
-          meditating: `${base}/left_cultivate.webp`,
-          hungry: `${base}/left_hungry.webp`,
-          sleeping: `${base}/left_sleep.webp`,
-          eating: `${base}/left_eat.webp`,
-          patted: `${base}/left_pat.webp`,
+          meditating: `${base}/left_cultivate.png`,
+          hungry: `${base}/left_hungry.png`,
+          sleeping: `${base}/left_sleep.png`,
+          eating: `${base}/left_eat.png`,
+          patted: `${base}/left_pat.png`,
         },
       },
       overlayPrefix: `${base}/`,

@@ -178,3 +178,93 @@ test('qi aura size follows the pet visual scale', () => {
 
   delete global.document;
 });
+
+test('interaction overlay image follows the pet visual scale', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  }, null, () => 2 / 3);
+  const petA = {
+    x: 2600,
+    y: 240,
+    size: 96,
+  };
+  const petB = {
+    x: 2680,
+    y: 240,
+    size: 96,
+  };
+
+  global.document = {
+    createElement() {
+      return {
+        style: {},
+      };
+    },
+  };
+  global.requestAnimationFrame = (callback) => callback();
+
+  const overlayPos = renderer.showOverlay(petA, petB, 'cultivate');
+
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].style.width, `${176 * (2 / 3)}px`);
+  assert.equal(appended[0].style.left, `${overlayPos.x}px`);
+  assert.equal(appended[0].style.top, `${overlayPos.y}px`);
+  assert.equal(overlayPos.width, 176 * (2 / 3));
+  assert.equal(overlayPos.baseWidth, 176);
+  assert.equal(overlayPos.scale, 2 / 3);
+
+  delete global.document;
+  delete global.requestAnimationFrame;
+});
+
+test('interaction overlay bubbles follow the overlay visual scale', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  });
+  const overlayPos = {
+    x: 2600,
+    y: 240,
+    width: 176 * (2 / 3),
+    scale: 2 / 3,
+  };
+
+  global.document = {
+    createElement() {
+      const style = {};
+      style.setProperty = (name, value) => {
+        style[name] = value;
+      };
+      return {
+        className: '',
+        textContent: '',
+        style,
+        classList: {
+          add() {},
+        },
+        remove() {},
+      };
+    },
+  };
+  const originalSetTimeout = global.setTimeout;
+  global.setTimeout = (callback) => {
+    callback();
+    return 1;
+  };
+
+  renderer.showOverlayBubbles('left', 'right', overlayPos, 1000);
+
+  assert.equal(appended.length, 2);
+  assert.equal(appended[0].style['--bubble-scale'], 2 / 3);
+  assert.equal(appended[1].style['--bubble-scale'], 2 / 3);
+  assert.equal(appended[0].style.top, `${overlayPos.y - 48 * (2 / 3)}px`);
+  assert.equal(appended[1].style.top, `${overlayPos.y - 48 * (2 / 3)}px`);
+
+  delete global.document;
+  global.setTimeout = originalSetTimeout;
+});

@@ -132,7 +132,6 @@ class PetRenderer {
       pet.isDragging = false;
       pet.idleTimer = 2000 + Math.random() * 3000;
       keepPetReachable();
-      if (window.electronAPI.notifyDragEnded) window.electronAPI.notifyDragEnded();
 
       if (restoreImmediately) {
         restoreMousePassthrough();
@@ -159,7 +158,6 @@ class PetRenderer {
       dragOffsetX = e.clientX - pet.x;
       dragOffsetY = e.clientY - pet.y;
       window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 1000 });
-      if (window.electronAPI.notifyDragStarted) window.electronAPI.notifyDragStarted();
       refreshDragWatchdog();
     });
 
@@ -204,6 +202,11 @@ class PetRenderer {
 
     // 优化：仅当朝向或状态改变时更新类
     if (pet._renderedDirection !== pet.direction || stateChanged) {
+      if (pet.direction !== pet.defaultDirection && pet.state !== 'walking') {
+        el.classList.add('pet--flipped');
+      } else {
+        el.classList.remove('pet--flipped');
+      }
       pet._renderedDirection = pet.direction;
     }
 
@@ -280,7 +283,7 @@ class PetRenderer {
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
-    overlay.src = `${this.skinPrefix}${type}.webp`;
+    overlay.src = `${this.skinPrefix}${type}.png`;
     overlay.alt = type;
     overlay.style.position = 'absolute';
     overlay.style.width = `${overlayWidth}px`;
@@ -334,9 +337,9 @@ class PetRenderer {
       const headX = overlayPos.x + overlayPos.width * headXRatio;
       el.style.left = `${headX}px`;
       el.style.transform = 'translateX(-50%)';
-      const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
-      el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
-      el.style.top = 'auto'; // 移除 top 定位
+      // 纵向：放在图片顶部上方，不遮挡人物
+      el.style.top = `${overlayPos.y - INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
+      el.style.bottom = 'auto'; // 强制覆盖 .dialog-bubble 的 bottom，防止高度被拉伸
       el.style.zIndex = '101';
       el.style.pointerEvents = 'none';
       this.stage.appendChild(el);

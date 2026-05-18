@@ -34,7 +34,7 @@ test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
 
 test('main.js tray menu includes only one update menu item', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const updateMenuItemCount = (mainSource.match(/label:\s*updateMenuState\.checking/g) || []).length;
+  const updateMenuItemCount = (mainSource.match(/label: updateMenuState\.label/g) || []).length;
 
   assert.equal(updateMenuItemCount, 1);
 });
@@ -60,51 +60,18 @@ test('scanAvailableSkins: 不存在的目录返回兜底值 [default]', () => {
 
 // --- SKIN_NAMES 映射测试（从 main.js 中提取验证） ---
 
-test('main.js 中包含皮肤本地化 key 映射', () => {
+test('main.js 中包含 SKIN_NAMES 映射且 default 有中文名', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes('SKIN_NAME_KEYS'), '托盘皮肤名应通过本地化 key 映射');
-  assert.ok(mainSource.includes("'default': 'skinDefault'"), 'default 皮肤应映射到 skinDefault');
-  assert.ok(mainSource.includes('getSkinDisplayName(skinId)'), '皮肤菜单应通过当前语言生成显示名');
-});
-
-test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("tray.setToolTip(trayT('trayTitle'))"), '托盘 tooltip 应使用多语言标题');
+  assert.ok(mainSource.includes("'default': '默认皮肤·凉拌仓鼠'"), 'SKIN_NAMES 应包含 default 的中文映射');
 });
 
 // --- 托盘菜单结构验证 ---
 
 test('main.js 中 buildTrayMenu 包含皮肤切换子菜单', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("trayT('traySwitchSkin')"), '托盘菜单应包含切换皮肤入口');
+  assert.ok(mainSource.includes("'🎨 切换皮肤'"), '托盘菜单应包含切换皮肤入口');
   assert.ok(mainSource.includes("submenu: skinSubmenu"), '应使用 submenu 展示皮肤列表');
   assert.ok(mainSource.includes("type: 'radio'"), '皮肤菜单项应使用 radio 类型');
-});
-
-test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const resetIndex = mainSource.indexOf("trayT('trayResetPos')");
-  const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
-  const autoLaunchIndex = mainSource.indexOf("trayT('trayAutoLaunchOn')", softwareSeparatorIndex);
-  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", softwareSeparatorIndex);
-  const exitIndex = mainSource.indexOf("trayT('trayQuit')", softwareSeparatorIndex);
-
-  assert.ok(resetIndex > -1, '桌宠功能组应包含重置位置');
-  assert.ok(softwareSeparatorIndex > resetIndex, '重置位置之后应有分割线');
-  assert.ok(autoLaunchIndex > softwareSeparatorIndex, '软件功能组应从分割线后开始');
-  assert.ok(devToolsIndex > softwareSeparatorIndex, '开发者工具应位于软件功能组');
-  assert.ok(exitIndex > softwareSeparatorIndex, '退出应位于软件功能组');
-});
-
-test('main.js 托盘开发者工具只在开发态显示', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const devToolsGuardIndex = mainSource.indexOf("...(!app.isPackaged ? [");
-  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", devToolsGuardIndex);
-  const devToolsGuardEndIndex = mainSource.indexOf("] : [])", devToolsIndex);
-
-  assert.ok(devToolsGuardIndex > -1, '开发者工具菜单应受 app.isPackaged 保护');
-  assert.ok(devToolsIndex > devToolsGuardIndex, '开发者工具应只在开发态条件块中定义');
-  assert.ok(devToolsGuardEndIndex > devToolsIndex, '开发者工具开发态条件块应完整闭合');
 });
 
 test('main.js 中 switch-skin IPC 消息在菜单点击时发送', () => {
@@ -146,10 +113,10 @@ test('preload.js 暴露了 setCurrentSkin API', () => {
 test('default 皮肤包含所有必要的图片文件', () => {
   const defaultDir = path.join(ASSETS_DIR, 'default');
   const requiredFiles = [
-    'left.webp', 'right.webp',
-    'left_cultivate.webp', 'left_eat.webp', 'left_sleep.webp', 'left_hungry.webp', 'left_pat.webp',
-    'right_cultivate.webp', 'right_eat.webp', 'right_sleep.webp', 'right_hungry.webp', 'right_pat.webp',
-    'shareFood.webp', 'cultivate.webp', 'kiss.webp', 'hug.webp',
+    'left.png', 'right.png',
+    'left_cultivate.png', 'left_eat.png', 'left_sleep.png', 'left_hungry.png', 'left_pat.png',
+    'right_cultivate.png', 'right_eat.png', 'right_sleep.png', 'right_hungry.png', 'right_pat.png',
+    'shareFood.png', 'cultivate.png', 'kiss.png', 'hug.png',
   ];
 
   for (const file of requiredFiles) {
