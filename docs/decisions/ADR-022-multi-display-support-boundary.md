@@ -6,6 +6,9 @@ Accepted
 ## 日期
 2026-05-12
 
+## 更新日期
+2026-05-18
+
 ## 背景
 桌宠应用使用一个透明的 Electron 窗口作为移动舞台。多显示器支持需要同时解决两个层面的问题：
 
@@ -30,28 +33,30 @@ Accepted
 采用一条统一的多显示器坐标和视觉缩放管线：
 
 1. 主 Electron 窗口继续通过 `getVirtualDisplayBounds(screen.getAllDisplays())` 覆盖完整虚拟桌面。
-2. `displayBounds.js` 负责从每个显示器的 `workArea` 生成可行走区域，并先裁剪到该显示器的 `bounds` 内。
-3. `getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor)` 将每个显示器工作区转换成主窗口内的相对坐标。
-4. 每个 `walkArea` 附带 `scaleRatio`：
+2. 主窗口在适配显示器变化时同步设置 `minimumSize`、`maximumSize` 和 `bounds`，避免透明窗口被 Windows 或 Electron 自动收缩回主屏。
+3. `displayBounds.js` 负责从每个显示器的 `workArea` 生成可行走区域，并先裁剪到该显示器的 `bounds` 内。
+4. `getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor)` 将每个显示器工作区转换成主窗口内的相对坐标。
+5. `windowScaleFactor` 取自主窗口左上角附近的显示器；当前单透明窗口模型以这个显示器作为 renderer 坐标基准。
+6. 每个 `walkArea` 附带 `scaleRatio`：
 
    ```text
    display.scaleFactor / windowScaleFactor
    ```
 
-5. `MovementSystem.normalizeWalkAreas()` 必须保留 `scaleRatio`，不能只保留 `{ x, y, width, height }`。
-6. 移动系统基于这些标准化后的 `walkAreas` 做随机目标选择、旧目标修复、跨屏桥接、以及右/下边缘 clamp。
-7. 渲染层使用同一份 `scaleRatio` 保持物理视觉大小一致：
+7. `MovementSystem.normalizeWalkAreas()` 必须保留 `scaleRatio`，不能只保留 `{ x, y, width, height }`。
+8. 移动系统基于这些标准化后的 `walkAreas` 做随机目标选择、旧目标修复、跨屏桥接、以及右/下边缘 clamp。
+9. 渲染层使用同一份 `scaleRatio` 保持物理视觉大小一致：
    - `PetRenderer` 根据小人所在显示器缩放小人 DOM。
    - `ContextMenu` 根据右键位置所在显示器缩放自定义菜单。
    - 灵力光环和粒子效果根据小人或互动中心所在显示器缩放。
-8. 因为小人 DOM 使用 `transform-origin: top left`，灵力效果定位必须使用缩放后的视觉中心，而不是未缩放逻辑中心：
+10. 因为小人 DOM 使用 `transform-origin: top left`，灵力效果定位必须使用缩放后的视觉中心，而不是未缩放逻辑中心：
 
    ```text
    pet.x + (pet.size * visualScale) / 2
    pet.y + (pet.size * visualScale) / 2
    ```
 
-9. 暴露 `window.__DEBUG_SCREEN()` 作为运行时调试入口，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、以及移动系统实际使用的 `walkAreas`。
+11. 暴露 `window.__DEBUG_SCREEN()` 作为运行时调试入口，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、窗口尺寸、以及移动系统实际使用的 `walkAreas`。
 
 ## 备选方案
 
@@ -73,6 +78,12 @@ Accepted
 - 缺点：拖拽跨屏、窗口置顶、点击穿透、状态保存、跨屏行走和互动都会显著复杂化。
 - 结论：暂不采用。当前单窗口模型在显式坐标转换后更简单、更可控。
 
+### 使用物理像素坐标重建整套移动系统
+
+- 优点：概念上能绕开 Electron DIP 与 CSS 坐标的部分歧义。
+- 缺点：renderer 事件、DOM 定位、CSS transform 和 Electron IPC 仍会回到 CSS 坐标；需要在更多边界上来回转换，错误面更大。
+- 结论：拒绝。移动和渲染都继续使用 renderer 坐标，只在主进程显示器边界输入处做一次显式转换。
+
 ### 只修移动边界，不修视觉缩放
 
 - 优点：变更更小。
@@ -83,6 +94,8 @@ Accepted
 
 - `walkAreas` 现在是富对象，至少包含 `{ x, y, width, height, scaleRatio }`。
 - 后续任何围绕小人定位的视觉元素，都应复用同一套显示器 scale 逻辑，不应直接写 `pet.x + pet.size / 2`。
+- 跨屏自动行走允许在显示器之间的不可见坐标空洞上做桥接；同屏移动和到达目标后仍必须 clamp 回可见工作区。
+- 拖拽释放、重置位置、读取存档和屏幕信息变化后，都应调用同一套可达性修正，避免遗留坐标停在不可见区域。
 - 单元测试需要覆盖：
   - 虚拟桌面边界计算。
   - `workArea` 裁剪到 `bounds`。
@@ -100,8 +113,15 @@ Accepted
 
 ## 实现备注
 
-- `main.js` 通过 `screen-info` 向 renderer 发送 `walkAreas`、`windowScaleFactor` 和原始显示器诊断信息。
+- `main.js` 通过 `screen-info` 向 renderer 发送 `width`、`height`、`walkAreas`、`windowScaleFactor` 和原始显示器诊断信息。
+- `main.js` 在 `display-added`、`display-removed` 和 `display-metrics-changed` 后重新适配窗口和屏幕信息。
 - `displayBounds.js` 负责显示器边界转换，保证这部分逻辑可以脱离 Electron 做单元测试。
 - `MovementSystem` 在 `normalizeWalkAreas()` 中保留 `scaleRatio`，因为 UI 视觉缩放依赖和移动系统一致的显示器区域判断。
 - `PetRenderer` 使用 `transform-origin: top left` 缩放小人，因此所有基于小人中心的效果都必须使用缩放后的视觉中心。
 - `ContextMenu` 使用 CSS 变量 `--display-scale`，让菜单常态和 reveal 动画保持同一视觉比例。
+
+## 已知边界
+
+- 当前模型仍以一个跨屏透明窗口承载所有宠物和 UI。它依赖 Electron 在目标 Windows 布局下允许 `enableLargerThanScreen` 和固定窗口 bounds 生效。
+- `scaleRatio` 解决的是混合 DPI 下的视觉比例和可见区域换算，不代表每个显示器都有独立 renderer 或独立 `devicePixelRatio`。
+- 如果现场仍出现副屏不可见区域，需要优先比较 `window.__DEBUG_SCREEN()` 中的 `displays`、`walkAreas`、`movementWalkAreas` 与宠物坐标，而不是先改随机移动逻辑。

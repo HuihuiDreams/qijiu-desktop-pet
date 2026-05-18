@@ -65,7 +65,6 @@ qijiu-desktop-pet\
 │   ├── status.html          # 独立数值状态窗口 HTML
 │   ├── status.css           # 独立数值状态窗口样式
 │   ├── statusWindow.js      # 独立数值状态窗口逻辑
-│   ├── status.css           # 独立数值状态窗口样式
 │   ├── data/
 │   │   ├── config.js        # 所有的全局配置（数值衰减、移动速度、互动权重与距离等）
 │   │   └── dialogues.js     # 互动与闲聊的台词池
@@ -75,7 +74,7 @@ qijiu-desktop-pet\
 │   │   └── SpriteView.js    # 负责基于状态的雪碧图动画帧播放、预加载与 DOM 复用
 │   ├── systems/             # 独立的业务逻辑子系统
 │   │   ├── InteractionSystem.js # 负责检测距离并触发两人的 CP 互动
-│   │   ├── MovementSystem.js    # 负责计算随机走动目标点与步进，处理状态切换时序
+│   │   ├── MovementSystem.js    # 负责随机走动、跨屏桥接、边界 clamp 与状态切换时序
 │   │   ├── NurtureSystem.js     # 负责数值衰减、回复及喂食/修炼等操作
 │   │   ├── SkinManager.js       # 负责皮肤列表、路径映射、运行时切换和渲染注入
 │   │   └── TimeSystem.js        # 负责离线时间计算和自动存档 (electron-store)
@@ -160,18 +159,27 @@ qijiu-desktop-pet\
 - **发布源**: `electron-updater` 读取 GitHub Releases 中的 `latest.yml`、安装包和 `.blockmap`。
 - **友好降级**: 当发布元数据缺失或返回 404 时，手动检查会按“已是最新版本”处理，避免把小范围发布或元数据未上传误报成严重错误。
 
-### 3.10 多显示器支持 (Multi-Display Support)
-应用支持在混合 DPI 的多显示器环境下无缝运行。
-- **覆盖范围**: 主透明窗口覆盖完整的“虚拟桌面”边界。
-- **坐标转换**: `displayBounds.js` 将每个物理显示器的 `workArea` 转换为相对于主窗口左上角的 CSS 相对坐标（`walkAreas`）。
-- **视觉一致性**: 渲染层（`PetRenderer`、`ContextMenu`）根据元素当前所在的显示器，动态应用 `scaleRatio` (Display Scale / Window Scale)，确保小人与 UI 在不同缩放比例的屏幕上看起来物理大小一致（详见 [ADR-022](./decisions/ADR-022-multi-display-support-boundary.md)）。
+### 3.10 托盘菜单分组 (Tray Menu Grouping)
+系统托盘菜单由 `main.js` 的 `buildTrayMenu()` 统一生成，并用分割线区分桌宠功能和软件功能。
+- **桌宠功能组**: 状态面板、切换皮肤、暂停/恢复走动、隐藏/显示桌宠、重置位置。
+- **软件功能组**: 开机启动、检查更新、退出。
+- **开发态调试入口**: `🛠️ 开发者工具` 只在 `!app.isPackaged` 时加入菜单；安装包版本不显示该入口，避免普通用户看到调试功能。
 
-### 3.11 调试与测试体系 (Debug & Test)
+### 3.11 多显示器支持 (Multi-Display Support)
+应用支持在混合 DPI 的多显示器环境下无缝运行。
+- **覆盖范围**: 主透明窗口通过 `getVirtualDisplayBounds()` 覆盖完整“虚拟桌面”边界，并在显示器增删或指标变化后重新设置 `minimumSize`、`maximumSize` 与 `bounds`。
+- **坐标转换**: `displayBounds.js` 将每个物理显示器的 `workArea` 裁剪到 `bounds` 内，再转换为相对于主窗口左上角的 renderer CSS 坐标（`walkAreas`）。
+- **缩放基准**: `main.js` 将主窗口左上角附近显示器的 `scaleFactor` 作为 `windowScaleFactor`，每个 `walkArea` 附带 `scaleRatio = display.scaleFactor / windowScaleFactor`。
+- **移动边界**: `MovementSystem` 基于 `walkAreas` 选择随机目标、修复旧目标、桥接显示器之间的不可见坐标空洞，并在同屏移动或到达目标后 clamp 回可见工作区。
+- **可达性修正**: 拖曳释放、重置位置、读取存档和屏幕信息变化后，`app.js` 都通过 `keepPetReachable()` 将宠物修正回可见区域。
+- **视觉一致性**: 渲染层（`PetRenderer`、`ContextMenu`、灵力效果）根据元素当前所在显示器动态应用 `scaleRatio`，确保小人与 UI 在不同缩放比例的屏幕上看起来物理大小一致（详见 [ADR-022](./decisions/ADR-022-multi-display-support-boundary.md)）。
+
+### 3.12 调试与测试体系 (Debug & Test)
 - **控制台调试**: `src/debug.js` 提供了 `testKiss()`、`testHungry()` 等函数，方便开发者在控制台手动触发各种互动状态和视觉效果。
-- **运行时监控**: 暴露 `window.__DEBUG_SCREEN()` 供排查多屏边界问题。
+- **运行时监控**: 暴露 `window.__DEBUG_SCREEN()` 供排查多屏边界问题，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、窗口尺寸和移动系统实际使用的 `movementWalkAreas`。
 - **单元测试**: `test/` 目录下包含对 `displayBounds.js` 和 `MovementSystem.js` 等纯逻辑模块的测试，确保坐标计算与状态切换的稳定性。
 
-### 3.12 独立状态窗口 (Independent Status Window)
+### 3.13 独立状态窗口 (Independent Status Window)
 除了嵌入在宠物旁边的状态条外，应用还提供了一个独立的“详细状态面板”。
 - **架构**: 这是一个独立的 `BrowserWindow` (`status.html`)，由主进程通过 IPC 管理其生命周期。
 - **数据流**: 渲染进程定期通过 `update-status-window` IPC 将最新的数值同步给主进程，再由主进程转发给状态窗口。

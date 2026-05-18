@@ -498,6 +498,13 @@ function buildTrayMenu() {
       },
     },
     {
+      label: '🔄 重置位置',
+      click: () => {
+        if (mainWindow) mainWindow.webContents.send('reset-positions');
+      },
+    },
+    { type: 'separator' },
+    {
       label: autoLaunchEnabled ? '🚀 禁用开机启动' : '🚀 开机自动启动',
       click: async () => {
         autoLaunchEnabled = !autoLaunchEnabled;
@@ -512,20 +519,14 @@ function buildTrayMenu() {
         void checkForUpdatesFromTray();
       },
     },
-    { type: 'separator' },
-    {
-      label: '🔄 重置位置',
-      click: () => {
-        if (mainWindow) mainWindow.webContents.send('reset-positions');
+    ...(!app.isPackaged ? [
+      {
+        label: '🛠️ 开发者工具',
+        click: () => {
+          if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
+        },
       },
-    },
-    {
-      label: '🛠️ 开发者工具',
-      click: () => {
-        if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
-      },
-    },
-    { type: 'separator' },
+    ] : []),
     {
       label: '❌ 退出',
       click: () => {
