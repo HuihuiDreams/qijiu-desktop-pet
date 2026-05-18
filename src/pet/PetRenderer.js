@@ -1,3 +1,13 @@
+// 1x renderer-coordinate design tokens. Multi-display rendering multiplies these
+// by the active walk area's scaleRatio before positioning visual overlay pieces.
+const INTERACTION_OVERLAY_BASE_WIDTH = 176;
+const INTERACTION_OVERLAY_TOP_OFFSET = 64;
+const INTERACTION_BUBBLE_TOP_GAP = 48;
+const INTERACTION_BUBBLE_HEAD_X = {
+  shenjiu: 0.1,
+  yueqi: 0.9,
+};
+
 /**
  * PetRenderer — 为每个宠物创建和更新 DOM 元素。
  * 处理鼠标移入/移出事件以切换点击穿透行为。
@@ -261,13 +271,15 @@ class PetRenderer {
     if (petA.element) petA.element.querySelector('.pet-body').style.visibility = 'hidden';
     if (petB.element) petB.element.querySelector('.pet-body').style.visibility = 'hidden';
 
-    // 计算两只宠物之间的中心点位置
-    const cx = (petA.x + petB.x) / 2 + petA.size / 2;
-    const cy = (petA.y + petB.y) / 2 + petA.size / 2;
+    const centerA = this.getPetVisualCenter(petA);
+    const centerB = this.getPetVisualCenter(petB);
+    const visualScale = (centerA.scale + centerB.scale) / 2;
 
-    const overlayWidth = 176;
+    const overlayWidth = INTERACTION_OVERLAY_BASE_WIDTH * visualScale;
+    const cx = (centerA.x + centerB.x) / 2;
+    const cy = (centerA.y + centerB.y) / 2;
     const overlayLeft = cx - overlayWidth / 2;
-    const overlayTop = cy - 64;
+    const overlayTop = cy - INTERACTION_OVERLAY_TOP_OFFSET * visualScale;
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
@@ -295,7 +307,13 @@ class PetRenderer {
     });
 
     // 返回覆盖层的位置信息，供气泡定位使用
-    return { x: overlayLeft, y: overlayTop, width: overlayWidth };
+    return {
+      x: overlayLeft,
+      y: overlayTop,
+      width: overlayWidth,
+      baseWidth: INTERACTION_OVERLAY_BASE_WIDTH,
+      scale: visualScale,
+    };
   }
 
   /**
@@ -307,21 +325,20 @@ class PetRenderer {
    * @param {number} duration   - 气泡显示时长（毫秒）
    */
   showOverlayBubbles(shenjuText, yueqiText, overlayPos, duration) {
-    // 为了防止长台词气泡重叠，把气泡的挂载点大幅向两侧拉开
-    const SHENJIU_HEAD_X = 0.1; // 偏左
-    const YUEQI_HEAD_X = 0.9; // 偏右
+    const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
 
     const makeOverlayBubble = (text, headXRatio) => {
       const el = document.createElement('div');
       el.className = 'dialog-bubble overlay-bubble';
       el.textContent = text;
       el.style.position = 'absolute';
+      el.style.setProperty('--bubble-scale', visualScale);
       // 水平居中于角色头部
       const headX = overlayPos.x + overlayPos.width * headXRatio;
       el.style.left = `${headX}px`;
       el.style.transform = 'translateX(-50%)';
       // 纵向：放在图片顶部上方，不遮挡人物
-      el.style.top = `${overlayPos.y - 48}px`;
+      el.style.top = `${overlayPos.y - INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
       el.style.bottom = 'auto'; // 强制覆盖 .dialog-bubble 的 bottom，防止高度被拉伸
       el.style.zIndex = '101';
       el.style.pointerEvents = 'none';
@@ -332,8 +349,8 @@ class PetRenderer {
       setTimeout(() => el.remove(), duration);
     };
 
-    if (shenjuText) makeOverlayBubble(shenjuText, SHENJIU_HEAD_X);
-    if (yueqiText) makeOverlayBubble(yueqiText, YUEQI_HEAD_X);
+    if (shenjuText) makeOverlayBubble(shenjuText, INTERACTION_BUBBLE_HEAD_X.shenjiu);
+    if (yueqiText) makeOverlayBubble(yueqiText, INTERACTION_BUBBLE_HEAD_X.yueqi);
   }
 
   /**

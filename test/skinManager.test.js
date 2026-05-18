@@ -41,7 +41,7 @@ test('SkinManager: 默认初始化状态正确', () => {
 
 test('SkinManager: getDisplayName 返回中文名，兜底返回文件夹名', () => {
   const sm = new SkinManager();
-  assert.equal(sm.getDisplayName('default'), '默认·仙侠水墨');
+  assert.equal(sm.getDisplayName('default'), '默认皮肤·凉拌仓鼠');
   assert.equal(sm.getDisplayName('qban'), 'qban'); // 没有映射时兜底
 });
 
@@ -51,7 +51,7 @@ test('SkinManager: setAvailableSkins 更新可用列表', () => {
   const list = sm.getAvailableSkins();
   assert.equal(list.length, 3);
   assert.equal(list[0].id, 'default');
-  assert.equal(list[0].displayName, '默认·仙侠水墨');
+  assert.equal(list[0].displayName, '默认皮肤·凉拌仓鼠');
   assert.equal(list[1].id, 'qban');
   assert.equal(list[1].displayName, 'qban');
 });

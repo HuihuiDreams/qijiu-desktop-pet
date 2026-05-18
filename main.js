@@ -16,7 +16,7 @@ const LOGIN_ITEM_NAME = '七九爱宠';
 
 // 皮肤中文显示名映射表（文件夹名 → 托盘菜单显示名）
 const SKIN_NAMES = {
-  'default': '默认·仙侠水墨',
+  'default': '默认皮肤·凉拌仓鼠',
   // 新增皮肤时在此添加映射，例如：
   // 'qban': 'Q版·萌系',
 };
