@@ -1,7 +1,7 @@
 # Changelog
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
-## [WIP] - 2026-05-16
+## [0.2.4] - 2026-05-18
 ### Added
 - **多显示器调试交接文档**：新增 `docs/plan/multi-display-debug-handoff.md`，记录跨屏移动相关改动、当前遗留问题、用户显示器布局线索和后续排查建议，便于后续 agent 接手。
 - **多显示器边界决策记录更新**：重写 `docs/decisions/ADR-022-multi-display-support-boundary.md`，记录混合 DPI 坐标转换、`walkAreas.scaleRatio`、视觉缩放和调试入口的最终方案。
