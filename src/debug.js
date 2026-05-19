@@ -13,6 +13,16 @@ window.testInteraction = function (type) {
 
   const { yueqi: petAObj, shenjiu: petBObj } = window.__DEBUG_PETS;
   const renderer = window.__DEBUG_RENDERER;
+  let overlayType = type;
+  let debugDialogue = null;
+
+  if (type === 'shareFood' && petBObj.stats.hunger + CONFIG.INTERACTIONS.shareFood.hungerB > 100) {
+    overlayType = 'throwup';
+    debugDialogue = {
+      yueqi: '小九你怎么了？',
+      shenjiu: '呕~~你要撑死我吗？！',
+    };
+  }
 
   // 清除旧的覆盖层（如果有）
   const existingOverlay = document.getElementById('interaction-overlay');
@@ -24,16 +34,16 @@ window.testInteraction = function (type) {
   petBObj.setState('interacting');
 
   // 通过 renderer 创建覆盖层，获取图片绝对坐标（已内置隐藏身体）
-  const overlayPos = renderer.showOverlay(petAObj, petBObj, type);
+  const overlayPos = renderer.showOverlay(petAObj, petBObj, overlayType);
 
   // 用正确的坐标在图片人物头顶生成气泡
   const pool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES[type] : null;
-  const shenjuText = pool?.shenjiu?.length
+  const shenjuText = debugDialogue?.shenjiu || (pool?.shenjiu?.length
     ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
-    : null;
-  const yueqiText = pool?.yueqi?.length
+    : null);
+  const yueqiText = debugDialogue?.yueqi || (pool?.yueqi?.length
     ? pool.yueqi[Math.floor(Math.random() * pool.yueqi.length)]
-    : null;
+    : null);
   renderer.showOverlayBubbles(shenjuText, yueqiText, overlayPos, 3500);
 
   console.log(`[debug] ${type} overlay 显示中，4秒后自动隐藏`);
@@ -52,6 +62,12 @@ window.testKiss = () => window.testInteraction('kiss');
 window.testHug = () => window.testInteraction('hug');
 window.testCultivate = () => window.testInteraction('cultivate');
 window.testShareFood = () => window.testInteraction('shareFood');
+window.testsharefood = window.testShareFood;
+window.testShareFoodThrowup = () => {
+  if (!window.__DEBUG_PETS) return;
+  window.__DEBUG_PETS.shenjiu.stats.hunger = 91;
+  window.testInteraction('shareFood');
+};
 
 window.testHungry = function() {
   if (!window.__DEBUG_PETS) {

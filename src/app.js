@@ -287,29 +287,30 @@
         // 检查 CP (组合) 互动
         const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
         if (interaction) {
-          const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood'].includes(interaction.key);
+          const overlayKey = interaction.overlayKey || interaction.key;
+          const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'].includes(overlayKey);
           dialogBubble.removeForPets([yueqi, shenjiu]);
 
           if (isOverlay) {
             // 显示图片覆盖层，并将气泡锁定到图片中角色头顶
             interactionOverlayActive = true;
-            const overlayPos = renderer.showOverlay(yueqi, shenjiu, interaction.key);
+            const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
             renderer.spawnQiAuraAt(
               overlayPos.x + overlayPos.width / 2,
               overlayPos.y + 82,
               (overlayPos.baseWidth || overlayPos.width) * 1.2,
-              interaction.key,
+              overlayKey,
               getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
             );
 
             // 从对话库中取台词：沈九在左，岳七在右
             const pool = DIALOGUES[interaction.key];
-            const shenjuText = pool?.shenjiu?.length
+            const shenjuText = interaction.dialogue?.shenjiu || (pool?.shenjiu?.length
               ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
-              : null;
-            const yueqiText = pool?.yueqi?.length
+              : null);
+            const yueqiText = interaction.dialogue?.yueqi || (pool?.yueqi?.length
               ? pool.yueqi[Math.floor(Math.random() * pool.yueqi.length)]
-              : null;
+              : null);
             renderer.showOverlayBubbles(shenjuText, yueqiText, overlayPos, CONFIG.INTERACTION_DURATION - 500);
           } else {
             // 非图片叠加层的互动：正常气泡 + 漂浮特效
