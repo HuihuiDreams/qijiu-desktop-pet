@@ -62,16 +62,11 @@ class InteractionSystem {
 
   getPresentation(petA, petB, interaction) {
     if (interaction.key === 'shareFood' && petB.stats.hunger + interaction.hungerB > 100) {
-      // 从 DIALOGUES.throwup 随机取台词（支持多语言），兜底用中文硬编码
-      const pool = (typeof window !== 'undefined' && window.DIALOGUES?.throwup) || null;
-      const pick = (arr) => (Array.isArray(arr) && arr.length > 0)
-        ? arr[Math.floor(Math.random() * arr.length)]
-        : null;
       return {
         overlayKey: 'throwup',
         dialogue: {
-          yueqi:   pool ? pick(pool.yueqi)   : '小九你怎么了？',
-          shenjiu: pool ? pick(pool.shenjiu) : '呕~~你要撑死我吗？！',
+          yueqi: '小九你怎么了？',
+          shenjiu: '呕~~你要撑死我吗？！',
         },
       };
     }
