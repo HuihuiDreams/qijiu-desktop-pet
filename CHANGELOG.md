@@ -2,8 +2,16 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [WIP] - 2026-05-19
+
+## [0.2.5] - 2026-05-19
+### Added
+- `shareFood` 互动新增吃太撑分支：当沈九饱腹 `+10` 后超过 100 时，互动图改为 `throwup.png`。
+- 调试入口新增 `testsharefood()` 小写别名和 `testShareFoodThrowup()`，方便在 Console 里直接验证吃太撑分支。
+- 新增 `docs/plan/cangqiong-pomodoro-plan.md`，记录“苍穹山派”番茄钟实施计划，包含非工作软件定义、前台窗口识别、触发阈值和测试场景。
+- 新增 `docs/plan/zongmen-task-todo-plan.md`，记录“宗门任务”待办事项实施计划，包含灵石/好感度奖励区分、任务系统数据模型、状态窗口 UI 和持久化方案。
+
 ### Changed
+- 吃太撑分支的互动对白固定为岳七“小九你怎么了？”、沈九“呕~~”。
 - 重写 `readme.txt` 为更面向普通用户的说明，保留养成数值、互动阈值和原有 emoji，并改为带 BOM 的 UTF-8 编码以减少中文 Windows 打开乱码。
 
 ## [0.2.4] - 2026-05-18

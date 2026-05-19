@@ -10,6 +10,11 @@ const { InteractionSystem } = require('../src/systems/InteractionSystem');
 
 function createPet() {
   return {
+    x: 0,
+    y: 0,
+    size: 96,
+    direction: 'right',
+    isDragging: false,
     stats: {
       affection: 0,
       hunger: 80,
@@ -24,6 +29,9 @@ function createPet() {
     },
     setState(newState) {
       this.state = newState;
+    },
+    isBusy() {
+      return this.state !== 'idle';
     },
   };
 }
@@ -77,4 +85,36 @@ test('share food uses the original asymmetric reward values', () => {
   assert.equal(shenjiu.stats.hunger, 90);
   assert.equal(yueqi.stats.mood, 78);
   assert.equal(shenjiu.stats.mood, 73);
+});
+
+test('share food switches to throwup presentation only when Shen Jiu would exceed full hunger', () => {
+  const yueqi = createPet();
+  const shenjiu = createPet();
+  shenjiu.x = 10;
+  const interactionSystem = new InteractionSystem();
+  interactionSystem.pickInteraction = () => ({ key: 'shareFood', ...CONFIG.INTERACTIONS.shareFood });
+
+  shenjiu.stats.hunger = 90;
+  let interaction = interactionSystem.update(yueqi, shenjiu, 16);
+
+  assert.equal(interaction.key, 'shareFood');
+  assert.equal(interaction.overlayKey, 'shareFood');
+  assert.equal(interaction.dialogue, null);
+  assert.equal(shenjiu.stats.hunger, 100);
+
+  interactionSystem.isInteracting = false;
+  interactionSystem.cooldownTimer = 0;
+  yueqi.state = 'idle';
+  shenjiu.state = 'idle';
+  shenjiu.stats.hunger = 91;
+
+  interaction = interactionSystem.update(yueqi, shenjiu, 16);
+
+  assert.equal(interaction.key, 'shareFood');
+  assert.equal(interaction.overlayKey, 'throwup');
+  assert.deepEqual(interaction.dialogue, {
+    yueqi: '小九你怎么了？',
+    shenjiu: '呕~~你要撑死我吗？！',
+  });
+  assert.equal(shenjiu.stats.hunger, 100);
 });

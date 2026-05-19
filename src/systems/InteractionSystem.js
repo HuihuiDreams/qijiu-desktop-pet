@@ -60,6 +60,23 @@ class InteractionSystem {
     petB.modifyStat('affection', interaction.affection);
   }
 
+  getPresentation(petA, petB, interaction) {
+    if (interaction.key === 'shareFood' && petB.stats.hunger + interaction.hungerB > 100) {
+      return {
+        overlayKey: 'throwup',
+        dialogue: {
+          yueqi: '小九你怎么了？',
+          shenjiu: '呕~~你要撑死我吗？！',
+        },
+      };
+    }
+
+    return {
+      overlayKey: interaction.key,
+      dialogue: null,
+    };
+  }
+
   /**
    * 主更新循环。如果本帧触发了互动，则返回互动信息。
    * @returns {{ key: string, interaction: object } | null}
@@ -120,9 +137,11 @@ class InteractionSystem {
         }
 
         // 应用属性增减效果
+        const presentation = this.getPresentation(petA, petB, interaction);
+
         this.applyInteraction(petA, petB, interaction);
 
-        return { key: interaction.key, interaction };
+        return { key: interaction.key, interaction, ...presentation };
       }
     }
 
