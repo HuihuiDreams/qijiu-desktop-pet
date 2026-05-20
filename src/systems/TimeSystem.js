@@ -40,8 +40,8 @@ class TimeSystem {
    */
   deserializePet(pet, data) {
     if (!data) return;
-    pet.x = data.x || pet.x;
-    pet.y = data.y || pet.y;
+    pet.x = Number.isFinite(data.x) ? data.x : pet.x;
+    pet.y = Number.isFinite(data.y) ? data.y : pet.y;
     if (data.stats) {
       pet.stats.affection = data.stats.affection ?? pet.stats.affection;
       pet.stats.hunger = data.stats.hunger ?? pet.stats.hunger;

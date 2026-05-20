@@ -16,6 +16,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateStatusWindow: (data) => ipcRenderer.send('update-status-window', data),
   closeStatusWindow: () => ipcRenderer.send('hide-status-window'),
   resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
+  onSaveBeforeQuit: (callback) => {
+    ipcRenderer.on('save-before-quit', async (_event, requestId) => {
+      let success = false;
+      try {
+        await callback();
+        success = true;
+      } catch (error) {
+        console.error('Final save before quit failed:', error);
+      } finally {
+        ipcRenderer.send('save-before-quit-complete', requestId, success);
+      }
+    });
+  },
 
   // 监听来自主进程的消息
   onScreenInfo: (callback) => {

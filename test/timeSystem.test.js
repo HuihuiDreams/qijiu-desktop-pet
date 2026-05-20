@@ -69,3 +69,17 @@ test('TimeSystem.load falls back to default for legacy saves without skinId', as
 
   assert.equal(loaded.skinId, 'default');
 });
+
+test('TimeSystem.deserializePet restores saved zero coordinates', () => {
+  const pet = createPet('yueqi');
+  const timeSystem = new TimeSystem();
+
+  timeSystem.deserializePet(pet, {
+    x: 0,
+    y: 0,
+    stats: {},
+  });
+
+  assert.equal(pet.x, 0);
+  assert.equal(pet.y, 0);
+});

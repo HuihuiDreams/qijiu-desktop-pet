@@ -55,9 +55,22 @@ class ContextMenu {
    */
   show(pet, x, y) {
     this.currentPet = pet;
-    const icon = pet.image ? `<img src="${pet.image}" class="status-pet-icon">` : pet.emoji;
     const displayName = pet.name && pet.nickname ? `${pet.name}（${pet.nickname}）` : pet.nickname || pet.name || '';
-    this.headerEl.innerHTML = `${icon} ${displayName}`;
+    this.headerEl.textContent = '';
+
+    if (pet.image) {
+      const icon = document.createElement('img');
+      icon.className = 'status-pet-icon';
+      icon.alt = '';
+      icon.src = pet.image;
+      this.headerEl.appendChild(icon);
+    } else {
+      const icon = document.createElement('span');
+      icon.textContent = pet.emoji || '';
+      this.headerEl.appendChild(icon);
+    }
+
+    this.headerEl.appendChild(document.createTextNode(` ${displayName}`));
 
     // 动态更新抚摸/关怀动作的菜单文本
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
