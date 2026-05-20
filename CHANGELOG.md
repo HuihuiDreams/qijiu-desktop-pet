@@ -3,6 +3,19 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [0.2.6] - 2026-05-20
+### Added
+- **代码规范规则集**：根据 Karpathy 编程指南定制了适用于本项目的 `.geminirules` 开发规范规则文件。
+- **发布前文档校验**：在 Release Preflight 工作流中新增对 `readme.txt` 存在性的自动校验步骤，防止漏发说明文档。
+
+### Changed
+- **Release 文档自动发布**：在 Build Windows Installer 工作流中增加了通过 GitHub CLI 自动向 GitHub Release 上传 `readme.txt` 的步骤，并同步将其打包进 Actions 构建 Artifacts。
+- **皮肤素材需求文档更新**：更新了 `docs/skin_assets_requirements.csv` 和 `.xlsx`，补充了沈九吃太撑互动的 `throwup.png` 资源需求及双人定位说明。
+
+### Fixed
+- **依赖安全漏洞修补**：通过 `npm audit fix` 升级了项目依赖库，修复了 Electron 等 13 个已知的安全漏洞。
+- **IPC 数据存储键校验**：在主进程数据持久化接口中增加了白名单校验，限制可读写的存储键值，增强了进程间通信的数据安全性。
+
 ## [0.2.5] - 2026-05-19
 ### Added
 - `shareFood` 互动新增吃太撑分支：当沈九饱腹 `+10` 后超过 100 时，互动图改为 `throwup.png`。

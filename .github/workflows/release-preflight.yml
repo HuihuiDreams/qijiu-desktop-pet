@@ -43,6 +43,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify readme.txt exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -Path readme.txt -PathType Leaf)) {
+            throw "readme.txt is missing from the repository root."
+          }
+
       - name: Validate release metadata
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
