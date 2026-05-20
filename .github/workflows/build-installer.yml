@@ -126,6 +126,20 @@ jobs:
         run: |
           "This release was built without Windows Authenticode signing because WIN_CSC_* secrets were not configured." | Out-File -FilePath dist\UNSIGNED-RELEASE.txt -Encoding utf8
 
+      - name: Upload readme.txt to GitHub Release
+        shell: pwsh
+        run: |
+          $version = '${{ inputs.version }}'
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $tag = '${{ github.ref_name }}'
+          } else {
+            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
+          }
+          Write-Host "Uploading readme.txt to GitHub Release for tag $tag..."
+          gh release upload $tag readme.txt --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:
@@ -135,4 +149,5 @@ jobs:
             dist/*.blockmap
             dist/latest.yml
             dist/UNSIGNED-RELEASE.txt
+            readme.txt
           if-no-files-found: error
