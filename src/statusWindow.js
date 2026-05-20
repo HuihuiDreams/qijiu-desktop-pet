@@ -9,35 +9,59 @@ const STAT_LABELS = {
 };
 
 function renderPetStats(pet) {
-  const icon = pet.image
-    ? `<img src="${pet.image}" class="status-pet-icon" alt="">`
-    : `<span>${pet.emoji || ''}</span>`;
-
-  const rows = Object.entries(STAT_LABELS).map(([key, label]) => {
-    const value = Math.max(0, Math.min(100, Number(pet.stats?.[key]) || 0));
-    return `
-      <div class="stat-row">
-        <span class="stat-label">${label}</span>
-        <div class="stat-bar">
-          <div class="stat-bar-fill stat-bar-fill--${key}" style="width: ${value}%"></div>
-        </div>
-        <span class="stat-value">${value}</span>
-      </div>
-    `;
-  }).join('');
-
   const displayName = pet.name && pet.nickname ? `${pet.name}（${pet.nickname}）` : pet.nickname || pet.name || '';
-  return `
-    <article class="pet-status-block">
-      <div class="pet-status-name">${icon} ${displayName}</div>
-      ${rows}
-    </article>
-  `;
+  const block = document.createElement('article');
+  block.className = 'pet-status-block';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'pet-status-name';
+
+  if (pet.image) {
+    const icon = document.createElement('img');
+    icon.className = 'status-pet-icon';
+    icon.alt = '';
+    icon.src = pet.image;
+    nameEl.appendChild(icon);
+  } else {
+    const icon = document.createElement('span');
+    icon.textContent = pet.emoji || '';
+    nameEl.appendChild(icon);
+  }
+
+  nameEl.appendChild(document.createTextNode(` ${displayName}`));
+  block.appendChild(nameEl);
+
+  Object.entries(STAT_LABELS).forEach(([key, label]) => {
+    const value = Math.max(0, Math.min(100, Number(pet.stats?.[key]) || 0));
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'stat-label';
+    labelEl.textContent = label;
+
+    const bar = document.createElement('div');
+    bar.className = 'stat-bar';
+
+    const fill = document.createElement('div');
+    fill.className = `stat-bar-fill stat-bar-fill--${key}`;
+    fill.style.width = `${value}%`;
+    bar.appendChild(fill);
+
+    const valueEl = document.createElement('span');
+    valueEl.className = 'stat-value';
+    valueEl.textContent = String(value);
+
+    row.append(labelEl, bar, valueEl);
+    block.appendChild(row);
+  });
+
+  return block;
 }
 
 function renderStatus(data) {
   const pets = Array.isArray(data?.pets) ? data.pets : [];
-  contentEl.innerHTML = pets.map(renderPetStats).join('');
+  contentEl.replaceChildren(...pets.map(renderPetStats));
   requestAnimationFrame(() => {
     const panel = document.querySelector('.status-panel');
     if (!panel) return;
