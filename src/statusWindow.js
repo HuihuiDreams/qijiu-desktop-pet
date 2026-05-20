@@ -1,50 +1,15 @@
 const contentEl = document.getElementById('status-content');
 const closeBtn = document.getElementById('status-close');
 
-let currentLocale = 'zh';
-
-function t(key) {
-  if (typeof I18N === 'undefined') return key;
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-}
-
-window.electronAPI.getLocale().then(locale => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  updateI18nElements();
-});
-
-let lastRenderData = null;
-
-window.electronAPI.onLocaleChange?.((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  updateI18nElements();
-  if (lastRenderData) {
-    renderStatus(lastRenderData);
-  }
-});
-
-function updateI18nElements() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
-  });
-}
+const STAT_LABELS = {
+  affection: '❤️ 好感',
+  hunger: '🍖 饱腹',
+  qi: '🧘🏻‍♂️ 灵力',
+  mood: '✨ 心境',
+};
 
 function renderPetStats(pet) {
-  const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-  const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-  const name = t(nameKey) !== nameKey ? t(nameKey) : pet.name;
-  const nickname = t(nicknameKey) !== nicknameKey ? t(nicknameKey) : pet.nickname;
-  const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
-
-  const STAT_LABELS = {
-    affection: '❤️ ' + t('statAffection'),
-    hunger: '🍖 ' + t('statHunger'),
-    qi: '🧘🏻‍♂️ ' + t('statQi'),
-    mood: '✨ ' + t('statMood'),
-  };
-
+  const displayName = pet.name && pet.nickname ? `${pet.name}（${pet.nickname}）` : pet.nickname || pet.name || '';
   const block = document.createElement('article');
   block.className = 'pet-status-block';
 
@@ -95,7 +60,6 @@ function renderPetStats(pet) {
 }
 
 function renderStatus(data) {
-  lastRenderData = data;
   const pets = Array.isArray(data?.pets) ? data.pets : [];
   contentEl.replaceChildren(...pets.map(renderPetStats));
   requestAnimationFrame(() => {

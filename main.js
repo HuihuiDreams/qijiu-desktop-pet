@@ -32,6 +32,10 @@ let autoLaunchEnabled = false; // 开机自动启动状态
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
 let keepOnTopTimer = null; // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
+let allowMainWindowClose = false;
+let finalSaveInProgress = false;
+let finalSaveRequestId = 0;
+const FINAL_SAVE_TIMEOUT_MS = 2500;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 /**
@@ -326,6 +330,60 @@ function resizeStatusWindow(size) {
   statusWindow.setContentSize(width, height);
 }
 
+function requestRendererFinalSave(win) {
+  if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
+    return Promise.resolve(false);
+  }
+
+  return new Promise((resolve) => {
+    const requestId = ++finalSaveRequestId;
+    let settled = false;
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      ipcMain.removeListener('save-before-quit-complete', handleComplete);
+    };
+
+    const settle = (success) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(Boolean(success));
+    };
+
+    const handleComplete = (event, completedRequestId, success) => {
+      if (event.sender !== win.webContents || completedRequestId !== requestId) return;
+      settle(success);
+    };
+
+    const timeout = setTimeout(() => {
+      console.warn('Timed out waiting for renderer final save.');
+      settle(false);
+    }, FINAL_SAVE_TIMEOUT_MS);
+
+    ipcMain.on('save-before-quit-complete', handleComplete);
+    win.webContents.send('save-before-quit', requestId);
+  });
+}
+
+function installFinalSaveBeforeClose(win) {
+  win.on('close', (event) => {
+    if (allowMainWindowClose) return;
+
+    event.preventDefault();
+    if (finalSaveInProgress) return;
+
+    finalSaveInProgress = true;
+    requestRendererFinalSave(win).finally(() => {
+      allowMainWindowClose = true;
+      finalSaveInProgress = false;
+      if (!win.isDestroyed()) {
+        win.close();
+      }
+    });
+  });
+}
+
 /**
  * 第二次点击应用图标时，唤起已存在的实例。
  */
@@ -404,6 +462,7 @@ function createWindow() {
   mainWindow.on('show', keepPetWindowOnTop);
   mainWindow.on('restore', keepPetWindowOnTop);
   mainWindow.on('blur', keepPetWindowOnTop);
+  installFinalSaveBeforeClose(mainWindow);
 
   mainWindow.on('closed', () => {
     if (keepOnTopTimer) {

@@ -1,6 +1,5 @@
 /**
  * ContextMenu — 用于宠物互动的自定义右键菜单。
- * 所有动态字符串均通过 window.t() 获取以支持多语言。
  */
 class ContextMenu {
   constructor(nurtureSystem, getVisualScaleForPoint = null) {
@@ -56,12 +55,7 @@ class ContextMenu {
    */
   show(pet, x, y) {
     this.currentPet = pet;
-    const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-    const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-    const name = window.t && window.t(nameKey) !== nameKey ? window.t(nameKey) : pet.name;
-    const nickname = window.t && window.t(nicknameKey) !== nicknameKey ? window.t(nicknameKey) : pet.nickname;
-    const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
-
+    const displayName = pet.name && pet.nickname ? `${pet.name}（${pet.nickname}）` : pet.nickname || pet.name || '';
     this.headerEl.textContent = '';
 
     if (pet.image) {
@@ -78,17 +72,11 @@ class ContextMenu {
 
     this.headerEl.appendChild(document.createTextNode(` ${displayName}`));
 
-    // 动态更新抚摸/关怀动作的菜单文本（语言敏感）
+    // 动态更新抚摸/关怀动作的菜单文本
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
     if (petActionEl) {
-      const key = pet.id === 'shenjiu' ? 'petShenjiu' : 'petYueqi';
-      petActionEl.textContent = window.t ? window.t(key) : (pet.id === 'shenjiu' ? '🤚 七哥关怀' : '🤚 小九撒娇');
+      petActionEl.textContent = pet.id === 'shenjiu' ? '🤚 七哥关怀' : '🤚 小九撒娇';
     }
-
-    // 刷新其他带 data-i18n 属性的菜单项
-    this.menuEl.querySelectorAll('[data-i18n]').forEach(el => {
-      if (window.t) el.textContent = window.t(el.dataset.i18n);
-    });
 
     // 更新禁用状态
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
@@ -122,7 +110,7 @@ class ContextMenu {
   hide() {
     this.menuEl.classList.add('hidden');
     this.currentPet = null;
-
+    
     // 菜单关闭后，检查是否有其他交互面板开着（如状态面板）
     // 如果状态面板是开着的，则不要重新启用点击穿透，否则状态面板会无法点击
     const panelOpen = !document.getElementById('status-panel').classList.contains('hidden');
@@ -134,45 +122,32 @@ class ContextMenu {
   handleAction(action) {
     if (!this.currentPet) return;
     const pet = this.currentPet;
-    const t = (key, fallback) => (window.t ? window.t(key) : fallback);
 
     switch (action) {
       case 'feed':
         if (this.nurtureSystem.feed(pet)) {
-          const feedBubble = pet.id === 'yueqi'
-            ? t('bubbleFeedYueqi', '（享用中…）')
-            : t('bubbleFeedShenjiu', '…还行吧。');
-          if (pet._showBubble) pet._showBubble(feedBubble);
+          if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '（享用中…）' : '…还行吧。');
           if (pet._spawnEffect) pet._spawnEffect('🍎', 'feed');
         }
         break;
       case 'meditate':
         if (this.nurtureSystem.meditate(pet)) {
-          const meditateBubble = pet.id === 'yueqi'
-            ? t('bubbleMeditateYueqi', '入定…')
-            : t('bubbleMeditateShenjiu', '（闭目凝神）');
-          if (pet._showBubble) pet._showBubble(meditateBubble);
+          if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '入定…' : '（闭目凝神）');
           if (pet._spawnEffect) pet._spawnEffect('✨', 'meditate');
         }
         break;
       case 'pet':
         if (this.nurtureSystem.headPat(pet)) {
-          const patBubble = pet.id === 'yueqi'
-            ? t('bubblePetYueqi', '（宠溺地笑）')
-            : t('bubblePetShenjiu', '…谁要你管。');
-          if (pet._showBubble) pet._showBubble(patBubble);
+          if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '（宠溺地笑）' : '…谁要你管。');
           if (pet._spawnEffect) pet._spawnEffect('💕', 'pet');
         }
         break;
       case 'rest':
         if (this.nurtureSystem.rest(pet)) {
-          const restBubble = pet.id === 'yueqi'
-            ? t('bubbleRestYueqi', '稍作休整。')
-            : t('bubbleRestShenjiu', '（假寐）');
-          if (pet._showBubble) pet._showBubble(restBubble);
+          if (pet._showBubble) pet._showBubble(pet.id === 'yueqi' ? '稍作休整。' : '（假寐）');
           if (pet._spawnEffect) pet._spawnEffect('💤', 'rest');
         } else {
-          if (pet._showBubble) pet._showBubble(t('bubbleRestTooHungry', '太饿了，无法休息…'));
+          if (pet._showBubble) pet._showBubble('太饿了，无法休息…');
         }
         break;
       case 'status':

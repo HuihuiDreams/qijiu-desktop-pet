@@ -382,9 +382,7 @@
   requestAnimationFrame(gameLoop);
 
   // 关闭时保存
-  window.addEventListener('beforeunload', () => {
-    saveCurrentState();
-  });
+  window.electronAPI.onSaveBeforeQuit(saveCurrentState);
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
