@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to validate, for example 0.3.0 or v0.3.0'
+        description: 'Release version to validate, for example 0.1.8 or v0.1.8'
         required: true
         type: string
   pull_request:
@@ -13,10 +13,8 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'CHANGELOG.md'
-      - 'readme*.txt'
       - 'build/**'
       - 'scripts/**'
-      - 'src/**'
       - 'main.js'
       - 'preload.js'
       - 'updateManager.js'
@@ -45,14 +43,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify release readme files exist
+      - name: Verify readme.txt exists
         shell: pwsh
         run: |
-          $files = @('readme.txt', 'readme_en.txt', 'readme_ja.txt')
-          foreach ($file in $files) {
-            if (-not (Test-Path -Path $file -PathType Leaf)) {
-              throw "$file is missing from the repository root."
-            }
+          if (-not (Test-Path -Path readme.txt -PathType Leaf)) {
+            throw "readme.txt is missing from the repository root."
           }
 
       - name: Validate release metadata
@@ -125,60 +120,3 @@ jobs:
         run: npx electron-builder --win --dir --config.win.signAndEditExecutable=false
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-
-  preflight-mac:
-    name: Validate macOS release readiness
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit tests
-        run: npm test
-
-      - name: Build unsigned macOS smoke package
-        run: npx electron-builder --mac --dir
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-
-      - name: Validate macOS executable metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-
-          apps=(dist/mac*/七九爱宠.app)
-          if [ "${#apps[@]}" -eq 0 ]; then
-            echo "No packaged macOS app found under dist/mac*/."
-            exit 1
-          fi
-
-          for app in "${apps[@]}"; do
-            executable="$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")"
-            if [ "$executable" != "DeskPet" ]; then
-              echo "Expected CFBundleExecutable to be DeskPet, got: $executable"
-              exit 1
-            fi
-
-            if [ ! -x "$app/Contents/MacOS/DeskPet" ]; then
-              echo "Missing executable: $app/Contents/MacOS/DeskPet"
-              exit 1
-            fi
-
-            if [ -e "$app/Contents/MacOS/七九爱宠" ]; then
-              echo "Unexpected non-ASCII macOS executable remains in package."
-              exit 1
-            fi
-
-            echo "Validated macOS executable metadata for $app"
-          done

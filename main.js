@@ -615,7 +615,18 @@ ipcMain.on('resize-status-window', (_event, size) => {
   resizeStatusWindow(size);
 });
 
+// 允许存储的合法 Key 列表 (安全白名单)
+const ALLOWED_STORE_KEYS = [
+  'autoLaunch',
+  'petState',
+  // 在这里添加其他合法的保存键值
+];
+
 ipcMain.handle('save-data', async (_event, key, value) => {
+  if (!ALLOWED_STORE_KEYS.includes(key)) {
+    console.warn(`[Security] 拦截到非法的数据保存请求: ${key}`);
+    return false;
+  }
   try {
     await initStore();
     if (!store) return false;
@@ -628,6 +639,10 @@ ipcMain.handle('save-data', async (_event, key, value) => {
 });
 
 ipcMain.handle('load-data', async (_event, key) => {
+  if (!ALLOWED_STORE_KEYS.includes(key)) {
+    console.warn(`[Security] 拦截到非法的数据读取请求: ${key}`);
+    return null;
+  }
   try {
     await initStore();
     return store ? store.get(key) : null;
