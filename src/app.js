@@ -7,6 +7,20 @@
  * applyI18n() — 遍历所有 [data-i18n] 元素，更新 textContent。
  * 对于 data-i18n-pet 属性，由 ContextMenu.show() 单独处理。
  */
+function getI18nDictionaries() {
+  return typeof I18N !== 'undefined' ? I18N : null;
+}
+
+function translateUi(key, locale = window.__currentLocale) {
+  const dictionaries = getI18nDictionaries();
+  return dictionaries?.[locale]?.ui?.[key] ?? dictionaries?.zh?.ui?.[key] ?? key;
+}
+
+function getI18nUi(locale = window.__currentLocale) {
+  const dictionaries = getI18nDictionaries();
+  return dictionaries?.[locale]?.ui ?? dictionaries?.zh?.ui ?? {};
+}
+
 function applyI18n() {
   if (!window.t) return;
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -23,14 +37,11 @@ function applyI18n() {
   window.__currentLocale = locale;
 
   // 建立 window.t() 翻译函数
-  window.t = (key) => {
-    if (typeof I18N === 'undefined') return key;
-    return (I18N[window.__currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-  };
+  window.t = (key) => translateUi(key);
 
   // 建立 window.I18N_UI （气泡等需要函数类型字符串的入口）
   const updateI18nRefs = () => {
-    window.I18N_UI = (typeof I18N !== 'undefined' && I18N[window.__currentLocale]?.ui) ? I18N[window.__currentLocale].ui : I18N?.zh?.ui ?? {};
+    window.I18N_UI = getI18nUi();
     if (typeof initDialogues === 'function') {
       initDialogues(window.__currentLocale);
     }
@@ -247,11 +258,8 @@ function applyI18n() {
   // === 语言热切换监听 ===
   window.electronAPI.onLocaleChange((newLocale) => {
     window.__currentLocale = newLocale;
-    window.t = (key) => {
-      if (typeof I18N === 'undefined') return key;
-      return (I18N[newLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-    };
-    window.I18N_UI = (typeof I18N !== 'undefined' && I18N[newLocale]?.ui) ? I18N[newLocale].ui : I18N?.zh?.ui ?? {};
+    window.t = (key) => translateUi(key, newLocale);
+    window.I18N_UI = getI18nUi(newLocale);
     if (typeof initDialogues === 'function') initDialogues(newLocale);
     applyI18n();
   });
