@@ -60,9 +60,16 @@ test('scanAvailableSkins: 不存在的目录返回兜底值 [default]', () => {
 
 // --- SKIN_NAMES 映射测试（从 main.js 中提取验证） ---
 
-test('main.js 中包含 SKIN_NAMES 映射且 default 有中文名', () => {
+test('main.js 中包含皮肤本地化 key 映射', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("'default': '默认皮肤·凉拌仓鼠'"), 'SKIN_NAMES 应包含 default 的中文映射');
+  assert.ok(mainSource.includes('SKIN_NAME_KEYS'), '托盘皮肤名应通过本地化 key 映射');
+  assert.ok(mainSource.includes("'default': 'skinDefault'"), 'default 皮肤应映射到 skinDefault');
+  assert.ok(mainSource.includes('getSkinDisplayName(skinId)'), '皮肤菜单应通过当前语言生成显示名');
+});
+
+test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+  assert.ok(mainSource.includes("tray.setToolTip(trayT('trayTitle'))"), '托盘 tooltip 应使用多语言标题');
 });
 
 // --- 托盘菜单结构验证 ---

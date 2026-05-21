@@ -1,48 +1,49 @@
-# 代码审查结果 - 2026-05-20 (Code Review Findings - 2026-05-20)
+# Code Review Findings - 2026-05-20
 
-范围：对 Electron 桌面宠物应用进行全项目审查。
+Scope: full-project review of the Electron desktop pet app.
 
-## 审查结果
+## Findings
 
-### 1. 保存的零坐标未被正确恢复
+### 1. Saved zero coordinates are not restored
 
-文件：`src/systems/TimeSystem.js`
+File: `src/systems/TimeSystem.js`
 
-`deserializePet()` 中通过 `data.x || pet.x` 和 `data.y || pet.y` 恢复 `x` 和 `y`。保存的坐标 `0` 在桌面左边缘或上边缘是合法的，但 `||` 会将其视为缺失，从而保留上一次的默认位置。
+`deserializePet()` restores `x` and `y` with `data.x || pet.x` and `data.y || pet.y`. A saved coordinate of `0` is valid for the left or top edge of the desktop, but `||` treats it as missing and keeps the previous/default position.
 
-影响：保存在屏幕左边缘或上边缘的宠物在重启应用后可能会发生非预期的坐标移动。
+Impact: pets saved at the left or top screen edge can move unexpectedly after restart.
 
-建议修复：使用空值合并运算符（nullish coalescing）或数值有效性验证，例如 `Number.isFinite(data.x) ? data.x : pet.x`。并为 `x: 0` 和 `y: 0` 添加回归测试。
+Recommended fix: use nullish handling and numeric validation, for example `Number.isFinite(data.x) ? data.x : pet.x`. Add a regression test for `x: 0` and `y: 0`.
 
-### 2. 窗口卸载时的最终保存未被等待
+### 2. Final save on window unload is not awaited
 
-文件：`src/app.js`
+File: `src/app.js`
 
-`beforeunload` 事件监听器调用了 `saveCurrentState()`，但未等待异步 IPC 保存操作完成。
+The `beforeunload` handler calls `saveCurrentState()` without waiting for the async IPC save to finish.
 
-影响：快速关闭应用可能会丢失最新的宠物位置、数值状态或最近选择的皮肤。
+Impact: quick app shutdown can lose the latest pet positions, stats, or recently selected skin.
 
-建议修复：将最终的保存操作移入由主进程控制的关闭/退出流中，或者在渲染进程中显式阻塞卸载（unload）事件，直至保存的 Promise 成功解析。
+Recommended fix: move the final save into a main-process controlled close/quit flow, or explicitly block unload until the renderer save promise has completed.
 
-### 3. 在自定义皮肤系统扩展前，应加固动态 HTML 渲染以防范安全隐患
+### 3. Dynamic HTML rendering should be hardened before custom skins expand
 
-文件：
+Files:
+
 - `src/ui/ContextMenu.js`
 - `src/statusWindow.js`
 
-这两个文件都是利用宠物的图片/名称数据通过 `innerHTML` 构建 UI。虽然当前这些数据的来源主要是本地配置，且有内容安全策略（CSP）降低了潜在风险，因此这在目前并非紧急阻碍上线的生产问题。但在未来，如果允许自定义皮肤或外部元数据定义名称、表情、图片路径或状态负载，风险就会增加。
+Both files build UI with `innerHTML` using pet image/name data. The current source of these values is mostly local configuration, and CSP reduces the immediate blast radius, so this is not an urgent production blocker today. It becomes riskier if custom skins or external metadata are allowed to define names, emoji, image paths, or status payloads.
 
-影响：未来的自定义内容可能会引入 HTML 注入路径。
+Impact: future custom content could create an HTML injection path.
 
-建议修复：使用 DOM API 渲染这些节点，通过 `textContent` 赋值文本，并直接设置图片属性。
+Recommended fix: render these nodes with DOM APIs, assign text through `textContent`, and set image attributes directly.
 
-## 已执行的验证
+## Verification Performed
 
-- `npm test`：76 个测试通过。
-- `node --check`：项目 JavaScript 文件通过语法检查。
-- `npm run build`：Windows NSIS 构建成功完成。
-- `node scripts/verify-installer.js`：安装程序环境验证通过。
+- `npm test`: 76 tests passed.
+- `node --check`: project JavaScript files passed syntax checks.
+- `npm run build`: Windows NSIS build completed successfully.
+- `node scripts/verify-installer.js`: installer environment verification passed.
 
-## 未完成的事项
+## Not Completed
 
-未执行 `npm audit --omit=dev --audit-level=high` 命令。由于该命令会将依赖项元数据发送至外部 npm 审计服务，此项外部信息公开在本次审查中未获得明确授权。
+`npm audit --omit=dev --audit-level=high` was not completed. The command would send dependency metadata to the npm audit service, and that external disclosure was not explicitly authorized for this review.
