@@ -7,9 +7,11 @@ const {
   checkForUpdatesFromTray,
   getUpdateMenuState,
 } = require('./updateManager');
+const { I18N } = require('./src/data/i18n');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
+const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const LOGIN_ITEM_NAME = '七九爱宠';
@@ -21,16 +23,34 @@ const SKIN_NAMES = {
   // 'qban': 'Q版·萌系',
 };
 
+/**
+ * 根据 app.getLocale() 的返回值推断语言代码。
+ * 规则：zh-Hans-* / zh-CN → 'zh'；zh-Hant-* / zh-TW / zh-HK → 'zh'；ja-* → 'ja'；其余 → 'en'
+ * @returns {'zh'|'en'|'ja'}
+ */
+function detectLocale() {
+  const raw = (app.getLocale() || '').toLowerCase();
+  if (raw.startsWith('zh')) return 'zh';
+  if (raw.startsWith('ja')) return 'ja';
+  return 'en';
+}
+
+/** 返回当前语言字典的 UI 节点（主进程用） */
+function trayT(key) {
+  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh.ui[key]) ?? key;
+}
+
 let mainWindow = null;
 let statusWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
 let store = null;
-let petHidden = false; // 桌宠隐藏状态
-let isPaused = false;  // 走动暂停状态
+let petHidden = false;         // 桌宠隐藏状态
+let isPaused = false;          // 走动暂停状态
 let autoLaunchEnabled = false; // 开机自动启动状态
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
-let keepOnTopTimer = null; // 置顶守卫计时器
+let currentLocale = 'zh';      // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
+let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
@@ -524,24 +544,45 @@ function buildTrayMenu() {
     },
   }));
 
+  // 构建语言切换子菜单
+  const langSubmenu = [
+    { lang: 'zh', key: 'langZh' },
+    { lang: 'en', key: 'langEn' },
+    { lang: 'ja', key: 'langJa' },
+  ].map(({ lang, key }) => ({
+    label: trayT(key),
+    type: 'radio',
+    checked: lang === currentLocale,
+    click: async () => {
+      currentLocale = lang;
+      await initStore();
+      if (store) store.set(LOCALE_KEY, lang);
+      refreshTrayMenu();
+      if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
+      if (statusWindow && !statusWindow.isDestroyed()) {
+        statusWindow.webContents.send('locale-changed', lang);
+      }
+    },
+  }));
+
   return Menu.buildFromTemplate([
     {
-      label: '岳清源x沈清秋 桌面爱宠',
+      label: trayT('trayTitle'),
       enabled: false,
     },
     { type: 'separator' },
     {
-      label: '📊 显示状态面板',
+      label: trayT('trayStatusPanel'),
       click: () => {
         if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
       },
     },
     {
-      label: '🎨 切换皮肤',
+      label: trayT('traySwitchSkin'),
       submenu: skinSubmenu,
     },
     {
-      label: isPaused ? '🚶 恢复走动' : '⏸️ 暂停走动',
+      label: isPaused ? trayT('trayResumeWalk') : trayT('trayPauseWalk'),
       click: () => {
         isPaused = !isPaused;
         if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
@@ -549,7 +590,7 @@ function buildTrayMenu() {
       },
     },
     {
-      label: petHidden ? '👻 显示桌宠' : '👻 隐藏桌宠',
+      label: petHidden ? trayT('trayShowPet') : trayT('trayHidePet'),
       click: () => {
         petHidden = !petHidden;
         if (mainWindow) mainWindow.webContents.send('toggle-pet-visibility', !petHidden);
@@ -557,14 +598,18 @@ function buildTrayMenu() {
       },
     },
     {
-      label: '🔄 重置位置',
+      label: trayT('trayResetPos'),
       click: () => {
         if (mainWindow) mainWindow.webContents.send('reset-positions');
       },
     },
     { type: 'separator' },
     {
-      label: autoLaunchEnabled ? '🚀 禁用开机启动' : '🚀 开机自动启动',
+      label: trayT('trayLanguage'),
+      submenu: langSubmenu,
+    },
+    {
+      label: autoLaunchEnabled ? trayT('trayAutoLaunchOn') : trayT('trayAutoLaunchOff'),
       click: async () => {
         autoLaunchEnabled = !autoLaunchEnabled;
         await setAutoLaunchPreference(autoLaunchEnabled);
@@ -572,7 +617,9 @@ function buildTrayMenu() {
       },
     },
     {
-      label: updateMenuState.label,
+      label: updateMenuState.checking ? trayT('trayUpdateChecking') 
+           : updateMenuState.downloading ? trayT('trayUpdateDownloading') 
+           : trayT('trayUpdateCheck'),
       enabled: updateMenuState.enabled,
       click: () => {
         void checkForUpdatesFromTray();
@@ -580,14 +627,14 @@ function buildTrayMenu() {
     },
     ...(!app.isPackaged ? [
       {
-        label: '🛠️ 开发者工具',
+        label: trayT('trayDevTools'),
         click: () => {
           if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
         },
       },
     ] : []),
     {
-      label: '❌ 退出',
+      label: trayT('trayQuit'),
       click: () => {
         app.quit();
       },
@@ -678,6 +725,7 @@ ipcMain.on('resize-status-window', (_event, size) => {
 const ALLOWED_STORE_KEYS = [
   'autoLaunch',
   'petState',
+  'locale',
   // 在这里添加其他合法的保存键值
 ];
 
@@ -728,6 +776,22 @@ ipcMain.on('set-current-skin', (_event, skinId) => {
   refreshTrayMenu();
 });
 
+// 多语言系统 IPC
+ipcMain.handle('get-locale', () => currentLocale);
+
+ipcMain.handle('set-locale', async (_event, lang) => {
+  if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
+  currentLocale = lang;
+  await initStore();
+  if (store) store.set(LOCALE_KEY, lang);
+  refreshTrayMenu();
+  if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
+  if (statusWindow && !statusWindow.isDestroyed()) {
+    statusWindow.webContents.send('locale-changed', lang);
+  }
+  return { success: true, locale: lang };
+});
+
 // --- 应用生命周期 ---
 
 if (!hasSingleInstanceLock) {
@@ -746,6 +810,9 @@ if (!hasSingleInstanceLock) {
     });
 
     await initStore();
+    // 加载持久化语言设置，若无则自动检测
+    const storedLocale = store ? store.get(LOCALE_KEY) : null;
+    currentLocale = ['zh', 'en', 'ja'].includes(storedLocale) ? storedLocale : detectLocale();
     const syncResult = await syncAutoLaunchPreference();
     autoLaunchEnabled = syncResult.preference;
     initUpdateManager({
@@ -753,6 +820,7 @@ if (!hasSingleInstanceLock) {
       dialog,
       getMainWindow: () => mainWindow,
       refreshTrayMenu,
+      t: trayT,
     });
     createWindow();
     createTray();

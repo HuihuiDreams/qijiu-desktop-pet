@@ -3,7 +3,47 @@
  * 初始化所有系统，并通过 requestAnimationFrame 运行游戏主循环。
  */
 
+/**
+ * applyI18n() — 遍历所有 [data-i18n] 元素，更新 textContent。
+ * 对于 data-i18n-pet 属性，由 ContextMenu.show() 单独处理。
+ */
+function applyI18n() {
+  if (!window.t) return;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = window.t(el.dataset.i18n);
+  });
+  // 更新 <html lang> 属性
+  const locale = window.__currentLocale || 'zh';
+  document.documentElement.lang = locale;
+}
+
 (async function main() {
+  // === 初始化 i18n （必须在其他系统之前）===
+  const locale = await window.electronAPI.getLocale();
+  window.__currentLocale = locale;
+
+  // 建立 window.t() 翻译函数
+  window.t = (key) => {
+    if (typeof I18N === 'undefined') return key;
+    return (I18N[window.__currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
+  };
+
+  // 建立 window.I18N_UI （气泡等需要函数类型字符串的入口）
+  const updateI18nRefs = () => {
+    window.I18N_UI = (typeof I18N !== 'undefined' && I18N[window.__currentLocale]?.ui) ? I18N[window.__currentLocale].ui : I18N?.zh?.ui ?? {};
+    if (typeof initDialogues === 'function') {
+      initDialogues(window.__currentLocale);
+    }
+    applyI18n();
+  };
+  
+  updateI18nRefs();
+
+  window.electronAPI.onLocaleChange?.((newLocale) => {
+    window.__currentLocale = newLocale;
+    updateI18nRefs();
+  });
+
   // 等待主进程的屏幕信息
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
@@ -204,6 +244,18 @@
     applySkinById(skinId);
   });
 
+  // === 语言热切换监听 ===
+  window.electronAPI.onLocaleChange((newLocale) => {
+    window.__currentLocale = newLocale;
+    window.t = (key) => {
+      if (typeof I18N === 'undefined') return key;
+      return (I18N[newLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
+    };
+    window.I18N_UI = (typeof I18N !== 'undefined' && I18N[newLocale]?.ui) ? I18N[newLocale].ui : I18N?.zh?.ui ?? {};
+    if (typeof initDialogues === 'function') initDialogues(newLocale);
+    applyI18n();
+  });
+
   // === 加载保存的状态 ===
   await refreshAvailableSkins();
   const savedState = await timeSystem.load();
@@ -219,11 +271,17 @@
       // 显示回归欢迎对话气泡
       const shichensAway = Math.round(savedState.offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
       if (shichensAway >= 1) {
+        const returnMsgYueqi = window.I18N_UI?.returnYueqi
+          ? (typeof window.I18N_UI.returnYueqi === 'function'
+            ? window.I18N_UI.returnYueqi(shichensAway)
+            : window.I18N_UI.returnYueqi)
+          : `你走了${shichensAway}个时辰…`;
+        const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
         setTimeout(() => {
-          dialogBubble.show(yueqi, `你走了${shichensAway}个时辰…`, 4000);
+          dialogBubble.show(yueqi, returnMsgYueqi, 4000);
         }, 1500);
         setTimeout(() => {
-          dialogBubble.show(shenjiu, '…哼，终于回来了。', 4000);
+          dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
         }, 3000);
       }
     }
@@ -260,11 +318,17 @@
           // 2. 根据跳跃的时间计算出走掉的“时辰”，触发回归特有的欢迎对白
           const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
           if (shichensAway >= 1) {
+            const returnMsgYueqi = window.I18N_UI?.returnYueqi
+              ? (typeof window.I18N_UI.returnYueqi === 'function'
+                ? window.I18N_UI.returnYueqi(shichensAway)
+                : window.I18N_UI.returnYueqi)
+              : `你走了${shichensAway}个时辰…`;
+            const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
             setTimeout(() => {
-              dialogBubble.show(yueqi, `你走了${shichensAway}个时辰…`, 4000);
+              dialogBubble.show(yueqi, returnMsgYueqi, 4000);
             }, 1500);
             setTimeout(() => {
-              dialogBubble.show(shenjiu, '…哼，终于回来了。', 4000);
+              dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
             }, 3000);
           }
           

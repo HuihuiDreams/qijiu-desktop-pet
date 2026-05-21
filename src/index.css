@@ -610,8 +610,10 @@ html, body {
 
 /* Overlay bubbles (kiss, hug, cultivate) — anchored to stage, not pet element */
 .overlay-bubble {
-  bottom: auto !important;   /* override dialog-bubble's bottom: calc(100%+8px) */
-  white-space: nowrap;       /* keep text on one line */
+  white-space: pre-wrap;     /* allow wrapping for long English text */
+  max-width: calc(130px * var(--bubble-scale)); /* narrower max-width to prevent overlap during interactions */
+  word-wrap: break-word;
+  text-align: center;
 }
 
 @keyframes bubbleIn {

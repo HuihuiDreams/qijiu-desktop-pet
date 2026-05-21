@@ -59,4 +59,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSwitchSkin: (callback) => {
     ipcRenderer.on('switch-skin', (event, skinId) => callback(skinId));
   },
+
+  // 多语言系统 (i18n)
+  getLocale: () => ipcRenderer.invoke('get-locale'),
+  setLocale: (lang) => ipcRenderer.invoke('set-locale', lang),
+  onLocaleChange: (callback) => {
+    ipcRenderer.on('locale-changed', (event, lang) => callback(lang));
+  },
 });

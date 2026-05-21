@@ -167,10 +167,11 @@ body {
 }
 
 .stat-label {
-  width: 72px;
+  width: 85px;
   color: var(--color-ink-light);
   font-size: 12px;
   text-align: right;
+  white-space: nowrap;
 }
 
 .stat-bar {
