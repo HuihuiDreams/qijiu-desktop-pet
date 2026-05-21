@@ -16,6 +16,7 @@ graph TB
         Main --> Lock["Single Instance Lock"]
         Main --> Update["updateManager.js"]
         Main --> DBounds["displayBounds.js"]
+        Main --> I18NMain["I18N Dictionary / Locale Store"]
     end
     
     subgraph "Renderer Process (Main Window)"
@@ -27,6 +28,7 @@ graph TB
         App --> Time["TimeSystem"]
         App --> Skin["SkinManager"]
         App --> Sprite["SpriteView"]
+        App --> I18NRender["Runtime i18n"]
         
         Move --> YQ["Pet: 岳七 (yueqi)"]
         Move --> SJ["Pet: 沈九 (shenjiu)"]
@@ -67,7 +69,8 @@ qijiu-desktop-pet\
 │   ├── statusWindow.js      # 独立数值状态窗口逻辑
 │   ├── data/
 │   │   ├── config.js        # 所有的全局配置（数值衰减、移动速度、互动权重与距离等）
-│   │   └── dialogues.js     # 互动与闲聊的台词池
+│   │   ├── dialogues.js     # 互动与闲聊的台词池
+│   │   └── i18n.js          # 多语言字典（UI 文案、角色名、对话与更新提示）
 │   ├── pet/
 │   │   ├── Pet.js           # 宠物实体类（状态机、位置、四维数值）
 │   │   ├── PetRenderer.js   # 负责生成 DOM 并实时更新坐标，处理视觉缩放与拖曳
@@ -86,7 +89,7 @@ qijiu-desktop-pet\
 │       ├── ContextMenu.js   # 右键交互菜单 (支持跟随显示器缩放)
 │       ├── DialogBubble.js  # 头顶对话气泡
 │       └── StatusBar.js     # 数值状态面板 (嵌入式)
-├── test/                    # 单元测试 (Mocha/Chai)，验证移动逻辑与坐标转换
+├── test/                    # Node.js test runner 单元测试，验证移动、i18n、更新与坐标转换
 └── docs/
     ├── structure.md         # 当前架构、核心机制与目录说明
     ├── git-workflow.md      # Git 提交、推送与变更记录规范
@@ -161,11 +164,20 @@ qijiu-desktop-pet\
 
 ### 3.10 托盘菜单分组 (Tray Menu Grouping)
 系统托盘菜单由 `main.js` 的 `buildTrayMenu()` 统一生成，并用分割线区分桌宠功能和软件功能。
-- **桌宠功能组**: 状态面板、切换皮肤、暂停/恢复走动、隐藏/显示桌宠、重置位置。
+- **桌宠功能组**: 状态面板、切换皮肤、语言切换、暂停/恢复走动、隐藏/显示桌宠、重置位置。
 - **软件功能组**: 开机启动、检查更新、退出。
 - **开发态调试入口**: `🛠️ 开发者工具` 只在 `!app.isPackaged` 时加入菜单；安装包版本不显示该入口，避免普通用户看到调试功能。
 
-### 3.11 多显示器支持 (Multi-Display Support)
+### 3.11 多语言系统 (i18n)
+应用支持中文、英文、日文三种语言，并允许运行时热切换。
+- **统一字典**: `src/data/i18n.js` 维护 `zh`、`en`、`ja` 三套文案，覆盖 UI、托盘菜单、状态面板、对话气泡、皮肤显示名和更新弹窗。
+- **启动语言**: `main.js` 从 `electron-store` 的 `locale` 读取用户选择；旧存档没有语言设置时，根据 `app.getLocale()` 推断并回退到中文。
+- **主进程职责**: 托盘菜单、托盘 tooltip、皮肤名称和 `updateManager.js` 弹窗文案都通过当前语言字典生成。
+- **渲染进程职责**: `app.js` 初始化 `window.__currentLocale`、`window.I18N_UI` 和 `window.t()`，并用 `data-i18n` 刷新静态 DOM；对话池会随语言切换重新初始化。
+- **IPC 与热切换**: `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange`；语言切换后，主进程向主窗口和独立状态窗口广播 `locale-changed`。
+- **状态窗口重绘**: `statusWindow.js` 缓存 `lastRenderData`，收到语言变化后立即用当前数值重新渲染，避免用户需要关闭再打开状态面板（详见 [ADR-024](./decisions/ADR-024-i18n-multilingual-support.md)）。
+
+### 3.12 多显示器支持 (Multi-Display Support)
 应用支持在混合 DPI 的多显示器环境下无缝运行。
 - **覆盖范围**: 主透明窗口通过 `getVirtualDisplayBounds()` 覆盖完整“虚拟桌面”边界，并在显示器增删或指标变化后重新设置 `minimumSize`、`maximumSize` 与 `bounds`。
 - **坐标转换**: `displayBounds.js` 将每个物理显示器的 `workArea` 裁剪到 `bounds` 内，再转换为相对于主窗口左上角的 renderer CSS 坐标（`walkAreas`）。
@@ -174,16 +186,17 @@ qijiu-desktop-pet\
 - **可达性修正**: 拖曳释放、重置位置、读取存档和屏幕信息变化后，`app.js` 都通过 `keepPetReachable()` 将宠物修正回可见区域。
 - **视觉一致性**: 渲染层（`PetRenderer`、`ContextMenu`、灵力效果）根据元素当前所在显示器动态应用 `scaleRatio`，确保小人与 UI 在不同缩放比例的屏幕上看起来物理大小一致（详见 [ADR-022](./decisions/ADR-022-multi-display-support-boundary.md)）。
 
-### 3.12 调试与测试体系 (Debug & Test)
+### 3.13 调试与测试体系 (Debug & Test)
 - **控制台调试**: `src/debug.js` 提供了 `testKiss()`、`testHungry()` 等函数，方便开发者在控制台手动触发各种互动状态和视觉效果。
 - **运行时监控**: 暴露 `window.__DEBUG_SCREEN()` 供排查多屏边界问题，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、窗口尺寸和移动系统实际使用的 `movementWalkAreas`。
-- **单元测试**: `test/` 目录下包含对 `displayBounds.js` 和 `MovementSystem.js` 等纯逻辑模块的测试，确保坐标计算与状态切换的稳定性。
+- **单元测试**: `test/` 目录下包含对 `displayBounds.js`、`MovementSystem.js`、i18n 兜底和更新弹窗翻译等逻辑的测试，确保坐标计算、状态切换与多语言路径的稳定性。
 
-### 3.13 独立状态窗口 (Independent Status Window)
+### 3.14 独立状态窗口 (Independent Status Window)
 除了嵌入在宠物旁边的状态条外，应用还提供了一个独立的“详细状态面板”。
 - **架构**: 这是一个独立的 `BrowserWindow` (`status.html`)，由主进程通过 IPC 管理其生命周期。
 - **数据流**: 渲染进程定期通过 `update-status-window` IPC 将最新的数值同步给主进程，再由主进程转发给状态窗口。
 - **自适应**: 状态窗口会根据内容高度动态调整自身窗口尺寸 (`resize-status-window`)。
+- **语言同步**: 状态窗口独立监听 `locale-changed`，刷新 `data-i18n` 静态文案并基于缓存数据重绘所有宠物状态条。
 
 ## 4. 后续建议 (Next Steps)
 1. **扩展动画资产与状态**: 当前已通过 `SpriteView.js` 引入了雪碧图（Sprite Sheet）渲染机制。后续可以继续丰富现有的动作帧（如增加更流畅的过渡动画），或为不同环境（如天气系统、皮肤系统）扩充更多图集资产和状态图。
