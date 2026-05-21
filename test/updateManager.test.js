@@ -49,6 +49,7 @@ function createHarness(options = {}) {
     refreshTrayMenu: () => {
       refreshCount += 1;
     },
+    t: options.t,
   });
 
   return {
@@ -261,4 +262,46 @@ test('classifyUpdateError covers common updater failures', () => {
     classifyUpdateError(new Error('boom')),
     'updateErrGeneric',
   );
+});
+
+test('update manager applies injected translations and version interpolation', async () => {
+  const translations = {
+    updateNotAvailTitle: 'Up to date',
+    updateNotAvailMsg: 'Version {version} is current.',
+    updateBtnOk: 'OK',
+  };
+  const { updater, messages } = createHarness({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.2.7',
+    },
+    t: (key) => translations[key] || key,
+  });
+
+  updater.emit('update-not-available');
+  await tick();
+
+  assert.equal(messages[0].title, 'Up to date');
+  assert.equal(messages[0].message, 'Version 0.2.7 is current.');
+  assert.deepEqual(messages[0].buttons, ['OK']);
+});
+
+test('update manager applies injected translations to error detail prefixes', async () => {
+  const translations = {
+    updateErrTitle: 'Update failed',
+    updateErrServer: 'Server unavailable.',
+    updateErrDetailPrefix: 'Reason: ',
+    updateBtnOk: 'OK',
+  };
+  const { updater, messages } = createHarness({
+    t: (key) => translations[key] || key,
+  });
+
+  updater.emit('error', Object.assign(new Error('Cannot download installer'), { statusCode: 404 }));
+  await tick();
+
+  assert.equal(messages[0].title, 'Update failed');
+  assert.equal(messages[0].message, 'Server unavailable.');
+  assert.equal(messages[0].detail, 'Reason: Cannot download installer');
+  assert.deepEqual(messages[0].buttons, ['OK']);
 });

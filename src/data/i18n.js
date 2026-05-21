@@ -41,6 +41,9 @@ const I18N = {
       nameShenjiu: '沈清秋',
       nicknameShenjiu: '沈九',
 
+      // 皮肤名
+      skinDefault: '默认皮肤·凉拌仓鼠',
+
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
       trayStatusPanel: '📊 显示状态面板',
@@ -252,6 +255,9 @@ const I18N = {
       nameShenjiu: 'Shen Qingqiu',
       nicknameShenjiu: 'Shen Jiu',
 
+      // Skin names
+      skinDefault: 'Default Skin - (Artist) Hamster Salad',
+
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
       trayStatusPanel: '📊 Show Status Panel',
@@ -456,13 +462,16 @@ const I18N = {
       statAffection: '好感度',
       statHunger: '満腹度',
       statQi: '霊力',
-      statMood: '心境',
+      statMood: '道心',
 
       // ペット名
       nameYueqi: '岳清源',
       nicknameYueqi: '岳七',
       nameShenjiu: '沈清秋',
       nicknameShenjiu: '沈九',
+
+      // 装束名
+      skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
 
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',
@@ -606,9 +615,9 @@ const I18N = {
           '小九！！',
         ],
         shenjiu: [
-          'おえ～！無理やり食わせて殺す気か？！',  // 嘧~~你要撞死我吗！
-          'もういい！自分で食え！！',                // 吧和！就你自己吃！
-          'これ以上は一口も入らん！！',  // 再也吃不下了！！
+          'うっ…！無理やり食わせて殺す気か？！',   
+          'もういい！自分で食え！！',              
+          'これ以上は一口も入らん！！',  
         ],
       },
       idle: {
@@ -622,7 +631,7 @@ const I18N = {
         shenjiu: [
           '（書物をめくる）',                      // （翻书）
           '…煩わしい。',                        // …烦。（“煩わしい”比直白的“うるさい”更有清冷仙长的心境）
-          'どうやって瓶頸を突破するか…',        // 如何突破瓶颈？（“瓶頸（へいけい）”是修真原汁原味的词）
+          'どうやって修行の限界を突破するか…',        // 如何突破瓶颈？（“瓶頸（へいけい）”是修真原汁原味的词）
           '（冷ややかな目で彼方を見遣る）',      // （冷冷地看着远方）
           'あの人…また来なかった。',              // 那个人…又没来。（“あの人”比直呼其名多了很多幽怨和隐藏的期待）
         ],
@@ -636,7 +645,7 @@ const I18N = {
         shenjiu: ['霊力が足りない…', '修行の時間だな。'],
       },
       lowMood: {
-        yueqi: ['心境が乱れているな…', '心がざわつく。'], // 心境不稳… / 有些心烦。（“ざわつく”形容心里毛毛的、无法平静）
+        yueqi: ['道心が揺らいでいる…', '心がざわつく。'], // 心境不稳… / 有些心烦。（“ざわつく”形容心里毛毛的、无法平静）
         shenjiu: ['…構うな。', '（無表情）'],             // …别烦我。（“構うな” = 别管我/别烦我） / （面无表情）
       },
       effects: {

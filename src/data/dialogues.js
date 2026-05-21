@@ -12,7 +12,8 @@
  * @param {'zh'|'en'|'ja'} locale
  */
 function initDialogues(locale) {
-  const dict = (typeof I18N !== 'undefined' && I18N[locale]) ? I18N[locale] : I18N?.zh;
+  const dictionaries = typeof I18N !== 'undefined' ? I18N : null;
+  const dict = dictionaries?.[locale] ?? dictionaries?.zh;
   window.DIALOGUES = dict ? dict.dialogues : _DIALOGUES_ZH_FALLBACK;
 }
 

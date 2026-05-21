@@ -16,11 +16,11 @@ const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const LOGIN_ITEM_NAME = '七九爱宠';
 
-// 皮肤中文显示名映射表（文件夹名 → 托盘菜单显示名）
-const SKIN_NAMES = {
-  'default': '默认皮肤·凉拌仓鼠',
+// 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
+const SKIN_NAME_KEYS = {
+  'default': 'skinDefault',
   // 新增皮肤时在此添加映射，例如：
-  // 'qban': 'Q版·萌系',
+  // 'qban': 'skinQban',
 };
 
 /**
@@ -38,6 +38,11 @@ function detectLocale() {
 /** 返回当前语言字典的 UI 节点（主进程用） */
 function trayT(key) {
   return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh.ui[key]) ?? key;
+}
+
+function getSkinDisplayName(skinId) {
+  const key = SKIN_NAME_KEYS[skinId];
+  return key ? trayT(key) : skinId;
 }
 
 let mainWindow = null;
@@ -170,6 +175,7 @@ async function getAutoLaunchPreference() {
  */
 function refreshTrayMenu() {
   if (tray) {
+    tray.setToolTip(trayT('trayTitle'));
     tray.setContextMenu(buildTrayMenu());
   }
 }
@@ -534,7 +540,7 @@ function buildTrayMenu() {
   // 构建皮肤切换子菜单
   const availableSkins = scanAvailableSkins();
   const skinSubmenu = availableSkins.map(skinId => ({
-    label: SKIN_NAMES[skinId] || skinId,
+    label: getSkinDisplayName(skinId),
     type: 'radio',
     checked: skinId === currentSkinId,
     click: () => {
@@ -652,7 +658,6 @@ function createTray() {
   });
 
   tray = new Tray(icon);
-  tray.setToolTip('岳七 & 沈九 桌面宠物');
   refreshTrayMenu();
 }
 
