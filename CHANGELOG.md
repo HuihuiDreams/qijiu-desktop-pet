@@ -3,11 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [0.2.7] - 2026-05-21
+## [0.3.0] - 2026-05-21
 ### Added
 - **多语言支持 (i18n) 架构**：新增 `src/data/i18n.js` 作为统一的多语言字典，支持中文 (zh)、英文 (en) 和日文 (ja)。
 - **语言运行时热切换**：主进程增加向所有窗口广播 `locale-changed` 机制，右键菜单和系统托盘均能实时切换主窗口和状态面板语言。
 - **状态面板缓存重绘**：状态窗口监听 `locale-changed` 并使用 `lastRenderData` 立即更新现有属性面板上的多语言数值。
+- **多语言发布说明**：新增 `readme_en.txt` 和 `readme_ja.txt`，对齐 `i18n.js` 的英日界面词与 emoji，并让发布工作流校验、上传三种语言的说明文件。
 
 ### Changed
 - **气泡重叠与换行策略**：单人对话框气泡保持 `nowrap` 风格，双人互动气泡限制 `max-width: 130px`、启用 `pre-wrap` 向上增长，防止英文等长句重叠。

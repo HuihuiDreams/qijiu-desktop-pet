@@ -5,9 +5,10 @@
 ## 1. 准备版本改动
 
 1. 更新 `package.json` 和 `package-lock.json` 的 `version`。
-2. 在 `CHANGELOG.md` 新增对应版本段落，例如 `## [0.1.8] - 2026-05-11`。
-3. 如果发布策略变化，补充 `docs/decisions/` 下的 ADR 或更新相关文档。
-4. 本地运行：
+2. 在 `CHANGELOG.md` 新增对应版本段落，例如 `## [0.3.0] - 2026-05-21`。
+3. 确认根目录存在 `readme.txt`、`readme_en.txt`、`readme_ja.txt` 三份面向用户的发布说明。
+4. 如果发布策略变化，补充 `docs/decisions/` 下的 ADR 或更新相关文档。
+5. 本地运行：
 
 ```powershell
 npm test
@@ -21,7 +22,7 @@ npx electron-builder --win --dir --config.win.signAndEditExecutable=false
 
 在 GitHub Actions 手动运行 `Release Preflight`：
 
-- `version`: 填目标版本，例如 `0.1.8`
+- `version`: 填目标版本，例如 `0.3.0`
 
 这个 workflow 会自动验证：
 
@@ -35,7 +36,7 @@ npx electron-builder --win --dir --config.win.signAndEditExecutable=false
 
 `Release Preflight` 通过后，手动运行 `Build Windows Installer`：
 
-- `version`: 填同一个版本，例如 `0.1.8`
+- `version`: 填同一个版本，例如 `0.3.0`
 
 如果仓库没有配置 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD`，workflow 会生成未签名安装包，并上传 `UNSIGNED-RELEASE.txt` 说明。小范围分发可以接受这个状态；扩大公开分发时再配置受信任代码签名。
 
@@ -46,6 +47,7 @@ GitHub Release 应包含这些更新相关资产：
 - Windows 安装包 `.exe`，文件名应与 `latest.yml` 中的 `path` / `files[].url` 一致。
 - 安装包 `.blockmap`
 - `latest.yml`
+- `readme.txt`、`readme_en.txt`、`readme_ja.txt`
 
 发布完成后，在已安装版本中通过托盘菜单手动执行“检查更新”。预期行为：
 

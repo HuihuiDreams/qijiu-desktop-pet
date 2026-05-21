@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to tag, for example 0.1.8 or v0.1.8'
+        description: 'Release version to tag, for example 0.3.0 or v0.3.0'
         required: true
         type: string
   push:
@@ -126,7 +126,7 @@ jobs:
         run: |
           "This release was built without Windows Authenticode signing because WIN_CSC_* secrets were not configured." | Out-File -FilePath dist\UNSIGNED-RELEASE.txt -Encoding utf8
 
-      - name: Upload readme.txt to GitHub Release
+      - name: Upload readme files to GitHub Release
         shell: pwsh
         run: |
           $version = '${{ inputs.version }}'
@@ -135,8 +135,8 @@ jobs:
           } else {
             $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
           }
-          Write-Host "Uploading readme.txt to GitHub Release for tag $tag..."
-          gh release upload $tag readme.txt --clobber
+          Write-Host "Uploading readme files to GitHub Release for tag $tag..."
+          gh release upload $tag readme.txt readme_en.txt readme_ja.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -150,4 +150,6 @@ jobs:
             dist/latest.yml
             dist/UNSIGNED-RELEASE.txt
             readme.txt
+            readme_en.txt
+            readme_ja.txt
           if-no-files-found: error
