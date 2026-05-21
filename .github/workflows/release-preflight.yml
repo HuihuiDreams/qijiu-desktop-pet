@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to validate, for example 0.1.8 or v0.1.8'
+        description: 'Release version to validate, for example 0.3.0 or v0.3.0'
         required: true
         type: string
   pull_request:
@@ -13,6 +13,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'CHANGELOG.md'
+      - 'readme*.txt'
       - 'build/**'
       - 'scripts/**'
       - 'main.js'
@@ -43,11 +44,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify readme.txt exists
+      - name: Verify release readme files exist
         shell: pwsh
         run: |
-          if (-not (Test-Path -Path readme.txt -PathType Leaf)) {
-            throw "readme.txt is missing from the repository root."
+          $files = @('readme.txt', 'readme_en.txt', 'readme_ja.txt')
+          foreach ($file in $files) {
+            if (-not (Test-Path -Path $file -PathType Leaf)) {
+              throw "$file is missing from the repository root."
+            }
           }
 
       - name: Validate release metadata
