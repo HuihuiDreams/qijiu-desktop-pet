@@ -34,7 +34,7 @@ test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
 
 test('main.js tray menu includes only one update menu item', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const updateMenuItemCount = (mainSource.match(/label: updateMenuState\.label/g) || []).length;
+  const updateMenuItemCount = (mainSource.match(/label:\s*updateMenuState\.checking/g) || []).length;
 
   assert.equal(updateMenuItemCount, 1);
 });
@@ -69,18 +69,18 @@ test('main.js 中包含 SKIN_NAMES 映射且 default 有中文名', () => {
 
 test('main.js 中 buildTrayMenu 包含皮肤切换子菜单', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("'🎨 切换皮肤'"), '托盘菜单应包含切换皮肤入口');
+  assert.ok(mainSource.includes("trayT('traySwitchSkin')"), '托盘菜单应包含切换皮肤入口');
   assert.ok(mainSource.includes("submenu: skinSubmenu"), '应使用 submenu 展示皮肤列表');
   assert.ok(mainSource.includes("type: 'radio'"), '皮肤菜单项应使用 radio 类型');
 });
 
 test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const resetIndex = mainSource.indexOf("'🔄 重置位置'");
+  const resetIndex = mainSource.indexOf("trayT('trayResetPos')");
   const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
-  const autoLaunchIndex = mainSource.indexOf("'🚀 禁用开机启动'", softwareSeparatorIndex);
-  const devToolsIndex = mainSource.indexOf("'🛠️ 开发者工具'", softwareSeparatorIndex);
-  const exitIndex = mainSource.indexOf("'❌ 退出'", softwareSeparatorIndex);
+  const autoLaunchIndex = mainSource.indexOf("trayT('trayAutoLaunchOn')", softwareSeparatorIndex);
+  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", softwareSeparatorIndex);
+  const exitIndex = mainSource.indexOf("trayT('trayQuit')", softwareSeparatorIndex);
 
   assert.ok(resetIndex > -1, '桌宠功能组应包含重置位置');
   assert.ok(softwareSeparatorIndex > resetIndex, '重置位置之后应有分割线');
@@ -92,7 +92,7 @@ test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => 
 test('main.js 托盘开发者工具只在开发态显示', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
   const devToolsGuardIndex = mainSource.indexOf("...(!app.isPackaged ? [");
-  const devToolsIndex = mainSource.indexOf("'🛠️ 开发者工具'", devToolsGuardIndex);
+  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", devToolsGuardIndex);
   const devToolsGuardEndIndex = mainSource.indexOf("] : [])", devToolsIndex);
 
   assert.ok(devToolsGuardIndex > -1, '开发者工具菜单应受 app.isPackaged 保护');

@@ -91,7 +91,7 @@ function isNotFoundError(error) {
   return signals.statuses.includes(404) || /\b404\b/.test(messageText);
 }
 
-function classifyUpdateError(error) {
+function classifyUpdateError(error, t = (k => k)) {
   const signals = collectErrorSignals(error);
   const codes = new Set(signals.codes);
   const messageText = signals.messages.join('\n');
@@ -104,11 +104,11 @@ function classifyUpdateError(error) {
     messageTextUpper.includes('ERR_NAME_NOT_RESOLVED') ||
     messageTextUpper.includes('GETADDRINFO ENOTFOUND')
   ) {
-    return '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。';
+    return t('updateErrNetwork');
   }
 
   if (isNotFoundError(error)) {
-    return '更新服务器暂时不可用，请稍后再试。';
+    return t('updateErrServer');
   }
 
   if (
@@ -118,18 +118,18 @@ function classifyUpdateError(error) {
     messageTextUpper.includes('SOCKET HANG UP') ||
     messageTextUpper.includes('ABORTED')
   ) {
-    return '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。';
+    return t('updateErrDownload');
   }
 
-  return '检查更新失败，详细原因已写入日志。';
+  return t('updateErrGeneric');
 }
 
-function getReadableErrorDetail(error) {
+function getReadableErrorDetail(error, t = (k => k)) {
   const [message] = collectErrorSignals(error).messages
     .map((text) => text.replace(/\s+/g, ' ').trim())
     .filter(Boolean);
 
-  return message ? `原因：${message}` : '原因：未知错误，详情已写入日志。';
+  return message ? `${t('updateErrDetailPrefix')}${message}` : t('updateErrUnknownDetail');
 }
 
 function createUpdateManager(options = {}) {
@@ -142,6 +142,7 @@ function createUpdateManager(options = {}) {
   let dialog = null;
   let getMainWindow = () => null;
   let refreshTrayMenu = () => {};
+  let t = (k) => k;
   let initialized = false;
   let checkNotFoundHandled = false;
   let state = cloneState(DEFAULT_UPDATE_STATE);
@@ -180,7 +181,9 @@ function createUpdateManager(options = {}) {
 
   function getNoUpdateMessage(info) {
     const version = getCurrentVersion() || getUpdateVersion(info);
-    return version ? `当前版本 ${version} 已是最新版本。` : '当前已经是最新版本。';
+    return version 
+      ? t('updateNotAvailMsg').replace('{version}', version) 
+      : t('updateNotAvailMsgNoVer');
   }
 
   function getUpdateMenuState() {
@@ -207,7 +210,7 @@ function createUpdateManager(options = {}) {
     }
 
     logError(error);
-    const message = classifyUpdateError(error);
+    const message = classifyUpdateError(error, t);
     setState({
       checking: false,
       downloading: false,
@@ -216,10 +219,10 @@ function createUpdateManager(options = {}) {
     setMainWindowProgress(-1);
     await showMessageBox({
       type: 'error',
-      title: '更新失败',
+      title: t('updateErrTitle'),
       message,
-      detail: getReadableErrorDetail(error),
-      buttons: ['知道了'],
+      detail: getReadableErrorDetail(error, t),
+      buttons: [t('updateBtnOk')],
       noLink: true,
     });
   }
@@ -233,12 +236,14 @@ function createUpdateManager(options = {}) {
       error: null,
     });
 
-    const versionText = latestVersion ? ` ${latestVersion}` : '';
+    const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
       type: 'info',
-      title: '发现新版本',
-      message: `发现新版本${versionText}，是否现在下载？`,
-      buttons: ['下载', '稍后'],
+      title: t('updateAvailTitle'),
+      message: versionText 
+        ? t('updateAvailMsg').replace('{version}', versionText)
+        : t('updateAvailMsgNoVer'),
+      buttons: [t('updateBtnDownload'), t('updateBtnLater')],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
@@ -267,9 +272,9 @@ function createUpdateManager(options = {}) {
 
     await showMessageBox({
       type: 'info',
-      title: '已是最新版本',
+      title: t('updateNotAvailTitle'),
       message: getNoUpdateMessage(info),
-      buttons: ['知道了'],
+      buttons: [t('updateBtnOk')],
       noLink: true,
     });
   }
@@ -285,12 +290,14 @@ function createUpdateManager(options = {}) {
     });
     setMainWindowProgress(-1);
 
-    const versionText = latestVersion ? ` ${latestVersion}` : '';
+    const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
       type: 'question',
-      title: '更新已下载',
-      message: `新版本${versionText}已下载完成，是否现在重启并安装？`,
-      buttons: ['重启并安装', '稍后'],
+      title: t('updateReadyTitle'),
+      message: versionText
+        ? t('updateReadyMsg').replace('{version}', versionText)
+        : t('updateReadyMsgNoVer'),
+      buttons: [t('updateBtnInstall'), t('updateBtnLater')],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
@@ -342,6 +349,7 @@ function createUpdateManager(options = {}) {
     dialog = config.dialog;
     getMainWindow = config.getMainWindow || getMainWindow;
     refreshTrayMenu = config.refreshTrayMenu || refreshTrayMenu;
+    if (config.t) t = config.t;
 
     if (initialized) return;
 
@@ -363,9 +371,9 @@ function createUpdateManager(options = {}) {
     if (state.checking || state.downloading) {
       await showMessageBox({
         type: 'info',
-        title: '更新检查进行中',
-        message: state.checking ? '正在检查更新，请稍候。' : '正在下载更新，请稍候。',
-        buttons: ['知道了'],
+        title: t('updateInProgressTitle'),
+        message: state.checking ? t('updateCheckingMsg') : t('updateDownloadingMsg'),
+        buttons: [t('updateBtnOk')],
         noLink: true,
       });
       return;
@@ -374,9 +382,9 @@ function createUpdateManager(options = {}) {
     if (!app?.isPackaged) {
       await showMessageBox({
         type: 'info',
-        title: '开发模式',
-        message: '开发模式下不支持检查更新，请使用安装包验证自动更新。',
-        buttons: ['知道了'],
+        title: t('updateDevTitle'),
+        message: t('updateDevMsg'),
+        buttons: [t('updateBtnOk')],
         noLink: true,
       });
       return;

@@ -18,9 +18,11 @@ window.testInteraction = function (type) {
 
   if (type === 'shareFood' && petBObj.stats.hunger + CONFIG.INTERACTIONS.shareFood.hungerB > 100) {
     overlayType = 'throwup';
+    const throwupPool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES.throwup : null;
+    const pick = (arr) => (Array.isArray(arr) && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : null;
     debugDialogue = {
-      yueqi: '小九你怎么了？',
-      shenjiu: '呕~~你要撑死我吗？！',
+      yueqi: throwupPool ? pick(throwupPool.yueqi) : '小九你怎么了？',
+      shenjiu: throwupPool ? pick(throwupPool.shenjiu) : '呕~~你要撑死我吗？！',
     };
   }
 

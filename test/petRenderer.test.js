@@ -162,8 +162,8 @@ test('interaction overlay bubbles follow the overlay visual scale', () => {
   assert.equal(appended.length, 2);
   assert.equal(appended[0].style['--bubble-scale'], 2 / 3);
   assert.equal(appended[1].style['--bubble-scale'], 2 / 3);
-  assert.equal(appended[0].style.top, `${overlayPos.y - 48 * (2 / 3)}px`);
-  assert.equal(appended[1].style.top, `${overlayPos.y - 48 * (2 / 3)}px`);
+  assert.equal(appended[0].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
+  assert.equal(appended[1].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
 
   delete global.document;
   global.setTimeout = originalSetTimeout;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 
 <head>
   <meta charset="UTF-8">
@@ -18,24 +18,25 @@
   <!-- Context menu (hidden by default) -->
   <div id="context-menu" class="context-menu hidden">
     <div class="menu-header" id="menu-header">角色名</div>
-    <div class="menu-item" data-action="feed">🍎 喂食</div>
-    <div class="menu-item" data-action="meditate">🧘🏻‍♂️打坐修炼</div>
-    <div class="menu-item" data-action="pet">🤚 摸头</div>
-    <div class="menu-item" data-action="rest">💤 休息</div>
+    <div class="menu-item" data-action="feed"   data-i18n="feed">🍎 喂食</div>
+    <div class="menu-item" data-action="meditate" data-i18n="meditate">🧘🏻‍♂️打坐修炼</div>
+    <div class="menu-item" data-action="pet"   data-i18n-pet>🤚 摸头</div>
+    <div class="menu-item" data-action="rest"   data-i18n="rest">💤 休息</div>
     <div class="menu-separator"></div>
-    <div class="menu-item" data-action="status">📊 查看状态</div>
+    <div class="menu-item" data-action="status" data-i18n="status">📊 查看状态</div>
   </div>
 
   <!-- Status panel (hidden by default) -->
   <div id="status-panel" class="status-panel hidden">
     <div class="status-panel-header">
-      <span>修仙状态</span>
+      <span data-i18n="statusTitle">修仙状态</span>
       <button id="status-close" class="status-close">✕</button>
     </div>
     <div id="status-content"></div>
   </div>
 
   <script src="data/config.js?v=2"></script>
+  <script src="data/i18n.js?v=1"></script>
   <script src="data/dialogues.js?v=2"></script>
   <script src="pet/Pet.js?v=2"></script>
   <script src="pet/PetRenderer.js?v=2"></script>

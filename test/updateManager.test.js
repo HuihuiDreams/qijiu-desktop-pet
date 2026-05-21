@@ -75,7 +75,7 @@ test('development mode shows a friendly message and does not check for updates',
 
   assert.equal(updater.checked, undefined);
   assert.equal(messages.length, 1);
-  assert.equal(messages[0].title, '开发模式');
+  assert.equal(messages[0].title, 'updateDevTitle');
 });
 
 test('update-available asks before downloading', async () => {
@@ -86,7 +86,7 @@ test('update-available asks before downloading', async () => {
   updater.emit('update-available', { version: '0.1.8' });
   await tick();
 
-  assert.equal(messages[0].title, '发现新版本');
+  assert.equal(messages[0].title, 'updateAvailTitle');
   assert.equal(updater.downloaded, true);
 });
 
@@ -98,7 +98,7 @@ test('update-available respects a user cancel', async () => {
   updater.emit('update-available', { version: '0.1.8' });
   await tick();
 
-  assert.equal(messages[0].title, '发现新版本');
+  assert.equal(messages[0].title, 'updateAvailTitle');
   assert.equal(updater.downloaded, undefined);
 });
 
@@ -113,8 +113,8 @@ test('update-not-available shows the current version as latest', async () => {
   updater.emit('update-not-available');
   await tick();
 
-  assert.equal(messages[0].title, '已是最新版本');
-  assert.equal(messages[0].message, '当前版本 0.1.8 已是最新版本。');
+  assert.equal(messages[0].title, 'updateNotAvailTitle');
+  assert.equal(messages[0].message, 'updateNotAvailMsg'.replace('{version}', '0.1.8'));
 });
 
 test('metadata not found while checking is treated as no update available', async () => {
@@ -132,8 +132,8 @@ test('metadata not found while checking is treated as no update available', asyn
 
   assert.equal(logErrors.length, 0);
   assert.equal(messages.length, 1);
-  assert.equal(messages[0].title, '已是最新版本');
-  assert.equal(messages[0].message, '当前版本 0.1.8 已是最新版本。');
+  assert.equal(messages[0].title, 'updateNotAvailTitle');
+  assert.equal(messages[0].message, 'updateNotAvailMsg'.replace('{version}', '0.1.8'));
   assert.equal(manager._getState().error, null);
 });
 
@@ -155,7 +155,7 @@ test('metadata not found only shows the latest-version message once', async () =
 
   assert.equal(logErrors.length, 0);
   assert.equal(messages.length, 1);
-  assert.equal(messages[0].title, '已是最新版本');
+  assert.equal(messages[0].title, 'updateNotAvailTitle');
 });
 
 test('update-downloaded asks before quit and install', async () => {
@@ -166,7 +166,7 @@ test('update-downloaded asks before quit and install', async () => {
   updater.emit('update-downloaded', { version: '0.1.8' });
   await tick();
 
-  assert.equal(messages[0].title, '更新已下载');
+  assert.equal(messages[0].title, 'updateReadyTitle');
   assert.deepEqual(updater.quitAndInstallArgs, [false, true]);
 });
 
@@ -192,10 +192,10 @@ test('error event records log details and exposes a user-safe message', async ()
   await tick();
 
   assert.equal(logErrors.length, 1);
-  assert.equal(messages[0].title, '更新失败');
+  assert.equal(messages[0].title, 'updateErrTitle');
   assert.equal(
     manager._getState().error,
-    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+    'updateErrNetwork',
   );
 });
 
@@ -210,12 +210,12 @@ test('error event classifies nested updater network failures', async () => {
   assert.equal(logErrors.length, 1);
   assert.equal(
     messages[0].message,
-    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+    'updateErrNetwork',
   );
   assert.match(messages[0].detail, /更新请求失败/);
   assert.equal(
     manager._getState().error,
-    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+    'updateErrNetwork',
   );
 });
 
@@ -234,31 +234,31 @@ test('download failures show a specific reason and keep full logs', async () => 
   await tick();
 
   assert.equal(logErrors.length, 1);
-  assert.equal(messages.at(-1).title, '更新失败');
-  assert.equal(messages.at(-1).message, '更新服务器暂时不可用，请稍后再试。');
-  assert.equal(messages.at(-1).detail, '原因：Cannot download installer');
-  assert.equal(manager._getState().error, '更新服务器暂时不可用，请稍后再试。');
+  assert.equal(messages.at(-1).title, 'updateErrTitle');
+  assert.equal(messages.at(-1).message, 'updateErrServer');
+  assert.equal(messages.at(-1).detail, 'updateErrDetailPrefixCannot download installer');
+  assert.equal(manager._getState().error, 'updateErrServer');
 });
 
 test('classifyUpdateError covers common updater failures', () => {
   assert.equal(
     classifyUpdateError({ statusCode: 404 }),
-    '更新服务器暂时不可用，请稍后再试。',
+    'updateErrServer',
   );
   assert.equal(
     classifyUpdateError({ code: 'ECONNRESET' }),
-    '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。',
+    'updateErrDownload',
   );
   assert.equal(
     classifyUpdateError(new Error('net::ERR_INTERNET_DISCONNECTED')),
-    '无法连接更新源，请稍后再试；如果网络正常，可能是 GitHub 更新源暂时不可访问。',
+    'updateErrNetwork',
   );
   assert.equal(
     classifyUpdateError({ cause: { code: 'ETIMEDOUT' } }),
-    '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。',
+    'updateErrDownload',
   );
   assert.equal(
     classifyUpdateError(new Error('boom')),
-    '检查更新失败，详细原因已写入日志。',
+    'updateErrGeneric',
   );
 });
