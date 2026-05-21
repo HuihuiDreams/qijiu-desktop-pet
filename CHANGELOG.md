@@ -3,6 +3,17 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [0.2.7] - 2026-05-21
+### Added
+- **多语言支持 (i18n) 架构**：新增 `src/data/i18n.js` 作为统一的多语言字典，支持中文 (zh)、英文 (en) 和日文 (ja)。
+- **语言运行时热切换**：主进程增加向所有窗口广播 `locale-changed` 机制，右键菜单和系统托盘均能实时切换主窗口和状态面板语言。
+- **状态面板缓存重绘**：状态窗口监听 `locale-changed` 并使用 `lastRenderData` 立即更新现有属性面板上的多语言数值。
+
+### Changed
+- **气泡重叠与换行策略**：单人对话框气泡保持 `nowrap` 风格，双人互动气泡限制 `max-width: 130px`、启用 `pre-wrap` 向上增长，防止英文等长句重叠。
+- **状态栏对齐美化**：状态面板属性标签宽由 `72px` 增加至 `85px`，增加 `white-space: nowrap`，防止英文属性名（如 `Affection`）换行，使 UI 更加美观对齐。
+- **全局多语言适配**：清理并重构 `debug.js`、`updateManager.js` 中的硬编码中文，改用统一的翻译字典接口。
+
 ## [0.2.6] - 2026-05-20
 ### Added
 - **代码规范规则集**：根据 Karpathy 编程指南定制了适用于本项目的 `.geminirules` 开发规范规则文件。

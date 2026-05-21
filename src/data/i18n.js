@@ -41,10 +41,6 @@ const I18N = {
       nameShenjiu: '沈清秋',
       nicknameShenjiu: '沈九',
 
-      // 皮肤名
-      skinDefault: '默认皮肤·凉拌仓鼠',
-      skinBirds: '鸟塑七九・凉拌仓鼠',
-
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
       trayStatusPanel: '📊 显示状态面板',
@@ -54,8 +50,6 @@ const I18N = {
       trayHidePet: '👻 隐藏桌宠',
       trayShowPet: '👻 显示桌宠',
       trayResetPos: '🔄 重置位置',
-      traySwitchScreen: '🖥️ 切换屏幕',
-      trayScreen: '屏幕',
       trayAutoLaunchOn: '🚀 禁用开机启动',
       trayAutoLaunchOff: '🚀 开机自动启动',
       trayDevTools: '🛠️ 开发者工具',
@@ -74,35 +68,28 @@ const I18N = {
       updateErrGeneric: '检查更新失败，详细原因已写入日志。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：未知错误，详情已写入日志。',
-
+      
       updateAvailTitle: '发现新版本',
       updateAvailMsg: '发现新版本 {version}，是否现在下载？',
       updateAvailMsgNoVer: '发现新版本，是否现在下载？',
       updateBtnDownload: '下载',
       updateBtnLater: '稍后',
-
+      
       updateNotAvailTitle: '已是最新版本',
       updateNotAvailMsg: '当前版本 {version} 已是最新版本。',
       updateNotAvailMsgNoVer: '当前已经是最新版本。',
-
+      
       updateReadyTitle: '更新已下载',
       updateReadyMsg: '新版本 {version} 已下载完成，是否现在重启并安装？',
       updateReadyMsgNoVer: '新版本已下载完成，是否现在重启并安装？',
       updateBtnInstall: '重启并安装',
-
-      updateCheckingTitle: '正在检查更新',
-      updateDownloadingTitle: '正在下载更新',
+      
       updateInProgressTitle: '更新检查进行中',
       updateCheckingMsg: '正在检查更新，请稍候。',
       updateDownloadingMsg: '正在下载更新，请稍候。',
-
+      
       updateDevTitle: '开发模式',
       updateDevMsg: '开发模式下不支持检查更新，请使用安装包验证自动更新。',
-
-      // macOS 无证书时手动更新提示
-      updateMacManualTitle: '检查更新',
-      updateMacManualMsg: '请先从托盘菜单完全退出当前应用，再下载最新 DMG 并拖入 Applications 覆盖安装。',
-      updateMacManualBtn: '前往下载页面',
 
       // 语言选项
       langZh: '中文',
@@ -265,10 +252,6 @@ const I18N = {
       nameShenjiu: 'Shen Qingqiu',
       nicknameShenjiu: 'Shen Jiu',
 
-      // Skin names
-      skinDefault: 'Default Skin - (Artist) Hamster Salad',
-      skinBirds: 'Cute Birds - (Artist) Hamster Salad',
-
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
       trayStatusPanel: '📊 Show Status Panel',
@@ -278,8 +261,6 @@ const I18N = {
       trayHidePet: '👻 Hide Pets',
       trayShowPet: '👻 Show Pets',
       trayResetPos: '🔄 Reset Position',
-      traySwitchScreen: '🖥️ Switch Screen',
-      trayScreen: 'Screen',
       trayAutoLaunchOn: '🚀 Disable Auto-launch',
       trayAutoLaunchOff: '🚀 Launch at Login',
       trayDevTools: '🛠️ Developer Tools',
@@ -298,35 +279,28 @@ const I18N = {
       updateErrGeneric: 'Failed to check for updates. Details have been logged.',
       updateErrDetailPrefix: 'Reason: ',
       updateErrUnknownDetail: 'Reason: Unknown error, details have been logged.',
-
+      
       updateAvailTitle: 'Update Available',
       updateAvailMsg: 'A new version {version} is available. Would you like to download it now?',
       updateAvailMsgNoVer: 'A new version is available. Would you like to download it now?',
       updateBtnDownload: 'Download',
       updateBtnLater: 'Later',
-
+      
       updateNotAvailTitle: 'Up to Date',
       updateNotAvailMsg: 'You are currently on the latest version {version}.',
       updateNotAvailMsgNoVer: 'You are currently on the latest version.',
-
+      
       updateReadyTitle: 'Update Downloaded',
       updateReadyMsg: 'Version {version} has been downloaded. Restart and install now?',
       updateReadyMsgNoVer: 'The update has been downloaded. Restart and install now?',
       updateBtnInstall: 'Install and Restart',
-
-      updateCheckingTitle: 'Checking for Updates',
-      updateDownloadingTitle: 'Downloading Update',
+      
       updateInProgressTitle: 'Update in Progress',
       updateCheckingMsg: 'Checking for updates, please wait...',
       updateDownloadingMsg: 'Downloading update, please wait...',
-
+      
       updateDevTitle: 'Development Mode',
       updateDevMsg: 'Checking for updates is not supported in development mode. Please use a packaged build to test updates.',
-
-      // macOS manual update (no Developer ID certificate)
-      updateMacManualTitle: 'Check for Updates',
-      updateMacManualMsg: 'Quit the current app from the tray menu first, then download the latest DMG and drag it into Applications to replace the old app.',
-      updateMacManualBtn: 'Open Download Page',
 
       // Language options
       langZh: '中文',
@@ -482,17 +456,13 @@ const I18N = {
       statAffection: '好感度',
       statHunger: '満腹度',
       statQi: '霊力',
-      statMood: '道心',
+      statMood: '心境',
 
       // ペット名
       nameYueqi: '岳清源',
       nicknameYueqi: '岳七',
       nameShenjiu: '沈清秋',
       nicknameShenjiu: '沈九',
-
-      // 装束名
-      skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
-      skinBirds: '小鳥七九・(絵師) Hamster Salad',
 
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',
@@ -503,8 +473,6 @@ const I18N = {
       trayHidePet: '👻 姿を隠す',      // “隐去身形”，比“隐藏宠物”更有仙术感
       trayShowPet: '👻 姿を現す',      // “显露身形”
       trayResetPos: '🔄 位置復元',      // 归位/复原
-      traySwitchScreen: '🖥️ 画面切り替え',
-      trayScreen: '画面',
       trayAutoLaunchOn: '🚀 起動時常駐を無効化',
       trayAutoLaunchOff: '🚀 起動時常駐',    // “常驻”比“登录时启动”更简练
       trayDevTools: '🛠️ 開発者ツール',
@@ -523,35 +491,28 @@ const I18N = {
       updateErrGeneric: '更新の確認に失敗しました。詳細はログに記録されています。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：不明なエラー。詳細はログに記録されています。',
-
+      
       updateAvailTitle: '新しいバージョン',
       updateAvailMsg: '新しいバージョン {version} が見つかりました。今すぐダウンロードしますか？',
       updateAvailMsgNoVer: '新しいバージョンが見つかりました。今すぐダウンロードしますか？',
       updateBtnDownload: 'ダウンロード',
       updateBtnLater: '後で',
-
+      
       updateNotAvailTitle: '最新バージョンです',
       updateNotAvailMsg: '現在のバージョン {version} は最新です。',
       updateNotAvailMsgNoVer: 'すでに最新バージョンです。',
-
+      
       updateReadyTitle: 'ダウンロード完了',
       updateReadyMsg: 'バージョン {version} のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
       updateReadyMsgNoVer: '更新のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
       updateBtnInstall: '再起動してインストール',
-
-      updateCheckingTitle: '更新を確認中',
-      updateDownloadingTitle: '更新をダウンロード中',
+      
       updateInProgressTitle: '更新確認中',
       updateCheckingMsg: '更新を確認しています。しばらくお待ちください。',
       updateDownloadingMsg: '更新をダウンロードしています。しばらくお待ちください。',
-
+      
       updateDevTitle: '開発モード',
       updateDevMsg: '開発モードでは更新機能を利用できません。自動更新のテストはパッケージ版をご利用ください。',
-
-      // macOS 証明書なし手動更新
-      updateMacManualTitle: '更新を確認',
-      updateMacManualMsg: 'まずトレイメニューから現在のアプリを完全に終了し、最新のDMGをダウンロードしてApplicationsにドラッグし、古いアプリを置き換えてください。',
-      updateMacManualBtn: 'ダウンロードページを開く',
 
       // Language options
       langZh: '中文',
@@ -570,7 +531,7 @@ const I18N = {
       bubbleRestTooHungry: '空腹で休むに休めぬ…',
 
       // 帰還の挨拶
-      returnYueqi: (n) => `此処を離れてより、${n}時辰が経ったよ…`,
+      returnYueqi: (n) => `此処を離れてより、${n}刻が経ったよ…`,
       returnShenjiu: '…ふん、ようやく戻ってきたか。',
     },
     dialogues: {
@@ -645,9 +606,9 @@ const I18N = {
           '小九！！',
         ],
         shenjiu: [
-          'うっ…！無理やり食わせて殺す気か？！',
-          'もういい！自分で食え！！',
-          'これ以上は一口も入らん！！',
+          'おえ～！無理やり食わせて殺す気か？！',  // 嘧~~你要撞死我吗！
+          'もういい！自分で食え！！',                // 吧和！就你自己吃！
+          'これ以上は一口も入らん！！',  // 再也吃不下了！！
         ],
       },
       idle: {
@@ -661,7 +622,7 @@ const I18N = {
         shenjiu: [
           '（書物をめくる）',                      // （翻书）
           '…煩わしい。',                        // …烦。（“煩わしい”比直白的“うるさい”更有清冷仙长的心境）
-          'どうやって修行の限界を突破するか…',        // 如何突破瓶颈？（“瓶頸（へいけい）”是修真原汁原味的词）
+          'どうやって瓶頸を突破するか…',        // 如何突破瓶颈？（“瓶頸（へいけい）”是修真原汁原味的词）
           '（冷ややかな目で彼方を見遣る）',      // （冷冷地看着远方）
           'あの人…また来なかった。',              // 那个人…又没来。（“あの人”比直呼其名多了很多幽怨和隐藏的期待）
         ],
@@ -675,7 +636,7 @@ const I18N = {
         shenjiu: ['霊力が足りない…', '修行の時間だな。'],
       },
       lowMood: {
-        yueqi: ['道心が揺らいでいる…', '心がざわつく。'], // 心境不稳… / 有些心烦。（“ざわつく”形容心里毛毛的、无法平静）
+        yueqi: ['心境が乱れているな…', '心がざわつく。'], // 心境不稳… / 有些心烦。（“ざわつく”形容心里毛毛的、无法平静）
         shenjiu: ['…構うな。', '（無表情）'],             // …别烦我。（“構うな” = 别管我/别烦我） / （面无表情）
       },
       effects: {

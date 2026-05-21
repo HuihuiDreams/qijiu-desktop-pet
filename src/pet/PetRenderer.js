@@ -337,9 +337,9 @@ class PetRenderer {
       const headX = overlayPos.x + overlayPos.width * headXRatio;
       el.style.left = `${headX}px`;
       el.style.transform = 'translateX(-50%)';
-      // 纵向：放在图片顶部上方，不遮挡人物
-      el.style.top = `${overlayPos.y - INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
-      el.style.bottom = 'auto'; // 强制覆盖 .dialog-bubble 的 bottom，防止高度被拉伸
+      const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+      el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
+      el.style.top = 'auto'; // 移除 top 定位
       el.style.zIndex = '101';
       el.style.pointerEvents = 'none';
       this.stage.appendChild(el);

@@ -7,14 +7,6 @@ const DEFAULT_UPDATE_STATE = Object.freeze({
   error: null,
 });
 
-// macOS 下没有 Apple Developer 证书时，Squirrel.Mac 会因 ad-hoc 签名
-// 不满足代码要求而报错。此标志用于在 macOS 上跳过 electron-updater，
-// 改为引导用户到 GitHub Releases 页面手动下载。
-const IS_MAC = process.platform === 'darwin';
-
-// GitHub Releases 页面地址（手动更新时在浏览器打开）
-const GITHUB_RELEASES_URL = 'https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest';
-
 function loadDefaultAutoUpdater() {
   return require('electron-updater').autoUpdater;
 }
@@ -140,85 +132,6 @@ function getReadableErrorDetail(error, t = (k => k)) {
   return message ? `${t('updateErrDetailPrefix')}${message}` : t('updateErrUnknownDetail');
 }
 
-function getTranslatedText(t, key, fallback) {
-  const value = t(key);
-  return value === key ? fallback : value;
-}
-
-/**
- * macOS 专用：无证书环境下的手动更新管理器。
- * 对外暴露与 createUpdateManager 完全一致的 API，
- * 但"检查更新"会直接打开浏览器跳转到 GitHub Releases 页面，
- * 绕过 Squirrel.Mac 的签名验证。
- */
-function createMacManualUpdateManager() {
-  let app = null;
-  let dialog = null;
-  let t = (k) => k;
-  let initialized = false;
-  const state = { ...DEFAULT_UPDATE_STATE };
-
-  function initUpdateManager(config) {
-    app = config.app;
-    dialog = config.dialog;
-    if (config.t) t = config.t;
-    initialized = true;
-  }
-
-  async function checkForUpdatesFromTray() {
-    if (!initialized) throw new Error('Update manager is not initialized.');
-
-    if (!app || !app.isPackaged) {
-      await dialog.showMessageBox({
-        type: 'info',
-        title: t('updateDevTitle'),
-        message: t('updateDevMsg'),
-        buttons: [t('updateBtnOk')],
-        noLink: true,
-      });
-      return;
-    }
-
-    // macOS 无证书：打开 GitHub Releases 页面，用户手动下载 DMG
-    const { shell } = require('electron');
-    const manualTitle = t('updateMacManualTitle');
-    const manualMsg = t('updateMacManualMsg');
-    const manualBtn = t('updateMacManualBtn');
-    const laterBtn = t('updateBtnLater');
-
-    const result = await dialog.showMessageBox({
-      type: 'info',
-      title: manualTitle !== 'updateMacManualTitle' ? manualTitle : '检查更新',
-      message: manualMsg !== 'updateMacManualMsg'
-        ? manualMsg
-        : '点击下方按钮前往 GitHub 下载最新版本的 DMG 安装包。',
-      buttons: [
-        manualBtn !== 'updateMacManualBtn' ? manualBtn : '前往下载页面',
-        laterBtn !== 'updateBtnLater' ? laterBtn : '稍后',
-      ],
-      defaultId: 0,
-      cancelId: 1,
-      noLink: true,
-    });
-
-    if (result.response === 0) {
-      shell.openExternal(GITHUB_RELEASES_URL);
-    }
-  }
-
-  function getUpdateMenuState() {
-    return { ...state, label: '📦 检查更新', enabled: true };
-  }
-
-  return {
-    initUpdateManager,
-    checkForUpdatesFromTray,
-    getUpdateMenuState,
-    classifyUpdateError,
-    _getState: () => ({ ...state }),
-  };
-}
-
 function createUpdateManager(options = {}) {
   const getAutoUpdater = options.getAutoUpdater || loadDefaultAutoUpdater;
   const getLog = options.getLog || loadDefaultLog;
@@ -229,12 +142,6 @@ function createUpdateManager(options = {}) {
   let dialog = null;
   let getMainWindow = () => null;
   let refreshTrayMenu = () => {};
-  let updateProgressUi = {
-    showChecking: () => {},
-    showDownloading: () => {},
-    setProgress: () => {},
-    close: () => {},
-  };
   let t = (k) => k;
   let initialized = false;
   let checkNotFoundHandled = false;
@@ -262,29 +169,6 @@ function createUpdateManager(options = {}) {
     if (typeof mainWindow.setProgressBar === 'function') {
       mainWindow.setProgressBar(value);
     }
-  }
-
-  function showCheckingProgress() {
-    updateProgressUi.showChecking?.({
-      title: getTranslatedText(t, 'updateCheckingTitle', 'Checking for Updates'),
-      message: t('updateCheckingMsg'),
-    });
-  }
-
-  function showDownloadingProgress(percent = 0) {
-    updateProgressUi.showDownloading?.({
-      title: getTranslatedText(t, 'updateDownloadingTitle', 'Downloading Update'),
-      message: t('updateDownloadingMsg'),
-      percent,
-    });
-  }
-
-  function setDownloadProgress(percent) {
-    updateProgressUi.setProgress?.(percent);
-  }
-
-  function closeProgressUi() {
-    updateProgressUi.close?.();
   }
 
   function getCurrentVersion() {
@@ -333,7 +217,6 @@ function createUpdateManager(options = {}) {
       error: message,
     });
     setMainWindowProgress(-1);
-    closeProgressUi();
     await showMessageBox({
       type: 'error',
       title: t('updateErrTitle'),
@@ -352,7 +235,6 @@ function createUpdateManager(options = {}) {
       latestVersion,
       error: null,
     });
-    closeProgressUi();
 
     const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
@@ -370,7 +252,6 @@ function createUpdateManager(options = {}) {
     if (result.response !== 0) return;
 
     setState({ downloading: true, error: null });
-    showDownloadingProgress(0);
     try {
       await autoUpdater.downloadUpdate();
     } catch (error) {
@@ -388,7 +269,6 @@ function createUpdateManager(options = {}) {
       error: null,
     });
     setMainWindowProgress(-1);
-    closeProgressUi();
 
     await showMessageBox({
       type: 'info',
@@ -409,7 +289,6 @@ function createUpdateManager(options = {}) {
       error: null,
     });
     setMainWindowProgress(-1);
-    closeProgressUi();
 
     const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
@@ -439,7 +318,6 @@ function createUpdateManager(options = {}) {
         latestVersion: null,
         error: null,
       });
-      showCheckingProgress();
     });
 
     autoUpdater.on('update-available', (info) => {
@@ -454,7 +332,6 @@ function createUpdateManager(options = {}) {
       setState({ checking: false, downloading: true, error: null });
       if (typeof progress?.percent === 'number') {
         setMainWindowProgress(progress.percent / 100);
-        setDownloadProgress(progress.percent);
       }
     });
 
@@ -472,7 +349,6 @@ function createUpdateManager(options = {}) {
     dialog = config.dialog;
     getMainWindow = config.getMainWindow || getMainWindow;
     refreshTrayMenu = config.refreshTrayMenu || refreshTrayMenu;
-    updateProgressUi = { ...updateProgressUi, ...(config.updateProgressUi || {}) };
     if (config.t) t = config.t;
 
     if (initialized) return;
@@ -522,7 +398,6 @@ function createUpdateManager(options = {}) {
       latestVersion: null,
       error: null,
     });
-    showCheckingProgress();
     checkNotFoundHandled = false;
 
     try {
@@ -541,11 +416,7 @@ function createUpdateManager(options = {}) {
   };
 }
 
-
-// macOS 无证书时使用手动更新管理器（打开浏览器），其他平台使用 electron-updater
-const defaultUpdateManager = IS_MAC
-  ? createMacManualUpdateManager()
-  : createUpdateManager();
+const defaultUpdateManager = createUpdateManager();
 
 module.exports = {
   initUpdateManager: defaultUpdateManager.initUpdateManager,
@@ -553,5 +424,4 @@ module.exports = {
   getUpdateMenuState: defaultUpdateManager.getUpdateMenuState,
   classifyUpdateError,
   createUpdateManager,
-  createMacManualUpdateManager,
 };
