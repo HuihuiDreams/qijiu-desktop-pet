@@ -132,6 +132,11 @@ function getReadableErrorDetail(error, t = (k => k)) {
   return message ? `${t('updateErrDetailPrefix')}${message}` : t('updateErrUnknownDetail');
 }
 
+function getTranslatedText(t, key, fallback) {
+  const value = t(key);
+  return value === key ? fallback : value;
+}
+
 function createUpdateManager(options = {}) {
   const getAutoUpdater = options.getAutoUpdater || loadDefaultAutoUpdater;
   const getLog = options.getLog || loadDefaultLog;
@@ -142,6 +147,12 @@ function createUpdateManager(options = {}) {
   let dialog = null;
   let getMainWindow = () => null;
   let refreshTrayMenu = () => {};
+  let updateProgressUi = {
+    showChecking: () => {},
+    showDownloading: () => {},
+    setProgress: () => {},
+    close: () => {},
+  };
   let t = (k) => k;
   let initialized = false;
   let checkNotFoundHandled = false;
@@ -169,6 +180,29 @@ function createUpdateManager(options = {}) {
     if (typeof mainWindow.setProgressBar === 'function') {
       mainWindow.setProgressBar(value);
     }
+  }
+
+  function showCheckingProgress() {
+    updateProgressUi.showChecking?.({
+      title: getTranslatedText(t, 'updateCheckingTitle', 'Checking for Updates'),
+      message: t('updateCheckingMsg'),
+    });
+  }
+
+  function showDownloadingProgress(percent = 0) {
+    updateProgressUi.showDownloading?.({
+      title: getTranslatedText(t, 'updateDownloadingTitle', 'Downloading Update'),
+      message: t('updateDownloadingMsg'),
+      percent,
+    });
+  }
+
+  function setDownloadProgress(percent) {
+    updateProgressUi.setProgress?.(percent);
+  }
+
+  function closeProgressUi() {
+    updateProgressUi.close?.();
   }
 
   function getCurrentVersion() {
@@ -217,6 +251,7 @@ function createUpdateManager(options = {}) {
       error: message,
     });
     setMainWindowProgress(-1);
+    closeProgressUi();
     await showMessageBox({
       type: 'error',
       title: t('updateErrTitle'),
@@ -235,6 +270,7 @@ function createUpdateManager(options = {}) {
       latestVersion,
       error: null,
     });
+    closeProgressUi();
 
     const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
@@ -252,6 +288,7 @@ function createUpdateManager(options = {}) {
     if (result.response !== 0) return;
 
     setState({ downloading: true, error: null });
+    showDownloadingProgress(0);
     try {
       await autoUpdater.downloadUpdate();
     } catch (error) {
@@ -269,6 +306,7 @@ function createUpdateManager(options = {}) {
       error: null,
     });
     setMainWindowProgress(-1);
+    closeProgressUi();
 
     await showMessageBox({
       type: 'info',
@@ -289,6 +327,7 @@ function createUpdateManager(options = {}) {
       error: null,
     });
     setMainWindowProgress(-1);
+    closeProgressUi();
 
     const versionText = latestVersion ? latestVersion : '';
     const result = await showMessageBox({
@@ -318,6 +357,7 @@ function createUpdateManager(options = {}) {
         latestVersion: null,
         error: null,
       });
+      showCheckingProgress();
     });
 
     autoUpdater.on('update-available', (info) => {
@@ -332,6 +372,7 @@ function createUpdateManager(options = {}) {
       setState({ checking: false, downloading: true, error: null });
       if (typeof progress?.percent === 'number') {
         setMainWindowProgress(progress.percent / 100);
+        setDownloadProgress(progress.percent);
       }
     });
 
@@ -349,6 +390,7 @@ function createUpdateManager(options = {}) {
     dialog = config.dialog;
     getMainWindow = config.getMainWindow || getMainWindow;
     refreshTrayMenu = config.refreshTrayMenu || refreshTrayMenu;
+    updateProgressUi = { ...updateProgressUi, ...(config.updateProgressUi || {}) };
     if (config.t) t = config.t;
 
     if (initialized) return;
@@ -398,6 +440,7 @@ function createUpdateManager(options = {}) {
       latestVersion: null,
       error: null,
     });
+    showCheckingProgress();
     checkNotFoundHandled = false;
 
     try {

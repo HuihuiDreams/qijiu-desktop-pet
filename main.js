@@ -40,6 +40,11 @@ function trayT(key) {
   return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh.ui[key]) ?? key;
 }
 
+function trayText(key, fallback) {
+  const value = trayT(key);
+  return value === key ? fallback : value;
+}
+
 function getSkinDisplayName(skinId) {
   const key = SKIN_NAME_KEYS[skinId];
   return key ? trayT(key) : skinId;
@@ -47,6 +52,7 @@ function getSkinDisplayName(skinId) {
 
 let mainWindow = null;
 let statusWindow = null;
+let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
 let store = null;
@@ -670,6 +676,169 @@ function createTray() {
   refreshTrayMenu();
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getUpdateProgressHtml(payload) {
+  const title = escapeHtml(payload.title);
+  const message = escapeHtml(payload.message);
+  const percent = Number.isFinite(payload.percent) ? Math.max(0, Math.min(100, payload.percent)) : 0;
+  const isChecking = payload.mode === 'checking';
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
+      color: #202124;
+      background: #fbfbf8;
+      user-select: none;
+    }
+    .wrap {
+      width: 100vw;
+      height: 100vh;
+      padding: 22px 24px;
+      display: grid;
+      align-content: center;
+      gap: 14px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 650;
+      line-height: 1.3;
+    }
+    p {
+      margin: 0;
+      color: #5a5f66;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .bar {
+      position: relative;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e3e6df;
+    }
+    .fill {
+      width: ${isChecking ? '38%' : `${percent}%`};
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #4f9d69, #79b87f);
+      transition: width 160ms ease;
+    }
+    .checking .fill {
+      position: absolute;
+      animation: sweep 1.25s ease-in-out infinite;
+    }
+    .meta {
+      min-height: 18px;
+      color: #6c726e;
+      font-size: 12px;
+      text-align: right;
+    }
+    .checking .meta { visibility: hidden; }
+    @keyframes sweep {
+      0% { left: -40%; }
+      50% { left: 30%; }
+      100% { left: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap ${isChecking ? 'checking' : 'downloading'}">
+    <h1 id="title">${title}</h1>
+    <p id="message">${message}</p>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}">
+      <div id="fill" class="fill"></div>
+    </div>
+    <div id="meta" class="meta">${Math.round(percent)}%</div>
+  </main>
+  <script>
+    window.updateProgress = function(payload) {
+      document.body.querySelector('.wrap').className = 'wrap ' + payload.mode;
+      document.getElementById('title').textContent = payload.title || '';
+      document.getElementById('message').textContent = payload.message || '';
+      const percent = Math.max(0, Math.min(100, Number(payload.percent) || 0));
+      document.getElementById('fill').style.width = payload.mode === 'checking' ? '38%' : percent + '%';
+      document.querySelector('.bar').setAttribute('aria-valuenow', Math.round(percent));
+      document.getElementById('meta').textContent = Math.round(percent) + '%';
+    };
+  </script>
+</body>
+</html>`;
+}
+
+function showUpdateProgressWindow(payload) {
+  const normalizedPayload = {
+    mode: payload.mode,
+    title: payload.title,
+    message: payload.message,
+    percent: payload.percent ?? 0,
+  };
+
+  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) {
+    updateProgressWindow = new BrowserWindow({
+      width: 380,
+      height: 172,
+      resizable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      title: normalizedPayload.title,
+      parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+    updateProgressWindow.setMenuBarVisibility(false);
+    updateProgressWindow.on('closed', () => {
+      updateProgressWindow = null;
+    });
+    updateProgressWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getUpdateProgressHtml(normalizedPayload))}`);
+    return;
+  }
+
+  updateProgressWindow.setTitle(normalizedPayload.title);
+  updateProgressWindow.show();
+  updateProgressWindow.focus();
+  updateProgressWindow.webContents.executeJavaScript(
+    `window.updateProgress(${JSON.stringify(normalizedPayload)})`,
+  ).catch(() => {});
+}
+
+function setUpdateProgress(percent) {
+  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
+  updateProgressWindow.webContents.executeJavaScript(
+    `window.updateProgress(${JSON.stringify({
+      mode: 'downloading',
+      title: trayText('updateDownloadingTitle', 'Downloading Update'),
+      message: trayT('updateDownloadingMsg'),
+      percent,
+    })})`,
+  ).catch(() => {});
+}
+
+function closeUpdateProgressWindow() {
+  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
+  updateProgressWindow.close();
+  updateProgressWindow = null;
+}
+
 /**
  * 绘制简单的托盘图标像素图
  */
@@ -834,6 +1003,21 @@ if (!hasSingleInstanceLock) {
       dialog,
       getMainWindow: () => mainWindow,
       refreshTrayMenu,
+      updateProgressUi: {
+        showChecking: ({ title, message }) => showUpdateProgressWindow({
+          mode: 'checking',
+          title,
+          message,
+        }),
+        showDownloading: ({ title, message, percent }) => showUpdateProgressWindow({
+          mode: 'downloading',
+          title,
+          message,
+          percent,
+        }),
+        setProgress: setUpdateProgress,
+        close: closeUpdateProgressWindow,
+      },
       t: trayT,
     });
     createWindow();

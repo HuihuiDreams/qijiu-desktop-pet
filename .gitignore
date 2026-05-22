@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-update-test/
 build/*
 !build/installer.nsh
 .DS_Store
