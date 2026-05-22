@@ -146,10 +146,10 @@ test('preload.js 暴露了 setCurrentSkin API', () => {
 test('default 皮肤包含所有必要的图片文件', () => {
   const defaultDir = path.join(ASSETS_DIR, 'default');
   const requiredFiles = [
-    'left.png', 'right.png',
-    'left_cultivate.png', 'left_eat.png', 'left_sleep.png', 'left_hungry.png', 'left_pat.png',
-    'right_cultivate.png', 'right_eat.png', 'right_sleep.png', 'right_hungry.png', 'right_pat.png',
-    'shareFood.png', 'cultivate.png', 'kiss.png', 'hug.png',
+    'left.webp', 'right.webp',
+    'left_cultivate.webp', 'left_eat.webp', 'left_sleep.webp', 'left_hungry.webp', 'left_pat.webp',
+    'right_cultivate.webp', 'right_eat.webp', 'right_sleep.webp', 'right_hungry.webp', 'right_pat.webp',
+    'shareFood.webp', 'cultivate.webp', 'kiss.webp', 'hug.webp',
   ];
 
   for (const file of requiredFiles) {

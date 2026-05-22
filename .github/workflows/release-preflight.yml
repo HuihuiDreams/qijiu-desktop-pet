@@ -16,6 +16,7 @@ on:
       - 'readme*.txt'
       - 'build/**'
       - 'scripts/**'
+      - 'src/**'
       - 'main.js'
       - 'preload.js'
       - 'updateManager.js'

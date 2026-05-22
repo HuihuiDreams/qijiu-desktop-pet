@@ -3,6 +3,7 @@
  */
 class DialogBubble {
   constructor() {
+    this.activeBubbleTimers = new Map(); // petId -> scheduled fade/remove timers
     this.activeBubbles = new Map(); // petId -> bubble element 气泡元素映射
   }
 
@@ -34,24 +35,33 @@ class DialogBubble {
     // 在移除前开始淡出动画
     const fadeDelay = Math.max(0, duration - 500);
 
-    setTimeout(() => {
+    const fadeTimer = setTimeout(() => {
       if (this.activeBubbles.get(pet.id) === bubble) {
         bubble.classList.add('dialog-bubble--fade-out');
       }
     }, fadeDelay);
 
     // 显示时间结束后移除气泡
-    setTimeout(() => {
+    const removeTimer = setTimeout(() => {
       if (this.activeBubbles.get(pet.id) === bubble) {
         this.remove(pet.id);
       }
     }, duration);
+
+    this.activeBubbleTimers.set(pet.id, { fadeTimer, removeTimer });
   }
 
   /**
    * 移除特定宠物的对话气泡。
    */
   remove(petId) {
+    const timers = this.activeBubbleTimers.get(petId);
+    if (timers) {
+      clearTimeout(timers.fadeTimer);
+      clearTimeout(timers.removeTimer);
+      this.activeBubbleTimers.delete(petId);
+    }
+
     const bubble = this.activeBubbles.get(petId);
     if (bubble) {
       bubble.remove();

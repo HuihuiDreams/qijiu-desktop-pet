@@ -25,6 +25,13 @@
     "appId": "com.deskpet.yueqi-shenjiu",
     "productName": "七九爱宠",
     "artifactName": "desktop-pet-setup-${version}.${ext}",
+    "files": [
+      "**/*",
+      "!docs/**",
+      "!test/**",
+      "!.github/**",
+      "!dist/**"
+    ],
     "win": {
       "target": "nsis",
       "icon": "src/assets/icon.ico",
