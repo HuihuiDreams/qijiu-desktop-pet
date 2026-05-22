@@ -3,7 +3,7 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP] - 2026-05-22
+## [0.3.1] - 2026-05-22
 ### Changed
 - 将默认桌宠运行时图片资源从 PNG 切换为 256px WebP，并保留全套预加载策略以降低状态切换闪烁风险。
 - 调整发布打包配置，排除 docs、test、.github 和 dist，避免全分辨率备份素材进入安装包。
