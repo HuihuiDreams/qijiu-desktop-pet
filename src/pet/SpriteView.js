@@ -125,9 +125,6 @@ class SpriteView {
     if (pet.state === 'walking') {
       return pet.direction === 'left' ? 'walkingLeft' : 'walkingRight';
     }
-    if (pet.state === 'interacting') {
-      return pet.direction === 'left' ? 'interactingLeft' : 'interactingRight';
-    }
     return pet.state || 'idle';
   }
 
@@ -141,15 +138,6 @@ class SpriteView {
     const stateImage = this.imageMap[pet.id]?.[stateKey] || null;
     if (stateImage) {
       return { src: stateImage, type: 'image' };
-    }
-
-    if (pet.state === 'interacting') {
-      const directionKey = pet.direction === 'left' ? 'walkingLeft' : 'walkingRight';
-      const frames = pet.sprites?.[directionKey]?.frames || [];
-      const directionFrame = frames[1] || frames[0];
-      if (directionFrame) {
-        return { src: directionFrame, type: 'image' };
-      }
     }
 
     const emojiIdle = this.emojiMap[pet.id]?.idle;

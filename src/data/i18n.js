@@ -540,7 +540,7 @@ const I18N = {
       bubbleRestTooHungry: '空腹で休むに休めぬ…',
 
       // 帰還の挨拶
-      returnYueqi: (n) => `此処を離れてより、${n}刻が経ったよ…`,
+      returnYueqi: (n) => `此処を離れてより、${n}時辰が経ったよ…`,
       returnShenjiu: '…ふん、ようやく戻ってきたか。',
     },
     dialogues: {

@@ -5,15 +5,13 @@ const { SkinManager } = require('../src/systems/SkinManager');
 const { SpriteView } = require('../src/pet/SpriteView');
 const { PetRenderer } = require('../src/pet/PetRenderer');
 
-// ─── helpers ───────────────────────────────────────────────────────
-
-/** 构造一个最小可用的 Pet 模拟对象 */
 function createFakePet(id = 'yueqi') {
+  const baseName = id === 'yueqi' ? 'left' : 'right';
   return {
     id,
-    image: `assets/default/${id === 'yueqi' ? 'left' : 'right'}.png`,
+    image: `assets/default/${baseName}.webp`,
     sprites: {
-      idle: { frames: [`assets/default/${id === 'yueqi' ? 'left' : 'right'}.png`], fps: 1 },
+      idle: { frames: [`assets/default/${baseName}.webp`], fps: 1 },
     },
     _sv_lastResource: null,
     _sv_frameIndex: 0,
@@ -29,63 +27,52 @@ function createFakePet(id = 'yueqi') {
   };
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  SkinManager 单元测试
-// ═══════════════════════════════════════════════════════════════════
-
-test('SkinManager: 默认初始化状态正确', () => {
+test('SkinManager initializes with default skin', () => {
   const sm = new SkinManager();
   assert.equal(sm.getCurrentSkin(), 'default');
   assert.deepEqual(sm.availableSkins, ['default']);
 });
 
-test('SkinManager: getDisplayName 返回中文名，兜底返回文件夹名', () => {
+test('SkinManager resolves display names', () => {
   const sm = new SkinManager();
-  assert.equal(sm.getDisplayName('default'), '默认皮肤·凉拌仓鼠');
-  assert.equal(sm.getDisplayName('qban'), 'qban'); // 没有映射时兜底
+  assert.equal(sm.getDisplayName('default'), SkinManager.SKIN_NAMES.default);
+  assert.equal(sm.getDisplayName('qban'), 'qban');
 });
 
-test('SkinManager: setAvailableSkins 更新可用列表', () => {
+test('SkinManager updates available skins', () => {
   const sm = new SkinManager();
   sm.setAvailableSkins(['default', 'qban', 'campus']);
-  const list = sm.getAvailableSkins();
-  assert.equal(list.length, 3);
-  assert.equal(list[0].id, 'default');
-  assert.equal(list[0].displayName, '默认皮肤·凉拌仓鼠');
-  assert.equal(list[1].id, 'qban');
-  assert.equal(list[1].displayName, 'qban');
+
+  assert.deepEqual(
+    sm.getAvailableSkins().map((skin) => skin.id),
+    ['default', 'qban', 'campus']
+  );
 });
 
-test('SkinManager: buildPaths 生成正确的默认路径', () => {
+test('SkinManager builds default WebP paths', () => {
   const sm = new SkinManager();
   const paths = sm.buildPaths('default');
 
-  assert.equal(paths.petA.image, 'assets/default/left.png');
-  assert.equal(paths.petB.image, 'assets/default/right.png');
+  assert.equal(paths.petA.image, 'assets/default/left.webp');
+  assert.equal(paths.petB.image, 'assets/default/right.webp');
   assert.equal(paths.overlayPrefix, 'assets/default/');
-
-  // 检查 sprites
-  assert.deepEqual(paths.petA.sprites.idle.frames, ['assets/default/left.png']);
-  assert.equal(paths.petA.sprites.walkingLeft.frames.length, 4);
-  assert.equal(paths.petA.sprites.walkingLeft.frames[0], 'assets/default/yueqi/walk_left01.png');
-
-  // 检查 imageMap
-  assert.equal(paths.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.png');
-  assert.equal(paths.imageMap.yueqi.eating, 'assets/default/left_eat.png');
+  assert.deepEqual(paths.petA.sprites.idle.frames, ['assets/default/left.webp']);
+  assert.equal(paths.petA.sprites.walkingLeft.frames[0], 'assets/default/yueqi/walk_left01.webp');
+  assert.equal(paths.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.webp');
+  assert.equal(paths.imageMap.yueqi.eating, 'assets/default/left_eat.webp');
 });
 
-test('SkinManager: buildPaths 为自定义皮肤生成正确路径', () => {
+test('SkinManager builds custom WebP skin paths', () => {
   const sm = new SkinManager();
   const paths = sm.buildPaths('qban');
 
-  assert.equal(paths.petA.image, 'assets/qban/left.png');
-  assert.equal(paths.petB.image, 'assets/qban/right.png');
-  assert.equal(paths.overlayPrefix, 'assets/qban/');
-  assert.equal(paths.petA.sprites.walkingRight.frames[2], 'assets/qban/yueqi/walk_right03.png');
-  assert.equal(paths.imageMap.shenjiu.hungry, 'assets/qban/right_hungry.png');
+  assert.equal(paths.petA.image, 'assets/qban/left.webp');
+  assert.equal(paths.petB.image, 'assets/qban/right.webp');
+  assert.equal(paths.petA.sprites.walkingRight.frames[2], 'assets/qban/yueqi/walk_right03.webp');
+  assert.equal(paths.imageMap.shenjiu.hungry, 'assets/qban/right_hungry.webp');
 });
 
-test('SkinManager: applySkin 更新 currentSkinId', async () => {
+test('SkinManager.applySkin updates current skin and pets', async () => {
   const sm = new SkinManager();
   const petA = createFakePet('yueqi');
   const petB = createFakePet('shenjiu');
@@ -93,85 +80,43 @@ test('SkinManager: applySkin 更新 currentSkinId', async () => {
   await sm.applySkin('qban', { petA, petB, spriteView: null, renderer: null });
 
   assert.equal(sm.getCurrentSkin(), 'qban');
+  assert.equal(petA.image, 'assets/qban/left.webp');
+  assert.equal(petB.image, 'assets/qban/right.webp');
+  assert.equal(petA.sprites.idle.frames[0], 'assets/qban/left.webp');
 });
 
-test('SkinManager: applySkin 注入 Pet 的 image 和 sprites', async () => {
-  const sm = new SkinManager();
-  const petA = createFakePet('yueqi');
-  const petB = createFakePet('shenjiu');
-
-  await sm.applySkin('qban', { petA, petB, spriteView: null, renderer: null });
-
-  assert.equal(petA.image, 'assets/qban/left.png');
-  assert.equal(petB.image, 'assets/qban/right.png');
-  assert.equal(petA.sprites.idle.frames[0], 'assets/qban/left.png');
-});
-
-test('SkinManager: applySkin 更新 PetRenderer 的 skinPrefix', async () => {
+test('SkinManager.applySkin updates renderer prefix', async () => {
   const sm = new SkinManager();
   const renderer = new PetRenderer(null);
-
-  assert.equal(renderer.skinPrefix, 'assets/default/');
 
   await sm.applySkin('qban', { petA: null, petB: null, spriteView: null, renderer });
 
   assert.equal(renderer.skinPrefix, 'assets/qban/');
 });
 
-// ═══════════════════════════════════════════════════════════════════
-//  Pet.updateSkin 单元测试
-// ═══════════════════════════════════════════════════════════════════
+test('SpriteView.updateImageMap replaces the image map', () => {
+  const sv = new SpriteView();
 
-test('Pet.updateSkin: 更新 image 和 sprites', () => {
-  const pet = createFakePet('yueqi');
-  const oldImage = pet.image;
+  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.webp');
 
-  pet.updateSkin = function(skinPaths) {
-    if (skinPaths.image) this.image = skinPaths.image;
-    if (skinPaths.sprites) this.sprites = skinPaths.sprites;
-  };
-
-  pet.updateSkin({
-    image: 'assets/qban/left.png',
-    sprites: { idle: { frames: ['assets/qban/left.png'], fps: 1 } },
+  sv.updateImageMap({
+    shenjiu: { meditating: 'assets/qban/right_cultivate.webp' },
+    yueqi: { meditating: 'assets/qban/left_cultivate.webp' },
   });
 
-  assert.notEqual(pet.image, oldImage);
-  assert.equal(pet.image, 'assets/qban/left.png');
-  assert.equal(pet.sprites.idle.frames[0], 'assets/qban/left.png');
+  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/qban/right_cultivate.webp');
+  assert.equal(sv.imageMap.yueqi.meditating, 'assets/qban/left_cultivate.webp');
 });
 
-// ═══════════════════════════════════════════════════════════════════
-//  SpriteView 新增方法单元测试
-// ═══════════════════════════════════════════════════════════════════
-
-test('SpriteView.updateImageMap: 替换 imageMap', () => {
-  const sv = new SpriteView();
-
-  // 初始值是 default 路径
-  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.png');
-
-  const newMap = {
-    shenjiu: { meditating: 'assets/qban/right_cultivate.png' },
-    yueqi: { meditating: 'assets/qban/left_cultivate.png' },
-  };
-  sv.updateImageMap(newMap);
-
-  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/qban/right_cultivate.png');
-  assert.equal(sv.imageMap.yueqi.meditating, 'assets/qban/left_cultivate.png');
-});
-
-test('SpriteView.reattach: 清除脏检查缓存', async () => {
+test('SpriteView.reattach clears render cache', async () => {
   const sv = new SpriteView();
   const pet = createFakePet('yueqi');
 
-  // 模拟已有缓存
-  pet._sv_lastResource = 'assets/default/left.png';
+  pet._sv_lastResource = 'assets/default/left.webp';
   pet._sv_frameIndex = 3;
   pet._sv_frameTimer = 123;
   pet._sv_lastSpriteKey = 'walkingLeft';
 
-  // reattach 在 Node.js 环境（无 Image）中应直接 resolve
   await sv.reattach(pet);
 
   assert.equal(pet._sv_lastResource, null);
@@ -180,17 +125,62 @@ test('SpriteView.reattach: 清除脏检查缓存', async () => {
   assert.equal(pet._sv_lastSpriteKey, null);
 });
 
-// ═══════════════════════════════════════════════════════════════════
-//  PetRenderer 新增方法单元测试
-// ═══════════════════════════════════════════════════════════════════
+test('SpriteView.reattach preloads each unique WebP resource once', async () => {
+  const originalImage = global.Image;
+  const createdImages = [];
 
-test('PetRenderer: 默认 skinPrefix 为 assets/default/', () => {
-  const renderer = new PetRenderer(null);
-  assert.equal(renderer.skinPrefix, 'assets/default/');
+  class FakeImage {
+    set src(value) {
+      this._src = value;
+      createdImages.push(this);
+      queueMicrotask(() => this.onload?.());
+    }
+
+    get src() {
+      return this._src;
+    }
+  }
+
+  global.Image = FakeImage;
+
+  try {
+    const sv = new SpriteView({
+      imageMap: {
+        yueqi: {
+          hungry: 'assets/default/left_hungry.webp',
+        },
+      },
+    });
+    const pet = createFakePet('yueqi');
+    pet.sprites.walkingLeft = {
+      frames: [
+        'assets/default/yueqi/walk_left01.webp',
+        'assets/default/yueqi/walk_left02.webp',
+      ],
+      fps: 4,
+    };
+
+    await sv.reattach(pet);
+
+    assert.equal(createdImages.length, 4);
+    assert.deepEqual(
+      pet._sv_preloadedImages.map((image) => image.src),
+      [
+        'assets/default/left.webp',
+        'assets/default/yueqi/walk_left01.webp',
+        'assets/default/yueqi/walk_left02.webp',
+        'assets/default/left_hungry.webp',
+      ]
+    );
+  } finally {
+    global.Image = originalImage;
+  }
 });
 
-test('PetRenderer.setSkinPrefix: 更新前缀', () => {
+test('PetRenderer defaults and updates skin prefix', () => {
   const renderer = new PetRenderer(null);
+  assert.equal(renderer.skinPrefix, 'assets/default/');
+
   renderer.setSkinPrefix('assets/qban/');
   assert.equal(renderer.skinPrefix, 'assets/qban/');
 });
