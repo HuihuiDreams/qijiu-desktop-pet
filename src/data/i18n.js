@@ -87,6 +87,8 @@ const I18N = {
       updateReadyMsgNoVer: '新版本已下载完成，是否现在重启并安装？',
       updateBtnInstall: '重启并安装',
       
+      updateCheckingTitle: '正在检查更新',
+      updateDownloadingTitle: '正在下载更新',
       updateInProgressTitle: '更新检查进行中',
       updateCheckingMsg: '正在检查更新，请稍候。',
       updateDownloadingMsg: '正在下载更新，请稍候。',
@@ -301,6 +303,8 @@ const I18N = {
       updateReadyMsgNoVer: 'The update has been downloaded. Restart and install now?',
       updateBtnInstall: 'Install and Restart',
       
+      updateCheckingTitle: 'Checking for Updates',
+      updateDownloadingTitle: 'Downloading Update',
       updateInProgressTitle: 'Update in Progress',
       updateCheckingMsg: 'Checking for updates, please wait...',
       updateDownloadingMsg: 'Downloading update, please wait...',
@@ -516,6 +520,8 @@ const I18N = {
       updateReadyMsgNoVer: '更新のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
       updateBtnInstall: '再起動してインストール',
       
+      updateCheckingTitle: '更新を確認中',
+      updateDownloadingTitle: '更新をダウンロード中',
       updateInProgressTitle: '更新確認中',
       updateCheckingMsg: '更新を確認しています。しばらくお待ちください。',
       updateDownloadingMsg: '更新をダウンロードしています。しばらくお待ちください。',

@@ -3,6 +3,17 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [WIP] - 2026-05-22
+### Added
+- Add `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md` for the visible updater progress window and local packaged update testing.
+- Add `electron-builder.update-test-old.yml` and `electron-builder.update-test-new.yml` for local updater validation without publishing a GitHub Release.
+
+### Changed
+- Show a dedicated progress window immediately after "Check for Updates"; after download confirmation, reuse it as a percentage-based download progress window.
+- Decouple `updateManager.js` from the main-process progress window through an injected `updateProgressUi` adapter while preserving existing result dialogs and tray state.
+- Ignore disposable local updater test output under `dist-update-test/`.
+- Add `docs/plan/window-awareness-plan.md` for the window-awareness implementation plan.
+
 ## [0.3.1] - 2026-05-22
 ### Changed
 - 将默认桌宠运行时图片资源从 PNG 切换为 256px WebP，并保留全套预加载策略以降低状态切换闪烁风险。
