@@ -61,6 +61,15 @@ let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let finalSaveRequestId = 0;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
+
+function configureChromiumMemoryBudget() {
+  app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128');
+  app.commandLine.appendSwitch('disable-site-isolation-trials');
+  app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService');
+}
+
+configureChromiumMemoryBudget();
+
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 /**

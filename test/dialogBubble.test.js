@@ -89,3 +89,32 @@ test('removeForPets hides personal bubbles for both pets before interaction bubb
     assert.equal(shenjiu.element.children.length, 0);
   });
 });
+
+test('remove clears scheduled bubble timers', () => {
+  withFakeDocument(() => {
+    const originalSetTimeout = global.setTimeout;
+    const originalClearTimeout = global.clearTimeout;
+    let nextTimerId = 1;
+    const clearedTimers = [];
+
+    global.setTimeout = () => nextTimerId++;
+    global.clearTimeout = (timerId) => clearedTimers.push(timerId);
+
+    try {
+      const dialogBubble = new DialogBubble();
+      const pet = { id: 'yueqi', element: createFakeElement() };
+
+      dialogBubble.show(pet, 'temporary bubble', 1000);
+      assert.equal(dialogBubble.activeBubbleTimers.has(pet.id), true);
+
+      dialogBubble.remove(pet.id);
+
+      assert.deepEqual(clearedTimers, [1, 2]);
+      assert.equal(dialogBubble.activeBubbleTimers.has(pet.id), false);
+      assert.equal(dialogBubble.activeBubbles.has(pet.id), false);
+    } finally {
+      global.setTimeout = originalSetTimeout;
+      global.clearTimeout = originalClearTimeout;
+    }
+  });
+});

@@ -3,6 +3,16 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [WIP] - 2026-05-22
+### Changed
+- 将默认桌宠运行时图片资源从 PNG 切换为 256px WebP，并保留全套预加载策略以降低状态切换闪烁风险。
+- 调整发布打包配置，排除 docs、test、.github 和 dist，避免全分辨率备份素材进入安装包。
+- 扩展 Release Preflight 触发路径，让 src 资源和渲染代码变化也会自动触发发布预检。
+
+### Fixed
+- 保留 SpriteView 图片加载失败时的 emoji fallback，避免回退内容变成文字占位。
+- 为默认 WebP 资源尺寸增加纯 Node 测试，避免 GitHub Actions 依赖 Python/Pillow 环境。
+
 ## [0.3.0] - 2026-05-21
 ### Added
 - **多语言支持 (i18n) 架构**：新增 `src/data/i18n.js` 作为统一的多语言字典，支持中文 (zh)、英文 (en) 和日文 (ja)。

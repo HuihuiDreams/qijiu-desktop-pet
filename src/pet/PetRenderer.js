@@ -283,7 +283,7 @@ class PetRenderer {
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
-    overlay.src = `${this.skinPrefix}${type}.png`;
+    overlay.src = `${this.skinPrefix}${type}.webp`;
     overlay.alt = type;
     overlay.style.position = 'absolute';
     overlay.style.width = `${overlayWidth}px`;
