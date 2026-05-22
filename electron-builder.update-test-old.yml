@@ -1,0 +1,30 @@
+appId: com.deskpet.qijiu-update-test
+productName: Qijiu Update Test
+artifactName: qijiu-update-test-setup-${version}.${ext}
+extraMetadata:
+  name: qijiu-update-test
+files:
+  - "**/*"
+  - "!docs/**"
+  - "!test/**"
+  - "!.github/**"
+  - "!dist/**"
+  - "!dist-update-test/**"
+win:
+  target: nsis
+  icon: src/assets/icon.ico
+  signAndEditExecutable: false
+afterPack: scripts/afterPack.js
+directories:
+  output: dist-update-test/old
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Qijiu Update Test
+  uninstallDisplayName: Qijiu Update Test
+  include: build/installer.nsh
+publish:
+  - provider: generic
+    url: http://localhost:8765/

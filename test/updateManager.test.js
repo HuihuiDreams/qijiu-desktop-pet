@@ -12,6 +12,7 @@ function createHarness(options = {}) {
   const updater = new EventEmitter();
   const messages = [];
   const logErrors = [];
+  const progressEvents = [];
   const mainWindow = options.mainWindow || null;
   let refreshCount = 0;
 
@@ -49,6 +50,12 @@ function createHarness(options = {}) {
     refreshTrayMenu: () => {
       refreshCount += 1;
     },
+    updateProgressUi: {
+      showChecking: (payload) => progressEvents.push(['checking', payload]),
+      showDownloading: (payload) => progressEvents.push(['downloading', payload]),
+      setProgress: (percent) => progressEvents.push(['progress', percent]),
+      close: () => progressEvents.push(['close']),
+    },
     t: options.t,
   });
 
@@ -57,6 +64,7 @@ function createHarness(options = {}) {
     updater,
     messages,
     logErrors,
+    progressEvents,
     getRefreshCount: () => refreshCount,
   };
 }
@@ -80,7 +88,7 @@ test('development mode shows a friendly message and does not check for updates',
 });
 
 test('update-available asks before downloading', async () => {
-  const { updater, messages } = createHarness({
+  const { updater, messages, progressEvents } = createHarness({
     responses: [{ response: 0 }],
   });
 
@@ -89,6 +97,14 @@ test('update-available asks before downloading', async () => {
 
   assert.equal(messages[0].title, 'updateAvailTitle');
   assert.equal(updater.downloaded, true);
+  assert.deepEqual(progressEvents, [
+    ['close'],
+    ['downloading', {
+      title: 'Downloading Update',
+      message: 'updateDownloadingMsg',
+      percent: 0,
+    }],
+  ]);
 });
 
 test('update-available respects a user cancel', async () => {
@@ -138,6 +154,15 @@ test('metadata not found while checking is treated as no update available', asyn
   assert.equal(manager._getState().error, null);
 });
 
+test('manual update check opens a visible checking progress window', async () => {
+  const { manager, progressEvents } = createHarness();
+
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(progressEvents[0][0], 'checking');
+  assert.equal(progressEvents[0][1].title, 'Checking for Updates');
+});
+
 test('metadata not found only shows the latest-version message once', async () => {
   const notFoundError = Object.assign(new Error('Cannot find latest.yml, 404'), { statusCode: 404 });
   const { manager, messages, logErrors } = createHarness({
@@ -160,7 +185,7 @@ test('metadata not found only shows the latest-version message once', async () =
 });
 
 test('update-downloaded asks before quit and install', async () => {
-  const { updater, messages } = createHarness({
+  const { updater, messages, progressEvents } = createHarness({
     responses: [{ response: 0 }],
   });
 
@@ -169,11 +194,12 @@ test('update-downloaded asks before quit and install', async () => {
 
   assert.equal(messages[0].title, 'updateReadyTitle');
   assert.deepEqual(updater.quitAndInstallArgs, [false, true]);
+  assert.equal(progressEvents[0][0], 'close');
 });
 
 test('download-progress updates the main window progress when available', async () => {
   const progressValues = [];
-  const { updater } = createHarness({
+  const { updater, progressEvents } = createHarness({
     mainWindow: {
       isDestroyed: () => false,
       setProgressBar: (value) => progressValues.push(value),
@@ -184,6 +210,7 @@ test('download-progress updates the main window progress when available', async 
   await tick();
 
   assert.deepEqual(progressValues, [0.42]);
+  assert.deepEqual(progressEvents, [['progress', 42]]);
 });
 
 test('error event records log details and exposes a user-safe message', async () => {
