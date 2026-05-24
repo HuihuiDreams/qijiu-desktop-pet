@@ -3,26 +3,26 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP] - 2026-05-24
+## [0.4.0] - 2026-05-24
 ### Added
-- **macOS Native Support**:
-  - Automatically hide the Dock icon (`app.dock.hide()`) in macOS runtime.
-  - Native monochrome Template Image support (`setTemplateImage(true)`) for macOS menu bar tray icon.
-  - Implement full auto-launch setting adaptation for macOS (`openAsHidden`).
-  - Added high-resolution `src/assets/icon.icns` for macOS desktop.
-  - Configured multi-architecture package targets (`dmg` + `zip` for `x64` and `arm64`) in `package.json`.
-  - Added macOS installer build job (`build-macos-installer`) in GitHub Actions to automatically publish macOS releases alongside Windows.
-  - Added macOS smoke package validation (`preflight-mac`) to the Release Preflight workflow.
-  - Added detailed, multi-lingual macOS download, installation, and Gatekeeper bypass instructions in `README.md`, `readme.txt`, `readme_en.txt`, and `readme_ja.txt`.
-- Add `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md` for the visible updater progress window and local packaged update testing.
-- Add `electron-builder.update-test-old.yml` and `electron-builder.update-test-new.yml` for local updater validation without publishing a GitHub Release.
+- **macOS 原生支持**：
+  - 在 macOS 运行时自动隐藏 Dock 图标 (`app.dock.hide()`)。
+  - 支持 macOS 菜单栏托盘图标的原生单色模板图像 (`setTemplateImage(true)`)。
+  - 实现 macOS 下完整的自动启动设置适配 (`openAsHidden`)。
+  - 为 macOS 桌面端添加高分辨率的 `src/assets/icon.icns` 图标。
+  - 在 `package.json` 中配置了多架构打包目标（针对 `x64` 和 `arm64` 的 `dmg` + `zip`）。
+  - 在 GitHub Actions 中添加了 macOS 安装包构建任务 (`build-macos-installer`)，以在发布 Release 时自动与 Windows 版本一同发布。
+  - 在 Release Preflight 工作流中添加了 macOS 冒烟包校验 (`preflight-mac`)。
+  - 在 `README.md`、`readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中添加了详细的多语言 macOS 下载、安装及绕过 Gatekeeper（安全隐私限制）的说明。
+- 新增 `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md`，用于记录可视化更新进度窗口以及本地打包更新测试的设计决策。
+- 新增 `electron-builder.update-test-old.yml` 和 `electron-builder.update-test-new.yml`，用于在不发布 GitHub Release 的情况下进行本地更新程序验证。
 
 ### Changed
-- Refactored `createTray` to use template image auto-inversion under macOS while preserving programmatic bitmap drawing on Windows.
-- Show a dedicated progress window immediately after "Check for Updates"; after download confirmation, reuse it as a percentage-based download progress window.
-- Decouple `updateManager.js` from the main-process progress window through an injected `updateProgressUi` adapter while preserving existing result dialogs and tray state.
-- Ignore disposable local updater test output under `dist-update-test/`.
-- Add `docs/plan/window-awareness-plan.md` for the window-awareness implementation plan.
+- 重构 `createTray`，使其在 macOS 下使用模板图像自动反色，同时在 Windows 下保留编程式位图绘制。
+- 在“检查更新”后立即显示专属进度窗口；在确认下载后，将其复用为基于百分比的下载进度窗口。
+- 通过注入 `updateProgressUi` 适配器，将 `updateManager.js` 与主进程进度窗口解耦，同时保留现有的结果对话框和托盘状态。
+- 忽略 `dist-update-test/` 下的一次性本地更新测试输出。
+- 新增 `docs/plan/window-awareness-plan.md`，记录窗口感知（window-awareness）特性的实现计划。
 
 ## [0.3.1] - 2026-05-22
 ### Changed
