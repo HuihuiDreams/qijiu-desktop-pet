@@ -4,8 +4,11 @@
 
 
 ## [WIP] - 2026-05-24
-### Changed
-- 更改mac版的更新方式
+### Fixed
+- **macOS 更新机制优化（无证书适配）**：
+  - 修复了 macOS 无 Apple Developer 证书（Ad-hoc 自签名）时，因新旧版本代码签名不匹配触发 Squirrel.Mac 校验报错（`Did not pass validation: コードは指定されたコード要件を満たしていません`）导致更新流程阻断的问题。
+  - 重构了 macOS 下的更新管理器逻辑，新增 `createMacManualUpdateManager` 专用于无证书环境。当用户在 macOS 平台点击“检查更新”时，绕过 Squirrel 自动更新，改为弹窗引导并使用浏览器打开 GitHub Releases 页面供用户下载最新 DMG 覆盖安装。
+  - 在 `src/data/i18n.js` 中补充了中、英、日三种语言对应的 macOS 手动更新引导文案及按钮文本（`updateMacManualTitle` / `updateMacManualMsg` / `updateMacManualBtn`）。
 
 ## [0.4.0] - 2026-05-24
 ### Added
