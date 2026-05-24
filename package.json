@@ -37,6 +37,15 @@
       "icon": "src/assets/icon.ico",
       "signAndEditExecutable": false
     },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ],
+      "icon": "src/assets/icon.icns",
+      "category": "public.app-category.utilities",
+      "darkModeSupport": true
+    },
     "afterPack": "scripts/afterPack.js",
     "nsis": {
       "oneClick": false,

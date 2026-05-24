@@ -3,12 +3,20 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP] - 2026-05-22
+## [WIP] - 2026-05-24
 ### Added
+- **macOS Native Support**:
+  - Automatically hide the Dock icon (`app.dock.hide()`) in macOS runtime.
+  - Native monochrome Template Image support (`setTemplateImage(true)`) for macOS menu bar tray icon.
+  - Implement full auto-launch setting adaptation for macOS (`openAsHidden`).
+  - Added high-resolution `src/assets/icon.icns` for macOS desktop.
+  - Configured multi-architecture package targets (`dmg` + `zip` for `x64` and `arm64`) in `package.json`.
+  - Added detailed, multi-lingual macOS download, installation, and Gatekeeper bypass instructions in `README.md`, `readme.txt`, `readme_en.txt`, and `readme_ja.txt`.
 - Add `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md` for the visible updater progress window and local packaged update testing.
 - Add `electron-builder.update-test-old.yml` and `electron-builder.update-test-new.yml` for local updater validation without publishing a GitHub Release.
 
 ### Changed
+- Refactored `createTray` to use template image auto-inversion under macOS while preserving programmatic bitmap drawing on Windows.
 - Show a dedicated progress window immediately after "Check for Updates"; after download confirmation, reuse it as a percentage-based download progress window.
 - Decouple `updateManager.js` from the main-process progress window through an injected `updateProgressUi` adapter while preserving existing result dialogs and tray state.
 - Ignore disposable local updater test output under `dist-update-test/`.
