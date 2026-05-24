@@ -1,6 +1,6 @@
 {
   "name": "desktop-pet",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "岳清源 & 沈清秋 桌面爱宠",
   "main": "main.js",
   "scripts": {
@@ -38,9 +38,22 @@
       "signAndEditExecutable": false
     },
     "mac": {
+      "artifactName": "desktop-pet-setup-${version}-${arch}.${ext}",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] },
-        { "target": "zip", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "src/assets/icon.icns",
       "category": "public.app-category.utilities",
