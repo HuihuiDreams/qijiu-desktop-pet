@@ -1,7 +1,23 @@
-﻿DeskPet: YueQi & ShenJiu Desktop Pet
+DeskPet: YueQi & ShenJiu Desktop Pet
 
 This is a desktop pet app themed around The Scum Villain's Self-Saving System.
 Yue Qingyuan (Yue Qi) and Shen Qingqiu (Shen Jiu) can walk, rest, cultivate, and occasionally interact on your desktop.
+
+========================================
+📦 Download & Installation
+========================================
+
+This app supports both Windows and macOS:
+- Windows: Download the `.exe` installer and run it.
+- macOS:
+  - System Requirements: macOS 11.0 (Big Sur) or higher.
+  - Architecture:
+    - Apple Silicon (M1/M2/M3, etc.): Download `*-arm64.dmg`.
+    - Intel: Download `*-x64.dmg`.
+  - Installation: Double-click the `.dmg` file, drag the "七九爱宠" (DeskPet) icon to your Applications folder.
+  - Bypass "Unidentified Developer / Damaged" Warning:
+    - Method 1: Go to "System Settings -> Privacy & Security", scroll down to find the blocked "七九爱宠", click "Open Anyway", and enter your password.
+    - Method 2: Open Terminal and run: `xattr -cr /Applications/七九爱宠.app`
 
 ========================================
 🚀 Basic Controls
