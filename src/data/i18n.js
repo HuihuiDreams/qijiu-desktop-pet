@@ -96,6 +96,11 @@ const I18N = {
       updateDevTitle: '开发模式',
       updateDevMsg: '开发模式下不支持检查更新，请使用安装包验证自动更新。',
 
+      // macOS 无证书时手动更新提示
+      updateMacManualTitle: '检查更新',
+      updateMacManualMsg: '点击下方按钮前往 GitHub 下载最新版本的 DMG 安装包，覆盖安装即可完成更新。',
+      updateMacManualBtn: '前往下载页面',
+
       // 语言选项
       langZh: '中文',
       langEn: 'English',
@@ -311,6 +316,11 @@ const I18N = {
       
       updateDevTitle: 'Development Mode',
       updateDevMsg: 'Checking for updates is not supported in development mode. Please use a packaged build to test updates.',
+
+      // macOS manual update (no Developer ID certificate)
+      updateMacManualTitle: 'Check for Updates',
+      updateMacManualMsg: 'Click below to open the GitHub Releases page and download the latest DMG installer.',
+      updateMacManualBtn: 'Open Download Page',
 
       // Language options
       langZh: '中文',
@@ -528,6 +538,11 @@ const I18N = {
       
       updateDevTitle: '開発モード',
       updateDevMsg: '開発モードでは更新機能を利用できません。自動更新のテストはパッケージ版をご利用ください。',
+
+      // macOS 証明書なし手動更新
+      updateMacManualTitle: '更新を確認',
+      updateMacManualMsg: '最新のDMGインストーラーをGitHubからダウンロードしてインストールしてください。',
+      updateMacManualBtn: 'ダウンロードページを開く',
 
       // Language options
       langZh: '中文',
