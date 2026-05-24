@@ -3,6 +3,10 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [WIP] - 2026-05-24
+### Changed
+- 更改mac版的更新方式
+
 ## [0.4.0] - 2026-05-24
 ### Added
 - **macOS 原生支持**：

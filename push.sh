@@ -35,8 +35,8 @@ if ! git status --porcelain | grep -q "CHANGELOG\.md"; then
     echo "### Fixed"
     echo "- "
     
-    # 跨平台打开文件 (macOS, Linux, Windows)
-    open CHANGELOG.md || xdg-open CHANGELOG.md || start CHANGELOG.md
+    # 在 macOS 上使用默认编辑器（或默认关联程序）打开文件
+    open CHANGELOG.md
     exit 1
 fi
 
