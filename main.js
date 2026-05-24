@@ -102,14 +102,17 @@ function getStoredAutoLaunchPreference() {
 }
 
 /**
- * 获取当前 Windows 系统的登录启动状态
+ * 获取当前系统的登录启动状态（Windows / macOS）
  */
 function getLoginItemStatus() {
-  if (process.platform !== 'win32') return { openAtLogin: false };
+  if (process.platform !== 'win32' && process.platform !== 'darwin') return { openAtLogin: false };
   if (!app.isPackaged) {
     return { openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [] };
   }
   try {
+    if (process.platform === 'darwin') {
+      return app.getLoginItemSettings();
+    }
     return app.getLoginItemSettings({
       path: process.execPath,
       args: [],
@@ -124,16 +127,23 @@ function getLoginItemStatus() {
  * 应用开机启动设置到系统
  */
 function applyAutoLaunchSetting(enabled) {
-  if (process.platform !== 'win32') return getLoginItemStatus();
+  if (process.platform !== 'win32' && process.platform !== 'darwin') return getLoginItemStatus();
   if (!app.isPackaged) return getLoginItemStatus();
   try {
-    const settings = {
-      openAtLogin: enabled,
-      path: process.execPath,
-      args: [],
-      name: LOGIN_ITEM_NAME,
-    };
-    app.setLoginItemSettings(settings);
+    if (process.platform === 'darwin') {
+      app.setLoginItemSettings({
+        openAtLogin: enabled,
+        openAsHidden: true,   // 开机后以后台方式启动，不弹到前台
+      });
+    } else {
+      const settings = {
+        openAtLogin: enabled,
+        path: process.execPath,
+        args: [],
+        name: LOGIN_ITEM_NAME,
+      };
+      app.setLoginItemSettings(settings);
+    }
   } catch (error) {
     console.error('Failed to update login item settings:', error);
   }
@@ -672,6 +682,10 @@ function createTray() {
     height: 16,
   });
 
+  if (process.platform === 'darwin') {
+    icon.setTemplateImage(true);
+  }
+
   tray = new Tray(icon);
   refreshTrayMenu();
 }
@@ -986,6 +1000,11 @@ if (!hasSingleInstanceLock) {
   app.on('second-instance', showExistingInstance);
 
   app.whenReady().then(async () => {
+    // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
+    if (process.platform === 'darwin') {
+      app.dock.hide();
+    }
+
     // 设置权限拦截
     const { session } = require('electron');
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {

@@ -3,6 +3,40 @@
 基于 Electron 构建的《人渣反派自救系统》主题桌面宠物应用。
 岳清源（岳七）和沈清秋（沈九）将在你的桌面上陪伴你，自由漫步，甚至偶尔触发互动。
 
+## 📦 软件下载与安装 (Download & Installation)
+
+本应用支持 **Windows** 和 **macOS** 平台。你可以在 GitHub Releases 页面下载已打包好的安装包。
+
+### 💻 Windows 平台
+* **安装包**：下载 `desktop-pet-setup-x.y.z.exe`。
+* **安装步骤**：双击运行安装程序，按照提示选择安装路径并完成安装即可。
+
+### 🍎 macOS 平台
+* **系统要求**：macOS 11.0 (Big Sur) 及更高版本。
+* **版本选择**：
+  * **Apple Silicon 芯片**（M1 / M2 / M3 等）：下载 `desktop-pet-setup-x.y.z-arm64.dmg`。
+  * **Intel 芯片**：下载 `desktop-pet-setup-x.y.z-x64.dmg`。
+* **安装步骤**：
+  1. 双击打开下载的 `.dmg` 磁盘映像。
+  2. 将 **七九爱宠** 图标拖拽到右侧的 **Applications**（应用程序）文件夹中。
+  3. 在“应用程序”中双击运行。
+* **首次启动报错解决方法（绕过 Gatekeeper）**：
+  由于应用未在 Apple 注册付费开发者证书，首次启动时系统可能会提示“无法验证开发者”或“已损坏，无法打开”。请通过以下方式解决：
+  > [!IMPORTANT]
+  > **方法一（推荐，系统设置中允许）**：
+  > 1. 打开 Mac 的 **系统设置 -> 隐私与安全性**。
+  > 2. 向下滚动到“安全性”板块，你会看到提示：*“已阻止使用“七九爱宠”，因为来自身份不明的开发者”*。
+  > 3. 点击 **仍要打开** (Open Anyway)，输入 Mac 登录密码确认即可。
+  >
+  > **方法二（终端命令）**：
+  > 1. 打开终端（Terminal）。
+  > 2. 输入以下命令并回车：
+  >    ```bash
+  >    xattr -cr /Applications/七九爱宠.app
+  >    ```
+
+---
+
 ## 🚀 快速开始 (Quick Start)
 
 1. 确保安装了 [Node.js](https://nodejs.org/)。
@@ -108,7 +142,7 @@
 |---------|-------------|
 | `npm run dev` | 启动开发服务器与 Electron 应用 |
 | `npm install` | 安装项目依赖 |
-| `npm run build` | 使用 electron-builder 构建 Windows 安装包 |
+| `npm run build` | 使用 electron-builder 进行跨平台构建（Windows 下生成 `.exe`，macOS 下生成 `.dmg` 和 `.zip`） |
 | `npm run verify:installer` | 构建后自动验证安装包完整性 |
 | `npm run verify:signatures` | 验证安装包与可执行文件的代码签名 |
 | `node --test` | 运行单元测试（包含更新管理器逻辑测试） |
