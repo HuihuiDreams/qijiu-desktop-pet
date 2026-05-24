@@ -11,6 +11,8 @@
   - Implement full auto-launch setting adaptation for macOS (`openAsHidden`).
   - Added high-resolution `src/assets/icon.icns` for macOS desktop.
   - Configured multi-architecture package targets (`dmg` + `zip` for `x64` and `arm64`) in `package.json`.
+  - Added macOS installer build job (`build-macos-installer`) in GitHub Actions to automatically publish macOS releases alongside Windows.
+  - Added macOS smoke package validation (`preflight-mac`) to the Release Preflight workflow.
   - Added detailed, multi-lingual macOS download, installation, and Gatekeeper bypass instructions in `README.md`, `readme.txt`, `readme_en.txt`, and `readme_ja.txt`.
 - Add `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md` for the visible updater progress window and local packaged update testing.
 - Add `electron-builder.update-test-old.yml` and `electron-builder.update-test-new.yml` for local updater validation without publishing a GitHub Release.
