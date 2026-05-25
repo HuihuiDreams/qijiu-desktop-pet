@@ -65,6 +65,51 @@ window.testHug = () => window.testInteraction('hug');
 window.testCultivate = () => window.testInteraction('cultivate');
 window.testShareFood = () => window.testInteraction('shareFood');
 window.testsharefood = window.testShareFood;
+window.testGreet = function () {
+  if (!window.__DEBUG_PETS || !window.__DEBUG_DIALOG || !window.__DEBUG_RENDERER || !window.__DEBUG_SPRITE_VIEW) {
+    console.warn('[debug] 调试对象尚未准备好，请确认应用已完成启动');
+    return;
+  }
+
+  const { yueqi: petAObj, shenjiu: petBObj } = window.__DEBUG_PETS;
+  const dialogBubble = window.__DEBUG_DIALOG;
+  const renderer = window.__DEBUG_RENDERER;
+  const spriteView = window.__DEBUG_SPRITE_VIEW;
+
+  const existingOverlay = document.getElementById('interaction-overlay');
+  if (existingOverlay) existingOverlay.remove();
+  document.querySelectorAll('.overlay-bubble').forEach(el => el.remove());
+  dialogBubble.removeForPets([petAObj, petBObj]);
+
+  petAObj.setState('interacting');
+  petBObj.setState('interacting');
+
+  if (petAObj.x < petBObj.x) {
+    petAObj.direction = 'right';
+    petBObj.direction = 'left';
+  } else {
+    petAObj.direction = 'left';
+    petBObj.direction = 'right';
+  }
+
+  renderer.update(petAObj);
+  renderer.update(petBObj);
+  spriteView.update(petAObj, 0);
+  spriteView.update(petBObj, 0);
+
+  dialogBubble.showInteraction(petAObj, petBObj, 'greet');
+  renderer.spawnQiAura(petAObj, 'greet');
+  renderer.spawnQiAura(petBObj, 'greet');
+
+  console.log('[debug] greet 互动显示中（4秒后自动结束）');
+
+  setTimeout(() => {
+    dialogBubble.removeForPets([petAObj, petBObj]);
+    petAObj.setState('idle');
+    petBObj.setState('idle');
+    console.log('[debug] greet 互动已结束，宠物已恢复待机');
+  }, 4000);
+};
 window.testShareFoodThrowup = () => {
   if (!window.__DEBUG_PETS) return;
   window.__DEBUG_PETS.shenjiu.stats.hunger = 91;
@@ -98,4 +143,4 @@ window.testHungry = function() {
   }, 5000);
 };
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testKiss(), testHug(), testCultivate(), testShareFood() 或 testHungry() 来测试效果。');
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood() 或 testHungry() 来测试效果。');

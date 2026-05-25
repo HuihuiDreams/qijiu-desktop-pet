@@ -3,8 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP] - 2026-05-25
+## [0.4.1] - 2026-05-25
 ### Added
+- 新增 DevTools Console 调试入口 `testGreet()`，可手动触发问候互动。
 - **第二套皮肤“鸟塑七九・凉拌仓鼠”**：
   - 新增了 `src/assets/birds/` 资源目录，图片均已转换为 256px WebP 格式。
   - 在 `src/data/i18n.js` 中增加了中/英/日多语言皮肤名称支持。
@@ -13,6 +14,9 @@
 - **皮肤菜单排序逻辑优化**：`main.js` 中的皮肤扫描逻辑会强制确保 `default` 皮肤始终排在托盘菜单的第一位。
 
 ### Fixed
+- **固定角色朝向资源，移除图片镜像翻转**
+  - 移除 `.pet--flipped` 对角色图片的 `scaleX(-1)` 镜像效果，避免任何状态下出现左右翻转。
+  - 互动问候时改用对应方向行走素材的第二帧作为静态朝向图，确保两人面对面且不依赖图片翻转。
 - **macOS 更新机制优化（无证书适配）**：
   - 修复了 macOS 无 Apple Developer 证书（Ad-hoc 自签名）时，因新旧版本代码签名不匹配触发 Squirrel.Mac 校验报错（`Did not pass validation: コードは指定されたコード要件を満たしていません`）导致更新流程阻断的问题。
   - 重构了 macOS 下的更新管理器逻辑，新增 `createMacManualUpdateManager` 专用于无证书环境。当用户在 macOS 平台点击“检查更新”时，绕过 Squirrel 自动更新，改为弹窗引导并使用浏览器打开 GitHub Releases 页面供用户下载最新 DMG 覆盖安装。

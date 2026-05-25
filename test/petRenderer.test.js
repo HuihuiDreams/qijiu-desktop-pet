@@ -22,128 +22,31 @@ function createFakeElement(initialClasses = []) {
   };
 }
 
+test('renderer never keeps the stale flipped class in any pet state', () => {
+  const renderer = new PetRenderer(null);
+  const states = ['idle', 'walking', 'sleeping', 'eating', 'meditating', 'patted'];
 
-test('qi aura size follows the pet visual scale', () => {
-  const appended = [];
-  const renderer = new PetRenderer({
-    appendChild(element) {
-      appended.push(element);
-    },
-  }, null, () => 2 / 3);
-  const pet = {
-    x: 100,
-    y: 100,
-    size: 96,
-  };
+  for (const state of states) {
+    const element = createFakeElement(['pet--flipped']);
+    const pet = {
+      x: 100,
+      y: 100,
+      state,
+      direction: 'right',
+      defaultDirection: 'left',
+      _renderedState: 'idle',
+      _renderedDirection: 'right',
+      _renderedHungry: false,
+      _renderedLowMood: false,
+      isHungry: () => false,
+      isLowMood: () => false,
+      element,
+    };
 
-  global.document = {
-    createElement() {
-      return {
-        style: {},
-        addEventListener() {},
-      };
-    },
-  };
+    renderer.update(pet);
 
-  renderer.spawnQiAura(pet, 'feed');
-
-  assert.equal(appended.length, 1);
-  assert.equal(appended[0].style.left, `${pet.x + (pet.size * (2 / 3)) / 2}px`);
-  assert.equal(appended[0].style.top, `${pet.y + (pet.size * (2 / 3)) / 2}px`);
-  assert.equal(appended[0].style.width, `${Math.max(112, pet.size * 1.45) * (2 / 3)}px`);
-  assert.equal(appended[0].style.height, `${Math.max(112, pet.size * 1.45) * (2 / 3)}px`);
-
-  delete global.document;
-});
-
-test('interaction overlay image follows the pet visual scale', () => {
-  const appended = [];
-  const renderer = new PetRenderer({
-    appendChild(element) {
-      appended.push(element);
-    },
-  }, null, () => 2 / 3);
-  const petA = {
-    x: 2600,
-    y: 240,
-    size: 96,
-  };
-  const petB = {
-    x: 2680,
-    y: 240,
-    size: 96,
-  };
-
-  global.document = {
-    createElement() {
-      return {
-        style: {},
-      };
-    },
-  };
-  global.requestAnimationFrame = (callback) => callback();
-
-  const overlayPos = renderer.showOverlay(petA, petB, 'cultivate');
-
-  assert.equal(appended.length, 1);
-  assert.equal(appended[0].style.width, `${176 * (2 / 3)}px`);
-  assert.equal(appended[0].style.left, `${overlayPos.x}px`);
-  assert.equal(appended[0].style.top, `${overlayPos.y}px`);
-  assert.equal(overlayPos.width, 176 * (2 / 3));
-  assert.equal(overlayPos.baseWidth, 176);
-  assert.equal(overlayPos.scale, 2 / 3);
-
-  delete global.document;
-  delete global.requestAnimationFrame;
-});
-
-test('interaction overlay bubbles follow the overlay visual scale', () => {
-  const appended = [];
-  const renderer = new PetRenderer({
-    appendChild(element) {
-      appended.push(element);
-    },
-  });
-  const overlayPos = {
-    x: 2600,
-    y: 240,
-    width: 176 * (2 / 3),
-    scale: 2 / 3,
-  };
-
-  global.document = {
-    createElement() {
-      const style = {};
-      style.setProperty = (name, value) => {
-        style[name] = value;
-      };
-      return {
-        className: '',
-        textContent: '',
-        style,
-        classList: {
-          add() {},
-        },
-        remove() {},
-      };
-    },
-  };
-  const originalSetTimeout = global.setTimeout;
-  global.setTimeout = (callback) => {
-    callback();
-    return 1;
-  };
-
-  renderer.showOverlayBubbles('left', 'right', overlayPos, 1000);
-
-  assert.equal(appended.length, 2);
-  assert.equal(appended[0].style['--bubble-scale'], 2 / 3);
-  assert.equal(appended[1].style['--bubble-scale'], 2 / 3);
-  assert.equal(appended[0].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
-  assert.equal(appended[1].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
-
-  delete global.document;
-  global.setTimeout = originalSetTimeout;
+    assert.equal(element.classList.contains('pet--flipped'), false);
+  }
 });
 
 test('qi aura size follows the pet visual scale', () => {

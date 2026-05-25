@@ -467,6 +467,7 @@ function applyI18n() {
   });
   window.__DEBUG_DIALOG = dialogBubble;
   window.__DEBUG_RENDERER = renderer;
+  window.__DEBUG_SPRITE_VIEW = spriteView;
   window.__DEBUG_SKIN_MANAGER = skinManager;
 
   console.log('🗡️🪭 岳七 & 沈九 桌面宠物已启动！');
