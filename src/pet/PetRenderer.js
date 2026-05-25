@@ -191,7 +191,6 @@ class PetRenderer {
     // 优化：使用 transform 代替 left/top，极大地减少布局重排 (Layout Thrashing) 的性能开销
     const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
-    el.classList.remove('pet--flipped');
 
     // 优化：仅当状态真正发生改变时才操作 DOM classList，减少重绘与垃圾回收
     const stateChanged = pet._renderedState !== pet.state;
