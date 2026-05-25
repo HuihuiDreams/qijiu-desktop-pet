@@ -3,7 +3,15 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP] - 2026-05-24
+## [WIP] - 2026-05-25
+### Added
+- **第二套皮肤“鸟塑七九・凉拌仓鼠”**：
+  - 新增了 `src/assets/birds/` 资源目录，图片均已转换为 256px WebP 格式。
+  - 在 `src/data/i18n.js` 中增加了中/英/日多语言皮肤名称支持。
+
+### Changed
+- **皮肤菜单排序逻辑优化**：`main.js` 中的皮肤扫描逻辑会强制确保 `default` 皮肤始终排在托盘菜单的第一位。
+
 ### Fixed
 - **macOS 更新机制优化（无证书适配）**：
   - 修复了 macOS 无 Apple Developer 证书（Ad-hoc 自签名）时，因新旧版本代码签名不匹配触发 Squirrel.Mac 校验报错（`Did not pass validation: コードは指定されたコード要件を満たしていません`）导致更新流程阻断的问题。

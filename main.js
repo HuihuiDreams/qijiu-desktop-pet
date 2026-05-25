@@ -19,6 +19,7 @@ const LOGIN_ITEM_NAME = '七九爱宠';
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
+  'birds': 'skinBirds',
   // 新增皮肤时在此添加映射，例如：
   // 'qban': 'skinQban',
 };
@@ -552,6 +553,10 @@ function scanAvailableSkins() {
       } catch {
         return false;
       }
+    }).sort((a, b) => {
+      if (a === 'default') return -1;
+      if (b === 'default') return 1;
+      return a.localeCompare(b);
     });
   } catch (error) {
     console.error('Failed to scan skins:', error);
