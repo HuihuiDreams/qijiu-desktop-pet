@@ -22,28 +22,31 @@ function createFakeElement(initialClasses = []) {
   };
 }
 
-test('walking state clears stale flipped class when direction did not change', () => {
+test('renderer never keeps the stale flipped class in any pet state', () => {
   const renderer = new PetRenderer(null);
-  const element = createFakeElement(['pet--flipped']);
-  const pet = {
-    x: 100,
-    y: 100,
-    state: 'walking',
-    direction: 'right',
-    defaultDirection: 'left',
-    _renderedState: 'idle',
-    _renderedDirection: 'right',
-    _renderedHungry: false,
-    _renderedLowMood: false,
-    isHungry: () => false,
-    isLowMood: () => false,
-    element,
-  };
+  const states = ['idle', 'walking', 'sleeping', 'eating', 'meditating', 'patted'];
 
-  renderer.update(pet);
+  for (const state of states) {
+    const element = createFakeElement(['pet--flipped']);
+    const pet = {
+      x: 100,
+      y: 100,
+      state,
+      direction: 'right',
+      defaultDirection: 'left',
+      _renderedState: 'idle',
+      _renderedDirection: 'right',
+      _renderedHungry: false,
+      _renderedLowMood: false,
+      isHungry: () => false,
+      isLowMood: () => false,
+      element,
+    };
 
-  assert.equal(element.classList.contains('pet--flipped'), false);
-  assert.equal(element.classList.contains('pet--walking'), true);
+    renderer.update(pet);
+
+    assert.equal(element.classList.contains('pet--flipped'), false);
+  }
 });
 
 test('qi aura size follows the pet visual scale', () => {

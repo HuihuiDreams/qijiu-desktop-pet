@@ -108,6 +108,35 @@ test('SpriteView.updateImageMap replaces the image map', () => {
   assert.equal(sv.imageMap.yueqi.meditating, 'assets/qban/left_cultivate.webp');
 });
 
+test('SpriteView uses direction-specific second walking frames for visible greetings', () => {
+  const sv = new SpriteView();
+  const yueqi = createFakePet('yueqi');
+  const shenjiu = createFakePet('shenjiu');
+
+  yueqi.state = 'interacting';
+  yueqi.direction = 'right';
+  yueqi.sprites.walkingRight = {
+    frames: ['assets/default/yueqi/walk_right01.webp', 'assets/default/yueqi/walk_right02.webp'],
+    fps: 4,
+  };
+
+  shenjiu.state = 'interacting';
+  shenjiu.direction = 'left';
+  shenjiu.sprites.walkingLeft = {
+    frames: ['assets/default/shenjiu/walk_left01.webp', 'assets/default/shenjiu/walk_left02.webp'],
+    fps: 4,
+  };
+
+  assert.deepEqual(
+    sv._resolveResource(yueqi),
+    { src: 'assets/default/yueqi/walk_right02.webp', type: 'image' }
+  );
+  assert.deepEqual(
+    sv._resolveResource(shenjiu),
+    { src: 'assets/default/shenjiu/walk_left02.webp', type: 'image' }
+  );
+});
+
 test('SpriteView.reattach clears render cache', async () => {
   const sv = new SpriteView();
   const pet = createFakePet('yueqi');
