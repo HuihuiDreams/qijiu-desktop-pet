@@ -3,6 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [WIP] - 2026-05-26
+### Changed
+- **性能优化**：移除 `PetRenderer` 中冗余的 `pet--flipped` DOM 类操作，减少无意义的重绘。
+- **发布脚本兼容性**：改进 `push.sh` 脚本，增加 Linux (`xdg-open`) 和 Windows (`start`) 跨平台打开 CHANGELOG.md 的兼容支持。
+- **图片转换脚本鲁棒性**：提高 `convert_images.js` 对 `.png` 大小写的兼容，并使用精确的正则表达式替换避免误伤文件路径。
+
 ## [0.4.1] - 2026-05-25
 ### Added
 - 新增 DevTools Console 调试入口 `testGreet()`，可手动触发问候互动。

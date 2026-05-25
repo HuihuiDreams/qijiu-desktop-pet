@@ -8,8 +8,8 @@ function processDir(dir) {
         const fullPath = path.join(dir, file);
         if (fs.statSync(fullPath).isDirectory()) {
             processDir(fullPath);
-        } else if (fullPath.endsWith('.png')) {
-            const outPath = fullPath.replace('.png', '.webp');
+        } else if (file.toLowerCase().endsWith('.png')) {
+            const outPath = fullPath.replace(/\.png$/i, '.webp');
             console.log(`Converting ${fullPath} to ${outPath}`);
             try {
                 execSync(`ffmpeg -v error -i "${fullPath}" -vf scale=256:256 -y "${outPath}"`);
