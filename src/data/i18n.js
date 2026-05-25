@@ -43,6 +43,7 @@ const I18N = {
 
       // 皮肤名
       skinDefault: '默认皮肤·凉拌仓鼠',
+      skinBirds: '鸟塑七九・凉拌仓鼠',
 
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
@@ -71,28 +72,28 @@ const I18N = {
       updateErrGeneric: '检查更新失败，详细原因已写入日志。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：未知错误，详情已写入日志。',
-      
+
       updateAvailTitle: '发现新版本',
       updateAvailMsg: '发现新版本 {version}，是否现在下载？',
       updateAvailMsgNoVer: '发现新版本，是否现在下载？',
       updateBtnDownload: '下载',
       updateBtnLater: '稍后',
-      
+
       updateNotAvailTitle: '已是最新版本',
       updateNotAvailMsg: '当前版本 {version} 已是最新版本。',
       updateNotAvailMsgNoVer: '当前已经是最新版本。',
-      
+
       updateReadyTitle: '更新已下载',
       updateReadyMsg: '新版本 {version} 已下载完成，是否现在重启并安装？',
       updateReadyMsgNoVer: '新版本已下载完成，是否现在重启并安装？',
       updateBtnInstall: '重启并安装',
-      
+
       updateCheckingTitle: '正在检查更新',
       updateDownloadingTitle: '正在下载更新',
       updateInProgressTitle: '更新检查进行中',
       updateCheckingMsg: '正在检查更新，请稍候。',
       updateDownloadingMsg: '正在下载更新，请稍候。',
-      
+
       updateDevTitle: '开发模式',
       updateDevMsg: '开发模式下不支持检查更新，请使用安装包验证自动更新。',
 
@@ -264,6 +265,7 @@ const I18N = {
 
       // Skin names
       skinDefault: 'Default Skin - (Artist) Hamster Salad',
+      skinBirds: 'Cute Birds - (Artist) Hamster Salad',
 
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
@@ -292,28 +294,28 @@ const I18N = {
       updateErrGeneric: 'Failed to check for updates. Details have been logged.',
       updateErrDetailPrefix: 'Reason: ',
       updateErrUnknownDetail: 'Reason: Unknown error, details have been logged.',
-      
+
       updateAvailTitle: 'Update Available',
       updateAvailMsg: 'A new version {version} is available. Would you like to download it now?',
       updateAvailMsgNoVer: 'A new version is available. Would you like to download it now?',
       updateBtnDownload: 'Download',
       updateBtnLater: 'Later',
-      
+
       updateNotAvailTitle: 'Up to Date',
       updateNotAvailMsg: 'You are currently on the latest version {version}.',
       updateNotAvailMsgNoVer: 'You are currently on the latest version.',
-      
+
       updateReadyTitle: 'Update Downloaded',
       updateReadyMsg: 'Version {version} has been downloaded. Restart and install now?',
       updateReadyMsgNoVer: 'The update has been downloaded. Restart and install now?',
       updateBtnInstall: 'Install and Restart',
-      
+
       updateCheckingTitle: 'Checking for Updates',
       updateDownloadingTitle: 'Downloading Update',
       updateInProgressTitle: 'Update in Progress',
       updateCheckingMsg: 'Checking for updates, please wait...',
       updateDownloadingMsg: 'Downloading update, please wait...',
-      
+
       updateDevTitle: 'Development Mode',
       updateDevMsg: 'Checking for updates is not supported in development mode. Please use a packaged build to test updates.',
 
@@ -486,6 +488,7 @@ const I18N = {
 
       // 装束名
       skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
+      skinBirds: '小鳥七九・(絵師) Hamster Salad',
 
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',
@@ -514,28 +517,28 @@ const I18N = {
       updateErrGeneric: '更新の確認に失敗しました。詳細はログに記録されています。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：不明なエラー。詳細はログに記録されています。',
-      
+
       updateAvailTitle: '新しいバージョン',
       updateAvailMsg: '新しいバージョン {version} が見つかりました。今すぐダウンロードしますか？',
       updateAvailMsgNoVer: '新しいバージョンが見つかりました。今すぐダウンロードしますか？',
       updateBtnDownload: 'ダウンロード',
       updateBtnLater: '後で',
-      
+
       updateNotAvailTitle: '最新バージョンです',
       updateNotAvailMsg: '現在のバージョン {version} は最新です。',
       updateNotAvailMsgNoVer: 'すでに最新バージョンです。',
-      
+
       updateReadyTitle: 'ダウンロード完了',
       updateReadyMsg: 'バージョン {version} のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
       updateReadyMsgNoVer: '更新のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
       updateBtnInstall: '再起動してインストール',
-      
+
       updateCheckingTitle: '更新を確認中',
       updateDownloadingTitle: '更新をダウンロード中',
       updateInProgressTitle: '更新確認中',
       updateCheckingMsg: '更新を確認しています。しばらくお待ちください。',
       updateDownloadingMsg: '更新をダウンロードしています。しばらくお待ちください。',
-      
+
       updateDevTitle: '開発モード',
       updateDevMsg: '開発モードでは更新機能を利用できません。自動更新のテストはパッケージ版をご利用ください。',
 
@@ -636,9 +639,9 @@ const I18N = {
           '小九！！',
         ],
         shenjiu: [
-          'うっ…！無理やり食わせて殺す気か？！',   
-          'もういい！自分で食え！！',              
-          'これ以上は一口も入らん！！',  
+          'うっ…！無理やり食わせて殺す気か？！',
+          'もういい！自分で食え！！',
+          'これ以上は一口も入らん！！',
         ],
       },
       idle: {
