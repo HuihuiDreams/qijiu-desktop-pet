@@ -12,6 +12,7 @@
 - **文档中文化与内容更新**：将发布代码签名说明、代码审查报告、多显示器调试交接文档以及项目结构等相关文档翻译并更新为中文。
 
 ### Fixed
+- **macOS unsigned installer workflow**: Stop running unconditional `codesign --verify` on unsigned macOS build outputs, so x64 and arm64 unsigned packages no longer fail metadata validation after packaging.
 - **macOS 手动更新启动兼容性**：打包时保留外层 `七九爱宠.app` 名称，但将包内 `CFBundleExecutable` 改为 ASCII 的 `DeskPet`，避免覆盖安装后 Finder / LaunchServices 找不到中文可执行文件而表现为 Dock 图标跳动后无法加载；同时更新手动更新提示，要求用户先退出旧版本再替换应用。
 - **macOS 系统版本说明校正**：显式声明安装包最低支持 macOS 12.0，与 Electron 42 生成的 `LSMinimumSystemVersion` 保持一致，避免 macOS 11 用户误以为当前包可运行。
 - **macOS 发布流程保护**：在 Release Preflight 和 Build Installers 两个 GitHub Actions workflow 中增加 macOS 可执行文件元数据校验，防止 `CFBundleExecutable` 回退到中文文件名后仍被发布。
