@@ -5,6 +5,7 @@
 
 ## [WIP] - 2026-05-26
 ### Changed
+- **项目结构文档更新**：重写 `docs/structure.md`，补齐当前目录树、主进程/渲染进程职责、皮肤、多语言、更新、多屏、测试覆盖和 ADR 索引说明。
 - **性能优化**：移除 `PetRenderer` 中冗余的 `pet--flipped` DOM 类操作，减少无意义的重绘。
 - **发布脚本兼容性**：改进 `push.sh` 脚本，增加 Linux (`xdg-open`) 和 Windows (`start`) 跨平台打开 CHANGELOG.md 的兼容支持。
 - **图片转换脚本鲁棒性**：提高 `convert_images.js` 对 `.png` 大小写的兼容，并使用精确的正则表达式替换避免误伤文件路径。
