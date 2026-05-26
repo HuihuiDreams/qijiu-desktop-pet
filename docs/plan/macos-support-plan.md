@@ -11,7 +11,7 @@
 本项目目前主要针对 Windows 平台开发。为了扩大受众，需要让沈清秋和岳清源也能在 macOS 桌面上自由行走。
 
 ### 核心假设
-- 不需要支持过旧的 macOS 版本，目标定为 macOS 11.0+。
+- 不需要支持过旧的 macOS 版本，目标定为 macOS 12.0+。
 - 用户可以接受非公证（Notarized）应用的手动开启过程（MVP 阶段）。
 - 窗口透明与鼠标穿透在 macOS 下的 Electron API 与 Windows 基本一致。
 
