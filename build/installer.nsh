@@ -9,10 +9,17 @@ RequestExecutionLevel admin
   ; 该错误常见于中文应用名或权限受限的安装环境
   SetOutPath "$INSTDIR"
 
-  ; 这里可以添加自定义的安装逻辑，例如设置注册表或特定的文件关联
+  ; 清理历史快捷方式（保守兜底，防止旧名称残留）
+  ; 注：用户反馈通过安装包升级后桌面出现两个快捷方式，根因尚在排查中。
+  ; 此处保守清理曾在内部开发期间出现过的旧名称 DeskPet，
+  ; 对不存在该文件的用户无副作用（NSIS Delete 对不存在的文件静默跳过）。
+  Delete "$DESKTOP\DeskPet.lnk"
+  Delete "$SMPROGRAMS\DeskPet.lnk"
 !macroend
 
 !macro customUnInstall
   DetailPrint "正在清理七九爱宠数据..."
-  ; 这里可以添加卸载时的清理逻辑，例如询问是否保留用户存档
+  ; 清理历史快捷方式（兜底，防止旧名称残留）
+  Delete "$DESKTOP\DeskPet.lnk"
+  Delete "$SMPROGRAMS\DeskPet.lnk"
 !macroend

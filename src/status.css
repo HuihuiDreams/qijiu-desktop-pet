@@ -36,7 +36,14 @@ body {
 
 .status-panel {
   position: relative;
-  width: 100%;
+  /* max-content: panel size is driven by content, not by the Electron window.
+     This is the key to avoiding the resize feedback loop:
+       width:100%  → panel fills parent → getBoundingClientRect grows with window → loop ❌
+       max-content → panel size set by text/layout → scrollWidth stays stable      → safe ✅
+     min/max-width clamps guard against edge cases (missing fonts, very long names). */
+  width: max-content;
+  min-width: 320px;
+  max-width: 480px;
   overflow: hidden;
   padding: 24px 26px 20px;
   background:
