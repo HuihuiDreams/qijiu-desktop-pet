@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
+const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds, findAdjacentDisplay } = require('./displayBounds');
 const {
   initUpdateManager,
   checkForUpdatesFromTray,
@@ -67,6 +67,8 @@ let mousePassthroughResetTimer = null;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let finalSaveRequestId = 0;
+let currentPetDisplay = null;  // macOS: 当前宠物窗口所在的显示器
+let dragPollTimer = null;      // macOS: 拖拽时轮询光标位置的计时器
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 
 function configureChromiumMemoryBudget() {
@@ -251,6 +253,13 @@ function startKeepOnTopWatcher() {
  * 获取覆盖所有显示器的虚拟桌面边界。
  */
 function getDesktopWindowBounds() {
+  // macOS: 单屏窗口模式，只覆盖当前显示器
+  if (process.platform === 'darwin') {
+    const display = currentPetDisplay || screen.getPrimaryDisplay();
+    return display.bounds;
+  }
+
+  // Windows/Linux: 跨所有显示器的虚拟桌面
   const virtualBounds = getVirtualDisplayBounds(screen.getAllDisplays());
   if (virtualBounds.width > 0 && virtualBounds.height > 0) {
     return virtualBounds;
@@ -265,13 +274,35 @@ function sendScreenInfo() {
   const displays = screen.getAllDisplays();
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
-  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
+  let walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
+
+  // macOS 单屏窗口模式：过滤掉不在窗口可见范围内的 walkArea
+  if (process.platform === 'darwin') {
+    walkAreas = walkAreas.filter((area) => (
+      area.x + area.width > 0
+      && area.y + area.height > 0
+      && area.x < bounds.width
+      && area.y < bounds.height
+    ));
+  }
+
+  // 计算每个方向是否有相邻屏幕（供渲染进程做边缘检测）
+  let adjacentDisplays = null;
+  if (process.platform === 'darwin' && currentPetDisplay) {
+    adjacentDisplays = {
+      left: Boolean(findAdjacentDisplay(currentPetDisplay, 'left', displays)),
+      right: Boolean(findAdjacentDisplay(currentPetDisplay, 'right', displays)),
+      top: Boolean(findAdjacentDisplay(currentPetDisplay, 'top', displays)),
+      bottom: Boolean(findAdjacentDisplay(currentPetDisplay, 'bottom', displays)),
+    };
+  }
 
   mainWindow.webContents.send('screen-info', {
     width: bounds.width,
     height: bounds.height,
     walkAreas,
     windowScaleFactor,
+    adjacentDisplays,
     displays: displays.map((display) => ({
       id: display.id,
       bounds: display.bounds,
@@ -285,11 +316,92 @@ function sendScreenInfo() {
 
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  // macOS: 确保 currentPetDisplay 仍有效
+  if (process.platform === 'darwin') {
+    const allDisplays = screen.getAllDisplays();
+    if (currentPetDisplay) {
+      const stillExists = allDisplays.some((d) => d.id === currentPetDisplay.id);
+      if (!stillExists) {
+        currentPetDisplay = screen.getPrimaryDisplay();
+      } else {
+        currentPetDisplay = allDisplays.find((d) => d.id === currentPetDisplay.id)
+          || screen.getPrimaryDisplay();
+      }
+    } else {
+      currentPetDisplay = screen.getPrimaryDisplay();
+    }
+  }
+
   const bounds = getDesktopWindowBounds();
   mainWindow.setMinimumSize(bounds.width, bounds.height);
   mainWindow.setMaximumSize(bounds.width, bounds.height);
   mainWindow.setBounds(bounds);
   sendScreenInfo();
+}
+
+function handleDisplayConfigurationChanged() {
+  fitWindowToAllDisplays();
+  refreshTrayMenu();
+}
+
+/**
+ * macOS: 将窗口迁移到目标显示器。
+ * @param {object} targetDisplay - 目标 Electron display 对象
+ * @returns {{x: number, y: number}|null} 坐标偏移量，或 null（无需迁移）
+ */
+function migrateWindowToDisplay(targetDisplay) {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  if (!targetDisplay || !targetDisplay.bounds) return null;
+  if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
+
+  const oldBounds = mainWindow.getBounds();
+  const newBounds = targetDisplay.bounds;
+
+  const offset = {
+    x: oldBounds.x - newBounds.x,
+    y: oldBounds.y - newBounds.y,
+  };
+
+  currentPetDisplay = targetDisplay;
+
+  mainWindow.setMinimumSize(newBounds.width, newBounds.height);
+  mainWindow.setMaximumSize(newBounds.width, newBounds.height);
+  mainWindow.setBounds(newBounds);
+
+  mainWindow.webContents.send('window-migrated', {
+    offset,
+    displayId: targetDisplay.id,
+    displayBounds: newBounds,
+  });
+
+  sendScreenInfo();
+  return offset;
+}
+
+/**
+ * macOS: 拖拽期间轮询光标位置，检测跨屏拖拽。
+ */
+function startDragPoll() {
+  stopDragPoll();
+  dragPollTimer = setInterval(() => {
+    if (!mainWindow || mainWindow.isDestroyed() || !currentPetDisplay) {
+      stopDragPoll();
+      return;
+    }
+    const cursor = screen.getCursorScreenPoint();
+    const cursorDisplay = screen.getDisplayNearestPoint(cursor);
+    if (cursorDisplay.id !== currentPetDisplay.id) {
+      migrateWindowToDisplay(cursorDisplay);
+    }
+  }, 100);
+}
+
+function stopDragPoll() {
+  if (dragPollTimer) {
+    clearInterval(dragPollTimer);
+    dragPollTimer = null;
+  }
 }
 
 function getInitialStatusWindowBounds() {
@@ -460,6 +572,11 @@ function showExistingInstance() {
  * 创建主渲染窗口
  */
 function createWindow() {
+  // macOS: 初始化当前显示器
+  if (process.platform === 'darwin') {
+    currentPetDisplay = screen.getPrimaryDisplay();
+  }
+
   const { x, y, width, height } = getDesktopWindowBounds();
 
   mainWindow = new BrowserWindow({
@@ -525,15 +642,16 @@ function createWindow() {
       clearTimeout(mousePassthroughResetTimer);
       mousePassthroughResetTimer = null;
     }
+    stopDragPoll();
     if (statusWindow && !statusWindow.isDestroyed()) {
       statusWindow.close();
     }
     mainWindow = null;
   });
 
-  screen.on('display-added', fitWindowToAllDisplays);
-  screen.on('display-removed', fitWindowToAllDisplays);
-  screen.on('display-metrics-changed', fitWindowToAllDisplays);
+  screen.on('display-added', handleDisplayConfigurationChanged);
+  screen.on('display-removed', handleDisplayConfigurationChanged);
+  screen.on('display-metrics-changed', handleDisplayConfigurationChanged);
 }
 
 /**
@@ -640,6 +758,17 @@ function buildTrayMenu() {
       },
     },
     { type: 'separator' },
+    // macOS 多屏时显示"切换屏幕"选项
+    ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
+      label: trayT('traySwitchScreen'),
+      submenu: screen.getAllDisplays().map((display, idx) => ({
+        label: `${trayT('trayScreen')} ${idx + 1}${currentPetDisplay && display.id === currentPetDisplay.id ? ' \u2713' : ''}`,
+        click: () => {
+          migrateWindowToDisplay(display);
+          refreshTrayMenu();
+        },
+      })),
+    }] : []),
     {
       label: trayT('trayLanguage'),
       submenu: langSubmenu,
@@ -902,6 +1031,25 @@ function createTrayIconBuffer() {
 }
 
 // --- IPC 通信监听 ---
+
+// macOS 多显示器迁移
+ipcMain.on('request-window-migration', (_event, direction) => {
+  if (process.platform !== 'darwin' || !currentPetDisplay) return;
+  const allDisplays = screen.getAllDisplays();
+  const adjacent = findAdjacentDisplay(currentPetDisplay, direction, allDisplays);
+  if (adjacent) {
+    migrateWindowToDisplay(adjacent);
+  }
+});
+
+ipcMain.on('drag-started', () => {
+  if (process.platform !== 'darwin') return;
+  startDragPoll();
+});
+
+ipcMain.on('drag-ended', () => {
+  stopDragPoll();
+});
 
 ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   setPetWindowMousePassthrough(ignore, options || {});

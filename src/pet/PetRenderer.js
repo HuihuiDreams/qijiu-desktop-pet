@@ -132,6 +132,7 @@ class PetRenderer {
       pet.isDragging = false;
       pet.idleTimer = 2000 + Math.random() * 3000;
       keepPetReachable();
+      if (window.electronAPI.notifyDragEnded) window.electronAPI.notifyDragEnded();
 
       if (restoreImmediately) {
         restoreMousePassthrough();
@@ -158,6 +159,7 @@ class PetRenderer {
       dragOffsetX = e.clientX - pet.x;
       dragOffsetY = e.clientY - pet.y;
       window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 1000 });
+      if (window.electronAPI.notifyDragStarted) window.electronAPI.notifyDragStarted();
       refreshDragWatchdog();
     });
 

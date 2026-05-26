@@ -66,4 +66,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLocaleChange: (callback) => {
     ipcRenderer.on('locale-changed', (event, lang) => callback(lang));
   },
+
+  // macOS 多显示器迁移
+  requestWindowMigration: (direction) => ipcRenderer.send('request-window-migration', direction),
+  notifyDragStarted: () => ipcRenderer.send('drag-started'),
+  notifyDragEnded: () => ipcRenderer.send('drag-ended'),
+  onWindowMigrated: (callback) => {
+    ipcRenderer.on('window-migrated', (event, data) => callback(data));
+  },
 });
