@@ -3,7 +3,7 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-## [WIP]
+## [WIP] - 2026-05-27
 ### Added
 - **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
 
