@@ -3,28 +3,36 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
-<<<<<<< HEAD
-## [WIP] - 2026-05-26
-=======
-## [WIP]
+## [WIP] - 2026-05-27
+### Added
+- **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
+
+### Changed
+- **多显示器 ADR 更新**：补充 `ADR-022` 中托盘切换屏幕和显示器热插拔刷新等设计边界。
+
 ### Fixed
+- **macOS 显示器热插拔菜单刷新**：显示器新增、移除或参数变化时同步刷新托盘菜单，避免“切换屏幕”列表继续使用过期的显示器信息。
 - **Windows 升级安装后桌面重复快捷方式**：修复通过安装包覆盖升级后，桌面出现两个快捷方式的问题。根因：NSIS `oneClick: false` 模式下升级安装时，安装程序会无条件创建快捷方式，若用户在历史版本中将快捷方式从开始菜单拖到桌面，或者旧版安装产生了多余的 `.lnk` 文件，则新安装的快捷方式与旧文件同时存在。修复方案：在 `build/installer.nsh` 的 `customInstall` 宏中主动清理桌面和开始菜单下的旧 `DeskPet.lnk`（历史曾用名，当前不适用），并记录此问题供后续深入排查。
 - **Windows 修仙状态窗口宽度自动增大**：修复状态窗口在 Windows 上打开后宽度持续增大的问题。根因是一个渲染→调整→渲染的反馈循环：`getBoundingClientRect()` 读到的宽度随父容器变化，每次 `setContentSize()` 后窗口变宽，`width: 100%` 的 panel 跟着变宽，导致下次测到的值更大，如此循环。修复方案：将 `.status-panel` 改为 `width: max-content`（panel 由内容驱动而非父容器），并改用 `panel.scrollWidth`（内容固有宽度，不随窗口变化）测量宽度，彻底打断反馈循环；同时保留 `min-width: 320px` / `max-width: 480px` 兜底，适应不同系统字体和 DPI 缩放。见 [ADR-027](docs/decisions/ADR-027-status-window-width-growth-fix.md)。
-
-
 
 ## [0.4.2] - 2026-05-26
 ### Added
 - **macOS 多显示器单屏迁移模式**：macOS 下桌宠主窗口改为覆盖当前显示器，并支持走到屏幕边缘或拖拽到相邻屏幕时迁移窗口，让桌宠在多屏环境中切换显示器时更稳定。
-- **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
 - **多显示器相邻屏幕识别测试**：为相邻显示器查找逻辑补充右侧、左侧、负坐标、小间隙、无重叠和非法输入等回归测试。
 
->>>>>>> d174ec4 (feat: implement status window UI with stable width-growth fix)
 ### Changed
+- **项目结构文档更新**：重写 `docs/structure.md`，补齐当前目录树、主进程/渲染进程职责、皮肤、多语言、更新、多屏、测试覆盖和 ADR 索引说明。
+- **多显示器 ADR 更新**：补充 `ADR-022` 中 macOS 单屏窗口迁移模式、相邻屏幕识别、拖拽跨屏迁移等设计边界。
 - **性能优化**：移除 `PetRenderer` 中冗余的 `pet--flipped` DOM 类操作，减少无意义的重绘。
 - **发布脚本兼容性**：改进 `push.sh` 脚本，增加 Linux (`xdg-open`) 和 Windows (`start`) 跨平台打开 CHANGELOG.md 的兼容支持。
 - **图片转换脚本鲁棒性**：提高 `convert_images.js` 对 `.png` 大小写的兼容，并使用精确的正则表达式替换避免误伤文件路径。
 - **文档中文化与内容更新**：将发布代码签名说明、代码审查报告、多显示器调试交接文档以及项目结构等相关文档翻译并更新为中文。
+
+### Fixed
+- **macOS unsigned installer workflow**: Stop running unconditional `codesign --verify` on unsigned macOS build outputs, so x64 and arm64 unsigned packages no longer fail metadata validation after packaging.
+- **macOS 手动更新启动兼容性**：打包时保留外层 `七九爱宠.app` 名称，但将包内 `CFBundleExecutable` 改为 ASCII 的 `DeskPet`，避免覆盖安装后 Finder / LaunchServices 找不到中文可执行文件而表现为 Dock 图标跳动后无法加载；同时更新手动更新提示，要求用户先退出旧版本再替换应用。
+- **macOS 系统版本说明校正**：显式声明安装包最低支持 macOS 12.0，与 Electron 42 生成的 `LSMinimumSystemVersion` 保持一致，避免 macOS 11 用户误以为当前包可运行。
+- **macOS 发布流程保护**：在 Release Preflight 和 Build Installers 两个 GitHub Actions workflow 中增加 macOS 可执行文件元数据校验，防止 `CFBundleExecutable` 回退到中文文件名后仍被发布。
 
 ## [0.4.1] - 2026-05-25
 ### Added
