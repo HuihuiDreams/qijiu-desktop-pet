@@ -1,0 +1,21 @@
+如果 0.4.2 安装后还是打不开：
+
+先完全退出旧版
+在顶部菜单栏/托盘里退出；如果找不到，就打开“活动监视器”，搜索并结束“七九爱宠”或“DeskPet”。
+
+删除旧版 App
+打开“应用程序 Applications”，把“七九爱宠.app”移到废纸篓。
+
+重新安装 0.4.2
+打开新的 0.4.2.dmg，把“七九爱宠”拖进 Applications。
+
+如果 macOS 提示无法验证开发者
+打开“系统设置” → “隐私与安全性”，点击“仍要打开”。
+
+如果还是 Dock 图标一直跳
+打开“终端”，复制执行下面几行，然后把输出发回来：
+
+xattr -cr "/Applications/七九爱宠.app"
+defaults read "/Applications/七九爱宠.app/Contents/Info" CFBundleExecutable
+ls -l "/Applications/七九爱宠.app/Contents/MacOS"
+"/Applications/七九爱宠.app/Contents/MacOS/DeskPet"
