@@ -191,6 +191,38 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Validate macOS executable metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          apps=(dist/mac*/七九爱宠.app)
+          if [ "${#apps[@]}" -eq 0 ]; then
+            echo "No packaged macOS app found under dist/mac*/."
+            exit 1
+          fi
+
+          for app in "${apps[@]}"; do
+            executable="$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")"
+            if [ "$executable" != "DeskPet" ]; then
+              echo "Expected CFBundleExecutable to be DeskPet, got: $executable"
+              exit 1
+            fi
+
+            if [ ! -x "$app/Contents/MacOS/DeskPet" ]; then
+              echo "Missing executable: $app/Contents/MacOS/DeskPet"
+              exit 1
+            fi
+
+            if [ -e "$app/Contents/MacOS/七九爱宠" ]; then
+              echo "Unexpected non-ASCII macOS executable remains in package."
+              exit 1
+            fi
+
+            codesign --verify --deep --strict --verbose=2 "$app"
+          done
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:

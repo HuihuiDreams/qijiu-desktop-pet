@@ -99,7 +99,7 @@ const I18N = {
 
       // macOS 无证书时手动更新提示
       updateMacManualTitle: '检查更新',
-      updateMacManualMsg: '点击下方按钮前往 GitHub 下载最新版本的 DMG 安装包，覆盖安装即可完成更新。',
+      updateMacManualMsg: '请先从托盘菜单完全退出当前应用，再下载最新 DMG 并拖入 Applications 覆盖安装。',
       updateMacManualBtn: '前往下载页面',
 
       // 语言选项
@@ -321,7 +321,7 @@ const I18N = {
 
       // macOS manual update (no Developer ID certificate)
       updateMacManualTitle: 'Check for Updates',
-      updateMacManualMsg: 'Click below to open the GitHub Releases page and download the latest DMG installer.',
+      updateMacManualMsg: 'Quit the current app from the tray menu first, then download the latest DMG and drag it into Applications to replace the old app.',
       updateMacManualBtn: 'Open Download Page',
 
       // Language options
@@ -544,7 +544,7 @@ const I18N = {
 
       // macOS 証明書なし手動更新
       updateMacManualTitle: '更新を確認',
-      updateMacManualMsg: '最新のDMGインストーラーをGitHubからダウンロードしてインストールしてください。',
+      updateMacManualMsg: 'まずトレイメニューから現在のアプリを完全に終了し、最新のDMGをダウンロードしてApplicationsにドラッグし、古いアプリを置き換えてください。',
       updateMacManualBtn: 'ダウンロードページを開く',
 
       // Language options

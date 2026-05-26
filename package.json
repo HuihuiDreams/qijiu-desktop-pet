@@ -57,6 +57,7 @@
       ],
       "icon": "src/assets/icon.icns",
       "category": "public.app-category.utilities",
+      "minimumSystemVersion": "12.0",
       "darkModeSupport": true
     },
     "afterPack": "scripts/afterPack.js",

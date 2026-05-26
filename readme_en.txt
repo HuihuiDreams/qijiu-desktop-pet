@@ -10,11 +10,15 @@ Yue Qingyuan (Yue Qi) and Shen Qingqiu (Shen Jiu) can walk, rest, cultivate, and
 This app supports both Windows and macOS:
 - Windows: Download the `.exe` installer and run it.
 - macOS:
-  - System Requirements: macOS 11.0 (Big Sur) or higher.
+  - System Requirements: macOS 12.0 (Monterey) or higher.
   - Architecture:
     - Apple Silicon (M1/M2/M3, etc.): Download `*-arm64.dmg`.
     - Intel: Download `*-x64.dmg`.
   - Installation: Double-click the `.dmg` file, drag the "七九爱宠" (DeskPet) icon to your Applications folder.
+  - Manual update:
+    - Quit the current app from the tray menu first.
+    - Open the new `.dmg`, drag "七九爱宠" into Applications, and choose to replace the old version.
+    - If macOS blocks the updated app on first launch, allow it again in Privacy & Security or rerun `xattr -cr /Applications/七九爱宠.app`.
   - Bypass "Unidentified Developer / Damaged" Warning:
     - Method 1: Go to "System Settings -> Privacy & Security", scroll down to find the blocked "七九爱宠", click "Open Anyway", and enter your password.
     - Method 2: Open Terminal and run: `xattr -cr /Applications/七九爱宠.app`
