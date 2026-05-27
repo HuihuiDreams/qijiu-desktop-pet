@@ -2,16 +2,16 @@
 
 Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when editing or debugging.
 
-## 🎯 Core Principles
+## Core Principles
 
-1. **Think First**: Surfacing assumptions/trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths.
-2. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures. 
+1. **Think First**: Surface assumptions and trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths.
+2. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures.
 3. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
-4. **Goal-Driven**: Define verification steps before coding. Run `npm run test` or check console logs to verify.
+4. **Goal-Driven**: Define verification steps before coding. Run `npm test` or focused `node --test ...` checks, plus console/manual checks when UI or Electron window behavior changes.
 
-## 🏗️ Technical Constraints
+## Technical Constraints
 
-1. **Process Separation**: 
+1. **Process Separation**:
    - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
    - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
@@ -20,14 +20,17 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
 3. **Multi-Display & DPI**:
    - Coordinate conversion via `displayBounds.js`.
+   - Window refit/debounce behavior via `displayFit.js`; keep Electron `screen` event coalescing and min/max constraint bridging together.
+   - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects to maintain consistent physical sizing across screens.
 4. **Input & Drag**:
    - Default: `setIgnoreMouseEvents(true, { forward: true })`. Toggle to `false` only on hover of interactive elements.
    - Set `isDragging = true` on drag, pausing `MovementSystem` and `InteractionSystem`.
 
-## 📝 Git Workflow & Versioning
+## Git Workflow & Versioning
 
 Before commit/push:
 1. **Update CHANGELOG.md**: Group changes under `Added`, `Changed`, `Fixed`, or `Removed`. Link ADRs if applicable.
-2. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
-3. **Pushing**: Use `.\push.ps1` to automate safety checks.
+2. **Update docs when behavior changes**: Keep `docs/structure.md` and relevant ADRs in sync for architecture or runtime behavior changes.
+3. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
+4. **Pushing**: Use `.\push.ps1` to automate safety checks.
