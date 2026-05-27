@@ -155,18 +155,54 @@ function createMacManualUpdateManager() {
   let app = null;
   let dialog = null;
   let t = (k) => k;
+  let refreshTrayMenu = () => {};
+  let updateProgressUi = {
+    showChecking: () => {},
+    close: () => {},
+  };
   let initialized = false;
-  const state = { ...DEFAULT_UPDATE_STATE };
+  let state = cloneState(DEFAULT_UPDATE_STATE);
+
+  function setState(patch) {
+    state = { ...state, ...patch };
+    refreshTrayMenu();
+  }
 
   function initUpdateManager(config) {
     app = config.app;
     dialog = config.dialog;
     if (config.t) t = config.t;
+    refreshTrayMenu = config.refreshTrayMenu || refreshTrayMenu;
+    updateProgressUi = { ...updateProgressUi, ...(config.updateProgressUi || {}) };
     initialized = true;
+  }
+
+  function isNewerVersion(latest, current) {
+    if (!latest || !current) return false;
+    const lParts = latest.split('.').map(Number);
+    const cParts = current.split('.').map(Number);
+    for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
+      const l = lParts[i] || 0;
+      const c = cParts[i] || 0;
+      if (l > c) return true;
+      if (l < c) return false;
+    }
+    return false;
   }
 
   async function checkForUpdatesFromTray() {
     if (!initialized) throw new Error('Update manager is not initialized.');
+
+    if (state.checking) {
+      await dialog.showMessageBox({
+        type: 'info',
+        title: t('updateInProgressTitle'),
+        message: t('updateCheckingMsg'),
+        buttons: [t('updateBtnOk')],
+        noLink: true,
+      });
+      return;
+    }
 
     if (!app || !app.isPackaged) {
       await dialog.showMessageBox({
@@ -179,35 +215,81 @@ function createMacManualUpdateManager() {
       return;
     }
 
-    // macOS 无证书：打开 GitHub Releases 页面，用户手动下载 DMG
-    const { shell } = require('electron');
-    const manualTitle = t('updateMacManualTitle');
-    const manualMsg = t('updateMacManualMsg');
-    const manualBtn = t('updateMacManualBtn');
-    const laterBtn = t('updateBtnLater');
-
-    const result = await dialog.showMessageBox({
-      type: 'info',
-      title: manualTitle !== 'updateMacManualTitle' ? manualTitle : '检查更新',
-      message: manualMsg !== 'updateMacManualMsg'
-        ? manualMsg
-        : '点击下方按钮前往 GitHub 下载最新版本的 DMG 安装包。',
-      buttons: [
-        manualBtn !== 'updateMacManualBtn' ? manualBtn : '前往下载页面',
-        laterBtn !== 'updateBtnLater' ? laterBtn : '稍后',
-      ],
-      defaultId: 0,
-      cancelId: 1,
-      noLink: true,
+    setState({ checking: true, error: null });
+    updateProgressUi.showChecking?.({
+      title: getTranslatedText(t, 'updateCheckingTitle', 'Checking for Updates'),
+      message: t('updateCheckingMsg'),
     });
 
-    if (result.response === 0) {
-      shell.openExternal(GITHUB_RELEASES_URL);
+    try {
+      const response = await fetch('https://api.github.com/repos/HuihuiDreams/qijiu-desktop-pet/releases/latest');
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
+      const data = await response.json();
+      const latestVersion = data.tag_name ? data.tag_name.replace(/^v/, '') : null;
+      const currentVersion = app.getVersion();
+
+      setState({ checking: false });
+      updateProgressUi.close?.();
+
+      if (latestVersion && isNewerVersion(latestVersion, currentVersion)) {
+        const { shell } = require('electron');
+        const manualTitle = getTranslatedText(t, 'updateMacManualTitle', '发现新版本');
+        
+        let manualMsg = getTranslatedText(t, 'updateMacManualMsg', '请先从托盘菜单完全退出当前应用，再下载最新 DMG 并拖入 Applications 覆盖安装。');
+        manualMsg = `当前版本: ${currentVersion}\n最新版本: ${latestVersion}\n\n${manualMsg}`;
+
+        const manualBtn = getTranslatedText(t, 'updateMacManualBtn', '前往下载页面');
+        const laterBtn = getTranslatedText(t, 'updateBtnLater', '稍后');
+
+        const result = await dialog.showMessageBox({
+          type: 'info',
+          title: manualTitle,
+          message: manualMsg,
+          buttons: [manualBtn, laterBtn],
+          defaultId: 0,
+          cancelId: 1,
+          noLink: true,
+        });
+
+        if (result.response === 0) {
+          shell.openExternal(GITHUB_RELEASES_URL);
+        }
+      } else {
+        const title = getTranslatedText(t, 'updateNotAvailTitle', '已是最新版本');
+        let msg = getTranslatedText(t, 'updateNotAvailMsg', '当前版本 {version} 已是最新版本。');
+        msg = msg.replace('{version}', currentVersion);
+
+        await dialog.showMessageBox({
+          type: 'info',
+          title: title,
+          message: msg,
+          buttons: [getTranslatedText(t, 'updateBtnOk', '知道了')],
+          noLink: true,
+        });
+      }
+    } catch (error) {
+      setState({ checking: false, error: error.message });
+      updateProgressUi.close?.();
+      
+      const message = classifyUpdateError(error, t);
+      await dialog.showMessageBox({
+        type: 'error',
+        title: t('updateErrTitle'),
+        message,
+        detail: getReadableErrorDetail(error, t),
+        buttons: [t('updateBtnOk')],
+        noLink: true,
+      });
     }
   }
 
   function getUpdateMenuState() {
-    return { ...state, label: '📦 检查更新', enabled: true };
+    if (state.checking) {
+      return { ...cloneState(state), label: getTranslatedText(t, 'trayUpdateChecking', '📦 正在检查更新...'), enabled: false };
+    }
+    return { ...cloneState(state), label: getTranslatedText(t, 'trayUpdateCheck', '📦 检查更新'), enabled: true };
   }
 
   return {
@@ -215,7 +297,7 @@ function createMacManualUpdateManager() {
     checkForUpdatesFromTray,
     getUpdateMenuState,
     classifyUpdateError,
-    _getState: () => ({ ...state }),
+    _getState: () => cloneState(state),
   };
 }
 
