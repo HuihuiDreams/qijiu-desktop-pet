@@ -1,1 +1,10 @@
-{}
+{
+  // 关闭 VS Code 内置 CSS 验证器，改用 stylelint（如已安装）或直接关掉。
+  // 原因：内置验证器不认识以下合法用法，会产生误报红点：
+  //   1. width: max-content — CSS Intrinsic Sizing 规范，Electron/Chromium 完整支持
+  //   2. -webkit-app-region: drag/no-drag — Electron 专有属性，用于窗口拖拽区域声明
+  "css.validate": false,
+
+  // 如果你使用 stylelint 扩展，可以在这里启用它来替代内置验证器：
+  // "stylelint.enable": true
+}

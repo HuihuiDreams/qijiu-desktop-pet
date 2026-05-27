@@ -3,9 +3,26 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 
+## [WIP] - 2026-05-27
+### Added
+- **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
+
+### Changed
+- **多显示器 ADR 更新**：补充 `ADR-022` 中托盘切换屏幕和显示器热插拔刷新等设计边界。
+
+### Fixed
+- **macOS 显示器热插拔菜单刷新**：显示器新增、移除或参数变化时同步刷新托盘菜单，避免“切换屏幕”列表继续使用过期的显示器信息。
+- **Windows 升级安装后桌面重复快捷方式**：修复通过安装包覆盖升级后，桌面出现两个快捷方式的问题。根因：NSIS `oneClick: false` 模式下升级安装时，安装程序会无条件创建快捷方式，若用户在历史版本中将快捷方式从开始菜单拖到桌面，或者旧版安装产生了多余的 `.lnk` 文件，则新安装的快捷方式与旧文件同时存在。修复方案：在 `build/installer.nsh` 的 `customInstall` 宏中主动清理桌面和开始菜单下的旧 `DeskPet.lnk`（历史曾用名，当前不适用），并记录此问题供后续深入排查。
+- **Windows 修仙状态窗口宽度自动增大**：修复状态窗口在 Windows 上打开后宽度持续增大的问题。根因是一个渲染→调整→渲染的反馈循环：`getBoundingClientRect()` 读到的宽度随父容器变化，每次 `setContentSize()` 后窗口变宽，`width: 100%` 的 panel 跟着变宽，导致下次测到的值更大，如此循环。修复方案：将 `.status-panel` 改为 `width: max-content`（panel 由内容驱动而非父容器），并改用 `panel.scrollWidth`（内容固有宽度，不随窗口变化）测量宽度，彻底打断反馈循环；同时保留 `min-width: 320px` / `max-width: 480px` 兜底，适应不同系统字体和 DPI 缩放。见 [ADR-027](docs/decisions/ADR-027-status-window-width-growth-fix.md)。
+
 ## [0.4.2] - 2026-05-26
+### Added
+- **macOS 多显示器单屏迁移模式**：macOS 下桌宠主窗口改为覆盖当前显示器，并支持走到屏幕边缘或拖拽到相邻屏幕时迁移窗口，让桌宠在多屏环境中切换显示器时更稳定。
+- **多显示器相邻屏幕识别测试**：为相邻显示器查找逻辑补充右侧、左侧、负坐标、小间隙、无重叠和非法输入等回归测试。
+
 ### Changed
 - **项目结构文档更新**：重写 `docs/structure.md`，补齐当前目录树、主进程/渲染进程职责、皮肤、多语言、更新、多屏、测试覆盖和 ADR 索引说明。
+- **多显示器 ADR 更新**：补充 `ADR-022` 中 macOS 单屏窗口迁移模式、相邻屏幕识别、拖拽跨屏迁移等设计边界。
 - **性能优化**：移除 `PetRenderer` 中冗余的 `pet--flipped` DOM 类操作，减少无意义的重绘。
 - **发布脚本兼容性**：改进 `push.sh` 脚本，增加 Linux (`xdg-open`) 和 Windows (`start`) 跨平台打开 CHANGELOG.md 的兼容支持。
 - **图片转换脚本鲁棒性**：提高 `convert_images.js` 对 `.png` 大小写的兼容，并使用精确的正则表达式替换避免误伤文件路径。
@@ -132,6 +149,150 @@
 - **灵力效果中心偏移**：修复喂食、修炼等光晕和粒子效果缩放后不再对准小人视觉中心的问题。
 - **多显示器移动回归测试**：新增覆盖随机目标落点、可见区域夹取、显示器间空洞桥接、旧目标越界夹取、副屏返回主屏接缝移动、`scaleRatio` 保留和灵力效果视觉缩放的测试。
 
+
+## [WIP] - 2026-05-27
+### Added
+- **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
+
+### Changed
+- **多显示器 ADR 更新**：补充 `ADR-022` 中托盘切换屏幕和显示器热插拔刷新等设计边界。
+
+### Fixed
+- **macOS 显示器热插拔菜单刷新**：显示器新增、移除或参数变化时同步刷新托盘菜单，避免“切换屏幕”列表继续使用过期的显示器信息。
+
+## [0.4.2] - 2026-05-26
+### Added
+- **macOS 多显示器单屏迁移模式**：macOS 下桌宠主窗口改为覆盖当前显示器，并支持走到屏幕边缘或拖拽到相邻屏幕时迁移窗口，让桌宠在多屏环境中切换显示器时更稳定。
+- **多显示器相邻屏幕识别测试**：为相邻显示器查找逻辑补充右侧、左侧、负坐标、小间隙、无重叠和非法输入等回归测试。
+
+### Changed
+- **项目结构文档更新**：重写 `docs/structure.md`，补齐当前目录树、主进程/渲染进程职责、皮肤、多语言、更新、多屏、测试覆盖和 ADR 索引说明。
+- **多显示器 ADR 更新**：补充 `ADR-022` 中 macOS 单屏窗口迁移模式、相邻屏幕识别、拖拽跨屏迁移等设计边界。
+- **性能优化**：移除 `PetRenderer` 中冗余的 `pet--flipped` DOM 类操作，减少无意义的重绘。
+- **发布脚本兼容性**：改进 `push.sh` 脚本，增加 Linux (`xdg-open`) 和 Windows (`start`) 跨平台打开 CHANGELOG.md 的兼容支持。
+- **图片转换脚本鲁棒性**：提高 `convert_images.js` 对 `.png` 大小写的兼容，并使用精确的正则表达式替换避免误伤文件路径。
+- **文档中文化与内容更新**：将发布代码签名说明、代码审查报告、多显示器调试交接文档以及项目结构等相关文档翻译并更新为中文。
+
+### Fixed
+- **macOS unsigned installer workflow**: Stop running unconditional `codesign --verify` on unsigned macOS build outputs, so x64 and arm64 unsigned packages no longer fail metadata validation after packaging.
+- **macOS 手动更新启动兼容性**：打包时保留外层 `七九爱宠.app` 名称，但将包内 `CFBundleExecutable` 改为 ASCII 的 `DeskPet`，避免覆盖安装后 Finder / LaunchServices 找不到中文可执行文件而表现为 Dock 图标跳动后无法加载；同时更新手动更新提示，要求用户先退出旧版本再替换应用。
+- **macOS 系统版本说明校正**：显式声明安装包最低支持 macOS 12.0，与 Electron 42 生成的 `LSMinimumSystemVersion` 保持一致，避免 macOS 11 用户误以为当前包可运行。
+- **macOS 发布流程保护**：在 Release Preflight 和 Build Installers 两个 GitHub Actions workflow 中增加 macOS 可执行文件元数据校验，防止 `CFBundleExecutable` 回退到中文文件名后仍被发布。
+
+## [0.4.1] - 2026-05-25
+### Added
+- 新增 DevTools Console 调试入口 `testGreet()`，可手动触发问候互动。
+- **第二套皮肤“鸟塑七九・凉拌仓鼠”**：
+  - 新增了 `src/assets/birds/` 资源目录，图片均已转换为 256px WebP 格式。
+  - 在 `src/data/i18n.js` 中增加了中/英/日多语言皮肤名称支持。
+
+### Changed
+- **皮肤菜单排序逻辑优化**：`main.js` 中的皮肤扫描逻辑会强制确保 `default` 皮肤始终排在托盘菜单的第一位。
+
+### Fixed
+- **固定角色朝向资源，移除图片镜像翻转**
+  - 移除 `.pet--flipped` 对角色图片的 `scaleX(-1)` 镜像效果，避免任何状态下出现左右翻转。
+  - 互动问候时改用对应方向行走素材的第二帧作为静态朝向图，确保两人面对面且不依赖图片翻转。
+- **macOS 更新机制优化（无证书适配）**：
+  - 修复了 macOS 无 Apple Developer 证书（Ad-hoc 自签名）时，因新旧版本代码签名不匹配触发 Squirrel.Mac 校验报错（`Did not pass validation: コードは指定されたコード要件を満たしていません`）导致更新流程阻断的问题。
+  - 重构了 macOS 下的更新管理器逻辑，新增 `createMacManualUpdateManager` 专用于无证书环境。当用户在 macOS 平台点击“检查更新”时，绕过 Squirrel 自动更新，改为弹窗引导并使用浏览器打开 GitHub Releases 页面供用户下载最新 DMG 覆盖安装。
+  - 在 `src/data/i18n.js` 中补充了中、英、日三种语言对应的 macOS 手动更新引导文案及按钮文本（`updateMacManualTitle` / `updateMacManualMsg` / `updateMacManualBtn`）。
+
+## [0.4.0] - 2026-05-24
+### Added
+- **macOS 原生支持**：
+  - 在 macOS 运行时自动隐藏 Dock 图标 (`app.dock.hide()`)。
+  - 支持 macOS 菜单栏托盘图标的原生单色模板图像 (`setTemplateImage(true)`)。
+  - 实现 macOS 下完整的自动启动设置适配 (`openAsHidden`)。
+  - 为 macOS 桌面端添加高分辨率的 `src/assets/icon.icns` 图标。
+  - 在 `package.json` 中配置了多架构打包目标（针对 `x64` 和 `arm64` 的 `dmg` + `zip`）。
+  - 在 GitHub Actions 中添加了 macOS 安装包构建任务 (`build-macos-installer`)，以在发布 Release 时自动与 Windows 版本一同发布。
+  - 在 Release Preflight 工作流中添加了 macOS 冒烟包校验 (`preflight-mac`)。
+  - 在 `README.md`、`readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中添加了详细的多语言 macOS 下载、安装及绕过 Gatekeeper（安全隐私限制）的说明。
+- 新增 `docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md`，用于记录可视化更新进度窗口以及本地打包更新测试的设计决策。
+- 新增 `electron-builder.update-test-old.yml` 和 `electron-builder.update-test-new.yml`，用于在不发布 GitHub Release 的情况下进行本地更新程序验证。
+
+### Changed
+- 重构 `createTray`，使其在 macOS 下使用模板图像自动反色，同时在 Windows 下保留编程式位图绘制。
+- 在“检查更新”后立即显示专属进度窗口；在确认下载后，将其复用为基于百分比的下载进度窗口。
+- 通过注入 `updateProgressUi` 适配器，将 `updateManager.js` 与主进程进度窗口解耦，同时保留现有的结果对话框和托盘状态。
+- 忽略 `dist-update-test/` 下的一次性本地更新测试输出。
+- 新增 `docs/plan/window-awareness-plan.md`，记录窗口感知（window-awareness）特性的实现计划。
+
+## [0.3.1] - 2026-05-22
+### Changed
+- 将默认桌宠运行时图片资源从 PNG 切换为 256px WebP，并保留全套预加载策略以降低状态切换闪烁风险。
+- 调整发布打包配置，排除 docs、test、.github 和 dist，避免全分辨率备份素材进入安装包。
+- 扩展 Release Preflight 触发路径，让 src 资源和渲染代码变化也会自动触发发布预检。
+
+### Fixed
+- 保留 SpriteView 图片加载失败时的 emoji fallback，避免回退内容变成文字占位。
+- 为默认 WebP 资源尺寸增加纯 Node 测试，避免 GitHub Actions 依赖 Python/Pillow 环境。
+
+## [0.3.0] - 2026-05-21
+### Added
+- **多语言支持 (i18n) 架构**：新增 `src/data/i18n.js` 作为统一的多语言字典，支持中文 (zh)、英文 (en) 和日文 (ja)。
+- **语言运行时热切换**：主进程增加向所有窗口广播 `locale-changed` 机制，右键菜单和系统托盘均能实时切换主窗口和状态面板语言。
+- **状态面板缓存重绘**：状态窗口监听 `locale-changed` 并使用 `lastRenderData` 立即更新现有属性面板上的多语言数值。
+- **多语言发布说明**：新增 `readme_en.txt` 和 `readme_ja.txt`，对齐 `i18n.js` 的英日界面词与 emoji，并让发布工作流校验、上传三种语言的说明文件。
+
+### Changed
+- **气泡重叠与换行策略**：单人对话框气泡保持 `nowrap` 风格，双人互动气泡限制 `max-width: 130px`、启用 `pre-wrap` 向上增长，防止英文等长句重叠。
+- **状态栏对齐美化**：状态面板属性标签宽由 `72px` 增加至 `85px`，增加 `white-space: nowrap`，防止英文属性名（如 `Affection`）换行，使 UI 更加美观对齐。
+- **全局多语言适配**：清理并重构 `debug.js`、`updateManager.js` 中的硬编码中文，改用统一的翻译字典接口。
+
+### Fixed
+- **托盘语言覆盖**：皮肤名称和托盘悬浮提示改为跟随当前语言切换。
+- **i18n 兜底安全性**：修复 `I18N` 全局缺失时兜底路径仍可能抛出 `ReferenceError` 的问题。
+- **更新弹窗测试覆盖**：补充真实翻译函数注入后的版本插值和错误详情前缀回归测试。
+
+## [0.2.6] - 2026-05-20
+### Added
+- **代码规范规则集**：根据 Karpathy 编程指南定制了适用于本项目的 `.geminirules` 开发规范规则文件。
+- **发布前文档校验**：在 Release Preflight 工作流中新增对 `readme.txt` 存在性的自动校验步骤，防止漏发说明文档。
+
+### Changed
+- **Release 文档自动发布**：在 Build Windows Installer 工作流中增加了通过 GitHub CLI 自动向 GitHub Release 上传 `readme.txt` 的步骤，并同步将其打包进 Actions 构建 Artifacts。
+- **皮肤素材需求文档更新**：更新了 `docs/skin_assets_requirements.csv` 和 `.xlsx`，补充了沈九吃太撑互动的 `throwup.png` 资源需求及双人定位说明。
+
+### Fixed
+- **依赖安全漏洞修补**：通过 `npm audit fix` 升级了项目依赖库，修复了 Electron 等 13 个已知的安全漏洞。
+- **IPC 数据存储键校验**：在主进程数据持久化接口中增加了白名单校验，限制可读写的存储键值，增强了进程间通信的数据安全性。
+
+## [0.2.5] - 2026-05-19
+### Added
+- `shareFood` 互动新增吃太撑分支：当沈九饱腹 `+10` 后超过 100 时，互动图改为 `throwup.png`。
+- 调试入口新增 `testsharefood()` 小写别名和 `testShareFoodThrowup()`，方便在 Console 里直接验证吃太撑分支。
+- 新增 `docs/plan/cangqiong-pomodoro-plan.md`，记录“苍穹山派”番茄钟实施计划，包含非工作软件定义、前台窗口识别、触发阈值和测试场景。
+- 新增 `docs/plan/zongmen-task-todo-plan.md`，记录“宗门任务”待办事项实施计划，包含灵石/好感度奖励区分、任务系统数据模型、状态窗口 UI 和持久化方案。
+
+### Changed
+- 吃太撑分支的互动对白固定为岳七“小九你怎么了？”、沈九“呕~~”。
+- 重写 `readme.txt` 为更面向普通用户的说明，保留养成数值、互动阈值和原有 emoji，并改为带 BOM 的 UTF-8 编码以减少中文 Windows 打开乱码。
+
+## [0.2.4] - 2026-05-18
+### Added
+- **多显示器调试交接文档**：新增 `docs/plan/multi-display-debug-handoff.md`，记录跨屏移动相关改动、当前遗留问题、用户显示器布局线索和后续排查建议，便于后续 agent 接手。
+- **多显示器边界决策记录更新**：重写 `docs/decisions/ADR-022-multi-display-support-boundary.md`，记录混合 DPI 坐标转换、`walkAreas.scaleRatio`、视觉缩放和调试入口的最终方案。
+
+### Changed
+- **系统托盘菜单分组**：用分割线区分桌宠功能和软件功能，并将“开发者工具”限制为开发态显示，安装包版本不再展示该入口。
+- **互动覆盖层缩放常量命名**：将互动覆盖图宽度、顶部偏移和气泡间距提取为命名常量，并补充 `scaleRatio` 缩放注释，减少后续维护误判。
+- **多显示器窗口覆盖逻辑调整**：主桌宠窗口允许大于单屏并在创建及显示器变化时重新设置虚拟桌面 bounds，解决开发态拖曳到主屏边缘被无形墙挡住的问题。
+- **桌宠移动边界逻辑调整**：`MovementSystem` 改为基于真实显示器 `workArea` 列表选择目标点，并支持跨显示器接缝及显示器间坐标空洞的移动桥接。
+- **混合 DPI 坐标管线调整**：`displayBounds.js` 将 Electron 显示器 DIP 坐标转换为主窗口内 renderer 坐标，并为每个 `walkArea` 附带 `scaleRatio`，供移动系统和视觉层共用。
+- **多屏视觉缩放统一**：桌宠本体、右键菜单、灵力光晕和粒子效果会根据所在显示器缩放比例自动调整，并使用缩放后的视觉中心对齐。
+- 更新 `docs/skin_assets_requirements.csv`，补充双人互动时的画面占位说明（沈九需在左边），并转存为带有 BOM 的 UTF-8 格式以修复 Excel 乱码问题。
+- **系统架构文档全面更新**：更新 `docs/structure.md`，同步了多显示器坐标管线、独立状态窗口架构、SpriteView 预加载优化以及调试工具 `debug.js` 的最新描述。
+- **架构图语法修复**：修正了 `structure.md` 中 Mermaid 图表的语法错误，确保多级子图在渲染引擎中正常显示。
+
+### Fixed
+- **副屏互动覆盖层缩放**：修复亲亲、拥抱、一起修炼、分食物等双人互动覆盖图、对话框大小和字体在副屏上仍按主屏比例显示的问题。
+- **跨屏拖曳和回程移动**：修复主窗口未正确覆盖副屏导致桌宠坐标跑出主屏后不可见、以及桌宠从副屏走回主屏时被接缝边界夹住的问题。
+- **副屏右/下边缘越界**：修复混合 DPI 多显示器布局下，桌宠在副屏右边缘或下边缘继续走入不可见区域的问题。
+- **副屏视觉大小漂移**：修复桌宠走到副屏后角色本体、右键菜单和灵力效果视觉大小不一致的问题。
+- **灵力效果中心偏移**：修复喂食、修炼等光晕和粒子效果缩放后不再对准小人视觉中心的问题。
+- **多显示器移动回归测试**：新增覆盖随机目标落点、可见区域夹取、显示器间空洞桥接、旧目标越界夹取、副屏返回主屏接缝移动、`scaleRatio` 保留和灵力效果视觉缩放的测试。
 
 ## [0.2.3] - 2026-05-14
 ### Added

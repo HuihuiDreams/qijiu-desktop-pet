@@ -94,6 +94,12 @@ function renderPetStats(pet) {
   return block;
 }
 
+// Body padding (10px each side).
+const BODY_PADDING = 20;
+// Titlebar height + its bottom margin (≈ 18px margin + ~49px bar = ~67px)
+// plus the panel's own vertical padding (24px top + 20px bottom).
+const TITLEBAR_AND_PANEL_PADDING = 92;
+
 function renderStatus(data) {
   lastRenderData = data;
   const pets = Array.isArray(data?.pets) ? data.pets : [];
@@ -102,10 +108,20 @@ function renderStatus(data) {
     const panel = document.querySelector('.status-panel');
     if (!panel) return;
 
-    const rect = panel.getBoundingClientRect();
+    // Use scrollWidth (content's intrinsic width) rather than
+    // getBoundingClientRect().width (which is constrained by the parent).
+    //
+    // The panel has `width: max-content` in CSS, so its size is driven by
+    // content, not by the Electron window. scrollWidth therefore stays
+    // stable across setContentSize() calls — no feedback loop.
+    //
+    // getBoundingClientRect().width on a `width:100%` panel would grow with
+    // the window on every resize tick, causing infinite drift on Windows.
+    const panelWidth = panel.scrollWidth;
+    const contentHeight = contentEl.scrollHeight;
     window.electronAPI.resizeStatusWindow({
-      width: Math.ceil(rect.width + 20),
-      height: Math.ceil(rect.height + 20),
+      width: panelWidth + BODY_PADDING,
+      height: contentHeight + TITLEBAR_AND_PANEL_PADDING + BODY_PADDING,
     });
   });
 }
