@@ -6,11 +6,14 @@
 ## [WIP] - 2026-05-27
 ### Added
 - **macOS 托盘切换屏幕菜单**：多显示器环境下新增“切换屏幕”托盘子菜单，可手动将桌宠移动到指定屏幕，并标记当前所在屏幕。
+- **显示器窗口适配辅助模块**：新增 `displayFit.js`，用于合并 Electron 显示器变化事件、判断窗口 bounds 是否已匹配目标值，并在重新设置窗口大小前桥接 min/max 尺寸约束。
 
 ### Changed
 - **多显示器 ADR 更新**：补充 `ADR-022` 中托盘切换屏幕和显示器热插拔刷新等设计边界。
+- **项目结构文档更新**：补充 `displayFit.js`、显示器事件合并机制、测试覆盖和 `ADR-028` 索引。
 
 ### Fixed
+- **macOS 数位板连接后窗口和桌宠图片多次 resize**：修复连接数位画图板后，Electron 连续触发 `display-added` / `display-removed` / `display-metrics-changed` 导致主透明窗口和宠物视觉比例短时间多次变化的问题。现在显示器变化事件会先合并等待 `250ms`，只应用最后一次窗口适配；设置新 bounds 前会临时放宽 min/max 约束，完成后再锁回目标尺寸，避免 macOS/Electron 在旧约束和新 bounds 之间来回校正。见 [ADR-028](docs/decisions/ADR-028-coalesce-display-metrics-window-fit.md)。
 - **macOS 显示器热插拔菜单刷新**：显示器新增、移除或参数变化时同步刷新托盘菜单，避免“切换屏幕”列表继续使用过期的显示器信息。
 - **Windows 升级安装后桌面重复快捷方式**：修复通过安装包覆盖升级后，桌面出现两个快捷方式的问题。根因：NSIS `oneClick: false` 模式下升级安装时，安装程序会无条件创建快捷方式，若用户在历史版本中将快捷方式从开始菜单拖到桌面，或者旧版安装产生了多余的 `.lnk` 文件，则新安装的快捷方式与旧文件同时存在。修复方案：在 `build/installer.nsh` 的 `customInstall` 宏中主动清理桌面和开始菜单下的旧 `DeskPet.lnk`（历史曾用名，当前不适用），并记录此问题供后续深入排查。
 - **Windows 修仙状态窗口宽度自动增大**：修复状态窗口在 Windows 上打开后宽度持续增大的问题。根因是一个渲染→调整→渲染的反馈循环：`getBoundingClientRect()` 读到的宽度随父容器变化，每次 `setContentSize()` 后窗口变宽，`width: 100%` 的 panel 跟着变宽，导致下次测到的值更大，如此循环。修复方案：将 `.status-panel` 改为 `width: max-content`（panel 由内容驱动而非父容器），并改用 `panel.scrollWidth`（内容固有宽度，不随窗口变化）测量宽度，彻底打断反馈循环；同时保留 `min-width: 320px` / `max-width: 480px` 兜底，适应不同系统字体和 DPI 缩放。见 [ADR-027](docs/decisions/ADR-027-status-window-width-growth-fix.md)。

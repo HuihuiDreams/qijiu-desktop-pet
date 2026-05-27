@@ -3,6 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
 const {
+  areWindowBoundsEqual,
+  createDisplayFitScheduler,
+  getResizeBridgeConstraints,
+} = require('./displayFit');
+const {
   initUpdateManager,
   checkForUpdatesFromTray,
   getUpdateMenuState,
@@ -14,6 +19,7 @@ const AUTO_LAUNCH_KEY = 'autoLaunch';
 const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
+const DISPLAY_METRICS_SETTLE_MS = 250;
 const LOGIN_ITEM_NAME = '七九爱宠';
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
@@ -68,6 +74,10 @@ let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let finalSaveRequestId = 0;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
+const displayFitScheduler = createDisplayFitScheduler({
+  fitNow: fitWindowToAllDisplays,
+  delayMs: DISPLAY_METRICS_SETTLE_MS,
+});
 
 function configureChromiumMemoryBudget() {
   app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128');
@@ -283,12 +293,27 @@ function sendScreenInfo() {
   });
 }
 
+function lockPetWindowToBounds(bounds) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  const currentBounds = mainWindow.getBounds();
+  if (!areWindowBoundsEqual(currentBounds, bounds)) {
+    const bridgeConstraints = getResizeBridgeConstraints(currentBounds, bounds);
+    if (bridgeConstraints) {
+      mainWindow.setMinimumSize(bridgeConstraints.minWidth, bridgeConstraints.minHeight);
+      mainWindow.setMaximumSize(bridgeConstraints.maxWidth, bridgeConstraints.maxHeight);
+    }
+    mainWindow.setBounds(bounds);
+  }
+
+  mainWindow.setMinimumSize(bounds.width, bounds.height);
+  mainWindow.setMaximumSize(bounds.width, bounds.height);
+}
+
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const bounds = getDesktopWindowBounds();
-  mainWindow.setMinimumSize(bounds.width, bounds.height);
-  mainWindow.setMaximumSize(bounds.width, bounds.height);
-  mainWindow.setBounds(bounds);
+  lockPetWindowToBounds(bounds);
   sendScreenInfo();
 }
 
@@ -490,9 +515,7 @@ function createWindow() {
   // 设置鼠标穿透逻辑
   setPetWindowMousePassthrough(true, { forward: true });
 
-  mainWindow.setMinimumSize(width, height);
-  mainWindow.setMaximumSize(width, height);
-  mainWindow.setBounds({ x, y, width, height });
+  lockPetWindowToBounds({ x, y, width, height });
   
   // macOS 特有：全工作区可见
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -525,15 +548,16 @@ function createWindow() {
       clearTimeout(mousePassthroughResetTimer);
       mousePassthroughResetTimer = null;
     }
+    displayFitScheduler.clear();
     if (statusWindow && !statusWindow.isDestroyed()) {
       statusWindow.close();
     }
     mainWindow = null;
   });
 
-  screen.on('display-added', fitWindowToAllDisplays);
-  screen.on('display-removed', fitWindowToAllDisplays);
-  screen.on('display-metrics-changed', fitWindowToAllDisplays);
+  screen.on('display-added', displayFitScheduler.schedule);
+  screen.on('display-removed', displayFitScheduler.schedule);
+  screen.on('display-metrics-changed', displayFitScheduler.schedule);
 }
 
 /**

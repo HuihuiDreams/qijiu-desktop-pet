@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-05-26
+最后更新：2026-05-27
 
 ## 1. 架构总览
 
@@ -19,6 +19,7 @@ graph TB
         MainJs --> IPC["IPC Handlers"]
         MainJs --> Update["updateManager.js"]
         MainJs --> Bounds["displayBounds.js"]
+        MainJs --> Fit["displayFit.js"]
         MainJs --> AutoLaunch["Login Item / Auto Launch"]
     end
 
@@ -52,10 +53,13 @@ qijiu-desktop-pet/
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
+├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
+├─ electron-builder.update-test-*.yml    # 本地更新流程测试用 electron-builder 配置
 ├─ CHANGELOG.md                         # 版本变更记录
 ├─ README.md / readme*.txt              # 用户说明与多语言说明文本
+├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
 ├─ build/
 │  └─ installer.nsh                     # Windows NSIS 安装器定制脚本
 ├─ scripts/
@@ -125,6 +129,7 @@ qijiu-desktop-pet/
 - 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据。
 - 使用 `app.requestSingleInstanceLock()` 保证单实例运行，并在二次启动时唤回已有窗口。
 - 使用 `displayBounds.js` 计算多显示器虚拟桌面范围和每块屏幕的可行走区域。
+- 使用 `displayFit.js` 合并显示器指标突发事件，并在重新适配透明主窗口时桥接 min/max 尺寸约束。
 - 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件。
 - 在退出前请求渲染进程做最后一次状态保存，降低异常退出造成的数据丢失。
 
@@ -153,6 +158,7 @@ qijiu-desktop-pet/
 
 - `main.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
 - `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`。
+- `displayFit.js` 将 `display-added`、`display-removed` 和 `display-metrics-changed` 的短时间连发合并为一次窗口适配，避免 macOS 数位板驱动等场景下出现多次可见 resize。
 - `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
 
@@ -189,6 +195,7 @@ src/assets/{skinId}/
 ├─ left_hungry.webp / right_hungry.webp
 ├─ left_eat.webp / right_eat.webp
 ├─ left_cultivate.webp / right_cultivate.webp
+├─ left_pat.webp / right_pat.webp
 ├─ kiss.webp / hug.webp / cultivate.webp / shareFood.webp / throwup.webp
 ├─ yueqi/
 │  └─ walk_left01.webp ... walk_right04.webp
@@ -237,6 +244,7 @@ npm test
 现有测试重点覆盖：
 
 - `displayBounds.js` 多屏边界和可行走区域计算。
+- `displayFit.js` 显示器事件合并、窗口 bounds 相等判断和 resize 约束桥接。
 - `MovementSystem` 移动、暂停、边界和目标选择。
 - `NurtureSystem` 和 `TimeSystem` 数值衰减、保存和离线变化。
 - `SkinManager`、托盘皮肤扫描和渲染集成。
@@ -264,6 +272,8 @@ npm test
 - [ADR-024](./decisions/ADR-024-i18n-multilingual-support.md)：多语言支持。
 - [ADR-025](./decisions/ADR-025-visible-update-progress-and-local-update-testing.md)：可见更新进度和本地更新测试。
 - [ADR-026](./decisions/ADR-026-macos-manual-update-executable-name.md)：macOS 手动更新可执行文件名。
+- [ADR-027](./decisions/ADR-027-status-window-width-growth-fix.md)：状态窗口宽度增长修复。
+- [ADR-028](./decisions/ADR-028-coalesce-display-metrics-window-fit.md)：合并显示器指标事件后再适配桌宠窗口。
 
 ## 6. 维护提示
 
