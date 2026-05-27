@@ -26,3 +26,12 @@ test('status window renders pet status content without innerHTML', () => {
   assert.ok(source.includes('replaceChildren'));
   assert.ok(source.includes('textContent'));
 });
+
+test('PetRenderer creates pet DOM without innerHTML', () => {
+  const source = readSource('src/pet/PetRenderer.js');
+
+  assert.equal(source.includes('innerHTML'), false);
+  assert.ok(source.includes("document.createElement('img')"));
+  assert.ok(source.includes('appendChild'));
+  assert.ok(source.includes('textContent'));
+});

@@ -5,7 +5,10 @@ build/*
 !build/installer.nsh
 .DS_Store
 .env
+.env.local
+.env.*.local
 *.log
+*.key
 *.cer
 *.crt
 *.der

@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -12,7 +12,15 @@ function processDir(dir) {
             const outPath = fullPath.replace(/\.png$/i, '.webp');
             console.log(`Converting ${fullPath} to ${outPath}`);
             try {
-                execSync(`ffmpeg -v error -i "${fullPath}" -vf scale=256:256 -y "${outPath}"`);
+                const result = spawnSync('ffmpeg', [
+                    '-v', 'error',
+                    '-i', fullPath,
+                    '-vf', 'scale=256:256',
+                    '-y', outPath,
+                ], { stdio: 'inherit' });
+                if (result.status !== 0) {
+                    throw new Error(`ffmpeg exited with status ${result.status}`);
+                }
                 fs.unlinkSync(fullPath);
             } catch (e) {
                 console.error(`Failed on ${fullPath}: ${e.message}`);

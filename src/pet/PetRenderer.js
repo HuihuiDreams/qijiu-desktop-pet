@@ -68,11 +68,19 @@ class PetRenderer {
     const el = document.createElement('div');
     el.id = `pet-${pet.id}`;
     el.className = `pet pet--${pet.id}`;
-    el.innerHTML = `
-      <div class="pet-body">
-        ${pet.image ? `<img src="${pet.image}" alt="${pet.nickname}" class="pet-image">` : pet.emoji}
-      </div>
-    `;
+
+    const body = document.createElement('div');
+    body.className = 'pet-body';
+    if (pet.image) {
+      const image = document.createElement('img');
+      image.src = pet.image;
+      image.alt = pet.nickname || '';
+      image.className = 'pet-image';
+      body.appendChild(image);
+    } else {
+      body.textContent = pet.emoji || '';
+    }
+    el.appendChild(body);
 
     // 初始基准点
     el.style.left = '0px';

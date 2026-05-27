@@ -274,6 +274,7 @@ npm test
 - [ADR-026](./decisions/ADR-026-macos-manual-update-executable-name.md)：macOS 手动更新可执行文件名。
 - [ADR-027](./decisions/ADR-027-status-window-width-growth-fix.md)：状态窗口宽度增长修复。
 - [ADR-028](./decisions/ADR-028-coalesce-display-metrics-window-fit.md)：合并显示器指标事件后再适配桌宠窗口。
+- [ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)：安全审计与本地硬化。
 
 ## 6. 维护提示
 

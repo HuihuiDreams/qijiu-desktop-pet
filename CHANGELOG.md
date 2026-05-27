@@ -12,7 +12,14 @@
 - **多显示器 ADR 更新**：补充 `ADR-022` 中托盘切换屏幕和显示器热插拔刷新等设计边界。
 - **项目结构文档更新**：补充 `displayFit.js`、显示器事件合并机制、测试覆盖和 `ADR-028` 索引。
 
+### Security
+- **依赖安全审计与修复**：运行全量 `npm audit` 和生产依赖 `npm audit --omit=dev`，修复 dev 依赖链中的 `tmp <0.2.6` high 漏洞；复核后全量与生产依赖审计均为 `0 vulnerabilities`。见 [ADR-029](docs/decisions/ADR-029-security-audit-and-local-hardening.md)。
+- **DOM 注入面硬化**：将 `PetRenderer` 的动态宠物节点渲染从 `innerHTML` 改为 `document.createElement` / `textContent`，并新增测试防止回退到动态 HTML 拼接。
+- **脚本命令注入面硬化**：将 `scripts/convert_images.js` 中的 `ffmpeg` 调用从 shell 字符串改为 `spawnSync` 参数数组，避免带特殊字符的文件路径影响命令解析。
+- **本地密钥忽略规则补齐**：在 `.gitignore` 中补充 `.env.local`、`.env.*.local` 和 `*.key`，降低本地配置或私钥误提交风险。
+
 ### Fixed
+- **Electron 开发启动环境修复**：修复依赖同步后 `node_modules/electron/dist/electron.exe` 缺失导致 `npm run dev` 报 `Electron failed to install correctly` 的问题，重新安装 Electron 42.2.0 二进制并验证 `electron --version` 返回 `v42.2.0`。
 - **macOS 数位板连接后窗口和桌宠图片多次 resize**：修复连接数位画图板后，Electron 连续触发 `display-added` / `display-removed` / `display-metrics-changed` 导致主透明窗口和宠物视觉比例短时间多次变化的问题。现在显示器变化事件会先合并等待 `250ms`，只应用最后一次窗口适配；设置新 bounds 前会临时放宽 min/max 约束，完成后再锁回目标尺寸，避免 macOS/Electron 在旧约束和新 bounds 之间来回校正。见 [ADR-028](docs/decisions/ADR-028-coalesce-display-metrics-window-fit.md)。
 - **macOS 显示器热插拔菜单刷新**：显示器新增、移除或参数变化时同步刷新托盘菜单，避免“切换屏幕”列表继续使用过期的显示器信息。
 - **Windows 升级安装后桌面重复快捷方式**：修复通过安装包覆盖升级后，桌面出现两个快捷方式的问题。根因：NSIS `oneClick: false` 模式下升级安装时，安装程序会无条件创建快捷方式，若用户在历史版本中将快捷方式从开始菜单拖到桌面，或者旧版安装产生了多余的 `.lnk` 文件，则新安装的快捷方式与旧文件同时存在。修复方案：在 `build/installer.nsh` 的 `customInstall` 宏中主动清理桌面和开始菜单下的旧 `DeskPet.lnk`（历史曾用名，当前不适用），并记录此问题供后续深入排查。
