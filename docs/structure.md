@@ -171,8 +171,8 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
 - `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
-- `main.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程，不经过活动窗口采样轮询。
-- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
+- `main.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程（支持 Windows 和 macOS 底部 Dock），不经过活动窗口采样轮询。
+- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。宠物走上任务栏平台后，有较高概率（70%）在下一次 idle 选点时继续沿着该平台行走。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
 
 ### 3.6 养成系统
 

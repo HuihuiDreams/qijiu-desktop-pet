@@ -20,7 +20,9 @@ Implement Window Awareness as a main-process provider plus renderer-side cache:
 - `WindowAwarenessSystem` in the renderer stores only the latest payload and exposes `getCurrentPlatform()` as an O(1) cache read.
 - `MovementSystem` receives the current platform through `setActivePlatform()` and only uses it when an idle pet chooses a new target.
 
-Windows uses a lightweight PowerShell/User32 provider at a 3000ms sampling interval. macOS and other platforms return an unavailable fallback for this MVP instead of attempting partial or permission-sensitive support.
+Windows uses a lightweight PowerShell/User32 provider at a 3000ms sampling interval. macOS and other platforms return an unavailable fallback for this MVP when querying active windows (instead of attempting partial or permission-sensitive support). However, **Taskbar/Dock platforms** are derived purely from display boundaries without OS privileges, meaning macOS Dock awareness is natively supported and active.
+
+Pets have a low probability of initially selecting a taskbar platform when choosing a random target. However, once a pet lands on a taskbar/Dock platform, it has a high retention probability (70%) of selecting another target along the same edge, preventing immediate drop-offs.
 
 ## Alternatives Considered
 

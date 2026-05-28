@@ -22,7 +22,7 @@ test('main process exposes active window IPC request and push channel', () => {
 
 test('main process sends taskbar platforms with screen info', () => {
   assert.ok(mainSource.includes('getTaskbarPlatformsRelativeToBounds'));
-  assert.ok(mainSource.includes("const taskbarPlatforms = process.platform === 'win32'"));
+  assert.ok(mainSource.includes("const taskbarPlatforms = (process.platform === 'win32' || process.platform === 'darwin')"));
   assert.ok(mainSource.includes('? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)'));
   assert.ok(mainSource.includes('taskbarPlatforms,'));
 });

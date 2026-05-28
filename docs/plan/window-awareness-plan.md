@@ -539,6 +539,24 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Estimated scope:** Small
 
+### Phase 5: macOS Dock Support
+
+#### Task 12: Enable bottom Dock platform on macOS
+
+**Description:** 由于任务栏平台（Taskbar Platform）的推导仅依赖于 `display.workArea` 与 `display.bounds` 的几何差值，不需要操作系统级权限。在 macOS 上解除系统判断限制，使宠物能够感知并走上底部的 macOS Dock。
+
+**Acceptance criteria:**
+
+- [x] `main.js` 中的 `sendScreenInfo()` 解除对 `win32` 的限制，允许 `darwin` 计算 `taskbarPlatforms`。
+- [x] 托盘菜单中的 `Surface Awareness` 开关解除仅 `win32` 可用的限制。在 macOS 上开启该功能时，由于 `activeWindowProvider` 仍为 unavailable，其只控制 Dock 的平台推导。
+- [x] 在 `displayBounds.js` 中继续保持仅支持底部横向 Dock（`bottomTaskbarHeight`）的逻辑。
+
+**Verification:**
+
+- [x] 测试运行并在主进程中无报错。
+- [x] 手动验证：在 macOS 上且 Dock 位于底部且不自动隐藏时，宠物能够停留于 Dock 上边缘。Dock 在两侧或自动隐藏时正常回退至桌面行走逻辑。
+- [x] 修正 `test/mainWindowAwareness.test.js` 和 `test/skinTray.test.js` 中关于 macOS 开关不可用的过期断言。
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |

@@ -285,7 +285,7 @@ function sendScreenInfo() {
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
   const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
-  const taskbarPlatforms = process.platform === 'win32'
+  const taskbarPlatforms = (process.platform === 'win32' || process.platform === 'darwin')
     ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
     : [];
 
@@ -349,7 +349,7 @@ function startActiveWindowAwareness() {
 }
 
 function setWindowAwarenessEnabled(enabled) {
-  if (process.platform !== 'win32') return;
+  if (process.platform !== 'win32' && process.platform !== 'darwin') return;
   windowAwarenessEnabled = Boolean(enabled);
   if (mainWindow && !mainWindow.isDestroyed()) {
     startActiveWindowAwareness();
@@ -720,13 +720,6 @@ function buildTrayMenu() {
       },
     },
     {
-      label: process.platform === 'win32'
-        ? (windowAwarenessEnabled ? trayT('trayWindowAwarenessOff') : trayT('trayWindowAwarenessOn'))
-        : trayT('trayWindowAwarenessUnavailable'),
-      enabled: process.platform === 'win32',
-      click: () => setWindowAwarenessEnabled(!windowAwarenessEnabled),
-    },
-    {
       label: petHidden ? trayT('trayShowPet') : trayT('trayHidePet'),
       click: () => {
         petHidden = !petHidden;
@@ -741,6 +734,13 @@ function buildTrayMenu() {
       },
     },
     { type: 'separator' },
+    {
+      label: (process.platform === 'win32' || process.platform === 'darwin')
+        ? (windowAwarenessEnabled ? trayT('trayWindowAwarenessOff') : trayT('trayWindowAwarenessOn'))
+        : trayT('trayWindowAwarenessUnavailable'),
+      enabled: process.platform === 'win32' || process.platform === 'darwin',
+      click: () => setWindowAwarenessEnabled(!windowAwarenessEnabled),
+    },
     {
       label: trayT('trayLanguage'),
       submenu: langSubmenu,

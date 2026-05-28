@@ -291,7 +291,21 @@ class MovementSystem {
     const activeRange = this.activePlatform
       ? this.getReachableTargetRange(this.activePlatform, pet, margin)
       : null;
-    const area = activeRange ? this.activePlatform : this.pickWalkArea(pet, margin);
+
+    let area;
+    // 有可用活动窗口平台时，70% 概率选择或留在该窗口上
+    if (activeRange && Math.random() < 0.7) {
+      area = this.activePlatform;
+    } else {
+      const currentArea = this.findMatchingWalkArea(pet.targetArea) || this.findAreaContainingPetBounds(pet) || this.findAreaContainingPet(pet);
+      // 如果当前在任务栏/Dock上，有 70% 的概率继续沿着它走
+      if (currentArea && currentArea.source === 'taskbar-edge' && Math.random() < 0.7) {
+        area = currentArea;
+      } else {
+        area = this.pickWalkArea(pet, margin);
+      }
+    }
+
     const range = activeRange || this.getReachableTargetRange(area, pet, margin);
     pet.targetArea = area;
 

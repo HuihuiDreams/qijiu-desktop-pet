@@ -274,7 +274,11 @@ window.testTaskbarAwareness = function (options = {}) {
       pet.x = platform.x + 24 + index * Math.min(160, Math.max(80, platform.width / 3));
       pet.y = Math.max(0, platform.y - pet.size - 120);
     }
-    window.__DEBUG_MOVEMENT.randomTarget(pet);
+    const margin = 24;
+    const range = window.__DEBUG_MOVEMENT.getReachableTargetRange(platform, pet, margin) || window.__DEBUG_MOVEMENT.getTargetRange(platform, pet, margin);
+    pet.targetArea = platform;
+    pet.targetX = range.minX + Math.random() * Math.max(0, range.maxX - range.minX);
+    pet.targetY = range.minY;
     pet.direction = pet.targetX > pet.x ? 'right' : 'left';
     pet.setState('walking');
   });

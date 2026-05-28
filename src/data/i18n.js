@@ -87,9 +87,9 @@ const I18N = {
       updateNotAvailMsgNoVer: '当前已经是最新版本。',
 
       updateReadyTitle: '更新已下载',
-      updateReadyMsg: '新版本 {version} 已下载完成，是否现在重启并安装？',
-      updateReadyMsgNoVer: '新版本已下载完成，是否现在重启并安装？',
-      updateBtnInstall: '重启并安装',
+      updateReadyMsg: '新版本 {version} 已下载完成，是否现在重启桌宠并安装？',
+      updateReadyMsgNoVer: '新版本已下载完成，是否现在重启桌宠并安装？',
+      updateBtnInstall: '重启桌宠并安装',
 
       updateCheckingTitle: '正在检查更新',
       updateDownloadingTitle: '正在下载更新',
@@ -312,9 +312,9 @@ const I18N = {
       updateNotAvailMsgNoVer: 'You are currently on the latest version.',
 
       updateReadyTitle: 'Update Downloaded',
-      updateReadyMsg: 'Version {version} has been downloaded. Restart and install now?',
-      updateReadyMsgNoVer: 'The update has been downloaded. Restart and install now?',
-      updateBtnInstall: 'Install and Restart',
+      updateReadyMsg: 'Version {version} has been downloaded. Restart the app and install now?',
+      updateReadyMsgNoVer: 'The update has been downloaded. Restart the app and install now?',
+      updateBtnInstall: 'Install and Restart App',
 
       updateCheckingTitle: 'Checking for Updates',
       updateDownloadingTitle: 'Downloading Update',
@@ -507,9 +507,9 @@ const I18N = {
       trayResetPos: '🔄 位置復元',      // 归位/复原
       trayAutoLaunchOn: '🚀 起動時常駐を無効化',
       trayAutoLaunchOff: '🚀 起動時常駐',    // “常驻”比“登录时启动”更简练
-      trayWindowAwarenessOn: '🪟 ウィンドウ感知を有効化',
-      trayWindowAwarenessOff: '🪟 ウィンドウ感知を無効化',
-      trayWindowAwarenessUnavailable: '🪟 ウィンドウ感知は未対応',
+      trayWindowAwarenessOn: '🪟 ウィンドウに乗る（有効化）',
+      trayWindowAwarenessOff: '🪟 ウィンドウに乗る（無効化）',
+      trayWindowAwarenessUnavailable: '🪟 ウィンドウに乗る（未対応）',
       trayDevTools: '🛠️ 開発者ツール',
       trayQuit: '❌ 終了',          // “退室”比冷冰冰的“終了（结束）”更具角色互动的沉浸感
       trayLanguage: '🌐 言語設定',
@@ -538,9 +538,9 @@ const I18N = {
       updateNotAvailMsgNoVer: 'すでに最新バージョンです。',
 
       updateReadyTitle: 'ダウンロード完了',
-      updateReadyMsg: 'バージョン {version} のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
-      updateReadyMsgNoVer: '更新のダウンロードが完了しました。今すぐ再起動してインストールしますか？',
-      updateBtnInstall: '再起動してインストール',
+      updateReadyMsg: 'バージョン {version} のダウンロードが完了しました。今すぐアプリを再起動してインストールしますか？',
+      updateReadyMsgNoVer: '更新のダウンロードが完了しました。今すぐアプリを再起動してインストールしますか？',
+      updateBtnInstall: 'アプリを再起動してインストール',
 
       updateCheckingTitle: '更新を確認中',
       updateDownloadingTitle: '更新をダウンロード中',

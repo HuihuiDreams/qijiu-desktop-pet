@@ -5,12 +5,16 @@
 ## [Unreleased]
 ### Added
 - **窗口感知 MVP**：新增主进程活动窗口 provider、面向渲染进程的安全 IPC 订阅、渲染进程 `WindowAwarenessSystem`，以及移动目标接入，使 idle 状态下的桌宠可以走到 Windows 当前活动窗口顶部边缘。
-- **任务栏平台走动**：从显示器 `bounds/workArea` 推导底部横向任务栏平台，并通过 `screen-info` 传给渲染进程，使桌宠在没有窗口平台优先目标时可以低频走到任务栏上边缘停留；DevTools 新增 `debugTaskbarPlatforms()` 和 `testTaskbarAwareness()` 调试入口。
-- **窗口感知托盘和调试入口**：Windows 托盘菜单新增窗口感知开关；非 Windows 平台显示不可用兜底文案；DevTools 新增 `debugWindowAwareness()` 调试入口。
+- **任务栏/Dock 平台走动**：从显示器 `bounds/workArea` 推导底部横向任务栏平台，并通过 `screen-info` 传给渲染进程，使桌宠在没有窗口平台优先目标时可以低频走到任务栏上边缘停留；解除 `win32` 限制，**正式支持 macOS 底部 Dock 平台感知**；DevTools 新增 `debugTaskbarPlatforms()` 和 `testTaskbarAwareness()` 调试入口。
+- **表面感知托盘开关**：Windows 和 macOS 的托盘菜单均提供该开关（在 macOS 上，因活动窗口感知仍处于兜底不可用状态，该开关实际用于控制是否在 Dock 上行走）；Linux 等其他平台显示不可用兜底文案；DevTools 新增 `debugWindowAwareness()` 调试入口。
 - **窗口感知架构记录**：新增 [ADR-030](docs/decisions/ADR-030-window-awareness.md)，记录 provider 边界、fallback 行为和 macOS 后续支持范围。
 
 ### Changed
-- **移动目标选择**：`MovementSystem` 现在可通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台；窗口平台优先，任务栏平台低频出现。窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍回退到现有显示器 walk area 行为。
+- **移动目标选择**：`MovementSystem` 现在可通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台；窗口平台优先，任务栏/Dock 平台低频出现。
+- **任务栏与活动窗口边缘驻留**：小宠物如果走到了任务栏/Dock 或活动窗口上边缘停下，在重新选择移动目标时会有 70% 的概率继续沿着当前边缘左右溜达，而不是立刻跳回到普通桌面。
+- **表面感知降级回退**：窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍无缝回退到现有显示器 walk area 行为。
+- **托盘菜单分组优化**：将“窗口感知”功能开关移动至下方，与语言、自动启动等统一归为“软件功能”组。
+- **本地化文案优化**：将日语的“窗口感知（ウィンドウ感知）”功能名优化为更有桌宠氛围的“ウィンドウに乗る”；明确了三国语言中更新弹窗里的“重启”文案为“重启桌宠/应用”，消除了用户误认为是系统重启的顾虑。
 
 ### Fixed
 - **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
