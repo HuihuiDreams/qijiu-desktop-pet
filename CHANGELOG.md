@@ -12,6 +12,7 @@
 - **移动目标选择**：`MovementSystem` 现在可通过 `setActivePlatform()` 接收可选的活动窗口平台；当窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍回退到现有显示器 walk area 行为。
 
 ### Fixed
+- **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
 - **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
 - **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
 

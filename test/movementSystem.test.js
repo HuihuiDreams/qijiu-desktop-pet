@@ -255,6 +255,54 @@ test('active window platform arrivals land pets on the platform foot line', () =
   assert.equal(pet.y + pet.size, 100);
 });
 
+test('near-screen-top active window platforms are ignored when pets cannot fit above them', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  movementSystem.setActivePlatform({
+    x: 0,
+    y: 0,
+    width: 1920,
+    height: 24,
+    source: 'active-window-top',
+  });
+  const pet = { size: 96 };
+
+  movementSystem.randomTarget(pet);
+
+  assert.equal(pet.targetArea.source, undefined);
+  assert.equal(pet.targetY >= 0, true);
+  assert.equal(pet.targetY + pet.size <= 1040, true);
+});
+
+test('stale near-screen-top active window targets fall back to visible walk areas', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  const pet = {
+    x: 600,
+    y: 20,
+    targetX: 600,
+    targetY: -84,
+    targetArea: {
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 24,
+      source: 'active-window-top',
+    },
+    size: 96,
+    speed: 10,
+    direction: 'left',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.equal(pet.targetArea.source, undefined);
+  assert.equal(pet.targetY >= 0, true);
+  assert.equal(pet.y >= 0, true);
+});
+
 test('active platform removal falls back to display walk areas for new idle targets', () => {
   const movementSystem = new MovementSystem(1920, 1080, [
     { x: 0, y: 0, width: 1920, height: 1040 },

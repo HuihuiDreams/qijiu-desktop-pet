@@ -101,9 +101,38 @@ class MovementSystem {
     };
   }
 
+  getReachableTargetRange(area, pet, margin) {
+    const range = this.getTargetRange(area, pet, margin);
+    if (!this.isActiveWindowPlatform(area)) return range;
+
+    const reachableRanges = this.getWalkAreas()
+      .map((walkArea) => ({
+        minX: Math.max(range.minX, walkArea.x),
+        maxX: Math.min(range.maxX, walkArea.x + walkArea.width - pet.size),
+        minY: Math.max(range.minY, walkArea.y),
+        maxY: Math.min(range.maxY, walkArea.y + walkArea.height - pet.size),
+      }))
+      .filter((candidate) => (
+        candidate.minX <= candidate.maxX
+        && candidate.minY <= candidate.maxY
+      ))
+      .sort((a, b) => (
+        (b.maxX - b.minX) * (b.maxY - b.minY)
+        - (a.maxX - a.minX) * (a.maxY - a.minY)
+      ));
+
+    return reachableRanges[0] || null;
+  }
+
+  getMovementAreasForPet(pet, margin = 0) {
+    return this.getMovementAreas().filter((area) => (
+      this.getReachableTargetRange(area, pet, margin)
+    ));
+  }
+
   pickWalkArea(pet, margin) {
-    const weightedAreas = this.getMovementAreas().map((area) => {
-      const range = this.getTargetRange(area, pet, margin);
+    const weightedAreas = this.getMovementAreasForPet(pet, margin).map((area) => {
+      const range = this.getReachableTargetRange(area, pet, margin);
       const width = Math.max(1, range.maxX - range.minX);
       const height = Math.max(1, range.maxY - range.minY);
       return { area, weight: width * height };
@@ -127,10 +156,13 @@ class MovementSystem {
       && a.height === b.height;
   }
 
-  findMatchingWalkArea(area) {
+  findMatchingWalkArea(area, pet = null) {
     if (!area) return null;
     if (area.source === 'active-window-top') {
-      return this.normalizeWalkAreas([area])[0] || null;
+      const normalizedArea = this.normalizeWalkAreas([area])[0] || null;
+      if (!normalizedArea) return null;
+      if (pet && !this.getReachableTargetRange(normalizedArea, pet, 0)) return null;
+      return normalizedArea;
     }
     return this.getMovementAreas().find((walkArea) => this.sameArea(walkArea, area)) || null;
   }
@@ -150,7 +182,7 @@ class MovementSystem {
 
   clampTargetToArea(pet, area) {
     if (!area) return;
-    const range = this.getTargetRange(area, pet, 0);
+    const range = this.getReachableTargetRange(area, pet, 0) || this.getTargetRange(area, pet, 0);
     pet.targetX = this.clampToRange(pet.targetX, range.minX, range.maxX);
     pet.targetY = this.clampToRange(pet.targetY, range.minY, range.maxY);
   }
@@ -168,8 +200,8 @@ class MovementSystem {
     let bestPosition = null;
     let bestDistance = Infinity;
 
-    for (const area of this.getMovementAreas()) {
-      const range = this.getTargetRange(area, pet, 0);
+    for (const area of this.getMovementAreasForPet(pet, 0)) {
+      const range = this.getReachableTargetRange(area, pet, 0);
       const clampedX = this.clampToRange(x, range.minX, range.maxX);
       const clampedY = this.clampToRange(y, range.minY, range.maxY);
       const distance = (clampedX - x) ** 2 + (clampedY - y) ** 2;
@@ -188,7 +220,7 @@ class MovementSystem {
   }
 
   resolveTargetArea(pet) {
-    const cachedArea = this.findMatchingWalkArea(pet.targetArea);
+    const cachedArea = this.findMatchingWalkArea(pet.targetArea, pet);
     if (cachedArea) {
       this.clampTargetToArea(pet, cachedArea);
       return cachedArea;
@@ -241,8 +273,11 @@ class MovementSystem {
    */
   randomTarget(pet) {
     const margin = CONFIG.WALK_TARGET_MARGIN;
-    const area = this.activePlatform || this.pickWalkArea(pet, margin);
-    const range = this.getTargetRange(area, pet, margin);
+    const activeRange = this.activePlatform
+      ? this.getReachableTargetRange(this.activePlatform, pet, margin)
+      : null;
+    const area = activeRange ? this.activePlatform : this.pickWalkArea(pet, margin);
+    const range = activeRange || this.getReachableTargetRange(area, pet, margin);
     pet.targetArea = area;
 
     pet.targetX = this.clampToRange(

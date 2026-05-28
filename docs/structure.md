@@ -162,7 +162,18 @@ qijiu-desktop-pet/
 - `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
 
-### 3.5 养成系统
+### 3.5 窗口感知
+
+窗口感知的设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
+
+- `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过 PowerShell/User32 辅助逻辑读取前台窗口；macOS 和暂不支持的平台返回不可用兜底。
+- `activeWindowAwareness.js` 将活动窗口 bounds 转成渲染进程相对坐标中的平台矩形，并在 IPC 发送前去重。
+- `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中。
+- `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
+- `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
+- `MovementSystem` 通过 `setActivePlatform()` 接收活动窗口平台，只在 idle 宠物选择新目标时使用可达平台；不可用、禁用、过期、最小化、最大化、全屏，以及窗口太贴近屏幕顶边导致宠物放不下的情况，都会回退到普通显示器 walk area。
+
+### 3.6 养成系统
 
 `NurtureSystem` 负责宠物的数值变化。当前核心数值包括：
 
@@ -173,7 +184,7 @@ qijiu-desktop-pet/
 
 `TimeSystem` 负责时间差计算和离线衰减。应用重启后会根据上次保存时间计算离线变化，并将结果应用到宠物数值。
 
-### 3.6 双人互动
+### 3.7 双人互动
 
 `InteractionSystem` 每帧检测两个宠物的距离。距离进入互动阈值后，根据好感、冷却时间和当前动作状态触发互动。
 
@@ -184,7 +195,7 @@ qijiu-desktop-pet/
 - 互动有全局冷却，防止短时间重复触发。
 - 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典。
 
-### 3.7 皮肤系统
+### 3.8 皮肤系统
 
 皮肤目录遵循同一资源契约：
 
@@ -205,7 +216,7 @@ src/assets/{skinId}/
 
 `main.js` 扫描 `src/assets/` 下的皮肤目录，托盘菜单发出皮肤切换事件；`SkinManager` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`。
 
-### 3.8 多语言系统
+### 3.9 多语言系统
 
 多语言由 `src/data/i18n.js` 统一维护，目前包含中文、英文和日文。
 
@@ -214,7 +225,7 @@ src/assets/{skinId}/
 - 独立状态窗口保存 `lastRenderData`，语言变化时可用当前状态重新渲染。
 - `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange` 等 IPC API。
 
-### 3.9 更新系统
+### 3.10 更新系统
 
 `updateManager.js` 封装更新流程：
 
@@ -224,7 +235,7 @@ src/assets/{skinId}/
 - 主进程会展示可见的更新进度窗口，并同步托盘菜单状态。
 - 404 或 release 元数据缺失会被归类为“已是最新/暂无更新”一类的可理解提示，而不是直接暴露底层错误。
 
-### 3.10 安全边界
+### 3.11 安全边界
 
 当前安全边界以 Electron 推荐模式为基础：
 
@@ -283,14 +294,3 @@ npm test
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
-
-## Window Awareness Notes
-
-Window Awareness is documented in [ADR-030](./decisions/ADR-030-window-awareness.md).
-
-- `activeWindowProvider.js` defines the main-process active-window provider contract. Windows samples the foreground window with a PowerShell/User32 helper; macOS and unsupported platforms return an unavailable fallback.
-- `activeWindowAwareness.js` converts active-window bounds into renderer-relative platform rectangles and deduplicates IPC updates.
-- `displayBounds.js` owns platform geometry conversion next to the existing multi-display walk-area helpers.
-- `preload.js` exposes only safe `getActiveWindowInfo()` and `onActiveWindowInfo(callback)` APIs.
-- `src/systems/WindowAwarenessSystem.js` stores the latest IPC payload in the renderer and exposes an O(1) `getCurrentPlatform()` cache read for the game loop.
-- `MovementSystem` receives the platform through `setActivePlatform()` and uses it only when idle pets choose a new target; unavailable, disabled, stale, minimized, maximized, and fullscreen windows fall back to display walk areas.
