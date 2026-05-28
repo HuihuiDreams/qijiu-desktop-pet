@@ -1,48 +1,48 @@
-# ADR-030: Window Awareness Platform Sampling
+# ADR-030: 窗口感知平台采样 (Window Awareness Platform Sampling)
 
-## Status
+## 状态 (Status)
 Accepted
 
-## Date
+## 日期 (Date)
 2026-05-28
 
-## Context
-The pet should be able to notice the current foreground application window and walk to the top edge of that window. The feature must not add OS polling to the renderer game loop, must keep click-through and drag behavior unchanged, and must degrade cleanly on platforms where foreground-window geometry is unavailable.
+## 背景 (Context)
+宠物应该能够注意到当前前台应用程序的窗口，并走到该窗口的顶部边缘。该功能不能在渲染器游戏循环中增加操作系统轮询，必须保持鼠标穿透和拖曳行为不变，并且必须在无法获取前台窗口几何信息的平台上优雅地降级。
 
-The existing architecture already separates native work into `main.js`, safe IPC into `preload.js`, and movement/rendering into `src/`. Multi-display geometry is already centralized in `displayBounds.js`.
+现有的架构已经将原生操作分离到 `main.js` 中，将安全的 IPC 分离到 `preload.js` 中，并将移动/渲染分离到 `src/` 中。多显示器几何信息已经集中在 `displayBounds.js` 中。
 
-## Decision
-Implement Window Awareness as a main-process provider plus renderer-side cache:
+## 决策 (Decision)
+将窗口感知实现为主进程提供程序 (provider) 加上渲染器端的缓存：
 
-- `activeWindowProvider.js` owns the provider contract and Windows foreground-window sampling.
-- `activeWindowAwareness.js` builds renderer payloads, converts active-window geometry into pet-window coordinates, and deduplicates updates before IPC.
-- `preload.js` exposes `getActiveWindowInfo()` and `onActiveWindowInfo(callback)`.
-- `WindowAwarenessSystem` in the renderer stores only the latest payload and exposes `getCurrentPlatform()` as an O(1) cache read.
-- `MovementSystem` receives the current platform through `setActivePlatform()` and only uses it when an idle pet chooses a new target.
+- `activeWindowProvider.js` 拥有提供程序的契约以及 Windows 前台窗口的采样逻辑。
+- `activeWindowAwareness.js` 构建渲染器有效负载 (payload)，将活动窗口几何坐标转换为宠物窗口坐标，并在发送 IPC 之前对重复的更新进行去重。
+- `preload.js` 暴露 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)`。
+- 渲染器中的 `WindowAwarenessSystem` 仅存储最新的有效负载，并将 `getCurrentPlatform()` 作为一个 O(1) 的缓存读取操作暴露出来。
+- `MovementSystem` 通过 `setActivePlatform()` 接收当前平台，并且仅在宠物处于空闲状态并选择新目标时才使用它。
 
-Windows uses a lightweight PowerShell/User32 provider at a 3000ms sampling interval. macOS and other platforms return an unavailable fallback for this MVP when querying active windows (instead of attempting partial or permission-sensitive support). However, **Taskbar/Dock platforms** are derived purely from display boundaries without OS privileges, meaning macOS Dock awareness is natively supported and active.
+Windows 使用一个轻量级的 PowerShell/User32 提供程序，采样间隔为 3000 毫秒。对于此 MVP 版本，macOS 和其他平台在查询活动窗口时会返回不可用的回退状态（而不是尝试不完整或涉及敏感权限的支持）。然而，**任务栏/程序坞 (Taskbar/Dock) 平台**是纯粹根据显示器边界计算得出的，无需操作系统权限，这意味着 macOS 的程序坞感知功能得到了原生支持并处于激活状态。
 
-Pets have a low probability of initially selecting a taskbar platform when choosing a random target. However, once a pet lands on a taskbar/Dock platform, it has a high retention probability (70%) of selecting another target along the same edge, preventing immediate drop-offs.
+当宠物选择随机目标时，初始选择任务栏平台的概率较低。然而，一旦宠物降落到任务栏/程序坞平台上，它有很高的保留概率 (70%) 会沿同一边缘选择另一个目标，以防止立即掉落。
 
-## Alternatives Considered
+## 替代方案 (Alternatives Considered)
 
-### Query OS Window State From The Renderer
-- Pros: Direct access from movement logic.
-- Cons: Violates renderer boundary, would require Node/native access in renderer, and risks game-loop stalls.
-- Rejected: Native work belongs in the main process.
+### 从渲染器查询操作系统窗口状态
+- 优点：可以直接从移动逻辑中访问。
+- 缺点：违反了渲染器边界，需要在渲染器中访问 Node/原生 API，并且有导致游戏循环停顿的风险。
+- 拒绝理由：原生操作属于主进程。
 
-### Add A Native Dependency
-- Pros: Potentially faster and richer window metadata.
-- Cons: Adds packaging and signing risk across Windows/macOS builds.
-- Rejected for MVP: The current provider is isolated and can be replaced later without changing renderer contracts.
+### 添加原生依赖
+- 优点：可能会更快，且能提供更丰富的窗口元数据。
+- 缺点：增加了跨 Windows/macOS 构建时的打包和签名风险。
+- 在 MVP 中被拒绝：当前的提供程序是隔离的，后续可以在不更改渲染器契约的情况下进行替换。
 
-### macOS Accessibility Provider In MVP
-- Pros: Feature parity with Windows.
-- Cons: Requires Accessibility permission handling, user education, and separate multi-display testing.
-- Deferred: macOS returns unavailable fallback until a permission-aware provider is designed.
+### 在 MVP 中提供 macOS 辅助功能支持
+- 优点：与 Windows 保持功能对齐。
+- 缺点：需要处理辅助功能权限、用户教育以及独立的多显示器测试。
+- 推迟：macOS 返回不可用的回退状态，直到设计出能够处理权限的提供程序。
 
-## Consequences
-- Renderer behavior remains deterministic when Window Awareness is unavailable or disabled.
-- IPC is sent only when relevant active-window/platform fields change.
-- Active-window changes do not immediately force walking or dragging pets to retarget; the platform is used on the next idle target selection.
-- Future macOS support should implement a provider behind the same contract and preserve the unavailable fallback when permission is missing.
+## 影响 (Consequences)
+- 当窗口感知功能不可用或被禁用时，渲染器的行为保持确定性。
+- 仅在相关的活动窗口/平台字段发生变化时才发送 IPC。
+- 活动窗口的更改不会立即迫使正在行走或被拖曳的宠物重新确定目标；该平台将在下一次空闲目标选择时才被使用。
+- 未来对 macOS 的支持应在相同的契约下实现提供程序，并在缺少权限时保留不可用的回退状态。

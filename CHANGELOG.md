@@ -15,11 +15,13 @@
 - **表面感知降级回退**：窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍无缝回退到现有显示器 walk area 行为。
 - **托盘菜单分组优化**：将“窗口感知”功能开关移动至下方，与语言、自动启动等统一归为“软件功能”组。
 - **本地化文案优化**：将日语的“窗口感知（ウィンドウ感知）”功能名优化为更有桌宠氛围的“ウィンドウに乗る”；明确了三国语言中更新弹窗里的“重启”文案为“重启桌宠/应用”，消除了用户误认为是系统重启的顾虑。
-
+- **表面感知文案修仙化**：将中日英三语的“窗口感知”托盘文案统一修改为更具修仙代入感的“界面/境界感知”（中文：界面感知，英文：Realm Awareness，日文：境界に乗る），避免在修仙游戏世界观中出现“UI”或“Window”等出戏的现代词汇。
+- **窗口感知验收与文档规范**：在 `docs/plan/window-awareness-plan.md` 中核对了所有自动化测试与手动验证项；并将 `ADR-030-window-awareness.md` 翻译为中文，统一项目文档语言规范。
 ### Fixed
 - **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
 - **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
 - **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
+- **测试稳定性修复**：在 `movementSystem.test.js` 中通过 mock `Math.random` 修复了偶发的窗口感知行走目标越界测试失败问题，保证 CI 自动化测试的绝对确定性。
 
 
 ## [0.4.3] - 2026-05-27

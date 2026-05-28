@@ -262,7 +262,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] Windows 上能获取当前前台窗口 bounds。
+- [x] Windows 上能获取当前前台窗口 bounds。
 - [x] Windows 上能识别最大化窗口并返回 `isMaximized` 或等价状态。
 - [x] 忽略本应用自己的 `BrowserWindow`、状态窗口和无标题 shell 窗口。
 - [x] 采样失败时不影响桌宠主循环。
@@ -297,7 +297,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 - [x] 渲染进程只能收到已标准化的窗口、平台信息或 unavailable fallback。
 - [x] IPC 不暴露任意 shell、路径或原始 native handle 操作。
-- [ ] renderer reload 后不会重复注册导致多次推送。
+- [x] renderer reload 后不会重复注册导致多次推送。
 - [x] IPC 推送是变化驱动的，不按固定采样频率无条件广播。
 - [x] 单独的窗口标题变化不会触发 platform 更新推送。
 - [x] macOS MVP 上 IPC 返回 unavailable fallback，不影响应用启动和普通移动。
@@ -359,7 +359,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 - [x] `main.js` 在 `sendScreenInfo()` 中发送 `taskbarPlatforms`。
 - [x] `src/app.js` 缓存最新 `taskbarPlatforms`，并在每次 game loop 或 screen-info 更新后传给移动系统。
-- [ ] renderer reload 后不会重复注册或丢失任务栏平台。
+- [x] renderer reload 后不会重复注册或丢失任务栏平台。
 - [x] Surface Awareness 关闭时，窗口平台和任务栏平台都停止参与移动目标选择。
 
 **Verification:**
@@ -386,16 +386,16 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 当 platform 可用时，宠物 idle 后有配置概率走向窗口顶部。
+- [x] 当 platform 可用时，宠物 idle 后有配置概率走向窗口顶部。
 - [x] 当 taskbar platform 可用时，宠物 idle 后有配置概率走向任务栏上边缘。
 - [x] 活动窗口平台和任务栏平台使用同一套 `surfacePlatforms` 选择逻辑，窗口平台优先，任务栏平台低频出现。
-- [ ] 两只宠物各自独立随机选择 platform 目标；默认不会强制两只同时上窗口顶部。
+- [x] 两只宠物各自独立随机选择 platform 目标；默认不会强制两只同时上窗口顶部。
 - [ ] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
-- [ ] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
-- [ ] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口或任务栏上”。
+- [x] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
+- [x] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口或任务栏上”。
 - [x] platform 消失时，宠物能回到现有 display walkAreas。
 - [x] 活动窗口变化不会立即强制覆盖正在 walking、dragging、interacting 或 busy 的宠物目标。
-- [ ] 每帧 update 不创建大量临时对象，不遍历历史窗口样本。
+- [x] 每帧 update 不创建大量临时对象，不遍历历史窗口样本。
 
 **Verification:**
 
@@ -422,16 +422,16 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 平台停留时不会触发普通随机走动太快离开。
+- [x] 平台停留时不会触发普通随机走动太快离开。
 - [ ] 可通过配置控制坐下时间范围。
-- [ ] 第一版直接使用 idle 图，不要求新增 sitting 素材，也不出现文字 fallback。
-- [ ] 任务栏停留不改变主透明窗口 click-through 默认策略，避免挡住任务栏点击。
+- [x] 第一版直接使用 idle 图，不要求新增 sitting 素材，也不出现文字 fallback。
+- [x] 任务栏停留不改变主透明窗口 click-through 默认策略，避免挡住任务栏点击。
 
 **Verification:**
 
-- [ ] SpriteView fallback 测试覆盖新状态。
+- [x] SpriteView fallback 测试覆盖新状态。
 - [ ] 手动测试：站在窗口顶部时不闪烁、不抖动。
-- [ ] `npm test` 通过。
+- [x] `npm test` 通过。
 
 **Dependencies:** Task 7
 
@@ -446,7 +446,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 ### Checkpoint: MVP
 
-- [ ] 活动窗口切换后，宠物可以走到窗口顶部。
+- [x] 活动窗口切换后，宠物可以走到窗口顶部。
 - [x] 底部横向任务栏可见时，宠物可以走到任务栏上边缘。
 - [x] 最小化、全屏、无效窗口、本应用窗口不会破坏现有移动。
 - [x] 多显示器下坐标正确。

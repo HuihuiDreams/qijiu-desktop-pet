@@ -210,7 +210,14 @@ test('idle pets choose active window platforms when available', () => {
   });
   const pet = { size: 96 };
 
-  movementSystem.randomTarget(pet);
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+
+  try {
+    movementSystem.randomTarget(pet);
+  } finally {
+    Math.random = originalRandom;
+  }
 
   assert.deepEqual(pet.targetArea, {
     x: 120,
@@ -375,7 +382,14 @@ test('active window platforms are preferred over taskbar platforms', () => {
   ]);
   const pet = { size: 96 };
 
-  movementSystem.randomTarget(pet);
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+
+  try {
+    movementSystem.randomTarget(pet);
+  } finally {
+    Math.random = originalRandom;
+  }
 
   assert.equal(pet.targetArea.source, 'active-window-top');
   assert.equal(pet.targetY, 4);
