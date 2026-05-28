@@ -1,4 +1,16 @@
 # Changelog
+
+## [Unreleased]
+### Added
+- **Window Awareness MVP**: Added a main-process active-window provider, renderer-safe IPC subscription, renderer-side `WindowAwarenessSystem`, and movement targeting so idle pets can walk to the top edge of the active Windows foreground window.
+- **Window Awareness tray/debug controls**: Added a tray toggle on Windows, unavailable fallback labels on non-Windows platforms, and `debugWindowAwareness()` for DevTools inspection.
+- **Window Awareness architecture record**: Added [ADR-030](docs/decisions/ADR-030-window-awareness.md) for provider boundaries, fallback behavior, and macOS follow-up scope.
+
+### Changed
+- **Movement targeting**: `MovementSystem` now accepts an optional active-window platform through `setActivePlatform()` while keeping display walk-area fallback behavior for stale, unavailable, minimized, maximized, fullscreen, or disabled Window Awareness data.
+
+### Fixed
+- **Window Awareness probing**: Windows active-window sampling now skips this app's own foreground windows and continues down z-order so DevTools probing can still find the external window underneath.
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 

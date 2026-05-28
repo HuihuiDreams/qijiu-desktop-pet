@@ -116,6 +116,105 @@ window.testShareFoodThrowup = () => {
   window.testInteraction('shareFood');
 };
 
+window.debugWindowAwareness = function () {
+  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : null;
+  console.log('[debug] Window Awareness:', screenInfo?.windowAwareness || null);
+  return screenInfo?.windowAwareness || null;
+};
+
+window.probeWindowAwareness = async function () {
+  const renderer = typeof window.__DEBUG_SCREEN === 'function'
+    ? window.__DEBUG_SCREEN()?.windowAwareness
+    : null;
+  let main = null;
+  try {
+    main = await window.electronAPI?.getActiveWindowInfo?.();
+  } catch (error) {
+    console.error('[debug] Window Awareness probe failed:', error);
+  }
+
+  const result = {
+    captured: Boolean(main?.active && main?.platform),
+    reason: main?.reason || null,
+    main,
+    renderer,
+  };
+  window.__LAST_WINDOW_AWARENESS_PROBE = result;
+  console.log(`[debug] Window Awareness probe:\n${JSON.stringify(result, null, 2)}`);
+  return result;
+};
+
+window.testWindowAwareness = async function (options = {}) {
+  if (!window.__DEBUG_PETS || !window.__DEBUG_MOVEMENT || !window.__DEBUG_WINDOW_AWARENESS) {
+    console.warn('[debug] Window Awareness 调试对象未就绪，请等应用完全启动后再试');
+    return null;
+  }
+
+  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : {};
+  const probe = await window.probeWindowAwareness();
+  let info = probe.main;
+  if (!info) try {
+    info = await window.electronAPI?.getActiveWindowInfo?.();
+  } catch (error) {
+    console.warn('[debug] 读取真实活动窗口失败，将使用模拟平台:', error);
+  }
+
+  let platform = options.platform || info?.platform || null;
+  let mode = 'real';
+  if (!platform || options.simulate === true) {
+    if (options.simulate !== true && !options.platform) {
+      console.warn('[debug] 没有抓到真实活动窗口；请先切到一个普通窗口再执行 testWindowAwareness()，或用 testWindowAwareness({ simulate: true }) 测试移动链路。', {
+        reason: info?.reason || 'missing-platform',
+        info,
+      });
+      return { mode: 'unavailable', reason: info?.reason || 'missing-platform', info };
+    }
+    const width = Math.min(720, Math.max(240, (screenInfo.innerWidth || window.innerWidth) - 240));
+    platform = {
+      x: Math.max(80, Math.round(((screenInfo.innerWidth || window.innerWidth) - width) / 2)),
+      y: 96,
+      width,
+      height: 48,
+      source: 'active-window-top',
+    };
+    info = {
+      active: true,
+      sampledAt: Date.now(),
+      source: 'debug-simulated',
+      window: {
+        id: 'debug-window-awareness',
+        title: 'Debug Window Awareness',
+        ownerName: 'DevTools',
+        bounds: { x: platform.x, y: platform.y + 24, width: platform.width, height: 480 },
+        isMinimized: false,
+        isMaximized: false,
+        isFullScreen: false,
+      },
+      platform,
+    };
+    mode = 'simulated';
+  }
+
+  window.__DEBUG_WINDOW_AWARENESS.setActiveWindowInfo(info);
+  window.__DEBUG_MOVEMENT.setActivePlatform(platform);
+
+  Object.values(window.__DEBUG_PETS).forEach((pet, index) => {
+    pet.isDragging = false;
+    pet.setState('idle');
+    pet.idleTimer = 0;
+    if (options.reposition === true) {
+      pet.x = platform.x + 24 + index * Math.min(160, Math.max(80, platform.width / 3));
+      pet.y = platform.y + 180 + index * 24;
+    }
+    window.__DEBUG_MOVEMENT.randomTarget(pet);
+    pet.direction = pet.targetX > pet.x ? 'right' : 'left';
+    pet.setState('walking');
+  });
+
+  console.log(`[debug] Window Awareness ${mode} test started`, { platform, info });
+  return { mode, platform, info };
+};
+
 window.testHungry = function() {
   if (!window.__DEBUG_PETS) {
     console.warn('[debug] 调试变量未就绪，请确保应用已完全启动');

@@ -283,3 +283,14 @@ npm test
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
+
+## Window Awareness Notes
+
+Window Awareness is documented in [ADR-030](./decisions/ADR-030-window-awareness.md).
+
+- `activeWindowProvider.js` defines the main-process active-window provider contract. Windows samples the foreground window with a PowerShell/User32 helper; macOS and unsupported platforms return an unavailable fallback.
+- `activeWindowAwareness.js` converts active-window bounds into renderer-relative platform rectangles and deduplicates IPC updates.
+- `displayBounds.js` owns platform geometry conversion next to the existing multi-display walk-area helpers.
+- `preload.js` exposes only safe `getActiveWindowInfo()` and `onActiveWindowInfo(callback)` APIs.
+- `src/systems/WindowAwarenessSystem.js` stores the latest IPC payload in the renderer and exposes an O(1) `getCurrentPlatform()` cache read for the game loop.
+- `MovementSystem` receives the platform through `setActivePlatform()` and uses it only when idle pets choose a new target; unavailable, disabled, stale, minimized, maximized, and fullscreen windows fall back to display walk areas.

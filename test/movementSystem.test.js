@@ -196,3 +196,117 @@ test('walking from a secondary display back to the primary display is not clampe
   assert.equal(pet.x < 2560, true);
   assert.equal(pet.x + pet.size > 2560, true);
 });
+
+test('idle pets choose active window platforms when available', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  movementSystem.setActivePlatform({
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  });
+  const pet = { size: 96 };
+
+  movementSystem.randomTarget(pet);
+
+  assert.deepEqual(pet.targetArea, {
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    scaleRatio: 1,
+    source: 'active-window-top',
+  });
+  assert.equal(pet.targetX >= 120, true);
+  assert.equal(pet.targetX + pet.size <= 920, true);
+  assert.equal(pet.targetY, 4);
+  assert.equal(pet.targetY + pet.size, 100);
+});
+
+test('active window platform arrivals land pets on the platform foot line', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  const platform = {
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  };
+  movementSystem.setActivePlatform(platform);
+  const pet = {
+    x: 500,
+    y: 300,
+    targetX: 500,
+    targetY: 4,
+    targetArea: platform,
+    size: 96,
+    speed: 1000,
+    direction: 'left',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.equal(pet.y, 4);
+  assert.equal(pet.y + pet.size, 100);
+});
+
+test('active platform removal falls back to display walk areas for new idle targets', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  movementSystem.setActivePlatform({
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  });
+  movementSystem.setActivePlatform(null);
+  const pet = { size: 96 };
+
+  movementSystem.randomTarget(pet);
+
+  assert.equal(pet.targetArea.source, undefined);
+  assert.equal(pet.targetY + pet.size <= 1040, true);
+});
+
+test('walking pets keep their cached active window target when the active window changes', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  const oldPlatform = {
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  };
+  const pet = {
+    x: 100,
+    y: 40,
+    targetX: 500,
+    targetY: 52,
+    targetArea: oldPlatform,
+    size: 96,
+    speed: 10,
+    direction: 'right',
+  };
+
+  movementSystem.setActivePlatform({
+    x: 1000,
+    y: 76,
+    width: 700,
+    height: 48,
+    source: 'active-window-top',
+  });
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.deepEqual(pet.targetArea, oldPlatform);
+  assert.equal(pet.x > 100, true);
+  assert.equal(pet.x < 1000, true);
+});

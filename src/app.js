@@ -91,6 +91,10 @@ function applyI18n() {
   const renderer = new PetRenderer(stage, keepPetReachable, getVisualScaleForPet);
   const spriteView = new SpriteView();
   const movementSystem = new MovementSystem(screenWidth, screenHeight);
+  const windowAwarenessSystem = new WindowAwarenessSystem(window.electronAPI, {
+    enabled: CONFIG.WINDOW_AWARENESS_ENABLED !== false,
+    ttlMs: CONFIG.WINDOW_AWARENESS_PLATFORM_TTL_MS,
+  });
   const nurtureSystemA = new NurtureSystem();
   const nurtureSystemB = new NurtureSystem();
   const interactionSystem = new InteractionSystem();
@@ -113,6 +117,7 @@ function applyI18n() {
     }
     pets.forEach(keepPetReachable);
   });
+  windowAwarenessSystem.start();
 
   // === 创建宠物 ===
   const yueqi = new Pet(CONFIG.PET_A);
@@ -349,6 +354,7 @@ function applyI18n() {
         }
 
         // 更新移动
+        movementSystem.setActivePlatform(windowAwarenessSystem.getCurrentPlatform(Date.now()));
         movementSystem.update(yueqi, deltaMs);
         movementSystem.update(shenjiu, deltaMs);
 
@@ -464,11 +470,14 @@ function applyI18n() {
     innerHeight: window.innerHeight,
     devicePixelRatio: window.devicePixelRatio,
     movementWalkAreas: movementSystem.getWalkAreas(),
+    windowAwareness: windowAwarenessSystem.getDebugInfo(),
   });
   window.__DEBUG_DIALOG = dialogBubble;
   window.__DEBUG_RENDERER = renderer;
   window.__DEBUG_SPRITE_VIEW = spriteView;
   window.__DEBUG_SKIN_MANAGER = skinManager;
+  window.__DEBUG_MOVEMENT = movementSystem;
+  window.__DEBUG_WINDOW_AWARENESS = windowAwarenessSystem;
 
   console.log('🗡️🪭 岳七 & 沈九 桌面宠物已启动！');
 })();

@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } =
 const path = require('path');
 const fs = require('fs');
 const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
+const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('./activeWindowProvider');
+const { createActiveWindowSampler } = require('./activeWindowAwareness');
 const {
   areWindowBoundsEqual,
   createDisplayFitScheduler,
@@ -20,6 +22,7 @@ const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const DISPLAY_METRICS_SETTLE_MS = 250;
+const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 3000;
 const LOGIN_ITEM_NAME = '七九爱宠';
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
@@ -70,6 +73,8 @@ let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标
 let currentLocale = 'zh';      // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
+let activeWindowSampler = null;
+let windowAwarenessEnabled = true;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let finalSaveRequestId = 0;
@@ -291,6 +296,60 @@ function sendScreenInfo() {
       internal: display.internal,
     })),
   });
+}
+
+function getActiveWindowDisplays() {
+  return screen.getAllDisplays();
+}
+
+function getActiveWindowMainBounds() {
+  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : getDesktopWindowBounds();
+}
+
+function sendActiveWindowInfo(activeWindowInfo) {
+  if (!mainWindow || mainWindow.isDestroyed() || !activeWindowInfo) return;
+  mainWindow.webContents.send('active-window-info', activeWindowInfo);
+}
+
+function unavailableActiveWindowPayload(reason) {
+  return {
+    ...unavailableActiveWindowInfo(reason),
+    platform: null,
+  };
+}
+
+function stopActiveWindowAwareness() {
+  if (!activeWindowSampler) return;
+  activeWindowSampler.stop();
+  activeWindowSampler = null;
+}
+
+function startActiveWindowAwareness() {
+  stopActiveWindowAwareness();
+  const provider = windowAwarenessEnabled
+    ? createActiveWindowProvider(process.platform)
+    : { getActiveWindowInfo: async () => unavailableActiveWindowInfo('disabled') };
+
+  activeWindowSampler = createActiveWindowSampler({
+    provider,
+    getWindowBounds: getActiveWindowMainBounds,
+    getDisplays: getActiveWindowDisplays,
+    onChange: sendActiveWindowInfo,
+    intervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
+  });
+  activeWindowSampler.start();
+}
+
+function setWindowAwarenessEnabled(enabled) {
+  if (process.platform !== 'win32') return;
+  windowAwarenessEnabled = Boolean(enabled);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    startActiveWindowAwareness();
+    if (!windowAwarenessEnabled) {
+      sendActiveWindowInfo(unavailableActiveWindowPayload('disabled'));
+    }
+  }
+  refreshTrayMenu();
 }
 
 function lockPetWindowToBounds(bounds) {
@@ -526,6 +585,7 @@ function createWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     console.log('Renderer loaded successfully');
     sendScreenInfo();
+    sendActiveWindowInfo(activeWindowSampler?.getLastPayload());
     keepPetWindowOnTop();
   });
 
@@ -549,6 +609,7 @@ function createWindow() {
       mousePassthroughResetTimer = null;
     }
     displayFitScheduler.clear();
+    stopActiveWindowAwareness();
     if (statusWindow && !statusWindow.isDestroyed()) {
       statusWindow.close();
     }
@@ -558,6 +619,7 @@ function createWindow() {
   screen.on('display-added', displayFitScheduler.schedule);
   screen.on('display-removed', displayFitScheduler.schedule);
   screen.on('display-metrics-changed', displayFitScheduler.schedule);
+  startActiveWindowAwareness();
 }
 
 /**
@@ -648,6 +710,13 @@ function buildTrayMenu() {
         if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
         refreshTrayMenu();
       },
+    },
+    {
+      label: process.platform === 'win32'
+        ? (windowAwarenessEnabled ? trayT('trayWindowAwarenessOff') : trayT('trayWindowAwarenessOn'))
+        : trayT('trayWindowAwarenessUnavailable'),
+      enabled: process.platform === 'win32',
+      click: () => setWindowAwarenessEnabled(!windowAwarenessEnabled),
     },
     {
       label: petHidden ? trayT('trayShowPet') : trayT('trayHidePet'),
@@ -995,6 +1064,11 @@ ipcMain.handle('get-auto-launch', async () => {
 
 ipcMain.handle('get-available-skins', () => {
   return scanAvailableSkins();
+});
+
+ipcMain.handle('get-active-window-info', async () => {
+  if (!activeWindowSampler) startActiveWindowAwareness();
+  return activeWindowSampler.sampleOnce();
 });
 
 ipcMain.on('set-current-skin', (_event, skinId) => {

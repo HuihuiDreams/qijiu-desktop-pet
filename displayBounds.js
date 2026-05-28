@@ -89,7 +89,60 @@ function getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor 
     .filter(Boolean);
 }
 
+function rectRelativeToBounds(rect, windowBounds) {
+  if (!isValidRect(rect) || !isValidRect(windowBounds)) return null;
+  return {
+    x: rect.x - windowBounds.x,
+    y: rect.y - windowBounds.y,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function getActiveWindowPlatformRelativeToBounds(activeWindowInfo, windowBounds, displays, options = {}) {
+  const windowInfo = activeWindowInfo?.window;
+  const activeBounds = windowInfo?.bounds;
+  if (!activeWindowInfo?.active || !isValidRect(activeBounds) || !isValidRect(windowBounds)) {
+    return null;
+  }
+
+  if (windowInfo.isMinimized || windowInfo.isMaximized || windowInfo.isFullScreen) {
+    return null;
+  }
+
+  const platformHeight = Number.isFinite(options.platformHeight) ? options.platformHeight : 48;
+  const petFootOffset = Number.isFinite(options.petFootOffset) ? options.petFootOffset : 24;
+  const minPlatformWidth = Number.isFinite(options.minPlatformWidth) ? options.minPlatformWidth : 120;
+  const absolutePlatform = {
+    x: activeBounds.x,
+    y: activeBounds.y - petFootOffset,
+    width: activeBounds.width,
+    height: platformHeight,
+  };
+
+  const displayList = Array.isArray(displays) ? displays : [];
+  const clipped = displayList
+    .map((display) => {
+      const displayBounds = display?.bounds;
+      if (!isValidRect(displayBounds)) return null;
+      const rawArea = isValidRect(display?.workArea) ? display.workArea : displayBounds;
+      const usableDisplay = intersectRects(rawArea, displayBounds);
+      return usableDisplay ? intersectRects(absolutePlatform, usableDisplay) : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b.width * b.height) - (a.width * a.height))[0]
+    || intersectRects(absolutePlatform, windowBounds);
+
+  if (!clipped || clipped.width < minPlatformWidth || clipped.height <= 0) return null;
+
+  return {
+    ...rectRelativeToBounds(clipped, windowBounds),
+    source: 'active-window-top',
+  };
+}
+
 module.exports = {
+  getActiveWindowPlatformRelativeToBounds,
   getVirtualDisplayBounds,
   getWalkAreasRelativeToBounds,
   intersectRects,

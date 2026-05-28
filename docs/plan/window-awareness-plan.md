@@ -23,10 +23,18 @@ Window Awareness 让桌宠能够感知当前活动窗口，并在活动窗口顶
 ## Architecture Decisions
 
 - 活动窗口感知放在主进程。渲染进程不直接访问 OS 窗口 API。
+- 活动窗口能力拆成共享合同层和平台 provider。共享层定义统一数据结构、几何转换、IPC 和 renderer 行为；平台 provider 只负责各 OS 的真实窗口采样。
+- Windows 先实现完整 provider。macOS MVP 先走 unavailable fallback，即应用正常运行、Window Awareness 不启用、移动系统回退到现有桌面 `walkAreas`。
+- 后续 macOS 支持作为单独版本/ADR 处理，通过 `darwin` provider 实现，并必须包含 Accessibility 权限检测、用户授权引导、未授权 fallback 和打包验证。
+- Windows MVP 默认开启 Window Awareness；macOS MVP 不启用该能力。
 - 活动窗口信息使用“低频采样 + 变化推送”，默认 500ms-1000ms 一次，避免高频 Win32 调用。
 - 坐标统一在主进程或纯函数中转换成主透明窗口内坐标，再发给渲染进程。
 - MVP 将窗口顶部建模为 `platform`：一个窄矩形，宽度等于活动窗口可用顶部范围，高度约为宠物脚下容忍范围。
 - 不把宠物强制吸附到窗口。只有在 idle 选新目标时才有概率选择窗口平台，避免突兀瞬移。
+- 两只宠物独立随机选择是否走向窗口顶部。默认体验是一只上去、另一只继续桌面移动；当时机和空间允许时，不硬性阻止两只同时坐在窗口顶部。
+- 最大化窗口不生成窗口顶部 platform，行为回退到现有桌面行走逻辑。普通非最大化窗口如果生成 platform，应避开系统标题栏按钮区域。
+- 窗口顶部停留第一版复用 `idle` 图。专用 sitting/perching 素材留给后续。
+- 根据窗口类型触发专属台词不进入第一版 MVP，后续可单独扩展。
 - 不感知密码框、窗口内容、文档标题以外的敏感内容。只需要进程名、窗口标题、bounds、状态和采样时间。
 
 ## Performance Constraints
@@ -65,6 +73,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
     ownerName: 'Code.exe',
     bounds: { x: 120, y: 80, width: 1400, height: 900 },
     isMinimized: false,
+    isMaximized: false,
     isFullScreen: false
   },
   platform: {
@@ -79,6 +88,21 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 注意：`platform.x/y/width/height` 应该是主透明窗口内的相对坐标，不是 OS 屏幕绝对坐标。
 
+不可用或未支持平台的 fallback shape：
+
+```js
+{
+  active: false,
+  sampledAt: 1770000000000,
+  source: 'unavailable',
+  reason: 'unsupported-platform',
+  window: null,
+  platform: null
+}
+```
+
+renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不报错、不改变宠物位置、不触发窗口顶部目标。
+
 ## Task List
 
 ### Phase 1: Discovery and Contracts
@@ -90,7 +114,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 **Acceptance criteria:**
 
 - [ ] 存在 `getActiveWindowInfo()` 风格的 provider 接口。
-- [ ] provider 返回标准化对象：`title`、`ownerName`、`bounds`、`isMinimized`、`isFullScreen`、`sampledAt`。
+- [ ] provider 返回标准化对象：`title`、`ownerName`、`bounds`、`isMinimized`、`isMaximized`、`isFullScreen`、`sampledAt`。
 - [ ] provider 失败时返回可识别的 unavailable 状态，而不是抛到渲染进程。
 
 **Verification:**
@@ -115,12 +139,13 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 - [ ] 能把 OS 绝对坐标窗口 bounds 转换为主透明窗口内坐标。
 - [ ] 能根据宠物尺寸生成顶部平台：`y = windowTop - petFootOffset`，并限制在显示器 workArea 内。
-- [ ] 太小、离屏、最小化、全屏、无效 bounds 的窗口会被过滤。
+- [ ] 太小、离屏、最小化、最大化、全屏、无效 bounds 的窗口会被过滤。
+- [ ] 普通非最大化窗口生成 platform 时避开系统标题栏按钮区域。
 - [ ] 多显示器和负坐标场景有测试。
 
 **Verification:**
 
-- [ ] 新增测试覆盖主屏、副屏、负坐标、副屏缩放、窗口部分出屏。
+- [ ] 新增测试覆盖主屏、副屏、负坐标、副屏缩放、窗口部分出屏、最大化窗口过滤。
 - [ ] `npm test -- --test-name-pattern "active window"` 通过。
 
 **Dependencies:** Task 1
@@ -141,13 +166,42 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 ### Phase 2: Main Process Integration
 
-#### Task 3: Implement Windows active window sampling
+#### Task 3: Add platform provider selection and unavailable fallback
+
+**Description:** 在主进程建立平台 provider 选择层，根据 `process.platform` 选择 Windows provider、macOS provider 或 unavailable provider。MVP 中 Windows 以外的平台先返回稳定 fallback。
+
+**Acceptance criteria:**
+
+- [ ] 存在 `createActiveWindowProvider()` 或等价工厂函数。
+- [ ] `process.platform === 'win32'` 时选择 Windows provider。
+- [ ] `process.platform === 'darwin'` 时 MVP 返回 unavailable fallback，并标记 `reason: 'unsupported-platform'` 或 `reason: 'permission-required'` 的扩展空间。
+- [ ] Linux 和其它平台返回 unavailable fallback。
+- [ ] fallback 不触发移动系统更新、不抛到渲染进程、不影响现有桌面行走。
+
+**Verification:**
+
+- [ ] 单元测试覆盖 win32、darwin、linux/unknown 的 provider 选择。
+- [ ] 单元测试覆盖 unavailable fallback data shape。
+- [ ] `npm test -- --test-name-pattern "active window"` 通过。
+
+**Dependencies:** Task 1, Task 2
+
+**Files likely touched:**
+
+- `main.js`
+- `test/activeWindowProvider.test.js`
+- `test/mainWindowAwareness.test.js`
+
+**Estimated scope:** Small
+
+#### Task 4: Implement Windows active window sampling
 
 **Description:** 在主进程实现 Windows 活动窗口采样。优先评估成熟 npm 包；如果引入 native dependency 会影响安装包，则改为 PowerShell/Win32 helper 或轻量 Node native boundary。实现前需要确认 CI 和 electron-builder 能通过。
 
 **Acceptance criteria:**
 
 - [ ] Windows 上能获取当前前台窗口 bounds。
+- [ ] Windows 上能识别最大化窗口并返回 `isMaximized` 或等价状态。
 - [ ] 忽略本应用自己的 `BrowserWindow`、状态窗口和无标题 shell 窗口。
 - [ ] 采样失败时不影响桌宠主循环。
 - [ ] 采样频率可配置，默认不高于每 500ms 一次。
@@ -162,7 +216,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - [ ] `npm test` 通过。
 - [ ] `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 通过。
 
-**Dependencies:** Task 1, Task 2
+**Dependencies:** Task 3
 
 **Files likely touched:**
 
@@ -173,26 +227,27 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 **Estimated scope:** Medium
 
-#### Task 4: Expose IPC subscription to renderer
+#### Task 5: Expose IPC subscription to renderer
 
 **Description:** 通过 `preload.js` 暴露安全的 `onActiveWindowInfo(callback)` 或 `getActiveWindowInfo()`，主进程在窗口信息变化时推送。
 
 **Acceptance criteria:**
 
-- [ ] 渲染进程只能收到已标准化的窗口和平台信息。
+- [ ] 渲染进程只能收到已标准化的窗口、平台信息或 unavailable fallback。
 - [ ] IPC 不暴露任意 shell、路径或原始 native handle 操作。
 - [ ] renderer reload 后不会重复注册导致多次推送。
 - [ ] IPC 推送是变化驱动的，不按固定采样频率无条件广播。
 - [ ] 单独的窗口标题变化不会触发 platform 更新推送。
+- [ ] macOS MVP 上 IPC 返回 unavailable fallback，不影响应用启动和普通移动。
 
 **Verification:**
 
 - [ ] preload 测试覆盖 API 暴露。
-- [ ] main IPC 测试覆盖推送数据 shape。
+- [ ] main IPC 测试覆盖推送数据 shape 和 unavailable fallback。
 - [ ] 测试覆盖相同 platform 重复采样时不会重复推送。
 - [ ] `npm test` 通过。
 
-**Dependencies:** Task 3
+**Dependencies:** Task 4
 
 **Files likely touched:**
 
@@ -205,7 +260,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 ### Phase 3: Movement Behavior
 
-#### Task 5: Introduce WindowAwarenessSystem in renderer
+#### Task 6: Introduce WindowAwarenessSystem in renderer
 
 **Description:** 新增渲染进程系统，保存最近一次活动窗口平台、过期时间、可用性和 debug 状态。它只负责状态，不直接移动宠物。
 
@@ -213,17 +268,18 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 - [ ] 接收 IPC 推送并保存当前 platform。
 - [ ] 超过 TTL 未更新时自动视为 unavailable。
-- [ ] 支持配置开关：默认开启或通过 debug flag 开启。
+- [ ] 收到 unavailable fallback 时返回 `null` platform，并保留现有桌面行走行为。
+- [ ] 支持配置开关：Windows MVP 默认开启；macOS MVP 返回 unavailable fallback。
 - [ ] 提供 `getCurrentPlatform()` 给移动系统或 app 循环读取。
 - [ ] `getCurrentPlatform()` 为 O(1) 缓存读取，不触发 IPC 或几何重算。
 
 **Verification:**
 
 - [ ] fake clock 测试覆盖更新、过期、无效平台。
-- [ ] 测试覆盖关闭开关后不再返回 platform。
+- [ ] 测试覆盖关闭开关和 unavailable fallback 后不再返回 platform。
 - [ ] `npm test -- --test-name-pattern "WindowAwarenessSystem"` 通过。
 
-**Dependencies:** Task 4
+**Dependencies:** Task 5
 
 **Files likely touched:**
 
@@ -233,13 +289,15 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 **Estimated scope:** Medium
 
-#### Task 6: Let MovementSystem choose active window platforms
+#### Task 7: Let MovementSystem choose active window platforms
 
 **Description:** 扩展 `MovementSystem`，让 idle 选择目标时有概率选择活动窗口顶部平台。平台目标应主要沿 X 轴移动，Y 保持在窗口顶部附近。
 
 **Acceptance criteria:**
 
 - [ ] 当 platform 可用时，宠物 idle 后有配置概率走向窗口顶部。
+- [ ] 两只宠物各自独立随机选择 platform 目标；默认不会强制两只同时上窗口顶部。
+- [ ] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
 - [ ] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
 - [ ] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口上”。
 - [ ] platform 消失时，宠物能回到现有 display walkAreas。
@@ -253,7 +311,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - [ ] 手动测试：切换活动窗口，宠物会自然走到窗口顶部。
 - [ ] `npm test` 通过。
 
-**Dependencies:** Task 5
+**Dependencies:** Task 6
 
 **Files likely touched:**
 
@@ -264,15 +322,15 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 **Estimated scope:** Medium
 
-#### Task 7: Add sitting/perching presentation
+#### Task 8: Add sitting/perching presentation
 
-**Description:** 为窗口顶部停留增加轻量表现。MVP 可复用 idle 帧并调整状态名；后续有素材时再加专用 sitting sprite。
+**Description:** 为窗口顶部停留增加轻量表现。MVP 复用 idle 帧；后续有素材时再加专用 sitting/perching sprite。
 
 **Acceptance criteria:**
 
 - [ ] 平台停留时不会触发普通随机走动太快离开。
 - [ ] 可通过配置控制坐下时间范围。
-- [ ] 没有 sitting 素材时回退到 idle 图，不出现文字 fallback。
+- [ ] 第一版直接使用 idle 图，不要求新增 sitting 素材，也不出现文字 fallback。
 
 **Verification:**
 
@@ -280,7 +338,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - [ ] 手动测试：站在窗口顶部时不闪烁、不抖动。
 - [ ] `npm test` 通过。
 
-**Dependencies:** Task 6
+**Dependencies:** Task 7
 
 **Files likely touched:**
 
@@ -303,15 +361,17 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 ### Phase 4: User Controls and Polish
 
-#### Task 8: Add tray/debug controls
+#### Task 9: Add tray/debug controls
 
 **Description:** 增加开关和调试入口，方便测试和用户关闭该能力。
 
 **Acceptance criteria:**
 
 - [ ] 托盘菜单可开启/关闭 Window Awareness。
+- [ ] Windows MVP 默认开启 Window Awareness，用户可通过托盘关闭。
 - [ ] debug 暴露当前 active window/platform 信息。
 - [ ] 关闭后完全回到现有桌面行走逻辑。
+- [ ] macOS MVP 上菜单不暴露该开关，或明确显示该功能暂不可用。
 
 **Verification:**
 
@@ -319,7 +379,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - [ ] 手动测试开关立即生效。
 - [ ] `npm test` 通过。
 
-**Dependencies:** Task 5, Task 6
+**Dependencies:** Task 6, Task 7
 
 **Files likely touched:**
 
@@ -331,7 +391,31 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 **Estimated scope:** Medium
 
-#### Task 9: Tune behavior and document release notes
+#### Task 10: Document macOS follow-up provider
+
+**Description:** 记录 macOS `darwin` provider 的后续实现边界，包括 Accessibility 权限、授权引导、未授权 fallback、隐私说明和打包验证。
+
+**Acceptance criteria:**
+
+- [ ] ADR 或计划文档说明 macOS 支持是单独版本/ADR 范围，不是简单替换 provider，需要用户授权 Accessibility。
+- [ ] 未授权时返回 unavailable fallback，不弹错误、不影响普通桌宠行为。
+- [ ] 文档说明 macOS provider 后续需要单独测试多显示器、全屏、最小化和本应用窗口过滤。
+
+**Verification:**
+
+- [ ] 文档包含 `darwin provider`、Accessibility 权限和 fallback 行为。
+- [ ] 与 Task 3 的 provider 选择逻辑一致。
+
+**Dependencies:** Task 3
+
+**Files likely touched:**
+
+- `docs/structure.md`
+- `docs/decisions/ADR-025-window-awareness.md`
+
+**Estimated scope:** Small
+
+#### Task 11: Tune behavior and document release notes
 
 **Description:** 根据手动体验调整平台选择概率、停留时长、顶部偏移和边界规则，并补充文档。
 
@@ -340,13 +424,15 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - [ ] 配置项集中在 `CONFIG` 或明确的系统默认值中。
 - [ ] `docs/structure.md` 或 ADR 记录主进程窗口感知边界。
 - [ ] `CHANGELOG.md` 有用户可读条目。
+- [ ] release notes 明确 Windows 默认开启首发支持，macOS 暂走普通桌面行走 fallback。
+- [ ] 第一版不加入“根据窗口类型说台词”的行为或配置。
 
 **Verification:**
 
 - [ ] 文档和代码配置一致。
 - [ ] release preflight 相关测试通过。
 
-**Dependencies:** Task 8
+**Dependencies:** Task 9, Task 10
 
 **Files likely touched:**
 
@@ -362,6 +448,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Windows 前台窗口 API 不稳定或引入 native dependency 影响打包 | High | 先做 provider 边界和 fake tests；真实 provider 单独一 task；每次引入依赖后立刻跑 unsigned dir build |
+| macOS 窗口 bounds 读取需要 Accessibility 权限，导致功能不可用或体验割裂 | High | macOS MVP 先 unavailable fallback；后续 `darwin` provider 单独实现权限检测、授权引导和未授权 fallback |
 | 高频 PowerShell/外部进程轮询导致 CPU 抖动 | High | 正式路径禁止高频子进程采样；优先 native/Win32 provider 或常驻 helper；采样间隔默认 1000ms |
 | IPC 无条件广播导致 renderer 负载和消息堆积 | Medium | 主进程去重，仅 platform 相关字段变化时推送；标题变化不触发移动更新 |
 | gameLoop 中做 OS 查询或复杂几何计算 | High | renderer 只读 `WindowAwarenessSystem` 缓存；几何转换放在采样/推送阶段 |
@@ -376,16 +463,22 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 
 - VS Code 活动窗口在主屏：宠物能走到窗口顶部并停留。
 - 资源管理器在副屏且副屏有负坐标：platform 坐标正确。
-- 浏览器最大化但非全屏：宠物可站在顶部；全屏视频时应回退。
+- 浏览器最大化但非全屏：回退到普通桌面行走；全屏视频也应回退。
 - 活动窗口最小化或切到桌面：宠物回到普通桌面行走。
 - 拖拽宠物时切换窗口：拖拽优先，不被系统吸附。
 - 打开状态面板：宠物不把状态面板当活动窗口平台。
 - 关闭 Window Awareness：现有移动行为保持不变。
+- macOS MVP：应用正常启动，Window Awareness 返回 unavailable fallback，宠物保持普通桌面行走。
+
+## Resolved Decisions
+
+- Windows MVP 默认开启，托盘提供关闭入口。
+- macOS 支持作为单独版本/ADR 处理，当前 MVP 使用 unavailable fallback。
+- 窗口顶部停留第一版复用 idle，不新增 sitting 素材。
+- 两只宠物独立随机选择窗口平台；通常一只上去、另一只继续桌面移动，但允许两只在空间足够时同时坐下。
+- 最大化窗口不作为 platform，回退到现有桌面行走逻辑；普通窗口平台应避开标题栏按钮区域。
+- 第一版 MVP 不做“根据窗口类型说台词”，后续可考虑。
 
 ## Open Questions
 
-- MVP 是否默认开启，还是先放在开发/托盘开关后面？
-- 窗口顶部“坐下”是否需要新增专用 sitting 素材，还是先复用 idle？
-- 宠物是两只都能上窗口顶部，还是只有一只随机上去，另一只保持桌面移动？
-- 最大化窗口顶部是否要避开系统标题栏按钮区域？
-- 后续是否要支持“根据窗口类型说台词”，例如 IDE、浏览器、游戏分别触发不同气泡？
+- None.

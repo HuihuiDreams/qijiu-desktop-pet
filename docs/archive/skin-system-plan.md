@@ -309,10 +309,10 @@ sequenceDiagram
 - [x] 4.3 `app.js`：切换皮肤时自动保存偏好
 
 ### Phase 5：测试与验证 ⏱️ ~15 min
-- [ ] 5.1 创建一个测试皮肤文件夹（可以用 default 的副本）
+- [x] 5.1 创建一个测试皮肤文件夹（可以用 default 的副本）
 - [x] 5.2 启动应用，测试托盘菜单皮肤列表是否正确（自动化覆盖：托盘扫描、IPC 暴露、渲染进程接线）
-- [ ] 5.3 切换皮肤，验证所有视觉状态（idle、walking、eating、sleeping、meditating、hungry、patted）
-- [ ] 5.4 切换皮肤后触发 CP 互动，验证叠加层图片正确
+- [x] 5.3 切换皮肤，验证所有视觉状态（idle、walking、eating、sleeping、meditating、hungry、patted）
+- [x] 5.4 切换皮肤后触发 CP 互动，验证叠加层图片正确
 - [x] 5.5 退出并重启应用，验证皮肤选择被持久化（自动化覆盖：`TimeSystem.save/load` 的 `skinId` 存取与旧存档兼容）
 - [x] 5.6 更新 `config.js` 中的默认路径指向 `assets/default/`
 - [x] 5.7 回归测试：确认 default 皮肤下所有功能正常（自动化覆盖：default 资源完整性与全量 `npm test`）

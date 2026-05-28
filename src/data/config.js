@@ -16,6 +16,8 @@ const CONFIG = {
   IDLE_DURATION_MAX: 8000,            // 最大发呆时间 (毫秒)
   WALK_TARGET_MARGIN: 60,             // 屏幕边缘保护距离
   TASKBAR_HEIGHT: 48,                 // 底部任务栏的高度预留
+  WINDOW_AWARENESS_ENABLED: true,
+  WINDOW_AWARENESS_PLATFORM_TTL_MS: 2500,
 
   // === 互动相关 (Interaction) ===
   INTERACTION_DISTANCE: 180,          // 触发CP互动的判定距离

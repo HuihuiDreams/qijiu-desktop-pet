@@ -6,6 +6,7 @@ class MovementSystem {
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
     this.walkAreas = this.normalizeWalkAreas(walkAreas);
+    this.activePlatform = null;
   }
 
   /**
@@ -27,6 +28,7 @@ class MovementSystem {
         width: Number(area?.width),
         height: Number(area?.height),
         scaleRatio: Number(area?.scaleRatio),
+        source: area?.source,
       }))
       .filter((area) => (
         Number.isFinite(area.x)
@@ -36,10 +38,17 @@ class MovementSystem {
         && area.width > 0
         && area.height > 0
       ))
-      .map((area) => ({
-        ...area,
-        scaleRatio: Number.isFinite(area.scaleRatio) && area.scaleRatio > 0 ? area.scaleRatio : 1,
-      }));
+      .map((area) => {
+        const normalized = {
+          x: area.x,
+          y: area.y,
+          width: area.width,
+          height: area.height,
+          scaleRatio: Number.isFinite(area.scaleRatio) && area.scaleRatio > 0 ? area.scaleRatio : 1,
+        };
+        if (area.source) normalized.source = area.source;
+        return normalized;
+      });
   }
 
   getFallbackWalkArea() {
@@ -55,12 +64,35 @@ class MovementSystem {
     return this.walkAreas.length > 0 ? this.walkAreas : [this.getFallbackWalkArea()];
   }
 
+  setActivePlatform(platform) {
+    this.activePlatform = this.normalizeWalkAreas(platform ? [platform] : [])[0] || null;
+  }
+
+  getMovementAreas() {
+    return this.activePlatform ? [this.activePlatform, ...this.getWalkAreas()] : this.getWalkAreas();
+  }
+
   clampToRange(value, min, max) {
     if (min > max) return (min + max) / 2;
     return Math.min(Math.max(value, min), max);
   }
 
+  isActiveWindowPlatform(area) {
+    return area?.source === 'active-window-top';
+  }
+
   getTargetRange(area, pet, margin) {
+    if (this.isActiveWindowPlatform(area)) {
+      const xMargin = Math.min(margin, Math.max(0, (area.width - pet.size) / 2));
+      const platformY = area.y + area.height / 2 - pet.size;
+      return {
+        minX: area.x + xMargin,
+        maxX: area.x + area.width - pet.size - xMargin,
+        minY: platformY,
+        maxY: platformY,
+      };
+    }
+
     return {
       minX: area.x + margin,
       maxX: area.x + area.width - pet.size - margin,
@@ -70,7 +102,7 @@ class MovementSystem {
   }
 
   pickWalkArea(pet, margin) {
-    const weightedAreas = this.getWalkAreas().map((area) => {
+    const weightedAreas = this.getMovementAreas().map((area) => {
       const range = this.getTargetRange(area, pet, margin);
       const width = Math.max(1, range.maxX - range.minX);
       const height = Math.max(1, range.maxY - range.minY);
@@ -97,11 +129,14 @@ class MovementSystem {
 
   findMatchingWalkArea(area) {
     if (!area) return null;
-    return this.getWalkAreas().find((walkArea) => this.sameArea(walkArea, area)) || null;
+    if (area.source === 'active-window-top') {
+      return this.normalizeWalkAreas([area])[0] || null;
+    }
+    return this.getMovementAreas().find((walkArea) => this.sameArea(walkArea, area)) || null;
   }
 
   findAreaContainingPoint(x, y) {
-    return this.getWalkAreas().find((area) => (
+    return this.getMovementAreas().find((area) => (
       x >= area.x
       && x <= area.x + area.width
       && y >= area.y
@@ -121,7 +156,7 @@ class MovementSystem {
   }
 
   findAreaContainingPetBounds(pet, x = pet.x, y = pet.y) {
-    return this.getWalkAreas().find((area) => (
+    return this.getMovementAreas().find((area) => (
       x >= area.x
       && y >= area.y
       && x + pet.size <= area.x + area.width
@@ -133,13 +168,10 @@ class MovementSystem {
     let bestPosition = null;
     let bestDistance = Infinity;
 
-    for (const area of this.getWalkAreas()) {
-      const minX = area.x;
-      const maxX = area.x + area.width - pet.size;
-      const minY = area.y;
-      const maxY = area.y + area.height - pet.size;
-      const clampedX = this.clampToRange(x, minX, maxX);
-      const clampedY = this.clampToRange(y, minY, maxY);
+    for (const area of this.getMovementAreas()) {
+      const range = this.getTargetRange(area, pet, 0);
+      const clampedX = this.clampToRange(x, range.minX, range.maxX);
+      const clampedY = this.clampToRange(y, range.minY, range.maxY);
       const distance = (clampedX - x) ** 2 + (clampedY - y) ** 2;
 
       if (distance < bestDistance) {
@@ -209,7 +241,7 @@ class MovementSystem {
    */
   randomTarget(pet) {
     const margin = CONFIG.WALK_TARGET_MARGIN;
-    const area = this.pickWalkArea(pet, margin);
+    const area = this.activePlatform || this.pickWalkArea(pet, margin);
     const range = this.getTargetRange(area, pet, margin);
     pet.targetArea = area;
 

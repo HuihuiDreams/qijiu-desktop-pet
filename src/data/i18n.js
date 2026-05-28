@@ -56,6 +56,9 @@ const I18N = {
       trayResetPos: '🔄 重置位置',
       trayAutoLaunchOn: '🚀 禁用开机启动',
       trayAutoLaunchOff: '🚀 开机自动启动',
+      trayWindowAwarenessOn: '🪟 启用窗口感知',
+      trayWindowAwarenessOff: '🪟 禁用窗口感知',
+      trayWindowAwarenessUnavailable: '🪟 窗口感知暂不可用',
       trayDevTools: '🛠️ 开发者工具',
       trayQuit: '❌ 退出',
       trayLanguage: '🌐 语言',
@@ -278,6 +281,9 @@ const I18N = {
       trayResetPos: '🔄 Reset Position',
       trayAutoLaunchOn: '🚀 Disable Auto-launch',
       trayAutoLaunchOff: '🚀 Launch at Login',
+      trayWindowAwarenessOn: '🪟 Enable Window Awareness',
+      trayWindowAwarenessOff: '🪟 Disable Window Awareness',
+      trayWindowAwarenessUnavailable: '🪟 Window Awareness Unavailable',
       trayDevTools: '🛠️ Developer Tools',
       trayQuit: '❌ Quit',
       trayLanguage: '🌐 Language',
@@ -501,6 +507,9 @@ const I18N = {
       trayResetPos: '🔄 位置復元',      // 归位/复原
       trayAutoLaunchOn: '🚀 起動時常駐を無効化',
       trayAutoLaunchOff: '🚀 起動時常駐',    // “常驻”比“登录时启动”更简练
+      trayWindowAwarenessOn: '🪟 ウィンドウ感知を有効化',
+      trayWindowAwarenessOff: '🪟 ウィンドウ感知を無効化',
+      trayWindowAwarenessUnavailable: '🪟 ウィンドウ感知は未対応',
       trayDevTools: '🛠️ 開発者ツール',
       trayQuit: '❌ 終了',          // “退室”比冷冰冰的“終了（结束）”更具角色互动的沉浸感
       trayLanguage: '🌐 言語設定',

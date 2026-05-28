@@ -1,0 +1,44 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+const i18nSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'i18n.js'), 'utf8');
+const debugSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'debug.js'), 'utf8');
+const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.js'), 'utf8');
+
+test('tray exposes Window Awareness toggle on Windows and unavailable state elsewhere', () => {
+  assert.ok(mainSource.includes("trayT('trayWindowAwarenessOff')"));
+  assert.ok(mainSource.includes("trayT('trayWindowAwarenessOn')"));
+  assert.ok(mainSource.includes("trayT('trayWindowAwarenessUnavailable')"));
+  assert.ok(mainSource.includes("enabled: process.platform === 'win32'"));
+  assert.ok(mainSource.includes('setWindowAwarenessEnabled(!windowAwarenessEnabled)'));
+});
+
+test('Window Awareness toggle sends disabled fallback and restarts sampling', () => {
+  assert.ok(mainSource.includes('function setWindowAwarenessEnabled(enabled)'));
+  assert.ok(mainSource.includes("unavailableActiveWindowPayload('disabled')"));
+  assert.ok(mainSource.includes('startActiveWindowAwareness();'));
+});
+
+test('Window Awareness tray labels are localized', () => {
+  assert.ok(i18nSource.includes('trayWindowAwarenessOn'));
+  assert.ok(i18nSource.includes('trayWindowAwarenessOff'));
+  assert.ok(i18nSource.includes('trayWindowAwarenessUnavailable'));
+});
+
+test('debug tools expose current Window Awareness state', () => {
+  assert.ok(appSource.includes('windowAwareness: windowAwarenessSystem.getDebugInfo()'));
+  assert.ok(debugSource.includes('window.debugWindowAwareness'));
+  assert.ok(debugSource.includes('window.probeWindowAwareness'));
+  assert.ok(debugSource.includes('window.__LAST_WINDOW_AWARENESS_PROBE = result'));
+  assert.ok(debugSource.includes('JSON.stringify(result, null, 2)'));
+  assert.ok(debugSource.includes('window.testWindowAwareness'));
+  assert.ok(debugSource.includes("mode: 'unavailable'"));
+  assert.equal(debugSource.includes('pet.x = platform.x'), true);
+  assert.ok(debugSource.includes('options.reposition === true'));
+  assert.ok(appSource.includes('window.__DEBUG_MOVEMENT = movementSystem'));
+  assert.ok(appSource.includes('window.__DEBUG_WINDOW_AWARENESS = windowAwarenessSystem'));
+  assert.ok(debugSource.includes('__DEBUG_SCREEN'));
+});

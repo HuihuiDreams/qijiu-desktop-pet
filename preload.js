@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onScreenInfo: (callback) => {
     ipcRenderer.on('screen-info', (event, data) => callback(data));
   },
+  getActiveWindowInfo: () => ipcRenderer.invoke('get-active-window-info'),
+  onActiveWindowInfo: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('active-window-info', listener);
+    return () => ipcRenderer.removeListener('active-window-info', listener);
+  },
   onToggleStatusPanel: (callback) => {
     ipcRenderer.on('toggle-status-panel', () => callback());
   },
