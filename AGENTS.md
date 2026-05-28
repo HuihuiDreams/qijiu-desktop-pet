@@ -52,8 +52,9 @@ in this project.
 
 Before commit or push:
 
-1. Update `CHANGELOG.md` and group changes under `Added`, `Changed`, `Fixed`, or
-   `Removed`. Link ADRs when relevant.
+1. Update `CHANGELOG.md` and group changes under the exact English headings
+   `Added`, `Changed`, `Fixed`, or `Removed` (Chinese entry text is fine).
+   Link ADRs when relevant.
 2. Update docs when behavior changes. Keep `docs/structure.md` and relevant ADRs
    synchronized with architecture or runtime behavior changes.
 3. Use atomic commits with this message shape:

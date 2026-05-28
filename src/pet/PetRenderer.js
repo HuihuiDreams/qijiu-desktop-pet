@@ -98,7 +98,7 @@ class PetRenderer {
 
     // 鼠标事件：切换点击穿透 (防止遮挡后方窗口)
     el.addEventListener('mouseenter', () => {
-      window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 4000 });
+      window.electronAPI.setIgnoreMouseEvents(false);
     });
 
     el.addEventListener('mouseleave', () => {

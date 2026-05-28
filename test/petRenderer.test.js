@@ -22,6 +22,29 @@ function createFakeElement(initialClasses = []) {
   };
 }
 
+function createFakeDomElement() {
+  return {
+    id: '',
+    className: '',
+    style: {},
+    children: [],
+    listeners: {},
+    classList: {
+      contains() {
+        return false;
+      },
+      add() {},
+      remove() {},
+    },
+    appendChild(child) {
+      this.children.push(child);
+    },
+    addEventListener(type, callback) {
+      this.listeners[type] = callback;
+    },
+  };
+}
+
 
 test('qi aura size follows the pet visual scale', () => {
   const appended = [];
@@ -54,6 +77,66 @@ test('qi aura size follows the pet visual scale', () => {
   assert.equal(appended[0].style.height, `${Math.max(112, pet.size * 1.45) * (2 / 3)}px`);
 
   delete global.document;
+});
+
+test('pet hover keeps mouse events enabled until the cursor leaves', () => {
+  const calls = [];
+  const listeners = {};
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  });
+  const pet = {
+    id: 'yueqi',
+    nickname: 'Yue Qi',
+    image: 'assets/default/left.webp',
+    x: 100,
+    y: 100,
+    size: 96,
+    isDragging: false,
+    isBusy() {
+      return false;
+    },
+    setState() {},
+  };
+
+  global.window = {
+    innerWidth: 1920,
+    innerHeight: 1080,
+    electronAPI: {
+      setIgnoreMouseEvents(ignore, options) {
+        calls.push([ignore, options]);
+      },
+    },
+    addEventListener(type, callback) {
+      listeners[type] = callback;
+    },
+  };
+  global.document = {
+    createElement() {
+      return createFakeDomElement();
+    },
+    addEventListener(type, callback) {
+      listeners[type] = callback;
+    },
+    getElementById() {
+      return createFakeElement(['hidden']);
+    },
+  };
+
+  try {
+    renderer.createPetElement(pet);
+    appended[0].listeners.mouseenter();
+    appended[0].listeners.mouseleave();
+
+    assert.deepEqual(calls[0], [false, undefined]);
+    assert.deepEqual(calls[1], [true, { forward: true }]);
+  } finally {
+    delete global.window;
+    delete global.document;
+  }
 });
 
 test('interaction overlay image follows the pet visual scale', () => {

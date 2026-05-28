@@ -17,7 +17,7 @@
 ### Step 2: 补充 `CHANGELOG.md`（若未更新）
 如果发现代码已改动但 CHANGELOG 未更新，必须先进行更新：
 1. 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/) 格式。
-2. 归类到合适的标签下：`Added` (新增), `Changed` (修改), `Fixed` (修复), `Removed` (移除)。
+2. 归类到合适的英文标题下：`Added` (新增), `Changed` (修改), `Fixed` (修复), `Removed` (移除)。条目正文可以使用中文。
 3. 关联相关的决策文档：如果本次更新有重大架构变动，需在条目末尾附加上 `(ADR-XXX)` 链接。
 
 ### Step 3: 执行原子化提交 (Atomic Commits)

@@ -27,7 +27,7 @@ Window Awareness 让桌宠能够感知当前活动窗口，并在活动窗口顶
 - Windows 先实现完整 provider。macOS MVP 先走 unavailable fallback，即应用正常运行、Window Awareness 不启用、移动系统回退到现有桌面 `walkAreas`。
 - 后续 macOS 支持作为单独版本/ADR 处理，通过 `darwin` provider 实现，并必须包含 Accessibility 权限检测、用户授权引导、未授权 fallback 和打包验证。
 - Windows MVP 默认开启 Window Awareness；macOS MVP 不启用该能力。
-- 活动窗口信息使用“低频采样 + 变化推送”，默认 500ms-1000ms 一次，避免高频 Win32 调用。
+- 活动窗口信息使用“低频采样 + 变化推送”，当前 Windows MVP 默认 3000ms 一次，避免高频 Win32 调用。
 - 坐标统一在主进程或纯函数中转换成主透明窗口内坐标，再发给渲染进程。
 - MVP 将窗口顶部建模为 `platform`：一个窄矩形，宽度等于活动窗口可用顶部范围，高度约为宠物脚下容忍范围。
 - 不把宠物强制吸附到窗口。只有在 idle 选新目标时才有概率选择窗口平台，避免突兀瞬移。
@@ -44,7 +44,7 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 必须遵守的性能约束：
 
 - 不允许在正式实现中每 500ms-1000ms 启动一次 PowerShell、cmd 或其它外部进程来获取活动窗口。高频子进程轮询会带来明显 CPU 抖动。
-- 默认采样间隔为 1000ms；允许调试时降低到 500ms，但不应低于 500ms。
+- 当前 Windows MVP 默认采样间隔为 3000ms；允许调试时降低到 500ms，但不应低于 500ms。
 - 活动窗口信息必须先在主进程侧去抖和去重。只有 `window id`、进程、bounds、最小化/全屏状态或 platform geometry 实际变化时才推送 IPC。
 - 窗口标题变化不应单独触发移动系统更新，避免浏览器/编辑器标题频繁变化造成 IPC 风暴。
 - renderer 的 game loop 只能读取 `WindowAwarenessSystem` 缓存；不得每帧查询 OS API、发送 IPC 或重新计算完整显示器几何。
@@ -113,14 +113,14 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 存在 `getActiveWindowInfo()` 风格的 provider 接口。
-- [ ] provider 返回标准化对象：`title`、`ownerName`、`bounds`、`isMinimized`、`isMaximized`、`isFullScreen`、`sampledAt`。
-- [ ] provider 失败时返回可识别的 unavailable 状态，而不是抛到渲染进程。
+- [x] 存在 `getActiveWindowInfo()` 风格的 provider 接口。
+- [x] provider 返回标准化对象：`title`、`ownerName`、`bounds`、`isMinimized`、`isMaximized`、`isFullScreen`、`sampledAt`。
+- [x] provider 失败时返回可识别的 unavailable 状态，而不是抛到渲染进程。
 
 **Verification:**
 
-- [ ] 单元测试覆盖 provider 成功、失败、缺失 bounds。
-- [ ] `npm test` 通过。
+- [x] 单元测试覆盖 provider 成功、失败、缺失 bounds。
+- [x] `npm test` 通过。
 
 **Dependencies:** None
 
@@ -137,16 +137,16 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 能把 OS 绝对坐标窗口 bounds 转换为主透明窗口内坐标。
-- [ ] 能根据宠物尺寸生成顶部平台：`y = windowTop - petFootOffset`，并限制在显示器 workArea 内。
-- [ ] 太小、离屏、最小化、最大化、全屏、无效 bounds 的窗口会被过滤。
+- [x] 能把 OS 绝对坐标窗口 bounds 转换为主透明窗口内坐标。
+- [x] 能根据宠物尺寸生成顶部平台：`y = windowTop - petFootOffset`，并限制在显示器 workArea 内。
+- [x] 太小、离屏、最小化、最大化、全屏、无效 bounds 的窗口会被过滤。
 - [ ] 普通非最大化窗口生成 platform 时避开系统标题栏按钮区域。
-- [ ] 多显示器和负坐标场景有测试。
+- [x] 多显示器和负坐标场景有测试。
 
 **Verification:**
 
-- [ ] 新增测试覆盖主屏、副屏、负坐标、副屏缩放、窗口部分出屏、最大化窗口过滤。
-- [ ] `npm test -- --test-name-pattern "active window"` 通过。
+- [x] 新增测试覆盖主屏、副屏、负坐标、副屏缩放、窗口部分出屏、最大化窗口过滤。
+- [x] `npm test -- --test-name-pattern "active window"` 通过。
 
 **Dependencies:** Task 1
 
@@ -160,9 +160,9 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 ### Checkpoint: Contract
 
-- [ ] 活动窗口数据结构稳定。
-- [ ] 坐标转换不依赖真实 OS API 也能测试。
-- [ ] 无效窗口都有明确 fallback。
+- [x] 活动窗口数据结构稳定。
+- [x] 坐标转换不依赖真实 OS API 也能测试。
+- [x] 无效窗口都有明确 fallback。
 
 ### Phase 2: Main Process Integration
 
@@ -172,17 +172,17 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 存在 `createActiveWindowProvider()` 或等价工厂函数。
-- [ ] `process.platform === 'win32'` 时选择 Windows provider。
-- [ ] `process.platform === 'darwin'` 时 MVP 返回 unavailable fallback，并标记 `reason: 'unsupported-platform'` 或 `reason: 'permission-required'` 的扩展空间。
-- [ ] Linux 和其它平台返回 unavailable fallback。
-- [ ] fallback 不触发移动系统更新、不抛到渲染进程、不影响现有桌面行走。
+- [x] 存在 `createActiveWindowProvider()` 或等价工厂函数。
+- [x] `process.platform === 'win32'` 时选择 Windows provider。
+- [x] `process.platform === 'darwin'` 时 MVP 返回 unavailable fallback，并标记 `reason: 'unsupported-platform'` 或 `reason: 'permission-required'` 的扩展空间。
+- [x] Linux 和其它平台返回 unavailable fallback。
+- [x] fallback 不触发移动系统更新、不抛到渲染进程、不影响现有桌面行走。
 
 **Verification:**
 
-- [ ] 单元测试覆盖 win32、darwin、linux/unknown 的 provider 选择。
-- [ ] 单元测试覆盖 unavailable fallback data shape。
-- [ ] `npm test -- --test-name-pattern "active window"` 通过。
+- [x] 单元测试覆盖 win32、darwin、linux/unknown 的 provider 选择。
+- [x] 单元测试覆盖 unavailable fallback data shape。
+- [x] `npm test -- --test-name-pattern "active window"` 通过。
 
 **Dependencies:** Task 1, Task 2
 
@@ -201,20 +201,20 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 **Acceptance criteria:**
 
 - [ ] Windows 上能获取当前前台窗口 bounds。
-- [ ] Windows 上能识别最大化窗口并返回 `isMaximized` 或等价状态。
-- [ ] 忽略本应用自己的 `BrowserWindow`、状态窗口和无标题 shell 窗口。
-- [ ] 采样失败时不影响桌宠主循环。
-- [ ] 采样频率可配置，默认不高于每 500ms 一次。
-- [ ] 正式路径不得通过高频启动 PowerShell/cmd/外部进程实现采样。
-- [ ] 主进程侧对采样结果做去重，只有可影响 platform 的字段变化时才准备推送。
+- [x] Windows 上能识别最大化窗口并返回 `isMaximized` 或等价状态。
+- [x] 忽略本应用自己的 `BrowserWindow`、状态窗口和无标题 shell 窗口。
+- [x] 采样失败时不影响桌宠主循环。
+- [x] 采样频率可配置，默认不高于每 500ms 一次。
+- [x] 正式路径不得通过高频启动 PowerShell/cmd/外部进程实现采样。
+- [x] 主进程侧对采样结果做去重，只有可影响 platform 的字段变化时才准备推送。
 
 **Verification:**
 
 - [ ] 本地打开 VS Code、资源管理器、浏览器时能看到窗口信息变化。
 - [ ] 连续采样 2 分钟，主进程 CPU 没有持续爬升。
 - [ ] 快速切换窗口 20 次，不出现明显卡顿或推送积压。
-- [ ] `npm test` 通过。
-- [ ] `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 通过。
+- [x] `npm test` 通过。
+- [x] `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 通过。
 
 **Dependencies:** Task 3
 
@@ -233,19 +233,19 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 渲染进程只能收到已标准化的窗口、平台信息或 unavailable fallback。
-- [ ] IPC 不暴露任意 shell、路径或原始 native handle 操作。
+- [x] 渲染进程只能收到已标准化的窗口、平台信息或 unavailable fallback。
+- [x] IPC 不暴露任意 shell、路径或原始 native handle 操作。
 - [ ] renderer reload 后不会重复注册导致多次推送。
-- [ ] IPC 推送是变化驱动的，不按固定采样频率无条件广播。
-- [ ] 单独的窗口标题变化不会触发 platform 更新推送。
-- [ ] macOS MVP 上 IPC 返回 unavailable fallback，不影响应用启动和普通移动。
+- [x] IPC 推送是变化驱动的，不按固定采样频率无条件广播。
+- [x] 单独的窗口标题变化不会触发 platform 更新推送。
+- [x] macOS MVP 上 IPC 返回 unavailable fallback，不影响应用启动和普通移动。
 
 **Verification:**
 
-- [ ] preload 测试覆盖 API 暴露。
-- [ ] main IPC 测试覆盖推送数据 shape 和 unavailable fallback。
-- [ ] 测试覆盖相同 platform 重复采样时不会重复推送。
-- [ ] `npm test` 通过。
+- [x] preload 测试覆盖 API 暴露。
+- [x] main IPC 测试覆盖推送数据 shape 和 unavailable fallback。
+- [x] 测试覆盖相同 platform 重复采样时不会重复推送。
+- [x] `npm test` 通过。
 
 **Dependencies:** Task 4
 
@@ -266,18 +266,18 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 接收 IPC 推送并保存当前 platform。
-- [ ] 超过 TTL 未更新时自动视为 unavailable。
-- [ ] 收到 unavailable fallback 时返回 `null` platform，并保留现有桌面行走行为。
-- [ ] 支持配置开关：Windows MVP 默认开启；macOS MVP 返回 unavailable fallback。
-- [ ] 提供 `getCurrentPlatform()` 给移动系统或 app 循环读取。
-- [ ] `getCurrentPlatform()` 为 O(1) 缓存读取，不触发 IPC 或几何重算。
+- [x] 接收 IPC 推送并保存当前 platform。
+- [x] 超过 TTL 未更新时自动视为 unavailable。
+- [x] 收到 unavailable fallback 时返回 `null` platform，并保留现有桌面行走行为。
+- [x] 支持配置开关：Windows MVP 默认开启；macOS MVP 返回 unavailable fallback。
+- [x] 提供 `getCurrentPlatform()` 给移动系统或 app 循环读取。
+- [x] `getCurrentPlatform()` 为 O(1) 缓存读取，不触发 IPC 或几何重算。
 
 **Verification:**
 
-- [ ] fake clock 测试覆盖更新、过期、无效平台。
-- [ ] 测试覆盖关闭开关和 unavailable fallback 后不再返回 platform。
-- [ ] `npm test -- --test-name-pattern "WindowAwarenessSystem"` 通过。
+- [x] fake clock 测试覆盖更新、过期、无效平台。
+- [x] 测试覆盖关闭开关和 unavailable fallback 后不再返回 platform。
+- [x] `npm test -- --test-name-pattern "WindowAwarenessSystem"` 通过。
 
 **Dependencies:** Task 5
 
@@ -300,16 +300,16 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - [ ] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
 - [ ] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
 - [ ] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口上”。
-- [ ] platform 消失时，宠物能回到现有 display walkAreas。
-- [ ] 活动窗口变化不会立即强制覆盖正在 walking、dragging、interacting 或 busy 的宠物目标。
+- [x] platform 消失时，宠物能回到现有 display walkAreas。
+- [x] 活动窗口变化不会立即强制覆盖正在 walking、dragging、interacting 或 busy 的宠物目标。
 - [ ] 每帧 update 不创建大量临时对象，不遍历历史窗口样本。
 
 **Verification:**
 
-- [ ] 单元测试覆盖 platform 目标选择、目标 clamp、platform 消失 fallback。
-- [ ] 测试覆盖 platform 快速变化时，宠物只在下一次 idle 选目标时采用新平台。
+- [x] 单元测试覆盖 platform 目标选择、目标 clamp、platform 消失 fallback。
+- [x] 测试覆盖 platform 快速变化时，宠物只在下一次 idle 选目标时采用新平台。
 - [ ] 手动测试：切换活动窗口，宠物会自然走到窗口顶部。
-- [ ] `npm test` 通过。
+- [x] `npm test` 通过。
 
 **Dependencies:** Task 6
 
@@ -352,12 +352,12 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 ### Checkpoint: MVP
 
 - [ ] 活动窗口切换后，宠物可以走到窗口顶部。
-- [ ] 最小化、全屏、无效窗口、本应用窗口不会破坏现有移动。
-- [ ] 多显示器下坐标正确。
+- [x] 最小化、全屏、无效窗口、本应用窗口不会破坏现有移动。
+- [x] 多显示器下坐标正确。
 - [ ] 拖拽、右键菜单、状态面板、互动动画仍可用。
 - [ ] 开启/关闭 Window Awareness 的 packaged build CPU/内存对比已记录。
 - [ ] 快速切换窗口时没有 IPC 堆积、宠物抖动或动画掉帧。
-- [ ] `npm test` 和 unsigned dir build 通过。
+- [x] `npm test` 和 unsigned dir build 通过。
 
 ### Phase 4: User Controls and Polish
 
@@ -367,17 +367,17 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 托盘菜单可开启/关闭 Window Awareness。
-- [ ] Windows MVP 默认开启 Window Awareness，用户可通过托盘关闭。
-- [ ] debug 暴露当前 active window/platform 信息。
-- [ ] 关闭后完全回到现有桌面行走逻辑。
-- [ ] macOS MVP 上菜单不暴露该开关，或明确显示该功能暂不可用。
+- [x] 托盘菜单可开启/关闭 Window Awareness。
+- [x] Windows MVP 默认开启 Window Awareness，用户可通过托盘关闭。
+- [x] debug 暴露当前 active window/platform 信息。
+- [x] 关闭后完全回到现有桌面行走逻辑。
+- [x] macOS MVP 上菜单不暴露该开关，或明确显示该功能暂不可用。
 
 **Verification:**
 
-- [ ] 托盘菜单测试覆盖新开关。
+- [x] 托盘菜单测试覆盖新开关。
 - [ ] 手动测试开关立即生效。
-- [ ] `npm test` 通过。
+- [x] `npm test` 通过。
 
 **Dependencies:** Task 6, Task 7
 
@@ -397,14 +397,14 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] ADR 或计划文档说明 macOS 支持是单独版本/ADR 范围，不是简单替换 provider，需要用户授权 Accessibility。
-- [ ] 未授权时返回 unavailable fallback，不弹错误、不影响普通桌宠行为。
-- [ ] 文档说明 macOS provider 后续需要单独测试多显示器、全屏、最小化和本应用窗口过滤。
+- [x] ADR 或计划文档说明 macOS 支持是单独版本/ADR 范围，不是简单替换 provider，需要用户授权 Accessibility。
+- [x] 未授权时返回 unavailable fallback，不弹错误、不影响普通桌宠行为。
+- [x] 文档说明 macOS provider 后续需要单独测试多显示器、全屏、最小化和本应用窗口过滤。
 
 **Verification:**
 
-- [ ] 文档包含 `darwin provider`、Accessibility 权限和 fallback 行为。
-- [ ] 与 Task 3 的 provider 选择逻辑一致。
+- [x] 文档包含 `darwin provider`、Accessibility 权限和 fallback 行为。
+- [x] 与 Task 3 的 provider 选择逻辑一致。
 
 **Dependencies:** Task 3
 
@@ -421,16 +421,16 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [ ] 配置项集中在 `CONFIG` 或明确的系统默认值中。
-- [ ] `docs/structure.md` 或 ADR 记录主进程窗口感知边界。
-- [ ] `CHANGELOG.md` 有用户可读条目。
-- [ ] release notes 明确 Windows 默认开启首发支持，macOS 暂走普通桌面行走 fallback。
-- [ ] 第一版不加入“根据窗口类型说台词”的行为或配置。
+- [x] 配置项集中在 `CONFIG` 或明确的系统默认值中。
+- [x] `docs/structure.md` 或 ADR 记录主进程窗口感知边界。
+- [x] `CHANGELOG.md` 有用户可读条目。
+- [x] release notes 明确 Windows 默认开启首发支持，macOS 暂走普通桌面行走 fallback。
+- [x] 第一版不加入“根据窗口类型说台词”的行为或配置。
 
 **Verification:**
 
-- [ ] 文档和代码配置一致。
-- [ ] release preflight 相关测试通过。
+- [x] 文档和代码配置一致。
+- [x] release preflight 相关测试通过。
 
 **Dependencies:** Task 9, Task 10
 
@@ -449,7 +449,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 |------|--------|------------|
 | Windows 前台窗口 API 不稳定或引入 native dependency 影响打包 | High | 先做 provider 边界和 fake tests；真实 provider 单独一 task；每次引入依赖后立刻跑 unsigned dir build |
 | macOS 窗口 bounds 读取需要 Accessibility 权限，导致功能不可用或体验割裂 | High | macOS MVP 先 unavailable fallback；后续 `darwin` provider 单独实现权限检测、授权引导和未授权 fallback |
-| 高频 PowerShell/外部进程轮询导致 CPU 抖动 | High | 正式路径禁止高频子进程采样；优先 native/Win32 provider 或常驻 helper；采样间隔默认 1000ms |
+| 高频 PowerShell/外部进程轮询导致 CPU 抖动 | High | 正式路径禁止高频子进程采样；优先 native/Win32 provider 或常驻 helper；Windows MVP 采样间隔默认 3000ms |
 | IPC 无条件广播导致 renderer 负载和消息堆积 | Medium | 主进程去重，仅 platform 相关字段变化时推送；标题变化不触发移动更新 |
 | gameLoop 中做 OS 查询或复杂几何计算 | High | renderer 只读 `WindowAwarenessSystem` 缓存；几何转换放在采样/推送阶段 |
 | 坐标系混乱，尤其多显示器、负坐标、DPI 缩放 | High | 把转换逻辑放纯函数并覆盖现有 displayBounds 测试风格 |

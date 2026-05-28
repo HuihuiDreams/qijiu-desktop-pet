@@ -1,18 +1,19 @@
 # Changelog
+本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
+格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
 ### Added
-- **Window Awareness MVP**: Added a main-process active-window provider, renderer-safe IPC subscription, renderer-side `WindowAwarenessSystem`, and movement targeting so idle pets can walk to the top edge of the active Windows foreground window.
-- **Window Awareness tray/debug controls**: Added a tray toggle on Windows, unavailable fallback labels on non-Windows platforms, and `debugWindowAwareness()` for DevTools inspection.
-- **Window Awareness architecture record**: Added [ADR-030](docs/decisions/ADR-030-window-awareness.md) for provider boundaries, fallback behavior, and macOS follow-up scope.
+- **窗口感知 MVP**：新增主进程活动窗口 provider、面向渲染进程的安全 IPC 订阅、渲染进程 `WindowAwarenessSystem`，以及移动目标接入，使 idle 状态下的桌宠可以走到 Windows 当前活动窗口顶部边缘。
+- **窗口感知托盘和调试入口**：Windows 托盘菜单新增窗口感知开关；非 Windows 平台显示不可用兜底文案；DevTools 新增 `debugWindowAwareness()` 调试入口。
+- **窗口感知架构记录**：新增 [ADR-030](docs/decisions/ADR-030-window-awareness.md)，记录 provider 边界、fallback 行为和 macOS 后续支持范围。
 
 ### Changed
-- **Movement targeting**: `MovementSystem` now accepts an optional active-window platform through `setActivePlatform()` while keeping display walk-area fallback behavior for stale, unavailable, minimized, maximized, fullscreen, or disabled Window Awareness data.
+- **移动目标选择**：`MovementSystem` 现在可通过 `setActivePlatform()` 接收可选的活动窗口平台；当窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍回退到现有显示器 walk area 行为。
 
 ### Fixed
-- **Window Awareness probing**: Windows active-window sampling now skips this app's own foreground windows and continues down z-order so DevTools probing can still find the external window underneath.
-本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
-格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
+- **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
+- **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
 
 
 ## [0.4.3] - 2026-05-27

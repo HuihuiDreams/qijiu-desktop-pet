@@ -242,8 +242,8 @@ function setPetWindowMousePassthrough(ignore, options = {}) {
   const { leaseMs, ...electronOptions } = options || {};
   mainWindow.setIgnoreMouseEvents(ignore, electronOptions);
 
-  if (!ignore) {
-    const timeoutMs = Number.isFinite(leaseMs) ? leaseMs : 2500;
+  if (!ignore && Number.isFinite(leaseMs) && leaseMs > 0) {
+    const timeoutMs = leaseMs;
     mousePassthroughResetTimer = setTimeout(() => {
       mousePassthroughResetTimer = null;
       if (mainWindow && !mainWindow.isDestroyed()) {
