@@ -8,6 +8,7 @@
 - **任务栏/Dock 平台走动**：从显示器 `bounds/workArea` 推导底部横向任务栏平台，并通过 `screen-info` 传给渲染进程，使桌宠在没有窗口平台优先目标时可以低频走到任务栏上边缘停留；解除 `win32` 限制，**正式支持 macOS 底部 Dock 平台感知**；DevTools 新增 `debugTaskbarPlatforms()` 和 `testTaskbarAwareness()` 调试入口。
 - **表面感知托盘开关**：Windows 和 macOS 的托盘菜单均提供该开关（在 macOS 上，因活动窗口感知仍处于兜底不可用状态，该开关实际用于控制是否在 Dock 上行走）；Linux 等其他平台显示不可用兜底文案；DevTools 新增 `debugWindowAwareness()` 调试入口。
 - **窗口感知架构记录**：新增 [ADR-030](docs/decisions/ADR-030-window-awareness.md)，记录 provider 边界、fallback 行为和 macOS 后续支持范围。
+- **修仙状态面板彩蛋**：在状态面板右下角新增了一行不显眼的白色加粗半透明英文水印“Make QiJiu Great Again!”，提升了趣味性。
 
 ### Changed
 - **移动目标选择**：`MovementSystem` 现在可通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台；窗口平台优先，任务栏/Dock 平台低频出现。
@@ -16,11 +17,13 @@
 - **托盘菜单分组优化**：将“窗口感知”功能开关移动至下方，与语言、自动启动等统一归为“软件功能”组。
 - **本地化文案优化**：将日语的“窗口感知（ウィンドウ感知）”功能名优化为更有桌宠氛围的“ウィンドウに乗る”；明确了三国语言中更新弹窗里的“重启”文案为“重启桌宠/应用”，消除了用户误认为是系统重启的顾虑。
 - **表面感知文案修仙化**：将中日英三语的“窗口感知”托盘文案统一修改为更具修仙代入感的“界面/境界感知”（中文：界面感知，英文：Realm Awareness，日文：境界に乗る），避免在修仙游戏世界观中出现“UI”或“Window”等出戏的现代词汇。
+- **状态面板自适应排版**：将修仙状态面板底层的属性排版从固定宽度的 Flexbox 重构为 CSS Grid，并将状态标签列设为 `max-content`。这彻底解决了在中文和日文环境下（因标签字数较少）状态条左侧留白过多、显得短小的问题，使得任何语言下彩色状态条都能无缝撑满剩余空间并完美对齐。
 - **窗口感知验收与文档规范**：在 `docs/plan/window-awareness-plan.md` 中核对了所有自动化测试与手动验证项；并将 `ADR-030-window-awareness.md` 翻译为中文，统一项目文档语言规范。
 ### Fixed
 - **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
 - **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
 - **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
+- **状态面板底部裁剪修复**：将状态窗口向主进程发送动态高度调整的测量基准从内部的 `contentEl.scrollHeight` 修正为整块面板的 `panel.scrollHeight`，修复了面板新增底部元素后导致计算高度不足，从而在 `overflow: hidden` 限制下把圆角和底部文字“一刀切”的问题。
 - **测试稳定性修复**：在 `movementSystem.test.js` 中通过 mock `Math.random` 修复了偶发的窗口感知行走目标越界测试失败问题，保证 CI 自动化测试的绝对确定性。
 
 

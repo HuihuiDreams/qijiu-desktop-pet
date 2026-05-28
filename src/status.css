@@ -132,6 +132,11 @@ body {
 }
 
 .pet-status-block {
+  display: grid;
+  grid-template-columns: max-content 1fr 32px;
+  align-items: center;
+  row-gap: 7px;
+  column-gap: 8px;
   margin-bottom: 16px;
   padding: 12px 14px;
   background:
@@ -149,10 +154,11 @@ body {
 }
 
 .pet-status-name {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 3px;
   color: var(--color-ink);
   font-family: var(--font-display);
   font-size: 15px;
@@ -168,14 +174,10 @@ body {
 }
 
 .stat-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 7px;
+  display: contents;
 }
 
 .stat-label {
-  width: 85px;
   color: var(--color-ink-light);
   font-size: 12px;
   text-align: right;
@@ -216,9 +218,22 @@ body {
 .stat-bar-fill--mood { background: linear-gradient(90deg, #249e58, #4dca7c); }
 
 .stat-value {
-  width: 32px;
   color: var(--color-ink-light);
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+.status-footer {
+  text-align: right;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 12px;
+  margin-bottom: -10px;
+  margin-right: -4px;
+  letter-spacing: 0.5px;
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  user-select: none;
+  pointer-events: none;
 }

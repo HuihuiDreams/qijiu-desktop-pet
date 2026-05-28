@@ -118,10 +118,10 @@ function renderStatus(data) {
     // getBoundingClientRect().width on a `width:100%` panel would grow with
     // the window on every resize tick, causing infinite drift on Windows.
     const panelWidth = panel.scrollWidth;
-    const contentHeight = contentEl.scrollHeight;
+    const panelHeight = panel.scrollHeight;
     window.electronAPI.resizeStatusWindow({
       width: panelWidth + BODY_PADDING,
-      height: contentHeight + TITLEBAR_AND_PANEL_PADDING + BODY_PADDING,
+      height: panelHeight + BODY_PADDING,
     });
   });
 }
