@@ -84,6 +84,10 @@ class WindowAwarenessSystem {
     return this.info.platform;
   }
 
+  isSurfaceAwarenessEnabled() {
+    return this.enabled && this.info?.reason !== 'disabled';
+  }
+
   getDebugInfo(now = this.now()) {
     return {
       enabled: this.enabled,

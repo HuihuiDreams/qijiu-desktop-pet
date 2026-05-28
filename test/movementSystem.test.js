@@ -323,6 +323,64 @@ test('active platform removal falls back to display walk areas for new idle targ
   assert.equal(pet.targetY + pet.size <= 1040, true);
 });
 
+test('idle pets can choose taskbar platforms when no active window platform is available', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  movementSystem.setSurfacePlatforms([
+    {
+      x: 0,
+      y: 1016,
+      width: 1920,
+      height: 48,
+      source: 'taskbar-edge',
+    },
+  ]);
+  const pet = { size: 96 };
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+
+  try {
+    movementSystem.randomTarget(pet);
+  } finally {
+    Math.random = originalRandom;
+  }
+
+  assert.equal(pet.targetArea.source, 'taskbar-edge');
+  assert.equal(pet.targetX >= 0, true);
+  assert.equal(pet.targetX + pet.size <= 1920, true);
+  assert.equal(pet.targetY, 944);
+  assert.equal(pet.targetY + pet.size, 1040);
+});
+
+test('active window platforms are preferred over taskbar platforms', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  movementSystem.setSurfacePlatforms([
+    {
+      x: 0,
+      y: 1016,
+      width: 1920,
+      height: 48,
+      source: 'taskbar-edge',
+    },
+    {
+      x: 120,
+      y: 76,
+      width: 800,
+      height: 48,
+      source: 'active-window-top',
+    },
+  ]);
+  const pet = { size: 96 };
+
+  movementSystem.randomTarget(pet);
+
+  assert.equal(pet.targetArea.source, 'active-window-top');
+  assert.equal(pet.targetY, 4);
+});
+
 test('walking pets keep their cached active window target when the active window changes', () => {
   const movementSystem = new MovementSystem(1920, 1080, [
     { x: 0, y: 0, width: 1920, height: 1040 },

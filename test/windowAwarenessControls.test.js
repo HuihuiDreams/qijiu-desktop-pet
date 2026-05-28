@@ -35,6 +35,10 @@ test('debug tools expose current Window Awareness state', () => {
   assert.ok(debugSource.includes('window.__LAST_WINDOW_AWARENESS_PROBE = result'));
   assert.ok(debugSource.includes('JSON.stringify(result, null, 2)'));
   assert.ok(debugSource.includes('window.testWindowAwareness'));
+  assert.ok(debugSource.includes('window.debugTaskbarPlatforms'));
+  assert.ok(debugSource.includes('window.testTaskbarAwareness'));
+  assert.ok(debugSource.includes('__LAST_TASKBAR_PLATFORM_PROBE'));
+  assert.ok(debugSource.includes('__LAST_TASKBAR_AWARENESS_TEST'));
   assert.ok(debugSource.includes("mode: 'unavailable'"));
   assert.equal(debugSource.includes('pet.x = platform.x'), true);
   assert.ok(debugSource.includes('options.reposition === true'));

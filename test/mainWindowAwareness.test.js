@@ -20,6 +20,13 @@ test('main process exposes active window IPC request and push channel', () => {
   assert.ok(mainSource.includes("webContents.send('active-window-info'"));
 });
 
+test('main process sends taskbar platforms with screen info', () => {
+  assert.ok(mainSource.includes('getTaskbarPlatformsRelativeToBounds'));
+  assert.ok(mainSource.includes("const taskbarPlatforms = process.platform === 'win32'"));
+  assert.ok(mainSource.includes('? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)'));
+  assert.ok(mainSource.includes('taskbarPlatforms,'));
+});
+
 test('preload exposes safe active window APIs to renderer', () => {
   assert.ok(preloadSource.includes("getActiveWindowInfo: () => ipcRenderer.invoke('get-active-window-info')"));
   assert.ok(preloadSource.includes("ipcRenderer.on('active-window-info'"));

@@ -1,37 +1,47 @@
-# Implementation Plan: Window Awareness
+# Implementation Plan: Surface Awareness
 
 ## Overview
 
-Window Awareness 让桌宠能够感知当前活动窗口，并在活动窗口顶部边缘“行走”或“坐下”。当前应用使用一个覆盖虚拟桌面的透明 `BrowserWindow`，宠物坐标和移动范围都在这个大窗口的渲染坐标系内。因此 MVP 不建议先改窗口架构，而是把活动窗口顶部转换成一条临时的 `walkArea/platform`，交给现有 `MovementSystem` 和渲染循环消费。
+Surface Awareness 让桌宠能够感知当前活动窗口和系统任务栏，并在这些稳定边缘上“行走”或“坐下”。当前应用使用一个覆盖虚拟桌面的透明 `BrowserWindow`，宠物坐标和移动范围都在这个大窗口的渲染坐标系内。因此 MVP 不建议先改窗口架构，而是把活动窗口顶部、任务栏可站立边缘转换成临时的 `platform`，交给现有 `MovementSystem` 和渲染循环消费。
 
 目标体验：
 
 - 当用户切换到普通应用窗口时，宠物可以移动到该窗口标题栏/顶部边缘附近。
 - 宠物可以沿活动窗口顶部水平走动，或在顶部坐下/停留。
+- 当系统底部横向任务栏可见时，宠物可以走到任务栏上边缘附近，并沿任务栏水平走动或坐下。
+- 多显示器场景下，每个有可推导任务栏边缘的显示器都可以生成自己的任务栏平台。
 - 当活动窗口最小化、全屏、不可用、太小，或是本应用自己的窗口时，宠物回退到现有桌面行走逻辑。
+- 当任务栏自动隐藏、位于竖向边缘、几何无法可靠推导，或平台会遮挡不可接受的系统交互时，宠物回退到现有桌面行走逻辑。
 - 不影响现有拖拽、点击穿透、多显示器、状态面板、互动动画和皮肤系统。
 
 ## Current Codebase Fit
 
 - `main.js` 已经负责显示器信息、主透明窗口尺寸和 IPC，可在这里采样活动窗口信息。
-- `displayBounds.js` 已经提供屏幕坐标到主窗口相对坐标的基础模型，可扩展活动窗口矩形转换逻辑。
+- `displayBounds.js` 已经提供屏幕坐标到主窗口相对坐标的基础模型，可扩展活动窗口矩形转换逻辑，也可从 `display.bounds` 与 `display.workArea` 的差异推导任务栏平台。
 - `preload.js` 是渲染进程唯一安全入口，需要暴露活动窗口订阅或拉取 API。
-- `src/systems/MovementSystem.js` 已经支持多个 `walkAreas`，但当前 area 是二维矩形；窗口顶部更像窄平台，需要补充平台选择策略。
-- `src/app.js` 是游戏循环入口，适合维护 `WindowAwarenessSystem` 状态，并决定是否把窗口平台注入 `MovementSystem`。
+- `src/systems/MovementSystem.js` 已经支持多个 `walkAreas`，但当前 area 是二维矩形；窗口顶部和任务栏边缘更像窄平台，需要补充平台选择策略。
+- `src/app.js` 是游戏循环入口，适合维护 `WindowAwarenessSystem` 状态，并决定是否把窗口平台、任务栏平台注入 `MovementSystem`。
 - `src/pet/Pet.js` 当前只有 `idle`/`walking` 等状态。MVP 可先复用 `idle` 表示坐下/停留，后续再加专用 `perching` 或 `sitting` 状态和素材。
 
 ## Architecture Decisions
 
 - 活动窗口感知放在主进程。渲染进程不直接访问 OS 窗口 API。
 - 活动窗口能力拆成共享合同层和平台 provider。共享层定义统一数据结构、几何转换、IPC 和 renderer 行为；平台 provider 只负责各 OS 的真实窗口采样。
-- Windows 先实现完整 provider。macOS MVP 先走 unavailable fallback，即应用正常运行、Window Awareness 不启用、移动系统回退到现有桌面 `walkAreas`。
+- Windows 先实现完整窗口 provider。macOS MVP 先走 unavailable fallback，即应用正常运行、Surface Awareness 的窗口平台不可用，移动系统回退到现有桌面 `walkAreas`。
 - 后续 macOS 支持作为单独版本/ADR 处理，通过 `darwin` provider 实现，并必须包含 Accessibility 权限检测、用户授权引导、未授权 fallback 和打包验证。
-- Windows MVP 默认开启 Window Awareness；macOS MVP 不启用该能力。
+- Windows MVP 默认开启 Surface Awareness；macOS MVP 不启用窗口平台能力。
 - 活动窗口信息使用“低频采样 + 变化推送”，当前 Windows MVP 默认 3000ms 一次，避免高频 Win32 调用。
+- 任务栏平台不通过 active window provider 采样，而是随 `screen-info` 从 Electron display metrics 派生。任务栏位置变化、显示器变化和 DPI 变化都跟随现有显示器更新链路。
 - 坐标统一在主进程或纯函数中转换成主透明窗口内坐标，再发给渲染进程。
 - MVP 将窗口顶部建模为 `platform`：一个窄矩形，宽度等于活动窗口可用顶部范围，高度约为宠物脚下容忍范围。
+- MVP 将任务栏建模为 `source: 'taskbar-edge'` 的平台：只支持底部横向任务栏，平台脚线对齐任务栏上边缘。
+- 竖向任务栏、顶部任务栏和自动隐藏任务栏不进入默认行为。
 - 不把宠物强制吸附到窗口。只有在 idle 选新目标时才有概率选择窗口平台，避免突兀瞬移。
+- 不把宠物强制吸附到任务栏。任务栏平台应参与同一套 idle 目标选择，但默认权重低于活动窗口平台，避免宠物长期占据任务栏。
+- 窗口平台和任务栏平台共用一个 Surface Awareness 托盘开关，不单独拆开。
+- 窗口平台和任务栏平台同时可用时，窗口平台优先；任务栏平台作为低频补充目标。
 - 两只宠物独立随机选择是否走向窗口顶部。默认体验是一只上去、另一只继续桌面移动；当时机和空间允许时，不硬性阻止两只同时坐在窗口顶部。
+- 两只宠物可以分别选择窗口或任务栏平台；当平台宽度足够时允许同一平台上同时停留，并避免目标重叠。
 - 最大化窗口不生成窗口顶部 platform，行为回退到现有桌面行走逻辑。普通非最大化窗口如果生成 platform，应避开系统标题栏按钮区域。
 - 窗口顶部停留第一版复用 `idle` 图。专用 sitting/perching 素材留给后续。
 - 根据窗口类型触发专属台词不进入第一版 MVP，后续可单独扩展。
@@ -39,7 +49,7 @@ Window Awareness 让桌宠能够感知当前活动窗口，并在活动窗口顶
 
 ## Performance Constraints
 
-Window Awareness 是行为功能，不是当前内存问题的主要解法。它不应增加新的 `BrowserWindow`，也不应改变现有全桌面透明窗口架构。预计内存增量应接近可忽略；真正需要控制的是活动窗口采样带来的 CPU、IPC 和抖动风险。
+Surface Awareness 是行为功能，不是当前内存问题的主要解法。它不应增加新的 `BrowserWindow`，也不应改变现有全桌面透明窗口架构。预计内存增量应接近可忽略；真正需要控制的是活动窗口采样带来的 CPU、IPC 和抖动风险。
 
 必须遵守的性能约束：
 
@@ -49,11 +59,12 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 - 窗口标题变化不应单独触发移动系统更新，避免浏览器/编辑器标题频繁变化造成 IPC 风暴。
 - renderer 的 game loop 只能读取 `WindowAwarenessSystem` 缓存；不得每帧查询 OS API、发送 IPC 或重新计算完整显示器几何。
 - `MovementSystem` 只能在 idle 重新选择目标时消费 platform，不应在活动窗口每次变化时强行改宠物目标。
-- Window Awareness 关闭时，CPU、内存和现有移动行为应与当前版本基本一致。
+- 任务栏平台只在显示器 metrics 变化时重算，不应被活动窗口采样频率驱动。
+- Surface Awareness 关闭时，CPU、内存和现有移动行为应与当前版本基本一致。
 
 性能验收基线：
 
-- 开启/关闭 Window Awareness 分别记录 packaged build 下的 Electron 总内存、主进程 CPU、renderer CPU。
+- 开启/关闭 Surface Awareness 分别记录 packaged build 下的 Electron 总内存、主进程 CPU、renderer CPU。
 - 开启后 idle 状态不应出现持续 CPU 爬升。
 - 快速切换活动窗口时，宠物不能抖动、来回改目标或明显掉帧。
 - unsigned dir build 必须通过，避免 native dependency 破坏打包。
@@ -87,6 +98,30 @@ Window Awareness 是行为功能，不是当前内存问题的主要解法。它
 ```
 
 注意：`platform.x/y/width/height` 应该是主透明窗口内的相对坐标，不是 OS 屏幕绝对坐标。
+
+显示器信息可额外携带任务栏平台：
+
+```js
+{
+  width: 1920,
+  height: 1080,
+  walkAreas: [
+    { x: 0, y: 0, width: 1920, height: 1040, scaleRatio: 1 }
+  ],
+  taskbarPlatforms: [
+    {
+      x: 0,
+      y: 1016,
+      width: 1920,
+      height: 48,
+      source: 'taskbar-edge',
+      displayId: 'primary'
+    }
+  ]
+}
+```
+
+后续如果窗口平台和任务栏平台需要同时参与选择，renderer 可以把它们合并成 `surfacePlatforms` 数组传给移动系统；旧的 `platform` 字段保留为活动窗口 MVP 的兼容入口。
 
 不可用或未支持平台的 fallback shape：
 
@@ -155,6 +190,33 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - `displayBounds.js`
 - `test/displayBounds.test.js`
 - `test/activeWindowGeometry.test.js`
+
+**Estimated scope:** Medium
+
+#### Task 2b: Add taskbar platform geometry helpers
+
+**Description:** 在 `displayBounds.js` 中从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台，并转换成主透明窗口内坐标。竖向和顶部任务栏不生成平台。
+
+**Acceptance criteria:**
+
+- [x] 能从 `bounds.bottom > workArea.bottom` 的显示器推导底部横向任务栏区域。
+- [x] 生成 `source: 'taskbar-edge'` 的平台，并让平台脚线对齐任务栏上边缘。
+- [x] 平台宽度、高度、最小可用宽度和宠物脚下偏移可配置。
+- [x] 自动隐藏任务栏、竖向任务栏、顶部任务栏或无效 display metrics 不生成平台。
+- [x] 多显示器场景下，每个符合条件的显示器都可生成独立任务栏平台。
+
+**Verification:**
+
+- [x] 单元测试覆盖主屏底部任务栏、副屏底部任务栏、负坐标显示器、无任务栏差异、竖向任务栏过滤、自动隐藏/厚度过小过滤。
+- [x] `npm test -- --test-name-pattern "taskbar platforms"` 通过。
+
+**Dependencies:** Task 2
+
+**Files likely touched:**
+
+- `displayBounds.js`
+- `test/displayBounds.test.js`
+- `test/taskbarPlatformGeometry.test.js`
 
 **Estimated scope:** Medium
 
@@ -289,17 +351,48 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Estimated scope:** Medium
 
-#### Task 7: Let MovementSystem choose active window platforms
+#### Task 6b: Carry taskbar platforms through screen-info
 
-**Description:** 扩展 `MovementSystem`，让 idle 选择目标时有概率选择活动窗口顶部平台。平台目标应主要沿 X 轴移动，Y 保持在窗口顶部附近。
+**Description:** 让主进程在发送 `screen-info` 时附带 `taskbarPlatforms`，renderer 缓存这些稳定平台，并和活动窗口平台一起提供给移动系统。任务栏平台跟随显示器信息变化，不走活动窗口 IPC。
+
+**Acceptance criteria:**
+
+- [x] `main.js` 在 `sendScreenInfo()` 中发送 `taskbarPlatforms`。
+- [x] `src/app.js` 缓存最新 `taskbarPlatforms`，并在每次 game loop 或 screen-info 更新后传给移动系统。
+- [ ] renderer reload 后不会重复注册或丢失任务栏平台。
+- [x] Surface Awareness 关闭时，窗口平台和任务栏平台都停止参与移动目标选择。
+
+**Verification:**
+
+- [x] 单元测试或源码测试覆盖 `screen-info` 包含任务栏平台。
+- [ ] 手动测试显示器设置变化后任务栏平台刷新。
+- [x] `npm test` 通过。
+
+**Dependencies:** Task 2b, Task 6
+
+**Files likely touched:**
+
+- `main.js`
+- `src/app.js`
+- `src/systems/MovementSystem.js`
+- `test/displayBounds.test.js`
+- `test/windowAwarenessRendererIntegration.test.js`
+
+**Estimated scope:** Medium
+
+#### Task 7: Let MovementSystem choose surface platforms
+
+**Description:** 扩展 `MovementSystem`，让 idle 选择目标时有概率选择活动窗口顶部平台或任务栏平台。平台目标应主要沿 X 轴移动，Y 保持在平台脚线附近。
 
 **Acceptance criteria:**
 
 - [ ] 当 platform 可用时，宠物 idle 后有配置概率走向窗口顶部。
+- [x] 当 taskbar platform 可用时，宠物 idle 后有配置概率走向任务栏上边缘。
+- [x] 活动窗口平台和任务栏平台使用同一套 `surfacePlatforms` 选择逻辑，窗口平台优先，任务栏平台低频出现。
 - [ ] 两只宠物各自独立随机选择 platform 目标；默认不会强制两只同时上窗口顶部。
 - [ ] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
 - [ ] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
-- [ ] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口上”。
+- [ ] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口或任务栏上”。
 - [x] platform 消失时，宠物能回到现有 display walkAreas。
 - [x] 活动窗口变化不会立即强制覆盖正在 walking、dragging、interacting 或 busy 的宠物目标。
 - [ ] 每帧 update 不创建大量临时对象，不遍历历史窗口样本。
@@ -309,9 +402,10 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - [x] 单元测试覆盖 platform 目标选择、目标 clamp、platform 消失 fallback。
 - [x] 测试覆盖 platform 快速变化时，宠物只在下一次 idle 选目标时采用新平台。
 - [ ] 手动测试：切换活动窗口，宠物会自然走到窗口顶部。
+- [ ] 手动测试：底部横向任务栏可见时，宠物会自然走到任务栏上边缘并停留。
 - [x] `npm test` 通过。
 
-**Dependencies:** Task 6
+**Dependencies:** Task 6, Task 6b
 
 **Files likely touched:**
 
@@ -324,13 +418,14 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 #### Task 8: Add sitting/perching presentation
 
-**Description:** 为窗口顶部停留增加轻量表现。MVP 复用 idle 帧；后续有素材时再加专用 sitting/perching sprite。
+**Description:** 为窗口顶部和任务栏停留增加轻量表现。MVP 复用 idle 帧；后续有素材时再加专用 sitting/perching sprite。
 
 **Acceptance criteria:**
 
 - [ ] 平台停留时不会触发普通随机走动太快离开。
 - [ ] 可通过配置控制坐下时间范围。
 - [ ] 第一版直接使用 idle 图，不要求新增 sitting 素材，也不出现文字 fallback。
+- [ ] 任务栏停留不改变主透明窗口 click-through 默认策略，避免挡住任务栏点击。
 
 **Verification:**
 
@@ -352,10 +447,11 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 ### Checkpoint: MVP
 
 - [ ] 活动窗口切换后，宠物可以走到窗口顶部。
+- [x] 底部横向任务栏可见时，宠物可以走到任务栏上边缘。
 - [x] 最小化、全屏、无效窗口、本应用窗口不会破坏现有移动。
 - [x] 多显示器下坐标正确。
 - [ ] 拖拽、右键菜单、状态面板、互动动画仍可用。
-- [ ] 开启/关闭 Window Awareness 的 packaged build CPU/内存对比已记录。
+- [ ] 开启/关闭 Surface Awareness 的 packaged build CPU/内存对比已记录。
 - [ ] 快速切换窗口时没有 IPC 堆积、宠物抖动或动画掉帧。
 - [x] `npm test` 和 unsigned dir build 通过。
 
@@ -367,8 +463,8 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 
 **Acceptance criteria:**
 
-- [x] 托盘菜单可开启/关闭 Window Awareness。
-- [x] Windows MVP 默认开启 Window Awareness，用户可通过托盘关闭。
+- [x] 托盘菜单可开启/关闭 Surface Awareness。
+- [x] Windows MVP 默认开启 Surface Awareness，用户可通过托盘关闭。
 - [x] debug 暴露当前 active window/platform 信息。
 - [x] 关闭后完全回到现有桌面行走逻辑。
 - [x] macOS MVP 上菜单不暴露该开关，或明确显示该功能暂不可用。
@@ -458,6 +554,10 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 | 窗口顶部太窄或靠近屏幕边缘导致宠物卡住 | Medium | 最小宽度过滤；目标 clamp；platform 消失后回退 display walkAreas |
 | 影响点击穿透和拖拽 | Medium | 不改变主透明窗口 click-through 策略；只改宠物目标位置 |
 | 敏感窗口标题被保存或展示 | Medium | 不持久化活动窗口标题；debug 仅开发态展示；日志避免记录完整标题 |
+| 任务栏自动隐藏导致平台几何不稳定 | Medium | 第一版不支持自动隐藏任务栏；厚度过小或 workArea 差异不明确时不生成平台 |
+| 竖向或顶部任务栏导致宠物可见区域不足 | Medium | 只支持底部横向任务栏；其它方向不生成平台 |
+| 宠物停在任务栏上影响用户点击图标 | High | 保持默认点击穿透；只在宠物交互 hover 时短暂接管鼠标；任务栏平台低频出现 |
+| 多显示器任务栏策略不一致 | Medium | 从每个 display 的 `bounds/workArea` 独立推导，不假设只有主屏有任务栏 |
 
 ## Test Scenarios
 
@@ -467,15 +567,23 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - 活动窗口最小化或切到桌面：宠物回到普通桌面行走。
 - 拖拽宠物时切换窗口：拖拽优先，不被系统吸附。
 - 打开状态面板：宠物不把状态面板当活动窗口平台。
-- 关闭 Window Awareness：现有移动行为保持不变。
-- macOS MVP：应用正常启动，Window Awareness 返回 unavailable fallback，宠物保持普通桌面行走。
+- Windows 底部横向任务栏可见：宠物能走到任务栏上边缘并横向移动。
+- 多显示器都有底部横向任务栏：每个显示器都能生成独立任务栏平台。
+- 任务栏自动隐藏、顶部停靠或竖向停靠：不生成任务栏平台，回退普通桌面行走。
+- 关闭 Surface Awareness：窗口平台和任务栏平台都停止参与目标选择，现有移动行为保持不变。
+- macOS MVP：应用正常启动，窗口平台返回 unavailable fallback，宠物保持普通桌面行走。
 
 ## Resolved Decisions
 
 - Windows MVP 默认开启，托盘提供关闭入口。
 - macOS 支持作为单独版本/ADR 处理，当前 MVP 使用 unavailable fallback。
 - 窗口顶部停留第一版复用 idle，不新增 sitting 素材。
+- 任务栏停留第一版复用 idle，不新增 sitting 素材。
 - 两只宠物独立随机选择窗口平台；通常一只上去、另一只继续桌面移动，但允许两只在空间足够时同时坐下。
+- 任务栏平台与窗口平台共享移动系统的窄平台模型，但来源独立：任务栏来自 display metrics，窗口来自 active window provider。
+- 任务栏平台和窗口平台共用一个 Surface Awareness 托盘开关。
+- 窗口平台和任务栏平台同时可用时，窗口平台优先，任务栏平台低频出现。
+- 任务栏只支持底部横向形态；顶部或竖向任务栏不生成平台。
 - 最大化窗口不作为 platform，回退到现有桌面行走逻辑；普通窗口平台应避开标题栏按钮区域。
 - 第一版 MVP 不做“根据窗口类型说台词”，后续可考虑。
 

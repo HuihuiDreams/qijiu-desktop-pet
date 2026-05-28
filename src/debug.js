@@ -215,6 +215,76 @@ window.testWindowAwareness = async function (options = {}) {
   return { mode, platform, info };
 };
 
+window.debugTaskbarPlatforms = function () {
+  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : null;
+  const result = {
+    captured: Boolean(screenInfo?.taskbarPlatforms?.length),
+    taskbarPlatforms: screenInfo?.taskbarPlatforms || [],
+    walkAreas: screenInfo?.movementWalkAreas || screenInfo?.walkAreas || [],
+    surfaceEnabled: screenInfo?.windowAwareness?.enabled !== false
+      && screenInfo?.windowAwareness?.info?.reason !== 'disabled',
+  };
+  window.__LAST_TASKBAR_PLATFORM_PROBE = result;
+  console.log(`[debug] Taskbar platforms:\n${JSON.stringify(result, null, 2)}`);
+  return result;
+};
+
+window.testTaskbarAwareness = function (options = {}) {
+  if (!window.__DEBUG_PETS || !window.__DEBUG_MOVEMENT) {
+    console.warn('[debug] Taskbar Awareness 调试对象未就绪，请等应用完全启动后再试');
+    return null;
+  }
+
+  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : {};
+  const probe = window.debugTaskbarPlatforms();
+  let platform = options.platform || probe.taskbarPlatforms?.[0] || null;
+  let mode = 'real';
+
+  if (!platform || options.simulate === true) {
+    if (!platform && options.requireReal === true) {
+      console.warn('[debug] 没有抓到真实任务栏平台。请确认是在 Windows、任务栏为底部横向且未自动隐藏。', probe);
+      return { mode: 'unavailable', reason: 'missing-taskbar-platform', probe };
+    }
+
+    const areas = Array.isArray(screenInfo.movementWalkAreas) && screenInfo.movementWalkAreas.length > 0
+      ? screenInfo.movementWalkAreas
+      : [{ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }];
+    const area = areas
+      .slice()
+      .sort((a, b) => (b.width * b.height) - (a.width * a.height))[0];
+    platform = {
+      x: area.x,
+      y: area.y + area.height - 24,
+      width: area.width,
+      height: 48,
+      scaleRatio: area.scaleRatio || 1,
+      source: 'taskbar-edge',
+      displayId: 'debug-simulated-taskbar',
+    };
+    mode = 'simulated';
+  }
+
+  window.__DEBUG_MOVEMENT.setSurfacePlatforms([platform]);
+
+  Object.values(window.__DEBUG_PETS).forEach((pet, index) => {
+    pet.isDragging = false;
+    pet.setState('idle');
+    pet.idleTimer = 0;
+    if (options.reposition === true) {
+      pet.x = platform.x + 24 + index * Math.min(160, Math.max(80, platform.width / 3));
+      pet.y = Math.max(0, platform.y - pet.size - 120);
+    }
+    window.__DEBUG_MOVEMENT.randomTarget(pet);
+    pet.direction = pet.targetX > pet.x ? 'right' : 'left';
+    pet.setState('walking');
+  });
+
+  const result = { mode, platform, probe };
+  window.__LAST_TASKBAR_AWARENESS_TEST = result;
+  console.log(`[debug] Taskbar Awareness ${mode} test started`, result);
+  return result;
+};
+
 window.testHungry = function() {
   if (!window.__DEBUG_PETS) {
     console.warn('[debug] 调试变量未就绪，请确保应用已完全启动');
@@ -242,4 +312,4 @@ window.testHungry = function() {
   }, 5000);
 };
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood() 或 testHungry() 来测试效果。');
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');

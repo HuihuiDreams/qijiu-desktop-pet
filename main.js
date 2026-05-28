@@ -1,7 +1,11 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { getVirtualDisplayBounds, getWalkAreasRelativeToBounds } = require('./displayBounds');
+const {
+  getTaskbarPlatformsRelativeToBounds,
+  getVirtualDisplayBounds,
+  getWalkAreasRelativeToBounds,
+} = require('./displayBounds');
 const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('./activeWindowProvider');
 const { createActiveWindowSampler } = require('./activeWindowAwareness');
 const {
@@ -281,11 +285,15 @@ function sendScreenInfo() {
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
   const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
+  const taskbarPlatforms = process.platform === 'win32'
+    ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
+    : [];
 
   mainWindow.webContents.send('screen-info', {
     width: bounds.width,
     height: bounds.height,
     walkAreas,
+    taskbarPlatforms,
     windowScaleFactor,
     displays: displays.map((display) => ({
       id: display.id,

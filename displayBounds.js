@@ -99,6 +99,50 @@ function rectRelativeToBounds(rect, windowBounds) {
   };
 }
 
+function getTaskbarPlatformsRelativeToBounds(displays, windowBounds, windowScaleFactor = 1, options = {}) {
+  if (!Array.isArray(displays) || !isValidRect(windowBounds)) return [];
+  const baseScaleFactor = Number.isFinite(windowScaleFactor) && windowScaleFactor > 0
+    ? windowScaleFactor
+    : 1;
+  const platformHeight = Number.isFinite(options.platformHeight) ? options.platformHeight : 48;
+  const petFootOffset = Number.isFinite(options.petFootOffset) ? options.petFootOffset : 24;
+  const minPlatformWidth = Number.isFinite(options.minPlatformWidth) ? options.minPlatformWidth : 120;
+  const minTaskbarThickness = Number.isFinite(options.minTaskbarThickness)
+    ? options.minTaskbarThickness
+    : 8;
+
+  return displays
+    .map((display) => {
+      const bounds = display?.bounds;
+      if (!isValidRect(bounds) || !isValidRect(display?.workArea)) return null;
+
+      const workArea = intersectRects(display.workArea, bounds);
+      if (!workArea) return null;
+
+      const boundsBottom = bounds.y + bounds.height;
+      const workAreaBottom = workArea.y + workArea.height;
+      const bottomTaskbarHeight = boundsBottom - workAreaBottom;
+      if (bottomTaskbarHeight < minTaskbarThickness || workArea.width < minPlatformWidth) {
+        return null;
+      }
+
+      const scaleRatio = getScaleFactor(display, baseScaleFactor) / baseScaleFactor;
+      const x = bounds.x - windowBounds.x + (workArea.x - bounds.x) * scaleRatio;
+      const edgeY = bounds.y - windowBounds.y + (workAreaBottom - bounds.y) * scaleRatio;
+
+      return {
+        x,
+        y: edgeY - petFootOffset,
+        width: workArea.width * scaleRatio,
+        height: platformHeight,
+        scaleRatio,
+        source: 'taskbar-edge',
+        displayId: display.id,
+      };
+    })
+    .filter(Boolean);
+}
+
 function getActiveWindowPlatformRelativeToBounds(activeWindowInfo, windowBounds, displays, options = {}) {
   const windowInfo = activeWindowInfo?.window;
   const activeBounds = windowInfo?.bounds;
@@ -143,6 +187,7 @@ function getActiveWindowPlatformRelativeToBounds(activeWindowInfo, windowBounds,
 
 module.exports = {
   getActiveWindowPlatformRelativeToBounds,
+  getTaskbarPlatformsRelativeToBounds,
   getVirtualDisplayBounds,
   getWalkAreasRelativeToBounds,
   intersectRects,

@@ -18,10 +18,13 @@ test('index.html loads WindowAwarenessSystem before app.js', () => {
 test('app.js wires WindowAwarenessSystem into MovementSystem without IPC in movement updates', () => {
   assert.ok(appSource.includes('new WindowAwarenessSystem(window.electronAPI'));
   assert.ok(appSource.includes('windowAwarenessSystem.start()'));
-  assert.ok(appSource.includes('movementSystem.setActivePlatform(windowAwarenessSystem.getCurrentPlatform(Date.now()))'));
+  assert.ok(appSource.includes('taskbarPlatforms: Array.isArray(info.taskbarPlatforms) ? info.taskbarPlatforms : []'));
+  assert.ok(appSource.includes('if (!windowAwarenessSystem.isSurfaceAwarenessEnabled()) return []'));
+  assert.ok(appSource.includes('movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()))'));
 });
 
 test('config exposes window awareness defaults', () => {
   assert.ok(configSource.includes('WINDOW_AWARENESS_ENABLED: true'));
   assert.ok(configSource.includes('WINDOW_AWARENESS_PLATFORM_TTL_MS: 2500'));
+  assert.ok(configSource.includes('TASKBAR_PLATFORM_WEIGHT: 120'));
 });

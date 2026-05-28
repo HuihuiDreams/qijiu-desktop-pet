@@ -18,6 +18,7 @@ const CONFIG = {
   TASKBAR_HEIGHT: 48,                 // 底部任务栏的高度预留
   WINDOW_AWARENESS_ENABLED: true,
   WINDOW_AWARENESS_PLATFORM_TTL_MS: 2500,
+  TASKBAR_PLATFORM_WEIGHT: 120,
 
   // === 互动相关 (Interaction) ===
   INTERACTION_DISTANCE: 180,          // 触发CP互动的判定距离

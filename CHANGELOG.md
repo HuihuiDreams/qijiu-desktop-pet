@@ -5,11 +5,12 @@
 ## [Unreleased]
 ### Added
 - **窗口感知 MVP**：新增主进程活动窗口 provider、面向渲染进程的安全 IPC 订阅、渲染进程 `WindowAwarenessSystem`，以及移动目标接入，使 idle 状态下的桌宠可以走到 Windows 当前活动窗口顶部边缘。
+- **任务栏平台走动**：从显示器 `bounds/workArea` 推导底部横向任务栏平台，并通过 `screen-info` 传给渲染进程，使桌宠在没有窗口平台优先目标时可以低频走到任务栏上边缘停留；DevTools 新增 `debugTaskbarPlatforms()` 和 `testTaskbarAwareness()` 调试入口。
 - **窗口感知托盘和调试入口**：Windows 托盘菜单新增窗口感知开关；非 Windows 平台显示不可用兜底文案；DevTools 新增 `debugWindowAwareness()` 调试入口。
 - **窗口感知架构记录**：新增 [ADR-030](docs/decisions/ADR-030-window-awareness.md)，记录 provider 边界、fallback 行为和 macOS 后续支持范围。
 
 ### Changed
-- **移动目标选择**：`MovementSystem` 现在可通过 `setActivePlatform()` 接收可选的活动窗口平台；当窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍回退到现有显示器 walk area 行为。
+- **移动目标选择**：`MovementSystem` 现在可通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台；窗口平台优先，任务栏平台低频出现。窗口感知数据过期、不可用、最小化、最大化、全屏或被关闭时，仍回退到现有显示器 walk area 行为。
 
 ### Fixed
 - **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.

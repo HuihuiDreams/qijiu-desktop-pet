@@ -7,6 +7,7 @@ class MovementSystem {
     this.screenHeight = screenHeight;
     this.walkAreas = this.normalizeWalkAreas(walkAreas);
     this.activePlatform = null;
+    this.surfacePlatforms = [];
   }
 
   /**
@@ -65,11 +66,18 @@ class MovementSystem {
   }
 
   setActivePlatform(platform) {
-    this.activePlatform = this.normalizeWalkAreas(platform ? [platform] : [])[0] || null;
+    this.setSurfacePlatforms(platform ? [platform] : []);
+  }
+
+  setSurfacePlatforms(platforms) {
+    this.surfacePlatforms = this.normalizeWalkAreas(Array.isArray(platforms) ? platforms : []);
+    this.activePlatform = this.surfacePlatforms.find((area) => this.isActiveWindowPlatform(area)) || null;
   }
 
   getMovementAreas() {
-    return this.activePlatform ? [this.activePlatform, ...this.getWalkAreas()] : this.getWalkAreas();
+    return this.surfacePlatforms.length > 0
+      ? [...this.surfacePlatforms, ...this.getWalkAreas()]
+      : this.getWalkAreas();
   }
 
   clampToRange(value, min, max) {
@@ -81,8 +89,12 @@ class MovementSystem {
     return area?.source === 'active-window-top';
   }
 
+  isSurfacePlatform(area) {
+    return area?.source === 'active-window-top' || area?.source === 'taskbar-edge';
+  }
+
   getTargetRange(area, pet, margin) {
-    if (this.isActiveWindowPlatform(area)) {
+    if (this.isSurfacePlatform(area)) {
       const xMargin = Math.min(margin, Math.max(0, (area.width - pet.size) / 2));
       const platformY = area.y + area.height / 2 - pet.size;
       return {
@@ -103,7 +115,7 @@ class MovementSystem {
 
   getReachableTargetRange(area, pet, margin) {
     const range = this.getTargetRange(area, pet, margin);
-    if (!this.isActiveWindowPlatform(area)) return range;
+    if (!this.isSurfacePlatform(area)) return range;
 
     const reachableRanges = this.getWalkAreas()
       .map((walkArea) => ({
@@ -135,7 +147,10 @@ class MovementSystem {
       const range = this.getReachableTargetRange(area, pet, margin);
       const width = Math.max(1, range.maxX - range.minX);
       const height = Math.max(1, range.maxY - range.minY);
-      return { area, weight: width * height };
+      const platformWeight = area.source === 'taskbar-edge'
+        ? (CONFIG.TASKBAR_PLATFORM_WEIGHT || 120)
+        : height;
+      return { area, weight: width * platformWeight };
     });
 
     const totalWeight = weightedAreas.reduce((sum, item) => sum + item.weight, 0);
@@ -158,7 +173,7 @@ class MovementSystem {
 
   findMatchingWalkArea(area, pet = null) {
     if (!area) return null;
-    if (area.source === 'active-window-top') {
+    if (this.isSurfacePlatform(area)) {
       const normalizedArea = this.normalizeWalkAreas([area])[0] || null;
       if (!normalizedArea) return null;
       if (pet && !this.getReachableTargetRange(normalizedArea, pet, 0)) return null;

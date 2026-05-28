@@ -162,16 +162,17 @@ qijiu-desktop-pet/
 - `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
 
-### 3.5 窗口感知
+### 3.5 Surface Awareness
 
-窗口感知的设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
+Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
 
 - `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过 PowerShell/User32 辅助逻辑读取前台窗口；macOS 和暂不支持的平台返回不可用兜底。
 - `activeWindowAwareness.js` 将活动窗口 bounds 转成渲染进程相对坐标中的平台矩形，并在 IPC 发送前去重。
-- `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中。
+- `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
 - `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
-- `MovementSystem` 通过 `setActivePlatform()` 接收活动窗口平台，只在 idle 宠物选择新目标时使用可达平台；不可用、禁用、过期、最小化、最大化、全屏，以及窗口太贴近屏幕顶边导致宠物放不下的情况，都会回退到普通显示器 walk area。
+- `main.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程，不经过活动窗口采样轮询。
+- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
 
 ### 3.6 养成系统
 

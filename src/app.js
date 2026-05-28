@@ -62,6 +62,7 @@ function applyI18n() {
     width: screenWidth,
     height: screenHeight,
     walkAreas: [],
+    taskbarPlatforms: [],
     windowScaleFactor: null,
     displays: [],
   };
@@ -109,6 +110,7 @@ function applyI18n() {
       width: screenWidth,
       height: screenHeight,
       walkAreas: Array.isArray(info.walkAreas) ? info.walkAreas : [],
+      taskbarPlatforms: Array.isArray(info.taskbarPlatforms) ? info.taskbarPlatforms : [],
       windowScaleFactor: info.windowScaleFactor,
       displays: Array.isArray(info.displays) ? info.displays : [],
     };
@@ -118,6 +120,14 @@ function applyI18n() {
     pets.forEach(keepPetReachable);
   });
   windowAwarenessSystem.start();
+
+  const getSurfacePlatforms = (now) => {
+    if (!windowAwarenessSystem.isSurfaceAwarenessEnabled()) return [];
+    const activePlatform = windowAwarenessSystem.getCurrentPlatform(now);
+    return activePlatform
+      ? [activePlatform, ...screenInfo.taskbarPlatforms]
+      : screenInfo.taskbarPlatforms;
+  };
 
   // === 创建宠物 ===
   const yueqi = new Pet(CONFIG.PET_A);
@@ -354,7 +364,7 @@ function applyI18n() {
         }
 
         // 更新移动
-        movementSystem.setActivePlatform(windowAwarenessSystem.getCurrentPlatform(Date.now()));
+        movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
         movementSystem.update(yueqi, deltaMs);
         movementSystem.update(shenjiu, deltaMs);
 

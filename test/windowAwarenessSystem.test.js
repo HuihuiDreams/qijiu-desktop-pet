@@ -52,6 +52,27 @@ test('WindowAwarenessSystem returns null for stale or unavailable data', () => {
   assert.equal(system.getCurrentPlatform(4001), null);
 });
 
+test('WindowAwarenessSystem treats disabled fallback as surface awareness off', () => {
+  const system = new WindowAwarenessSystem(null, { ttlMs: 2500, now: () => 1000 });
+
+  system.setActiveWindowInfo({
+    active: false,
+    sampledAt: 1000,
+    source: 'unavailable',
+    reason: 'disabled',
+    window: null,
+    platform: null,
+  });
+
+  assert.equal(system.isSurfaceAwarenessEnabled(), false);
+});
+
+test('WindowAwarenessSystem keeps taskbar surfaces available before first active-window sample', () => {
+  const system = new WindowAwarenessSystem(null, { ttlMs: 2500, now: () => 1000 });
+
+  assert.equal(system.isSurfaceAwarenessEnabled(), true);
+});
+
 test('WindowAwarenessSystem subscribes to push updates and requests an initial value', async () => {
   let listener = null;
   let removed = false;
