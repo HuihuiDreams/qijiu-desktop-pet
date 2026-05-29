@@ -20,11 +20,12 @@
 - **状态面板自适应排版**：将修仙状态面板底层的属性排版从固定宽度的 Flexbox 重构为 CSS Grid，并将状态标签列设为 `max-content`。这彻底解决了在中文和日文环境下（因标签字数较少）状态条左侧留白过多、显得短小的问题，使得任何语言下彩色状态条都能无缝撑满剩余空间并完美对齐。
 - **窗口感知验收与文档规范**：在 `docs/plan/window-awareness-plan.md` 中核对了所有自动化测试与手动验证项；并将 `ADR-030-window-awareness.md` 翻译为中文，统一项目文档语言规范。
 ### Fixed
-- **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
+- **窗口感知内存压力**：将 Windows 活动窗口采样频率从 `3000ms` 降低到 `10000ms`，并将 renderer 侧窗口平台 TTL 延长到 `22000ms`，减少反复启动 PowerShell/User32 provider 的成本，同时让平台缓存稳定覆盖两个采样周期。
+- **窗口顶部平台循环**：当桌宠无法完整站在活动窗口顶部可见区域内时，跳过该窗口顶部平台；并将靠近屏幕顶部的过期窗口平台目标重新定向回普通可行走区域。
 - **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
 - **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
 - **窗口顶部目标概率**：修正活动窗口平台目标选择，使 `70%` 的窗口顶部概率和实际坐标范围一致，未命中时不再偷偷继续使用窗口顶部平台。
-- **窗口平台缓存 TTL**：将 renderer 侧窗口平台 TTL 提高到 `6500ms`，覆盖主进程 `3000ms` 采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`，导致宠物很少采用窗口顶部目标。
+- **窗口平台缓存 TTL**：将 renderer 侧窗口平台 TTL 提高到 `22000ms`，覆盖主进程 `10000ms` 采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`，导致宠物很少采用窗口顶部目标。
 - **状态面板底部裁剪修复**：将状态窗口向主进程发送动态高度调整的测量基准从内部的 `contentEl.scrollHeight` 修正为整块面板的 `panel.scrollHeight`，修复了面板新增底部元素后导致计算高度不足，从而在 `overflow: hidden` 限制下把圆角和底部文字“一刀切”的问题。
 - **测试稳定性修复**：在 `movementSystem.test.js` 中通过 mock `Math.random` 修复了偶发的窗口感知行走目标越界测试失败问题，保证 CI 自动化测试的绝对确定性。
 

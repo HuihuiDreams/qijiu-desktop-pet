@@ -274,8 +274,8 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 **Verification:**
 
 - [ ] 本地打开 VS Code、资源管理器、浏览器时能看到窗口信息变化。
-- [ ] 连续采样 2 分钟，主进程 CPU 没有持续爬升。
-- [ ] 快速切换窗口 20 次，不出现明显卡顿或推送积压。
+- [x] 连续采样 2 分钟，主进程 CPU 没有持续爬升。
+- [x] 快速切换窗口 20 次，不出现明显卡顿或推送积压。
 - [x] `npm test` 通过。
 - [x] `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 通过。
 
@@ -391,7 +391,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - [x] 当 taskbar platform 可用时，宠物 idle 后有配置概率走向任务栏上边缘。
 - [x] 活动窗口平台和任务栏平台使用同一套 `surfacePlatforms` 选择逻辑，窗口平台优先，任务栏平台低频出现。
 - [x] 两只宠物各自独立随机选择 platform 目标；默认不会强制两只同时上窗口顶部。
-- [ ] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
+- [x] 当窗口顶部宽度足够且两只宠物都自然选中 platform 时，允许两只同时停在窗口顶部，并避免目标重叠。
 - [x] 宠物不会被瞬移到窗口顶部，仍然通过现有 walking 状态移动。
 - [x] 到达平台后 idle 停留一段时间，表现为“坐下/停在窗口或任务栏上”。
 - [x] platform 消失时，宠物能回到现有 display walkAreas。
@@ -403,7 +403,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - [x] 单元测试覆盖 platform 目标选择、目标 clamp、platform 消失 fallback。
 - [x] 测试覆盖 platform 快速变化时，宠物只在下一次 idle 选目标时采用新平台。
 - [ ] 手动测试：切换活动窗口，宠物会自然走到窗口顶部。
-- [ ] 手动测试：底部横向任务栏可见时，宠物会自然走到任务栏上边缘并停留。
+- [x] 手动测试：底部横向任务栏可见时，宠物会自然走到任务栏上边缘并停留。
 - [x] `npm test` 通过。
 
 **Dependencies:** Task 6, Task 6b

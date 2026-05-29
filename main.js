@@ -26,7 +26,7 @@ const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const DISPLAY_METRICS_SETTLE_MS = 250;
-const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 3000;
+const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
 const LOGIN_ITEM_NAME = '七九爱宠';
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
