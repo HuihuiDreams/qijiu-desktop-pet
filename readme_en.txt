@@ -40,12 +40,23 @@ The tray menu lets you:
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
 - "🚀 Launch at Login" or "🚀 Disable Auto-launch"
+- "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
 - "🌐 Language": choose "中文", "English", or "日本語"
 - "📦 Check for Updates"
 - "❌ Quit"
 
 If you use multiple monitors, you can drag characters or the status panel to a secondary display.
 When you switch language from the tray menu, the main window, right-click menus, status panel, and update prompts refresh together.
+
+========================================
+🪟 Realm Awareness
+========================================
+
+When Realm Awareness is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
+During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
+
+You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
+If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
 
 ========================================
 📊 Cultivation Status

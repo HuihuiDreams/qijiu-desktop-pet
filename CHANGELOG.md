@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **三语用户说明更新**：在 `readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中补充界面感知/Realm Awareness/境界に乗る的托盘菜单入口与行为说明，明确桌宠会感知活动窗口、任务栏或 Dock 的边缘。
 
 ## [0.5.0] - 2026-05-29
 ### Added
