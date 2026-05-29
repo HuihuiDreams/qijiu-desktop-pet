@@ -23,6 +23,8 @@
 - **Window Awareness near-top platform loop**: Skip active-window top platforms when a pet cannot fully fit in the visible walk area above them, and retarget stale near-screen-top platform goals back to normal walk areas.
 - **窗口感知探测**：Windows 活动窗口采样现在会跳过本应用自己的前台窗口，并沿 z-order 继续查找后方窗口，使 DevTools 中执行探测时也能找到底下的外部窗口。
 - **活动窗口上的桌宠输入**：鼠标停留在桌宠身上时不再让交互租约自动过期，避免拖拽和右键菜单点击穿透到下方的非最大化活动窗口。
+- **窗口顶部目标概率**：修正活动窗口平台目标选择，使 `70%` 的窗口顶部概率和实际坐标范围一致，未命中时不再偷偷继续使用窗口顶部平台。
+- **窗口平台缓存 TTL**：将 renderer 侧窗口平台 TTL 提高到 `6500ms`，覆盖主进程 `3000ms` 采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`，导致宠物很少采用窗口顶部目标。
 - **状态面板底部裁剪修复**：将状态窗口向主进程发送动态高度调整的测量基准从内部的 `contentEl.scrollHeight` 修正为整块面板的 `panel.scrollHeight`，修复了面板新增底部元素后导致计算高度不足，从而在 `overflow: hidden` 限制下把圆角和底部文字“一刀切”的问题。
 - **测试稳定性修复**：在 `movementSystem.test.js` 中通过 mock `Math.random` 修复了偶发的窗口感知行走目标越界测试失败问题，保证 CI 自动化测试的绝对确定性。
 

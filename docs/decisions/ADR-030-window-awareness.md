@@ -1,48 +1,72 @@
-# ADR-030: 窗口感知平台采样 (Window Awareness Platform Sampling)
+# ADR-030: 窗口感知平台采样
 
-## 状态 (Status)
+## 状态
 Accepted
 
-## 日期 (Date)
+## 日期
 2026-05-28
 
-## 背景 (Context)
-宠物应该能够注意到当前前台应用程序的窗口，并走到该窗口的顶部边缘。该功能不能在渲染器游戏循环中增加操作系统轮询，必须保持鼠标穿透和拖曳行为不变，并且必须在无法获取前台窗口几何信息的平台上优雅地降级。
+## 背景
+桌宠需要感知当前前台应用窗口，并能自然走到该窗口的顶部边缘停留。该能力不能放在渲染进程的游戏循环中轮询系统窗口，也不能破坏鼠标穿透、拖拽、右键菜单和现有多显示器行为。
 
-现有的架构已经将原生操作分离到 `main.js` 中，将安全的 IPC 分离到 `preload.js` 中，并将移动/渲染分离到 `src/` 中。多显示器几何信息已经集中在 `displayBounds.js` 中。
+现有架构已经把系统能力放在主进程，把安全 IPC 暴露放在 `preload.js`，把移动和渲染行为放在 `src/`。多显示器坐标转换集中在 `displayBounds.js`，因此窗口感知也必须沿用这些边界。
 
-## 决策 (Decision)
-将窗口感知实现为主进程提供程序 (provider) 加上渲染器端的缓存：
+后续实现加入了任务栏/Dock 边缘平台。它和活动窗口顶部一样，都是“可站立表面”，但来源和选择频率不同。移动系统需要能同时处理这些 surface platform，同时保持普通桌面 walk area 的兜底行为。
 
-- `activeWindowProvider.js` 拥有提供程序的契约以及 Windows 前台窗口的采样逻辑。
-- `activeWindowAwareness.js` 构建渲染器有效负载 (payload)，将活动窗口几何坐标转换为宠物窗口坐标，并在发送 IPC 之前对重复的更新进行去重。
-- `preload.js` 暴露 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)`。
-- 渲染器中的 `WindowAwarenessSystem` 仅存储最新的有效负载，并将 `getCurrentPlatform()` 作为一个 O(1) 的缓存读取操作暴露出来。
-- `MovementSystem` 通过 `setActivePlatform()` 接收当前平台，并且仅在宠物处于空闲状态并选择新目标时才使用它。
+## 决策
+将窗口感知实现为主进程 provider 加渲染进程缓存：
 
-Windows 使用一个轻量级的 PowerShell/User32 提供程序，采样间隔为 3000 毫秒。对于此 MVP 版本，macOS 和其他平台在查询活动窗口时会返回不可用的回退状态（而不是尝试不完整或涉及敏感权限的支持）。然而，**任务栏/程序坞 (Taskbar/Dock) 平台**是纯粹根据显示器边界计算得出的，无需操作系统权限，这意味着 macOS 的程序坞感知功能得到了原生支持并处于激活状态。
+- `activeWindowProvider.js` 定义 provider 合同，并负责 Windows 前台窗口采样。
+- `activeWindowAwareness.js` 构建渲染进程 payload，将活动窗口 bounds 转换为桌宠主窗口内的 platform 坐标，并在 IPC 推送前去重。
+- `preload.js` 只暴露 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)`。
+- 渲染进程 `WindowAwarenessSystem` 只缓存最新 payload，并用 O(1) 的 `getCurrentPlatform()` 给游戏循环读取。
+- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏/Dock 平台，只在 idle 重新选择目标时使用它们。
 
-当宠物选择随机目标时，初始选择任务栏平台的概率较低。然而，一旦宠物降落到任务栏/程序坞平台上，它有很高的保留概率 (70%) 会沿同一边缘选择另一个目标，以防止立即掉落。
+Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 3000ms。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 6500ms，覆盖两个采样周期再加少量余量，避免 provider 正常 3000ms 采样时 renderer 缓存周期性过期。macOS 和其它平台在活动窗口感知上返回 unavailable fallback；macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。
 
-## 替代方案 (Alternatives Considered)
+## 平台选择概率
+活动窗口顶部平台的选择概率显式配置为：
 
-### 从渲染器查询操作系统窗口状态
-- 优点：可以直接从移动逻辑中访问。
-- 缺点：违反了渲染器边界，需要在渲染器中访问 Node/原生 API，并且有导致游戏循环停顿的风险。
-- 拒绝理由：原生操作属于主进程。
+```js
+CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
+```
 
-### 添加原生依赖
-- 优点：可能会更快，且能提供更丰富的窗口元数据。
-- 缺点：增加了跨 Windows/macOS 构建时的打包和签名风险。
-- 在 MVP 中被拒绝：当前的提供程序是隔离的，后续可以在不更改渲染器契约的情况下进行替换。
+当活动窗口顶部 platform 可达时，每只宠物在 idle 重新选目标时有 70% 概率选择该窗口顶部。两只宠物独立计算，因此两只都去窗口顶部的概率是 49%，至少一只去的概率是 91%。
 
-### 在 MVP 中提供 macOS 辅助功能支持
-- 优点：与 Windows 保持功能对齐。
-- 缺点：需要处理辅助功能权限、用户教育以及独立的多显示器测试。
-- 推迟：macOS 返回不可用的回退状态，直到设计出能够处理权限的提供程序。
+如果这次 70% roll 没有命中，`MovementSystem` 必须在 fallback 选区中排除 `source: 'active-window-top'` 的平台，并且最终目标坐标必须使用实际选中的 area 的 range。这样“设计概率”和“实际坐标范围”保持一致，避免未命中时仍偷偷落到窗口顶部。
 
-## 影响 (Consequences)
-- 当窗口感知功能不可用或被禁用时，渲染器的行为保持确定性。
-- 仅在相关的活动窗口/平台字段发生变化时才发送 IPC。
-- 活动窗口的更改不会立即迫使正在行走或被拖曳的宠物重新确定目标；该平台将在下一次空闲目标选择时才被使用。
-- 未来对 macOS 的支持应在相同的契约下实现提供程序，并在缺少权限时保留不可用的回退状态。
+任务栏/Dock 平台使用同一套 `surfacePlatforms` 机制，但权重由 `CONFIG.TASKBAR_PLATFORM_WEIGHT` 控制。当宠物已经在任务栏/Dock 边缘上时，有 70% 概率继续沿该边缘移动，避免刚停下又立刻跳回普通桌面。
+
+## 不可用与边界行为
+以下场景不生成活动窗口顶部 platform，移动系统回退到普通 walk area：
+
+- 活动窗口不可用或 provider 失败。
+- 窗口最小化、最大化、全屏、bounds 无效或太小。
+- 窗口顶部太靠近屏幕上缘，宠物无法完整站在可见 walk area 内。
+- Window Awareness 被用户关闭。
+
+正在 walking、dragging、interacting 或 busy 的宠物不会被新的活动窗口立即覆盖目标。只有下一次 idle 重新选目标时，新的 surface platform 才会参与选择。
+
+## 备选方案
+### 在渲染进程直接查询系统窗口
+- 优点：可以直接在移动逻辑中读取窗口状态。
+- 缺点：破坏主进程/渲染进程边界，需要在渲染进程访问 Node 或 native API，并可能让游戏循环承担系统调用负担。
+- 结论：拒绝。系统窗口采样必须留在主进程。
+
+### 引入 native 活动窗口依赖
+- 优点：可能提供更完整的窗口元数据。
+- 缺点：增加 Windows/macOS 打包和签名风险。
+- 结论：MVP 使用 PowerShell/User32 provider；如后续需要 native provider，必须保持现有 provider 合同不变。
+
+### macOS 活动窗口 provider 同步进入 MVP
+- 优点：跨平台能力更完整。
+- 缺点：需要 Accessibility 权限检测、授权引导、未授权 fallback 和额外多显示器测试。
+- 结论：延期。macOS 当前返回 unavailable fallback；未来 provider 必须在缺少权限时保持普通桌面移动可用。
+
+## 影响
+- 活动窗口感知不可用时，渲染进程行为仍保持确定。
+- 只有影响 platform 的字段变化时才推送 IPC，窗口标题单独变化不触发移动更新。
+- 活动窗口变化不会立刻抢走正在移动或交互中的宠物目标。
+- renderer TTL 大于主进程采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`。
+- 70% 的活动窗口顶部概率由配置项表达，测试覆盖命中和未命中两条路径，防止代码再次出现“概率判断”和“实际目标范围”不一致。
+- 未来 macOS provider 可在同一合同下实现，并继续保留 permission missing 时的 unavailable fallback。

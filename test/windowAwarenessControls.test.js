@@ -32,6 +32,9 @@ test('debug tools expose current Window Awareness state', () => {
   assert.ok(appSource.includes('windowAwareness: windowAwarenessSystem.getDebugInfo()'));
   assert.ok(debugSource.includes('window.debugWindowAwareness'));
   assert.ok(debugSource.includes('window.probeWindowAwareness'));
+  assert.ok(debugSource.includes('window.explainWindowAwareness'));
+  assert.ok(debugSource.includes('__LAST_WINDOW_AWARENESS_EXPLANATION'));
+  assert.ok(debugSource.includes('unreachable-platform'));
   assert.ok(debugSource.includes('window.__LAST_WINDOW_AWARENESS_PROBE = result'));
   assert.ok(debugSource.includes('JSON.stringify(result, null, 2)'));
   assert.ok(debugSource.includes('window.testWindowAwareness'));

@@ -144,6 +144,48 @@ window.probeWindowAwareness = async function () {
   return result;
 };
 
+window.explainWindowAwareness = async function () {
+  const probe = await window.probeWindowAwareness();
+  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : {};
+  const movement = window.__DEBUG_MOVEMENT;
+  const pets = window.__DEBUG_PETS || {};
+  const platform = probe.main?.platform || probe.renderer?.platform || null;
+  const petResults = Object.entries(pets).map(([id, pet]) => {
+    const range = platform && movement
+      ? movement.getReachableTargetRange(platform, pet, CONFIG.WALK_TARGET_MARGIN)
+      : null;
+    return {
+      id,
+      size: pet.size,
+      reachable: Boolean(range),
+      range,
+    };
+  });
+  const result = {
+    ok: Boolean(probe.main?.active && platform && petResults.some((pet) => pet.reachable)),
+    captured: Boolean(probe.main?.active),
+    reason: probe.main?.reason || (platform ? null : 'missing-platform'),
+    activeWindow: probe.main?.window || null,
+    platform,
+    pets: petResults,
+    walkAreas: screenInfo.movementWalkAreas || screenInfo.walkAreas || [],
+    note: null,
+  };
+
+  if (result.captured && platform && !result.ok) {
+    result.reason = 'unreachable-platform';
+    result.note = '窗口可能太贴近屏幕顶部，宠物身体没有空间站到窗口上方。把窗口往下拖一点再试。';
+  } else if (result.captured && !platform) {
+    result.note = '窗口已抓到，但没有生成 platform；通常是最大化、最小化、全屏、bounds 无效或窗口太小。';
+  } else if (!result.captured) {
+    result.note = '没有抓到可用活动窗口；请确认前台是普通非最大化窗口，并重试。';
+  }
+
+  window.__LAST_WINDOW_AWARENESS_EXPLANATION = result;
+  console.log(`[debug] Window Awareness explanation:\n${JSON.stringify(result, null, 2)}`);
+  return result;
+};
+
 window.testWindowAwareness = async function (options = {}) {
   if (!window.__DEBUG_PETS || !window.__DEBUG_MOVEMENT || !window.__DEBUG_WINDOW_AWARENESS) {
     console.warn('[debug] Window Awareness 调试对象未就绪，请等应用完全启动后再试');

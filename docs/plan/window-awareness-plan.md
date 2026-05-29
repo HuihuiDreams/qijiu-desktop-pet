@@ -55,6 +55,7 @@ Surface Awareness 是行为功能，不是当前内存问题的主要解法。�
 
 - 不允许在正式实现中每 500ms-1000ms 启动一次 PowerShell、cmd 或其它外部进程来获取活动窗口。高频子进程轮询会带来明显 CPU 抖动。
 - 当前 Windows MVP 默认采样间隔为 3000ms；允许调试时降低到 500ms，但不应低于 500ms。
+- renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于主进程采样间隔；当前为 6500ms，用于覆盖两个采样周期并避免 platform 缓存周期性过期。
 - 活动窗口信息必须先在主进程侧去抖和去重。只有 `window id`、进程、bounds、最小化/全屏状态或 platform geometry 实际变化时才推送 IPC。
 - 窗口标题变化不应单独触发移动系统更新，避免浏览器/编辑器标题频繁变化造成 IPC 风暴。
 - renderer 的 game loop 只能读取 `WindowAwarenessSystem` 缓存；不得每帧查询 OS API、发送 IPC 或重新计算完整显示器几何。

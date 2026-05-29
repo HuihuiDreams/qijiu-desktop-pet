@@ -25,6 +25,7 @@ test('app.js wires WindowAwarenessSystem into MovementSystem without IPC in move
 
 test('config exposes window awareness defaults', () => {
   assert.ok(configSource.includes('WINDOW_AWARENESS_ENABLED: true'));
-  assert.ok(configSource.includes('WINDOW_AWARENESS_PLATFORM_TTL_MS: 2500'));
+  assert.ok(configSource.includes('WINDOW_AWARENESS_PLATFORM_TTL_MS: 6500'));
+  assert.ok(configSource.includes('WINDOW_AWARENESS_PLATFORM_CHANCE: 0.7'));
   assert.ok(configSource.includes('TASKBAR_PLATFORM_WEIGHT: 120'));
 });

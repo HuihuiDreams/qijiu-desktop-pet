@@ -74,10 +74,14 @@ class MovementSystem {
     this.activePlatform = this.surfacePlatforms.find((area) => this.isActiveWindowPlatform(area)) || null;
   }
 
-  getMovementAreas() {
-    return this.surfacePlatforms.length > 0
+  getMovementAreas(options = {}) {
+    const areas = this.surfacePlatforms.length > 0
       ? [...this.surfacePlatforms, ...this.getWalkAreas()]
       : this.getWalkAreas();
+    if (options.excludeActiveWindowPlatform) {
+      return areas.filter((area) => !this.isActiveWindowPlatform(area));
+    }
+    return areas;
   }
 
   clampToRange(value, min, max) {
@@ -136,14 +140,14 @@ class MovementSystem {
     return reachableRanges[0] || null;
   }
 
-  getMovementAreasForPet(pet, margin = 0) {
-    return this.getMovementAreas().filter((area) => (
+  getMovementAreasForPet(pet, margin = 0, options = {}) {
+    return this.getMovementAreas(options).filter((area) => (
       this.getReachableTargetRange(area, pet, margin)
     ));
   }
 
-  pickWalkArea(pet, margin) {
-    const weightedAreas = this.getMovementAreasForPet(pet, margin).map((area) => {
+  pickWalkArea(pet, margin, options = {}) {
+    const weightedAreas = this.getMovementAreasForPet(pet, margin, options).map((area) => {
       const range = this.getReachableTargetRange(area, pet, margin);
       const width = Math.max(1, range.maxX - range.minX);
       const height = Math.max(1, range.maxY - range.minY);
@@ -291,10 +295,13 @@ class MovementSystem {
     const activeRange = this.activePlatform
       ? this.getReachableTargetRange(this.activePlatform, pet, margin)
       : null;
+    const activeWindowPlatformChance = Number.isFinite(CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE)
+      ? CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE
+      : 0.7;
 
     let area;
     // 有可用活动窗口平台时，70% 概率选择或留在该窗口上
-    if (activeRange && Math.random() < 0.7) {
+    if (activeRange && Math.random() < activeWindowPlatformChance) {
       area = this.activePlatform;
     } else {
       const currentArea = this.findMatchingWalkArea(pet.targetArea) || this.findAreaContainingPetBounds(pet) || this.findAreaContainingPet(pet);
@@ -302,11 +309,11 @@ class MovementSystem {
       if (currentArea && currentArea.source === 'taskbar-edge' && Math.random() < 0.7) {
         area = currentArea;
       } else {
-        area = this.pickWalkArea(pet, margin);
+        area = this.pickWalkArea(pet, margin, { excludeActiveWindowPlatform: Boolean(activeRange) });
       }
     }
 
-    const range = activeRange || this.getReachableTargetRange(area, pet, margin);
+    const range = this.getReachableTargetRange(area, pet, margin);
     pet.targetArea = area;
 
     pet.targetX = this.clampToRange(

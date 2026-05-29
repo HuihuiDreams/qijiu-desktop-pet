@@ -14,6 +14,16 @@ test('main process wires active window provider and sampler', () => {
   assert.ok(mainSource.includes('createActiveWindowSampler({'));
 });
 
+test('renderer Window Awareness TTL covers more than two sampling intervals', () => {
+  const configSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'config.js'), 'utf8');
+  const sampleMatch = mainSource.match(/ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = (\d+)/);
+  const ttlMatch = configSource.match(/WINDOW_AWARENESS_PLATFORM_TTL_MS: (\d+)/);
+
+  assert.ok(sampleMatch);
+  assert.ok(ttlMatch);
+  assert.equal(Number(ttlMatch[1]) > Number(sampleMatch[1]) * 2, true);
+});
+
 test('main process exposes active window IPC request and push channel', () => {
   assert.ok(mainSource.includes("ipcMain.handle('get-active-window-info'"));
   assert.ok(mainSource.includes('return activeWindowSampler.sampleOnce()'));
