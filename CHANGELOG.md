@@ -3,8 +3,11 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.5.1] - 2026-05-29
 ### Changed
 - **三语用户说明更新**：在 `readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中补充界面感知/Realm Awareness/境界に乗る的托盘菜单入口与行为说明，明确桌宠会感知活动窗口、任务栏或 Dock 的边缘。
+- **CP 互动心境收益对等调整**：将所有 CP 互动中七哥（岳七）的心境收益统一调整为与小九（沈九）相同：分享食物 `+3`，一起修炼 `+5`，亲亲 `+10`，拥抱 `+8`，打招呼 `+1` 不变。
 
 ## [0.5.0] - 2026-05-29
 ### Added

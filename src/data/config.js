@@ -47,10 +47,10 @@ const CONFIG = {
   // === CP互动效果配置 (Interaction Effects) ===
   INTERACTIONS: {
     greet: { weight: 30, moodA: 1, moodB: 1, affection: 1, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 0 },
-    shareFood: { weight: 20, moodA: 8, moodB: 3, affection: 2, hungerA: -5, hungerB: 10, qiA: 0, qiB: 0, minAffection: 0 },
-    cultivate: { weight: 25, moodA: 8, moodB: 5, affection: 3, hungerA: 0, hungerB: 0, qiA: CULTIVATE_QI_GAIN, qiB: CULTIVATE_QI_GAIN, minAffection: 20 },
-    kiss: { weight: 15, moodA: 2, moodB: 10, affection: 4, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 70 },
-    hug: { weight: 10, moodA: 2, moodB: 8, affection: 5, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 50 },
+    shareFood: { weight: 20, moodA: 3, moodB: 3, affection: 2, hungerA: -5, hungerB: 10, qiA: 0, qiB: 0, minAffection: 0 },
+    cultivate: { weight: 25, moodA: 5, moodB: 5, affection: 3, hungerA: 0, hungerB: 0, qiA: CULTIVATE_QI_GAIN, qiB: CULTIVATE_QI_GAIN, minAffection: 20 },
+    kiss: { weight: 15, moodA: 10, moodB: 10, affection: 4, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 70 },
+    hug: { weight: 10, moodA: 8, moodB: 8, affection: 5, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 50 },
   },
 
   // === 角色定义 (Pet Definitions) ===

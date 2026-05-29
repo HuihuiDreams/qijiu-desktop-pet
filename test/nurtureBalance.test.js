@@ -74,7 +74,7 @@ test('cultivating together restores more qi than solo meditation', () => {
   assert.ok(pairedMeditationQi > soloMeditationQi);
 });
 
-test('share food uses the original asymmetric reward values', () => {
+test('share food uses the updated symmetric mood values', () => {
   const yueqi = createPet();
   const shenjiu = createPet();
   const interactionSystem = new InteractionSystem();
@@ -83,7 +83,7 @@ test('share food uses the original asymmetric reward values', () => {
 
   assert.equal(yueqi.stats.hunger, 75);
   assert.equal(shenjiu.stats.hunger, 90);
-  assert.equal(yueqi.stats.mood, 78);
+  assert.equal(yueqi.stats.mood, 73);
   assert.equal(shenjiu.stats.mood, 73);
 });
 
