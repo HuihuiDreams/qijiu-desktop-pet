@@ -260,6 +260,44 @@ test('does not double-fire while reminder is shown (waiting for dismiss)', () =>
   service.stop();
 });
 
+test('resets reminder state when delivery is rejected', () => {
+  const clock = createFakeClock();
+  const pm = createFakePowerMonitor();
+  let deliveryAttempts = 0;
+  const service = createBreakReminderService({
+    powerMonitor: pm,
+    onReminderDue: () => {
+      deliveryAttempts += 1;
+      return false;
+    },
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
+    sampleIntervalMs: MIN_SAMPLE_INTERVAL_MS,
+    settings: {
+      enabled: true,
+      intervalMinutes: MIN_INTERVAL_MINUTES,
+      idleResetMinutes: 5,
+    },
+  });
+
+  service.start();
+  pm.setIdleTime(5);
+  pm.setIdleState('active');
+
+  for (let i = 0; i < 30; i++) {
+    clock.advance(MIN_SAMPLE_INTERVAL_MS);
+    clock.tickIntervals();
+  }
+
+  assert.equal(deliveryAttempts, 1, 'should attempt delivery once at the interval');
+  assert.equal(service.getState().reminderShown, false, 'rejected delivery should not wait for renderer dismiss');
+  assert.equal(service.getState().activeMs, 0, 'rejected delivery should restart the interval');
+  service.stop();
+});
+
 // ═══════════════════════════════════════════════════════════════════
 //  Service: idle reset
 // ═══════════════════════════════════════════════════════════════════

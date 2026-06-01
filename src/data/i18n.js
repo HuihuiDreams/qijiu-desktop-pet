@@ -245,11 +245,11 @@ const I18N = {
       },
       breakReminder: {
         yueqi: [
-          '小九，起来走走吧，你已经坐很久了。',
-          '清秋师弟，修行也要注意体魄。',
-          '来，休息一下，我陪你走走。',
+          '起来走走吧，你已经坐很久了。',
+          '修行也要注意体魄。',
+          '来，休息一下，起身走走。',
           '坚持修炼是好事，但也要活动筋骨。',
-          '小九，站起来伸展一下吧。',
+          '站起来伸展一下吧。',
         ],
         shenjiu: [
           '…别死坐着了，起来活动活动。',
@@ -493,17 +493,17 @@ const I18N = {
       },
       breakReminder: {
         yueqi: [
-          'Xiao Jiu, get up and move around. You\'ve been sitting too long.',
-          'Qingqiu Shidi, cultivation is important, but so is your body.',
-          'Come, let me walk with you for a while.',
+          'Stand up and move around. You\'ve been sitting too long.',
+          'Even in cultivation, one must care for their physical body.',
+          'Come, take a rest and walk around a bit.',
           'Persistence is admirable, but stretch your limbs.',
-          'Xiao Jiu, stand up and stretch a little.',
+          'Stand up and stretch a little.',
         ],
         shenjiu: [
           '...Stop sitting there like a statue. Get up.',
           '(Stands up) You too.',
-          'The body is the foundation of cultivation. Don\'t just sit there.',
-          '...Hmph, I\'m only reminding you as a courtesy.',
+          'The body is the foundation of cultivation. Stop lounging around.',
+          '...Hmph, I am merely reminding you in passing.',
           'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
         ],
       },
@@ -562,9 +562,9 @@ const I18N = {
       trayUpdateDownloading: '📦 更新をダウンロード中...',
 
       // 休憩リマインダー
-      trayBreakReminderOn: '⏰ 休憩リマインダーを無効化',
-      trayBreakReminderOff: '⏰ 休憩リマインダーを有効化',
-      trayBreakReminderInterval: '⏰ リマインダー間隔',
+      trayBreakReminderOn: '⏰ 休憩通知を無効化',
+      trayBreakReminderOff: '⏰ 休憩通知を有効化',
+      trayBreakReminderInterval: '⏰ 通知間隔',
       trayMinuteUnit: '分',
 
       // 更新ダイアログ
@@ -740,18 +740,18 @@ const I18N = {
       },
       breakReminder: {
         yueqi: [
-          '小九、そろそろ立ち上がろう。ずいぶん座っていたよ。',
-          '清秋師弟、修行も大事だが、体もいたわらなくては。',
-          'さあ、少し歩こう。僕が付き合うよ。',
-          '勤勉は美徳だが、体も解してやりなさい。',
-          '小九、立ち上がって伸びをしよう。',
+          '立って少し歩くといい、随分長く座っているよ。',                // 起来走走吧，你已经坐很久了。（语气轻柔温和）
+          '修行においても、身体を労わらなければ。',                      // 修行也要注意体魄。（“労わる”体现七哥的关心）
+          'さあ、少し休んで、立って歩いてごらん。',                      // 来，休息一下，起身走走。（“〜てごらん”有哄着对方的感觉）
+          '修行に励むのは良いことだが、筋骨も動かさないとね。',          // 坚持修炼是好事，但也要活动筋骨。（筋骨：きんこつ）
+          '立ち上がって、少し背伸びをしてごらん。',                      // 站起来伸展一下吧。
         ],
         shenjiu: [
-          '…いつまで座ってるんだ。立て。',
-          '（立ち上がる）お前も立て。',
-          '体は修行の土台だ。座りっぱなしでいるな。',
-          '…ふん、ただの親切で言ってやってるだけだ。',
-          '久座は体に毒だ。修行しなくても歩くくらいはしろ。',
+          '…いつまで座っているつもりだ。立って少し動け。',               // …别死坐着了，起来活动活动。（清冷命令式）
+          '（立ち上がり）お前も立て。',                                  // （站起来）你也起来。
+          '体は修行の根基だ、いつまでも怠けているな。',                  // 身体是修炼的根基，别赖着不动。（根基：こんき，纯正修真词汇）
+          '…ふん、ついでの忠告だ。勘違いするな。',                       // …哼，我只是顺便提醒你一下。（稍微润色加了一句“别误会”，把傲娇度拉满！）
+          '長座は体を痛める。修行する気がないなら、少しは歩け。',        // 久坐伤身，不想修练也得走两步。（長座：ちょうざ，久坐的古雅说法）
         ],
       },
     },

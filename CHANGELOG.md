@@ -12,10 +12,13 @@
   - 新增 41 项自动化测试覆盖计时、空闲重置、演示延后、配置归一化和跨层集成。
 
 ### Changed
+- **Break reminder documentation**: Added the Break Reminder / 久坐提醒 / 休憩通知 behavior and tray controls to `readme.txt`, `readme_en.txt`, and `readme_ja.txt`, including interval choices and hidden/idle reset behavior.
+- **Break reminder wording**: Aligned the three-language break reminder labels and dialogue wording with the current i18n terms.
 - **初始发呆时间配置化**：启动时岳七和沈九的初始发呆计时器现在统一使用 `CONFIG.IDLE_DURATION_MIN/MAX`，不再分别使用两套硬编码随机范围。
 - **文档规范补齐**：补齐 `ADR-010` 历史编号保留记录，为 `ADR-019` 增加备选方案说明，并同步 `docs/structure.md` 中的窗口感知架构索引。
 
 ### Fixed
+- **Break reminder state recovery**: Prevent reminder delivery failures from leaving the service stuck waiting for a renderer dismiss, and allow break reminders to continue when Window Awareness is disabled.
 - **安全性修复**：修复 `main.js` 中的潜在路径遍历漏洞（增强 `scanAvailableSkins` 的路径校验）与 XSS 跨站脚本风险（将更新进度窗口的动态数据流从 HTML 字符串插值重构为完全静态 HTML 加安全的 `executeJavaScript` 调用）。
 
 ## [0.5.1] - 2026-05-29

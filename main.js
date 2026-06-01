@@ -1194,9 +1194,10 @@ if (!hasSingleInstanceLock) {
       settings: breakSettings,
       onReminderDue: (payload) => {
         // 桌宠隐藏时不提示
-        if (petHidden) return;
-        if (!mainWindow || mainWindow.isDestroyed()) return;
+        if (petHidden) return false;
+        if (!mainWindow || mainWindow.isDestroyed()) return false;
         mainWindow.webContents.send('break-reminder-triggered', payload);
+        return true;
       },
     });
 

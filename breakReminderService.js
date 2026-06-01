@@ -188,10 +188,16 @@ function createBreakReminderService(deps) {
     reminderPending = false;
     reminderShown = true;
 
-    onReminderDue({
+    const delivered = onReminderDue({
       triggeredAt: now(),
       intervalMinutes: settings.intervalMinutes,
-    });
+    }) !== false;
+
+    if (!delivered) {
+      reminderShown = false;
+      activeMs = 0;
+      lastSampleTime = now();
+    }
   }
 
   /**

@@ -121,6 +121,22 @@ test('Windows: defers when window info is inactive', () => {
   assert.equal(result.deferReason, 'unknown-state');
 });
 
+test('Windows: allows interrupt when active window awareness is disabled', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: false,
+      source: 'unavailable',
+      reason: 'disabled',
+      window: null,
+    }),
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, true);
+  assert.equal(result.deferReason, null);
+});
+
 test('Windows: defers when provider throws', () => {
   const guard = createPresentationGuard({
     platform: 'win32',

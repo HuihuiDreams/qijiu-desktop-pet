@@ -297,7 +297,10 @@ function applyI18n() {
 
   function handleBreakReminderTriggered(_payload) {
     // 桌宠隐藏或暂停时不展示
-    if (isPaused) return;
+    if (isPaused) {
+      window.electronAPI.dismissBreakReminder();
+      return;
+    }
     // 如果已经在展示提醒，忽略
     if (breakReminderActive) return;
 

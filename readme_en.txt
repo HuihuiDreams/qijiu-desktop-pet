@@ -41,6 +41,7 @@ The tray menu lets you:
 - "🔄 Reset Position"
 - "🚀 Launch at Login" or "🚀 Disable Auto-launch"
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
+- "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", plus "⏰ Reminder Interval"
 - "🌐 Language": choose "中文", "English", or "日本語"
 - "📦 Check for Updates"
 - "❌ Quit"
@@ -57,6 +58,16 @@ During idle walking, they may stroll to the top edge of the active window, the a
 
 You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
 If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
+
+========================================
+⏰ Break Reminder
+========================================
+
+When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
+When it triggers, Yue Qi and Shen Jiu move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
+
+You can toggle it from the tray menu with "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", and use "⏰ Reminder Interval" to choose 30, 45, 60, 90, or 120 minutes.
+Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
 
 ========================================
 📊 Cultivation Status

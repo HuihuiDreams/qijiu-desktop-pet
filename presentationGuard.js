@@ -57,6 +57,10 @@ function createPresentationGuard(deps) {
         return { canInterrupt: false, deferReason: 'provider-error' };
       }
 
+      if (info?.reason === 'disabled') {
+        return { canInterrupt: true, deferReason: null };
+      }
+
       if (!info || !info.active || !info.window) {
         // Cannot determine — conservative: defer on Windows
         return { canInterrupt: false, deferReason: 'unknown-state' };
