@@ -1,0 +1,195 @@
+const assert = require('node:assert/strict');
+const test = require('node:test');
+
+const { createPresentationGuard, coversWorkArea } = require('../presentationGuard');
+
+// ═══════════════════════════════════════════════════════════════════
+//  macOS: always canInterrupt
+// ═══════════════════════════════════════════════════════════════════
+
+test('macOS: always returns canInterrupt = true', () => {
+  const guard = createPresentationGuard({ platform: 'darwin' });
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, true);
+  assert.equal(result.deferReason, null);
+});
+
+test('macOS: canInterrupt even without any provider', () => {
+  const guard = createPresentationGuard({
+    platform: 'darwin',
+    getActiveWindowInfo: null,
+    getDisplays: null,
+  });
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, true);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Linux / unsupported: always canInterrupt
+// ═══════════════════════════════════════════════════════════════════
+
+test('Linux: always returns canInterrupt = true', () => {
+  const guard = createPresentationGuard({ platform: 'linux' });
+  assert.equal(guard.canInterrupt().canInterrupt, true);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Windows: fullscreen detection
+// ═══════════════════════════════════════════════════════════════════
+
+test('Windows: canInterrupt when window is not fullscreen', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 100, y: 100, width: 800, height: 600 },
+        isFullScreen: false,
+        isMaximized: false,
+      },
+    }),
+    getDisplays: () => [{
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 },
+    }],
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, true);
+  assert.equal(result.deferReason, null);
+});
+
+test('Windows: defers when isFullScreen is true', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+        isFullScreen: true,
+        isMaximized: false,
+      },
+    }),
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.deferReason, 'fullscreen');
+});
+
+test('Windows: defers when window covers entire workArea (presentation)', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 0, y: 0, width: 1920, height: 1040 },
+        isFullScreen: false,
+        isMaximized: false,
+      },
+    }),
+    getDisplays: () => [{
+      bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      workArea: { x: 0, y: 0, width: 1920, height: 1040 },
+    }],
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.deferReason, 'presentation');
+});
+
+test('Windows: defers when provider unavailable', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: null,
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.deferReason, 'provider-unavailable');
+});
+
+test('Windows: defers when window info is inactive', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({ active: false, window: null }),
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.deferReason, 'unknown-state');
+});
+
+test('Windows: defers when provider throws', () => {
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => { throw new Error('fail'); },
+  });
+
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.deferReason, 'provider-error');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  coversWorkArea utility
+// ═══════════════════════════════════════════════════════════════════
+
+test('coversWorkArea: exact match returns true', () => {
+  assert.equal(
+    coversWorkArea(
+      { x: 0, y: 0, width: 1920, height: 1040 },
+      { x: 0, y: 0, width: 1920, height: 1040 },
+    ),
+    true,
+  );
+});
+
+test('coversWorkArea: slightly larger window returns true', () => {
+  assert.equal(
+    coversWorkArea(
+      { x: -5, y: -5, width: 1930, height: 1050 },
+      { x: 0, y: 0, width: 1920, height: 1040 },
+    ),
+    true,
+  );
+});
+
+test('coversWorkArea: small window returns false', () => {
+  assert.equal(
+    coversWorkArea(
+      { x: 100, y: 100, width: 800, height: 600 },
+      { x: 0, y: 0, width: 1920, height: 1040 },
+    ),
+    false,
+  );
+});
+
+test('coversWorkArea: null bounds returns false', () => {
+  assert.equal(coversWorkArea(null, { x: 0, y: 0, width: 100, height: 100 }), false);
+  assert.equal(coversWorkArea({ x: 0, y: 0, width: 100, height: 100 }, null), false);
+});
+
+test('coversWorkArea: invalid dimensions returns false', () => {
+  assert.equal(
+    coversWorkArea(
+      { x: 0, y: 0, width: 0, height: 0 },
+      { x: 0, y: 0, width: 1920, height: 1040 },
+    ),
+    false,
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Privacy: no window title/process/URL stored
+// ═══════════════════════════════════════════════════════════════════
+
+test('PresentationGuard does not store any window content', () => {
+  // The guard source should not reference title/ownerName/url storage
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'presentationGuard.js'), 'utf-8');
+  assert.ok(!src.includes('title'), 'should not reference window title');
+  assert.ok(!src.includes('ownerName'), 'should not reference owner name');
+  assert.ok(!src.includes('url'), 'should not reference URL');
+  assert.ok(!src.includes('processName'), 'should not reference process name');
+});

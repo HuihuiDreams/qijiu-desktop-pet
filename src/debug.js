@@ -358,4 +358,25 @@ window.testHungry = function() {
   }, 5000);
 };
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+/**
+ * 久坐提醒调试入口。
+ * 在 DevTools Console 中调用 testBreakReminder() 即可触发。
+ * 走的是与真实 IPC 相同的 renderer 表现路径。
+ */
+window.testBreakReminder = function () {
+  if (!window.electronAPI?.onBreakReminder) {
+    console.warn('[debug] 久坐提醒 API 未就绪。');
+    return;
+  }
+  // 直接发送模拟的 break-reminder-triggered IPC 事件
+  // 通过 window.__DEBUG_BREAK_REMINDER 公开的 trigger 方法
+  if (window.__DEBUG_BREAK_REMINDER && typeof window.__DEBUG_BREAK_REMINDER.trigger === 'function') {
+    window.__DEBUG_BREAK_REMINDER.trigger();
+    console.log('[debug] 久坐提醒已触发（走 renderer 表现路径）。20秒后自动消失，或点击小人提前关闭。');
+  } else {
+    console.warn('[debug] __DEBUG_BREAK_REMINDER 未就绪，请确认应用已完全启动。');
+  }
+};
+
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+

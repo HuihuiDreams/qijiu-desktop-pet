@@ -72,4 +72,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLocaleChange: (callback) => {
     ipcRenderer.on('locale-changed', (event, lang) => callback(lang));
   },
+
+  // 久坐提醒
+  onBreakReminder: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on('break-reminder-triggered', listener);
+    return () => ipcRenderer.removeListener('break-reminder-triggered', listener);
+  },
+  dismissBreakReminder: () => {
+    ipcRenderer.send('break-reminder-dismissed');
+  },
 });

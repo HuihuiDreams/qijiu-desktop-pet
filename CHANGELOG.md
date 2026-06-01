@@ -4,7 +4,12 @@
 
 ## [Unreleased]
 ### Added
-- **久坐提醒 MVP 规划**：新增 `docs/plan/break-reminder-plan.md`，明确默认开启的连续活跃提醒、20 秒可点击收起的双角色提示、托盘分钟间隔、全屏/演示延后、Windows/macOS 实现路径、隐私边界与性能约束。
+- **久坐提醒 MVP**：新增 `breakReminderService.js` 和 `presentationGuard.js`，实现基于 `powerMonitor.getSystemIdleTime()` 的低频采样久坐提醒。默认每 60 分钟提醒一次，空闲 5 分钟自动重置。macOS 不做全屏检测，Windows 全屏/演示模式下延后 60 秒重试。
+  - 托盘菜单新增开关和间隔选择（30/45/60/90/120 分钟），配置通过 `electron-store` 持久化。
+  - 提醒触发时两个小人瞬移到主显示器中心面对面，显示随机对话气泡（中/英/日各 5 句×2 角色），20 秒后自动消失或点击小人提前关闭。
+  - 新增 `testBreakReminder()` 调试入口。
+  - 新增 [ADR-031](docs/decisions/ADR-031-break-reminder.md) 记录设计决策。
+  - 新增 41 项自动化测试覆盖计时、空闲重置、演示延后、配置归一化和跨层集成。
 
 ### Changed
 - **初始发呆时间配置化**：启动时岳七和沈九的初始发呆计时器现在统一使用 `CONFIG.IDLE_DURATION_MIN/MAX`，不再分别使用两套硬编码随机范围。

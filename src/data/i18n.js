@@ -66,6 +66,12 @@ const I18N = {
       trayUpdateChecking: '📦 正在检查更新...',
       trayUpdateDownloading: '📦 正在下载更新...',
 
+      // 久坐提醒
+      trayBreakReminderOn: '⏰ 关闭久坐提醒',
+      trayBreakReminderOff: '⏰ 开启久坐提醒',
+      trayBreakReminderInterval: '⏰ 提醒间隔',
+      trayMinuteUnit: '分钟',
+
       // 更新提示框
       updateErrTitle: '更新失败',
       updateBtnOk: '知道了',
@@ -237,6 +243,22 @@ const I18N = {
         kiss: '💋',
         hug: '💕',
       },
+      breakReminder: {
+        yueqi: [
+          '小九，起来走走吧，你已经坐很久了。',
+          '清秋师弟，修行也要注意体魄。',
+          '来，休息一下，我陪你走走。',
+          '坚持修炼是好事，但也要活动筋骨。',
+          '小九，站起来伸展一下吧。',
+        ],
+        shenjiu: [
+          '…别死坐着了，起来活动活动。',
+          '（站起来）你也起来。',
+          '身体是修炼的根基，别赖着不动。',
+          '…哼，我只是顺便提醒你一下。',
+          '久坐伤身，不想修练也得走两步。',
+        ],
+      },
     },
   },
 
@@ -290,6 +312,12 @@ const I18N = {
       trayUpdateCheck: '📦 Check for Updates',
       trayUpdateChecking: '📦 Checking for Updates...',
       trayUpdateDownloading: '📦 Downloading Update...',
+
+      // Break reminder
+      trayBreakReminderOn: '⏰ Disable Break Reminder',
+      trayBreakReminderOff: '⏰ Enable Break Reminder',
+      trayBreakReminderInterval: '⏰ Reminder Interval',
+      trayMinuteUnit: 'min',
 
       // Update Dialogs
       updateErrTitle: 'Update Failed',
@@ -463,6 +491,22 @@ const I18N = {
         kiss: '💋',
         hug: '💕',
       },
+      breakReminder: {
+        yueqi: [
+          'Xiao Jiu, get up and move around. You\'ve been sitting too long.',
+          'Qingqiu Shidi, cultivation is important, but so is your body.',
+          'Come, let me walk with you for a while.',
+          'Persistence is admirable, but stretch your limbs.',
+          'Xiao Jiu, stand up and stretch a little.',
+        ],
+        shenjiu: [
+          '...Stop sitting there like a statue. Get up.',
+          '(Stands up) You too.',
+          'The body is the foundation of cultivation. Don\'t just sit there.',
+          '...Hmph, I\'m only reminding you as a courtesy.',
+          'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
+        ],
+      },
     },
   },
 
@@ -516,6 +560,12 @@ const I18N = {
       trayUpdateCheck: '📦 更新を確認',
       trayUpdateChecking: '📦 更新を確認中...',
       trayUpdateDownloading: '📦 更新をダウンロード中...',
+
+      // 休憩リマインダー
+      trayBreakReminderOn: '⏰ 休憩リマインダーを無効化',
+      trayBreakReminderOff: '⏰ 休憩リマインダーを有効化',
+      trayBreakReminderInterval: '⏰ リマインダー間隔',
+      trayMinuteUnit: '分',
 
       // 更新ダイアログ
       updateErrTitle: '更新失敗',
@@ -687,6 +737,22 @@ const I18N = {
         cultivate: '✨',
         kiss: '💋',
         hug: '💕',
+      },
+      breakReminder: {
+        yueqi: [
+          '小九、そろそろ立ち上がろう。ずいぶん座っていたよ。',
+          '清秋師弟、修行も大事だが、体もいたわらなくては。',
+          'さあ、少し歩こう。僕が付き合うよ。',
+          '勤勉は美徳だが、体も解してやりなさい。',
+          '小九、立ち上がって伸びをしよう。',
+        ],
+        shenjiu: [
+          '…いつまで座ってるんだ。立て。',
+          '（立ち上がる）お前も立て。',
+          '体は修行の土台だ。座りっぱなしでいるな。',
+          '…ふん、ただの親切で言ってやってるだけだ。',
+          '久座は体に毒だ。修行しなくても歩くくらいはしろ。',
+        ],
       },
     },
   },

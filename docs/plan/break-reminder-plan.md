@@ -5,9 +5,9 @@
 
 ## Overview
 
-实现一个默认开启的久坐提醒：用户连续活跃 60 分钟后，岳七和沈九走到屏幕中间附近，各说一句提醒用户起身活动的话；系统空闲 5 分钟以上视为已休息并重置连续活跃计时。用户可以在托盘关闭功能，也可以调整提醒间隔，单位为分钟。
+实现一个默认开启的久坐提醒：用户连续活跃 60 分钟后，岳七和沈九瞬移到主显示器中间附近，各说一句提醒用户起身活动的话；系统空闲 5 分钟以上视为已休息并重置连续活跃计时。用户可以在托盘关闭功能，也可以调整提醒间隔，单位为分钟。
 
-这个功能只读取系统级“空闲时长/空闲状态”，不监听键盘内容、鼠标轨迹、点击目标、窗口标题或浏览器 URL。MVP 的目标是做一个可信、低权限、低打扰的健康提醒，而不是生产力监控。
+这个功能只读取系统级"空闲时长/空闲状态"，不监听键盘内容、鼠标轨迹、点击目标、窗口标题或浏览器 URL。MVP 的目标是做一个可信、低权限、低打扰的健康提醒，而不是生产力监控。
 
 ## MVP Behavior
 
@@ -15,10 +15,11 @@
 - 默认提醒间隔为 60 分钟，可通过托盘菜单调整。
 - 托盘固定候选值为 30、45、60、90、120 分钟；MVP 不提供 15 分钟选项。
 - 系统空闲 5 分钟以上视为用户已经休息，连续活跃计时清零。
-- 触发提醒后进入冷却，避免在同一段连续活跃时间内重复刷屏。
-- 提醒时暂停普通游走，最多展示 20 秒；用户点击小人或提醒气泡后可提前收起。提醒期间把两只小人移动到主窗口虚拟桌面中心附近，并显示两句对话：岳七一句、沈九一句。
+- 触发提醒后重置连续活跃计时器；如果用户继续活跃不休息，下一个 interval 到达时再次提醒。例如间隔 60 分钟时，连续使用 3 小时会在第 60、120、180 分钟各提醒一次。
+- 提醒时暂停普通游走，最多展示 20 秒；用户点击小人或提醒气泡后可提前收起。提醒期间把两只小人瞬移到主显示器中心附近，并显示两句对话：岳七一句、沈九一句。对话从提醒文案池中随机选取，保持新鲜感。
 - 如果用户隐藏桌宠，则不提示，也不在重新显示后补弹上一次提醒。
-- 如果用户处于全屏应用、演示或屏幕共享等场景，则自动延后提醒，等退出该场景后再重新判断。
+- Windows：如果用户处于全屏应用或演示场景，则自动延后提醒，等退出该场景后再重新判断。
+- macOS：不做全屏检测（避免触发隐私权限），提醒始终正常触发。
 - 如果用户暂停移动、窗口未加载完成或屏幕信息不可用，则不强行打扰；记录状态并等下一轮活跃计时。
 
 ## Platform Implementation
@@ -35,7 +36,7 @@
 参考：Electron `powerMonitor` 官方文档
 https://www.electronjs.org/docs/latest/api/power-monitor/
 
-全屏/演示延后不属于活跃度判断，单独封装为 `PresentationGuard`。它只回答“现在是否适合弹提醒”，不参与连续活跃计时，不保存窗口标题、进程名、URL 或历史记录。若平台能力不可用，MVP 采取保守策略：本轮不打断，短暂延后后重试。
+全屏/演示延后不属于活跃度判断，单独封装为 `PresentationGuard`。它只回答"现在是否适合弹提醒"，不参与连续活跃计时，不保存窗口标题、进程名、URL 或历史记录。MVP 中 `PresentationGuard` 只在 Windows 上做全屏检测；macOS 不做全屏检测，始终返回可打断。
 
 ### Windows
 
@@ -64,46 +65,54 @@ macOS 版同样优先使用 Electron `powerMonitor`，保持与 Windows 一致�
 - 使用 `getSystemIdleTime()` 和 `getSystemIdleState(300)` 判断活跃/空闲/锁屏。
 - 监听 `lock-screen`、`unlock-screen`、`suspend`、`resume`。
 - 可额外监听 macOS 专有的 `user-did-resign-active` / `user-did-become-active`，用于登录会话切换时暂停或恢复计时。
-- 触发提醒前调用 `PresentationGuard`：
-  - 优先使用可用的 macOS 前台窗口/空间状态能力判断全屏；实现时必须避免申请 Screen Recording、Accessibility 或 Input Monitoring 权限。
-  - 如果无法在无额外权限下可靠判断，则按保守策略延后提醒，不在疑似演示/全屏期间弹出。
-  - macOS 的全屏检测必须有单独 QA；不能为了该功能引入会弹系统隐私权限的方案。
+- **macOS 不做全屏检测**：`PresentationGuard` 在 macOS 上始终返回 `canInterrupt = true`。在不申请 Accessibility / Screen Recording / Input Monitoring 权限的前提下，无法可靠检测其他应用的全屏状态，因此 MVP 直接跳过。
 
-macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使用 `globalShortcut` 或原生输入 hook。若 `getSystemIdleState()` 返回 `unknown`，MVP 采取保守策略：不触发提醒，只继续等待下一轮可用状态。
+macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `globalShortcut` 或原生输入 hook。若 `getSystemIdleState()` 返回 `unknown`，MVP 采取保守策略：不触发提醒，只继续等待下一轮可用状态。
 
 ## Architecture Decisions
 
-- 新增主进程服务 `breakReminderService.js`，负责计时、配置、系统空闲状态采样和 IPC 事件发送。
-- Renderer 只负责表现：收到提醒事件后移动宠物、展示气泡、短暂停止普通移动。
+- 新增主进程服务 `breakReminderService.js`（项目根目录，与 `activeWindowProvider.js`、`displayBounds.js` 同级），负责计时、配置、系统空闲状态采样和 IPC 事件发送。
+- Renderer 只负责表现：收到提醒事件后瞬移宠物、展示气泡、短暂停止普通移动。
+- 提醒触发后重置连续活跃计时器，下一个 interval 到达时再次提醒，直到用户休息（空闲 5 分钟）。
 - 配置保存在 `electron-store`，新增允许保存的 store key，例如 `breakReminderSettings`。
 - 托盘是 MVP 的唯一设置入口，不做额外设置页。
-- 新增 `PresentationGuard` 用于提醒前的全屏/演示延后判断，和 `BreakReminderService` 解耦。
+- 新增 `PresentationGuard`（项目根目录）用于提醒前的全屏/演示延后判断，和 `BreakReminderService` 解耦。MVP 中 `PresentationGuard` 只在 Windows 上做全屏检测，macOS 始终返回可打断。
 - `BreakReminderService` 平时只做低频 idle 采样，默认 30 秒一次，最小采样间隔不低于 10 秒。
-- `PresentationGuard` 只在提醒到期前检查一次；若需要延后重试，重试间隔不低于 60 秒，避免额外常驻前台窗口采样。
+- `PresentationGuard` 只在提醒到期前检查一次（仅 Windows）；若需要延后重试，重试间隔不低于 60 秒，避免额外常驻前台窗口采样。
+- Renderer 收到提醒后通过 `break-reminder-dismissed` 回传主进程，主进程据此确认提醒已展示并维护计时器状态。
 - 不在 renderer `requestAnimationFrame` 中读取系统状态或前台窗口状态。
-- 不在每次 idle 采样时写入 `electron-store`；只在用户修改设置、退出前最终保存或必要状态变化时保存。
+- 不在每次 idle 采样时写入 `electron-store`；只在用户修改设置时保存。
 - 不复用 `activeWindowProvider.js` 判断工作状态。久坐提醒只关心连续使用电脑，不关心用户在用什么软件。
-- 可复用或新增最小化的前台窗口几何能力判断全屏，但不保存、不展示、不分类窗口内容。
+- Windows 可复用最小化的前台窗口几何能力判断全屏，但不保存、不展示、不分类窗口内容。macOS 不做全屏检测。
 - 不监听键盘和鼠标。隐私边界写入文档，后续实现时也要保持这个边界。
 
 ## Performance Constraints
 
 - 无提醒、无设置变更时，额外 CPU 占用应接近 0；主进程只做低频 timer 和 `powerMonitor` 查询。
 - `powerMonitor.getSystemIdleTime()` / `getSystemIdleState()` 是常规采样路径；不得引入高频键鼠 hook 或 renderer 轮询。
-- 前台窗口几何检测只用于 `PresentationGuard` 的“是否延后提醒”判断，不做持续采样，不保留历史。
+- 前台窗口几何检测只用于 Windows `PresentationGuard` 的"是否延后提醒"判断，不做持续采样，不保留历史。macOS 不做全屏检测。
 - 若 Windows 复用 `activeWindowProvider.js`，提醒侧只在到期时调用，不额外启动第二个 10 秒采样器。
-- macOS 不为全屏检测引入重型轮询或会触发隐私权限的方案；不可可靠判断时保守延后。
 - 提醒表现复用现有宠物 DOM、气泡和移动系统，不新增全屏遮罩、复杂 layout 或独立高频动画循环。
 - 手动 QA 需要观察任务管理器/活动监视器：无提醒待机时 CPU 不应出现持续可见增长。
 
 ## Proposed Data Model
 
+持久化配置（保存到 `electron-store`）：
+
 ```js
 {
   enabled: true,
   intervalMinutes: 60,
-  idleResetMinutes: 5,
-  lastReminderAt: 0
+  idleResetMinutes: 5
+}
+```
+
+运行时状态（不持久化，进程内存中维护）：
+
+```js
+{
+  activeMs: 0,          // 当前连续活跃毫秒数
+  lastReminderAt: 0     // 上次提醒的时间戳，用于计时器重置
 }
 ```
 
@@ -113,6 +122,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - 托盘 MVP 只暴露 30、45、60、90、120 分钟。
 - `idleResetMinutes` MVP 固定 5，不在托盘暴露。
 - 旧数据缺字段时使用默认值。
+- `lastReminderAt` 为运行时状态，不写入 `electron-store`；应用重启后计时器自然归零。
 
 ## Task List
 
@@ -124,9 +134,10 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 **Acceptance criteria:**
 - [ ] 默认启用，默认间隔 60 分钟。
-- [ ] 连续活跃达到配置分钟数时只触发一次提醒。
+- [ ] 连续活跃达到配置分钟数时触发提醒，触发后重置连续活跃计时器。
+- [ ] 如果用户继续活跃不休息，下一个 interval 到达时再次提醒（例如 60 分钟间隔，3 小时连续使用会在 60/120/180 分钟各提醒一次）。
 - [ ] 空闲达到 5 分钟后清零连续活跃计时。
-- [ ] 提醒被延后时不会重复发送 renderer 事件。
+- [ ] 提醒被 `PresentationGuard` 延后时不会重复发送 renderer 事件。
 - [ ] 默认采样间隔为 30 秒，配置或测试环境中不得低于 10 秒。
 
 **Verification:**
@@ -136,7 +147,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 **Dependencies:** None
 
 **Files likely touched:**
-- `breakReminderService.js`
+- `breakReminderService.js`（项目根目录）
 - `test/breakReminderService.test.js`
 
 **Estimated scope:** Medium
@@ -164,25 +175,26 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 **Estimated scope:** Medium
 
-#### Task 3: 新增 PresentationGuard 延后判断
+#### Task 3: 新增 PresentationGuard 延后判断（Windows-only 全屏检测）
 
-**Description:** 新增提醒前置守卫，用于判断当前是否处于全屏、演示或疑似屏幕共享场景。它不负责活跃计时，只返回 `canInterrupt` / `deferReason`。
+**Description:** 新增提醒前置守卫，用于判断当前是否处于全屏或演示场景。它不负责活跃计时，只返回 `canInterrupt` / `deferReason`。Windows 上基于前台窗口 bounds 判断全屏；macOS 始终返回 `canInterrupt = true`，不做全屏检测。
 
 **Acceptance criteria:**
 - [ ] Windows 可基于前台窗口 bounds / `isFullScreen` 判断全屏并延后提醒。
-- [ ] macOS 不引入 Accessibility、Input Monitoring 或 Screen Recording 权限请求。
-- [ ] 无法可靠判断时采取保守延后策略，并在下一轮重新检查。
+- [ ] macOS 始终返回 `canInterrupt = true`，不做全屏检测，不引入任何隐私权限请求。
+- [ ] Windows 无法可靠判断时采取保守延后策略，并在下一轮重新检查。
 - [ ] 不保存窗口标题、进程名、URL 或历史记录。
-- [ ] 只在提醒到期或延后重试时运行，延后重试间隔不低于 60 秒。
+- [ ] 只在提醒到期或延后重试时运行（仅 Windows），延后重试间隔不低于 60 秒。
 
 **Verification:**
-- [ ] fake provider 单测覆盖 can interrupt、fullscreen defer、unknown defer。
+- [ ] fake provider 单测覆盖 Windows can interrupt、fullscreen defer、unknown defer。
+- [ ] 单测覆盖 macOS 始终 canInterrupt。
 - [ ] `node --test test/presentationGuard.test.js`
 
 **Dependencies:** Task 1
 
 **Files likely touched:**
-- `presentationGuard.js`
+- `presentationGuard.js`（项目根目录）
 - `activeWindowProvider.js`
 - `test/presentationGuard.test.js`
 
@@ -193,7 +205,8 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - [ ] 不需要键鼠监听。
 - [ ] 不需要 macOS Accessibility 权限。
 - [ ] Windows/macOS 行为路径在测试中都有覆盖。
-- [ ] 全屏/演示延后不读取或保存用户内容。
+- [ ] macOS 不做全屏检测，PresentationGuard 始终返回可打断。
+- [ ] Windows 全屏/演示延后不读取或保存用户内容。
 - [ ] 平时没有额外前台窗口常驻采样器。
 
 ### Phase 2: 配置与托盘入口
@@ -223,7 +236,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 #### Task 5: 增加托盘菜单控制
 
-**Description:** 在托盘中增加“久坐提醒 开/关”和提醒间隔分钟选项。MVP 使用固定候选值，避免复杂输入窗口。
+**Description:** 在托盘中增加"久坐提醒 开/关"和提醒间隔分钟选项。MVP 使用固定候选值，避免复杂输入窗口。
 
 **Acceptance criteria:**
 - [ ] 托盘可切换启用/关闭。
@@ -259,6 +272,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 **Acceptance criteria:**
 - [ ] 主进程发送 `break-reminder-triggered`。
+- [ ] Renderer 通过 `break-reminder-dismissed` 回传主进程，通知提醒已展示或被用户关闭。
 - [ ] preload 返回 unsubscribe，避免重复监听。
 - [ ] IPC payload 只包含必要字段，例如 `triggeredAt`、`intervalMinutes`。
 
@@ -275,22 +289,23 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 **Estimated scope:** Small
 
-#### Task 7: 小人移动到屏幕中间并说话
+#### Task 7: 小人瞬移到主显示器中间并说话
 
-**Description:** Renderer 收到提醒后，暂停普通移动一小段时间，把岳七和沈九放到屏幕中心附近，展示两句休息提醒对话。
+**Description:** Renderer 收到提醒后，暂停普通移动，把岳七和沈九瞬移到主显示器中心附近，展示两句休息提醒对话。对话文案从提醒文案池中随机选取。
 
 **Acceptance criteria:**
-- [ ] 两只小人分别站在中心左右，且经过 `MovementSystem` 可行走区域约束。
-- [ ] 岳七和沈九各显示一句提醒文案。
+- [ ] 两只小人瞬移到主显示器可行走区域中心附近，分别站在中心左右。
+- [ ] 多显示器环境下始终使用主显示器（`screen.getPrimaryDisplay()` 对应的 walkArea）。
+- [ ] 岳七和沈九各显示一句提醒文案，从文案池中随机选取，保持新鲜感。
 - [ ] 提醒最多展示 20 秒。
-- [ ] 用户点击小人或提醒气泡后，提醒立即消失并恢复普通移动。
+- [ ] 用户点击小人或提醒气泡后，提醒立即消失，通过 `break-reminder-dismissed` 通知主进程，恢复普通移动。
 - [ ] 桌宠隐藏时不展示提醒，也不在恢复显示后补弹。
 - [ ] 提醒期间不触发普通闲聊或状态警告打断。
 - [ ] 提醒结束后恢复普通移动。
 
 **Verification:**
 - [ ] 增加 renderer 集成测试或 debug 方法验证坐标和气泡调用。
-- [ ] 手动检查多显示器和不同 DPI 下中心位置合理。
+- [ ] 手动检查多显示器和不同 DPI 下主显示器中心位置合理。
 - [ ] `npm test`
 
 **Dependencies:** Task 6
@@ -341,7 +356,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - [ ] 空闲 5 分钟后重置连续活跃。
 - [ ] 锁屏后不触发提醒，解锁后重新计时。
 - [ ] 睡眠/恢复后不因为时间跳变立刻误触发。
-- [ ] 全屏应用或演示场景中自动延后提醒，退出后再重新判断。
+- [ ] 全屏应用或演示场景中自动延后提醒（Windows PresentationGuard），退出后再重新判断。
 - [ ] 无提醒待机时任务管理器中 CPU 无持续可见增长。
 
 **Verification:**
@@ -364,7 +379,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - [ ] 连续活跃达到短测试间隔后触发提醒。
 - [ ] 锁屏、切换登录会话、睡眠/恢复后计时合理。
 - [ ] 若 idle state 返回 `unknown`，不误触发提醒。
-- [ ] 全屏或演示场景中不打断；若无权限安全检测不可用，则保守延后。
+- [ ] 全屏场景中提醒正常触发（macOS 不做全屏检测）。
 - [ ] 无提醒待机时活动监视器中 CPU 无持续可见增长。
 
 **Verification:**
@@ -385,7 +400,7 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 
 **Acceptance criteria:**
 - [ ] `docs/structure.md` 说明 `breakReminderService.js` 和 IPC 边界。
-- [ ] 若实现确认采用 `powerMonitor`，新增 ADR 记录“不监听键鼠”的隐私边界。
+- [ ] 若实现确认采用 `powerMonitor`，新增 ADR 记录"不监听键鼠"的隐私边界。
 - [ ] `CHANGELOG.md` 按 `Added` / `Changed` / `Fixed` / `Removed` 标题记录。
 
 **Verification:**
@@ -407,13 +422,14 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 | --- | --- | --- |
 | 睡眠或系统时间跳变导致误触发 | Medium | 监听 `suspend` / `resume`，恢复后重置连续活跃计时；沿用现有时间跳变思路。 |
 | macOS 返回 `unknown` 状态 | Medium | 保守处理：不触发提醒，等待下一次有效采样。 |
-| 提醒打断用户演示或全屏工作 | High | MVP 必须加入 `PresentationGuard`，提醒前检测全屏/演示并延后；不可用时保守延后。 |
+| 提醒打断用户演示或全屏工作 | High | Windows 加入 `PresentationGuard` 做全屏检测并延后；macOS 不做全屏检测，提醒正常触发。 |
 | 托盘间隔输入过于复杂 | Low | MVP 用固定分钟选项，后续再做自定义输入。 |
 | 用户误以为在监听键鼠 | High | 文档、ADR、设置文案明确说明只读取系统空闲时长，不记录输入内容。 |
-| 多显示器中心位置不自然 | Medium | 使用现有 `screen-info`、`walkAreas` 和 `MovementSystem` clamp，手动覆盖多显示器/DPI。 |
-| 全屏检测扩大隐私边界 | High | 只读取几何状态，不保存窗口标题、进程名、URL 或历史；macOS 不引入会触发隐私权限的检测方式。 |
-| 前台窗口全屏检测造成额外性能开销 | Medium | `PresentationGuard` 只在提醒到期和延后重试时运行；不启动第二个常驻采样器，延后重试不低于 60 秒。 |
+| 多显示器中心位置不自然 | Low | 始终使用主显示器中心，行为可预测。 |
+| 全屏检测扩大隐私边界 | Medium | Windows 只读取几何状态，不保存窗口标题、进程名、URL 或历史；macOS 不做全屏检测，无隐私风险。 |
+| 前台窗口全屏检测造成额外性能开销 | Medium | `PresentationGuard` 只在提醒到期和延后重试时运行（仅 Windows）；不启动第二个常驻采样器，延后重试不低于 60 秒。 |
 | Renderer 提醒造成布局或动画开销 | Low | 复用现有宠物 DOM 和气泡系统，20 秒内展示，点击可提前结束；不新增复杂 overlay。 |
+| 提醒文案重复导致用户厌烦 | Low | 维护多条提醒文案池，随机选取。 |
 
 ## Not Doing in MVP
 
@@ -423,7 +439,8 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - 不做番茄钟开始/暂停/完成流程。
 - 不做自定义提醒文案编辑器。
 - 不做复杂设置页，只使用托盘菜单。
-- 不做“工作软件/娱乐网站”分类。
+- 不做"工作软件/娱乐网站"分类。
+- macOS 不做全屏/演示检测。
 
 ## Resolved Decisions and Validation Notes
 
@@ -432,8 +449,10 @@ macOS 不使用 Accessibility API，不申请“辅助功能”权限，不使�
 - 固定间隔候选值为 30、45、60、90、120 分钟；不提供 15 分钟。
 - 提醒最多展示 20 秒；用户点击小人或提醒气泡时提前消失。
 - 用户隐藏桌宠时不提示，也不补弹隐藏期间错过的提醒。
-- 全屏应用、演示或疑似屏幕共享场景需要自动延后提醒。
-
-待实现时验证：
-
-- macOS 如何在不触发隐私权限请求的前提下可靠判断全屏/演示；若无法可靠判断，MVP 保守延后。
+- Windows 全屏应用或演示场景自动延后提醒。
+- macOS 不做全屏检测，提醒正常触发。
+- 提醒触发后重置计时器，用户继续活跃时按 interval 重复提醒。
+- 宠物瞬移到主显示器中心，不走过去。
+- `lastReminderAt` 为运行时状态，不持久化。
+- Renderer 通过 `break-reminder-dismissed` 回传主进程。
+- 提醒文案从池中随机选取，保持新鲜感。

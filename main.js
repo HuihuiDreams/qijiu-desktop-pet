@@ -18,6 +18,12 @@ const {
   checkForUpdatesFromTray,
   getUpdateMenuState,
 } = require('./updateManager');
+const {
+  createBreakReminderService,
+  normalizeSettings: normalizeBreakReminderSettings,
+  DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
+} = require('./breakReminderService');
+const { createPresentationGuard } = require('./presentationGuard');
 const { I18N } = require('./src/data/i18n');
 
 // 常量定义
@@ -28,6 +34,8 @@ const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const DISPLAY_METRICS_SETTLE_MS = 250;
 const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
 const LOGIN_ITEM_NAME = '七九爱宠';
+const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
+const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
@@ -81,6 +89,9 @@ let activeWindowSampler = null;
 let windowAwarenessEnabled = true;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
+let breakReminderService = null;
+let breakReminderEnabled = true;
+let breakReminderIntervalMinutes = 60;
 let finalSaveRequestId = 0;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 const displayFitScheduler = createDisplayFitScheduler({
@@ -735,6 +746,33 @@ function buildTrayMenu() {
     },
     { type: 'separator' },
     {
+      label: breakReminderEnabled ? trayT('trayBreakReminderOn') : trayT('trayBreakReminderOff'),
+      click: async () => {
+        breakReminderEnabled = !breakReminderEnabled;
+        const newSettings = { enabled: breakReminderEnabled, intervalMinutes: breakReminderIntervalMinutes, idleResetMinutes: 5 };
+        if (breakReminderService) breakReminderService.updateSettings(newSettings);
+        await initStore();
+        if (store) store.set(BREAK_REMINDER_STORE_KEY, newSettings);
+        refreshTrayMenu();
+      },
+    },
+    {
+      label: trayT('trayBreakReminderInterval'),
+      submenu: BREAK_REMINDER_TRAY_INTERVALS.map(minutes => ({
+        label: `${minutes} ${trayT('trayMinuteUnit')}`,
+        type: 'radio',
+        checked: breakReminderIntervalMinutes === minutes,
+        click: async () => {
+          breakReminderIntervalMinutes = minutes;
+          const newSettings = { enabled: breakReminderEnabled, intervalMinutes: minutes, idleResetMinutes: 5 };
+          if (breakReminderService) breakReminderService.updateSettings(newSettings);
+          await initStore();
+          if (store) store.set(BREAK_REMINDER_STORE_KEY, newSettings);
+          refreshTrayMenu();
+        },
+      })),
+    },
+    {
       label: (process.platform === 'win32' || process.platform === 'darwin')
         ? (windowAwarenessEnabled ? trayT('trayWindowAwarenessOff') : trayT('trayWindowAwarenessOn'))
         : trayT('trayWindowAwarenessUnavailable'),
@@ -1029,7 +1067,7 @@ const ALLOWED_STORE_KEYS = [
   'autoLaunch',
   'petState',
   'locale',
-  // 在这里添加其他合法的保存键值
+  BREAK_REMINDER_STORE_KEY,
 ];
 
 ipcMain.handle('save-data', async (_event, key, value) => {
@@ -1100,6 +1138,11 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   return { success: true, locale: lang };
 });
 
+// 久坐提醒 IPC
+ipcMain.on('break-reminder-dismissed', () => {
+  if (breakReminderService) breakReminderService.onDismissed();
+});
+
 // --- 应用生命周期 ---
 
 if (!hasSingleInstanceLock) {
@@ -1117,7 +1160,7 @@ if (!hasSingleInstanceLock) {
     }
 
     // 设置权限拦截
-    const { session } = require('electron');
+    const { session, powerMonitor } = require('electron');
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
       callback(false);
     });
@@ -1128,6 +1171,50 @@ if (!hasSingleInstanceLock) {
     currentLocale = ['zh', 'en', 'ja'].includes(storedLocale) ? storedLocale : detectLocale();
     const syncResult = await syncAutoLaunchPreference();
     autoLaunchEnabled = syncResult.preference;
+
+    // --- 久坐提醒服务初始化 ---
+    const storedBreakSettings = store ? store.get(BREAK_REMINDER_STORE_KEY) : null;
+    const breakSettings = normalizeBreakReminderSettings(storedBreakSettings);
+    breakReminderEnabled = breakSettings.enabled;
+    breakReminderIntervalMinutes = breakSettings.intervalMinutes;
+
+    const presentationGuard = createPresentationGuard({
+      platform: process.platform,
+      getActiveWindowInfo: () => activeWindowSampler?.getLastPayload() || null,
+      getDisplays: () => screen.getAllDisplays(),
+    });
+
+    breakReminderService = createBreakReminderService({
+      powerMonitor,
+      presentationGuard,
+      settings: breakSettings,
+      onReminderDue: (payload) => {
+        // 桌宠隐藏时不提示
+        if (petHidden) return;
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        mainWindow.webContents.send('break-reminder-triggered', payload);
+      },
+    });
+
+    // 支持的平台才启动服务
+    if (process.platform === 'win32' || process.platform === 'darwin') {
+      breakReminderService.start();
+    }
+
+    // 监听系统事件
+    powerMonitor.on('lock-screen', () => {
+      if (breakReminderService) breakReminderService.onLockOrSuspend();
+    });
+    powerMonitor.on('suspend', () => {
+      if (breakReminderService) breakReminderService.onLockOrSuspend();
+    });
+    powerMonitor.on('unlock-screen', () => {
+      if (breakReminderService) breakReminderService.onUnlockOrResume();
+    });
+    powerMonitor.on('resume', () => {
+      if (breakReminderService) breakReminderService.onUnlockOrResume();
+    });
+
     initUpdateManager({
       app,
       dialog,

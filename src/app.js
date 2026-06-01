@@ -221,9 +221,13 @@ function applyI18n() {
       contextMenu.show(pet, e.clientX, e.clientY);
     });
 
-    // 左键点击 = 随机对话
+    // 左键点击 = 随机对话 / 久坐提醒点击消失
     pet.element.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (breakReminderActive) {
+        dismissBreakReminder();
+        return;
+      }
       if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)) {
         dialogBubble.showIdleChatter(pet);
       }
@@ -242,6 +246,8 @@ function applyI18n() {
 
   let isPaused = false;
   let interactionOverlayActive = false; // 记录是否当前正在显示互动覆盖层
+  let breakReminderActive = false;      // 久坐提醒展示中
+  let breakReminderDismissTimer = null; // 20秒自动消失计时器
 
   window.electronAPI.onTogglePause((paused) => {
     isPaused = paused;
@@ -269,6 +275,104 @@ function applyI18n() {
   window.electronAPI.onSwitchSkin((skinId) => {
     applySkinById(skinId);
   });
+
+  // === 久坐提醒处理 ===
+  function dismissBreakReminder() {
+    if (!breakReminderActive) return;
+    breakReminderActive = false;
+    if (breakReminderDismissTimer) {
+      clearTimeout(breakReminderDismissTimer);
+      breakReminderDismissTimer = null;
+    }
+    // 清除气泡
+    dialogBubble.removeForPets([yueqi, shenjiu]);
+    // 恢复状态
+    yueqi.setState('idle');
+    shenjiu.setState('idle');
+    yueqi.idleTimer = 2000;
+    shenjiu.idleTimer = 2000;
+    // 通知主进程
+    window.electronAPI.dismissBreakReminder();
+  }
+
+  function handleBreakReminderTriggered(_payload) {
+    // 桌宠隐藏或暂停时不展示
+    if (isPaused) return;
+    // 如果已经在展示提醒，忽略
+    if (breakReminderActive) return;
+
+    breakReminderActive = true;
+
+    // 清除现有互动覆盖层
+    if (interactionOverlayActive) {
+      interactionOverlayActive = false;
+      renderer.hideOverlay(yueqi, shenjiu);
+    }
+    // 清除现有气泡
+    dialogBubble.removeForPets([yueqi, shenjiu]);
+
+    // 找到主显示器对应的 walkArea 中心
+    // walkAreas 是相对于窗口坐标的；使用最大的 walkArea 作为主显示器区域
+    const walkAreas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
+    let area = walkAreas[0] || { x: 0, y: 0, width: screenWidth, height: screenHeight };
+    // 选最大面积的 walkArea（通常是主显示器）
+    for (const wa of walkAreas) {
+      if (wa.width * wa.height > area.width * area.height) {
+        area = wa;
+      }
+    }
+
+    const petSize = yueqi.size || CONFIG.PET_SIZE;
+    const centerX = area.x + area.width / 2;
+    const centerY = area.y + area.height / 2;
+    const spacing = petSize * 1.5;
+
+    // 瞬移到主显示器中心附近
+    yueqi.x = Math.max(area.x, centerX - spacing - petSize / 2);
+    yueqi.y = Math.max(area.y, centerY - petSize / 2);
+    shenjiu.x = Math.min(area.x + area.width - petSize, centerX + spacing - petSize / 2);
+    shenjiu.y = Math.max(area.y, centerY - petSize / 2);
+
+    // 面对面
+    yueqi.direction = 'right';
+    shenjiu.direction = 'left';
+
+    // 暂停移动
+    yueqi.setState('interacting');
+    shenjiu.setState('interacting');
+
+    // 立即更新渲染位置
+    renderer.update(yueqi);
+    renderer.update(shenjiu);
+    spriteView.update(yueqi, 0);
+    spriteView.update(shenjiu, 0);
+
+    // 从文案池随机选取
+    const pool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES.breakReminder : null;
+    const yueqiTexts = pool?.yueqi;
+    const shenjiuTexts = pool?.shenjiu;
+    const yueqiText = Array.isArray(yueqiTexts) && yueqiTexts.length > 0
+      ? yueqiTexts[Math.floor(Math.random() * yueqiTexts.length)]
+      : '起来活动一下吧！';
+    const shenjiuText = Array.isArray(shenjiuTexts) && shenjiuTexts.length > 0
+      ? shenjiuTexts[Math.floor(Math.random() * shenjiuTexts.length)]
+      : '…别坐太久了。';
+
+    // 显示气泡
+    setTimeout(() => {
+      if (!breakReminderActive) return;
+      dialogBubble.show(yueqi, yueqiText, 18000);
+    }, 300);
+    setTimeout(() => {
+      if (!breakReminderActive) return;
+      dialogBubble.show(shenjiu, shenjiuText, 17500);
+    }, 800);
+
+    // 20秒后自动消失
+    breakReminderDismissTimer = setTimeout(dismissBreakReminder, 20000);
+  }
+
+  window.electronAPI.onBreakReminder(handleBreakReminderTriggered);
 
   // === 语言热切换监听 ===
   window.electronAPI.onLocaleChange((newLocale) => {
@@ -326,7 +430,7 @@ function applyI18n() {
     lastTime = currentTime;
 
     try {
-      if (!isPaused) {
+      if (!isPaused && !breakReminderActive) {
         // --- 修复: 电脑睡眠模式 / 后台挂机的时间跳跃处理 ---
         // 在桌面应用中，如果电脑进入休眠，requestAnimationFrame 会被完全挂起。
         // 当重新唤醒时，这里的 deltaMs（两帧时间差）会变得极其巨大（甚至长达几个小时）。
@@ -488,6 +592,11 @@ function applyI18n() {
   window.__DEBUG_SKIN_MANAGER = skinManager;
   window.__DEBUG_MOVEMENT = movementSystem;
   window.__DEBUG_WINDOW_AWARENESS = windowAwarenessSystem;
+  window.__DEBUG_BREAK_REMINDER = {
+    trigger: () => {
+      handleBreakReminderTriggered({ triggeredAt: Date.now(), intervalMinutes: 60 });
+    },
+  };
 
   console.log('🗡️🪭 岳七 & 沈九 桌面宠物已启动！');
 })();

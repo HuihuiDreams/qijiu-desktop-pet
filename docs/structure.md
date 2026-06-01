@@ -22,6 +22,8 @@ graph TB
         MainJs --> Fit["displayFit.js"]
         MainJs --> ActiveWindow["activeWindowProvider.js / activeWindowAwareness.js"]
         MainJs --> AutoLaunch["Login Item / Auto Launch"]
+        MainJs --> BreakReminder["breakReminderService.js"]
+        MainJs --> PresentGuard["presentationGuard.js"]
     end
 
     subgraph Renderer["Pet Renderer Process"]
@@ -58,6 +60,8 @@ qijiu-desktop-pet/
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
 ├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现
 ├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换与去重
+├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
+├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
 ├─ electron-builder.update-test-*.yml    # 本地更新流程测试用 electron-builder 配置
@@ -239,9 +243,24 @@ src/assets/{skinId}/
 - macOS 包含手动更新提示和可执行文件名处理。
 - 支持检查中、下载中、下载完成、无更新、错误等状态。
 - 主进程会展示可见的更新进度窗口，并同步托盘菜单状态。
-- 404 或 release 元数据缺失会被归类为“已是最新/暂无更新”一类的可理解提示，而不是直接暴露底层错误。
+- 404 或 release 元数据缺失会被归类为"已是最新/暂无更新"一类的可理解提示，而不是直接暴露底层错误。
 
-### 3.11 安全边界
+### 3.11 久坐提醒
+
+`breakReminderService.js` 负责久坐提醒的核心计时逻辑：
+
+- 使用 `powerMonitor.getSystemIdleTime()` 低频采样（默认每 30 秒），不监听键盘/鼠标事件。
+- 当连续活跃时间达到配置间隔（默认 60 分钟）时触发提醒。
+- 用户空闲超过 `idleResetMinutes`（默认 5 分钟）时自动重置计时器。
+- 系统锁屏/挂起/恢复事件也会重置计时器。
+- 提醒触发前经过 `PresentationGuard` 检查：
+  - macOS：始终允许提醒（不做全屏检测，避免请求辅助功能权限）。
+  - Windows：检查前台窗口是否全屏或覆盖整个工作区，若是则延后 60 秒重试。
+  - 不保存窗口标题、进程名或 URL。
+- 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
+- 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。
+
+### 3.12 安全边界
 
 当前安全边界以 Electron 推荐模式为基础：
 
@@ -267,6 +286,8 @@ npm test
 - `SkinManager`、托盘皮肤扫描和渲染集成。
 - `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
+- `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
+- `presentationGuard.js` 跨平台全屏检测和隐私边界。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
 
 ## 5. 架构决策索引
@@ -293,6 +314,7 @@ npm test
 - [ADR-028](./decisions/ADR-028-coalesce-display-metrics-window-fit.md)：合并显示器指标事件后再适配桌宠窗口。
 - [ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)：安全审计与本地硬化。
 - [ADR-030](./decisions/ADR-030-window-awareness.md)：窗口感知平台采样。
+- [ADR-031](./decisions/ADR-031-break-reminder.md)：久坐提醒设计。
 
 ## 6. 维护提示
 
