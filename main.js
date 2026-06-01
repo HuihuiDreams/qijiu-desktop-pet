@@ -293,9 +293,12 @@ function sendScreenInfo() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const bounds = mainWindow.getBounds();
   const displays = screen.getAllDisplays();
+  const primaryDisplay = screen.getPrimaryDisplay();
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
-  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor);
+  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor, {
+    primaryDisplayId: primaryDisplay?.id,
+  });
   const taskbarPlatforms = (process.platform === 'win32' || process.platform === 'darwin')
     ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
     : [];

@@ -54,6 +54,11 @@ test('main.js tray menu includes break reminder interval submenu', () => {
   assert.ok(mainSource.includes("BREAK_REMINDER_TRAY_INTERVALS"), 'should use intervals array');
 });
 
+test('main.js marks the primary display walk area for renderer screen info', () => {
+  assert.ok(mainSource.includes('screen.getPrimaryDisplay()'), 'should read the primary display');
+  assert.ok(mainSource.includes('primaryDisplayId'), 'should pass primary display id into walk area conversion');
+});
+
 // --- preload.js ---
 
 test('preload.js exposes onBreakReminder API', () => {
@@ -95,6 +100,11 @@ test('app.js shows dialogues from breakReminder pool', () => {
 
 test('app.js auto-dismisses after 20 seconds', () => {
   assert.ok(appSource.includes('setTimeout(dismissBreakReminder, 20000)'), 'should auto-dismiss after 20s');
+});
+
+test('app.js chooses the primary walk area for break reminder placement', () => {
+  assert.ok(appSource.includes('wa.isPrimary'), 'should prefer the primary display walk area');
+  assert.ok(!appSource.includes('wa.width * wa.height > area.width * area.height'), 'should not choose the largest area');
 });
 
 test('app.js click-to-dismiss during break reminder', () => {

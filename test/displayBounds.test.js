@@ -118,6 +118,32 @@ test('walk areas scale secondary display sizes into renderer coordinates', () =>
   );
 });
 
+test('walk areas mark the primary display when primaryDisplayId is provided', () => {
+  assert.deepEqual(
+    getWalkAreasRelativeToBounds(
+      [
+        {
+          id: 1,
+          bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+          workArea: { x: 0, y: 0, width: 1920, height: 1040 },
+        },
+        {
+          id: 2,
+          bounds: { x: 1920, y: 0, width: 2560, height: 1440 },
+          workArea: { x: 1920, y: 0, width: 2560, height: 1400 },
+        },
+      ],
+      { x: 0, y: 0, width: 4480, height: 1440 },
+      1,
+      { primaryDisplayId: 1 },
+    ),
+    [
+      { x: 0, y: 0, width: 1920, height: 1040, scaleRatio: 1, isPrimary: true },
+      { x: 1920, y: 0, width: 2560, height: 1400, scaleRatio: 1 },
+    ],
+  );
+});
+
 test('taskbar platforms are derived from bottom horizontal taskbars', () => {
   assert.deepEqual(
     getTaskbarPlatformsRelativeToBounds(

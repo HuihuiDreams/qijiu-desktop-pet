@@ -30,6 +30,7 @@ class MovementSystem {
         height: Number(area?.height),
         scaleRatio: Number(area?.scaleRatio),
         source: area?.source,
+        isPrimary: area?.isPrimary === true,
       }))
       .filter((area) => (
         Number.isFinite(area.x)
@@ -48,6 +49,7 @@ class MovementSystem {
           scaleRatio: Number.isFinite(area.scaleRatio) && area.scaleRatio > 0 ? area.scaleRatio : 1,
         };
         if (area.source) normalized.source = area.source;
+        if (area.isPrimary) normalized.isPrimary = true;
         return normalized;
       });
   }

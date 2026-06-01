@@ -69,6 +69,18 @@ test('walk area scale ratios survive normalization', () => {
   ]);
 });
 
+test('walk area primary flag survives normalization', () => {
+  const movementSystem = new MovementSystem(4480, 1440, [
+    { x: 0, y: 0, width: 1920, height: 1040, scaleRatio: 1, isPrimary: true },
+    { x: 1920, y: 0, width: 2560, height: 1400, scaleRatio: 1 },
+  ]);
+
+  assert.deepEqual(movementSystem.getWalkAreas(), [
+    { x: 0, y: 0, width: 1920, height: 1040, scaleRatio: 1, isPrimary: true },
+    { x: 1920, y: 0, width: 2560, height: 1400, scaleRatio: 1 },
+  ]);
+});
+
 test('pets are clamped back to the nearest visible display area', () => {
   const movementSystem = new MovementSystem(3200, 1080, [
     { x: 0, y: 0, width: 1920, height: 1080 },

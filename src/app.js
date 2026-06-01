@@ -315,15 +315,11 @@ function applyI18n() {
     dialogBubble.removeForPets([yueqi, shenjiu]);
 
     // 找到主显示器对应的 walkArea 中心
-    // walkAreas 是相对于窗口坐标的；使用最大的 walkArea 作为主显示器区域
+    // walkAreas 是相对于窗口坐标的；主进程会标记 isPrimary。
     const walkAreas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
-    let area = walkAreas[0] || { x: 0, y: 0, width: screenWidth, height: screenHeight };
-    // 选最大面积的 walkArea（通常是主显示器）
-    for (const wa of walkAreas) {
-      if (wa.width * wa.height > area.width * area.height) {
-        area = wa;
-      }
-    }
+    const area = walkAreas.find((wa) => wa.isPrimary)
+      || walkAreas[0]
+      || { x: 0, y: 0, width: screenWidth, height: screenHeight };
 
     const petSize = yueqi.size || CONFIG.PET_SIZE;
     const centerX = area.x + area.width / 2;

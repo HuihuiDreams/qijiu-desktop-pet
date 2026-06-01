@@ -133,16 +133,16 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 新增一个可单测的主进程服务，注入 `powerMonitor`、时钟和 timer 实现，输出 `reminder-due` 事件或回调。
 
 **Acceptance criteria:**
-- [ ] 默认启用，默认间隔 60 分钟。
-- [ ] 连续活跃达到配置分钟数时触发提醒，触发后重置连续活跃计时器。
-- [ ] 如果用户继续活跃不休息，下一个 interval 到达时再次提醒（例如 60 分钟间隔，3 小时连续使用会在 60/120/180 分钟各提醒一次）。
-- [ ] 空闲达到 5 分钟后清零连续活跃计时。
-- [ ] 提醒被 `PresentationGuard` 延后时不会重复发送 renderer 事件。
-- [ ] 默认采样间隔为 30 秒，配置或测试环境中不得低于 10 秒。
+- [x] 默认启用，默认间隔 60 分钟。
+- [x] 连续活跃达到配置分钟数时触发提醒，触发后重置连续活跃计时器。
+- [x] 如果用户继续活跃不休息，下一个 interval 到达时再次提醒（例如 60 分钟间隔，3 小时连续使用会在 60/120/180 分钟各提醒一次）。
+- [x] 空闲达到 5 分钟后清零连续活跃计时。
+- [x] 提醒被 `PresentationGuard` 延后时不会重复发送 renderer 事件。
+- [x] 默认采样间隔为 30 秒，配置或测试环境中不得低于 10 秒。
 
 **Verification:**
-- [ ] 新增 fake clock 单测覆盖 active、idle、locked、unknown。
-- [ ] `node --test test/breakReminderService.test.js`
+- [x] 新增 fake clock 单测覆盖 active、idle、locked、unknown。
+- [x] `node --test test/breakReminderService.test.js`
 
 **Dependencies:** None
 
@@ -157,14 +157,14 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 在 `main.js` 中启动服务，读取 Windows/macOS 共享的 `powerMonitor` 状态，处理锁屏、解锁、睡眠和恢复事件。
 
 **Acceptance criteria:**
-- [ ] `app.whenReady()` 后启动服务。
-- [ ] `lock-screen` / `suspend` 暂停或清零连续活跃计时。
-- [ ] `unlock-screen` / `resume` 后重新开始下一段计时。
-- [ ] 非 Windows/macOS 平台安全降级，不触发提醒。
+- [x] `app.whenReady()` 后启动服务。
+- [x] `lock-screen` / `suspend` 暂停或清零连续活跃计时。
+- [x] `unlock-screen` / `resume` 后重新开始下一段计时。
+- [x] 非 Windows/macOS 平台安全降级，不触发提醒。
 
 **Verification:**
 - [ ] fake `powerMonitor` 集成测试覆盖 Windows/macOS 事件。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1
 
@@ -180,16 +180,16 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 新增提醒前置守卫，用于判断当前是否处于全屏或演示场景。它不负责活跃计时，只返回 `canInterrupt` / `deferReason`。Windows 上基于前台窗口 bounds 判断全屏；macOS 始终返回 `canInterrupt = true`，不做全屏检测。
 
 **Acceptance criteria:**
-- [ ] Windows 可基于前台窗口 bounds / `isFullScreen` 判断全屏并延后提醒。
-- [ ] macOS 始终返回 `canInterrupt = true`，不做全屏检测，不引入任何隐私权限请求。
-- [ ] Windows 无法可靠判断时采取保守延后策略，并在下一轮重新检查。
-- [ ] 不保存窗口标题、进程名、URL 或历史记录。
-- [ ] 只在提醒到期或延后重试时运行（仅 Windows），延后重试间隔不低于 60 秒。
+- [x] Windows 可基于前台窗口 bounds / `isFullScreen` 判断全屏并延后提醒。
+- [x] macOS 始终返回 `canInterrupt = true`，不做全屏检测，不引入任何隐私权限请求。
+- [x] Windows 无法可靠判断时采取保守延后策略，并在下一轮重新检查。
+- [x] 不保存窗口标题、进程名、URL 或历史记录。
+- [x] 只在提醒到期或延后重试时运行（仅 Windows），延后重试间隔不低于 60 秒。
 
 **Verification:**
-- [ ] fake provider 单测覆盖 Windows can interrupt、fullscreen defer、unknown defer。
-- [ ] 单测覆盖 macOS 始终 canInterrupt。
-- [ ] `node --test test/presentationGuard.test.js`
+- [x] fake provider 单测覆盖 Windows can interrupt、fullscreen defer、unknown defer。
+- [x] 单测覆盖 macOS 始终 canInterrupt。
+- [x] `node --test test/presentationGuard.test.js`
 
 **Dependencies:** Task 1
 
@@ -202,12 +202,12 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 ### Checkpoint: 计时基础
 
-- [ ] 不需要键鼠监听。
-- [ ] 不需要 macOS Accessibility 权限。
-- [ ] Windows/macOS 行为路径在测试中都有覆盖。
-- [ ] macOS 不做全屏检测，PresentationGuard 始终返回可打断。
-- [ ] Windows 全屏/演示延后不读取或保存用户内容。
-- [ ] 平时没有额外前台窗口常驻采样器。
+- [x] 不需要键鼠监听。
+- [x] 不需要 macOS Accessibility 权限。
+- [x] Windows/macOS 行为路径在测试中都有覆盖。
+- [x] macOS 不做全屏检测，PresentationGuard 始终返回可打断。
+- [x] Windows 全屏/演示延后不读取或保存用户内容。
+- [x] 平时没有额外前台窗口常驻采样器。
 
 ### Phase 2: 配置与托盘入口
 
@@ -216,14 +216,14 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 使用 `electron-store` 保存 `breakReminderSettings`，并把 key 加入主进程 store 白名单。
 
 **Acceptance criteria:**
-- [ ] 首次启动使用默认开启和 60 分钟。
-- [ ] 读取到非法配置时自动回退默认值。
-- [ ] 设置变更后立即影响下一轮计时。
-- [ ] idle 采样不会写入 `electron-store`。
+- [x] 首次启动使用默认开启和 60 分钟。
+- [x] 读取到非法配置时自动回退默认值。
+- [x] 设置变更后立即影响下一轮计时。
+- [x] idle 采样不会写入 `electron-store`。
 
 **Verification:**
-- [ ] 配置 normalize 单测覆盖缺字段、非法分钟数、关闭状态。
-- [ ] `npm test`
+- [x] 配置 normalize 单测覆盖缺字段、非法分钟数、关闭状态。
+- [x] `npm test`
 
 **Dependencies:** Task 1
 
@@ -239,15 +239,15 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 在托盘中增加"久坐提醒 开/关"和提醒间隔分钟选项。MVP 使用固定候选值，避免复杂输入窗口。
 
 **Acceptance criteria:**
-- [ ] 托盘可切换启用/关闭。
-- [ ] 托盘可选择 30、45、60、90、120 分钟。
-- [ ] 托盘不提供 15 分钟选项。
-- [ ] 当前间隔以 radio checked 形式展示。
-- [ ] 菜单文案进入 i18n 字典。
+- [x] 托盘可切换启用/关闭。
+- [x] 托盘可选择 30、45、60、90、120 分钟。
+- [x] 托盘不提供 15 分钟选项。
+- [x] 当前间隔以 radio checked 形式展示。
+- [x] 菜单文案进入 i18n 字典。
 
 **Verification:**
-- [ ] `skinTray.test.js` 或新增托盘测试覆盖菜单项状态。
-- [ ] `npm test`
+- [x] `skinTray.test.js` 或新增托盘测试覆盖菜单项状态。
+- [x] `npm test`
 
 **Dependencies:** Task 4
 
@@ -260,9 +260,9 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 ### Checkpoint: 可配置 MVP
 
-- [ ] 用户能在托盘关闭功能。
-- [ ] 用户能以分钟为单位调整提醒间隔。
-- [ ] 重启后配置保留。
+- [x] 用户能在托盘关闭功能。
+- [x] 用户能以分钟为单位调整提醒间隔。
+- [x] 重启后配置保留。
 
 ### Phase 3: Renderer 提醒表现
 
@@ -271,14 +271,14 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 通过 `preload.js` 暴露 `onBreakReminder(callback)`，renderer 只能接收提醒事件，不直接访问 `powerMonitor` 或 Node API。
 
 **Acceptance criteria:**
-- [ ] 主进程发送 `break-reminder-triggered`。
-- [ ] Renderer 通过 `break-reminder-dismissed` 回传主进程，通知提醒已展示或被用户关闭。
-- [ ] preload 返回 unsubscribe，避免重复监听。
-- [ ] IPC payload 只包含必要字段，例如 `triggeredAt`、`intervalMinutes`。
+- [x] 主进程发送 `break-reminder-triggered`。
+- [x] Renderer 通过 `break-reminder-dismissed` 回传主进程，通知提醒已展示或被用户关闭。
+- [x] preload 返回 unsubscribe，避免重复监听。
+- [x] IPC payload 只包含必要字段，例如 `triggeredAt`、`intervalMinutes`。
 
 **Verification:**
-- [ ] preload/API 相关测试覆盖事件订阅。
-- [ ] `npm test`
+- [x] preload/API 相关测试覆盖事件订阅。
+- [x] `npm test`
 
 **Dependencies:** Task 2, Task 3
 
@@ -294,19 +294,19 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** Renderer 收到提醒后，暂停普通移动，把岳七和沈九瞬移到主显示器中心附近，展示两句休息提醒对话。对话文案从提醒文案池中随机选取。
 
 **Acceptance criteria:**
-- [ ] 两只小人瞬移到主显示器可行走区域中心附近，分别站在中心左右。
-- [ ] 多显示器环境下始终使用主显示器（`screen.getPrimaryDisplay()` 对应的 walkArea）。
-- [ ] 岳七和沈九各显示一句提醒文案，从文案池中随机选取，保持新鲜感。
-- [ ] 提醒最多展示 20 秒。
+- [x] 两只小人瞬移到主显示器可行走区域中心附近，分别站在中心左右。
+- [x] 多显示器环境下始终使用主显示器（`screen.getPrimaryDisplay()` 对应的 walkArea）。
+- [x] 岳七和沈九各显示一句提醒文案，从文案池中随机选取，保持新鲜感。
+- [x] 提醒最多展示 20 秒。
 - [ ] 用户点击小人或提醒气泡后，提醒立即消失，通过 `break-reminder-dismissed` 通知主进程，恢复普通移动。
-- [ ] 桌宠隐藏时不展示提醒，也不在恢复显示后补弹。
-- [ ] 提醒期间不触发普通闲聊或状态警告打断。
-- [ ] 提醒结束后恢复普通移动。
+- [x] 桌宠隐藏时不展示提醒，也不在恢复显示后补弹。
+- [x] 提醒期间不触发普通闲聊或状态警告打断。
+- [x] 提醒结束后恢复普通移动。
 
 **Verification:**
-- [ ] 增加 renderer 集成测试或 debug 方法验证坐标和气泡调用。
+- [x] 增加 renderer 集成测试或 debug 方法验证坐标和气泡调用。
 - [ ] 手动检查多显示器和不同 DPI 下主显示器中心位置合理。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 6
 
@@ -323,13 +323,13 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 增加仅开发环境可用的调试入口，便于不用等待 60 分钟就触发提醒。
 
 **Acceptance criteria:**
-- [ ] DevTools 可调用 `window.__DEBUG_BREAK_REMINDER.trigger()` 或等价方法。
-- [ ] 调试触发走同一条 renderer 表现路径。
+- [x] DevTools 可调用 `window.__DEBUG_BREAK_REMINDER.trigger()` 或等价方法。
+- [x] 调试触发走同一条 renderer 表现路径。
 - [ ] 打包环境不暴露危险能力。
 
 **Verification:**
 - [ ] 手动触发后观察小人移动和气泡。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 7
 
@@ -341,8 +341,8 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 ### Checkpoint: 端到端提醒
 
-- [ ] 主进程能触发提醒。
-- [ ] renderer 能展示岳七和沈九两句对话。
+- [x] 主进程能触发提醒。
+- [x] renderer 能展示岳七和沈九两句对话。
 - [ ] 提醒不会破坏鼠标穿透、暂停、隐藏、皮肤切换。
 
 ### Phase 4: 跨平台 QA 与文档
@@ -361,7 +361,7 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 **Verification:**
 - [ ] 使用 1 分钟测试间隔手动验证。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1-8
 
@@ -385,7 +385,7 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Verification:**
 - [ ] 使用 1 分钟测试间隔手动验证。
 - [ ] macOS 打包 smoke test。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1-8
 
@@ -399,13 +399,13 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Description:** 行为落地后更新项目结构文档、README 或 ADR，并在提交前更新 CHANGELOG。
 
 **Acceptance criteria:**
-- [ ] `docs/structure.md` 说明 `breakReminderService.js` 和 IPC 边界。
-- [ ] 若实现确认采用 `powerMonitor`，新增 ADR 记录"不监听键鼠"的隐私边界。
-- [ ] `CHANGELOG.md` 按 `Added` / `Changed` / `Fixed` / `Removed` 标题记录。
+- [x] `docs/structure.md` 说明 `breakReminderService.js` 和 IPC 边界。
+- [x] 若实现确认采用 `powerMonitor`，新增 ADR 记录"不监听键鼠"的隐私边界。
+- [x] `CHANGELOG.md` 按 `Added` / `Changed` / `Fixed` / `Removed` 标题记录。
 
 **Verification:**
-- [ ] 文档链接有效。
-- [ ] `npm test`
+- [x] 文档链接有效。
+- [x] `npm test`
 
 **Dependencies:** Task 1-10
 

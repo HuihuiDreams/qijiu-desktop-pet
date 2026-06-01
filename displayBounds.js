@@ -61,11 +61,12 @@ function getScaleFactor(display, fallback = 1) {
   return Number.isFinite(scaleFactor) && scaleFactor > 0 ? scaleFactor : fallback;
 }
 
-function getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor = 1) {
+function getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor = 1, options = {}) {
   if (!Array.isArray(displays) || !isValidRect(windowBounds)) return [];
   const baseScaleFactor = Number.isFinite(windowScaleFactor) && windowScaleFactor > 0
     ? windowScaleFactor
     : 1;
+  const primaryDisplayId = options.primaryDisplayId;
 
   return displays
     .map((display) => {
@@ -78,13 +79,17 @@ function getWalkAreasRelativeToBounds(displays, windowBounds, windowScaleFactor 
 
       const scaleRatio = getScaleFactor(display, baseScaleFactor) / baseScaleFactor;
 
-      return {
+      const walkArea = {
         x: bounds.x - windowBounds.x + (area.x - bounds.x) * scaleRatio,
         y: bounds.y - windowBounds.y + (area.y - bounds.y) * scaleRatio,
         width: area.width * scaleRatio,
         height: area.height * scaleRatio,
         scaleRatio,
       };
+      if (primaryDisplayId != null && display.id === primaryDisplayId) {
+        walkArea.isPrimary = true;
+      }
+      return walkArea;
     })
     .filter(Boolean);
 }
