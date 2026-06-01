@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **久坐提醒 MVP 规划**：新增 `docs/plan/break-reminder-plan.md`，明确默认开启的连续活跃提醒、20 秒可点击收起的双角色提示、托盘分钟间隔、全屏/演示延后、Windows/macOS 实现路径、隐私边界与性能约束。
+
 ### Changed
 - **初始发呆时间配置化**：启动时岳七和沈九的初始发呆计时器现在统一使用 `CONFIG.IDLE_DURATION_MIN/MAX`，不再分别使用两套硬编码随机范围。
 - **文档规范补齐**：补齐 `ADR-010` 历史编号保留记录，为 `ADR-019` 增加备选方案说明，并同步 `docs/structure.md` 中的窗口感知架构索引。
