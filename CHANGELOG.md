@@ -15,6 +15,9 @@
 - **初始发呆时间配置化**：启动时岳七和沈九的初始发呆计时器现在统一使用 `CONFIG.IDLE_DURATION_MIN/MAX`，不再分别使用两套硬编码随机范围。
 - **文档规范补齐**：补齐 `ADR-010` 历史编号保留记录，为 `ADR-019` 增加备选方案说明，并同步 `docs/structure.md` 中的窗口感知架构索引。
 
+### Fixed
+- **安全性修复**：修复 `main.js` 中的潜在路径遍历漏洞（增强 `scanAvailableSkins` 的路径校验）与 XSS 跨站脚本风险（将更新进度窗口的动态数据流从 HTML 字符串插值重构为完全静态 HTML 加安全的 `executeJavaScript` 调用）。
+
 ## [0.5.1] - 2026-05-29
 ### Changed
 - **三语用户说明更新**：在 `readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中补充界面感知/Realm Awareness/境界に乗る的托盘菜单入口与行为说明，明确桌宠会感知活动窗口、任务栏或 Dock 的边缘。

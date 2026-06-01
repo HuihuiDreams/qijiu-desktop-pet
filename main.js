@@ -654,7 +654,9 @@ function scanAvailableSkins() {
     const entries = fs.readdirSync(assetsDir);
     return entries.filter(entry => {
       try {
-        return fs.statSync(path.join(assetsDir, entry)).isDirectory();
+        const fullPath = path.normalize(path.join(assetsDir, entry));
+        if (!fullPath.startsWith(assetsDir)) return false;
+        return fs.statSync(fullPath).isDirectory();
       } catch {
         return false;
       }
@@ -843,12 +845,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function getUpdateProgressHtml(payload) {
-  const title = escapeHtml(payload.title);
-  const message = escapeHtml(payload.message);
-  const percent = Number.isFinite(payload.percent) ? Math.max(0, Math.min(100, payload.percent)) : 0;
-  const isChecking = payload.mode === 'checking';
-
+function getUpdateProgressHtml() {
   return `<!doctype html>
 <html>
 <head>
@@ -891,7 +888,7 @@ function getUpdateProgressHtml(payload) {
       background: #e3e6df;
     }
     .fill {
-      width: ${isChecking ? '38%' : `${percent}%`};
+      width: 0%;
       height: 100%;
       border-radius: inherit;
       background: linear-gradient(90deg, #4f9d69, #79b87f);
@@ -916,13 +913,13 @@ function getUpdateProgressHtml(payload) {
   </style>
 </head>
 <body>
-  <main class="wrap ${isChecking ? 'checking' : 'downloading'}">
-    <h1 id="title">${title}</h1>
-    <p id="message">${message}</p>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(percent)}">
+  <main class="wrap downloading">
+    <h1 id="title"></h1>
+    <p id="message"></p>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
       <div id="fill" class="fill"></div>
     </div>
-    <div id="meta" class="meta">${Math.round(percent)}%</div>
+    <div id="meta" class="meta">0%</div>
   </main>
   <script>
     window.updateProgress = function(payload) {
@@ -967,7 +964,14 @@ function showUpdateProgressWindow(payload) {
     updateProgressWindow.on('closed', () => {
       updateProgressWindow = null;
     });
-    updateProgressWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getUpdateProgressHtml(normalizedPayload))}`);
+    updateProgressWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getUpdateProgressHtml())}`);
+    
+    updateProgressWindow.webContents.once('did-finish-load', () => {
+      if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
+      updateProgressWindow.webContents.executeJavaScript(
+        `window.updateProgress(${JSON.stringify(normalizedPayload)})`,
+      ).catch(() => {});
+    });
     return;
   }
 
