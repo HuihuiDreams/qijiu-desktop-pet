@@ -431,7 +431,7 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 **Verification:**
 
 - [x] SpriteView fallback 测试覆盖新状态。
-- [ ] 手动测试：站在窗口顶部时不闪烁、不抖动。
+- [x] 手动测试：站在窗口顶部时不闪烁、不抖动。
 - [x] `npm test` 通过。
 
 **Dependencies:** Task 7
@@ -451,9 +451,9 @@ renderer 收到 `platform: null` 时必须保持现有桌面行走逻辑，不�
 - [x] 底部横向任务栏可见时，宠物可以走到任务栏上边缘。
 - [x] 最小化、全屏、无效窗口、本应用窗口不会破坏现有移动。
 - [x] 多显示器下坐标正确。
-- [ ] 拖拽、右键菜单、状态面板、互动动画仍可用。
+- [x] 拖拽、右键菜单、状态面板、互动动画仍可用。
 - [ ] 开启/关闭 Surface Awareness 的 packaged build CPU/内存对比已记录。
-- [ ] 快速切换窗口时没有 IPC 堆积、宠物抖动或动画掉帧。
+- [x] 快速切换窗口时没有 IPC 堆积、宠物抖动或动画掉帧。
 - [x] `npm test` 和 unsigned dir build 通过。
 
 ### Phase 4: User Controls and Polish

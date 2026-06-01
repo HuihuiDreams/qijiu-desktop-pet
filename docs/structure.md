@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-05-27
+最后更新：2026-06-01
 
 ## 1. 架构总览
 
@@ -20,6 +20,7 @@ graph TB
         MainJs --> Update["updateManager.js"]
         MainJs --> Bounds["displayBounds.js"]
         MainJs --> Fit["displayFit.js"]
+        MainJs --> ActiveWindow["activeWindowProvider.js / activeWindowAwareness.js"]
         MainJs --> AutoLaunch["Login Item / Auto Launch"]
     end
 
@@ -29,6 +30,7 @@ graph TB
         App --> Nurture["NurtureSystem"]
         App --> Interaction["InteractionSystem"]
         App --> Time["TimeSystem"]
+        App --> Awareness["WindowAwarenessSystem"]
         App --> Skin["SkinManager"]
         App --> Pet["Pet / PetRenderer / SpriteView"]
         App --> UI["ContextMenu / StatusBar / DialogBubble"]
@@ -54,6 +56,8 @@ qijiu-desktop-pet/
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
+├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现
+├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换与去重
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
 ├─ electron-builder.update-test-*.yml    # 本地更新流程测试用 electron-builder 配置
@@ -89,7 +93,8 @@ qijiu-desktop-pet/
 │  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
-│  │  └─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
+│  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
+│  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
 │  ├─ ui/
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
 │  │  ├─ DialogBubble.js                # 对话气泡
@@ -287,6 +292,7 @@ npm test
 - [ADR-027](./decisions/ADR-027-status-window-width-growth-fix.md)：状态窗口宽度增长修复。
 - [ADR-028](./decisions/ADR-028-coalesce-display-metrics-window-fit.md)：合并显示器指标事件后再适配桌宠窗口。
 - [ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)：安全审计与本地硬化。
+- [ADR-030](./decisions/ADR-030-window-awareness.md)：窗口感知平台采样。
 
 ## 6. 维护提示
 

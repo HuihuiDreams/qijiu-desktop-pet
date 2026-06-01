@@ -141,8 +141,8 @@ function applyI18n() {
   shenjiu.y = screenHeight * 0.5;
 
   // 设置初始的发呆计时器
-  yueqi.idleTimer = 2000 + Math.random() * 3000;
-  shenjiu.idleTimer = 3000 + Math.random() * 3000;
+  yueqi.idleTimer = movementSystem.randomIdleDuration();
+  shenjiu.idleTimer = movementSystem.randomIdleDuration();
 
   // === 初始化 UI ===
   const contextMenu = new ContextMenu(null, getVisualScaleForPoint); // 我们将在后续为每个宠物设置养成系统

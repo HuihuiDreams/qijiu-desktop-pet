@@ -43,7 +43,7 @@ const I18N = {
 
       // 皮肤名
       skinDefault: '默认皮肤·凉拌仓鼠',
-      skinBirds: '鸟塑七九・凉拌仓鼠',
+      skinBirds: '鸟塑七九·凉拌仓鼠',
 
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
