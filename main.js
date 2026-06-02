@@ -349,8 +349,16 @@ function sendScreenInfo() {
   });
 }
 
+let lastDisplaysState = '';
+
 function getActiveWindowDisplays() {
-  return screen.getAllDisplays();
+  const displays = screen.getAllDisplays();
+  const currentState = displays.map(d => `${d.id}:${d.bounds.x},${d.bounds.y},${d.bounds.width},${d.bounds.height}`).join('|');
+  if (lastDisplaysState && currentState !== lastDisplaysState) {
+    displayFitScheduler.schedule();
+  }
+  lastDisplaysState = currentState;
+  return displays;
 }
 
 function getActiveWindowMainBounds() {
