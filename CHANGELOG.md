@@ -2,7 +2,7 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [Unreleased]
+## [0.6.0] - 2026-06-02
 ### Added
 - **久坐提醒 MVP**：新增 `breakReminderService.js` 和 `presentationGuard.js`，实现基于 `powerMonitor.getSystemIdleTime()` 的低频采样久坐提醒。默认每 60 分钟提醒一次，空闲 5 分钟自动重置。macOS 不做全屏检测，Windows 全屏/演示模式下延后 60 秒重试。
   - 托盘菜单新增开关和间隔选择（30/45/60/90/120 分钟），配置通过 `electron-store` 持久化。
