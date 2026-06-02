@@ -65,6 +65,7 @@ function applyI18n() {
     taskbarPlatforms: [],
     windowScaleFactor: null,
     displays: [],
+    adjacentDisplays: null,
   };
   let pets = [];
   const keepPetReachable = (pet) => {
@@ -113,6 +114,7 @@ function applyI18n() {
       taskbarPlatforms: Array.isArray(info.taskbarPlatforms) ? info.taskbarPlatforms : [],
       windowScaleFactor: info.windowScaleFactor,
       displays: Array.isArray(info.displays) ? info.displays : [],
+      adjacentDisplays: info.adjacentDisplays || null,
     };
     if (movementSystem) {
       movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas);
@@ -120,6 +122,20 @@ function applyI18n() {
     pets.forEach(keepPetReachable);
   });
   windowAwarenessSystem.start();
+
+  // macOS: 窗口迁移到新显示器后，调整所有宠物坐标
+  window.electronAPI.onWindowMigrated?.((data) => {
+    const { offset } = data;
+    pets.forEach((pet) => {
+      pet.x += offset.x;
+      pet.y += offset.y;
+      pet.targetX += offset.x;
+      pet.targetY += offset.y;
+      pet.setState('idle');
+      pet.idleTimer = 1000 + Math.random() * 2000;
+    });
+    // keepPetReachable 会在后续的 screen-info 事件中触发
+  });
 
   const getSurfacePlatforms = (now) => {
     if (!windowAwarenessSystem.isSurfaceAwarenessEnabled()) return [];
@@ -419,6 +435,7 @@ function applyI18n() {
   let chatterTimer = 15000 + Math.random() * 30000;
   // 状态警告专属计时器（比普通闲聊更频繁，确保低状态能触发对话）
   let statWarningTimer = 8000 + Math.random() * 5000;
+  let migrationCooldown = 0; // macOS: 跨屏迁移冷却时间
 
   // === 游戏主循环 ===
   let lastTime = performance.now();
@@ -474,6 +491,34 @@ function applyI18n() {
         // 更新养成状态 (属性衰减)
         nurtureSystemA.update(yueqi, deltaMs);
         nurtureSystemB.update(shenjiu, deltaMs);
+
+        // macOS: 检测宠物是否走到屏幕边缘，触发跨屏迁移
+        if (migrationCooldown > 0) migrationCooldown -= deltaMs;
+        if (window.electronAPI.requestWindowMigration && screenInfo.adjacentDisplays && migrationCooldown <= 0) {
+          const edgeThreshold = 5;
+          for (const pet of pets) {
+            if (pet.isDragging || pet.state !== 'walking') continue;
+            let migrated = false;
+            if (pet.x <= edgeThreshold && pet.direction === 'left' && screenInfo.adjacentDisplays.left) {
+              window.electronAPI.requestWindowMigration('left');
+              migrated = true;
+            } else if (pet.x + pet.size >= screenWidth - edgeThreshold && pet.direction === 'right' && screenInfo.adjacentDisplays.right) {
+              window.electronAPI.requestWindowMigration('right');
+              migrated = true;
+            } else if (pet.y <= edgeThreshold && pet.targetY < pet.y && screenInfo.adjacentDisplays.top) {
+              // Y 轴没有 explicit direction 属性，我们可以通过 targetY 判断
+              window.electronAPI.requestWindowMigration('top');
+              migrated = true;
+            } else if (pet.y + pet.size >= screenHeight - edgeThreshold && pet.targetY > pet.y && screenInfo.adjacentDisplays.bottom) {
+              window.electronAPI.requestWindowMigration('bottom');
+              migrated = true;
+            }
+            if (migrated) {
+              migrationCooldown = 2000;
+              break;
+            }
+          }
+        }
 
         // 检查 CP (组合) 互动
         const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);

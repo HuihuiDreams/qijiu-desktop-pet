@@ -48,6 +48,8 @@
 
 ## 后果
 
-- 新增 2 个模块文件 + 3 个测试文件。
-- 对 `main.js`、`preload.js`、`app.js`、`debug.js`、`i18n.js`、`dialogues.js` 有增量修改。
-- 不影响现有宠物移动、交互、皮肤切换等功能。
+- 新增 2 个核心模块文件（`breakReminderService.js`、`presentationGuard.js`）与 3 个测试文件。
+- 对 `main.js`、`preload.js`、`app.js`、`debug.js`、`i18n.js`、`dialogues.js`、`displayBounds.js`、`MovementSystem.js` 有增量修改。
+- 提醒定位优化：通过 `displayBounds.js` 标记主显示器（`isPrimary`），确保多屏环境下桌宠始终瞬移到主屏中心进行提醒。
+- 与窗口感知（Window Awareness）解耦：当用户在托盘关闭“界面感知”时，Windows 的前台窗口探测器返回 `disabled`，此时 `PresentationGuard` 会安全降级，始终允许提醒打断，确保久坐提醒功能不受感知开关影响。
+- 不影响现有宠物普通移动、交互、皮肤切换等功能。

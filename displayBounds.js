@@ -190,10 +190,61 @@ function getActiveWindowPlatformRelativeToBounds(activeWindowInfo, windowBounds,
   };
 }
 
+function findAdjacentDisplay(display, direction, displays) {
+  if (!display || !Array.isArray(displays)) return null;
+
+  const currentBounds = display.bounds;
+  if (!isValidRect(currentBounds)) return null;
+
+  let bestMatch = null;
+  let minDistance = Infinity;
+
+  for (const target of displays) {
+    if (target.id === display.id) continue;
+    const targetBounds = target.bounds;
+    if (!isValidRect(targetBounds)) continue;
+
+    const isLeft = targetBounds.x + targetBounds.width <= currentBounds.x;
+    const isRight = targetBounds.x >= currentBounds.x + currentBounds.width;
+    const isTop = targetBounds.y + targetBounds.height <= currentBounds.y;
+    const isBottom = targetBounds.y >= currentBounds.y + currentBounds.height;
+
+    // 检查是否有垂直方向的重叠（如果是左右相邻）
+    const vOverlap = Math.max(0, Math.min(currentBounds.y + currentBounds.height, targetBounds.y + targetBounds.height) - Math.max(currentBounds.y, targetBounds.y));
+    // 检查是否有水平方向的重叠（如果是上下相邻）
+    const hOverlap = Math.max(0, Math.min(currentBounds.x + currentBounds.width, targetBounds.x + targetBounds.width) - Math.max(currentBounds.x, targetBounds.x));
+
+    let valid = false;
+    let distance = 0;
+
+    if (direction === 'left' && isLeft && vOverlap > 0) {
+      valid = true;
+      distance = currentBounds.x - (targetBounds.x + targetBounds.width);
+    } else if (direction === 'right' && isRight && vOverlap > 0) {
+      valid = true;
+      distance = targetBounds.x - (currentBounds.x + currentBounds.width);
+    } else if (direction === 'top' && isTop && hOverlap > 0) {
+      valid = true;
+      distance = currentBounds.y - (targetBounds.y + targetBounds.height);
+    } else if (direction === 'bottom' && isBottom && hOverlap > 0) {
+      valid = true;
+      distance = targetBounds.y - (currentBounds.y + currentBounds.height);
+    }
+
+    if (valid && distance >= 0 && distance < minDistance) {
+      minDistance = distance;
+      bestMatch = target;
+    }
+  }
+
+  return bestMatch;
+}
+
 module.exports = {
   getActiveWindowPlatformRelativeToBounds,
   getTaskbarPlatformsRelativeToBounds,
   getVirtualDisplayBounds,
   getWalkAreasRelativeToBounds,
   intersectRects,
+  findAdjacentDisplay,
 };

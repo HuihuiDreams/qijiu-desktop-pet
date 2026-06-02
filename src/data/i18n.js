@@ -54,6 +54,8 @@ const I18N = {
       trayHidePet: '👻 隐藏桌宠',
       trayShowPet: '👻 显示桌宠',
       trayResetPos: '🔄 重置位置',
+      traySwitchScreen: '🖥️ 切换屏幕',
+      trayScreen: '屏幕',
       trayAutoLaunchOn: '🚀 禁用开机启动',
       trayAutoLaunchOff: '🚀 开机自动启动',
       trayWindowAwarenessOn: '🪟 启用界面感知',
@@ -301,6 +303,8 @@ const I18N = {
       trayHidePet: '👻 Hide Pets',
       trayShowPet: '👻 Show Pets',
       trayResetPos: '🔄 Reset Position',
+      traySwitchScreen: '🖥️ Switch Screen',
+      trayScreen: 'Screen',
       trayAutoLaunchOn: '🚀 Disable Auto-launch',
       trayAutoLaunchOff: '🚀 Launch at Login',
       trayWindowAwarenessOn: '🪟 Enable Realm Awareness',
@@ -549,6 +553,8 @@ const I18N = {
       trayHidePet: '👻 姿を隠す',      // “隐去身形”，比“隐藏宠物”更有仙术感
       trayShowPet: '👻 姿を現す',      // “显露身形”
       trayResetPos: '🔄 位置復元',      // 归位/复原
+      traySwitchScreen: '🖥️ 画面切り替え',
+      trayScreen: '画面',
       trayAutoLaunchOn: '🚀 起動時常駐を無効化',
       trayAutoLaunchOff: '🚀 起動時常駐',    // “常驻”比“登录时启动”更简练
       trayWindowAwarenessOn: '🪟 境界に乗る（有効化）',

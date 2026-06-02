@@ -5,6 +5,7 @@ const {
   getTaskbarPlatformsRelativeToBounds,
   getVirtualDisplayBounds,
   getWalkAreasRelativeToBounds,
+  findAdjacentDisplay,
 } = require('./displayBounds');
 const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('./activeWindowProvider');
 const { createActiveWindowSampler } = require('./activeWindowAwareness');
@@ -93,6 +94,8 @@ let breakReminderService = null;
 let breakReminderEnabled = true;
 let breakReminderIntervalMinutes = 60;
 let finalSaveRequestId = 0;
+let currentPetDisplay = null;
+let dragPollTimer = null;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 const displayFitScheduler = createDisplayFitScheduler({
   fitNow: fitWindowToAllDisplays,
@@ -281,6 +284,11 @@ function startKeepOnTopWatcher() {
  * 获取覆盖所有显示器的虚拟桌面边界。
  */
 function getDesktopWindowBounds() {
+  if (process.platform === 'darwin') {
+    const display = currentPetDisplay || screen.getPrimaryDisplay();
+    return display.bounds;
+  }
+
   const virtualBounds = getVirtualDisplayBounds(screen.getAllDisplays());
   if (virtualBounds.width > 0 && virtualBounds.height > 0) {
     return virtualBounds;
@@ -296,9 +304,29 @@ function sendScreenInfo() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
   const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
-  const walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor, {
+  let walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor, {
     primaryDisplayId: primaryDisplay?.id,
   });
+
+  if (process.platform === 'darwin') {
+    walkAreas = walkAreas.filter((area) => (
+      area.x + area.width > 0
+      && area.y + area.height > 0
+      && area.x < bounds.width
+      && area.y < bounds.height
+    ));
+  }
+
+  let adjacentDisplays = null;
+  if (process.platform === 'darwin' && currentPetDisplay) {
+    adjacentDisplays = {
+      left: Boolean(findAdjacentDisplay(currentPetDisplay, 'left', displays)),
+      right: Boolean(findAdjacentDisplay(currentPetDisplay, 'right', displays)),
+      top: Boolean(findAdjacentDisplay(currentPetDisplay, 'top', displays)),
+      bottom: Boolean(findAdjacentDisplay(currentPetDisplay, 'bottom', displays)),
+    };
+  }
+
   const taskbarPlatforms = (process.platform === 'win32' || process.platform === 'darwin')
     ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
     : [];
@@ -309,6 +337,7 @@ function sendScreenInfo() {
     walkAreas,
     taskbarPlatforms,
     windowScaleFactor,
+    adjacentDisplays,
     displays: displays.map((display) => ({
       id: display.id,
       bounds: display.bounds,
@@ -393,9 +422,78 @@ function lockPetWindowToBounds(bounds) {
 
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  console.log('fitWindowToAllDisplays called');
+
+  if (process.platform === 'darwin') {
+    const allDisplays = screen.getAllDisplays();
+    if (currentPetDisplay) {
+      const stillExists = allDisplays.some((d) => d.id === currentPetDisplay.id);
+      if (!stillExists) {
+        currentPetDisplay = screen.getPrimaryDisplay();
+      } else {
+        currentPetDisplay = allDisplays.find((d) => d.id === currentPetDisplay.id)
+          || screen.getPrimaryDisplay();
+      }
+    } else {
+      currentPetDisplay = screen.getPrimaryDisplay();
+    }
+  }
+
   const bounds = getDesktopWindowBounds();
+  console.log('fitWindowToAllDisplays bounds:', bounds);
   lockPetWindowToBounds(bounds);
   sendScreenInfo();
+  refreshTrayMenu();
+}
+
+function migrateWindowToDisplay(targetDisplay) {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  if (!targetDisplay || !targetDisplay.bounds) return null;
+  console.log('migrateWindowToDisplay target:', targetDisplay.id);
+  if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
+
+  const oldBounds = mainWindow.getBounds();
+  const newBounds = targetDisplay.bounds;
+
+  const offset = {
+    x: oldBounds.x - newBounds.x,
+    y: oldBounds.y - newBounds.y,
+  };
+  console.log('migrateWindowToDisplay oldBounds:', oldBounds, 'newBounds:', newBounds, 'offset:', offset);
+
+  currentPetDisplay = targetDisplay;
+  lockPetWindowToBounds(newBounds);
+
+  mainWindow.webContents.send('window-migrated', {
+    offset,
+    displayId: targetDisplay.id,
+    displayBounds: newBounds,
+  });
+
+  sendScreenInfo();
+  return offset;
+}
+
+function startDragPoll() {
+  stopDragPoll();
+  dragPollTimer = setInterval(() => {
+    if (!mainWindow || mainWindow.isDestroyed() || !currentPetDisplay) {
+      stopDragPoll();
+      return;
+    }
+    const cursor = screen.getCursorScreenPoint();
+    const cursorDisplay = screen.getDisplayNearestPoint(cursor);
+    if (cursorDisplay.id !== currentPetDisplay.id) {
+      migrateWindowToDisplay(cursorDisplay);
+    }
+  }, 100);
+}
+
+function stopDragPoll() {
+  if (dragPollTimer) {
+    clearInterval(dragPollTimer);
+    dragPollTimer = null;
+  }
 }
 
 function getInitialStatusWindowBounds() {
@@ -566,6 +664,10 @@ function showExistingInstance() {
  * 创建主渲染窗口
  */
 function createWindow() {
+  if (process.platform === 'darwin') {
+    currentPetDisplay = screen.getPrimaryDisplay();
+  }
+
   const { x, y, width, height } = getDesktopWindowBounds();
 
   mainWindow = new BrowserWindow({
@@ -630,6 +732,7 @@ function createWindow() {
       clearTimeout(mousePassthroughResetTimer);
       mousePassthroughResetTimer = null;
     }
+    stopDragPoll();
     displayFitScheduler.clear();
     stopActiveWindowAwareness();
     if (statusWindow && !statusWindow.isDestroyed()) {
@@ -749,6 +852,16 @@ function buildTrayMenu() {
         if (mainWindow) mainWindow.webContents.send('reset-positions');
       },
     },
+    ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
+      label: trayT('traySwitchScreen'),
+      submenu: screen.getAllDisplays().map((display, idx) => ({
+        label: `${trayT('trayScreen')} ${idx + 1}${currentPetDisplay && display.id === currentPetDisplay.id ? ' \u2713' : ''}`,
+        click: () => {
+          migrateWindowToDisplay(display);
+          refreshTrayMenu();
+        },
+      })),
+    }] : []),
     { type: 'separator' },
     {
       label: breakReminderEnabled ? trayT('trayBreakReminderOn') : trayT('trayBreakReminderOff'),
@@ -1051,6 +1164,25 @@ function createTrayIconBuffer() {
 
 ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   setPetWindowMousePassthrough(ignore, options || {});
+});
+
+ipcMain.on('request-window-migration', (_event, direction) => {
+  if (process.platform !== 'darwin' || !currentPetDisplay) return;
+  const allDisplays = screen.getAllDisplays();
+  const adjacent = findAdjacentDisplay(currentPetDisplay, direction, allDisplays);
+  console.log('request-window-migration direction:', direction, 'adjacent:', adjacent?.id);
+  if (adjacent) {
+    migrateWindowToDisplay(adjacent);
+  }
+});
+
+ipcMain.on('drag-started', () => {
+  if (process.platform !== 'darwin') return;
+  startDragPoll();
+});
+
+ipcMain.on('drag-ended', () => {
+  stopDragPoll();
 });
 
 ipcMain.on('show-status-window', (_event, data) => {

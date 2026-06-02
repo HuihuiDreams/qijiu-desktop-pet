@@ -73,6 +73,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('locale-changed', (event, lang) => callback(lang));
   },
 
+  // macOS 多显示器迁移
+  requestWindowMigration: (direction) => ipcRenderer.send('request-window-migration', direction),
+  notifyDragStarted: () => ipcRenderer.send('drag-started'),
+  notifyDragEnded: () => ipcRenderer.send('drag-ended'),
+  onWindowMigrated: (callback) => {
+    ipcRenderer.on('window-migrated', (event, data) => callback(data));
+  },
+
   // 久坐提醒
   onBreakReminder: (callback) => {
     const listener = (_event, payload) => callback(payload);

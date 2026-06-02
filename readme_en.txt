@@ -39,6 +39,7 @@ The tray menu lets you:
 - "⏸️ Pause Walking" or "🚶 Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
+- "📺 Switch Screen": move pets between displays (macOS multi-display only)
 - "🚀 Launch at Login" or "🚀 Disable Auto-launch"
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
 - "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", plus "⏰ Reminder Interval"

@@ -384,7 +384,7 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 **Verification:**
 - [ ] 使用 1 分钟测试间隔手动验证。
-- [ ] macOS 打包 smoke test。
+- [x] macOS 打包 smoke test。
 - [x] `npm test`
 
 **Dependencies:** Task 1-8
