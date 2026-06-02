@@ -2,6 +2,43 @@
  * MovementSystem — 移动系统。处理随机行走、发呆等待以及屏幕边界检测。
  */
 class MovementSystem {
+  static getEdgeMigrationDirection(pet, screenWidth, screenHeight, adjacentDisplays, options = {}) {
+    if (!pet || !adjacentDisplays || pet.isDragging || pet.state !== 'walking') return null;
+
+    const width = Number(screenWidth);
+    const height = Number(screenHeight);
+    const size = Number(pet.size);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || !Number.isFinite(size)) return null;
+
+    const edgeThreshold = Number.isFinite(options.edgeThreshold) ? options.edgeThreshold : 5;
+    const configuredMargin = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG.WALK_TARGET_MARGIN)
+      ? CONFIG.WALK_TARGET_MARGIN
+      : 0;
+    const walkTargetMargin = Number.isFinite(options.walkTargetMargin)
+      ? options.walkTargetMargin
+      : configuredMargin;
+    const threshold = Math.max(edgeThreshold, walkTargetMargin + edgeThreshold);
+
+    if (adjacentDisplays.left && pet.direction === 'left' && pet.x <= threshold) {
+      return 'left';
+    }
+    if (adjacentDisplays.right
+      && pet.direction === 'right'
+      && pet.x + size >= width - threshold) {
+      return 'right';
+    }
+    if (adjacentDisplays.top && pet.targetY < pet.y && pet.y <= threshold) {
+      return 'top';
+    }
+    if (adjacentDisplays.bottom
+      && pet.targetY > pet.y
+      && pet.y + size >= height - threshold) {
+      return 'bottom';
+    }
+
+    return null;
+  }
+
   constructor(screenWidth, screenHeight, walkAreas = null) {
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;

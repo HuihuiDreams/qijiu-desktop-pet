@@ -495,25 +495,15 @@ function applyI18n() {
         // macOS: 检测宠物是否走到屏幕边缘，触发跨屏迁移
         if (migrationCooldown > 0) migrationCooldown -= deltaMs;
         if (window.electronAPI.requestWindowMigration && screenInfo.adjacentDisplays && migrationCooldown <= 0) {
-          const edgeThreshold = 5;
           for (const pet of pets) {
-            if (pet.isDragging || pet.state !== 'walking') continue;
-            let migrated = false;
-            if (pet.x <= edgeThreshold && pet.direction === 'left' && screenInfo.adjacentDisplays.left) {
-              window.electronAPI.requestWindowMigration('left');
-              migrated = true;
-            } else if (pet.x + pet.size >= screenWidth - edgeThreshold && pet.direction === 'right' && screenInfo.adjacentDisplays.right) {
-              window.electronAPI.requestWindowMigration('right');
-              migrated = true;
-            } else if (pet.y <= edgeThreshold && pet.targetY < pet.y && screenInfo.adjacentDisplays.top) {
-              // Y 轴没有 explicit direction 属性，我们可以通过 targetY 判断
-              window.electronAPI.requestWindowMigration('top');
-              migrated = true;
-            } else if (pet.y + pet.size >= screenHeight - edgeThreshold && pet.targetY > pet.y && screenInfo.adjacentDisplays.bottom) {
-              window.electronAPI.requestWindowMigration('bottom');
-              migrated = true;
-            }
-            if (migrated) {
+            const migrationDirection = MovementSystem.getEdgeMigrationDirection(
+              pet,
+              screenWidth,
+              screenHeight,
+              screenInfo.adjacentDisplays,
+            );
+            if (migrationDirection) {
+              window.electronAPI.requestWindowMigration(migrationDirection);
               migrationCooldown = 2000;
               break;
             }

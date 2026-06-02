@@ -81,6 +81,30 @@ test('walk area primary flag survives normalization', () => {
   ]);
 });
 
+test('macOS edge migration triggers at the walk target margin near an adjacent display', () => {
+  const pet = {
+    x: 1824,
+    y: 200,
+    targetX: 1824,
+    targetY: 200,
+    size: 96,
+    state: 'walking',
+    direction: 'right',
+    isDragging: false,
+  };
+
+  assert.equal(
+    MovementSystem.getEdgeMigrationDirection(
+      pet,
+      1920,
+      1080,
+      { right: true },
+      { edgeThreshold: 5, walkTargetMargin: 60 },
+    ),
+    'right',
+  );
+});
+
 test('pets are clamped back to the nearest visible display area', () => {
   const movementSystem = new MovementSystem(3200, 1080, [
     { x: 0, y: 0, width: 1920, height: 1080 },

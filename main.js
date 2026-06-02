@@ -422,7 +422,6 @@ function lockPetWindowToBounds(bounds) {
 
 function fitWindowToAllDisplays() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  console.log('fitWindowToAllDisplays called');
 
   if (process.platform === 'darwin') {
     const allDisplays = screen.getAllDisplays();
@@ -440,7 +439,6 @@ function fitWindowToAllDisplays() {
   }
 
   const bounds = getDesktopWindowBounds();
-  console.log('fitWindowToAllDisplays bounds:', bounds);
   lockPetWindowToBounds(bounds);
   sendScreenInfo();
   refreshTrayMenu();
@@ -449,7 +447,6 @@ function fitWindowToAllDisplays() {
 function migrateWindowToDisplay(targetDisplay) {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   if (!targetDisplay || !targetDisplay.bounds) return null;
-  console.log('migrateWindowToDisplay target:', targetDisplay.id);
   if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
 
   const oldBounds = mainWindow.getBounds();
@@ -459,7 +456,6 @@ function migrateWindowToDisplay(targetDisplay) {
     x: oldBounds.x - newBounds.x,
     y: oldBounds.y - newBounds.y,
   };
-  console.log('migrateWindowToDisplay oldBounds:', oldBounds, 'newBounds:', newBounds, 'offset:', offset);
 
   currentPetDisplay = targetDisplay;
   lockPetWindowToBounds(newBounds);
@@ -1170,7 +1166,6 @@ ipcMain.on('request-window-migration', (_event, direction) => {
   if (process.platform !== 'darwin' || !currentPetDisplay) return;
   const allDisplays = screen.getAllDisplays();
   const adjacent = findAdjacentDisplay(currentPetDisplay, direction, allDisplays);
-  console.log('request-window-migration direction:', direction, 'adjacent:', adjacent?.id);
   if (adjacent) {
     migrateWindowToDisplay(adjacent);
   }

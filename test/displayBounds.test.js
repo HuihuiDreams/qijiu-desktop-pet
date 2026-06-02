@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
+  findAdjacentDisplay,
   getTaskbarPlatformsRelativeToBounds,
   getVirtualDisplayBounds,
   getWalkAreasRelativeToBounds,
@@ -215,4 +216,33 @@ test('taskbar platforms ignore vertical or hidden taskbars', () => {
     ),
     [],
   );
+});
+
+test('findAdjacentDisplay finds displays on each overlapping side', () => {
+  const current = { id: 'main', bounds: { x: 0, y: 0, width: 1920, height: 1080 } };
+  const left = { id: 'left', bounds: { x: -1280, y: 120, width: 1280, height: 720 } };
+  const right = { id: 'right', bounds: { x: 1920, y: 0, width: 1440, height: 900 } };
+  const top = { id: 'top', bounds: { x: 200, y: -900, width: 1200, height: 900 } };
+  const bottom = { id: 'bottom', bounds: { x: 100, y: 1080, width: 1600, height: 900 } };
+  const displays = [current, left, right, top, bottom];
+
+  assert.equal(findAdjacentDisplay(current, 'left', displays), left);
+  assert.equal(findAdjacentDisplay(current, 'right', displays), right);
+  assert.equal(findAdjacentDisplay(current, 'top', displays), top);
+  assert.equal(findAdjacentDisplay(current, 'bottom', displays), bottom);
+});
+
+test('findAdjacentDisplay ignores displays without perpendicular overlap', () => {
+  const current = { id: 'main', bounds: { x: 0, y: 0, width: 1920, height: 1080 } };
+  const diagonalRight = { id: 'diagonal-right', bounds: { x: 1920, y: 1200, width: 1440, height: 900 } };
+
+  assert.equal(findAdjacentDisplay(current, 'right', [current, diagonalRight]), null);
+});
+
+test('findAdjacentDisplay chooses the nearest matching display', () => {
+  const current = { id: 'main', bounds: { x: 0, y: 0, width: 1920, height: 1080 } };
+  const farRight = { id: 'far-right', bounds: { x: 3000, y: 0, width: 1440, height: 900 } };
+  const nearRight = { id: 'near-right', bounds: { x: 1920, y: 100, width: 1280, height: 720 } };
+
+  assert.equal(findAdjacentDisplay(current, 'right', [current, farRight, nearRight]), nearRight);
 });
