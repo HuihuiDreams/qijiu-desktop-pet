@@ -398,6 +398,41 @@ function applyI18n() {
     applyI18n();
   });
 
+  // === 系统睡眠/唤醒处理 (macOS 专用路径) ===
+  // macOS 下 performance.now() 在睡眠期间冻结，导致 rAF 的 deltaMs 不会跳跃，
+  // 所以游戏循环内的 deltaMs > 60000 检测永远不会触发。
+  // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
+  window.electronAPI.onSystemSuspend?.(() => {
+    saveCurrentState(); // 睡前即时存档，锁定新鲜 timestamp
+  });
+
+  window.electronAPI.onSystemResume?.((data) => {
+    const offlineMs = data?.offlineMs ?? 0;
+    if (offlineMs > CONFIG.DECAY_INTERVAL) {
+      nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
+      nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
+
+      // 显示回归欢迎对白
+      const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
+      if (shichensAway >= 1) {
+        const returnMsgYueqi = window.I18N_UI?.returnYueqi
+          ? (typeof window.I18N_UI.returnYueqi === 'function'
+            ? window.I18N_UI.returnYueqi(shichensAway)
+            : window.I18N_UI.returnYueqi)
+          : `你走了${shichensAway}个时辰…`;
+        const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
+        setTimeout(() => {
+          dialogBubble.show(yueqi, returnMsgYueqi, 4000);
+        }, 1500);
+        setTimeout(() => {
+          dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
+        }, 3000);
+      }
+
+      saveCurrentState(); // 唤醒结算后即时存档
+    }
+  });
+
   // === 加载保存的状态 ===
   await refreshAvailableSkins();
   const savedState = await timeSystem.load();

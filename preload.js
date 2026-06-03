@@ -90,4 +90,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dismissBreakReminder: () => {
     ipcRenderer.send('break-reminder-dismissed');
   },
+
+  // 系统睡眠/唤醒事件（用于 macOS 离线衰减结算）
+  onSystemSuspend: (callback) => {
+    ipcRenderer.on('system-suspended', () => callback());
+  },
+  onSystemResume: (callback) => {
+    ipcRenderer.on('system-resumed', (_event, data) => callback(data));
+  },
 });

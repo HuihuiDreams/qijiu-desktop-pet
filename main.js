@@ -96,6 +96,7 @@ let breakReminderIntervalMinutes = 60;
 let finalSaveRequestId = 0;
 let currentPetDisplay = null;
 let dragPollTimer = null;
+let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 const displayFitScheduler = createDisplayFitScheduler({
   fitNow: fitWindowToAllDisplays,
@@ -1350,12 +1351,25 @@ if (!hasSingleInstanceLock) {
     });
     powerMonitor.on('suspend', () => {
       if (breakReminderService) breakReminderService.onLockOrSuspend();
+      // macOS: performance.now() freezes during sleep, so deltaMs in the
+      // renderer game-loop never jumps. Record wall-clock time here and
+      // tell the renderer to save immediately so the timestamp is fresh.
+      suspendTimestamp = Date.now();
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('system-suspended');
+      }
     });
     powerMonitor.on('unlock-screen', () => {
       if (breakReminderService) breakReminderService.onUnlockOrResume();
     });
     powerMonitor.on('resume', () => {
       if (breakReminderService) breakReminderService.onUnlockOrResume();
+      // Calculate real wall-clock sleep duration and notify renderer
+      const offlineMs = suspendTimestamp > 0 ? Math.max(0, Date.now() - suspendTimestamp) : 0;
+      suspendTimestamp = 0;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('system-resumed', { offlineMs });
+      }
     });
 
     initUpdateManager({
