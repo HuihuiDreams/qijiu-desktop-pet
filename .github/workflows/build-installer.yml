@@ -140,6 +140,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Remove auto-generated source code archives
+        shell: pwsh
+        run: |
+          $version = '${{ inputs.version }}'
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $tag = '${{ github.ref_name }}'
+          } else {
+            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
+          }
+          $repo = '${{ github.repository }}'
+          $assets = gh release view $tag --repo $repo --json assets --jq '.assets[].name'
+          foreach ($asset in $assets -split "`n") {
+            $asset = $asset.Trim()
+            if ($asset -match '(?i)^.*source.*code.*\.(zip|tar\.gz)$') {
+              Write-Host "Removing source code archive: $asset"
+              gh release delete-asset $tag $asset --repo $repo --yes
+            }
+          }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:
@@ -222,6 +243,26 @@ jobs:
 
             echo "Validated macOS executable metadata for $app"
           done
+
+      - name: Remove auto-generated source code archives
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="${VERSION#v}"
+            TAG="v${TAG}"
+          fi
+          REPO="${{ github.repository }}"
+          for asset in $(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name'); do
+            if echo "$asset" | grep -iqE '^.*source.*code.*\.(zip|tar\.gz)$'; then
+              echo "Removing source code archive: $asset"
+              gh release delete-asset "$TAG" "$asset" --repo "$REPO" --yes
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6

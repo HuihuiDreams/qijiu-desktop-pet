@@ -6,6 +6,9 @@
 ### Fixed
 - **macOS 睡眠模式数值不衰减**：修复了 Mac 进入睡眠模式后桌宠属性（饥饿/灵力/心境）不衰减的 Bug。根因：macOS 的 `performance.now()` 在睡眠期间冻结，导致游戏循环的 `deltaMs > 60000` 检测永远不触发。修复方案：利用 Electron `powerMonitor` 的 `suspend`/`resume` 事件，在主进程记录 `Date.now()` 墙钟时间戳，唤醒后通过 IPC 通知渲染进程用真实时间差结算离线衰减。与原有的 Windows 帧间隔检测路径共存，互不干扰。更新 [ADR-019](docs/decisions/ADR-019-handling-time-jumps-after-system-sleep.md) 补充双轨策略说明。
 
+### Changed
+- **Release 移除源码归档**：在 Build Installers workflow 的 Windows 和 macOS 两个 job 中各新增一步，使用 `gh release delete-asset` 自动删除 GitHub 为每个 Release 自动附加的 `Source code (zip)` 和 `Source code (tar.gz)` 归档，使发布产物仅包含安装包和说明文件。
+
 ## [0.6.0] - 2026-06-02
 ### Added
 - **久坐提醒 MVP**：新增 `breakReminderService.js` 和 `presentationGuard.js`，实现基于 `powerMonitor.getSystemIdleTime()` 的低频采样久坐提醒。默认每 60 分钟提醒一次，空闲 5 分钟自动重置。macOS 不做全屏检测，Windows 全屏/演示模式下延后 60 秒重试。
