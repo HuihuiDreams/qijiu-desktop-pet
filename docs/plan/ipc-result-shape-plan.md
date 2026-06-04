@@ -2,6 +2,7 @@
 
 > 状态：首个迁移片已实现
 > 最后更新：2026-06-04
+> 决策记录：[ADR-032: IPC 返回形状统一](../decisions/ADR-032-ipc-result-shape.md)
 
 ## 背景
 

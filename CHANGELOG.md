@@ -4,6 +4,7 @@
 
 ## [WIP]
 ### Added
+- **IPC 返回契约决策记录**：新增 [ADR-032](docs/decisions/ADR-032-ipc-result-shape.md)，记录新增和迁移后的 IPC handler 优先使用 `{ success, data }` / `{ success, error }` 结果对象，以及既有广覆盖接口渐进迁移的兼容策略。
 - **键盘活动感知计划**：新增 [keyboard-activity-awareness-plan.md](docs/plan/keyboard-activity-awareness-plan.md)，规划仅基于键盘活动节奏影响宠物行为的实现路径，明确不引入用户皮肤导入功能，并记录主进程活动观察、preload 安全订阅、renderer 行为系统、移动/互动降噪、隐私边界与 MVP 切分。
 
 ### Fixed
@@ -14,6 +15,7 @@
 ### Changed
 - **IPC 返回契约统一起步**：新增统一 IPC 成功/失败结果 helper，并将 `set-current-skin` 迁移为 `ipcMain.handle` / `ipcRenderer.invoke`，成功返回 `{ success: true, data: { skinId } }`，校验和内部错误返回结构化 `error`；`saveData`、`loadData` 等广覆盖接口保持既有兼容形状。
 - **Preload 订阅清理函数**：所有暴露的 `window.electronAPI.on*` 订阅现在都通过共享 preload helper 返回 cleanup 函数。
+- **安全决策记录补充**：在 [ADR-014](docs/decisions/ADR-014-electron-security-hardening.md) 中补充 IPC 边界输入校验和 preload 订阅生命周期约束。
 - **Release 移除源码归档**：在 Build Installers workflow 的 Windows 和 macOS 两个 job 中各新增一步，使用 `gh release delete-asset` 自动删除 GitHub 为每个 Release 自动附加的 `Source code (zip)` 和 `Source code (tar.gz)` 归档，使发布产物仅包含安装包和说明文件。
 
 ## [0.6.0] - 2026-06-02

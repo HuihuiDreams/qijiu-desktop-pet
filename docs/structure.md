@@ -319,6 +319,7 @@ npm test
 - [ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)：安全审计与本地硬化。
 - [ADR-030](./decisions/ADR-030-window-awareness.md)：窗口感知平台采样。
 - [ADR-031](./decisions/ADR-031-break-reminder.md)：久坐提醒设计。
+- [ADR-032](./decisions/ADR-032-ipc-result-shape.md)：IPC 返回形状统一。
 
 ## 6. 维护提示
 
