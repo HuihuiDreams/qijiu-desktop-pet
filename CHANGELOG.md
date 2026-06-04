@@ -12,6 +12,7 @@
 - **macOS 睡眠模式数值不衰减**：修复了 Mac 进入睡眠模式后桌宠属性（饥饿/灵力/心境）不衰减的 Bug。根因：macOS 的 `performance.now()` 在睡眠期间冻结，导致游戏循环的 `deltaMs > 60000` 检测永远不触发。修复方案：利用 Electron `powerMonitor` 的 `suspend`/`resume` 事件，在主进程记录 `Date.now()` 墙钟时间戳，唤醒后通过 IPC 通知渲染进程用真实时间差结算离线衰减。与原有的 Windows 帧间隔检测路径共存，互不干扰。更新 [ADR-019](docs/decisions/ADR-019-handling-time-jumps-after-system-sleep.md) 补充双轨策略说明。
 
 ### Changed
+- **IPC 返回契约统一起步**：新增统一 IPC 成功/失败结果 helper，并将 `set-current-skin` 迁移为 `ipcMain.handle` / `ipcRenderer.invoke`，成功返回 `{ success: true, data: { skinId } }`，校验和内部错误返回结构化 `error`；`saveData`、`loadData` 等广覆盖接口保持既有兼容形状。
 - **Preload 订阅清理函数**：所有暴露的 `window.electronAPI.on*` 订阅现在都通过共享 preload helper 返回 cleanup 函数。
 - **Release 移除源码归档**：在 Build Installers workflow 的 Windows 和 macOS 两个 job 中各新增一步，使用 `gh release delete-asset` 自动删除 GitHub 为每个 Release 自动附加的 `Source code (zip)` 和 `Source code (tar.gz)` 归档，使发布产物仅包含安装包和说明文件。
 

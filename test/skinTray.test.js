@@ -119,9 +119,12 @@ test('main.js 注册了 get-available-skins IPC handler', () => {
   assert.ok(mainSource.includes("ipcMain.handle('get-available-skins'"), '应注册 get-available-skins handler');
 });
 
-test('main.js 注册了 set-current-skin IPC listener', () => {
+test('main.js 注册了 set-current-skin IPC handler', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("ipcMain.on('set-current-skin'"), '应注册 set-current-skin listener');
+  assert.ok(mainSource.includes("ipcMain.handle('set-current-skin'"), '应注册 set-current-skin handler');
+  assert.ok(mainSource.includes("createIpcFailure('VALIDATION_ERROR'"), '无效皮肤应返回结构化 IPC 错误');
+  assert.ok(mainSource.includes("createIpcFailure('INTERNAL_ERROR'"), '内部异常应返回结构化 IPC 错误');
+  assert.ok(mainSource.includes('createIpcSuccess({ skinId })'), '有效皮肤应返回结构化 IPC 成功结果');
 });
 
 // --- preload.js API 暴露验证 ---
@@ -139,6 +142,10 @@ test('preload.js 暴露了 onSwitchSkin API', () => {
 test('preload.js 暴露了 setCurrentSkin API', () => {
   const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf-8');
   assert.ok(preloadSource.includes('setCurrentSkin'), 'preload 应暴露 setCurrentSkin');
+  assert.ok(
+    preloadSource.includes("setCurrentSkin: (skinId) => ipcRenderer.invoke('set-current-skin', skinId)"),
+    'setCurrentSkin 应通过 invoke 返回结构化 IPC 结果',
+  );
 });
 
 // --- default 皮肤文件夹完整性验证 ---

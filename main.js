@@ -20,6 +20,8 @@ const {
   getUpdateMenuState,
 } = require('./updateManager');
 const {
+  createIpcFailure,
+  createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
   normalizeStatusWindowSize,
@@ -1269,10 +1271,18 @@ ipcMain.handle('get-active-window-info', async () => {
   return activeWindowSampler.sampleOnce();
 });
 
-ipcMain.on('set-current-skin', (_event, skinId) => {
-  if (!isAllowedSkinId(skinId, scanAvailableSkins())) return;
-  currentSkinId = skinId;
-  refreshTrayMenu();
+ipcMain.handle('set-current-skin', async (_event, skinId) => {
+  if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
+    return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
+  }
+  try {
+    currentSkinId = skinId;
+    refreshTrayMenu();
+    return createIpcSuccess({ skinId });
+  } catch (error) {
+    console.error('Failed to set current skin:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to set current skin');
+  }
 });
 
 // 多语言系统 IPC

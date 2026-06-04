@@ -1,6 +1,23 @@
 const VALID_WINDOW_MIGRATION_DIRECTIONS = new Set(['left', 'right', 'top', 'bottom']);
 const MAX_MOUSE_PASSTHROUGH_LEASE_MS = 30000;
 
+function createIpcSuccess(data) {
+  return {
+    success: true,
+    data,
+  };
+}
+
+function createIpcFailure(code, message) {
+  return {
+    success: false,
+    error: {
+      code,
+      message,
+    },
+  };
+}
+
 function normalizeMousePassthroughRequest(ignore, options = {}) {
   if (typeof ignore !== 'boolean') return null;
 
@@ -40,6 +57,8 @@ function isAllowedSkinId(skinId, availableSkins) {
 }
 
 module.exports = {
+  createIpcFailure,
+  createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
   normalizeStatusWindowSize,

@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-02
+最后更新：2026-06-04
 
 ## 1. 架构总览
 
@@ -60,6 +60,7 @@ qijiu-desktop-pet/
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
 ├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现
 ├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换与去重
+├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
 ├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
@@ -269,6 +270,7 @@ src/assets/{skinId}/
 - 主窗口不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口会对动态内容进行转义。
 - IPC 通道集中在 `main.js`，便于审计。
+- 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
 
 ## 4. 测试与验证
 
@@ -289,6 +291,7 @@ npm test
 - `updateManager.js` 更新状态、错误分类和菜单状态。
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
+- `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
 
 ## 5. 架构决策索引

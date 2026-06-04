@@ -2,11 +2,30 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
+  createIpcFailure,
+  createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
   normalizeStatusWindowSize,
   normalizeWindowMigrationDirection,
 } = require('../ipcContracts');
+
+test('createIpcSuccess wraps data in the unified IPC result shape', () => {
+  assert.deepEqual(createIpcSuccess({ skinId: 'default' }), {
+    success: true,
+    data: { skinId: 'default' },
+  });
+});
+
+test('createIpcFailure wraps errors in the unified IPC result shape', () => {
+  assert.deepEqual(createIpcFailure('VALIDATION_ERROR', 'Invalid skin id'), {
+    success: false,
+    error: {
+      code: 'VALIDATION_ERROR',
+      message: 'Invalid skin id',
+    },
+  });
+});
 
 test('normalizeMousePassthroughRequest rejects non-boolean ignore values', () => {
   assert.equal(normalizeMousePassthroughRequest('true', { forward: true }), null);

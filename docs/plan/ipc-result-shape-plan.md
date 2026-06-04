@@ -1,6 +1,6 @@
 # IPC 返回形状统一计划
 
-> 状态：提议中
+> 状态：首个迁移片已实现
 > 最后更新：2026-06-04
 
 ## 背景
@@ -45,6 +45,14 @@
 2. 新增 IPC handler 先使用统一结果形状。
 3. 迁移调用面较窄、风险较低的既有 handler，例如 `setCurrentSkin`。
 4. `saveData`、`loadData` 这类覆盖面较广的数据持久化调用，等调用方可以一起更新和测试时再迁移。
+
+## 已实现内容
+
+- 在 `ipcContracts.js` 中新增 `createIpcSuccess(data)` 和 `createIpcFailure(code, message)`，作为后续 IPC handler 的统一结果对象 helper。
+- 将 `set-current-skin` 从单向 `ipcMain.on` / `ipcRenderer.send` 迁移为 `ipcMain.handle` / `ipcRenderer.invoke`。
+- `set-current-skin` 成功时返回 `{ success: true, data: { skinId } }`；非法皮肤 ID 返回 `VALIDATION_ERROR`；内部异常返回 `INTERNAL_ERROR`。
+- 渲染进程现有调用点仍可继续调用 `window.electronAPI.setCurrentSkin(nextSkinId)`，不要求同步迁移业务行为。
+- `saveData()`、`loadData()`、`setLocale()`、`setAutoLaunch()` 和 `getAutoLaunch()` 暂不改变返回形状，等待调用方可以一起更新和测试时再迁移。
 
 ## 验证
 
