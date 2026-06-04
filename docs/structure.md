@@ -328,3 +328,4 @@ npm test
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
+- `.codex/tmp-*` 属于 Codex 临时工作目录，不应作为 gitlink 或源码文件提交。

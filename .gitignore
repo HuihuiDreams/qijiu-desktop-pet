@@ -8,6 +8,7 @@ build/*
 .env.local
 .env.*.local
 *.log
+.codex/tmp-*/
 *.key
 *.cer
 *.crt

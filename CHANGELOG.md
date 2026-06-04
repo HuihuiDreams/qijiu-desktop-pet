@@ -2,12 +2,13 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
-## [WIP]
+## [0.6.1] - 2026-06-04
 ### Added
 - **IPC 返回契约决策记录**：新增 [ADR-032](docs/decisions/ADR-032-ipc-result-shape.md)，记录新增和迁移后的 IPC handler 优先使用 `{ success, data }` / `{ success, error }` 结果对象，以及既有广覆盖接口渐进迁移的兼容策略。
 - **键盘活动感知计划**：新增 [keyboard-activity-awareness-plan.md](docs/plan/keyboard-activity-awareness-plan.md)，规划仅基于键盘活动节奏影响宠物行为的实现路径，明确不引入用户皮肤导入功能，并记录主进程活动观察、preload 安全订阅、renderer 行为系统、移动/互动降噪、隐私边界与 MVP 切分。
 
 ### Fixed
+- **Codex 临时目录误提交修复**：从 Git 索引移除误提交为 gitlink 的 `.codex/tmp-baebae-pet`，恢复 `git submodule status` 正常执行，并在 `.gitignore` 中新增 `.codex/tmp-*/` 防止临时工作目录再次入库。
 - **IPC 边界加固**：在渲染进程输入触达主进程行为前，校验鼠标穿透、macOS 显示器迁移、状态窗口尺寸和皮肤切换等 IPC 参数。
 - **编码检查说明**：确认 README、package、preload 和 changelog 文本均以 UTF-8 正常存储；PowerShell 可能因控制台编码显示乱码，后续不要仅凭终端显示结果重写项目文本。
 - **macOS 睡眠模式数值不衰减**：修复了 Mac 进入睡眠模式后桌宠属性（饥饿/灵力/心境）不衰减的 Bug。根因：macOS 的 `performance.now()` 在睡眠期间冻结，导致游戏循环的 `deltaMs > 60000` 检测永远不触发。修复方案：利用 Electron `powerMonitor` 的 `suspend`/`resume` 事件，在主进程记录 `Date.now()` 墙钟时间戳，唤醒后通过 IPC 通知渲染进程用真实时间差结算离线衰减。与原有的 Windows 帧间隔检测路径共存，互不干扰。更新 [ADR-019](docs/decisions/ADR-019-handling-time-jumps-after-system-sleep.md) 补充双轨策略说明。
