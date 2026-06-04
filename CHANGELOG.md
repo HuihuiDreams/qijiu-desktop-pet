@@ -3,10 +3,16 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [WIP]
+### Added
+- **键盘活动感知计划**：新增 [keyboard-activity-awareness-plan.md](docs/plan/keyboard-activity-awareness-plan.md)，规划仅基于键盘活动节奏影响宠物行为的实现路径，明确不引入用户皮肤导入功能，并记录主进程活动观察、preload 安全订阅、renderer 行为系统、移动/互动降噪、隐私边界与 MVP 切分。
+
 ### Fixed
+- **IPC 边界加固**：在渲染进程输入触达主进程行为前，校验鼠标穿透、macOS 显示器迁移、状态窗口尺寸和皮肤切换等 IPC 参数。
+- **编码检查说明**：确认 README、package、preload 和 changelog 文本均以 UTF-8 正常存储；PowerShell 可能因控制台编码显示乱码，后续不要仅凭终端显示结果重写项目文本。
 - **macOS 睡眠模式数值不衰减**：修复了 Mac 进入睡眠模式后桌宠属性（饥饿/灵力/心境）不衰减的 Bug。根因：macOS 的 `performance.now()` 在睡眠期间冻结，导致游戏循环的 `deltaMs > 60000` 检测永远不触发。修复方案：利用 Electron `powerMonitor` 的 `suspend`/`resume` 事件，在主进程记录 `Date.now()` 墙钟时间戳，唤醒后通过 IPC 通知渲染进程用真实时间差结算离线衰减。与原有的 Windows 帧间隔检测路径共存，互不干扰。更新 [ADR-019](docs/decisions/ADR-019-handling-time-jumps-after-system-sleep.md) 补充双轨策略说明。
 
 ### Changed
+- **Preload 订阅清理函数**：所有暴露的 `window.electronAPI.on*` 订阅现在都通过共享 preload helper 返回 cleanup 函数。
 - **Release 移除源码归档**：在 Build Installers workflow 的 Windows 和 macOS 两个 job 中各新增一步，使用 `gh release delete-asset` 自动删除 GitHub 为每个 Release 自动附加的 `Source code (zip)` 和 `Source code (tar.gz)` 归档，使发布产物仅包含安装包和说明文件。
 
 ## [0.6.0] - 2026-06-02

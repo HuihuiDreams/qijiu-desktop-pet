@@ -23,7 +23,7 @@ test('preload exposes final-save request handler to the renderer', () => {
   const preloadSource = readSource('preload.js');
 
   assert.ok(preloadSource.includes('onSaveBeforeQuit'));
-  assert.ok(preloadSource.includes("ipcRenderer.on('save-before-quit'"));
+  assert.ok(preloadSource.includes("return subscribeIpc('save-before-quit', listener)"));
   assert.ok(preloadSource.includes("ipcRenderer.send('save-before-quit-complete'"));
 });
 

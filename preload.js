@@ -1,5 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+function subscribeIpc(channel, listener) {
+  ipcRenderer.on(channel, listener);
+  return () => ipcRenderer.removeListener(channel, listener);
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // 鼠标事件控制：切换穿透状态
   setIgnoreMouseEvents: (ignore, options) => {
@@ -17,7 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeStatusWindow: () => ipcRenderer.send('hide-status-window'),
   resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
   onSaveBeforeQuit: (callback) => {
-    ipcRenderer.on('save-before-quit', async (_event, requestId) => {
+    const listener = async (_event, requestId) => {
       let success = false;
       try {
         await callback();
@@ -27,50 +32,50 @@ contextBridge.exposeInMainWorld('electronAPI', {
       } finally {
         ipcRenderer.send('save-before-quit-complete', requestId, success);
       }
-    });
+    };
+    return subscribeIpc('save-before-quit', listener);
   },
 
   // 监听来自主进程的消息
   onScreenInfo: (callback) => {
-    ipcRenderer.on('screen-info', (event, data) => callback(data));
+    return subscribeIpc('screen-info', (_event, data) => callback(data));
   },
   getActiveWindowInfo: () => ipcRenderer.invoke('get-active-window-info'),
   onActiveWindowInfo: (callback) => {
     const listener = (_event, data) => callback(data);
-    ipcRenderer.on('active-window-info', listener);
-    return () => ipcRenderer.removeListener('active-window-info', listener);
+    return subscribeIpc('active-window-info', listener);
   },
   onToggleStatusPanel: (callback) => {
-    ipcRenderer.on('toggle-status-panel', () => callback());
+    return subscribeIpc('toggle-status-panel', () => callback());
   },
   onStatusWindowData: (callback) => {
-    ipcRenderer.on('status-window-data', (event, data) => callback(data));
+    return subscribeIpc('status-window-data', (_event, data) => callback(data));
   },
   onStatusWindowClosed: (callback) => {
-    ipcRenderer.on('status-window-closed', () => callback());
+    return subscribeIpc('status-window-closed', () => callback());
   },
   onTogglePause: (callback) => {
-    ipcRenderer.on('toggle-pause', (event, paused) => callback(paused));
+    return subscribeIpc('toggle-pause', (_event, paused) => callback(paused));
   },
   onResetPositions: (callback) => {
-    ipcRenderer.on('reset-positions', () => callback());
+    return subscribeIpc('reset-positions', () => callback());
   },
   onTogglePetVisibility: (callback) => {
-    ipcRenderer.on('toggle-pet-visibility', (event, visible) => callback(visible));
+    return subscribeIpc('toggle-pet-visibility', (_event, visible) => callback(visible));
   },
 
   // 皮肤系统
   getAvailableSkins: () => ipcRenderer.invoke('get-available-skins'),
   setCurrentSkin: (skinId) => ipcRenderer.send('set-current-skin', skinId),
   onSwitchSkin: (callback) => {
-    ipcRenderer.on('switch-skin', (event, skinId) => callback(skinId));
+    return subscribeIpc('switch-skin', (_event, skinId) => callback(skinId));
   },
 
   // 多语言系统 (i18n)
   getLocale: () => ipcRenderer.invoke('get-locale'),
   setLocale: (lang) => ipcRenderer.invoke('set-locale', lang),
   onLocaleChange: (callback) => {
-    ipcRenderer.on('locale-changed', (event, lang) => callback(lang));
+    return subscribeIpc('locale-changed', (_event, lang) => callback(lang));
   },
 
   // macOS 多显示器迁移
@@ -78,14 +83,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notifyDragStarted: () => ipcRenderer.send('drag-started'),
   notifyDragEnded: () => ipcRenderer.send('drag-ended'),
   onWindowMigrated: (callback) => {
-    ipcRenderer.on('window-migrated', (event, data) => callback(data));
+    return subscribeIpc('window-migrated', (_event, data) => callback(data));
   },
 
   // 久坐提醒
   onBreakReminder: (callback) => {
     const listener = (_event, payload) => callback(payload);
-    ipcRenderer.on('break-reminder-triggered', listener);
-    return () => ipcRenderer.removeListener('break-reminder-triggered', listener);
+    return subscribeIpc('break-reminder-triggered', listener);
   },
   dismissBreakReminder: () => {
     ipcRenderer.send('break-reminder-dismissed');
@@ -93,9 +97,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 系统睡眠/唤醒事件（用于 macOS 离线衰减结算）
   onSystemSuspend: (callback) => {
-    ipcRenderer.on('system-suspended', () => callback());
+    return subscribeIpc('system-suspended', () => callback());
   },
   onSystemResume: (callback) => {
-    ipcRenderer.on('system-resumed', (_event, data) => callback(data));
+    return subscribeIpc('system-resumed', (_event, data) => callback(data));
   },
 });

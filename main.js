@@ -20,6 +20,12 @@ const {
   getUpdateMenuState,
 } = require('./updateManager');
 const {
+  isAllowedSkinId,
+  normalizeMousePassthroughRequest,
+  normalizeStatusWindowSize,
+  normalizeWindowMigrationDirection,
+} = require('./ipcContracts');
+const {
   createBreakReminderService,
   normalizeSettings: normalizeBreakReminderSettings,
   DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
@@ -586,8 +592,7 @@ function hideStatusWindow() {
 function resizeStatusWindow(size) {
   if (!statusWindow || statusWindow.isDestroyed()) return;
 
-  const width = Math.min(Math.max(Math.ceil(Number(size?.width) || 400), 360), 520);
-  const height = Math.min(Math.max(Math.ceil(Number(size?.height) || 460), 360), 720);
+  const { width, height } = normalizeStatusWindowSize(size);
   statusWindow.setContentSize(width, height);
 }
 
@@ -1168,13 +1173,17 @@ function createTrayIconBuffer() {
 // --- IPC 通信监听 ---
 
 ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
-  setPetWindowMousePassthrough(ignore, options || {});
+  const request = normalizeMousePassthroughRequest(ignore, options);
+  if (!request) return;
+  setPetWindowMousePassthrough(request.ignore, request.options);
 });
 
 ipcMain.on('request-window-migration', (_event, direction) => {
+  const normalizedDirection = normalizeWindowMigrationDirection(direction);
+  if (!normalizedDirection) return;
   if (process.platform !== 'darwin' || !currentPetDisplay) return;
   const allDisplays = screen.getAllDisplays();
-  const adjacent = findAdjacentDisplay(currentPetDisplay, direction, allDisplays);
+  const adjacent = findAdjacentDisplay(currentPetDisplay, normalizedDirection, allDisplays);
   if (adjacent) {
     migrateWindowToDisplay(adjacent);
   }
@@ -1261,6 +1270,7 @@ ipcMain.handle('get-active-window-info', async () => {
 });
 
 ipcMain.on('set-current-skin', (_event, skinId) => {
+  if (!isAllowedSkinId(skinId, scanAvailableSkins())) return;
   currentSkinId = skinId;
   refreshTrayMenu();
 });

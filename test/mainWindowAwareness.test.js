@@ -39,6 +39,6 @@ test('main process sends taskbar platforms with screen info', () => {
 
 test('preload exposes safe active window APIs to renderer', () => {
   assert.ok(preloadSource.includes("getActiveWindowInfo: () => ipcRenderer.invoke('get-active-window-info')"));
-  assert.ok(preloadSource.includes("ipcRenderer.on('active-window-info'"));
-  assert.ok(preloadSource.includes("ipcRenderer.removeListener('active-window-info'"));
+  assert.ok(preloadSource.includes("return subscribeIpc('active-window-info', listener)"));
+  assert.ok(preloadSource.includes('return () => ipcRenderer.removeListener(channel, listener)'));
 });
