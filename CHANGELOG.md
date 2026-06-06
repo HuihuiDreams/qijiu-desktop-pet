@@ -3,7 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **UI 性能与高级视觉升级**：新增 [ADR-034](docs/decisions/ADR-034-ui-performance-and-visual-upgrades.md) 记录。实现了高性能的 GPU 加速宠物光晕特效，增加了右键菜单和面板按钮的物理按下触感（Active State），升级了状态面板的玻璃边缘折射质感，并修复了状态条数值跳变导致的微弱抖动（改用等宽字体与回弹动画曲线）。
+
 ### Changed
+- **AI 智能体研发规范升级**：在 `.geminirules` 和 `AGENTS.md` 的核心原则中强制增加 "Use Skills First"，要求 Agent 在执行代码或文档任务前必须主动加载相应的技能指南。
+- **文档规范性修复**：修复了 `ADR-034` 的格式，补充了缺失的 `Alternatives Considered`（替代方案考虑）章节，以严格遵守 `documentation-and-adrs` 技能标准。
 - **测试配置归一化与文档同步**：将本地打包更新测试配置归档至 `docs/archive/` 目录，并同步更新了 [structure.md](docs/structure.md) 和 [ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)。
 - **README.md 文档样式统一**：补全了 README.md 中部分三级标题和系统托盘功能列表缺失的 emoji 图标，使其与多语言配置（i18n.js）保持一致。
 - **渲染器代码重构**：提取 `app.js` 离线衰减重复逻辑至 `handleOfflineReturn` 统一处理；为 `index.css` 补充设计 tokens；并将全局样式拆分为基于组件的 `context-menu.css`、`dialog-bubble.css` 和 `effects.css`。

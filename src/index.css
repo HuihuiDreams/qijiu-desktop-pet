@@ -115,6 +115,9 @@ html, body {
 .pet:active {
   cursor: grabbing;
 }
+.pet:active .pet-body {
+  transform: scale(0.96);
+}
 
 .pet-body {
   width: 96px;
@@ -136,14 +139,40 @@ html, body {
 
 .pet--yueqi .pet-body:not(:has(.pet-image)) {
   background: linear-gradient(145deg, var(--color-yueqi-light) 0%, var(--color-yueqi) 60%, var(--color-yueqi-dark) 100%);
-  border: 2px solid var(--color-yueqi-deep);
-  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), 0 0 24px var(--color-yueqi-glow);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 4px 10px rgba(255, 255, 255, 0.5), 
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .pet--shenjiu .pet-body:not(:has(.pet-image)) {
   background: linear-gradient(145deg, var(--color-shenjiu-light) 0%, var(--color-jade) 60%, var(--color-shenjiu-dark) 100%);
-  border: 2px solid var(--color-jade-deep);
-  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), var(--shadow-glow-jade);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    inset 0 4px 10px rgba(255, 255, 255, 0.5), 
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Performant Hardware-Accelerated Aura Glow */
+.pet-body::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.pet--yueqi .pet-body::before {
+  background: radial-gradient(circle, var(--color-yueqi-glow) 0%, transparent 60%);
+}
+
+.pet--shenjiu .pet-body::before {
+  background: radial-gradient(circle, var(--color-jade-glow) 0%, transparent 60%);
 }
 
 .pet-image {
@@ -188,31 +217,25 @@ html, body {
 @keyframes sleepBreath {
   0%, 100% { 
     transform: scale(1) translateY(0) rotate(0deg);
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
   }
   50% { 
     transform: scale(0.95) translateY(3px) rotate(1deg); /* Slight tilt adds life */
-    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.08));
   }
 }
 
 /* === Meditating — slow rhythmic glow pulse === */
-.pet--meditating .pet-body {
-  animation: meditateGlow 4.5s ease-in-out infinite;
+.pet--meditating .pet-body::before {
+  animation: auraPulse 4.5s ease-in-out infinite;
 }
 
-@keyframes meditateGlow {
+@keyframes auraPulse {
   0%, 100% { 
-    transform: scale(1);
-    filter: 
-      drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12))
-      drop-shadow(0 0 0px rgba(110, 198, 160, 0));
+    transform: scale(0.9);
+    opacity: 0.5;
   }
   50% { 
-    transform: scale(1.02);
-    filter: 
-      drop-shadow(0 4px 16px rgba(110, 198, 160, 0.5))
-      drop-shadow(0 0 35px rgba(110, 198, 160, 0.3));
+    transform: scale(1.3);
+    opacity: 1;
   }
 }
 
@@ -258,9 +281,8 @@ html, body {
   min-width: 360px;
   box-shadow: 
     0 12px 30px rgba(30, 42, 54, 0.16),
-    0 0 16px rgba(110, 198, 160, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
     inset 0 -12px 24px rgba(61, 139, 107, 0.06);
   z-index: 10000;
   pointer-events: auto;
@@ -349,6 +371,10 @@ html, body {
   transform: scale(1.1);
 }
 
+.status-close:active {
+  transform: scale(0.92);
+}
+
 .pet-status-block {
   margin-bottom: 18px;
   padding: 12px 14px;
@@ -422,7 +448,7 @@ html, body {
   width: 0;
   height: 100%;
   border-radius: 4px;
-  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
 }
@@ -464,6 +490,7 @@ html, body {
   color: var(--color-ink-light);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  font-family: 'JetBrains Mono', 'Geist Mono', monospace;
 }
 
 .stat-money {
@@ -477,18 +504,19 @@ html, body {
    Low Stat Warning Effects
    ============================================ */
 /* Hunger — warm pulse with subtle urgency */
-.pet--hungry .pet-body {
-  animation: hungerPulse 2.5s ease-in-out infinite;
+.pet--hungry .pet-body::before {
+  background: radial-gradient(circle, rgba(212, 120, 42, 0.4) 0%, transparent 60%);
+  animation: hungerAuraPulse 2.5s ease-in-out infinite;
 }
 
-@keyframes hungerPulse {
+@keyframes hungerAuraPulse {
   0%, 100% { 
-    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
+    transform: scale(1);
+    opacity: 0.4;
   }
   50% { 
-    filter: 
-      drop-shadow(0 4px 14px rgba(212, 120, 42, 0.45))
-      drop-shadow(0 0 20px rgba(212, 120, 42, 0.2));
+    transform: scale(1.2);
+    opacity: 0.8;
   }
 }
 
@@ -500,10 +528,10 @@ html, body {
 @keyframes moodFade {
   0%, 100% { 
     opacity: 0.8; 
-    filter: saturate(0.7) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12)); 
+    transform: translateY(0);
   }
   50% { 
-    opacity: 0.65; 
-    filter: saturate(0.5) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08)); 
+    opacity: 0.5; 
+    transform: translateY(2px);
   }
 }

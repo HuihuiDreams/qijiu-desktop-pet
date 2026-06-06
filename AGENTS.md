@@ -11,7 +11,10 @@ in this project.
 1. Think first: surface assumptions and trade-offs before coding. Ask questions
    when game logic, formulas, or scaling behavior is unclear. Prefer simpler
    paths when they satisfy the requirement.
-2. Keep changes simple: write the minimum code needed. Avoid speculative
+2. Use skills first: Before performing tasks like UI engineering, writing
+   documentation, or debugging, you MUST proactively review the available agent
+   skills in your context and load the relevant skill instructions first.
+3. Keep changes simple: write the minimum code needed. Avoid speculative
    abstractions and premature object-oriented registry structures.
 3. Make surgical edits: modify only the lines needed. Match the existing style
    with vanilla JavaScript and standard CSS. Remove orphaned code created by

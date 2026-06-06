@@ -5,7 +5,8 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Core Principles
 
 1. **Think First**: Surface assumptions and trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths.
-2. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures.
+2. **Use Skills First**: Before writing code, documentation, or designing architecture, you MUST proactively review your available skills list and invoke the appropriate skill (e.g., `documentation-and-adrs`, `frontend-ui-engineering`) via `view_file` to load its instructions.
+3. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures.
 3. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
 4. **Goal-Driven**: Define verification steps before coding. Run `npm test` or focused `node --test ...` checks, plus console/manual checks when UI or Electron window behavior changes.
 

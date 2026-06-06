@@ -320,6 +320,7 @@ npm test
 - [ADR-031](./decisions/ADR-031-break-reminder.md)：久坐提醒设计。
 - [ADR-032](./decisions/ADR-032-ipc-result-shape.md)：IPC 返回形状统一。
 - [ADR-033](./decisions/ADR-033-frontend-ui-engineering-and-color-swap.md)：前端组件化、Design Tokens 与角色主题色互换。
+- [ADR-034](./decisions/ADR-034-ui-performance-and-visual-upgrades.md)：UI 性能优化与高级视觉升级。
 
 ## 6. 维护提示
 
