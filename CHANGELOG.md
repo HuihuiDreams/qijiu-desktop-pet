@@ -4,7 +4,7 @@
 
 ## [Unreleased]
 ### Added
-- **UI 性能与高级视觉升级**：新增 [ADR-034](docs/decisions/ADR-034-ui-performance-and-visual-upgrades.md) 记录。实现了高性能的 GPU 加速宠物光晕特效，增加了右键菜单和面板按钮的物理按下触感（Active State），升级了状态面板的玻璃边缘折射质感，并修复了状态条数值跳变导致的微弱抖动（改用等宽字体与回弹动画曲线）。
+- **UI 性能与视觉还原升级**：新增及更新了 [ADR-034](docs/decisions/ADR-034-ui-performance-and-visual-upgrades.md) 记录。恢复了 `filter: drop-shadow()` 以实现严格贴合小人边缘的精致发光效果；为彻底解决其带来的 CPU 占用飙升问题，去除了发光层的缩放及透明度动画，采用 0 占用的完全静态渲染。同时修复了饥饿/打坐状态下角色变透明的 Bug，确保“身体变半透明”的视觉反馈严格保留给“心境低落”这一设定。另外增加了右键菜单和面板按钮的物理按下触感（Active State），升级了状态面板的玻璃边缘折射质感，并修复了状态条数值跳变导致的微弱抖动（改用等宽字体与回弹动画曲线）。
 
 ### Changed
 - **AI 智能体研发规范升级**：在 `.geminirules` 和 `AGENTS.md` 的核心原则中强制增加 "Use Skills First"，要求 Agent 在执行代码或文档任务前必须主动加载相应的技能指南。

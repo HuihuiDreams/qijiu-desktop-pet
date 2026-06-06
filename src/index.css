@@ -155,31 +155,14 @@ html, body {
     0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-/* Performant Hardware-Accelerated Aura Glow */
-.pet-body::before {
-  content: '';
-  position: absolute;
-  inset: -30%;
-  border-radius: 50%;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-
-.pet--yueqi .pet-body::before {
-  background: radial-gradient(circle, var(--color-yueqi-glow) 0%, transparent 60%);
-}
-
-.pet--shenjiu .pet-body::before {
-  background: radial-gradient(circle, var(--color-jade-glow) 0%, transparent 60%);
-}
-
 .pet-image {
   width: 100%;
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  transition: filter 0.4s ease;
+  filter: drop-shadow(0 0 0 transparent);
+  will-change: filter, opacity;
 }
 
 .pet-name {
@@ -223,20 +206,12 @@ html, body {
   }
 }
 
-/* === Meditating — slow rhythmic glow pulse === */
-.pet--meditating .pet-body::before {
-  animation: auraPulse 4.5s ease-in-out infinite;
+/* === Meditating — edge glow === */
+.pet--meditating.pet--yueqi .pet-image {
+  filter: drop-shadow(0 0 5px var(--color-yueqi-glow));
 }
-
-@keyframes auraPulse {
-  0%, 100% { 
-    transform: scale(0.9);
-    opacity: 0.5;
-  }
-  50% { 
-    transform: scale(1.3);
-    opacity: 1;
-  }
+.pet--meditating.pet--shenjiu .pet-image {
+  filter: drop-shadow(0 0 5px var(--color-jade-glow));
 }
 
 /* === Working — focused sway === */
@@ -503,21 +478,9 @@ html, body {
 /* ============================================
    Low Stat Warning Effects
    ============================================ */
-/* Hunger — warm pulse with subtle urgency */
-.pet--hungry .pet-body::before {
-  background: radial-gradient(circle, rgba(212, 120, 42, 0.4) 0%, transparent 60%);
-  animation: hungerAuraPulse 2.5s ease-in-out infinite;
-}
-
-@keyframes hungerAuraPulse {
-  0%, 100% { 
-    transform: scale(1);
-    opacity: 0.4;
-  }
-  50% { 
-    transform: scale(1.2);
-    opacity: 0.8;
-  }
+/* Hunger — warm edge glow with subtle urgency */
+.pet--hungry .pet-image {
+  filter: drop-shadow(0 0 5px rgba(212, 120, 42, 0.8));
 }
 
 /* Low mood — desaturated with gentle opacity pulse */

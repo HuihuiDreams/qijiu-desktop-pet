@@ -15,10 +15,10 @@ Accepted
 ## Decision
 我们决定对 UI 进行视觉与性能的同步升级，具体决策如下：
 
-### 1. 硬件加速的光晕特效 (Hardware-Accelerated Aura)
-移除所有基于 `filter: drop-shadow()` 的发光实现。改为在 `.pet-body` 挂载 `::before` 伪元素，利用 `radial-gradient` 绘制光晕，并仅通过 `opacity` 和 `transform: scale()` 进行动画处理。
-- **优势**：`opacity` 和 `transform` 是复合图层属性，完全交由 GPU 处理，不会触发浏览器的重排（Reflow）和重绘（Repaint），性能开销几乎为零。
-- **修正**：移除了伪元素的默认透明度，使其平时完全不可见，仅在打坐、饥饿时通过 `@keyframes` 动画显现。
+### 1. 边缘发光特效与性能平衡 (Edge Glow Performance)
+基于最新的视觉要求（发光需要严格沿着人物边缘，而不是简单的圆形光晕），我们恢复了在 `.pet-image` 上使用 `filter: drop-shadow()`。为了解决它此前引起的 CPU 飙升问题，我们进行了重新设计：
+- **剥离任何 CSS 动画**：原先的性能杀手在于对包含 `drop-shadow` 的元素进行 `@keyframes` 下的动画（尤其是 `transform: scale`），这迫使渲染引擎每秒 60 次重新计算阴影。
+- **静态发光层**：现在改为对图片静态应用 `drop-shadow`，不再附加任何呼吸脉冲（也取消了透明度脉冲，因为根据设定，只有“心境低落”才会变透明）。静态的 `drop-shadow` 渲染开销极低，完美兼顾了精准贴边的高级感和 0 CPU 占用的性能要求。
 
 ### 2. 物理触觉反馈 (Tactile Active States)
 为所有按钮（`.close-btn`）、菜单项（`.menu-item`）以及宠物本体（`.pet`）增加了 `:active` 状态的缩小动画（`transform: scale(0.95)`）。这为用户的点击操作提供了即时且具有阻尼感的物理反馈。
@@ -34,10 +34,10 @@ Accepted
 
 ## Alternatives Considered
 
-### 继续使用 filter: drop-shadow() 并节流重绘
-- Pros: 代码改动最小，直接维持现有的 CSS 发光逻辑。
-- Cons: Electron / Chromium 渲染 `drop-shadow` 的本质是高昂的像素级计算。在桌宠 60FPS 的游戏循环下，哪怕是微小的位移也会导致整体重绘，引起肉眼可见的 CPU 峰值。
-- Rejected: 不符合桌面宠物常驻后台、要求极低系统开销的前提。
+### 继续使用 filter: drop-shadow() 并配合任何动画
+- Pros: 能够完美勾勒出不规则透明图片的边缘光效。
+- Cons: Electron / Chromium 渲染 `drop-shadow` 本质是高昂的像素计算。如果配合 `scale` 或频繁变动的属性，在 60FPS 下会持续触发重绘，引起肉眼可见的 CPU 峰值。
+- Rejected: 原始方案不可取。最终方案是保留静态存在的 `drop-shadow`，不再叠加任何呼吸脉冲，这样既保住了性能，又避免与“心境低落才透明”的设定发生冲突。
 
 ### 使用 CSS backdrop-filter 模糊底层系统桌面
 - Pros: 符合现代 Glassmorphism（毛玻璃）设计规范，视觉效果最佳。
