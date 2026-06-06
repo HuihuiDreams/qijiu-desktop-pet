@@ -85,6 +85,7 @@ html, body {
   overflow: hidden;
   background: transparent;
   pointer-events: none;
+  -webkit-user-select: none;
   user-select: none;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;

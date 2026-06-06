@@ -5,8 +5,8 @@
   position: fixed;
   --display-scale: 1;
   background: var(--color-mist);
-  backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid var(--color-glass-border);
   border-radius: 14px;
   padding: 6px 0;
