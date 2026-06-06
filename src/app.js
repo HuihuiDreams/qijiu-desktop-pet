@@ -398,7 +398,33 @@ function applyI18n() {
     applyI18n();
   });
 
-  // === 系统睡眠/唤醒处理 (macOS 专用路径) ===
+  // === 离线回归结算（统一入口）===
+  // 系统唤醒、保存恢复、游戏循环时间跳跃均复用此函数。
+  // 负责：属性衰减 → 时辰计算 → 回归气泡 → 即时存档。
+  function handleOfflineReturn(offlineMs) {
+    nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
+    nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
+
+    const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
+    if (shichensAway >= 1) {
+      const returnMsgYueqi = window.I18N_UI?.returnYueqi
+        ? (typeof window.I18N_UI.returnYueqi === 'function'
+          ? window.I18N_UI.returnYueqi(shichensAway)
+          : window.I18N_UI.returnYueqi)
+        : `你走了${shichensAway}个时辰…`;
+      const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
+      setTimeout(() => {
+        dialogBubble.show(yueqi, returnMsgYueqi, 4000);
+      }, 1500);
+      setTimeout(() => {
+        dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
+      }, 3000);
+    }
+
+    saveCurrentState();
+  }
+
+    // === 系统睡眠/唤醒处理 (macOS 专用路径) ===
   // macOS 下 performance.now() 在睡眠期间冻结，导致 rAF 的 deltaMs 不会跳跃，
   // 所以游戏循环内的 deltaMs > 60000 检测永远不会触发。
   // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
@@ -409,27 +435,7 @@ function applyI18n() {
   window.electronAPI.onSystemResume?.((data) => {
     const offlineMs = data?.offlineMs ?? 0;
     if (offlineMs > CONFIG.DECAY_INTERVAL) {
-      nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
-      nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
-
-      // 显示回归欢迎对白
-      const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
-      if (shichensAway >= 1) {
-        const returnMsgYueqi = window.I18N_UI?.returnYueqi
-          ? (typeof window.I18N_UI.returnYueqi === 'function'
-            ? window.I18N_UI.returnYueqi(shichensAway)
-            : window.I18N_UI.returnYueqi)
-          : `你走了${shichensAway}个时辰…`;
-        const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
-        setTimeout(() => {
-          dialogBubble.show(yueqi, returnMsgYueqi, 4000);
-        }, 1500);
-        setTimeout(() => {
-          dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
-        }, 3000);
-      }
-
-      saveCurrentState(); // 唤醒结算后即时存档
+      handleOfflineReturn(offlineMs);
     }
   });
 
@@ -442,25 +448,7 @@ function applyI18n() {
 
     // 应用离线衰减计算
     if (savedState.offlineMs > CONFIG.DECAY_INTERVAL) {
-      nurtureSystemA.applyOfflineDecay(yueqi, savedState.offlineMs);
-      nurtureSystemB.applyOfflineDecay(shenjiu, savedState.offlineMs);
-
-      // 显示回归欢迎对话气泡
-      const shichensAway = Math.round(savedState.offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
-      if (shichensAway >= 1) {
-        const returnMsgYueqi = window.I18N_UI?.returnYueqi
-          ? (typeof window.I18N_UI.returnYueqi === 'function'
-            ? window.I18N_UI.returnYueqi(shichensAway)
-            : window.I18N_UI.returnYueqi)
-          : `你走了${shichensAway}个时辰…`;
-        const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
-        setTimeout(() => {
-          dialogBubble.show(yueqi, returnMsgYueqi, 4000);
-        }, 1500);
-        setTimeout(() => {
-          dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
-        }, 3000);
-      }
+      handleOfflineReturn(savedState.offlineMs);
     }
     pets.forEach(keepPetReachable);
   }
@@ -487,35 +475,12 @@ function applyI18n() {
         // 当重新唤醒时，这里的 deltaMs（两帧时间差）会变得极其巨大（甚至长达几个小时）。
         // 如果两帧之间间隔过大（例如超过 60 秒），说明刚刚经历了系统休眠或被系统挂起。
         if (deltaMs > 60000) {
-          const offlineMs = deltaMs;
+          // 时间跳跃（系统休眠等），一次性结算离线衰减 + 回归气泡 + 存档
+          handleOfflineReturn(deltaMs);
           
-          // 1. 将这段“跳跃的空白时间”视作离线，一次性结算属性的自然衰减
-          nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
-          nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
-
-          // 2. 根据跳跃的时间计算出走掉的“时辰”，触发回归特有的欢迎对白
-          const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
-          if (shichensAway >= 1) {
-            const returnMsgYueqi = window.I18N_UI?.returnYueqi
-              ? (typeof window.I18N_UI.returnYueqi === 'function'
-                ? window.I18N_UI.returnYueqi(shichensAway)
-                : window.I18N_UI.returnYueqi)
-              : `你走了${shichensAway}个时辰…`;
-            const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
-            setTimeout(() => {
-              dialogBubble.show(yueqi, returnMsgYueqi, 4000);
-            }, 1500);
-            setTimeout(() => {
-              dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
-            }, 3000);
-          }
-          
-          // 3. 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
+          // 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
           // 防止后续系统的物理移动、动画计时器因为接收到巨大的 deltaMs 发生瞬间暴走（如小人飞出屏幕等 bug）。
           deltaMs = 16;
-          
-          // 4. 唤醒并结算完毕后，立刻存一次档，保护当前已被衰减的数值状态。
-          saveCurrentState();
         }
 
         // 更新移动

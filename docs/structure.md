@@ -319,6 +319,7 @@ npm test
 - [ADR-030](./decisions/ADR-030-window-awareness.md)：窗口感知平台采样。
 - [ADR-031](./decisions/ADR-031-break-reminder.md)：久坐提醒设计。
 - [ADR-032](./decisions/ADR-032-ipc-result-shape.md)：IPC 返回形状统一。
+- [ADR-033](./decisions/ADR-033-frontend-ui-engineering-and-color-swap.md)：前端组件化、Design Tokens 与角色主题色互换。
 
 ## 6. 维护提示
 

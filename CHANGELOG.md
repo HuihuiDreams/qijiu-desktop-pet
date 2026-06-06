@@ -6,6 +6,9 @@
 ### Changed
 - **测试配置归一化与文档同步**：将本地打包更新测试配置归档至 `docs/archive/` 目录，并同步更新了 [structure.md](docs/structure.md) 和 [ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)。
 - **README.md 文档样式统一**：补全了 README.md 中部分三级标题和系统托盘功能列表缺失的 emoji 图标，使其与多语言配置（i18n.js）保持一致。
+- **渲染器代码重构**：提取 `app.js` 离线衰减重复逻辑至 `handleOfflineReturn` 统一处理；为 `index.css` 补充设计 tokens；并将全局样式拆分为基于组件的 `context-menu.css`、`dialog-bubble.css` 和 `effects.css`。
+- **角色专属颜色互换与语义修正**：将沈九和岳七的专属主题色互换（沈九使用 Jade 灵玉绿，岳七使用 Purple 紫玉色），并全量重命名了 `index.css` 中的 CSS 变量（如 `--color-shenjiu` 等），确保语义完全对齐。
+- **前端工程化决策记录**：新增 [ADR-033](docs/decisions/ADR-033-frontend-ui-engineering-and-color-swap.md)，记录了基于组件的 CSS 拆分、Design Tokens 的引入以及角色主题色的互换策略。
 
 ### Removed
 - **本地打包更新测试配置**：从项目根目录移除了 `electron-builder.update-test-new.yml` 和 `electron-builder.update-test-old.yml`（已移动归档）。
