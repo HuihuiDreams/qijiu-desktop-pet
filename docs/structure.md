@@ -65,7 +65,6 @@ qijiu-desktop-pet/
 ├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
-├─ electron-builder.update-test-*.yml    # 本地更新流程测试用 electron-builder 配置
 ├─ CHANGELOG.md                         # 版本变更记录
 ├─ README.md / readme*.txt              # 用户说明与多语言说明文本
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
@@ -123,7 +122,7 @@ qijiu-desktop-pet/
    ├─ skin_assets_requirements.*        # 皮肤资源命名和尺寸要求
    ├─ decisions/                        # 架构决策记录 ADR
    ├─ plan/                             # 功能规划和任务拆分
-   ├─ archive/                          # 已归档计划、交接和历史 review
+   ├─ archive/                          # 已归档计划、交接、历史 review 和本地更新测试配置
    └─ source-assets/                    # 源素材备份，不随应用打包
 ```
 

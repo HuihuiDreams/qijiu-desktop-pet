@@ -305,7 +305,7 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 **Verification:**
 - [x] 增加 renderer 集成测试或 debug 方法验证坐标和气泡调用。
-- [ ] 手动检查多显示器和不同 DPI 下主显示器中心位置合理。
+- [x] 手动检查多显示器和不同 DPI 下主显示器中心位置合理。
 - [x] `npm test`
 
 **Dependencies:** Task 6
@@ -325,7 +325,7 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 **Acceptance criteria:**
 - [x] DevTools 可调用 `window.__DEBUG_BREAK_REMINDER.trigger()` 或等价方法。
 - [x] 调试触发走同一条 renderer 表现路径。
-- [ ] 打包环境不暴露危险能力。
+- [x] 打包环境不暴露危险能力。
 
 **Verification:**
 - [x] 手动触发后观察小人移动和气泡。
@@ -418,18 +418,18 @@ macOS 不使用 Accessibility API，不申请"辅助功能"权限，不使用 `g
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| 睡眠或系统时间跳变导致误触发 | Medium | 监听 `suspend` / `resume`，恢复后重置连续活跃计时；沿用现有时间跳变思路。 |
-| macOS 返回 `unknown` 状态 | Medium | 保守处理：不触发提醒，等待下一次有效采样。 |
-| 提醒打断用户演示或全屏工作 | High | Windows 加入 `PresentationGuard` 做全屏检测并延后；macOS 不做全屏检测，提醒正常触发。 |
-| 托盘间隔输入过于复杂 | Low | MVP 用固定分钟选项，后续再做自定义输入。 |
-| 用户误以为在监听键鼠 | High | 文档、ADR、设置文案明确说明只读取系统空闲时长，不记录输入内容。 |
-| 多显示器中心位置不自然 | Low | 始终使用主显示器中心，行为可预测。 |
-| 全屏检测扩大隐私边界 | Medium | Windows 只读取几何状态，不保存窗口标题、进程名、URL 或历史；macOS 不做全屏检测，无隐私风险。 |
+| Risk                             | Impact | Mitigation                                                                                                     |
+| -------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
+| 睡眠或系统时间跳变导致误触发     | Medium | 监听 `suspend` / `resume`，恢复后重置连续活跃计时；沿用现有时间跳变思路。                                      |
+| macOS 返回 `unknown` 状态        | Medium | 保守处理：不触发提醒，等待下一次有效采样。                                                                     |
+| 提醒打断用户演示或全屏工作       | High   | Windows 加入 `PresentationGuard` 做全屏检测并延后；macOS 不做全屏检测，提醒正常触发。                          |
+| 托盘间隔输入过于复杂             | Low    | MVP 用固定分钟选项，后续再做自定义输入。                                                                       |
+| 用户误以为在监听键鼠             | High   | 文档、ADR、设置文案明确说明只读取系统空闲时长，不记录输入内容。                                                |
+| 多显示器中心位置不自然           | Low    | 始终使用主显示器中心，行为可预测。                                                                             |
+| 全屏检测扩大隐私边界             | Medium | Windows 只读取几何状态，不保存窗口标题、进程名、URL 或历史；macOS 不做全屏检测，无隐私风险。                   |
 | 前台窗口全屏检测造成额外性能开销 | Medium | `PresentationGuard` 只在提醒到期和延后重试时运行（仅 Windows）；不启动第二个常驻采样器，延后重试不低于 60 秒。 |
-| Renderer 提醒造成布局或动画开销 | Low | 复用现有宠物 DOM 和气泡系统，20 秒内展示，点击可提前结束；不新增复杂 overlay。 |
-| 提醒文案重复导致用户厌烦 | Low | 维护多条提醒文案池，随机选取。 |
+| Renderer 提醒造成布局或动画开销  | Low    | 复用现有宠物 DOM 和气泡系统，20 秒内展示，点击可提前结束；不新增复杂 overlay。                                 |
+| 提醒文案重复导致用户厌烦         | Low    | 维护多条提醒文案池，随机选取。                                                                                 |
 
 ## Not Doing in MVP
 

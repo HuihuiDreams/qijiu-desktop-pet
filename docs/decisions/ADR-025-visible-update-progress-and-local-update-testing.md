@@ -28,8 +28,8 @@ Accepted
 
 为了在不发布 GitHub Release 的情况下测试 packaged 更新流程，新增两个 electron-builder 测试配置：
 
-- `electron-builder.update-test-old.yml`：构建当前版本的测试旧包。
-- `electron-builder.update-test-new.yml`：通过 `extraMetadata.version` 构建一个伪装的新版本。
+- `docs/archive/electron-builder.update-test-old.yml`：构建当前版本的测试旧包。
+- `docs/archive/electron-builder.update-test-new.yml`：通过 `extraMetadata.version` 构建一个伪装的新版本。
 
 两个测试配置都使用独立的 `appId`、`productName`、`extraMetadata.name` 和安装包文件名，避免和正式安装版、正式更新缓存相互污染。测试更新源使用 generic provider，并指向 `http://localhost:8765/`。
 
@@ -68,8 +68,8 @@ Accepted
 ## 验证 (Verification)
 - `npm test` 已通过，覆盖了检查中 UI、开始下载、下载进度更新和进度窗口关闭。
 - 已手动验证本地 packaged 更新流程：
-  - `npm run build -- --config electron-builder.update-test-old.yml`
-  - `npm run build -- --config electron-builder.update-test-new.yml`
+  - `npm run build -- --config docs/archive/electron-builder.update-test-old.yml`
+  - `npm run build -- --config docs/archive/electron-builder.update-test-new.yml`
   - 在 `dist-update-test/feed` 中运行 `py -m http.server 8765`
   - 安装 `dist-update-test/old/qijiu-update-test-setup-0.3.1.exe`
   - 触发检查更新，并下载伪新版本 `0.3.2`
@@ -81,6 +81,6 @@ Accepted
 | `main.js` | 实现更新进度 `BrowserWindow`。 |
 | `src/data/i18n.js` | 增加进度窗口标题的多语言文案。 |
 | `test/updateManager.test.js` | 覆盖更新进度 UI 流程。 |
-| `electron-builder.update-test-old.yml` | 构建本地测试旧版本。 |
-| `electron-builder.update-test-new.yml` | 构建本地测试伪新版本。 |
+| `docs/archive/electron-builder.update-test-old.yml` | 构建本地测试旧版本。 |
+| `docs/archive/electron-builder.update-test-new.yml` | 构建本地测试伪新版本。 |
 | `.gitignore` | 忽略一次性输出目录 `dist-update-test/`。 |

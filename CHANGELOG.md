@@ -2,6 +2,14 @@
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
+## [Unreleased]
+### Changed
+- **测试配置归一化与文档同步**：将本地打包更新测试配置归档至 `docs/archive/` 目录，并同步更新了 [structure.md](docs/structure.md) 和 [ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)。
+- **README.md 文档样式统一**：补全了 README.md 中部分三级标题和系统托盘功能列表缺失的 emoji 图标，使其与多语言配置（i18n.js）保持一致。
+
+### Removed
+- **本地打包更新测试配置**：从项目根目录移除了 `electron-builder.update-test-new.yml` 和 `electron-builder.update-test-old.yml`（已移动归档）。
+
 ## [0.6.1] - 2026-06-04
 ### Added
 - **IPC 返回契约决策记录**：新增 [ADR-032](docs/decisions/ADR-032-ipc-result-shape.md)，记录新增和迁移后的 IPC handler 优先使用 `{ success, data }` / `{ success, error }` 结果对象，以及既有广覆盖接口渐进迁移的兼容策略。
