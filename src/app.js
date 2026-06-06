@@ -481,6 +481,9 @@ function applyI18n() {
           // 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
           // 防止后续系统的物理移动、动画计时器因为接收到巨大的 deltaMs 发生瞬间暴走（如小人飞出屏幕等 bug）。
           deltaMs = 16;
+        } else if (deltaMs <= 0 || Number.isNaN(deltaMs)) {
+          // 防止休眠唤醒后高精度计时器出现负数、0 或 NaN 导致的物理计算异常（如除以0变成NaN从而隐身）
+          deltaMs = 16;
         }
 
         // 更新移动

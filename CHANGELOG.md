@@ -19,6 +19,9 @@
 ### Removed
 - **本地打包更新测试配置**：从项目根目录移除了 `electron-builder.update-test-new.yml` 和 `electron-builder.update-test-old.yml`（已移动归档）。
 
+### Fixed
+- **彻底修复长时间休眠后小人神秘消失的 Bug**：修复了在 macOS 或强力休眠环境下，因底层高精度计时器时钟回拨或跳跃导致 `deltaMs` 为负数或 0，进而在计算移动向量时引发 `0/0` 导致坐标变成 `NaN` 的严重 Bug。通过在 `app.js` 的 `gameLoop` 中强力拦截 `<=0` 和 `NaN` 的时间跳跃，并在 `MovementSystem.js` 距离计算中增加 `dist === 0` 的零距离除数保护，彻底杜绝了因底层时钟异常引起的坐标崩溃与渲染消失问题。
+
 ## [0.6.1] - 2026-06-04
 ### Added
 - **IPC 返回契约决策记录**：新增 [ADR-032](docs/decisions/ADR-032-ipc-result-shape.md)，记录新增和迁移后的 IPC handler 优先使用 `{ success, data }` / `{ success, error }` 结果对象，以及既有广覆盖接口渐进迁移的兼容策略。

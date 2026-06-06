@@ -396,7 +396,7 @@ class MovementSystem {
     const timeScale = deltaMs / 16.666;
     const moveDist = pet.speed * timeScale;
 
-    if (dist < moveDist) {
+    if (dist <= moveDist || dist === 0) {
       // 已经到达目标位置
       pet.x = pet.targetX;
       pet.y = pet.targetY;
