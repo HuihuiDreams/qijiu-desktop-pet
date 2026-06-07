@@ -1,12 +1,12 @@
 # ADR-024: 多语言支持 (i18n)
 
-## 状态 (Status)
+## Status
 已接受 (Accepted)
 
-## 日期 (Date)
+## Date
 2026-05-20
 
-## 背景 (Context)
+## Context
 桌面宠物需要面向多语言用户群体，原始代码中的 UI 文字、对话气泡、托盘菜单、状态面板和更新弹窗均为中文硬编码。需要在不破坏现有架构的前提下，支持 **中文 (zh)**、**英语 (en)**、**日语 (ja)** 三种语言，并允许运行时热切换。
 
 语言判定规则：
@@ -14,8 +14,7 @@
 - OS 语言为日语 → `ja`
 - 其他所有 OS 语言 → `en`
 
-## 决策 (Decision)
-
+## Decision
 ### 1. 统一字典架构
 
 新增 `src/data/i18n.js`，导出一个以 locale 为键的 `I18N` 对象。每个 locale 包含两个层级：
@@ -69,8 +68,7 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 - **双人互动气泡** (`.overlay-bubble`)：使用 `white-space: pre-wrap`、`max-width: 130px`、`word-wrap: break-word`，英文长文本受限折行后向上增长（`bottom` 定位），避免两人气泡重叠。
 - **状态面板** (`.stat-label`)：宽度从 72px 增至 85px，加 `white-space: nowrap`，确保英文标签（如 "❤️ Affection"）不折行，所有属性名右对齐。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 使用成熟的 i18n 库（如 i18next）
 - **优点：** 复数、插值、命名空间等功能齐全。
 - **缺点：** 本项目翻译量极小（约 80 个 UI key + 约 70 条对话），引入外部依赖增加了打包体积和学习成本，Electron 主进程/渲染进程的双端加载也需额外胶水代码。
@@ -86,8 +84,7 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 - **缺点：** 用户体验差，切换后需要完全退出并重启才能看到效果。
 - **结论：** 拒绝。桌面宠物是长时间驻留型应用，运行时切换是刚需。
 
-## 影响 (Consequences)
-
+## Consequences
 - 所有用户可见的文字均已纳入 `I18N` 字典管辖，新增 UI 字符串时必须在 `zh`、`en`、`ja` 三套中同步添加。
 - `DIALOGUES` 不再是全局硬编码常量，而是在 `initDialogues()` 调用后才可用；`debug.js` 和 `InteractionSystem.js` 中对 `DIALOGUES` 的访问需做 null-safe 检查。
 - 切换语言时主进程向所有窗口广播事件，新增窗口类型时需确保将其加入广播列表。

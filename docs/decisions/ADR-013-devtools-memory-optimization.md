@@ -1,25 +1,25 @@
 ﻿# ADR-013: 移除自动挂载 DevTools 以优化基础内存占用
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-01
 
-## 背景 (Context)
+## Context
 尽管实施了 ADR-012 中的渲染层DOM优化，Electron 应用的基础内存占用依然高达 ~300MB。在考虑向 Tauri 这种轻量级框架迁移之前，我们对主进程的启动逻辑进行了诊断。
 发现 `main.js` 中保留了调试期的设定：`mainWindow.webContents.openDevTools({ mode: 'detach' });`
 在生产模式下，即使 DevTools 窗口是分离或隐藏状态，Chromium 也会为开启了调试工具的 `webContents` 维护一个极其庞大的调试上下文（包含所有的源码映射、DOM树快照、网络记录器等），这会导致无意义且巨大的内存开销。
 
-## 决策 (Decision)
+## Decision
 移除在启动时自动打开 DevTools 的代码。
 保留开发态托盘菜单中的 "🛠️ 开发者工具" 按钮，将其作为按需开启调试的唯一入口。
 该入口仅在 `!app.isPackaged` 时显示，安装包版本不展示调试菜单项。
 
-## 替代方案 (Alternatives Considered)
+## Alternatives Considered
 - **迁移至 Tauri**: 考虑过彻底放弃 Electron 以换取更小的内存占用。但考虑到这需要重写整个进程间通信和打包流程，成本过高。通过排查 Electron 配置问题，我们发现了 DevTools 的巨大开销。
 
-## 影响 (Consequences)
+## Consequences
 - **立竿见影的内存收益**：渲染进程的内存占用显著下降近 100MB，稳定在 200MB 出头。
 - **开发体验**：开发者在测试时不再自动弹出调试窗，需要手动从托盘右键开启。
 - **安装版体验**：普通用户不会在托盘菜单中看到 DevTools 入口，菜单只保留实际可用的软件功能。

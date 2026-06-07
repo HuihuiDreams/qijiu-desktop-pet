@@ -1,14 +1,15 @@
 # ADR-031: 久坐提醒设计
 
-**状态**：已实施  
-**日期**：2026-06-01
+## Status
+Accepted
 
-## 背景
+## Date
+2026-06-01
 
+## Context
 用户长时间使用电脑时缺少休息提示。桌宠作为始终可见的伙伴，是传达健康提醒的天然载体。
 
-## 决策
-
+## Decision
 ### 核心原则
 
 - **仅限健康提醒**：这是一个休息提示功能，不是生产力监控。
@@ -39,15 +40,14 @@
 | `preload.js` | `onBreakReminder` + `dismissBreakReminder` |
 | `src/app.js` | 渲染表现、自动/手动消失、game loop 暂停 |
 
-## 考虑过的替代方案
+## Alternatives Considered
 
 - **监听键鼠事件**：放弃，侵入性太高且 macOS 需要权限。
 - **macOS 全屏检测**：放弃，需要 Accessibility/Input Monitoring 权限。
 - **独立提醒窗口**：放弃，利用现有桌宠窗口和对话气泡系统即可。
 - **精确分钟级计时**：放弃，30 秒采样足够且更省资源。
 
-## 后果
-
+## Consequences
 - 新增 2 个核心模块文件（`breakReminderService.js`、`presentationGuard.js`）与 3 个测试文件。
 - 对 `main.js`、`preload.js`、`app.js`、`debug.js`、`i18n.js`、`dialogues.js`、`displayBounds.js`、`MovementSystem.js` 有增量修改。
 - 提醒定位优化：通过 `displayBounds.js` 标记主显示器（`isPrimary`），确保多屏环境下桌宠始终瞬移到主屏中心进行提醒。

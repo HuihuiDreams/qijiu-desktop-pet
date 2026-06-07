@@ -1,12 +1,12 @@
 # ADR-021: 使用 Electron 单实例锁防止重复启动
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-11
 
-## 背景 (Context)
+## Context
 Windows 安装包会创建桌面快捷方式。用户在桌宠已经运行时再次点击快捷方式，操作系统会尝试启动新的应用进程。此前主进程没有申请 Electron 的 single-instance lock，因此第二次启动会继续执行 `app.whenReady()`、创建新的透明窗口和托盘入口，导致多个桌宠实例同时运行。
 
 桌宠窗口本身是全屏透明、置顶、鼠标穿透的工具窗。重复实例会带来这些问题：
@@ -15,7 +15,7 @@ Windows 安装包会创建桌面快捷方式。用户在桌宠已经运行时再
 - 多个托盘图标和定时器并存，用户难以判断哪个实例正在响应。
 - 多套 `electron-store` 状态读写可能互相覆盖，影响宠物位置、数值和隐藏状态。
 
-## 决策 (Decision)
+## Decision
 在 `main.js` 主进程启动早期调用 `app.requestSingleInstanceLock()`。
 
 - 如果当前进程拿不到锁，立即 `app.quit()`，不继续初始化窗口、托盘、IPC 或更新管理器。
@@ -26,7 +26,7 @@ Windows 安装包会创建桌面快捷方式。用户在桌宠已经运行时再
   - 将 `petHidden` 复位为 `false`，并通知渲染进程显示宠物。
   - 刷新托盘菜单并重新执行置顶守卫。
 
-## 备选方案 (Alternatives Considered)
+## Alternatives Considered
 
 ### 允许多个实例运行
 - Pros: 实现成本为零。
@@ -43,7 +43,7 @@ Windows 安装包会创建桌面快捷方式。用户在桌宠已经运行时再
 - Cons: Electron 已提供原生 single-instance API；自建锁需要额外处理异常退出、锁文件清理、权限和竞态问题。
 - Rejected: 没有必要引入额外复杂度。
 
-## 影响 (Consequences)
+## Consequences
 - 再次点击桌面图标不会创建第二个持久进程。
 - 已隐藏的桌宠会被重新显示，桌面图标可作为“找回桌宠”的入口。
 - 未来如果加入多账号、多角色或调试多实例模式，需要显式设计开发开关，不能默认绕过该锁。

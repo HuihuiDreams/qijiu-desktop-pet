@@ -1,12 +1,12 @@
 # ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-26
 
-## 背景 (Context)
+## Context
 macOS 用户反馈：首次安装旧版本并绕过“无法验证开发者”后可以正常运行，但使用 `0.4.1` DMG 覆盖安装更新后，Dock 图标只跳动，应用无法加载。
 
 本项目没有 Apple Developer ID 证书，因此 macOS 自动更新不能依赖 Squirrel.Mac 的签名校验。`0.4.1` 已将 macOS 更新路径改为手动下载 DMG 并拖入 Applications 覆盖安装。
@@ -16,7 +16,7 @@ macOS 用户反馈：首次安装旧版本并绕过“无法验证开发者”�
 1. 手动覆盖安装前，旧版本可能仍在后台运行。此时用户再次打开应用会命中单实例锁，看起来像“没打开”。因此更新说明必须明确要求先从托盘菜单“退出”，这里的退出是关闭正在运行的旧进程，不是卸载。
 2. 打包后的 macOS `.app` 外层名称、`CFBundleExecutable` 和 `Contents/MacOS/` 下真实启动文件都使用了中文 `七九爱宠`。在部分 macOS / LaunchServices 场景中，覆盖安装后可能无法正确解析包内中文可执行文件，表现为 Dock 图标跳动后无法加载。
 
-## 决策 (Decision)
+## Decision
 macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包内真实可执行文件统一改为 ASCII 名称 `DeskPet`。
 
 具体实现：
@@ -36,8 +36,7 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 
 显式设置 `mac.minimumSystemVersion` 为 `12.0`，并将 README / 发布说明中的 macOS 最低版本同步为 macOS 12.0 (Monterey)。Electron 42 生成的包本身已经声明 `LSMinimumSystemVersion = 12.0`，文档不能继续写 11.0。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 要求用户先卸载旧版本
 - 优点：表面上能减少覆盖安装时的旧进程干扰。
 - 缺点：容易让用户误以为存档会丢失，也不能解决包内中文可执行文件被 LaunchServices 解析失败的问题。
@@ -58,7 +57,7 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 - 缺点：只能解决“旧版本仍在运行”的误操作，不能解决 `.app` 包内启动文件名兼容性。
 - 结论：拒绝。需要同时修产物和说明。
 
-## 影响 (Consequences)
+## Consequences
 - 用户在 Finder / Applications 中看到的仍是 `七九爱宠.app`。
 - 包内启动文件变为 `DeskPet`，降低 LaunchServices 对中文可执行文件名的兼容风险。
 - 覆盖安装流程仍然适用于无证书分发，但用户必须先退出正在运行的旧版本。

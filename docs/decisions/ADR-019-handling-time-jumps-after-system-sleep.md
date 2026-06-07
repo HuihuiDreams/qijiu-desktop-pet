@@ -1,12 +1,12 @@
 # ADR-019: 处理系统休眠后的时间跳跃 (Handling Time Jumps After System Sleep)
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-10
 
-## 背景 (Context)
+## Context
 用户反馈在电脑进入睡眠/休眠模式（Sleep Mode）很长时间后唤醒，发现桌宠的属性数值没有变化，且没有触发预期的“离线归来”欢迎对白。尽管应用在休眠期间一直保持开启状态，但时间流逝的影响未能正确体现。
 
 ## 问题分析 (Problem)
@@ -18,7 +18,7 @@ Accepted
    - 欢迎对白逻辑原本只写在 `app.js` 的初始化（Load）阶段，未考虑到应用不关闭直接从休眠中唤醒的情况。
    - 巨大的 `deltaMs` 直接传递给物理/运动系统会导致物体瞬间位移过大（暴走）。
 
-## 决策 (Decision)
+## Decision
 采用**双轨策略**，分别针对 Windows 和 macOS 的不同行为：
 
 ### 路径 A：帧间隔跳跃检测（主要覆盖 Windows）
@@ -36,8 +36,7 @@ Accepted
 
 两条路径互不干扰——在 macOS 上 `deltaMs` 永远不会超过 60000，所以路径 A 不触发；在 Windows 上路径 B 同样有效但路径 A 已先行处理。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 只让 `NurtureSystem.update` 用 `while` 消化巨大 `deltaMs`
 - 优点：改动集中在数值系统内，能让饥饿、灵力和心情按时间补算。
 - 缺点：运动、动画、欢迎对白和保存逻辑仍会收到异常大的单帧时间差，无法完整解决唤醒后的表现问题。且在 macOS 上 deltaMs 根本不会跳跃，此方案同样无效。
@@ -58,7 +57,7 @@ Accepted
 - 缺点：路径 A 已稳定运行并已覆盖 Windows 场景。若 powerMonitor 事件在某些极端条件下漏发（例如快速休眠/唤醒），路径 A 仍能兜底。
 - 结论：拒绝。保留双轨以提升覆盖鲁棒性。
 
-## 影响 (Consequences)
+## Consequences
 - **优点**：完美解决了所有平台（Windows 和 macOS）上电脑不关机、只进入休眠模式下的养成体验断档问题，使"离线衰减"和"欢迎对白"在所有场景下表现一致。
 - **性能**：由于使用了专门的离线结算函数，即使跳跃时间很长，计算也是瞬间完成的，不会造成掉帧。
 - **稳定性**：通过 `deltaMs` 压制，避免了系统唤醒后桌宠瞬间"飞走"的潜在 Bug。

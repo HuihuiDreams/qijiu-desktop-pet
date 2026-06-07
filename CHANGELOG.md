@@ -8,7 +8,7 @@
 
 ### Changed
 - **AI 智能体研发规范升级**：在 `.geminirules` 和 `AGENTS.md` 的核心原则中强制增加 "Use Skills First"，要求 Agent 在执行代码或文档任务前必须主动加载相应的技能指南。
-- **文档规范性修复**：修复了 `ADR-034` 的格式，补充了缺失的 `Alternatives Considered`（替代方案考虑）章节，以严格遵守 `documentation-and-adrs` 技能标准。
+- **文档规范性修复**：批量将所有 34 个 ADR 文件的中文标题段落重构为标准的纯英文格式（如 `## Status`、`## Date` 等），同时手动修复了 `ADR-021`、`ADR-027`、`ADR-031` 和 `ADR-034` 中缺失的必需章节，以严格遵守 `documentation-and-adrs` 的技能标准规范。
 - **CSS 规范性修复**：修复了 IDE 报告的多个 CSS Linter 警告（为 Safari 补全 `-webkit-user-select` 前缀，修正了 `backdrop-filter` 顺序，并为 Electron 私有属性补充标准 fallback）。
 - **测试配置归一化与文档同步**：将本地打包更新测试配置归档至 `docs/archive/` 目录，并同步更新了 [structure.md](docs/structure.md) 和 [ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)。
 - **README.md 文档样式统一**：补全了 README.md 中部分三级标题和系统托盘功能列表缺失的 emoji 图标，使其与多语言配置（i18n.js）保持一致。

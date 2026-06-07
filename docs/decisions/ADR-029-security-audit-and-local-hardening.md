@@ -1,12 +1,12 @@
 # ADR-029: 安全审计与本地硬化
 
-## 状态
+## Status
 Accepted
 
-## 日期
+## Date
 2026-05-27
 
-## 背景
+## Context
 DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包的 HTML、CSS、JavaScript 和图片资源。ADR-014 已经确定了运行时 Electron 安全基线：renderer 启用 context isolation、禁用 Node integration、拦截导航和新窗口、默认拒绝权限请求，并为本地页面配置严格 CSP。
 
 本次安全审计发现仍有几类本地硬化空间：
@@ -16,7 +16,7 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 - 依赖审计发现 dev 依赖链中存在 high 漏洞：`tmp <0.2.6`，由 Electron Builder 工具链间接引入。
 - 密钥扫描没有发现真实凭据，但 `.gitignore` 未覆盖全部常见本地密钥文件名。
 
-## 决策
+## Decision
 保留 ADR-014 作为运行时 Electron 安全基线，并增加一组本地硬化约束，覆盖 renderer DOM、维护脚本、依赖审计和本地密钥文件。
 
 1. 动态 renderer 内容优先使用 DOM API，而不是拼接 HTML 字符串。`PetRenderer` 已改为使用 `document.createElement`、`appendChild` 和 `textContent` 构建宠物节点，不再使用 `innerHTML`。
@@ -25,7 +25,7 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 4. `npm audit` 中 high / critical 漏洞默认视为发布阻断项，除非明确记录为不可达。此次 `tmp` dev 依赖链漏洞已通过 lockfile 升级到 `tmp@0.2.6` 修复。
 5. 默认忽略常见本地密钥文件。`.gitignore` 已补充 `.env.local`、`.env.*.local` 和 `*.key`。
 
-## 替代方案
+## Alternatives Considered
 ### 保留现有 `innerHTML`
 - 优点：改动更少；当前数据来源主要是本地且可控。
 - 缺点：renderer 类中会继续保留一个容易被复制和误用的危险模式。
@@ -46,7 +46,7 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 - 缺点：打包工具会处理本地文件并运行在发布机器上；当 high 路径穿越漏洞已有兼容补丁时，不应留下已知风险。
 - 结论：拒绝。兼容的修复版本已经可用。
 
-## 影响
+## Consequences
 - renderer 动态内容少了一个易引入 XSS 的构建模式。
 - 资源维护脚本对特殊文件路径更稳健。
 - 修复后 `npm audit --audit-level=high` 和 `npm audit --omit=dev --audit-level=high` 都返回 `0 vulnerabilities`。

@@ -1,12 +1,12 @@
 ﻿# ADR-012: 渲染层性能优化与防抖
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-01
 
-## 背景 (Context)
+## Context
 随着游戏的运行，我们发现桌宠应用占用了大量的 CPU 资源，并伴随较高的内存波动。分析后发现，在游戏的主循环（每秒 60 帧）中存在大量的低效 DOM 操作：
 1. 宠物的移动通过修改 `style.left` 和 `style.top` 实现，导致浏览器频繁触发极其昂贵的“布局重排”（Layout Thrashing）。
 2. `PetRenderer.js` 中无论状态是否改变，每帧都在频繁操作元素的 `classList`。
@@ -14,7 +14,7 @@ Accepted
 
 由于 Electron 本质上是 Chromium，DOM 操作的开销会直接转化为内存和 CPU 的高负载。
 
-## 决策 (Decision)
+## Decision
 我们决定对渲染层及主进程进行多维度的性能与内存重构：
 
 **渲染层优化：**
@@ -27,10 +27,10 @@ Accepted
 2. **限制 V8 堆内存**：通过 `--max-old-space-size=128` 强制 V8 积极回收垃圾内存。
 3. **禁用冗余功能**：关闭 `HardwareMediaKeyHandling` 等不需要的 Chromium 特性。
 
-## 替代方案 (Alternatives Considered)
+## Alternatives Considered
 - **迁移到更底层的渲染引擎 (如 PixiJS/WebGL)**: 虽然性能上限更高，但会增加大量引入成本和重写负担。优先尝试通过 DOM 优化解决。
 
-## 影响 (Consequences)
+## Consequences
 - **大幅降低 CPU 负载**：避免了无意义的重排和重绘。
 - **减少内存抖动与整体占用**：避免了每帧创建新 DOM 节点带来的 GC 峰值，主进程的内存限制有效压低了闲置内存的水位。
 - **维护成本微增**：`StatusBar` 的代码结构比直接拼字符串更复杂（需要维护节点引用），但在高频 UI 更新的场景下这是必须付出的代价。

@@ -1,13 +1,12 @@
 # ADR-032: IPC 返回形状统一
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-06-04
 
-## 背景 (Context)
-
+## Context
 `window.electronAPI` 暴露给渲染进程的 IPC 调用长期按各自场景返回不同形状：
 
 - `saveData()` 返回 `true` 或 `false`。
@@ -17,8 +16,7 @@ Accepted
 
 这些形状都能被既有调用方理解，但它们会让新增 IPC 更难推理：调用方需要记住每个方法的失败语义，测试也难以复用同一套成功/失败断言。随着主进程 IPC 同时承担窗口管理、系统设置、皮肤选择和持久化等职责，新的 IPC contract 应该更一致，也要避免一次性破坏已有 renderer 调用点。
 
-## 决策 (Decision)
-
+## Decision
 新增或迁移后的 `ipcMain.handle` 优先返回轻量结果对象：
 
 ```js
@@ -51,8 +49,7 @@ Accepted
 
 `saveData()`、`loadData()`、`setLocale()`、`setAutoLaunch()` 和 `getAutoLaunch()` 暂不改变返回形状。它们覆盖面更广，应等调用方可以一起更新和测试时再迁移，必要时在 `preload.js` 中提供兼容包装。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 继续维持每个 IPC 自定义返回形状
 
 - Pros: 不需要迁移，完全避免短期改动风险。
@@ -71,8 +68,7 @@ Accepted
 - Cons: handler 容易手写出细微不一致的结果对象，测试也缺少聚焦入口。
 - Rejected: helper 很小，能降低后续误用成本。
 
-## 影响 (Consequences)
-
+## Consequences
 - 新增或迁移后的 IPC handler 有统一成功/失败语义。
 - `ipcContracts.js` 既负责边界输入归一化，也承载轻量结果对象 helper。
 - 每迁移一个既有 IPC handler，都应补充聚焦测试，覆盖成功结果和结构化失败。

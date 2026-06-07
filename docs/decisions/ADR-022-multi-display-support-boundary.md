@@ -1,15 +1,15 @@
 # ADR-022: 多显示器支持边界
 
-## 状态
+## Status
 Accepted
 
-## 日期
+## Date
 2026-05-12
 
 ## 更新日期
 2026-05-18
 
-## 背景
+## Context
 桌宠应用使用一个透明的 Electron 窗口作为移动舞台。多显示器支持需要同时解决两个层面的问题：
 
 - 主窗口必须覆盖完整的虚拟桌面，让小人可以被拖曳或自动行走到副屏。
@@ -29,7 +29,7 @@ Accepted
 - 一个跨多屏透明窗口内的 renderer CSS 坐标。
 - 不同显示器缩放比例下的物理视觉大小。
 
-## 决策
+## Decision
 采用一条统一的多显示器坐标和视觉缩放管线：
 
 1. 主 Electron 窗口继续通过 `getVirtualDisplayBounds(screen.getAllDisplays())` 覆盖完整虚拟桌面。
@@ -58,8 +58,7 @@ Accepted
 
 11. 暴露 `window.__DEBUG_SCREEN()` 作为运行时调试入口，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、窗口尺寸、以及移动系统实际使用的 `walkAreas`。
 
-## 备选方案
-
+## Alternatives Considered
 ### 直接把 Electron DIP 坐标当作 renderer CSS 坐标
 
 - 优点：实现简单，在所有显示器缩放一致时看起来可用。
@@ -90,8 +89,7 @@ Accepted
 - 缺点：小人、右键菜单、灵力效果在副屏上的视觉大小不一致，影响核心体验。
 - 结论：拒绝。桌宠的核心体验依赖跨屏后仍然看起来像同一个小人。
 
-## 影响
-
+## Consequences
 - `walkAreas` 现在是富对象，至少包含 `{ x, y, width, height, scaleRatio }`。
 - 后续任何围绕小人定位的视觉元素，都应复用同一套显示器 scale 逻辑，不应直接写 `pet.x + pet.size / 2`。
 - 跨屏自动行走允许在显示器之间的不可见坐标空洞上做桥接；同屏移动和到达目标后仍必须 clamp 回可见工作区。

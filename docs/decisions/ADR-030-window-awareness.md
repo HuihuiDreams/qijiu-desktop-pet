@@ -1,19 +1,19 @@
 # ADR-030: 窗口感知平台采样
 
-## 状态
+## Status
 Accepted
 
-## 日期
+## Date
 2026-05-28
 
-## 背景
+## Context
 桌宠需要感知当前前台应用窗口，并能自然走到该窗口的顶部边缘停留。该能力不能放在渲染进程的游戏循环中轮询系统窗口，也不能破坏鼠标穿透、拖拽、右键菜单和现有多显示器行为。
 
 现有架构已经把系统能力放在主进程，把安全 IPC 暴露放在 `preload.js`，把移动和渲染行为放在 `src/`。多显示器坐标转换集中在 `displayBounds.js`，因此窗口感知也必须沿用这些边界。
 
 后续实现加入了任务栏/Dock 边缘平台。它和活动窗口顶部一样，都是“可站立表面”，但来源和选择频率不同。移动系统需要能同时处理这些 surface platform，同时保持普通桌面 walk area 的兜底行为。
 
-## 决策
+## Decision
 将窗口感知实现为主进程 provider 加渲染进程缓存：
 
 - `activeWindowProvider.js` 定义 provider 合同，并负责 Windows 前台窗口采样。
@@ -47,7 +47,7 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 
 正在 walking、dragging、interacting 或 busy 的宠物不会被新的活动窗口立即覆盖目标。只有下一次 idle 重新选目标时，新的 surface platform 才会参与选择。
 
-## 备选方案
+## Alternatives Considered
 ### 在渲染进程直接查询系统窗口
 - 优点：可以直接在移动逻辑中读取窗口状态。
 - 缺点：破坏主进程/渲染进程边界，需要在渲染进程访问 Node 或 native API，并可能让游戏循环承担系统调用负担。
@@ -63,7 +63,7 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 - 缺点：需要 Accessibility 权限检测、授权引导、未授权 fallback 和额外多显示器测试。
 - 结论：延期。macOS 当前返回 unavailable fallback；未来 provider 必须在缺少权限时保持普通桌面移动可用。
 
-## 影响
+## Consequences
 - 活动窗口感知不可用时，渲染进程行为仍保持确定。
 - 只有影响 platform 的字段变化时才推送 IPC，窗口标题单独变化不触发移动更新。
 - 活动窗口变化不会立刻抢走正在移动或交互中的宠物目标。

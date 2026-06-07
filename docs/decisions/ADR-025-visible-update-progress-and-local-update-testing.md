@@ -1,19 +1,19 @@
 # ADR-025: 更新进度弹窗与本地打包更新测试
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-22
 
-## 背景 (Context)
+## Context
 有用户反馈点击“检查更新”之后看起来没有反应。实际更新检查已经触发，但即时状态只体现在托盘菜单文案里。用户点击菜单项后通常会关闭托盘菜单，因此很容易错过“正在检查更新”的状态反馈。
 
 下载阶段也有类似问题：用户确认下载新版本后，下载状态主要显示在托盘菜单和任务栏进度里。当前桌宠主窗口是透明桌面窗口，任务栏进度不一定明显或可靠，因此需要一个更直观的屏幕内反馈。
 
 同时，自动更新必须在打包态验证。开发态被 `app.isPackaged` 明确拦截，`npm run dev` 不能覆盖 `electron-updater` 的真实检查、下载和安装流程。但为了日常验证，又不希望每次都发布真实 GitHub Release。
 
-## 决策 (Decision)
+## Decision
 新增一个由主进程管理的轻量更新进度窗口，并让 `updateManager.js` 通过注入式 `updateProgressUi` 适配器驱动它。
 
 更新流程调整为：
@@ -35,8 +35,7 @@ Accepted
 
 `dist-update-test/` 是一次性测试构建输出，因此加入 `.gitignore`。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 继续只使用托盘菜单状态
 - 优点：实现最简单，不新增窗口。
 - 缺点：用户已经明确错过了托盘里的状态变化；菜单点击后会关闭，无法解决“没反应”的感知问题。
@@ -57,7 +56,7 @@ Accepted
 - 缺点：流程慢，需要上传发布资产，并且有误暴露测试版本或干扰真实用户的风险。
 - 结论：不作为日常验证方式。正式发布前仍可用 GitHub Release 做最终验证，但本地 generic provider 更适合作为快速测试路径。
 
-## 影响 (Consequences)
+## Consequences
 - 用户点击“检查更新”后会立即看到屏幕内反馈。
 - 下载进度在托盘菜单关闭后仍然清晰可见。
 - `updateManager.js` 通过注入式 `updateProgressUi` 保持可测试，不直接依赖 Electron 窗口实现。

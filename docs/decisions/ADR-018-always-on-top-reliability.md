@@ -1,12 +1,12 @@
 ﻿# ADR-018: 窗口始终置顶可靠性增强策略
 
-## 状态 (Status)
+## Status
 已接受 (Accepted)
 
-## 日期 (Date)
+## Date
 2026-05-07
 
-## 背景 (Context)
+## Context
 Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工作，但在以下情况下可能失效，导致桌宠窗口被压到底层：
 
 1. **全屏游戏或视频**：部分全屏程序会在切换时重新排列窗口层级。
@@ -16,7 +16,7 @@ Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工�
 
 在单纯依赖 `alwaysOnTop: true` 窗口选项的情况下，用户反馈偶有桌宠"消失"（实际上是被遮挡）的现象。
 
-## 决策 (Decision)
+## Decision
 采用多层防御策略，确保宠物窗口在各种场景下始终可见：
 
 1. **轮询定时器 (`keepOnTopTimer`)**：每 3 秒调用一次 `keepPetWindowOnTop()`，在周期性轮询中主动重申层级，防止静默被压。
@@ -30,8 +30,7 @@ Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工�
 5. **`focusable: false`**：将窗口设置为不可聚焦，防止宠物窗口因意外获得焦点而与用户当前操作的程序产生竞争。
 6. **`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`**：使窗口在所有虚拟桌面和全屏应用场景下均可见（主要对 macOS 生效，Windows 环境作为保留配置）。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 仅依赖 `alwaysOnTop: true` 窗口选项
 - **优点：** 实现简单，无额外维护成本。
 - **缺点：** 无法应对全屏应用、UAC 弹窗等场景导致的层级重排。实测存在用户可感知的"消失"问题。
@@ -44,7 +43,7 @@ Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工�
 - **优点：** 事件粒度更细。
 - **缺点：** 对于当前需求而言过度设计；轮询定时器已能覆盖所有异步场景。
 
-## 影响 (Consequences)
+## Consequences
 - **资源消耗**：每 3 秒执行一次轻量级的 `setAlwaysOnTop` + `moveTop` 调用，实测 CPU 开销可以忽略不计。
 - **计时器生命周期管理**：`keepOnTopTimer` 在 `mainWindow` 关闭时通过 `clearInterval` 正确清理，不存在内存泄漏风险。
 - **用户体验**：桌宠在全屏游戏、视频播放等场景下稳定可见，解决了此前的"消失"问题。

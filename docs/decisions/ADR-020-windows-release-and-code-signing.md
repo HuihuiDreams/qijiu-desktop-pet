@@ -1,9 +1,9 @@
 # ADR-020: Windows Release 与代码签名发布策略
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-11
 
 ## 2026-05-11 补充
@@ -12,7 +12,7 @@ Accepted
 可以继续构建未签名的 NSIS 安装包。后续如果分发范围扩大，公开发布仍应优先使用
 Authenticode 签名。
 
-## 背景 (Context)
+## Context
 项目已经具备 Windows NSIS 安装包能力，并通过 GitHub Releases 面向普通用户分发。近期发布链路连续做了几类调整：
 
 1. `package.json` 中配置 GitHub Releases 作为 `electron-builder` 的发布源。
@@ -23,7 +23,7 @@ Authenticode 签名。
 
 这些改动共同指向同一个决策：Windows 安装包不再只是“能构建”，而是要形成可重复、可验证、适合公开分发的发布链路。
 
-## 决策 (Decision)
+## Decision
 我们决定将 Windows 发布流程固定为：
 
 1. **发布源使用 GitHub Releases**
@@ -50,8 +50,7 @@ Authenticode 签名。
    - `.gitignore` 忽略 `.pfx`、`.p12`、`.pem` 等证书/私钥文件。
    - `docs/release-code-signing.md` 记录如何配置 GitHub Secrets、如何本地测试签名、以及 SmartScreen 的预期。
 
-## 替代方案 (Alternatives Considered)
-
+## Alternatives Considered
 ### 仅上传 GitHub Actions artifact
 - Pros: 实现简单，便于调试。
 - Cons: artifact 不是稳定的面向用户分发源，也不能作为自动更新客户端的正式发布源。
@@ -77,7 +76,7 @@ Authenticode 签名。
 - Cons: 私钥泄漏风险不可接受。
 - Rejected: 签名材料必须通过 GitHub Secrets 或专用签名服务管理。
 
-## 影响 (Consequences)
+## Consequences
 - 发布流程更灵活：缺少签名 secret 时，发布 workflow 会继续生成未签名安装包，并明确记录该发布状态。
 - 版本发布更可追踪：tag、`package.json` version、Release 资产保持一致。
 - 签名发布时用户信任度更高：安装包可以显示已验证发布者，并减少“未知发布者”的安全提示。

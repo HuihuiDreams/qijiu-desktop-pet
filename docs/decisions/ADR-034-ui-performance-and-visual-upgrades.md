@@ -33,7 +33,6 @@ Accepted
 - 采用自定义弹性动画曲线（`cubic-bezier(0.34, 1.56, 0.64, 1)`），使得状态条的长度变化带有微微的回弹效果。
 
 ## Alternatives Considered
-
 ### 继续使用 filter: drop-shadow() 并配合任何动画
 - Pros: 能够完美勾勒出不规则透明图片的边缘光效。
 - Cons: Electron / Chromium 渲染 `drop-shadow` 本质是高昂的像素计算。如果配合 `scale` 或频繁变动的属性，在 60FPS 下会持续触发重绘，引起肉眼可见的 CPU 峰值。

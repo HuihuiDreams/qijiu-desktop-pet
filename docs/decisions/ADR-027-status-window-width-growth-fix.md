@@ -1,12 +1,12 @@
 # ADR-027: 修仙状态窗口宽度自动增大修复
 
-## 状态 (Status)
+## Status
 Accepted
 
-## 日期 (Date)
+## Date
 2026-05-27
 
-## 背景 (Context)
+## Context
 有 Windows 用户反馈，修仙状态窗口打开后宽度会持续自动变宽，最终撑到很宽。视频复现截图可以清晰看到窗口在每次数据刷新后都比上次宽一点点。
 
 根因是一个渲染→调整→渲染的反馈循环（feedback loop）：
@@ -28,8 +28,7 @@ renderStatus()
 
 这个循环在 macOS 上不易复现，因为 macOS 的 `setContentSize` 在值接近时会内部去重；而 Windows 每次调用都会真实触发 resize 事件，导致循环被稳定驱动。
 
-## 决策 (Decision)
-
+## Decision
 将 `.status-panel` 的 CSS 宽度从 `width: 100%` 改为 `width: max-content`（加 `min-width: 320px` / `max-width: 480px` 兜底），并在 JS 中改为读取 `panel.scrollWidth` 而不是 `getBoundingClientRect().width`。
 
 ### 为什么 `max-content + scrollWidth` 能打断循环
@@ -51,7 +50,7 @@ renderStatus()
 - `min-width: 320px`：防止在极端情况（字体加载失败、内容为空）下窗口过窄。
 - `max-width: 480px`：防止长宠物名或异常内容导致窗口失控地宽。
 
-## 备选方案 (Alternatives Considered)
+## Alternatives Considered
 
 ### 硬编码固定宽度（如 `width: 360px`）
 
@@ -77,8 +76,7 @@ renderStatus()
 - 缺点：DOM 更新后同步读取尺寸，此时浏览器可能还没有完成布局，读到旧值。
 - 结论：拒绝。保留 `requestAnimationFrame` 确保布局已经稳定。
 
-## 影响 (Consequences)
-
+## Consequences
 - 修仙状态窗口宽度在内容不变时保持稳定，不再在 Windows 上持续自动增大。
 - 窗口宽度会根据实际字体渲染尺寸自适应（320px–480px 范围内），在不同系统字体和 DPI 缩放下都能正常显示内容。
 - 语言切换后，如果多语言文案的宽度不同，窗口会重新适配，不会出现内容溢出或过窄。

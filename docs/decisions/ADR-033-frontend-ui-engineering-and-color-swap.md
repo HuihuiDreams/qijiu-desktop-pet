@@ -37,7 +37,6 @@ Accepted
 在拆分 CSS 的同时，顺带清理了 `app.js` 中关于时间跳跃、离线结算的三处重复逻辑，将其统一提取为 `handleOfflineReturn(offlineMs)` 方法，进一步降低了 UI/交互逻辑的耦合度。
 
 ## Alternatives Considered
-
 ### 仅在 CSS 中交换颜色值而不改变量名
 - Pros: 改动极小，只需要修改两行代码（把 `.pet--yueqi` 的背景色设为原先的沈九变量）。
 - Cons: 会导致后续维护时的巨大认知负担（看到 `--color-shenjiu` 实际上呈现的是岳七的颜色），语义完全错乱。
