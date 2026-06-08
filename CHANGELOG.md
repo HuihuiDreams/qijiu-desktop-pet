@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **会议自动隐藏 MVP**：新增 `meetingDetector.js` 和 `tools/measure-meeting-udp.js`，主进程会低频检测已知会议应用进程及 UDP 端点数量；当前 Windows Teams 实测阈值为单进程 UDP `>= 5` 且连续 2 次命中时自动隐藏桌宠，低于阈值持续 15 秒后恢复。手动隐藏状态与会议自动隐藏状态分离，用户手动隐藏的桌宠不会在会议结束后被自动显示。新增 [ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md) 记录隐私边界和检测取舍。
+
 ### Changed
 - **Spec-driven plan alignment**: Updated the active `docs/plan/` implementation plans with `Objective`, `Commands`, `Project Structure`, `Code Style`, `Boundaries`, `Success Criteria`, and `Testing Strategy` sections so future implementation work can follow the spec-driven workflow consistently.
 - **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。

@@ -172,6 +172,19 @@
 - [ ] 记录测量结果：应用打开未开会 vs 开会中 vs 共享屏幕中的 UDP 连接数差异。
 - [ ] 根据测量结果确定 `meetingDetector.js` 中的阈值常量。
 
+**Current measurement note (Windows / Teams / 2026-06-08):**
+
+手动使用 `tasklist` + `netstat -ano -p udp` 观察 `ms-teams.exe`，同一 Teams 环境中 UDP 数量有稳定差异。PID 只用于单次采样时关联进程和 UDP 端点，进程重启后会变化，不能写死到配置或判断逻辑中。
+
+| 状态 | `ms-teams.exe` 同名进程 UDP 连接数 | 总 UDP |
+|---|---|---:|
+| Teams 打开但未开会 | `0, 2` | 2 |
+| Teams 会议中 | `0, 6` | 6 |
+| Teams 共享屏幕中 | `0, 6` | 6 |
+| 退出会议后 | `0, 2` | 2 |
+
+建议的 Windows Teams MVP 阈值：每次轮询先通过 `tasklist` 获取当前已知会议进程 PID，再用当次 PID 匹配 `netstat` 输出；若任一同名进程 UDP 连接数 `>= 5`，连续 2 次采样命中后判定为会议中；低于阈值持续 15 秒后判定会议结束。该阈值避开了当前未开会基线 `2`，但仍需保留为常量，方便后续根据 Zoom、Slack、Discord 或不同 Teams 版本实测调整。
+
 **Verification:**
 - [ ] 手动运行脚本，分别在以下状态下记录：
   - Teams 打开但未开会
@@ -332,6 +345,6 @@
 
 ## Open Questions
 
-- UDP 连接数阈值具体应该设为多少？需通过 Task 2 实测确定。
-- `netstat -anop udp` 在用户的企业 Windows 环境中是否正常执行？
+- UDP 连接数阈值具体应该设为多少？Windows Teams 初测建议为单进程 UDP `>= 5`，连续 2 次采样命中；其他应用仍需通过 Task 2 实测确认。
+- `netstat -ano -p udp` 在当前 Windows 环境中可正常执行；企业 EDR 环境仍需 QA 阶段确认是否会拦截。
 - Slack 和 Discord 在非通话状态下是否也有大量 UDP 连接？需实测。

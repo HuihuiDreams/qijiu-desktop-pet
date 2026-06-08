@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-04
+最后更新：2026-06-08
 
 ## 1. 架构总览
 
@@ -24,6 +24,7 @@ graph TB
         MainJs --> AutoLaunch["Login Item / Auto Launch"]
         MainJs --> BreakReminder["breakReminderService.js"]
         MainJs --> PresentGuard["presentationGuard.js"]
+        MainJs --> MeetingDetector["meetingDetector.js"]
     end
 
     subgraph Renderer["Pet Renderer Process"]
@@ -63,6 +64,7 @@ qijiu-desktop-pet/
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
 ├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
+├─ meetingDetector.js                   # 会议自动隐藏检测：已知会议进程 + UDP 端点数量轮询与防抖状态机
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
 ├─ CHANGELOG.md                         # 版本变更记录
@@ -112,6 +114,7 @@ qijiu-desktop-pet/
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
+│  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
@@ -141,6 +144,7 @@ qijiu-desktop-pet/
 - 使用 `displayFit.js` 合并显示器指标突发事件，并在重新适配透明主窗口时桥接 min/max 尺寸约束。
 - 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件。
 - 监听 `powerMonitor` 睡眠/唤醒事件，向渲染进程同步真实时间差（用于修复 macOS 睡眠期间时间冻结的问题）。
+- 启动 `meetingDetector.js` 低频检测已知会议应用，在检测到 Teams/Zoom 等会议活动时自动隐藏桌宠，会议结束后恢复；手动隐藏状态和会议自动隐藏状态相互独立。
 - 在退出前请求渲染进程做最后一次状态保存，降低异常退出造成的数据丢失。
 
 ### 3.2 渲染进程职责
@@ -261,7 +265,19 @@ src/assets/{skinId}/
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
 - 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。
 
-### 3.12 安全边界
+### 3.12 会议自动隐藏
+
+`meetingDetector.js` 负责主进程侧会议状态检测，设计背景记录在 [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)。
+
+- Windows 使用 `tasklist /fo csv /nh` 获取当前已知会议应用 PID，再用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量；PID 只用于当次采样关联，不写死。
+- macOS 使用 `pgrep -x` 和 `lsof -nP -i UDP -p <pid> -Fn` 做同类检测。
+- 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。
+- 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。
+- `main.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
+- 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
+- `tools/measure-meeting-udp.js` 可用于后续校准 Zoom、Slack、Discord 或不同 Teams 版本的阈值。
+
+### 3.13 安全边界
 
 当前安全边界以 Electron 推荐模式为基础：
 
@@ -290,6 +306,7 @@ npm test
 - `updateManager.js` 更新状态、错误分类和菜单状态。
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
+- `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。
 - `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
 
@@ -321,6 +338,7 @@ npm test
 - [ADR-032](./decisions/ADR-032-ipc-result-shape.md)：IPC 返回形状统一。
 - [ADR-033](./decisions/ADR-033-frontend-ui-engineering-and-color-swap.md)：前端组件化、Design Tokens 与角色主题色互换。
 - [ADR-034](./decisions/ADR-034-ui-performance-and-visual-upgrades.md)：UI 性能优化与高级视觉升级。
+- [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)：会议自动隐藏检测。
 
 ## 6. 维护提示
 

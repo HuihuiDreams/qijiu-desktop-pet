@@ -33,6 +33,7 @@ const {
   DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
 } = require('./breakReminderService');
 const { createPresentationGuard } = require('./presentationGuard');
+const { createMeetingDetector } = require('./meetingDetector');
 const { I18N } = require('./src/data/i18n');
 
 // 常量定义
@@ -88,6 +89,7 @@ let lastStatusWindowData = null;
 let tray = null;
 let store = null;
 let petHidden = false;         // 桌宠隐藏状态
+let meetingHidden = false;     // 会议检测导致的自动隐藏状态
 let isPaused = false;          // 走动暂停状态
 let autoLaunchEnabled = false; // 开机自动启动状态
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
@@ -99,6 +101,7 @@ let windowAwarenessEnabled = true;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let breakReminderService = null;
+let meetingDetector = null;
 let breakReminderEnabled = true;
 let breakReminderIntervalMinutes = 60;
 let finalSaveRequestId = 0;
@@ -652,6 +655,68 @@ function installFinalSaveBeforeClose(win) {
   });
 }
 
+function isPetCurrentlyHidden() {
+  return petHidden || meetingHidden;
+}
+
+function sendPetVisibility(visible) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('toggle-pet-visibility', visible);
+}
+
+function showPetManually() {
+  petHidden = false;
+  meetingHidden = false;
+  sendPetVisibility(true);
+  refreshTrayMenu();
+}
+
+function hidePetManually() {
+  petHidden = true;
+  meetingHidden = false;
+  sendPetVisibility(false);
+  refreshTrayMenu();
+}
+
+function hidePetForMeeting() {
+  if (meetingHidden) return;
+  meetingHidden = true;
+  if (!petHidden) {
+    sendPetVisibility(false);
+  }
+  refreshTrayMenu();
+}
+
+function showPetAfterMeeting() {
+  if (!meetingHidden) return;
+  meetingHidden = false;
+  if (!petHidden) {
+    sendPetVisibility(true);
+  }
+  refreshTrayMenu();
+}
+
+function stopMeetingDetector() {
+  if (!meetingDetector) return;
+  meetingDetector.stop();
+  meetingDetector = null;
+}
+
+function startMeetingDetector() {
+  stopMeetingDetector();
+  if (process.platform !== 'win32' && process.platform !== 'darwin') return;
+
+  meetingDetector = createMeetingDetector({
+    platform: process.platform,
+    onMeetingStart: hidePetForMeeting,
+    onMeetingEnd: showPetAfterMeeting,
+    onError: (error) => {
+      console.warn('Meeting detector scan failed:', error.message);
+    },
+  });
+  meetingDetector.start();
+}
+
 /**
  * 第二次点击应用图标时，唤起已存在的实例。
  */
@@ -666,9 +731,7 @@ function showExistingInstance() {
     mainWindow.showInactive();
   }
 
-  petHidden = false;
-  mainWindow.webContents.send('toggle-pet-visibility', true);
-  refreshTrayMenu();
+  showPetManually();
   keepPetWindowOnTop();
 }
 
@@ -722,7 +785,9 @@ function createWindow() {
     console.log('Renderer loaded successfully');
     sendScreenInfo();
     sendActiveWindowInfo(activeWindowSampler?.getLastPayload());
+    sendPetVisibility(!isPetCurrentlyHidden());
     keepPetWindowOnTop();
+    startMeetingDetector();
   });
 
   // 安全加固：禁止新窗口和导航 (ADR-014)
@@ -851,11 +916,13 @@ function buildTrayMenu() {
       },
     },
     {
-      label: petHidden ? trayT('trayShowPet') : trayT('trayHidePet'),
+      label: isPetCurrentlyHidden() ? trayT('trayShowPet') : trayT('trayHidePet'),
       click: () => {
-        petHidden = !petHidden;
-        if (mainWindow) mainWindow.webContents.send('toggle-pet-visibility', !petHidden);
-        refreshTrayMenu();
+        if (isPetCurrentlyHidden()) {
+          showPetManually();
+        } else {
+          hidePetManually();
+        }
       },
     },
     {
@@ -1315,6 +1382,7 @@ if (!hasSingleInstanceLock) {
 
 
   app.on('second-instance', showExistingInstance);
+  app.on('before-quit', stopMeetingDetector);
 
   app.whenReady().then(async () => {
     // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
@@ -1353,7 +1421,7 @@ if (!hasSingleInstanceLock) {
       settings: breakSettings,
       onReminderDue: (payload) => {
         // 桌宠隐藏时不提示
-        if (petHidden) return false;
+        if (isPetCurrentlyHidden()) return false;
         if (!mainWindow || mainWindow.isDestroyed()) return false;
         mainWindow.webContents.send('break-reminder-triggered', payload);
         return true;
