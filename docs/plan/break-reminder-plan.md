@@ -3,6 +3,52 @@
 > 状态：Proposed
 > 最后更新：2026-06-01
 
+## Spec Alignment
+
+### Objective
+
+实现一个默认开启、低打扰的久坐提醒 MVP：当用户连续活跃达到配置间隔后，让桌宠移动到主显示器中心附近并用短对话提醒起身活动；用户空闲、锁屏、睡眠或全屏展示时不打扰。
+
+### Commands
+
+- Dev: `npm run dev`
+- Test all: `npm test`
+- Focused tests: `node --test test/breakReminderService.test.js test/breakReminder.integration.test.js test/presentationGuard.test.js`
+- Build: `npm run build`
+
+### Project Structure
+
+- `breakReminderService.js`: 主进程纯逻辑计时、idle reset、提醒触发。
+- `presentationGuard.js`: 提醒前的全屏/展示场景延后判断。
+- `main.js`: Electron `powerMonitor`、托盘配置、IPC 发送和应用生命周期。
+- `preload.js`: 只暴露安全订阅和 dismiss API。
+- `src/app.js` / `src/ui/DialogBubble.js`: renderer 端提醒表现。
+- `test/`: 服务、IPC、托盘和 renderer 集成测试。
+
+### Code Style
+
+使用现有 vanilla JavaScript 风格：小型纯函数优先，依赖通过构造参数注入以便测试；主进程代码保持 CommonJS；IPC payload 使用普通对象并校验字段；注释只解释计时、防抖和平台差异这类不直观逻辑。
+
+### Boundaries
+
+- Always: renderer 不直接访问 `powerMonitor`、`electron-store` 或 Node API。
+- Always: 默认鼠标穿透和拖拽状态不因提醒被破坏。
+- Always: 提醒只记录时间与状态，不记录前台窗口标题、URL 或用户内容。
+- Ask first: 新增提醒设置页、自定义文案池、额外 OS 权限或新依赖。
+- Never: 在用户空闲/锁屏/睡眠/全屏展示时强行弹提醒。
+
+### Success Criteria
+
+- 连续活跃达到间隔时触发一次提醒，并重置下一轮计时。
+- 空闲达到阈值会重置活跃计时。
+- Windows 全屏展示场景会延后提醒；macOS MVP 不做全屏检测但仍保持正常提醒。
+- 托盘开关和间隔选择可持久化，并在重启后生效。
+- `npm test` 通过，相关 focused tests 通过。
+
+### Testing Strategy
+
+优先覆盖纯逻辑和 IPC：用 fake clock / fake `powerMonitor` 验证 active、idle、locked、suspend/resume、dismiss 和延后逻辑。UI 行为使用 renderer 集成测试和 `npm run dev` 手动确认提醒位置、气泡显示、点击 dismiss、跨显示器表现。
+
 ## Overview
 
 实现一个默认开启的久坐提醒：用户连续活跃 60 分钟后，岳七和沈九瞬移到主显示器中间附近，各说一句提醒用户起身活动的话；系统空闲 5 分钟以上视为已休息并重置连续活跃计时。用户可以在托盘关闭功能，也可以调整提醒间隔，单位为分钟。

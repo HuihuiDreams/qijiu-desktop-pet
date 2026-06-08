@@ -1,5 +1,51 @@
 # 实施计划：苍穹山派番茄钟
 
+## Spec Alignment
+
+### Objective
+
+实现本地番茄钟 MVP：用户开启专注后，系统根据前台窗口分类判断是否频繁切到非工作软件，并用沈九台词进行轻量监督；不强制锁屏，不阻断用户操作。
+
+### Commands
+
+- Dev: `npm run dev`
+- Test all: `npm test`
+- Focused tests: `node --test test/focusClassification.test.js test/focusSystem.test.js`
+- Build: `npm run build`
+
+### Project Structure
+
+- `src/data/config.js`: 番茄钟默认配置和软件/域名分类规则。
+- `src/systems/FocusSystem.js`: 专注生命周期、前台分类统计和警告事件。
+- `main.js` / `preload.js`: 前台窗口信息读取和安全 IPC。
+- `src/app.js`: 游戏循环集成和桌宠状态响应。
+- `src/data/dialogues.js`: 专注开始、警告、成功、失败台词。
+- `test/`: 分类、FocusSystem、托盘入口和持久化测试。
+
+### Code Style
+
+使用现有 vanilla JavaScript 风格：分类逻辑保持纯函数，FocusSystem 使用 fake clock 可测试；主进程只负责读取前台窗口并发送脱敏摘要；renderer 根据状态做表现，不直接推断 OS 或窗口细节。
+
+### Boundaries
+
+- Always: 前台窗口读取在主进程，renderer 只接收脱敏分类/摘要。
+- Always: 分类失败时 fallback 为 `neutral`，不能误判为非工作。
+- Always: 该功能只做提醒和监督，不强制关闭、遮挡或拦截用户软件。
+- Ask first: 新增前台窗口依赖、读取浏览器完整 URL、增加账号同步或统计报表。
+- Never: 记录完整窗口标题、完整路径、完整 URL 或用户输入内容。
+
+### Success Criteria
+
+- 用户可以从托盘开始和结束 25 分钟专注。
+- 默认工作/中立/非工作分类规则可测试且可配置。
+- 10 分钟窗口内非工作切换次数或累计时长达到阈值时触发警告，并有冷却。
+- 专注状态不破坏移动、拖拽、隐藏和现有交互。
+- `npm test` 和 focus focused tests 通过。
+
+### Testing Strategy
+
+先测试 `classifyForegroundWindow` 的配置命中和 fallback，再用 fake clock 测 FocusSystem 生命周期、阈值、冷却和完成状态。Electron 前台窗口读取作为主进程边界测试，真实 UI 用 `npm run dev` 手动验证托盘入口和台词触发。
+
 ## Overview
 
 “苍穹山派”番茄钟是一个沉浸式专注模式：用户开启专注后，沈九进入“闭关/监督”状态；应用定期识别当前前台窗口，判断用户是否频繁切换到非工作软件；达到阈值后触发沈九冷嘲热讽式提醒。MVP 只做本地识别、轻量监督和可配置规则，不做强制锁屏、应用拦截、云同步或账号系统。
@@ -376,4 +422,3 @@ MVP 采用“允许清单优先 + 常见分心黑名单”的平衡模式：
 - 是否需要在托盘里提供“本次允许当前软件”快捷操作？
 - 微信/QQ/Discord 这类既可能工作也可能分心的软件，默认应放入中立、非工作，还是交给用户首次选择？
 - 是否需要给番茄钟完成后增加奖励台词或灵力收益？
-

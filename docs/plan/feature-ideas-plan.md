@@ -5,6 +5,20 @@
 
 ---
 
+## Spec Status
+
+这份文档是功能候选池，不是单个可执行 spec。进入实现前，需要把被选中的功能拆成独立 `docs/plan/<feature>-plan.md`，并补齐 `Objective`、`Commands`、`Project Structure`、`Boundaries`、`Success Criteria`、`Testing Strategy` 和逐任务验收。
+
+当前可直接拆出的候选 spec：
+
+- 苍穹山派番茄钟：已拆到 `docs/plan/cangqiong-pomodoro-plan.md`。
+- 宗门事务 To-Do List：已拆到 `docs/plan/zongmen-task-todo-plan.md`。
+- 系统状态映射：需要先确认是否允许新增系统指标依赖。
+- 天气/时空同步：需要先确认外部 API、离线 fallback 和隐私边界。
+- 皮肤/配件系统：需要先确认资产格式、商店经济和迁移路径。
+
+拆分规则：每个候选功能单独成 spec，不在本文件继续扩写实现细节。
+
 ## 一、背景与精炼 (Background & Refinement)
 
 ### 问题陈述

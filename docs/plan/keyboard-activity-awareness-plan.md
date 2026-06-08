@@ -3,6 +3,52 @@
 > 状态：提议中
 > 最后更新：2026-06-04
 
+## Spec Alignment
+
+### Objective
+
+实现隐私友好的键盘活动感知 MVP：只用时间和活跃状态判断用户是否正在短时间输入或持续专注，让桌宠降低移动和互动打扰；不记录按键、文本或应用内容。
+
+### Commands
+
+- Dev: `npm run dev`
+- Test all: `npm test`
+- Focused tests: `node --test test/keyboardActivityService.test.js test/activityAwarenessSystem.test.js test/movementSystem.test.js`
+- Build: `npm run build`
+
+### Project Structure
+
+- `keyboardActivityService.js`: 主进程活动观察和 payload 生成。
+- `main.js`: 服务生命周期、设置和 IPC 事件发送。
+- `preload.js`: 安全订阅 API。
+- `src/systems/ActivityAwarenessSystem.js`: renderer 端 typing/focus/idle 状态归纳。
+- `src/systems/MovementSystem.js` / `src/systems/InteractionSystem.js`: 依据活动状态降低打扰。
+- `docs/decisions/`: 隐私边界 ADR。
+
+### Code Style
+
+使用现有 vanilla JavaScript 风格：活动 observer 和 renderer system 分离；payload 字段保持布尔值和毫秒数，不传原始事件；Movement/Interaction 只消费归纳后的 `typing` / `focus` / `idle` 状态，避免跨系统读取实现细节。
+
+### Boundaries
+
+- Always: payload 只包含时间戳、布尔状态和持续时间，不包含按键、文本、窗口标题或应用内容。
+- Always: 功能可关闭，关闭后 renderer 回到现有 idle 行为。
+- Always: renderer 不能直接访问 OS 键盘监听或 Node API。
+- Ask first: 引入全局键盘 hook、读取输入法内容、增加新动画资产或默认开启更强监督。
+- Never: 记录、存储、上传或展示用户输入内容。
+
+### Success Criteria
+
+- 短时间输入被归纳为 `typing`，持续输入被归纳为 `focus`。
+- 输入停止后状态能按 TTL 回到 `idle`。
+- `typing` / `focus` 时 Movement 和 Interaction 降低打扰，用户主动交互仍可用。
+- 功能关闭或信号过期时不影响现有行为。
+- `npm test` 和相关 focused tests 通过。
+
+### Testing Strategy
+
+用 fake clock 测主进程 service 的 burst、flow、idle reset 和 disable 行为；用 renderer 系统测试状态 TTL 和 fallback；再跑 Movement/Interaction 相关测试确认打扰降低但主动交互不被禁用。最后用 `npm run dev` 手动观察连续打字时桌宠移动频率下降。
+
 ## 概览
 
 新增一个保护隐私的键盘活动感知层，让桌宠可以根据用户的工作节奏作出反应。该功能只检测活动时间，不检测按键值或输入内容。它会把短时间输入、持续输入和停止输入事件转换成 renderer 安全的状态提示，用于影响移动、互动、提醒，以及可选的专用动画。

@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **Spec-driven plan alignment**: Updated the active `docs/plan/` implementation plans with `Objective`, `Commands`, `Project Structure`, `Code Style`, `Boundaries`, `Success Criteria`, and `Testing Strategy` sections so future implementation work can follow the spec-driven workflow consistently.
+- **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。
 
 ## [0.6.2] - 2026-06-08
 ### Added

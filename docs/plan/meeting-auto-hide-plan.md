@@ -3,6 +3,51 @@
 > 状态：Proposed
 > 最后更新：2026-06-01
 
+## Spec Alignment
+
+### Objective
+
+实现会议自动隐藏桌宠 MVP：当已知会议应用进入疑似会议状态时自动隐藏桌宠，会议结束并经过防抖确认后恢复；手动隐藏状态必须优先于自动隐藏。
+
+### Commands
+
+- Dev: `npm run dev`
+- Test all: `npm test`
+- Focused tests: `node --test test/meetingDetector.test.js`
+- Build: `npm run build`
+
+### Project Structure
+
+- `meetingDetector.js`: 主进程纯检测逻辑，注入平台命令执行器和计时器。
+- `main.js`: 启停 detector，并协调 `meetingHidden` 与手动 `petHidden` 状态。
+- `tools/measure-meeting-udp.js`: 本机阈值测量脚本。
+- `test/meetingDetector.test.js`: 检测、超时、防抖和平台 fallback 测试。
+- `docs/structure.md` / `CHANGELOG.md`: 行为和架构记录。
+
+### Code Style
+
+使用现有 vanilla JavaScript 风格：检测器写成可注入 `execFile`、timer 和 platform 的纯服务；命令参数用数组表达，不拼 shell 字符串；状态名保持显式布尔值，如 `meetingHidden` 和 `petHidden`，避免含糊的三态标记。
+
+### Boundaries
+
+- Always: 只检测进程名和 UDP 连接数量，不读取窗口内容、会议标题、聊天内容或 URL。
+- Always: 自动隐藏不得覆盖用户手动隐藏/显示意图。
+- Always: 子进程命令必须使用 `execFile` 或等价参数化调用，避免 shell 拼接。
+- Ask first: 增加新会议软件列表、引入原生模块、读取屏幕/麦克风/摄像头权限。
+- Never: 为识别会议内容申请 Accessibility、Screen Recording、麦克风或摄像头权限。
+
+### Success Criteria
+
+- Windows/macOS 已知会议应用在达到 UDP 阈值时触发自动隐藏。
+- 会议结束后经过 15 秒稳定确认再自动恢复。
+- 用户手动隐藏时，会议结束不会自动显示桌宠。
+- 检测命令失败、超时或非支持平台时采用保守 fallback，不崩溃。
+- `npm test` 和 `node --test test/meetingDetector.test.js` 通过。
+
+### Testing Strategy
+
+先用 fake `execFile` 覆盖进程存在、无 UDP、有 UDP、命令失败、超时和防抖，再用 `tools/measure-meeting-udp.js` 在真实 Teams/Zoom 场景校准阈值。最后用 `npm run dev` 手动验证手动隐藏与自动隐藏状态互不覆盖。
+
 ## Overview
 
 当用户正在使用 Zoom、Teams、WebEx、Slack 或 Discord 进行在线会议时，自动隐藏桌宠；会议结束后自动恢复。检测方式为定期轮询已知会议应用的进程状态和活跃 UDP 连接数，判断用户是否正在开会。
