@@ -81,7 +81,8 @@ Even if you close the app, some consumption will be calculated from offline time
 1. ❤️ Affection
 
 Affection represents the bond between the two characters.
-It only increases and does not naturally decrease.
+Natural consumption:
+- Decreases by 1 every 2 hours.
 
 Ways to increase it:
 - Right-click Shen Jiu and choose "🤚 QiGe Spoils".

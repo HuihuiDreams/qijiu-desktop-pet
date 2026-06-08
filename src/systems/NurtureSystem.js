@@ -44,6 +44,7 @@ class NurtureSystem {
     pet.modifyStat('hunger', -CONFIG.HUNGER_DECAY);
     pet.modifyStat('qi', -CONFIG.QI_DECAY);
     pet.modifyStat('mood', -CONFIG.MOOD_DECAY);
+    pet.modifyStat('affection', -CONFIG.AFFECTION_DECAY);
 
     // 复合效果：过度饥饿或灵力过低会导致心境额外下降
     if (pet.stats.hunger < 30) {

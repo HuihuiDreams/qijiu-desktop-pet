@@ -31,6 +31,7 @@ const CONFIG = {
   HUNGER_DECAY: 2,                    // 每个周期减少的饱腹度
   QI_DECAY: 2,                        // 每个周期减少的灵力
   MOOD_DECAY: 2,                      // 每个周期减少的心境
+  AFFECTION_DECAY: 1 / 24,            // 每个周期减少的好感度 (2小时1点)
 
   // === 养成数值 - 玩家操作带来的恢复 (Nurture - Actions) ===
   FEED_HUNGER: 25,                    // 【喂食】恢复的饱腹度

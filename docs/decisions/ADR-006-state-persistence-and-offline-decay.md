@@ -1,4 +1,4 @@
-﻿# ADR-006: 状态持久化与离线收益/衰减机制 (State Persistence & Offline Decay)
+# ADR-006: 状态持久化与离线收益/衰减机制 (State Persistence & Offline Decay)
 
 ## Status
 Accepted
@@ -25,3 +25,6 @@ Accepted
 ## Consequences
 - **优点**：实现了真实的养成感，用户离开后宠物依然在“变饿/变累”。
 - **风险**：如果用户长时间（如一个月）不打开应用，回来时数值可能会全部归零。目前通过 `clampStat` 保证数值最低为 0，不会出现负数。
+
+## Updates
+- **2026-06-08**：引入了好感度自然衰减机制（每 2 小时下降 1 点）。好感度的衰减被无缝整合进了 `applyOfflineDecay` 中，与其它属性共享统一的结算链路。

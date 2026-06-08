@@ -7,6 +7,7 @@
 - **会议自动隐藏 MVP**：新增 `meetingDetector.js` 和 `tools/measure-meeting-udp.js`，主进程会低频检测已知会议应用进程及 UDP 端点数量；当前 Windows Teams 实测阈值为单进程 UDP `>= 5` 且连续 2 次命中时自动隐藏桌宠，低于阈值持续 15 秒后恢复。手动隐藏状态与会议自动隐藏状态分离，用户手动隐藏的桌宠不会在会议结束后被自动显示。新增 [ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md) 记录隐私边界和检测取舍。
 
 ### Changed
+- **好感度自然衰减机制**：增加了好感度随时间自然消耗的逻辑，设定为每 2 小时下降 1 点（每天下降 12 点）。该衰减同样适用离线结算，增加桌面宠物的真实陪伴感，长线离线后好感可能会清零，但正常的互动（如摸头）可以轻松恢复。
 - **Spec-driven plan alignment**: Updated the active `docs/plan/` implementation plans with `Objective`, `Commands`, `Project Structure`, `Code Style`, `Boundaries`, `Success Criteria`, and `Testing Strategy` sections so future implementation work can follow the spec-driven workflow consistently.
 - **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。
 
@@ -17,7 +18,8 @@
 ### Changed
 - **休息玩法区分调整**：将右键“休息”从单纯恢复 30 点灵力，调整为恢复 10 点灵力和 15 点心境，并继续消耗 10 点饱腹度，让休息更偏向安抚低心境，和打坐修炼的纯灵力恢复形成区别。
 - **AI 智能体研发规范升级**：在 `.geminirules` 和 `AGENTS.md` 的核心原则中强制增加 "Use Skills First"，要求 Agent 在执行代码或文档任务前必须主动加载相应的技能指南。
-- **文档规范性修复**：批量将所有 34 个 ADR 文件的中文标题段落重构为标准的纯英文格式（如 `## Status`、`## Date` 等），同时手动修复了 `ADR-021`、`ADR-027`、`ADR-031` 和 `ADR-034` 中缺失的必需章节，以严格遵守 `documentation-and-adrs` 的技能标准规范。
+- **文档规范性修复**：修复了 `ADR-034` 的格式，补充了缺失的 `Alternatives Considered`（替代方案考虑）章节，以严格遵守 `documentation-and-adrs` 技能标准。
+- **文档规范性重构**：批量将所有 34 个 ADR 文件的中文标题段落重构为标准的纯英文格式（如 `## Status`、`## Date` 等），同时手动修复了 `ADR-021`、`ADR-027` 和 `ADR-031` 中缺失的必需章节。
 - **CSS 规范性修复**：修复了 IDE 报告的多个 CSS Linter 警告（为 Safari 补全 `-webkit-user-select` 前缀，修正了 `backdrop-filter` 顺序，并为 Electron 私有属性补充标准 fallback）。
 - **测试配置归一化与文档同步**：将本地打包更新测试配置归档至 `docs/archive/` 目录，并同步更新了 [structure.md](docs/structure.md) 和 [ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)。
 - **README.md 文档样式统一**：补全了 README.md 中部分三级标题和系统托盘功能列表缺失的 emoji 图标，使其与多语言配置（i18n.js）保持一致。

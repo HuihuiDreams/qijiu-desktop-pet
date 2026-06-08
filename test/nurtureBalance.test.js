@@ -38,6 +38,7 @@ function createPet() {
 
 test('offline decay makes qi and mood visibly fall over one hour', () => {
   const pet = createPet();
+  pet.stats.affection = 10; // set starting affection to verify decay
   const nurtureSystem = new NurtureSystem();
 
   nurtureSystem.applyOfflineDecay(pet, 60 * 60 * 1000);
@@ -45,6 +46,8 @@ test('offline decay makes qi and mood visibly fall over one hour', () => {
   assert.equal(pet.stats.hunger, 56);
   assert.equal(pet.stats.qi, 76);
   assert.equal(pet.stats.mood, 46);
+  // 1 hour = 0.5 points decay. Handle floating point precision.
+  assert.equal(Math.round(pet.stats.affection * 10) / 10, 9.5); 
 });
 
 test('solo meditation restores one qi per second', () => {

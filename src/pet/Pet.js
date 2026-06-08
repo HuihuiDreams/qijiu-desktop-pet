@@ -27,7 +27,7 @@ class Pet {
 
     // 养成属性 (修仙主题)
     this.stats = {
-      affection: 0,     // 好感度 0-100 (不会自然衰减)
+      affection: 0,     // 好感度 0-100
       hunger: 80,       // 饱腹度 0-100
       qi: 100,          // 灵力 0-100
       mood: 70,         // 心境 0-100
