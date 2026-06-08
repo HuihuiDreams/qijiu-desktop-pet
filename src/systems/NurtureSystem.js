@@ -104,12 +104,13 @@ class NurtureSystem {
   }
 
   /**
-   * 休息。瞬间恢复灵力但会消耗饱腹度。
+   * 休息。恢复心境和少量灵力，但会消耗饱腹度。
    */
   rest(pet) {
     if (pet.isBusy()) return false;
     if (pet.stats.hunger < CONFIG.REST_HUNGER_COST + 5) return false; // 太饿了不能休息
     pet.modifyStat('qi', CONFIG.REST_QI);
+    pet.modifyStat('mood', CONFIG.REST_MOOD);
     pet.modifyStat('hunger', -CONFIG.REST_HUNGER_COST);
     pet.setState('sleeping');
     pet.stateTimer = CONFIG.REST_DURATION;

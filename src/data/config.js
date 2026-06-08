@@ -40,7 +40,8 @@ const CONFIG = {
   MEDITATE_QI_RATE,                   // 【打坐】每秒恢复的灵力
   MEDITATE_DURATION,                  // 【打坐】持续时间
   CULTIVATE_QI_MULTIPLIER,            // 【一起修炼】相对单人打坐的灵力倍率
-  REST_QI: 30,                        // 【休息】瞬间恢复的灵力
+  REST_QI: 10,                        // 【休息】瞬间恢复的灵力
+  REST_MOOD: 15,                      // 【休息】恢复的心境
   REST_HUNGER_COST: 10,               // 【休息】消耗的饱腹度
   REST_DURATION: 20000,               // 【休息】持续时间
 

@@ -59,6 +59,22 @@ test('solo meditation restores one qi per second', () => {
   assert.equal(pet.stats.qi, 60);
 });
 
+test('rest restores mood and a small amount of qi at a hunger cost', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+
+  pet.stats.qi = 50;
+  pet.stats.mood = 40;
+  const rested = nurtureSystem.rest(pet);
+
+  assert.equal(rested, true);
+  assert.equal(pet.stats.qi, 60);
+  assert.equal(pet.stats.mood, 55);
+  assert.equal(pet.stats.hunger, 70);
+  assert.equal(pet.state, 'sleeping');
+  assert.equal(pet.stateTimer, CONFIG.REST_DURATION);
+});
+
 test('automatic interactions can happen once per minute', () => {
   assert.equal(CONFIG.INTERACTION_COOLDOWN, 60 * 1000);
 });

@@ -3,10 +3,13 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.6.2] - 2026-06-08
 ### Added
 - **UI 性能与视觉还原升级**：新增及更新了 [ADR-034](docs/decisions/ADR-034-ui-performance-and-visual-upgrades.md) 记录。恢复了 `filter: drop-shadow()` 以实现严格贴合小人边缘的精致发光效果；为彻底解决其带来的 CPU 占用飙升问题，去除了发光层的缩放及透明度动画，采用 0 占用的完全静态渲染。同时修复了饥饿/打坐状态下角色变透明的 Bug，确保“身体变半透明”的视觉反馈严格保留给“心境低落”这一设定。另外增加了右键菜单和面板按钮的物理按下触感（Active State），升级了状态面板的玻璃边缘折射质感，并修复了状态条数值跳变导致的微弱抖动（改用等宽字体与回弹动画曲线）。
 
 ### Changed
+- **休息玩法区分调整**：将右键“休息”从单纯恢复 30 点灵力，调整为恢复 10 点灵力和 15 点心境，并继续消耗 10 点饱腹度，让休息更偏向安抚低心境，和打坐修炼的纯灵力恢复形成区别。
 - **AI 智能体研发规范升级**：在 `.geminirules` 和 `AGENTS.md` 的核心原则中强制增加 "Use Skills First"，要求 Agent 在执行代码或文档任务前必须主动加载相应的技能指南。
 - **文档规范性修复**：批量将所有 34 个 ADR 文件的中文标题段落重构为标准的纯英文格式（如 `## Status`、`## Date` 等），同时手动修复了 `ADR-021`、`ADR-027`、`ADR-031` 和 `ADR-034` 中缺失的必需章节，以严格遵守 `documentation-and-adrs` 的技能标准规范。
 - **CSS 规范性修复**：修复了 IDE 报告的多个 CSS Linter 警告（为 Safari 补全 `-webkit-user-select` 前缀，修正了 `backdrop-filter` 顺序，并为 Electron 私有属性补充标准 fallback）。

@@ -124,7 +124,7 @@ Natural consumption:
 
 How to restore:
 - Right-click a character and choose "🧘🏻‍♂️ Cultivate": they meditate for 30 seconds and restore 1 Qi per second.
-- Right-click a character and choose "💤 Rest": restores 30 Qi and consumes 10 Satiety.
+- Right-click a character and choose "💤 Rest": restores 10 Qi and 15 Mood, and consumes 10 Satiety.
 - When the two interact, they may cultivate together and restore Qi at 1.5x the single-character meditation amount.
 
 Note:
