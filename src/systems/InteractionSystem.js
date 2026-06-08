@@ -132,6 +132,21 @@ class InteractionSystem {
         petA.setState('interacting');
         petB.setState('interacting');
 
+        // 防止身体交叠 (Anti-Overlap)
+        // 互动时，如果两人在 X 轴上贴得太近，稍微拉开一定距离，避免重叠
+        const minXDist = petA.size * 0.8; 
+        const currentXDist = Math.abs(petA.x - petB.x);
+        if (currentXDist < minXDist) {
+          const shift = (minXDist - currentXDist) / 2;
+          if (petA.x < petB.x) {
+            petA.x -= shift;
+            petB.x += shift;
+          } else {
+            petA.x += shift;
+            petB.x -= shift;
+          }
+        }
+
         // 让双方互相面对面打招呼
         if (petA.x < petB.x) {
           petA.direction = 'right';

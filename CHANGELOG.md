@@ -11,6 +11,9 @@
 - **Spec-driven plan alignment**: Updated the active `docs/plan/` implementation plans with `Objective`, `Commands`, `Project Structure`, `Code Style`, `Boundaries`, `Success Criteria`, and `Testing Strategy` sections so future implementation work can follow the spec-driven workflow consistently.
 - **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。
 
+### Fixed
+- **CP 互动身体交叠修复**：修复了桌宠在触发互动（如打招呼）时如果恰好处于同一坐标（例如被拖拽到一起，或冷却结束时刚好重合）会导致身体图像严重交叠的 Bug。现在互动触发瞬间会动态计算两者水平距离，过近时会智能拉开并重新确保相对朝向，同时限制在屏幕边界内。新增 `ADR-036` 并添加了相关单元测试。
+
 ## [0.6.2] - 2026-06-08
 ### Added
 - **UI 性能与视觉还原升级**：新增及更新了 [ADR-034](docs/decisions/ADR-034-ui-performance-and-visual-upgrades.md) 记录。恢复了 `filter: drop-shadow()` 以实现严格贴合小人边缘的精致发光效果；为彻底解决其带来的 CPU 占用飙升问题，去除了发光层的缩放及透明度动画，采用 0 占用的完全静态渲染。同时修复了饥饿/打坐状态下角色变透明的 Bug，确保“身体变半透明”的视觉反馈严格保留给“心境低落”这一设定。另外增加了右键菜单和面板按钮的物理按下触感（Active State），升级了状态面板的玻璃边缘折射质感，并修复了状态条数值跳变导致的微弱抖动（改用等宽字体与回弹动画曲线）。

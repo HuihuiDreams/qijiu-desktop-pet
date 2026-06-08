@@ -513,9 +513,20 @@ function applyI18n() {
           }
         }
 
-        // 检查 CP (组合) 互动
         const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
         if (interaction) {
+          // 防交叠移位后，确保宠物仍在可行走区域内
+          movementSystem.clampPetToWalkAreas(yueqi);
+          movementSystem.clampPetToWalkAreas(shenjiu);
+          // 确保他们仍然面对面 (因为 clamp 可能改变相对 x 坐标)
+          if (yueqi.x < shenjiu.x) {
+            yueqi.direction = 'right';
+            shenjiu.direction = 'left';
+          } else {
+            yueqi.direction = 'left';
+            shenjiu.direction = 'right';
+          }
+
           const overlayKey = interaction.overlayKey || interaction.key;
           const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'].includes(overlayKey);
           dialogBubble.removeForPets([yueqi, shenjiu]);

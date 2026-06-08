@@ -339,6 +339,7 @@ npm test
 - [ADR-033](./decisions/ADR-033-frontend-ui-engineering-and-color-swap.md)：前端组件化、Design Tokens 与角色主题色互换。
 - [ADR-034](./decisions/ADR-034-ui-performance-and-visual-upgrades.md)：UI 性能优化与高级视觉升级。
 - [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)：会议自动隐藏检测。
+- [ADR-036](./decisions/ADR-036-cp-interaction-anti-overlap.md)：CP 互动防交叠机制。
 
 ## 6. 维护提示
 
