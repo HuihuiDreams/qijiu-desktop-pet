@@ -3,7 +3,10 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.6.3] - 2026-06-09
 ### Added
+- **Outlook/Teams 日程提醒规划**：新增 [outlook-teams-calendar-reminder-plan.md](docs/plan/outlook-teams-calendar-reminder-plan.md)，记录基于 Microsoft Graph 读取 Outlook 日程、识别 Teams 会议链接并由桌宠触发低打扰提醒的 MVP 方向；明确主进程认证与 Graph 调用边界、最小权限策略、轮询优先于 webhook 的取舍、任务拆分、风险和 Not Doing 范围。
 - **会议自动隐藏 MVP**：新增 `meetingDetector.js` 和 `tools/measure-meeting-udp.js`，主进程会低频检测已知会议应用进程及 UDP 端点数量；当前 Windows Teams 实测阈值为单进程 UDP `>= 5` 且连续 2 次命中时自动隐藏桌宠，低于阈值持续 15 秒后恢复。手动隐藏状态与会议自动隐藏状态分离，用户手动隐藏的桌宠不会在会议结束后被自动显示。新增 [ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md) 记录隐私边界和检测取舍。
 
 ### Changed
@@ -12,6 +15,7 @@
 - **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。
 
 ### Fixed
+- **会议检测 tasklist 权限降级**：修复 Windows 环境中 `tasklist /fo csv /nh` 返回 `Access denied` 时，会议自动隐藏检测每 5 秒刷 `Meeting detector scan failed` 的问题。现在会回退到 `powershell.exe Get-Process` 仅查询已知会议应用进程，再继续用 `netstat` 统计 UDP 端点。
 - **界面感知窗口边缘续走**：修复活动窗口长时间不变化时 renderer 侧窗口平台 TTL 过期，导致宠物坐到窗口上边缘后很少继续沿边缘走的问题。主进程现在会对未变化的活动窗口 payload 做低频续期，移动系统也会在宠物已经站在活动窗口上边缘时按驻留概率继续沿当前边缘选点。
 - **分享食物低饱腹保护**：修复岳七饱腹低于 5 时仍可能触发“分享食物”并继续投喂沈九的问题。现在分食会先检查岳七是否足够支付 5 点饱腹成本；不足时跳过该互动，双方数值和状态保持不变。
 - **CP 互动身体交叠修复**：修复了桌宠在触发互动（如打招呼）时如果恰好处于同一坐标（例如被拖拽到一起，或冷却结束时刚好重合）会导致身体图像严重交叠的 Bug。现在互动触发瞬间会动态计算两者水平距离，过近时会智能拉开并重新确保相对朝向，同时限制在屏幕边界内。新增 `ADR-036` 并添加了相关单元测试。

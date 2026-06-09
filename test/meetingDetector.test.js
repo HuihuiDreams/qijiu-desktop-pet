@@ -78,6 +78,45 @@ test('Windows snapshot skips netstat when no known meeting process is running', 
   assert.deepEqual(snapshot.apps, []);
 });
 
+test('Windows snapshot falls back to PowerShell process lookup when tasklist is denied', async () => {
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+    if (key === 'tasklist /fo csv /nh') {
+      cb(new Error('Command failed: tasklist /fo csv /nh'));
+      return;
+    }
+    if (command === 'powershell.exe') {
+      cb(null, [
+        '"ImageName","PID"',
+        '"ms-teams.exe","7712"',
+      ].join('\r\n'), '');
+      return;
+    }
+    if (key === 'netstat -ano -p udp') {
+      cb(null, [
+        '  UDP    0.0.0.0:50000          *:*                                    7712',
+        '  UDP    0.0.0.0:50001          *:*                                    7712',
+        '  UDP    0.0.0.0:50002          *:*                                    7712',
+        '  UDP    0.0.0.0:50003          *:*                                    7712',
+        '  UDP    0.0.0.0:50004          *:*                                    7712',
+      ].join('\r\n'), '');
+      return;
+    }
+    cb(new Error(`unexpected command: ${key}`));
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'win32',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, true);
+  assert.deepEqual(snapshot.detectedApps, ['Teams']);
+  assert.equal(snapshot.apps.find((app) => app.name === 'Teams').processes[0].pid, '7712');
+});
+
 test('meeting detector starts after two hits and ends after the grace window', async () => {
   let now = 0;
   const starts = [];

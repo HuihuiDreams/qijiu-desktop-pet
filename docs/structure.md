@@ -269,7 +269,7 @@ src/assets/{skinId}/
 
 `meetingDetector.js` 负责主进程侧会议状态检测，设计背景记录在 [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)。
 
-- Windows 使用 `tasklist /fo csv /nh` 获取当前已知会议应用 PID，再用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量；PID 只用于当次采样关联，不写死。
+- Windows 优先使用 `tasklist /fo csv /nh` 获取当前已知会议应用 PID；若 `tasklist` 被权限策略拒绝，则回退到 `powershell.exe Get-Process` 仅查询已知会议应用进程名。随后用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量；PID 只用于当次采样关联，不写死。
 - macOS 使用 `pgrep -x` 和 `lsof -nP -i UDP -p <pid> -Fn` 做同类检测。
 - 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。
 - 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。

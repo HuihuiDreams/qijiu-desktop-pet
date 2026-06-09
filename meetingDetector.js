@@ -84,6 +84,20 @@ function parseTasklistCsv(output) {
     .filter((processInfo) => processInfo.processName && /^\d+$/.test(processInfo.pid));
 }
 
+function parsePowerShellProcessCsv(output) {
+  return String(output || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map(parseCsvLine)
+    .filter((row) => row[0] !== 'ImageName' || row[1] !== 'PID')
+    .map((row) => ({
+      processName: row[0],
+      pid: row[1],
+    }))
+    .filter((processInfo) => processInfo.processName && /^\d+$/.test(processInfo.pid));
+}
+
 function parseWindowsUdpEndpoints(output) {
   return String(output || '')
     .split(/\r?\n/)
@@ -106,20 +120,62 @@ function getProcessNamesForPlatform(appInfo, platform) {
   return Array.isArray(appInfo[platform]) ? appInfo[platform] : [];
 }
 
-async function collectWindowsSnapshot(options) {
+function quotePowerShellString(value) {
+  return `'${String(value).replace(/'/g, "''")}'`;
+}
+
+async function collectWindowsProcesses(options) {
   const {
     execFile: execFileImpl = execFile,
     commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
     meetingApps = MEETING_APPS,
+  } = options;
+
+  try {
+    const { stdout } = await runExecFile(
+      execFileImpl,
+      'tasklist',
+      ['/fo', 'csv', '/nh'],
+      commandTimeoutMs,
+    );
+    return parseTasklistCsv(stdout);
+  } catch (tasklistError) {
+    const processNames = [...new Set(meetingApps
+      .flatMap((appInfo) => getProcessNamesForPlatform(appInfo, 'win32'))
+      .map((name) => name.replace(/\.exe$/i, ''))
+      .filter(Boolean))];
+
+    if (processNames.length === 0) throw tasklistError;
+
+    const script = [
+      "$ErrorActionPreference = 'SilentlyContinue'",
+      `$names = @(${processNames.map(quotePowerShellString).join(',')})`,
+      'Get-Process -Name $names -ErrorAction SilentlyContinue | Select-Object @{Name=\'ImageName\';Expression={$_.ProcessName + \'.exe\'}},@{Name=\'PID\';Expression={[string]$_.Id}} | ConvertTo-Csv -NoTypeInformation',
+      'exit 0',
+    ].join('; ');
+
+    try {
+      const { stdout } = await runExecFile(
+        execFileImpl,
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', script],
+        commandTimeoutMs,
+      );
+      return parsePowerShellProcessCsv(stdout);
+    } catch {
+      throw tasklistError;
+    }
+  }
+}
+
+async function collectWindowsSnapshot(options) {
+  const {
+    commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+    meetingApps = MEETING_APPS,
     udpThreshold = DEFAULT_UDP_THRESHOLD,
   } = options;
-  const { stdout: tasklistOutput } = await runExecFile(
-    execFileImpl,
-    'tasklist',
-    ['/fo', 'csv', '/nh'],
-    commandTimeoutMs,
-  );
-  const processes = parseTasklistCsv(tasklistOutput);
+  const execFileImpl = options.execFile || execFile;
+  const processes = await collectWindowsProcesses(options);
 
   const appsWithProcesses = meetingApps.map((appInfo) => {
     const processNames = getProcessNamesForPlatform(appInfo, 'win32');
