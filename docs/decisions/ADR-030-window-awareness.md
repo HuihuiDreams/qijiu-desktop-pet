@@ -22,7 +22,7 @@ Accepted
 - 渲染进程 `WindowAwarenessSystem` 只缓存最新 payload，并用 O(1) 的 `getCurrentPlatform()` 给游戏循环读取。
 - `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏/Dock 平台，只在 idle 重新选择目标时使用它们。
 
-Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 10000ms。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms，覆盖两个采样周期再加少量余量，避免 provider 正常 10000ms 采样时 renderer 缓存周期性过期。macOS 和其它平台在活动窗口感知上返回 unavailable fallback；macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。
+Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 10000ms。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms，覆盖两个采样周期再加少量余量。主进程会在窗口字段不变化时按采样间隔刷新同一 payload 的 `sampledAt`，避免去重后 renderer 长时间收不到 IPC，导致本来仍有效的窗口平台在 renderer 侧过期。macOS 和其它平台在活动窗口感知上返回 unavailable fallback；macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。
 
 ## 平台选择概率
 活动窗口顶部平台的选择概率显式配置为：
@@ -35,7 +35,7 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 
 如果这次 70% roll 没有命中，`MovementSystem` 必须在 fallback 选区中排除 `source: 'active-window-top'` 的平台，并且最终目标坐标必须使用实际选中的 area 的 range。这样“设计概率”和“实际坐标范围”保持一致，避免未命中时仍偷偷落到窗口顶部。
 
-任务栏/Dock 平台使用同一套 `surfacePlatforms` 机制，但权重由 `CONFIG.TASKBAR_PLATFORM_WEIGHT` 控制。当宠物已经在任务栏/Dock 边缘上时，有 70% 概率继续沿该边缘移动，避免刚停下又立刻跳回普通桌面。
+任务栏/Dock 平台使用同一套 `surfacePlatforms` 机制，但权重由 `CONFIG.TASKBAR_PLATFORM_WEIGHT` 控制。当宠物已经在活动窗口顶部或任务栏/Dock 边缘上时，有 70% 概率继续沿当前边缘移动，避免刚停下又立刻跳回普通桌面。活动窗口顶部平台使用几何目标线判断“已经站在边缘上”，即使当前 active-window sample 短暂缺失，也可以基于缓存目标继续一次自然的边缘行走。
 
 ## 不可用与边界行为
 以下场景不生成活动窗口顶部 platform，移动系统回退到普通 walk area：
@@ -65,7 +65,7 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 
 ## Consequences
 - 活动窗口感知不可用时，渲染进程行为仍保持确定。
-- 只有影响 platform 的字段变化时才推送 IPC，窗口标题单独变化不触发移动更新。
+- 影响 platform 的字段变化时会推送 IPC；字段不变时也会按采样间隔低频刷新 payload 的 `sampledAt`，避免 renderer TTL 过期。
 - 活动窗口变化不会立刻抢走正在移动或交互中的宠物目标。
 - renderer TTL 大于主进程采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`。
 - 70% 的活动窗口顶部概率由配置项表达，测试覆盖命中和未命中两条路径，防止代码再次出现“概率判断”和“实际目标范围”不一致。

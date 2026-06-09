@@ -12,6 +12,7 @@ test('main process wires active window provider and sampler', () => {
   assert.ok(mainSource.includes('ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000'));
   assert.ok(mainSource.includes('createActiveWindowProvider(process.platform)'));
   assert.ok(mainSource.includes('createActiveWindowSampler({'));
+  assert.ok(mainSource.includes('refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS'));
 });
 
 test('renderer Window Awareness TTL covers more than two sampling intervals', () => {

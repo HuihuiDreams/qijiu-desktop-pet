@@ -407,6 +407,7 @@ function startActiveWindowAwareness() {
     getDisplays: getActiveWindowDisplays,
     onChange: sendActiveWindowInfo,
     intervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
+    refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
   });
   activeWindowSampler.start();
 }

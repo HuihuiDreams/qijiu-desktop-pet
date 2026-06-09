@@ -305,6 +305,43 @@ test('idle pets already on active window platforms keep walking along the edge o
   assert.equal(pet.targetY + pet.size, 100);
 });
 
+test('idle pets sitting on an active window platform keep walking after the active sample expires', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  const platform = {
+    x: 120,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  };
+  movementSystem.setActivePlatform(platform);
+  const pet = {
+    x: 400,
+    y: 4,
+    targetArea: platform,
+    size: 96,
+    speed: 1,
+  };
+  movementSystem.setActivePlatform(null);
+
+  const rolls = [0.69, 0.5, 0.5];
+  const originalRandom = Math.random;
+  Math.random = () => rolls.shift() ?? 0.5;
+
+  try {
+    movementSystem.randomTarget(pet);
+  } finally {
+    Math.random = originalRandom;
+  }
+
+  assert.equal(pet.targetArea.source, 'active-window-top');
+  assert.equal(pet.targetX >= 120, true);
+  assert.equal(pet.targetX + pet.size <= 920, true);
+  assert.equal(pet.targetY, 4);
+});
+
 test('idle pets skip active window platforms when the 70 percent roll misses', () => {
   const movementSystem = new MovementSystem(1920, 1080, [
     { x: 0, y: 0, width: 1920, height: 1040 },

@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-08
+最后更新：2026-06-09
 
 ## 1. 架构总览
 
@@ -60,7 +60,7 @@ qijiu-desktop-pet/
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
 ├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现
-├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换与去重
+├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
 ├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
@@ -181,12 +181,12 @@ qijiu-desktop-pet/
 Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
 
 - `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过 PowerShell/User32 辅助逻辑读取前台窗口；macOS 和暂不支持的平台返回不可用兜底。
-- `activeWindowAwareness.js` 将活动窗口 bounds 转成渲染进程相对坐标中的平台矩形，并在 IPC 发送前去重。
+- `activeWindowAwareness.js` 将活动窗口 bounds 转成渲染进程相对坐标中的平台矩形，并在 IPC 发送前去重；主进程会按采样间隔刷新未变化 payload 的 `sampledAt`，避免 renderer 侧平台 TTL 在窗口长期不变时过期。
 - `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
 - `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
 - `main.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程（支持 Windows 和 macOS 底部 Dock），不经过活动窗口采样轮询。
-- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。宠物走上任务栏平台后，有较高概率（70%）在下一次 idle 选点时继续沿着该平台行走。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
+- `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。宠物走上活动窗口顶部或任务栏平台后，有较高概率（默认 70%）在下一次 idle 选点时继续沿着当前边缘行走。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
 
 ### 3.6 养成系统
 

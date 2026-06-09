@@ -40,6 +40,11 @@ function activeWindowPayloadKey(payload) {
   ].join('|');
 }
 
+function payloadSampleTime(payload) {
+  const sampledAt = Number(payload?.sampledAt);
+  return Number.isFinite(sampledAt) ? sampledAt : Date.now();
+}
+
 function createActiveWindowSampler(options) {
   const {
     provider,
@@ -47,14 +52,29 @@ function createActiveWindowSampler(options) {
     getDisplays,
     onChange,
     intervalMs = 1000,
+    refreshUnchangedIntervalMs = Infinity,
     platformOptions,
     setIntervalImpl = setInterval,
     clearIntervalImpl = clearInterval,
   } = options;
   let lastKey = null;
   let lastPayload = null;
+  let lastEmittedAt = null;
   let timer = null;
   let sampling = false;
+
+  function shouldEmit(nextKey, payload) {
+    if (nextKey !== lastKey) return true;
+    if (!Number.isFinite(refreshUnchangedIntervalMs) || refreshUnchangedIntervalMs <= 0) return false;
+    if (lastEmittedAt == null) return true;
+    return payloadSampleTime(payload) - lastEmittedAt >= refreshUnchangedIntervalMs;
+  }
+
+  function emit(payload, nextKey) {
+    lastKey = nextKey;
+    lastEmittedAt = payloadSampleTime(payload);
+    onChange?.(payload);
+  }
 
   async function sampleOnce() {
     if (sampling) return lastPayload;
@@ -69,9 +89,8 @@ function createActiveWindowSampler(options) {
       );
       const nextKey = activeWindowPayloadKey(payload);
       lastPayload = payload;
-      if (nextKey !== lastKey) {
-        lastKey = nextKey;
-        onChange?.(payload);
+      if (shouldEmit(nextKey, payload)) {
+        emit(payload, nextKey);
       }
       return payload;
     } catch {
@@ -81,9 +100,8 @@ function createActiveWindowSampler(options) {
       };
       const nextKey = activeWindowPayloadKey(payload);
       lastPayload = payload;
-      if (nextKey !== lastKey) {
-        lastKey = nextKey;
-        onChange?.(payload);
+      if (shouldEmit(nextKey, payload)) {
+        emit(payload, nextKey);
       }
       return payload;
     } finally {

@@ -136,6 +136,26 @@ class MovementSystem {
     return area?.source === 'active-window-top' || area?.source === 'taskbar-edge';
   }
 
+  isPetOnTargetRange(pet, area, margin = 0) {
+    if (!pet || !this.isSurfacePlatform(area)) return false;
+    const range = this.getReachableTargetRange(area, pet, margin);
+    if (!range) return false;
+    const epsilon = Math.max(1, pet.speed || 0);
+    return pet.x >= range.minX - epsilon
+      && pet.x <= range.maxX + epsilon
+      && pet.y >= range.minY - epsilon
+      && pet.y <= range.maxY + epsilon;
+  }
+
+  findCurrentSurfacePlatform(pet) {
+    const cachedArea = this.findMatchingWalkArea(pet?.targetArea, pet);
+    if (this.isPetOnTargetRange(pet, cachedArea, 0)) return cachedArea;
+
+    return this.surfacePlatforms.find((area) => (
+      this.isPetOnTargetRange(pet, area, 0)
+    )) || null;
+  }
+
   getTargetRange(area, pet, margin) {
     if (this.isSurfacePlatform(area)) {
       const xMargin = Math.min(margin, Math.max(0, (area.width - pet.size) / 2));
@@ -339,17 +359,22 @@ class MovementSystem {
       : 0.7;
 
     let area;
+    const currentSurfaceArea = this.findCurrentSurfacePlatform(pet);
+    const currentSurfaceChance = this.isActiveWindowPlatform(currentSurfaceArea)
+      ? activeWindowPlatformChance
+      : 0.7;
+
+    if (currentSurfaceArea && Math.random() < currentSurfaceChance) {
+      area = currentSurfaceArea;
+    }
     // 有可用活动窗口平台时，70% 概率选择或留在该窗口上
-    if (activeRange && Math.random() < activeWindowPlatformChance) {
+    if (!area
+      && activeRange
+      && !this.isActiveWindowPlatform(currentSurfaceArea)
+      && Math.random() < activeWindowPlatformChance) {
       area = this.activePlatform;
-    } else {
-      const currentArea = this.findMatchingWalkArea(pet.targetArea) || this.findAreaContainingPetBounds(pet) || this.findAreaContainingPet(pet);
-      // 如果当前在任务栏/Dock上，有 70% 的概率继续沿着它走
-      if (currentArea && currentArea.source === 'taskbar-edge' && Math.random() < 0.7) {
-        area = currentArea;
-      } else {
-        area = this.pickWalkArea(pet, margin, { excludeActiveWindowPlatform: Boolean(activeRange) });
-      }
+    } else if (!area) {
+      area = this.pickWalkArea(pet, margin, { excludeActiveWindowPlatform: Boolean(activeRange) });
     }
 
     const range = this.getReachableTargetRange(area, pet, margin);

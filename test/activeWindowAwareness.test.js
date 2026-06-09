@@ -6,10 +6,10 @@ const {
   createActiveWindowSampler,
 } = require('../activeWindowAwareness');
 
-function activeInfo(bounds, id = '1') {
+function activeInfo(bounds, id = '1', sampledAt = 1770000000000) {
   return {
     active: true,
-    sampledAt: 1770000000000,
+    sampledAt,
     source: 'active-window',
     window: {
       id,
@@ -84,4 +84,33 @@ test('active window sampler only emits when relevant fields change', async () =>
   assert.equal(emitted.length, 2);
   assert.equal(emitted[0].platform.x, 100);
   assert.equal(emitted[1].platform.x, 120);
+});
+
+test('active window sampler can refresh unchanged payloads before renderer TTL expires', async () => {
+  const records = [
+    activeInfo({ x: 100, y: 100, width: 800, height: 600 }, '1', 1000),
+    activeInfo({ x: 100, y: 100, width: 800, height: 600 }, '1', 5000),
+    activeInfo({ x: 100, y: 100, width: 800, height: 600 }, '1', 11000),
+  ];
+  const emitted = [];
+  const sampler = createActiveWindowSampler({
+    provider: {
+      async getActiveWindowInfo() {
+        return records.shift();
+      },
+    },
+    getWindowBounds: () => ({ x: 0, y: 0, width: 1920, height: 1080 }),
+    getDisplays: () => displays,
+    onChange: (payload) => emitted.push(payload),
+    refreshUnchangedIntervalMs: 10000,
+  });
+
+  await sampler.sampleOnce();
+  await sampler.sampleOnce();
+  await sampler.sampleOnce();
+
+  assert.equal(emitted.length, 2);
+  assert.equal(emitted[0].sampledAt, 1000);
+  assert.equal(emitted[1].sampledAt, 11000);
+  assert.equal(emitted[1].platform.x, 100);
 });
