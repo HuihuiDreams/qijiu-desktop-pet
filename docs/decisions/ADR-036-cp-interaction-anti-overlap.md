@@ -1,4 +1,4 @@
-# ADR-036: CP Interaction Anti-Overlap Logic (CP 互动防交叠机制)
+﻿# ADR-036: CP Interaction Anti-Overlap Logic (CP 互动防交叠机制)
 
 ## Status
 Accepted

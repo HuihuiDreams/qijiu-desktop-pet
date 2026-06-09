@@ -1,4 +1,4 @@
-# ADR-022: 多显示器支持边界
+﻿# ADR-022: 多显示器支持边界
 
 ## Status
 Accepted

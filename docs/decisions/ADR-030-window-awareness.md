@@ -1,4 +1,4 @@
-# ADR-030: 窗口感知平台采样
+﻿# ADR-030: 窗口感知平台采样
 
 ## Status
 Accepted

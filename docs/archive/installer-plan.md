@@ -1,4 +1,4 @@
-# 安装包与自动启动 - 功能规划
+﻿# 安装包与自动启动 - 功能规划
 
 > 本文档经由 idea-refine -> spec-driven-development -> planning-and-task-breakdown 流程生成。  
 > 状态：已实现核心功能；安装包已构建，仍需最终干净 Windows 环境人工验收

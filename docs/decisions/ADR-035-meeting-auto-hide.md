@@ -1,4 +1,4 @@
-# ADR-035: 会议自动隐藏检测
+﻿# ADR-035: 会议自动隐藏检测
 
 ## Status
 Accepted

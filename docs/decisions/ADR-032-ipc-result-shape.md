@@ -1,4 +1,4 @@
-# ADR-032: IPC 返回形状统一
+﻿# ADR-032: IPC 返回形状统一
 
 ## Status
 Accepted

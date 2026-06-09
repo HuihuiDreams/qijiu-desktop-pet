@@ -1,4 +1,4 @@
-# 代码审查结果 - 2026-05-20 (Code Review Findings - 2026-05-20)
+﻿# 代码审查结果 - 2026-05-20 (Code Review Findings - 2026-05-20)
 
 范围：对 Electron 桌面宠物应用进行全项目审查。
 

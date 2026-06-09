@@ -1,4 +1,4 @@
-# ADR-021: 使用 Electron 单实例锁防止重复启动
+﻿# ADR-021: 使用 Electron 单实例锁防止重复启动
 
 ## Status
 Accepted

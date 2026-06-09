@@ -1,4 +1,4 @@
-DeskPet: YueQi & ShenJiu Desktop Pet
+﻿DeskPet: YueQi & ShenJiu Desktop Pet
 
 This is a desktop pet app themed around The Scum Villain's Self-Saving System.
 Yue Qingyuan (Yue Qi) and Shen Qingqiu (Shen Jiu) can walk, rest, cultivate, and occasionally interact on your desktop.

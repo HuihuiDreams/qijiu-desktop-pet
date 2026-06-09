@@ -1,4 +1,4 @@
-# ADR-006: 状态持久化与离线收益/衰减机制 (State Persistence & Offline Decay)
+﻿# ADR-006: 状态持久化与离线收益/衰减机制 (State Persistence & Offline Decay)
 
 ## Status
 Accepted

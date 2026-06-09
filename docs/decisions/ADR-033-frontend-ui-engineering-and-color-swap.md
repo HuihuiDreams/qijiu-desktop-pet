@@ -1,4 +1,4 @@
-# ADR-033: Frontend UI Engineering & Theme Color Swap
+﻿# ADR-033: Frontend UI Engineering & Theme Color Swap
 
 ## Status
 Accepted

@@ -1,4 +1,4 @@
-# ADR-034: UI Performance & Visual Upgrades
+﻿# ADR-034: UI Performance & Visual Upgrades
 
 ## Status
 Accepted

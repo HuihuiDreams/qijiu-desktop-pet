@@ -1,4 +1,4 @@
-# DeskPet 项目结构与架构说明
+﻿# DeskPet 项目结构与架构说明
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 

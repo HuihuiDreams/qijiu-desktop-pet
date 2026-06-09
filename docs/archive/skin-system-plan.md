@@ -1,4 +1,4 @@
-# 🎨 皮肤切换系统实施计划 (Skin System Plan)
+﻿# 🎨 皮肤切换系统实施计划 (Skin System Plan)
 
 > 本计划综合运用 **idea-refine**（构思精炼）、**spec-driven-development**（规格驱动开发）与 **planning-and-task-breakdown**（任务分解）三个方法论编写。
 

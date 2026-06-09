@@ -1,4 +1,4 @@
-# 多显示器移动调试交接文档 (Multi-Display Movement Debug Handoff)
+﻿# 多显示器移动调试交接文档 (Multi-Display Movement Debug Handoff)
 
 ## 当前状态 (Status)
 

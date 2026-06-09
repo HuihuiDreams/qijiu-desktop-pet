@@ -1,4 +1,4 @@
-# ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
+﻿# ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
 
 ## Status
 Accepted

@@ -1,4 +1,4 @@
-# Git 提交流程与规范 (Git Workflow & Versioning)
+﻿# Git 提交流程与规范 (Git Workflow & Versioning)
 
 基于 `git-workflow-and-versioning` 技能规范，本项目采用严格但高效的 Trunk-Based Development（主干开发）模式。
 

@@ -1,4 +1,4 @@
-# DeskPet — 岳七 & 沈九 修仙桌宠功能指南 (Walkthrough)
+﻿# DeskPet — 岳七 & 沈九 修仙桌宠功能指南 (Walkthrough)
 
 ## 项目简介
 

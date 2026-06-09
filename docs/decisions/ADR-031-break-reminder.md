@@ -1,4 +1,4 @@
-# ADR-031: 久坐提醒设计
+﻿# ADR-031: 久坐提醒设计
 
 ## Status
 Accepted

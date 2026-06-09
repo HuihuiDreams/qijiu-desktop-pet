@@ -1,4 +1,4 @@
-# ADR-010: 保留历史 ADR 编号空缺
+﻿# ADR-010: 保留历史 ADR 编号空缺
 
 ## Status
 Accepted

@@ -1,4 +1,4 @@
-# Release Workflow
+﻿# Release Workflow
 
 本项目的 Windows 发布分为两步：先做发布前检查，再构建并发布安装包。
 

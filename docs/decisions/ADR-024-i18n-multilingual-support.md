@@ -1,4 +1,4 @@
-# ADR-024: 多语言支持 (i18n)
+﻿# ADR-024: 多语言支持 (i18n)
 
 ## Status
 已接受 (Accepted)

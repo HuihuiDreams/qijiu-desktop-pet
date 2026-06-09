@@ -1,4 +1,4 @@
-# ADR-020: Windows Release 与代码签名发布策略
+﻿# ADR-020: Windows Release 与代码签名发布策略
 
 ## Status
 Accepted

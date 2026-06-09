@@ -1,4 +1,4 @@
-# Windows 代码签名发布说明 (Windows Code Signing Release Notes)
+﻿# Windows 代码签名发布说明 (Windows Code Signing Release Notes)
 
 本项目使用 `electron-builder` 构建 Windows NSIS 安装包。公开版本发布建议使用 Authenticode 签名，以便 Windows 和 Microsoft Edge 能够显示已验证的发布者，而不是将安装包视为未知应用。对于小范围分发版本，在付费购买代码签名证书尚不划算时，可以选择在不签名的情况下进行构建。
 

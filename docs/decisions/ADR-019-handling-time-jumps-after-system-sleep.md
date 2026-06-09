@@ -1,4 +1,4 @@
-# ADR-019: 处理系统休眠后的时间跳跃 (Handling Time Jumps After System Sleep)
+﻿# ADR-019: 处理系统休眠后的时间跳跃 (Handling Time Jumps After System Sleep)
 
 ## Status
 Accepted
