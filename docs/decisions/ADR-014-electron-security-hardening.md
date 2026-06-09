@@ -35,3 +35,14 @@ Accepted
 4. **订阅生命周期一致**：`preload.js` 中暴露的 `window.electronAPI.on*` 订阅统一返回 cleanup 函数，减少重复初始化或窗口重建时的监听器泄漏风险。
 
 这些调整不改变既有 renderer 调用方式，但让 preload/main 的边界更难误用。未来新增 IPC 时也应优先在边界处定义并测试输入合约。
+
+## 补充：窗口 sandbox 与更新进度窗口隔离 (2026-06-09)
+
+一次后续安全优化将 Electron 运行时基线继续收紧：
+
+1. **显式启用 renderer sandbox**：主宠物窗口、状态窗口和更新进度窗口的 `webPreferences` 均声明 `sandbox: true`，与既有 `contextIsolation: true`、`nodeIntegration: false` 共同构成默认隔离边界。
+2. **移除更新进度窗口字符串脚本执行**：更新进度窗口不再通过 `data:` URL、内联脚本或 `webContents.executeJavaScript()` 接收进度数据，改为加载随应用打包的 `src/update-progress.html`、`src/update-progress.css` 和 `src/update-progress.js`。
+3. **最小 preload 暴露面**：新增 `updateProgressPreload.js`，只暴露 `onProgress(callback)` 订阅，避免复用主窗口完整 `window.electronAPI`。
+4. **更严格的更新窗口 CSP**：更新进度页面使用 `script-src 'self'; style-src 'self'`，动态文案通过 `textContent` 渲染。
+
+这保持了可见更新进度窗口的用户体验，同时减少本地页面中可执行字符串和宽松 CSP 的数量。

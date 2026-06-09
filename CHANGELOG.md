@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+
 
 ## [0.6.3] - 2026-06-09
 ### Added
@@ -13,6 +15,7 @@
 - **好感度自然衰减机制**：增加了好感度随时间自然消耗的逻辑，设定为每 2 小时下降 1 点（每天下降 12 点）。该衰减同样适用离线结算，增加桌面宠物的真实陪伴感，长线离线后好感可能会清零，但正常的互动（如摸头）可以轻松恢复。
 - **Spec-driven plan alignment**: Updated the active `docs/plan/` implementation plans with `Objective`, `Commands`, `Project Structure`, `Code Style`, `Boundaries`, `Success Criteria`, and `Testing Strategy` sections so future implementation work can follow the spec-driven workflow consistently.
 - **宗门任务经济系统计划补强**：更新 [zongmen-task-todo-plan.md](docs/plan/zongmen-task-todo-plan.md)，明确 MVP 暂不实现商店 UI，但先定义灵石产出边界、未来消费方向、价格尺度、经济健康指标和 `rewardVersion` 等存档字段，避免只开放奖励获取导致后续通货膨胀。
+- **Electron 安全加固**：主宠物窗口、状态窗口和更新进度窗口均显式启用 renderer `sandbox`；更新进度窗口从 `data:` HTML、内联脚本和 `executeJavaScript` 改为本地 HTML/CSS/JS 加最小 preload IPC 通道，保持可见下载进度的同时收紧 CSP。
 
 ### Fixed
 - **会议检测 tasklist 权限降级**：修复 Windows 环境中 `tasklist /fo csv /nh` 返回 `Access denied` 时，会议自动隐藏检测每 5 秒刷 `Meeting detector scan failed` 的问题。现在会回退到 `powershell.exe Get-Process` 仅查询已知会议应用进程，再继续用 `netstat` 统计 UDP 端点。

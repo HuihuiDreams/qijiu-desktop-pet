@@ -67,3 +67,13 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 | `scripts/convert_images.js` | 使用 `spawnSync` 参数数组调用 `ffmpeg`。 |
 | `.gitignore` | 忽略更多本地密钥文件模式。 |
 | `package-lock.json` | 将 `tmp` 解析到已修复的 `0.2.6`。 |
+
+## 补充：更新进度窗口硬化 (2026-06-09)
+
+后续安全优化继续减少 Electron 本地页面的字符串执行面：
+
+- `main.js` 中的更新进度窗口改为 `loadFile()` 加载本地页面，不再使用 `data:text/html`。
+- 删除通过 `webContents.executeJavaScript()` 注入进度 payload 的路径，改用主进程 `webContents.send('update-progress', payload)`。
+- 新增 `updateProgressPreload.js`，只暴露更新进度订阅能力。
+- 新增 `src/update-progress.html`、`src/update-progress.css` 和 `src/update-progress.js`，页面 CSP 不再包含 `unsafe-inline`，动态文案使用 `textContent`。
+- 新增 `test/updateProgressSecurity.test.js` 防止退回字符串脚本执行或宽松更新窗口 CSP。

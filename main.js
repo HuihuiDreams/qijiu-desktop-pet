@@ -551,6 +551,7 @@ function createStatusWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -763,6 +764,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
 
@@ -1032,104 +1034,9 @@ function createTray() {
   refreshTrayMenu();
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function getUpdateProgressHtml() {
-  return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif;
-      color: #202124;
-      background: #fbfbf8;
-      user-select: none;
-    }
-    .wrap {
-      width: 100vw;
-      height: 100vh;
-      padding: 22px 24px;
-      display: grid;
-      align-content: center;
-      gap: 14px;
-    }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 650;
-      line-height: 1.3;
-    }
-    p {
-      margin: 0;
-      color: #5a5f66;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .bar {
-      position: relative;
-      height: 10px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: #e3e6df;
-    }
-    .fill {
-      width: 0%;
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #4f9d69, #79b87f);
-      transition: width 160ms ease;
-    }
-    .checking .fill {
-      position: absolute;
-      animation: sweep 1.25s ease-in-out infinite;
-    }
-    .meta {
-      min-height: 18px;
-      color: #6c726e;
-      font-size: 12px;
-      text-align: right;
-    }
-    .checking .meta { visibility: hidden; }
-    @keyframes sweep {
-      0% { left: -40%; }
-      50% { left: 30%; }
-      100% { left: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <main class="wrap downloading">
-    <h1 id="title"></h1>
-    <p id="message"></p>
-    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-      <div id="fill" class="fill"></div>
-    </div>
-    <div id="meta" class="meta">0%</div>
-  </main>
-  <script>
-    window.updateProgress = function(payload) {
-      document.body.querySelector('.wrap').className = 'wrap ' + payload.mode;
-      document.getElementById('title').textContent = payload.title || '';
-      document.getElementById('message').textContent = payload.message || '';
-      const percent = Math.max(0, Math.min(100, Number(payload.percent) || 0));
-      document.getElementById('fill').style.width = payload.mode === 'checking' ? '38%' : percent + '%';
-      document.querySelector('.bar').setAttribute('aria-valuenow', Math.round(percent));
-      document.getElementById('meta').textContent = Math.round(percent) + '%';
-    };
-  </script>
-</body>
-</html>`;
+function sendUpdateProgressPayload(payload) {
+  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
+  updateProgressWindow.webContents.send('update-progress', payload);
 }
 
 function showUpdateProgressWindow(payload) {
@@ -1151,6 +1058,7 @@ function showUpdateProgressWindow(payload) {
       title: normalizedPayload.title,
       parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
       webPreferences: {
+        preload: path.join(__dirname, 'updateProgressPreload.js'),
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
@@ -1160,13 +1068,12 @@ function showUpdateProgressWindow(payload) {
     updateProgressWindow.on('closed', () => {
       updateProgressWindow = null;
     });
-    updateProgressWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(getUpdateProgressHtml())}`);
+    updateProgressWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    updateProgressWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+    updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'));
     
     updateProgressWindow.webContents.once('did-finish-load', () => {
-      if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-      updateProgressWindow.webContents.executeJavaScript(
-        `window.updateProgress(${JSON.stringify(normalizedPayload)})`,
-      ).catch(() => {});
+      sendUpdateProgressPayload(normalizedPayload);
     });
     return;
   }
@@ -1174,21 +1081,17 @@ function showUpdateProgressWindow(payload) {
   updateProgressWindow.setTitle(normalizedPayload.title);
   updateProgressWindow.show();
   updateProgressWindow.focus();
-  updateProgressWindow.webContents.executeJavaScript(
-    `window.updateProgress(${JSON.stringify(normalizedPayload)})`,
-  ).catch(() => {});
+  sendUpdateProgressPayload(normalizedPayload);
 }
 
 function setUpdateProgress(percent) {
   if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-  updateProgressWindow.webContents.executeJavaScript(
-    `window.updateProgress(${JSON.stringify({
-      mode: 'downloading',
-      title: trayText('updateDownloadingTitle', 'Downloading Update'),
-      message: trayT('updateDownloadingMsg'),
-      percent,
-    })})`,
-  ).catch(() => {});
+  sendUpdateProgressPayload({
+    mode: 'downloading',
+    title: trayText('updateDownloadingTitle', 'Downloading Update'),
+    message: trayT('updateDownloadingMsg'),
+    percent,
+  });
 }
 
 function closeUpdateProgressWindow() {

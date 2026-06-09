@@ -47,6 +47,7 @@ graph TB
 
     Preload["preload.js"] --> Renderer
     Preload --> Status
+    UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
 
@@ -56,6 +57,7 @@ graph TB
 qijiu-desktop-pet/
 ├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
+├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
@@ -86,6 +88,9 @@ qijiu-desktop-pet/
 │  ├─ status.html                       # 独立状态窗口 HTML
 │  ├─ status.css                        # 独立状态窗口样式
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
+│  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
+│  ├─ update-progress.css               # 更新进度窗口样式
+│  ├─ update-progress.js                # 更新进度窗口渲染，通过 textContent 和样式属性更新进度
 │  ├─ data/
 │  │  ├─ config.js                      # 全局配置：数值、移动、交互、状态等
 │  │  ├─ dialogues.js                   # 对话与交互文本
@@ -247,7 +252,7 @@ src/assets/{skinId}/
 - Windows 主要走 `electron-updater` 和 GitHub Releases。
 - macOS 包含手动更新提示和可执行文件名处理。
 - 支持检查中、下载中、下载完成、无更新、错误等状态。
-- 主进程会展示可见的更新进度窗口，并同步托盘菜单状态。
+- 主进程会展示可见的更新进度窗口，并通过 `updateProgressPreload.js` 的最小 IPC 通道同步进度和托盘菜单状态。
 - 404 或 release 元数据缺失会被归类为"已是最新/暂无更新"一类的可理解提示，而不是直接暴露底层错误。
 
 ### 3.11 久坐提醒
@@ -282,8 +287,8 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 主窗口不直接使用 Node 全局能力。
-- HTML 注入相关逻辑有测试覆盖，更新进度窗口会对动态内容进行转义。
+- 主窗口、状态窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
+- HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道集中在 `main.js`，便于审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
 

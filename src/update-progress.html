@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self';">
+  <title>Update Progress</title>
+  <link rel="stylesheet" href="update-progress.css">
+</head>
+<body>
+  <main class="wrap downloading">
+    <h1 id="title"></h1>
+    <p id="message"></p>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="fill" class="fill"></div>
+    </div>
+    <div id="meta" class="meta">0%</div>
+  </main>
+  <script src="update-progress.js"></script>
+</body>
+</html>
