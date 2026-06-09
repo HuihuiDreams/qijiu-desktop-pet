@@ -106,6 +106,24 @@ test('share food uses the updated symmetric mood values', () => {
   assert.equal(shenjiu.stats.mood, 73);
 });
 
+test('share food does not trigger when Yue Qi has less than the food cost', () => {
+  const yueqi = createPet();
+  const shenjiu = createPet();
+  shenjiu.x = 10;
+  yueqi.stats.hunger = 4;
+  shenjiu.stats.hunger = 50;
+  const interactionSystem = new InteractionSystem();
+  interactionSystem.pickInteraction = () => ({ key: 'shareFood', ...CONFIG.INTERACTIONS.shareFood });
+
+  const interaction = interactionSystem.update(yueqi, shenjiu, 16);
+
+  assert.equal(interaction, null);
+  assert.equal(yueqi.stats.hunger, 4);
+  assert.equal(shenjiu.stats.hunger, 50);
+  assert.equal(yueqi.state, 'idle');
+  assert.equal(shenjiu.state, 'idle');
+});
+
 test('share food switches to throwup presentation only when Shen Jiu would exceed full hunger', () => {
   const yueqi = createPet();
   const shenjiu = createPet();

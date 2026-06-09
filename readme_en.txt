@@ -113,6 +113,7 @@ Notes:
 Small hidden interaction:
 When the two are close and trigger "Share Food", Yue Qi may give his food to Shen Jiu.
 Yue Qi loses 5 Satiety, and Shen Jiu restores 10 Satiety.
+Share Food only triggers when Yue Qi has at least 5 Satiety, so he will not keep feeding Shen Jiu after his Satiety has bottomed out.
 If they spend a lot of time together, Yue Qi may get hungry faster.
 
 3. 🧘🏻‍♂️ Qi
