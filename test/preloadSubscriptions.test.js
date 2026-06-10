@@ -44,3 +44,12 @@ test('preload on* APIs return cleanup functions from subscribeIpc', () => {
     );
   }
 });
+
+test('preload exposes platform info through electronAPI', () => {
+  assert.match(
+    preloadSource,
+    /platform:\s*process\.platform/,
+    'preload should expose process.platform through electronAPI'
+  );
+});
+

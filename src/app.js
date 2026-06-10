@@ -36,6 +36,10 @@ function applyI18n() {
   const locale = await window.electronAPI.getLocale();
   window.__currentLocale = locale;
 
+  // 设置平台类以便在 CSS 中进行平台特定的样式调整
+  const platform = window.electronAPI.platform || 'win32';
+  document.body.classList.add(`platform-${platform}`);
+
   // 建立 window.t() 翻译函数
   window.t = (key) => translateUi(key);
 

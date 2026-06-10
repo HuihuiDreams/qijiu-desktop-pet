@@ -1,9 +1,11 @@
-﻿# Changelog
+# Changelog
 本文件记录 DeskPet（岳七 & 沈九修仙桌宠）的所有重要变更。
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
 ### Changed
+- **macOS 低心境透明度调整**：在 macOS 上由于 Electron 透明窗口与系统混合渲染的差异，低心境下的半透明角色可能显得过于透明难辨。现已在 `preload.js` 中暴露 `platform` 并由 `app.js` 为 `document.body` 附加平台类，单独针对 macOS 调整了 `moodFade` 动画的 `opacity` 范围（从 `0.8 - 0.5` 优化至 `0.85 - 0.6`），防止其过高透明度，实现更和谐的视觉还原。
+
 
 
 ## [0.6.3] - 2026-06-09

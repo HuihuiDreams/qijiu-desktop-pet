@@ -499,3 +499,19 @@ html, body {
     transform: translateY(2px);
   }
 }
+
+/* Adjust transparency for macOS to prevent it from being too see-through */
+.platform-darwin .pet--low-mood .pet-body {
+  animation: moodFadeMac 3s ease-in-out infinite;
+}
+
+@keyframes moodFadeMac {
+  0%, 100% { 
+    opacity: 0.85; 
+    transform: translateY(0);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: translateY(2px);
+  }
+}

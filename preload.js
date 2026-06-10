@@ -6,6 +6,8 @@ function subscribeIpc(channel, listener) {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  platform: process.platform,
+
   // 鼠标事件控制：切换穿透状态
   setIgnoreMouseEvents: (ignore, options) => {
     ipcRenderer.send('set-ignore-mouse-events', ignore, options);
