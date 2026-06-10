@@ -498,6 +498,44 @@ test('idle pets can choose taskbar platforms when no active window platform is a
   assert.equal(pet.targetY + pet.size, 1040);
 });
 
+test('interaction separation survives taskbar edge clamping', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040 },
+  ]);
+  const taskbarPlatform = {
+    x: 0,
+    y: 1016,
+    width: 1920,
+    height: 48,
+    source: 'taskbar-edge',
+  };
+  movementSystem.setSurfacePlatforms([taskbarPlatform]);
+
+  const petA = {
+    x: 48,
+    y: 944,
+    targetArea: taskbarPlatform,
+    size: 96,
+  };
+  const petB = {
+    x: 0,
+    y: 944,
+    targetArea: taskbarPlatform,
+    size: 96,
+  };
+
+  const separated = movementSystem.separatePetsWithinWalkAreas(petA, petB, 96);
+
+  assert.equal(separated, true);
+  assert.equal(Math.abs(petA.x - petB.x), 96);
+  assert.equal(petA.y, 944);
+  assert.equal(petB.y, 944);
+  assert.equal(petA.x >= 0, true);
+  assert.equal(petB.x >= 0, true);
+  assert.equal(petA.x + petA.size <= 1920, true);
+  assert.equal(petB.x + petB.size <= 1920, true);
+});
+
 test('active window platforms are preferred over taskbar platforms', () => {
   const movementSystem = new MovementSystem(1920, 1080, [
     { x: 0, y: 0, width: 1920, height: 1040 },

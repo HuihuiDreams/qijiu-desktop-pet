@@ -13,6 +13,21 @@ test('macOS packaging rewrites the internal executable to an ASCII name', () => 
   assert.match(afterPackSource, /fs\.renameSync\(originalExecutablePath, asciiExecutablePath\)/);
 });
 
+test('macOS release workflows enforce Chinese wrapper app and ASCII executable names', () => {
+  const workflowFiles = [
+    '.github/workflows/build-installer.yml',
+    '.github/workflows/release-preflight.yml',
+  ];
+
+  for (const workflowFile of workflowFiles) {
+    const workflowSource = fs.readFileSync(path.join(ROOT, workflowFile), 'utf8');
+
+    assert.ok(workflowSource.includes('expected_app_name="七九爱宠.app"'), workflowFile);
+    assert.ok(workflowSource.includes('expected_executable="DeskPet"'), workflowFile);
+    assert.ok(workflowSource.includes('legacy_executable_name="七九爱宠"'), workflowFile);
+  }
+});
+
 test('macOS manual update text tells users to quit before replacing the app', () => {
   const i18nSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'i18n.js'), 'utf8');
 

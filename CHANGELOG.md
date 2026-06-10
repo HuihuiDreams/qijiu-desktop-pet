@@ -5,8 +5,11 @@
 ## [Unreleased]
 ### Changed
 - **macOS 低心境透明度调整**：在 macOS 上由于 Electron 透明窗口与系统混合渲染的差异，低心境下的半透明角色可能显得过于透明难辨。现已在 `preload.js` 中暴露 `platform` 并由 `app.js` 为 `document.body` 附加平台类，单独针对 macOS 调整了 `moodFade` 动画的 `opacity` 范围（从 `0.8 - 0.5` 优化至 `0.85 - 0.6`），防止其过高透明度，实现更和谐的视觉还原。
+- **macOS 未签名发布流程加固**：调整 Build Installers workflow 的 macOS 发布顺序，先本地构建未签名 DMG/ZIP 并校验 `七九爱宠.app` 外层中文应用名、`DeskPet` 包内可执行文件名和 `CFBundleExecutable`，校验通过后才上传 Release 资产，避免坏包在检查前进入 GitHub Release。
 
 
+### Fixed
+- **任务栏打招呼防交叠**：修复任务栏/Dock 边缘平台上打招呼或 CP 互动时，边界夹取把两只桌宠重新压回重叠的问题。现在夹取后会保持至少一个宠物宽度的水平间距。详见 [ADR-036](docs/decisions/ADR-036-cp-interaction-anti-overlap.md)。
 
 ## [0.6.3] - 2026-06-09
 ### Added

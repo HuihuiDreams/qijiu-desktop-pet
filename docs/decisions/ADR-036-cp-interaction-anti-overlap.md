@@ -1,36 +1,41 @@
-﻿# ADR-036: CP Interaction Anti-Overlap Logic (CP 互动防交叠机制)
+# ADR-036：CP 互动防交叠机制
 
-## Status
-Accepted
+## 状态
+已接受
 
-## Date
+## 日期
 2026-06-08
 
-## Context
-When pets trigger a "greeting" or "CP interaction" (e.g., sharing food, cultivating, kissing, hugging), they face each other and play their animation. The interaction triggers when the `distance` between their centers falls below `CONFIG.INTERACTION_DISTANCE` (180px) and the cooldown timer has expired.
-However, because pets can walk freely or be dragged and dropped by the user, they can occasionally end up standing on the exact same X/Y coordinates when the cooldown expires. If they interact from exactly the same location (or very close X coordinates), their visuals heavily overlap, which looks visually broken and breaks immersion.
+## 背景
+当两只桌宠触发“打招呼”或 CP 互动（例如分享食物、一起修炼、亲吻、拥抱）时，它们会面对彼此并播放对应动画。互动触发条件是两者中心点距离小于 `CONFIG.INTERACTION_DISTANCE`（180px），且互动冷却已经结束。
 
-## Decision
-We decided to implement a dynamic anti-overlap mechanism inside `InteractionSystem.js` and `app.js` specifically triggered at the start of an interaction.
+但桌宠会随机行走，也可能被用户拖放到任意位置，因此冷却结束时两者偶尔会处在完全相同或非常接近的坐标。如果在这种状态下直接进入互动，两只桌宠的身体图像会严重交叠，视觉上很破碎。
 
-1.  **Horizontal Separation (`InteractionSystem.js`)**:
-    *   When an interaction triggers, the system checks the X-axis distance between the two pets.
-    *   If their X distance is less than 80% of `pet.size` (i.e., less than ~76.8px), they are symmetrically pushed apart on the X-axis until they meet this minimum distance.
-    *   This ensures they always stand comfortably face-to-face.
+后来又发现任务栏/Dock 平台会放大这个问题：任务栏平台把两只桌宠约束在同一条脚线上，互动开始时虽然已经被水平拉开，但随后边界夹取可能把靠近边缘的一只再次压回去，导致打招呼时仍然重叠。
 
-2.  **Boundary Clamping (`app.js`)**:
-    *   Because the symmetric push might force a pet outside the visible screen bounds (if the interaction happens at the extreme edge of the screen), we immediately call `movementSystem.clampPetToWalkAreas(pet)` after the interaction is generated.
-    *   This forces the pets back into the reachable bounds safely.
-    *   After clamping, we perform a secondary check to guarantee they are still facing each other (in case the clamping inverted their left/right order).
+## 决策
+在 `InteractionSystem.js`、`MovementSystem.js` 和 `app.js` 中维护互动开始时的防交叠流程。
 
-## Alternatives Considered
-*   **Rejecting interactions when too close**: We considered simply returning `null` from `InteractionSystem.update()` if they are too close. However, this would prevent interactions entirely if the user drags and drops one pet onto another (a common way users try to force an interaction).
-*   **Gradual walking into position**: We considered forcing them to walk to predefined offsets before starting the interaction. While more realistic, it would significantly increase the complexity of the state machine (requiring a new `walking_to_interact` state) and delay the visual feedback of the interaction. The immediate snap-separation is lightweight and visually acceptable for a desktop pet.
+1. **水平分离（`InteractionSystem.js`）**
+   - 互动触发时检查两只桌宠的 X 轴距离。
+   - 如果 X 距离小于两者中较大的宠物宽度，则沿 X 轴对称拉开，直到满足最小距离。
+   - 这样可以避免仅拉开到 `0.8 * pet.size` 时仍有身体重叠的问题。
 
-## Consequences
-*   **Positive**: Pets no longer overlap when interacting, regardless of how they were brought together (random walking, cooldown expiry, or manual drag-and-drop).
-*   **Positive**: Interactions reliably occur even if users stack the pets intentionally.
-*   **Negative**: There is a minor "teleport" effect if they are stacked exactly on top of each other when the cooldown expires, but it is small enough (usually < 38px) that it just looks like a quick hop into position.
+2. **边界夹取后的成对分离（`app.js` / `MovementSystem.js`）**
+   - 对称拉开可能把桌宠推到可行走区域外，因此互动生成后仍然调用 `movementSystem.clampPetToWalkAreas(pet)`，先把两只桌宠夹回可达范围。
+   - 夹取后再调用 `MovementSystem.separatePetsWithinWalkAreas()` 做一次成对分离，避免屏幕边缘、任务栏/Dock 平台或活动窗口平台把刚拉开的距离重新压缩成重叠。
+   - 最后重新校正朝向，确保两只桌宠仍然面对彼此。
 
-## Testing Strategy
-Added `test/interactionSystem.test.js` to simulate the worst-case scenario (exact coordinate overlap) and assert that the distance after `InteractionSystem.update()` satisfies the minimum X-distance threshold, and that their directions are correctly set to face each other.
+## 考虑过的替代方案
+- **过近时拒绝互动**：如果距离太近就直接返回 `null`。这样可以避免重叠，但用户把一只桌宠拖到另一只旁边来触发互动时会失效，反馈不自然。
+- **先走到预设互动站位再播放动画**：视觉会更自然，但需要新增类似 `walking_to_interact` 的状态，显著增加状态机复杂度，并延迟互动反馈。本项目当前选择更轻量的即时分离。
+
+## 影响
+- **正面影响**：互动触发时，两只桌宠不会再因为随机行走、冷却结束或用户拖放而严重重叠。
+- **正面影响**：即使用户有意把两只桌宠叠在一起，互动仍然可以正常触发。
+- **正面影响**：任务栏/Dock 边缘平台上的打招呼场景也会在边界夹取后保持至少一个宠物宽度的间距。
+- **负面影响**：如果两只桌宠完全重合，互动开始时会有轻微“跳位”感；通常每只最多移动半个宠物宽度，仍比重叠显示更可接受。
+
+## 测试策略
+- `test/interactionSystem.test.js` 覆盖完全同坐标的最坏场景，确认 `InteractionSystem.update()` 后两只桌宠至少相隔一个宠物宽度，并且朝向正确。
+- `test/movementSystem.test.js` 覆盖任务栏边缘场景，确认单独边界夹取造成距离压缩后，`separatePetsWithinWalkAreas()` 能把两只桌宠重新分开。

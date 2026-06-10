@@ -48,7 +48,7 @@ test('InteractionSystem - Anti-Overlap when triggered', (t) => {
   
   // 验证防交叠机制
   const currentXDist = Math.abs(petA.x - petB.x);
-  const minXDist = 96 * 0.8;
+  const minXDist = 96;
   
   assert.ok(currentXDist >= minXDist, `Pets should be pushed apart. Distance: ${currentXDist}`);
   

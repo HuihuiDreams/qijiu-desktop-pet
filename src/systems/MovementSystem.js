@@ -401,6 +401,47 @@ class MovementSystem {
     }
   }
 
+  separatePetsWithinWalkAreas(petA, petB, minXDistance) {
+    if (!petA || !petB) return false;
+
+    const distance = Number(minXDistance);
+    if (!Number.isFinite(distance) || distance <= 0) return false;
+    if (Math.abs(petA.x - petB.x) >= distance) return false;
+
+    const areaA = this.findCurrentSurfacePlatform(petA)
+      || this.findAreaContainingPetBounds(petA)
+      || this.findAreaContainingPet(petA)
+      || this.getNearestPositionInWalkAreas(petA)?.area;
+    const areaB = this.findCurrentSurfacePlatform(petB)
+      || this.findAreaContainingPetBounds(petB)
+      || this.findAreaContainingPet(petB)
+      || this.getNearestPositionInWalkAreas(petB)?.area;
+
+    if (!areaA || !areaB || !this.sameArea(areaA, areaB)) return false;
+
+    const petALeftFirst = petA.x <= petB.x;
+    const leftPet = petALeftFirst ? petA : petB;
+    const rightPet = petALeftFirst ? petB : petA;
+    const leftRange = this.getReachableTargetRange(areaA, leftPet, 0);
+    const rightRange = this.getReachableTargetRange(areaB, rightPet, 0);
+    if (!leftRange || !rightRange) return false;
+
+    const feasibleLeftMin = Math.max(leftRange.minX, rightRange.minX - distance);
+    const feasibleLeftMax = Math.min(leftRange.maxX, rightRange.maxX - distance);
+    if (feasibleLeftMin > feasibleLeftMax) return false;
+
+    const preferredLeft = ((leftPet.x + rightPet.x) / 2) - distance / 2;
+    const nextLeftX = this.clampToRange(preferredLeft, feasibleLeftMin, feasibleLeftMax);
+    const nextRightX = nextLeftX + distance;
+
+    leftPet.x = nextLeftX;
+    rightPet.x = nextRightX;
+    leftPet.y = this.clampToRange(leftPet.y, leftRange.minY, leftRange.maxY);
+    rightPet.y = this.clampToRange(rightPet.y, rightRange.minY, rightRange.maxY);
+
+    return true;
+  }
+
   /**
    * 获取一个随机的发呆时间。
    */

@@ -522,6 +522,11 @@ function applyI18n() {
           // 防交叠移位后，确保宠物仍在可行走区域内
           movementSystem.clampPetToWalkAreas(yueqi);
           movementSystem.clampPetToWalkAreas(shenjiu);
+          movementSystem.separatePetsWithinWalkAreas(
+            yueqi,
+            shenjiu,
+            InteractionSystem.getMinimumInteractionXDistance(yueqi, shenjiu),
+          );
           // 确保他们仍然面对面 (因为 clamp 可能改变相对 x 坐标)
           if (yueqi.x < shenjiu.x) {
             yueqi.direction = 'right';

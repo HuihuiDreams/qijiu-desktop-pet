@@ -2,6 +2,17 @@
  * InteractionSystem — 交互系统。检测两只宠物靠近时触发 CP 互动。
  */
 class InteractionSystem {
+  static getMinimumInteractionXDistance(petA, petB) {
+    const sizeA = Number(petA?.size);
+    const sizeB = Number(petB?.size);
+    const configuredSize = typeof CONFIG !== 'undefined' ? Number(CONFIG.PET_SIZE) : 96;
+    const fallbackSize = Number.isFinite(configuredSize) && configuredSize > 0 ? configuredSize : 96;
+    return Math.max(
+      Number.isFinite(sizeA) && sizeA > 0 ? sizeA : fallbackSize,
+      Number.isFinite(sizeB) && sizeB > 0 ? sizeB : fallbackSize,
+    );
+  }
+
   constructor() {
     this.cooldownTimer = 0; // 冷却计时器
     this.isInteracting = false; // 是否正在互动
@@ -149,7 +160,7 @@ class InteractionSystem {
 
         // 防止身体交叠 (Anti-Overlap)
         // 互动时，如果两人在 X 轴上贴得太近，稍微拉开一定距离，避免重叠
-        const minXDist = petA.size * 0.8; 
+        const minXDist = InteractionSystem.getMinimumInteractionXDistance(petA, petB);
         const currentXDist = Math.abs(petA.x - petB.x);
         if (currentXDist < minXDist) {
           const shift = (minXDist - currentXDist) / 2;

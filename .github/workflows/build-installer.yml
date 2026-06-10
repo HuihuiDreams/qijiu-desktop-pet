@@ -206,10 +206,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish unsigned macOS release
-        run: npx electron-builder --mac --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+      - name: Build unsigned macOS release
+        run: npx electron-builder --mac --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Validate macOS executable metadata
@@ -218,31 +217,76 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          apps=(dist/mac*/七九爱宠.app)
+          expected_app_name="七九爱宠.app"
+          expected_executable="DeskPet"
+          legacy_executable_name="七九爱宠"
+
+          apps=(dist/mac*/"$expected_app_name")
           if [ "${#apps[@]}" -eq 0 ]; then
-            echo "No packaged macOS app found under dist/mac*/."
+            echo "Expected packaged macOS app named $expected_app_name under dist/mac*/."
+            find dist -maxdepth 2 -name '*.app' -print || true
             exit 1
           fi
 
           for app in "${apps[@]}"; do
+            app_name="$(basename "$app")"
+            if [ "$app_name" != "$expected_app_name" ]; then
+              echo "Expected outer macOS app name to be $expected_app_name, got: $app_name"
+              exit 1
+            fi
+
             executable="$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")"
-            if [ "$executable" != "DeskPet" ]; then
-              echo "Expected CFBundleExecutable to be DeskPet, got: $executable"
+            if [ "$executable" != "$expected_executable" ]; then
+              echo "Expected CFBundleExecutable to be $expected_executable, got: $executable"
               exit 1
             fi
 
-            if [ ! -x "$app/Contents/MacOS/DeskPet" ]; then
-              echo "Missing executable: $app/Contents/MacOS/DeskPet"
+            if [ ! -x "$app/Contents/MacOS/$expected_executable" ]; then
+              echo "Missing executable: $app/Contents/MacOS/$expected_executable"
               exit 1
             fi
 
-            if [ -e "$app/Contents/MacOS/七九爱宠" ]; then
+            if [ -e "$app/Contents/MacOS/$legacy_executable_name" ]; then
               echo "Unexpected non-ASCII macOS executable remains in package."
               exit 1
             fi
 
             echo "Validated macOS executable metadata for $app"
           done
+
+      - name: Upload validated macOS release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            TAG="${VERSION#v}"
+            TAG="v${TAG}"
+          fi
+          REPO="${{ github.repository }}"
+
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$REPO" --title "$TAG" --notes "Release $TAG" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+
+          assets=(dist/*.dmg dist/*.zip dist/*.blockmap)
+          if [ -f dist/latest-mac.yml ]; then
+            assets+=(dist/latest-mac.yml)
+          fi
+
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No macOS release assets found under dist/."
+            exit 1
+          fi
+
+          gh release upload "$TAG" "${assets[@]}" --repo "$REPO" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove auto-generated source code archives
         shell: bash
