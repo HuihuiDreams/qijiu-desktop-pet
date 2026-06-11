@@ -78,6 +78,33 @@ test('Windows snapshot skips netstat when no known meeting process is running', 
   assert.deepEqual(snapshot.apps, []);
 });
 
+test('Windows snapshot treats known processes without enough UDP endpoints as inactive', async () => {
+  const execFile = createExecFileStub({
+    'tasklist /fo csv /nh': [
+      '"Zoom.exe","8800","Console","1","10,000 K"',
+    ],
+    'netstat -ano -p udp': [
+      [
+        '  UDP    0.0.0.0:50000          *:*                                    8800',
+        '  UDP    0.0.0.0:60000          *:*                                    1234',
+      ].join('\r\n'),
+    ],
+  });
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'win32',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, false);
+  assert.deepEqual(snapshot.detectedApps, []);
+  assert.deepEqual(
+    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
+    [1],
+  );
+});
+
 test('Windows snapshot falls back to PowerShell process lookup when tasklist is denied', async () => {
   const execFile = (command, args, options, callback) => {
     const cb = typeof options === 'function' ? options : callback;
@@ -115,6 +142,52 @@ test('Windows snapshot falls back to PowerShell process lookup when tasklist is 
   assert.equal(snapshot.isActive, true);
   assert.deepEqual(snapshot.detectedApps, ['Teams']);
   assert.equal(snapshot.apps.find((app) => app.name === 'Teams').processes[0].pid, '7712');
+});
+
+test('macOS snapshot counts UDP endpoints from pgrep and lsof', async () => {
+  const execFile = createExecFileStub({
+    'pgrep -x zoom.us': ['4242\n'],
+    'lsof -nP -i UDP -p 4242 -Fn': [
+      [
+        'n*:50000',
+        'n*:50001',
+        'n*:50002',
+        'n*:50003',
+        'n*:50004',
+      ].join('\n'),
+    ],
+  });
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, true);
+  assert.deepEqual(snapshot.detectedApps, ['Zoom']);
+  assert.deepEqual(
+    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
+    [5],
+  );
+});
+
+test('unsupported platforms return an inactive snapshot without executing commands', async () => {
+  let execCalled = false;
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'linux',
+    execFile: () => {
+      execCalled = true;
+    },
+  });
+
+  assert.equal(execCalled, false);
+  assert.deepEqual(snapshot, {
+    platform: 'linux',
+    isActive: false,
+    detectedApps: [],
+    apps: [],
+  });
 });
 
 test('meeting detector starts after two hits and ends after the grace window', async () => {
@@ -189,4 +262,47 @@ test('meeting detector does not emit duplicate starts while still inside the gra
 
   assert.equal(detector.getState().isInMeeting, true);
   assert.equal(starts.length, 1);
+});
+
+test('meeting detector keeps current state when a scan fails', async () => {
+  let now = 0;
+  const starts = [];
+  const ends = [];
+  const errors = [];
+  const samples = [
+    { isActive: true, detectedApps: ['Teams'], apps: [] },
+    { isActive: true, detectedApps: ['Teams'], apps: [] },
+    new Error('scan timed out'),
+    { isActive: false, detectedApps: [], apps: [] },
+  ];
+
+  const detector = createMeetingDetector({
+    getSnapshot: async () => {
+      const next = samples.shift();
+      if (next instanceof Error) throw next;
+      return next;
+    },
+    now: () => now,
+    startConfirmations: 2,
+    endGraceMs: 15000,
+    onMeetingStart: (payload) => starts.push(payload),
+    onMeetingEnd: (payload) => ends.push(payload),
+    onError: (error) => errors.push(error),
+  });
+
+  await detector.sampleOnce();
+  now = 5000;
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, true);
+  assert.equal(starts.length, 1);
+
+  now = 20000;
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, true);
+  assert.equal(errors.length, 1);
+  assert.equal(ends.length, 0);
+
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, false);
+  assert.equal(ends.length, 1);
 });

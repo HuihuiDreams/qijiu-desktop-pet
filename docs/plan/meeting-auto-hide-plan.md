@@ -141,18 +141,18 @@
 **Description:** 新增一个可单测的主进程模块，注入平台命令执行器和 timer 实现，输出会议状态变化回调。
 
 **Acceptance criteria:**
-- [ ] 接收平台类型（`win32` / `darwin`）和依赖注入。
-- [ ] Windows 上执行 `tasklist` + `netstat` 检测已知会议进程及 UDP 连接。
-- [ ] macOS 上执行 `pgrep` + `lsof` 检测已知会议进程及 UDP 连接。
-- [ ] 检测到会议开始时触发 `onMeetingStart` 回调。
-- [ ] 检测到会议结束（且经过 15 秒防抖确认）时触发 `onMeetingEnd` 回调。
-- [ ] 子进程执行超时 3 秒，超时视为检测失败，不改变当前状态。
-- [ ] 不支持的平台（非 win32/darwin）安全降级，不执行检测。
+- [x] 接收平台类型（`win32` / `darwin`）和依赖注入。
+- [x] Windows 上执行 `tasklist` + `netstat` 检测已知会议进程及 UDP 连接。
+- [x] macOS 上执行 `pgrep` + `lsof` 检测已知会议进程及 UDP 连接。
+- [x] 检测到会议开始时触发 `onMeetingStart` 回调。
+- [x] 检测到会议结束（且经过 15 秒防抖确认）时触发 `onMeetingEnd` 回调。
+- [x] 子进程执行超时 3 秒，超时视为检测失败，不改变当前状态。
+- [x] 不支持的平台（非 win32/darwin）安全降级，不执行检测。
 
 **Verification:**
-- [ ] 新增 fake execFile 单测覆盖：进程存在+有 UDP、进程存在+无 UDP、进程不存在、超时、错误返回。
-- [ ] 单测覆盖防抖逻辑：短暂断开后恢复、连续断开超过 15 秒后触发 onMeetingEnd。
-- [ ] `node --test test/meetingDetector.test.js`
+- [x] 新增 fake execFile 单测覆盖：进程存在+有 UDP、进程存在+无 UDP、进程不存在、超时、错误返回。
+- [x] 单测覆盖防抖逻辑：短暂断开后恢复、连续断开超过 15 秒后触发 onMeetingEnd。
+- [x] `node --test test/meetingDetector.test.js`
 
 **Dependencies:** None
 
@@ -167,10 +167,10 @@
 **Description:** 编写调试脚本，在实际环境中测量已知会议应用在不同状态下的 UDP 连接数，确定阈值。
 
 **Acceptance criteria:**
-- [ ] 提供一个可在终端运行的调试脚本 `tools/measure-meeting-udp.js`。
-- [ ] 脚本输出格式：进程名、PID、UDP 连接数、连接详情。
+- [x] 提供一个可在终端运行的调试脚本 `tools/measure-meeting-udp.js`。
+- [x] 脚本输出格式：进程名、PID、UDP 连接数、连接详情。
 - [ ] 记录测量结果：应用打开未开会 vs 开会中 vs 共享屏幕中的 UDP 连接数差异。
-- [ ] 根据测量结果确定 `meetingDetector.js` 中的阈值常量。
+- [x] 根据测量结果确定 `meetingDetector.js` 中的阈值常量。
 
 **Current measurement note (Windows / Teams / 2026-06-08):**
 
@@ -186,12 +186,12 @@
 建议的 Windows Teams MVP 阈值：每次轮询先通过 `tasklist` 获取当前已知会议进程 PID，再用当次 PID 匹配 `netstat` 输出；若任一同名进程 UDP 连接数 `>= 5`，连续 2 次采样命中后判定为会议中；低于阈值持续 15 秒后判定会议结束。该阈值避开了当前未开会基线 `2`，但仍需保留为常量，方便后续根据 Zoom、Slack、Discord 或不同 Teams 版本实测调整。
 
 **Verification:**
-- [ ] 手动运行脚本，分别在以下状态下记录：
+- [x] 手动运行脚本，分别在以下状态下记录：
   - Teams 打开但未开会
   - Teams 在会议中（未共享屏幕）
   - Teams 在会议中（共享屏幕）
   - Teams 未打开
-- [ ] 将测量结果记录到实施文档或 PR 描述中。
+- [x] 将测量结果记录到实施文档或 PR 描述中。
 
 **Dependencies:** Task 1（需要了解命令格式）
 
@@ -202,10 +202,10 @@
 
 ### Checkpoint: 检测基础
 
-- [ ] 单测覆盖 Windows 和 macOS 检测路径。
-- [ ] 防抖逻辑在测试中有覆盖。
-- [ ] 实测数据确认 UDP 阈值合理。
-- [ ] 子进程超时和错误处理在测试中有覆盖。
+- [x] 单测覆盖 Windows 和 macOS 检测路径。
+- [x] 防抖逻辑在测试中有覆盖。
+- [x] 实测数据确认 UDP 阈值合理。
+- [x] 子进程超时和错误处理在测试中有覆盖。
 
 ### Phase 2: 接入主进程
 
@@ -214,22 +214,22 @@
 **Description:** 在主进程中启动会议检测器，检测到会议时隐藏桌宠，会议结束后恢复。
 
 **Acceptance criteria:**
-- [ ] `app.whenReady()` 后启动 `meetingDetector`。
-- [ ] 新增 `meetingHidden` 状态标记，与 `petHidden`（手动隐藏）区分。
-- [ ] 检测到会议开始：若桌宠未手动隐藏，则设置 `meetingHidden = true` 并发送 `toggle-pet-visibility(false)`。
-- [ ] 检测到会议结束：若 `meetingHidden === true`，则设置 `meetingHidden = false` 并发送 `toggle-pet-visibility(true)`。
-- [ ] 用户手动隐藏桌宠时，`meetingHidden` 不受影响；会议结束后不恢复手动隐藏的桌宠。
-- [ ] 用户手动显示桌宠时，清除 `meetingHidden` 状态。
-- [ ] 托盘菜单的"隐藏/显示桌宠"正确反映综合状态。
-- [ ] 应用退出时调用 `meetingDetector.stop()` 清理资源。
+- [x] `app.whenReady()` 后启动 `meetingDetector`。
+- [x] 新增 `meetingHidden` 状态标记，与 `petHidden`（手动隐藏）区分。
+- [x] 检测到会议开始：若桌宠未手动隐藏，则设置 `meetingHidden = true` 并发送 `toggle-pet-visibility(false)`。
+- [x] 检测到会议结束：若 `meetingHidden === true`，则设置 `meetingHidden = false` 并发送 `toggle-pet-visibility(true)`。
+- [x] 用户手动隐藏桌宠时，`meetingHidden` 不受影响；会议结束后不恢复手动隐藏的桌宠。
+- [x] 用户手动显示桌宠时，清除 `meetingHidden` 状态。
+- [x] 托盘菜单的"隐藏/显示桌宠"正确反映综合状态。
+- [x] 应用退出时调用 `meetingDetector.stop()` 清理资源。
 
 **Verification:**
-- [ ] 单测覆盖状态交互矩阵：
+- [x] 单测覆盖状态交互矩阵：
   - 会议开始 → 桌宠隐藏
   - 会议结束 → 桌宠恢复
   - 手动隐藏 → 会议开始 → 会议结束 → 桌宠仍隐藏
   - 会议隐藏 → 手动显示 → 会议结束 → 桌宠仍显示
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1, Task 2
 
@@ -240,8 +240,8 @@
 
 ### Checkpoint: 核心功能
 
-- [ ] 能在真实环境中打开 Teams/Zoom 开始会议，桌宠自动隐藏。
-- [ ] 结束会议后桌宠自动恢复。
+- [x] 能在真实环境中打开 Teams/Zoom 开始会议，桌宠自动隐藏。
+- [x] 结束会议后桌宠自动恢复。
 - [ ] 手动隐藏/显示与会议检测互不干扰。
 
 ### Phase 3: 跨平台 QA 与文档
@@ -251,11 +251,11 @@
 **Description:** 在 Windows 上使用 Teams 验证完整流程。
 
 **Acceptance criteria:**
-- [ ] 打开 Teams 未开会 → 桌宠不隐藏。
-- [ ] 加入 Teams 会议 → 桌宠自动隐藏。
-- [ ] 离开 Teams 会议 → 等待约 15 秒后桌宠自动恢复。
+- [x] 打开 Teams 未开会 → 桌宠不隐藏。
+- [x] 加入 Teams 会议 → 桌宠自动隐藏。
+- [x] 离开 Teams 会议 → 等待约 15 秒后桌宠自动恢复。
 - [ ] 会议中网络短暂断开（< 15 秒） → 桌宠不闪烁。
-- [ ] `netstat` 命令不被 EDR 拦截。
+- [x] `netstat` 命令不被 EDR 拦截。
 - [ ] 无会议时任务管理器中 CPU 无持续可见增长。
 - [ ] 与久坐提醒功能互不干扰。
 
@@ -263,7 +263,7 @@
 - [ ] 使用 `tools/measure-meeting-udp.js` 确认阈值合理。
 - [ ] 手动加入/离开 Teams 会议，观察桌宠状态变化。
 - [ ] 打开任务管理器，确认无会议待机时桌宠应用 CPU 无异常增长。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1-3
 
@@ -287,7 +287,7 @@
 **Verification:**
 - [ ] 手动加入/离开会议，观察桌宠状态变化。
 - [ ] 打开活动监视器，确认无会议待机时桌宠应用 CPU 无异常增长。
-- [ ] `npm test`
+- [x] `npm test`
 
 **Dependencies:** Task 1-3
 
@@ -301,14 +301,14 @@
 **Description:** 更新项目结构文档和 CHANGELOG。
 
 **Acceptance criteria:**
-- [ ] `docs/structure.md` 说明 `meetingDetector.js` 的职责和边界。
-- [ ] `CHANGELOG.md` 按 `Added` 标题记录新功能。
-- [ ] 若有 ADR 需要，新增 ADR 记录会议检测的隐私边界（只读取进程名和网络连接状态）。
+- [x] `docs/structure.md` 说明 `meetingDetector.js` 的职责和边界。
+- [x] `CHANGELOG.md` 按 `Added` 标题记录新功能。
+- [x] 若有 ADR 需要，新增 ADR 记录会议检测的隐私边界（只读取进程名和网络连接状态）。
 
 **Verification:**
-- [ ] 文档中新增文件的描述与实际一致。
-- [ ] CHANGELOG 条目格式正确。
-- [ ] `npm test`
+- [x] 文档中新增文件的描述与实际一致。
+- [x] CHANGELOG 条目格式正确。
+- [x] `npm test`
 
 **Dependencies:** Task 1-5
 
