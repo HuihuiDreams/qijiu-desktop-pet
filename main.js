@@ -120,6 +120,10 @@ function configureChromiumMemoryBudget() {
   app.commandLine.appendSwitch('disable-features', 'HardwareMediaKeyHandling,MediaSessionService');
 }
 
+function disableApplicationMenu() {
+  Menu.setApplicationMenu(null);
+}
+
 configureChromiumMemoryBudget();
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -1289,6 +1293,8 @@ if (!hasSingleInstanceLock) {
   app.on('before-quit', stopMeetingDetector);
 
   app.whenReady().then(async () => {
+    disableApplicationMenu();
+
     // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
     if (process.platform === 'darwin') {
       app.dock.hide();
