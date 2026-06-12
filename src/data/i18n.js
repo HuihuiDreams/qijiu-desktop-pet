@@ -67,6 +67,7 @@ const I18N = {
       trayUpdateCheck: '📦 检查更新',
       trayUpdateChecking: '📦 正在检查更新...',
       trayUpdateDownloading: '📦 正在下载更新...',
+      trayVersion: '🏷️ 版本',
 
       // 久坐提醒
       trayBreakReminderOn: '⏰ 关闭久坐提醒',
@@ -316,6 +317,7 @@ const I18N = {
       trayUpdateCheck: '📦 Check for Updates',
       trayUpdateChecking: '📦 Checking for Updates...',
       trayUpdateDownloading: '📦 Downloading Update...',
+      trayVersion: '🏷️ Version',
 
       // Break reminder
       trayBreakReminderOn: '⏰ Disable Break Reminder',
@@ -566,6 +568,7 @@ const I18N = {
       trayUpdateCheck: '📦 更新を確認',
       trayUpdateChecking: '📦 更新を確認中...',
       trayUpdateDownloading: '📦 更新をダウンロード中...',
+      trayVersion: '🏷️ 現行版',
 
       // 休憩リマインダー
       trayBreakReminderOn: '⏰ 休憩通知を無効化',

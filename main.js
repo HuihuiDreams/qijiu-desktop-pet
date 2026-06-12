@@ -863,6 +863,7 @@ function scanAvailableSkins() {
 
 function buildTrayMenu() {
   const updateMenuState = getUpdateMenuState();
+  const appVersion = app.getVersion();
 
   // 构建皮肤切换子菜单
   const availableSkins = scanAvailableSkins();
@@ -1017,6 +1018,11 @@ function buildTrayMenu() {
       click: () => {
         app.quit();
       },
+    },
+    { type: 'separator' },
+    {
+      label: `${trayText('trayVersion', 'Version')} ${appVersion}`,
+      enabled: false,
     },
   ]);
 }

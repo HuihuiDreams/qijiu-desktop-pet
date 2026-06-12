@@ -39,6 +39,16 @@ test('main.js tray menu includes only one update menu item', () => {
   assert.equal(updateMenuItemCount, 1);
 });
 
+test('main.js tray menu shows app version at the bottom', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+  const quitIndex = mainSource.indexOf("trayT('trayQuit')");
+  const versionLabelIndex = mainSource.indexOf("trayText('trayVersion', 'Version')", quitIndex);
+  const versionValueIndex = mainSource.indexOf('app.getVersion()', mainSource.indexOf('function buildTrayMenu()'));
+
+  assert.ok(versionValueIndex > -1, 'tray menu should read the runtime app version');
+  assert.ok(versionLabelIndex > quitIndex, 'version label should appear after Quit near the bottom of the tray menu');
+});
+
 test('scanAvailableSkins: 排除非目录文件 (icon.ico, icon.png)', () => {
   const skins = scanAvailableSkins(ASSETS_DIR);
   assert.ok(!skins.includes('icon.ico'), 'icon.ico 不应出现在皮肤列表中');
