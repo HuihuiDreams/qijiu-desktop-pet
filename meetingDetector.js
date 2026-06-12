@@ -163,7 +163,7 @@ async function collectWindowsProcesses(options) {
       );
       return parsePowerShellProcessCsv(stdout);
     } catch {
-      throw tasklistError;
+      return [];
     }
   }
 }

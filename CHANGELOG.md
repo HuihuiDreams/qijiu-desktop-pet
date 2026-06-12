@@ -19,6 +19,7 @@
 
 
 ### Fixed
+- **会议检测进程查询降级**：当 Windows 环境同时拒绝 `tasklist /fo csv /nh` 和 PowerShell `Get-Process` fallback 时，会议检测现在会保守返回 inactive 并跳过 `netstat`，避免每 5 秒刷 `Meeting detector scan failed: Command failed: tasklist /fo csv /nh`。
 - macOS: 禁用 Electron 默认应用菜单，避免系统菜单栏显示不适用的 File/Edit/View/Window 菜单项，同时保留应用自己的托盘菜单和渲染进程自定义菜单。
 - **任务栏打招呼防交叠**：修复任务栏/Dock 边缘平台上打招呼或 CP 互动时，边界夹取把两只桌宠重新压回重叠的问题。现在夹取后会保持至少一个宠物宽度的水平间距。详见 [ADR-036](docs/decisions/ADR-036-cp-interaction-anti-overlap.md)。
 

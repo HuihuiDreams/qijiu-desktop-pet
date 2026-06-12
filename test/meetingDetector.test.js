@@ -144,6 +144,40 @@ test('Windows snapshot falls back to PowerShell process lookup when tasklist is 
   assert.equal(snapshot.apps.find((app) => app.name === 'Teams').processes[0].pid, '7712');
 });
 
+test('Windows snapshot returns inactive when process lookup commands are denied', async () => {
+  let netstatCalled = false;
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+    if (key === 'tasklist /fo csv /nh') {
+      cb(new Error('Command failed: tasklist /fo csv /nh'));
+      return;
+    }
+    if (command === 'powershell.exe') {
+      cb(new Error('Command failed: powershell.exe'));
+      return;
+    }
+    if (key === 'netstat -ano -p udp') {
+      netstatCalled = true;
+    }
+    cb(new Error(`unexpected command: ${key}`));
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'win32',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(netstatCalled, false);
+  assert.deepEqual(snapshot, {
+    platform: 'win32',
+    isActive: false,
+    detectedApps: [],
+    apps: [],
+  });
+});
+
 test('macOS snapshot counts UDP endpoints from pgrep and lsof', async () => {
   const execFile = createExecFileStub({
     'pgrep -x zoom.us': ['4242\n'],
