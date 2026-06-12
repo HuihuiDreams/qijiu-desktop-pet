@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 ### Added
+- **第三套皮肤“猫兔七九·紫萤”**：
+  - 新增了 `src/assets/animal_ears/` 资源目录，通过 FFmpeg padding 缩放策略维持原始图片比例，避免人脸变宽。
+  - 源文件存档于 `docs/source-assets/animal_ears/`。
+  - 托盘菜单新增中日英三语支持（Cat & Bunny - (Artist) Violetfirefly / 猫兎七九・(絵師) Violetfirefly）。
+- **皮肤菜单排序逻辑优化**：`main.js` 中的皮肤扫描逻辑改为根据 `SKIN_NAME_KEYS` 定义的顺序排列，确保新增皮肤始终显示在托盘菜单最下方。
 - **托盘版本号显示**：在托盘菜单底部新增带图标的禁用版本号行，方便 macOS 用户手动更新前快速确认当前安装版本；日语文案使用 `現行版`，更贴合修仙题材的古风气质。
 
 ### Changed

@@ -15,13 +15,13 @@ function processDir(dir) {
                 const result = spawnSync('ffmpeg', [
                     '-v', 'error',
                     '-i', fullPath,
-                    '-vf', 'scale=256:256',
+                    '-vf', 'scale=256:256:force_original_aspect_ratio=decrease,pad=256:256:(ow-iw)/2:(oh-ih)/2:color=black@0',
                     '-y', outPath,
                 ], { stdio: 'inherit' });
                 if (result.status !== 0) {
                     throw new Error(`ffmpeg exited with status ${result.status}`);
                 }
-                fs.unlinkSync(fullPath);
+                // fs.unlinkSync(fullPath); // Disable auto-delete for safety
             } catch (e) {
                 console.error(`Failed on ${fullPath}: ${e.message}`);
             }
@@ -29,4 +29,4 @@ function processDir(dir) {
     }
 }
 
-processDir(path.resolve('src/assets/birds'));
+processDir(path.resolve('src/assets/animal_ears'));

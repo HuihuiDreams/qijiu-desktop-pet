@@ -16,6 +16,7 @@ class SkinManager {
   static SKIN_NAMES = {
     'default': '默认皮肤·凉拌仓鼠',
     'birds': '鸟塑七九・凉拌仓鼠',
+    'animal_ears': '猫兔七九·紫萤',
     // 新增皮肤时在此添加映射，例如：
     // 'qban': 'Q版·萌系',
   };

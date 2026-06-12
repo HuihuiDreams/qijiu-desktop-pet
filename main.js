@@ -51,6 +51,7 @@ const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
   'birds': 'skinBirds',
+  'animal_ears': 'skinAnimalEars',
   // 新增皮肤时在此添加映射，例如：
   // 'qban': 'skinQban',
 };
@@ -851,8 +852,12 @@ function scanAvailableSkins() {
         return false;
       }
     }).sort((a, b) => {
-      if (a === 'default') return -1;
-      if (b === 'default') return 1;
+      const keys = Object.keys(SKIN_NAME_KEYS);
+      const indexA = keys.indexOf(a);
+      const indexB = keys.indexOf(b);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
       return a.localeCompare(b);
     });
   } catch (error) {
