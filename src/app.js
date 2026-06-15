@@ -77,19 +77,26 @@ function applyI18n() {
       movementSystem.clampPetToWalkAreas(pet);
     }
   };
-  const getVisualScaleForPoint = (x, y) => {
+  const getWalkAreaForPoint = (x, y) => {
     const areas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
-    const area = areas.find((walkArea) => (
+    return areas.find((walkArea) => (
       x >= walkArea.x
       && x <= walkArea.x + walkArea.width
       && y >= walkArea.y
       && y <= walkArea.y + walkArea.height
     ));
+  };
+  const getVisualScaleForPoint = (x, y) => {
+    const area = getWalkAreaForPoint(x, y);
     const scaleRatio = Number(area?.scaleRatio);
     return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
   };
   const getVisualScaleForPet = (pet) => (
     getVisualScaleForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
+  );
+  const getMenuBoundsForPet = (pet) => (
+    getWalkAreaForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
+    || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }
   );
 
   // === 初始化系统 ===
@@ -166,6 +173,7 @@ function applyI18n() {
 
   // === 初始化 UI ===
   const contextMenu = new ContextMenu(null, getVisualScaleForPoint); // 我们将在后续为每个宠物设置养成系统
+  contextMenu.getMenuBoundsForPet = getMenuBoundsForPet;
   const statusBar = new StatusBar();
   const dialogBubble = new DialogBubble();
   const skinTargets = {

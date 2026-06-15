@@ -78,9 +78,18 @@ function trayText(key, fallback) {
   return value === key ? fallback : value;
 }
 
+function escapeElectronMenuLabel(label) {
+  return String(label).replaceAll('&', '&&');
+}
+
+function trayMenuLabel(key, fallback) {
+  const value = fallback === undefined ? trayT(key) : trayText(key, fallback);
+  return escapeElectronMenuLabel(value);
+}
+
 function getSkinDisplayName(skinId) {
   const key = SKIN_NAME_KEYS[skinId];
-  return key ? trayT(key) : skinId;
+  return escapeElectronMenuLabel(key ? trayT(key) : skinId);
 }
 
 let mainWindow = null;
@@ -889,7 +898,7 @@ function buildTrayMenu() {
     { lang: 'en', key: 'langEn' },
     { lang: 'ja', key: 'langJa' },
   ].map(({ lang, key }) => ({
-    label: trayT(key),
+    label: trayMenuLabel(key),
     type: 'radio',
     checked: lang === currentLocale,
     click: async () => {
@@ -906,22 +915,22 @@ function buildTrayMenu() {
 
   return Menu.buildFromTemplate([
     {
-      label: trayT('trayTitle'),
+      label: trayMenuLabel('trayTitle'),
       enabled: false,
     },
     { type: 'separator' },
     {
-      label: trayT('trayStatusPanel'),
+      label: trayMenuLabel('trayStatusPanel'),
       click: () => {
         if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
       },
     },
     {
-      label: trayT('traySwitchSkin'),
+      label: trayMenuLabel('traySwitchSkin'),
       submenu: skinSubmenu,
     },
     {
-      label: isPaused ? trayT('trayResumeWalk') : trayT('trayPauseWalk'),
+      label: isPaused ? trayMenuLabel('trayResumeWalk') : trayMenuLabel('trayPauseWalk'),
       click: () => {
         isPaused = !isPaused;
         if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
@@ -929,7 +938,7 @@ function buildTrayMenu() {
       },
     },
     {
-      label: isPetCurrentlyHidden() ? trayT('trayShowPet') : trayT('trayHidePet'),
+      label: isPetCurrentlyHidden() ? trayMenuLabel('trayShowPet') : trayMenuLabel('trayHidePet'),
       click: () => {
         if (isPetCurrentlyHidden()) {
           showPetManually();
@@ -939,15 +948,15 @@ function buildTrayMenu() {
       },
     },
     {
-      label: trayT('trayResetPos'),
+      label: trayMenuLabel('trayResetPos'),
       click: () => {
         if (mainWindow) mainWindow.webContents.send('reset-positions');
       },
     },
     ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
-      label: trayT('traySwitchScreen'),
+      label: trayMenuLabel('traySwitchScreen'),
       submenu: screen.getAllDisplays().map((display, idx) => ({
-        label: `${trayT('trayScreen')} ${idx + 1}${currentPetDisplay && display.id === currentPetDisplay.id ? ' \u2713' : ''}`,
+        label: `${trayMenuLabel('trayScreen')} ${idx + 1}${currentPetDisplay && display.id === currentPetDisplay.id ? ' \u2713' : ''}`,
         click: () => {
           migrateWindowToDisplay(display);
           refreshTrayMenu();
@@ -956,7 +965,7 @@ function buildTrayMenu() {
     }] : []),
     { type: 'separator' },
     {
-      label: breakReminderEnabled ? trayT('trayBreakReminderOn') : trayT('trayBreakReminderOff'),
+      label: breakReminderEnabled ? trayMenuLabel('trayBreakReminderOn') : trayMenuLabel('trayBreakReminderOff'),
       click: async () => {
         breakReminderEnabled = !breakReminderEnabled;
         const newSettings = { enabled: breakReminderEnabled, intervalMinutes: breakReminderIntervalMinutes, idleResetMinutes: 5 };
@@ -967,9 +976,9 @@ function buildTrayMenu() {
       },
     },
     {
-      label: trayT('trayBreakReminderInterval'),
+      label: trayMenuLabel('trayBreakReminderInterval'),
       submenu: BREAK_REMINDER_TRAY_INTERVALS.map(minutes => ({
-        label: `${minutes} ${trayT('trayMinuteUnit')}`,
+        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
         type: 'radio',
         checked: breakReminderIntervalMinutes === minutes,
         click: async () => {
@@ -984,17 +993,17 @@ function buildTrayMenu() {
     },
     {
       label: (process.platform === 'win32' || process.platform === 'darwin')
-        ? (windowAwarenessEnabled ? trayT('trayWindowAwarenessOff') : trayT('trayWindowAwarenessOn'))
-        : trayT('trayWindowAwarenessUnavailable'),
+        ? (windowAwarenessEnabled ? trayMenuLabel('trayWindowAwarenessOff') : trayMenuLabel('trayWindowAwarenessOn'))
+        : trayMenuLabel('trayWindowAwarenessUnavailable'),
       enabled: process.platform === 'win32' || process.platform === 'darwin',
       click: () => setWindowAwarenessEnabled(!windowAwarenessEnabled),
     },
     {
-      label: trayT('trayLanguage'),
+      label: trayMenuLabel('trayLanguage'),
       submenu: langSubmenu,
     },
     {
-      label: autoLaunchEnabled ? trayT('trayAutoLaunchOn') : trayT('trayAutoLaunchOff'),
+      label: autoLaunchEnabled ? trayMenuLabel('trayAutoLaunchOn') : trayMenuLabel('trayAutoLaunchOff'),
       click: async () => {
         autoLaunchEnabled = !autoLaunchEnabled;
         await setAutoLaunchPreference(autoLaunchEnabled);
@@ -1002,9 +1011,9 @@ function buildTrayMenu() {
       },
     },
     {
-      label: updateMenuState.checking ? trayT('trayUpdateChecking') 
-           : updateMenuState.downloading ? trayT('trayUpdateDownloading') 
-           : trayT('trayUpdateCheck'),
+      label: updateMenuState.checking ? trayMenuLabel('trayUpdateChecking')
+           : updateMenuState.downloading ? trayMenuLabel('trayUpdateDownloading')
+           : trayMenuLabel('trayUpdateCheck'),
       enabled: updateMenuState.enabled,
       click: () => {
         void checkForUpdatesFromTray();
@@ -1012,21 +1021,21 @@ function buildTrayMenu() {
     },
     ...(!app.isPackaged ? [
       {
-        label: trayT('trayDevTools'),
+        label: trayMenuLabel('trayDevTools'),
         click: () => {
           if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
         },
       },
     ] : []),
     {
-      label: trayT('trayQuit'),
+      label: trayMenuLabel('trayQuit'),
       click: () => {
         app.quit();
       },
     },
     { type: 'separator' },
     {
-      label: `${trayText('trayVersion', 'Version')} ${appVersion}`,
+      label: `${trayMenuLabel('trayVersion', 'Version')} ${appVersion}`,
       enabled: false,
     },
   ]);

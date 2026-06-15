@@ -25,6 +25,14 @@ function scanAvailableSkins(assetsDir) {
 
 const ASSETS_DIR = path.join(__dirname, '..', 'src', 'assets');
 
+test('main.js escapes literal ampersands in Electron menu labels', () => {
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
+
+  assert.ok(mainSource.includes('function escapeElectronMenuLabel'), 'menu labels should have a dedicated Electron escape helper');
+  assert.ok(mainSource.includes("replaceAll('&', '&&')"), 'literal ampersands should be doubled for Electron menus');
+  assert.ok(mainSource.includes('return escapeElectronMenuLabel(key ? trayT(key) : skinId)'), 'skin names should be escaped before entering the tray menu');
+});
+
 // --- 目录扫描测试 ---
 
 test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
@@ -41,8 +49,8 @@ test('main.js tray menu includes only one update menu item', () => {
 
 test('main.js tray menu shows app version at the bottom', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const quitIndex = mainSource.indexOf("trayT('trayQuit')");
-  const versionLabelIndex = mainSource.indexOf("trayText('trayVersion', 'Version')", quitIndex);
+  const quitIndex = mainSource.indexOf("trayMenuLabel('trayQuit')");
+  const versionLabelIndex = mainSource.indexOf("trayMenuLabel('trayVersion', 'Version')", quitIndex);
   const versionValueIndex = mainSource.indexOf('app.getVersion()', mainSource.indexOf('function buildTrayMenu()'));
 
   assert.ok(versionValueIndex > -1, 'tray menu should read the runtime app version');
@@ -86,18 +94,18 @@ test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
 
 test('main.js 中 buildTrayMenu 包含皮肤切换子菜单', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("trayT('traySwitchSkin')"), '托盘菜单应包含切换皮肤入口');
+  assert.ok(mainSource.includes("trayMenuLabel('traySwitchSkin')"), '托盘菜单应包含切换皮肤入口');
   assert.ok(mainSource.includes("submenu: skinSubmenu"), '应使用 submenu 展示皮肤列表');
   assert.ok(mainSource.includes("type: 'radio'"), '皮肤菜单项应使用 radio 类型');
 });
 
 test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  const resetIndex = mainSource.indexOf("trayT('trayResetPos')");
+  const resetIndex = mainSource.indexOf("trayMenuLabel('trayResetPos')");
   const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
-  const autoLaunchIndex = mainSource.indexOf("trayT('trayAutoLaunchOn')", softwareSeparatorIndex);
-  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", softwareSeparatorIndex);
-  const exitIndex = mainSource.indexOf("trayT('trayQuit')", softwareSeparatorIndex);
+  const autoLaunchIndex = mainSource.indexOf("trayMenuLabel('trayAutoLaunchOn')", softwareSeparatorIndex);
+  const devToolsIndex = mainSource.indexOf("trayMenuLabel('trayDevTools')", softwareSeparatorIndex);
+  const exitIndex = mainSource.indexOf("trayMenuLabel('trayQuit')", softwareSeparatorIndex);
 
   assert.ok(resetIndex > -1, '桌宠功能组应包含重置位置');
   assert.ok(softwareSeparatorIndex > resetIndex, '重置位置之后应有分割线');
@@ -109,7 +117,7 @@ test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => 
 test('main.js 托盘开发者工具只在开发态显示', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
   const devToolsGuardIndex = mainSource.indexOf("...(!app.isPackaged ? [");
-  const devToolsIndex = mainSource.indexOf("trayT('trayDevTools')", devToolsGuardIndex);
+  const devToolsIndex = mainSource.indexOf("trayMenuLabel('trayDevTools')", devToolsGuardIndex);
   const devToolsGuardEndIndex = mainSource.indexOf("] : [])", devToolsIndex);
 
   assert.ok(devToolsGuardIndex > -1, '开发者工具菜单应受 app.isPackaged 保护');

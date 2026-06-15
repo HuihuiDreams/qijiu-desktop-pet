@@ -19,6 +19,9 @@
 
 
 ### Fixed
+- 修复宠物位于任务栏附近时右键菜单会被任务栏遮挡的问题；菜单现在会限制在当前可行走区域内，并在底部边缘宠物的右上方以更紧凑的间距展开。
+- 规范化 `animal_ears` 源图和运行时精灵图边框，使 Cat & Bunny Qijiu 不再比 default 和 birds 皮肤明显偏小。
+- 转义 Electron 托盘菜单标签中的字面量 `&`，使英文皮肤名如 `Cat & Bunny` 能正确显示 `&` 字符。
 - **会议检测进程查询降级**：当 Windows 环境同时拒绝 `tasklist /fo csv /nh` 和 PowerShell `Get-Process` fallback 时，会议检测现在会保守返回 inactive 并跳过 `netstat`，避免每 5 秒刷 `Meeting detector scan failed: Command failed: tasklist /fo csv /nh`。
 - macOS: 禁用 Electron 默认应用菜单，避免系统菜单栏显示不适用的 File/Edit/View/Window 菜单项，同时保留应用自己的托盘菜单和渲染进程自定义菜单。
 - **任务栏打招呼防交叠**：修复任务栏/Dock 边缘平台上打招呼或 CP 互动时，边界夹取把两只桌宠重新压回重叠的问题。现在夹取后会保持至少一个宠物宽度的水平间距。详见 [ADR-036](docs/decisions/ADR-036-cp-interaction-anti-overlap.md)。

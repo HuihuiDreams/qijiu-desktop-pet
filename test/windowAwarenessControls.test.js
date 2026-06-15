@@ -9,9 +9,9 @@ const debugSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'debug.js'
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.js'), 'utf8');
 
 test('tray exposes Window Awareness toggle on Windows/macOS and unavailable state elsewhere', () => {
-  assert.ok(mainSource.includes("trayT('trayWindowAwarenessOff')"));
-  assert.ok(mainSource.includes("trayT('trayWindowAwarenessOn')"));
-  assert.ok(mainSource.includes("trayT('trayWindowAwarenessUnavailable')"));
+  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOff')"));
+  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOn')"));
+  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessUnavailable')"));
   assert.ok(mainSource.includes("enabled: process.platform === 'win32' || process.platform === 'darwin'"));
   assert.ok(mainSource.includes('setWindowAwarenessEnabled(!windowAwarenessEnabled)'));
 });

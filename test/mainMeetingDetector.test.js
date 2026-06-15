@@ -40,7 +40,7 @@ test('manual show clears meeting auto-hide state', () => {
 });
 
 test('tray label reflects combined hidden state', () => {
-  assert.ok(mainSource.includes('isPetCurrentlyHidden() ? trayT(\'trayShowPet\') : trayT(\'trayHidePet\')'));
+  assert.ok(mainSource.includes('isPetCurrentlyHidden() ? trayMenuLabel(\'trayShowPet\') : trayMenuLabel(\'trayHidePet\')'));
 });
 
 test('break reminder stays quiet while meeting-hidden', () => {
