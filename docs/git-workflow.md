@@ -6,6 +6,34 @@
 
 ---
 
+## 🌐 跨平台 Git 配置 (Cross-Platform Git Setup)
+
+本项目会在 Windows、WSL 和 macOS 上共同开发。仓库通过根目录 `.gitattributes` 统一文本文件换行符为 `LF`，避免不同系统的 `core.autocrlf` 默认值把大量文件误标记为 modified。
+
+在一台新机器上首次开发本项目时，建议执行：
+
+```bash
+git config --global core.autocrlf false
+git config --global core.eol lf
+```
+
+在本仓库内也可以固定本地配置，避免被全局配置影响：
+
+```bash
+git config core.autocrlf false
+git config core.eol lf
+git config core.filemode false
+```
+
+如果刚切换到这套规则后看到大量仅由换行符引起的变更，请单独执行一次归一化并独立提交，避免和业务改动混在一起：
+
+```bash
+git add --renormalize .
+git status
+```
+
+---
+
 ## 🚀 推送工作流 (Push Workflow)
 
 在执行任何 `git push` 操作前，必须遵循以下步骤：

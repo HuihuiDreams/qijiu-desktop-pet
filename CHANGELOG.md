@@ -12,6 +12,7 @@
 - **托盘版本号显示**：在托盘菜单底部新增带图标的禁用版本号行，方便 macOS 用户手动更新前快速确认当前安装版本；日语文案使用 `現行版`，更贴合修仙题材的古风气质。
 
 ### Changed
+- **跨平台换行配置**：新增 `.gitattributes` 固定文本文件使用 LF，并在 [git-workflow.md](docs/git-workflow.md) 记录 Windows、WSL 和 macOS 新机器建议执行的 Git 配置，减少换行符导致的全仓库 modified 噪音。
 - **文档维护与 ADR 格式校验**：将 [ADR-036](docs/decisions/ADR-036-cp-interaction-anti-overlap.md) 统一为项目要求的 ADR 标题格式，收紧 `scripts/fix_adrs.py`，避免标题规范化时吞掉空行，并同步保持当前计划文档与已归档、已验证工作一致。
 - **会议自动隐藏测试与计划同步**：补充 `test/meetingDetector.test.js` 自动测试，覆盖 Windows 未达 UDP 阈值、macOS `pgrep`/`lsof` 路径、非支持平台 fallback，以及扫描失败时保持当前会议状态；同步更新 [meeting-auto-hide-plan.md](docs/plan/meeting-auto-hide-plan.md)，勾选已由自动测试和文档检查证明的任务，保留真实会议、EDR、CPU 和 macOS 权限等手动 QA 项。
 - **macOS 低心境透明度调整**：在 macOS 上由于 Electron 透明窗口与系统混合渲染的差异，低心境下的半透明角色可能显得过于透明难辨。现已在 `preload.js` 中暴露 `platform` 并由 `app.js` 为 `document.body` 附加平台类，单独针对 macOS 调整了 `moodFade` 动画的 `opacity` 范围（从 `0.8 - 0.5` 优化至 `0.85 - 0.6`），防止其过高透明度，实现更和谐的视觉还原。
