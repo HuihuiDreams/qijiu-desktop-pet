@@ -689,8 +689,8 @@ function startPomodoroTicker() {
 }
 
 function getInitialPomodoroWindowBounds() {
-  const width = 420;
-  const height = 520;
+  const width = 360;
+  const height = 440;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
@@ -989,10 +989,10 @@ function createWindow() {
   setPetWindowMousePassthrough(true, { forward: true });
 
   lockPetWindowToBounds({ x, y, width, height });
-  
+
   // macOS 特有：全工作区可见
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  
+
   // 启动置顶守护
   startKeepOnTopWatcher();
 
@@ -1154,6 +1154,7 @@ function buildTrayMenu() {
     },
     {
       label: isPaused ? trayMenuLabel('trayResumeWalk') : trayMenuLabel('trayPauseWalk'),
+      enabled: !pomodoroPetHidden,
       click: () => {
         isPaused = !isPaused;
         if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
@@ -1236,8 +1237,8 @@ function buildTrayMenu() {
     },
     {
       label: updateMenuState.checking ? trayMenuLabel('trayUpdateChecking')
-           : updateMenuState.downloading ? trayMenuLabel('trayUpdateDownloading')
-           : trayMenuLabel('trayUpdateCheck'),
+        : updateMenuState.downloading ? trayMenuLabel('trayUpdateDownloading')
+          : trayMenuLabel('trayUpdateCheck'),
       enabled: updateMenuState.enabled,
       click: () => {
         void checkForUpdatesFromTray();
@@ -1319,7 +1320,7 @@ function showUpdateProgressWindow(payload) {
     updateProgressWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     updateProgressWindow.webContents.on('will-navigate', (event) => event.preventDefault());
     updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'));
-    
+
     updateProgressWindow.webContents.once('did-finish-load', () => {
       sendUpdateProgressPayload(normalizedPayload);
     });

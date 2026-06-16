@@ -56,8 +56,13 @@ function updateI18nElements() {
     el.textContent = t(el.dataset.i18n);
   });
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    el.title = t(el.dataset.i18nTitle);
-    el.setAttribute('aria-label', t(el.dataset.i18nTitle));
+    const translated = t(el.dataset.i18nTitle);
+    el.title = translated;
+    el.setAttribute('aria-label', translated);
+    // Keep custom tooltip attribute in sync when title is updated externally
+    if (el.hasAttribute('data-tooltip-text')) {
+      el.setAttribute('data-tooltip-text', translated);
+    }
   });
   renderPinState(Boolean(currentState.isAlwaysOnTop));
 }
@@ -97,9 +102,18 @@ function renderPets(assets = DEFAULT_POMODORO_STATE.assets) {
 
 function renderPinState(isAlwaysOnTop) {
   pinBtn.setAttribute('aria-pressed', String(isAlwaysOnTop));
-  pinBtn.title = isAlwaysOnTop ? t('pomodoroUnpin') : t('pomodoroPin');
-  pinBtn.setAttribute('aria-label', pinBtn.title);
+  const pinTitle = isAlwaysOnTop ? t('pomodoroUnpin') : t('pomodoroPin');
+  pinBtn.title = pinTitle;
+  pinBtn.setAttribute('aria-label', pinTitle);
+  // Keep custom tooltip attribute in sync during hover
+  if (pinBtn.hasAttribute('data-tooltip-text')) {
+    pinBtn.setAttribute('data-tooltip-text', pinTitle);
+  }
   pinBtn.classList.toggle('pomodoro-icon-button--muted', !isAlwaysOnTop);
+  // Refresh visible tooltip if pin button is currently hovered
+  if (activeHoverEl === pinBtn && tooltipEl) {
+    tooltipEl.textContent = pinTitle;
+  }
 }
 
 function renderState(nextState) {
@@ -183,9 +197,111 @@ window.electronAPI.onLocaleChange?.((locale) => {
   updateI18nElements();
 });
 
+// Custom Tooltip Logic
+const tooltipEl = document.getElementById('pomodoro-tooltip');
+let activeHoverEl = null;
+
+function showTooltip(target) {
+  if (!tooltipEl) return;
+  
+  // Clear native title to prevent default tooltip, saving it in a custom attribute
+  if (target.title) {
+    target.setAttribute('data-tooltip-text', target.title);
+    target.title = '';
+  }
+  
+  const titleText = target.getAttribute('data-tooltip-text');
+  if (!titleText) return;
+
+  tooltipEl.textContent = titleText;
+  
+  // Calculate position
+  const rect = target.getBoundingClientRect();
+  const panelRect = document.getElementById('pomodoro-panel').getBoundingClientRect();
+  
+  // Center horizontally relative to the target
+  const targetCenterX = rect.left + rect.width / 2 - panelRect.left;
+  
+  // Determine if we show it above or below the target
+  // If target is in the upper half of the panel, show below. Otherwise show above.
+  const isUpperHalf = (rect.top + rect.height / 2 - panelRect.top) < (panelRect.height / 2);
+  
+  // First, set the left coordinate
+  tooltipEl.style.left = `${targetCenterX}px`;
+  
+  // To get offsetHeight accurately, we ensure tooltipEl is in the DOM and style is computed
+  const tooltipHeight = tooltipEl.offsetHeight || 26;
+
+  let targetY;
+  if (isUpperHalf) {
+    // Show below the element (slide down from -4px offset)
+    targetY = rect.bottom - panelRect.top + 6;
+    if (!tooltipEl.classList.contains('pomodoro-tooltip--visible')) {
+      tooltipEl.style.transform = 'translate(-50%, -4px)';
+    }
+  } else {
+    // Show above the element (slide up from 4px offset)
+    targetY = rect.top - panelRect.top - tooltipHeight - 6;
+    if (!tooltipEl.classList.contains('pomodoro-tooltip--visible')) {
+      tooltipEl.style.transform = 'translate(-50%, 4px)';
+    }
+  }
+  
+  tooltipEl.style.top = `${targetY}px`;
+  
+  // Force a reflow to apply the initial transform/position
+  tooltipEl.getBoundingClientRect();
+  
+  // Add visible class and set final transform
+  tooltipEl.classList.add('pomodoro-tooltip--visible');
+  tooltipEl.style.transform = 'translate(-50%, 0)';
+}
+
+function hideTooltip(target) {
+  if (!tooltipEl) return;
+  
+  // Restore native title on mouse leave
+  if (target && target.getAttribute('data-tooltip-text')) {
+    target.title = target.getAttribute('data-tooltip-text');
+  }
+  
+  tooltipEl.classList.remove('pomodoro-tooltip--visible');
+}
+
+// Attach hover listeners to elements with titles
+function initTooltipEvents() {
+  const targets = document.querySelectorAll('.pomodoro-icon-button, .pomodoro-step-button');
+  targets.forEach(target => {
+    target.addEventListener('mouseenter', () => {
+      activeHoverEl = target;
+      showTooltip(target);
+    });
+    target.addEventListener('mouseleave', () => {
+      if (activeHoverEl === target) {
+        activeHoverEl = null;
+      }
+      hideTooltip(target);
+    });
+    target.addEventListener('click', () => {
+      // Temporarily restore title so renderPinState / translation updates write to title correctly
+      if (target.getAttribute('data-tooltip-text')) {
+        target.title = target.getAttribute('data-tooltip-text');
+      }
+      
+      // Update tooltip content dynamically after state / title has been updated
+      setTimeout(() => {
+        if (activeHoverEl === target) {
+          showTooltip(target);
+        }
+      }, 50);
+    });
+  });
+}
+
 window.electronAPI.getLocale().then(locale => {
   currentLocale = locale;
   document.documentElement.lang = locale;
   updateI18nElements();
+  initTooltipEvents();
   return refreshState();
 });

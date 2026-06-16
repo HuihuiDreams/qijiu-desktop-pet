@@ -19,7 +19,7 @@
             <path d="M8 4h8l-1 6 4 4v2h-6v5h-2v-5H5v-2l4-4-1-6z"></path>
           </svg>
         </button>
-        <button id="pomodoro-close" class="pomodoro-icon-button pomodoro-icon-button--danger" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
+        <button id="pomodoro-close" class="pomodoro-icon-button" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
           <svg class="pomodoro-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18"></path>
           </svg>
@@ -54,14 +54,14 @@
         <div class="pomodoro-pets pomodoro-pets--running" aria-hidden="true">
           <figure class="pomodoro-pet-figure">
             <img id="pomodoro-running-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
-            <figcaption data-i18n="nicknameYueqi">岳七</figcaption>
+            <figcaption data-i18n="nameYueqi">岳清源</figcaption>
           </figure>
           <figure class="pomodoro-pet-figure">
             <img id="pomodoro-running-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
-            <figcaption data-i18n="nicknameShenjiu">沈九</figcaption>
+            <figcaption data-i18n="nameShenjiu">沈清秋</figcaption>
           </figure>
         </div>
-        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">结束本次</button>
+        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">结束</button>
       </div>
 
       <div id="pomodoro-completed" class="pomodoro-state pomodoro-state--hidden">
@@ -70,10 +70,13 @@
           <img id="pomodoro-complete-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
           <img id="pomodoro-complete-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
         </div>
-        <p id="pomodoro-message" class="pomodoro-message" data-i18n="pomodoroCompleteMessage">今日这一段，已经很好了。</p>
-        <button id="pomodoro-finish" class="pomodoro-primary-button" type="button" data-i18n="pomodoroFinish">收起静室</button>
+        <p id="pomodoro-message" class="pomodoro-message" data-i18n="pomodoroCompleteMessage">闭关结束，修为又大有精进。</p>
+        <button id="pomodoro-finish" class="pomodoro-primary-button" type="button" data-i18n="pomodoroFinish">出关</button>
       </div>
     </section>
+
+    <!-- Custom tooltip for hover annotations -->
+    <div id="pomodoro-tooltip" class="pomodoro-tooltip" aria-hidden="true"></div>
   </main>
 
   <script src="data/i18n.js"></script>
