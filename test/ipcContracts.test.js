@@ -6,6 +6,7 @@ const {
   createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
+  normalizePomodoroMinutes,
   normalizeStatusWindowSize,
   normalizeWindowMigrationDirection,
 } = require('../ipcContracts');
@@ -84,4 +85,19 @@ test('isAllowedSkinId accepts only scanned skin IDs', () => {
   assert.equal(isAllowedSkinId('missing', ['default', 'birds']), false);
   assert.equal(isAllowedSkinId('../default', ['default', 'birds']), false);
   assert.equal(isAllowedSkinId('default', null), false);
+});
+
+test('normalizePomodoroMinutes accepts finite whole-minute input', () => {
+  assert.equal(normalizePomodoroMinutes('30'), 30);
+  assert.equal(normalizePomodoroMinutes(45.8), 45);
+});
+
+test('normalizePomodoroMinutes falls back for unsafe input', () => {
+  assert.equal(normalizePomodoroMinutes('abc'), 25);
+  assert.equal(normalizePomodoroMinutes(0), 25);
+  assert.equal(normalizePomodoroMinutes(-5), 25);
+});
+
+test('normalizePomodoroMinutes clamps very long sessions', () => {
+  assert.equal(normalizePomodoroMinutes(999), 240);
 });

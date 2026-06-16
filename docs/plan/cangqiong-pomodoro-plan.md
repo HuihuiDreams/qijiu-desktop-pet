@@ -1,395 +1,466 @@
-﻿# 实施计划：苍穹山派番茄钟
+﻿# 实施计划：苍穹山派轻量番茄钟
 
 ## Spec Alignment
 
 ### Objective
 
-实现本地番茄钟 MVP：用户开启专注后，系统根据前台窗口分类判断是否频繁切到非工作软件，并用沈九台词进行轻量监督；不强制锁屏，不阻断用户操作。
+实现本地轻量番茄钟 MVP：用户输入专注时长后，应用打开一个倒计时窗口；专注期间两只宠物从桌面进入该窗口，静止陪伴用户完成倒计时。MVP 不检查前台窗口，不判断用户是否分心，不做警告或监督。
+
+### How Might We
+
+如何让桌宠在不窥探用户工作内容、不增加复杂配置的前提下，提供一个足够可爱、足够低打扰的专注陪伴体验？
+
+### Target User
+
+当前桌宠用户中，想要一个简单番茄钟的人：他们只需要设置时长、看到倒计时，并让岳清源和沈九在窗口里陪着自己，不需要应用判断他们在做什么。
 
 ### Commands
 
 - Dev: `npm run dev`
 - Test all: `npm test`
-- Focused tests: `node --test test/focusClassification.test.js test/focusSystem.test.js`
+- Focused tests: `node --test test/pomodoroSystem.test.js test/pomodoroWindow.test.js test/pomodoroTray.test.js`
 - Build: `npm run build`
 
 ### Project Structure
 
-- `src/data/config.js`: 番茄钟默认配置和软件/域名分类规则。
-- `src/systems/FocusSystem.js`: 专注生命周期、前台分类统计和警告事件。
-- `main.js` / `preload.js`: 前台窗口信息读取和安全 IPC。
-- `src/app.js`: 游戏循环集成和桌宠状态响应。
-- `src/data/dialogues.js`: 专注开始、警告、成功、失败台词。
-- `test/`: 分类、FocusSystem、托盘入口和持久化测试。
+- `src/systems/PomodoroSystem.js`: 纯倒计时状态机，负责开始、停止、完成、剩余时间快照。
+- `main.js`: 托盘入口、番茄钟窗口生命周期、桌面宠物隐藏/恢复、主进程 IPC。
+- `preload.js`: 暴露安全的番茄钟 IPC 订阅和命令。
+- `src/pomodoro.html`: 番茄钟窗口 HTML。
+- `src/pomodoro.css`: 倒计时窗口布局、两只静态宠物、完成态样式。
+- `src/pomodoroWindow.js`: 番茄钟窗口渲染逻辑、输入分钟数、倒计时刷新、完成/关闭交互。
+- `src/data/i18n.js`: 托盘和番茄钟窗口文案。
+- `test/`: 倒计时状态机、托盘入口、窗口 IPC 和安全边界测试。
 
 ### Code Style
 
-使用现有 vanilla JavaScript 风格：分类逻辑保持纯函数，FocusSystem 使用 fake clock 可测试；主进程只负责读取前台窗口并发送脱敏摘要；renderer 根据状态做表现，不直接推断 OS 或窗口细节。
+沿用现有 vanilla JavaScript 和标准 CSS。倒计时逻辑保持可注入时钟的纯状态机；Electron 主进程只管理窗口和 IPC；番茄钟窗口渲染进程只负责 UI，不直接读写 Node API。
 
 ### Boundaries
 
-- Always: 前台窗口读取在主进程，renderer 只接收脱敏分类/摘要。
-- Always: 分类失败时 fallback 为 `neutral`，不能误判为非工作。
-- Always: 该功能只做提醒和监督，不强制关闭、遮挡或拦截用户软件。
-- Ask first: 新增前台窗口依赖、读取浏览器完整 URL、增加账号同步或统计报表。
-- Never: 记录完整窗口标题、完整路径、完整 URL 或用户输入内容。
+- Always: 用户先输入专注时长，再进入倒计时。
+- Always: 分钟输入框默认使用上次专注时长；首次使用或读取失败时 fallback 为 `25` 分钟。
+- Always: 倒计时使用绝对 `endAt` 时间计算剩余时间，避免窗口卡顿或系统睡眠后漂移。
+- Always: 专注开始后桌面宠物暂停/隐藏，番茄钟窗口内显示两只静态宠物。
+- Always: 番茄钟窗口默认置顶，窗口内提供取消置顶/重新置顶的控制。
+- Always: 倒计时完成后显示一句温和鼓励台词和完成态，不评价用户是否“成功”专注。
+- Always: 手动关闭番茄钟窗口视为结束本次专注，并恢复桌面宠物到专注前状态。
+- Always: 番茄钟窗口使用 `contextIsolation`、`sandbox` 和 preload 暴露的最小 API。
+- Ask first: 新增统计、历史记录、奖励系统、专注失败判定或用户配置页。
+- Never: 检查前台窗口、读取浏览器 URL、扫描进程、记录用户打开的软件或网页。
+- Never: 强制锁屏、拦截应用、遮挡其他软件、惩罚用户。
 
 ### Success Criteria
 
-- 用户可以从托盘开始和结束 25 分钟专注。
-- 默认工作/中立/非工作分类规则可测试且可配置。
-- 10 分钟窗口内非工作切换次数或累计时长达到阈值时触发警告，并有冷却。
-- 专注状态不破坏移动、拖拽、隐藏和现有交互。
-- `npm test` 和 focus focused tests 通过。
+- 用户可以从托盘打开番茄钟入口。
+- 用户可以输入一个合理的专注分钟数并开始倒计时，下一次打开时默认使用上次时长。
+- 倒计时窗口显示剩余时间和两只静止宠物。
+- 番茄钟窗口默认置顶，用户可以在窗口内取消置顶。
+- 专注期间桌面上的两只宠物不再乱走，视觉上“进入”倒计时窗口。
+- 倒计时完成后显示完成态和温和鼓励台词，用户关闭窗口后桌面宠物恢复。
+- 手动关闭或取消专注不会破坏移动、拖拽、隐藏、暂停和托盘现有功能。
+- `npm test` 和 focused tests 通过。
 
 ### Testing Strategy
 
-先测试 `classifyForegroundWindow` 的配置命中和 fallback，再用 fake clock 测 FocusSystem 生命周期、阈值、冷却和完成状态。Electron 前台窗口读取作为主进程边界测试，真实 UI 用 `npm run dev` 手动验证托盘入口和台词触发。
+先用 fake clock 测 `PomodoroSystem` 的开始、剩余时间、完成和停止；再测 `main.js` 的托盘入口、窗口创建、关闭恢复、上次时长偏好和 IPC 注册。番茄钟 UI 用静态 DOM/字符串测试覆盖关键元素，真实窗口用 `npm run dev` 手动验证输入时长、倒计时、置顶切换、完成态台词和宠物恢复。
 
 ## Overview
 
-“苍穹山派”番茄钟是一个沉浸式专注模式：用户开启专注后，沈九进入“闭关/监督”状态；应用定期识别当前前台窗口，判断用户是否频繁切换到非工作软件；达到阈值后触发沈九冷嘲热讽式提醒。MVP 只做本地识别、轻量监督和可配置规则，不做强制锁屏、应用拦截、云同步或账号系统。
+“苍穹山派轻量番茄钟”是陪伴型专注模式，不是监督型专注模式。用户主动设定一个专注时长，随后看到一个小窗口：中央是倒计时，两侧或下方是岳清源和沈九的静态修炼姿态。桌面上的宠物在这段时间暂停并隐藏，避免出现“桌面也有、窗口也有”的重复感。
 
-## 核心定义：什么是非工作软件
+MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作，也不接触隐私敏感的窗口标题、URL 或进程信息。功能边界越清楚，越容易先做出一个能用、可爱的版本。
 
-### 识别对象
+## Recommended Direction
 
-只识别“当前前台窗口”，不扫描用户后台进程，不记录完整使用历史。每次采样尽量获取以下字段：
+采用“独立番茄钟窗口 + 纯倒计时系统 + 静态宠物资源”的方案。
 
-- `processName`：进程名，例如 `Code.exe`、`chrome.exe`、`Steam.exe`
-- `ownerName`：应用名，例如 Visual Studio Code、Google Chrome
-- `path`：可执行文件路径，仅用于本地匹配，不展示给普通 UI
-- `title`：窗口标题，例如当前文档、网页标题
-- `url/domain`：浏览器当前网址或域名，能稳定获取时才使用
+倒计时窗口一开始显示分钟输入框和开始按钮，输入框默认填入上次使用的专注分钟数；开始后切换到倒计时视图。窗口内宠物不复用主窗口里的可拖拽 DOM，而是直接根据当前皮肤显示静态图片，例如 `left_cultivate.webp` 和 `right_cultivate.webp`，缺失时 fallback 到默认皮肤资源。
 
-### 分类结果
+专注开始时，主进程记录桌面宠物当前可见/暂停状态，然后隐藏或暂停透明宠物窗口；专注结束或窗口关闭时恢复原状态。番茄钟窗口默认置顶，但用户可以在窗口里取消置顶；完成后显示一句温和鼓励台词。这样用户看到的是“两只宠物进入倒计时窗口”，实现上却不需要跨窗口迁移真实 DOM，也不会触碰现有移动系统太多。
 
-前台窗口统一分类为三类：
+## Resolved Product Decisions
 
-- `work`：工作软件。命中工作应用、工作域名或用户自定义允许规则。
-- `neutral`：中立软件。系统窗口、桌面、任务栏、文件选择器、输入法、杀毒/系统设置、桌宠自身，以及短暂无法识别的空窗口。
-- `nonWork`：非工作软件。明确命中分心应用/分心域名，或未知普通应用持续超过宽限时间。
+- 默认时长：使用上次专注时长，首次使用 fallback 为 `25` 分钟。
+- 完成体验：完成态自动显示一句温和鼓励台词。
+- 窗口层级：番茄钟窗口默认置顶，用户可以在窗口内取消置顶或重新置顶。
 
-### 默认工作软件
+## UI Design Specification
 
-默认工作软件列表用于降低误伤，后续允许用户修改：
+番茄钟窗口沿用现有右键菜单和状态窗口的“仙侠水墨玻璃”系统，不引入新的品牌方向。它应该像一个从状态面板拆出来的“小静室玉牌”：同样的 mist glass、玉色描边、书法标题、细金玉分隔线、内嵌浅色内容块，只把内容换成倒计时和两只静止宠物。
 
-- 编辑器/IDE：VS Code、Cursor、WebStorm、Visual Studio、Notepad++
-- 终端/开发工具：PowerShell、Windows Terminal、cmd、Git Bash、Node、npm
-- 办公与创作：Word、Excel、PowerPoint、OneNote、Obsidian、Notion、Figma
-- 浏览器中的工作域名：GitHub、GitLab、Stack Overflow、npm、MDN、OpenAI 文档、公司/项目配置域名
+### Existing UI Tokens To Reuse
 
-### 默认中立软件
+- **Panel shell:** 复用 `status-panel` 的视觉语言：半透明白玉渐变、`rgba(61, 139, 107, 0.3)` 边框、14px 外圆角、9px inset 内描边、顶部/底部 1px 高光线、`0 12px 30px rgba(30, 42, 54, 0.16)` 阴影。
+- **Typography:** 标题使用 `--font-display`，正文和控件使用 `--font-body`，数字倒计时使用 `'JetBrains Mono', 'Geist Mono', monospace`；不要使用浏览器默认按钮/输入框字体。
+- **Palette:** 主色只用现有 `--color-jade`、`--color-jade-deep`、`--color-gold`、`--color-ink`、`--color-ink-light`、`--color-mist`、`--color-crimson`。岳清源相关轻微点缀可用 `--color-yueqi`，但不能让窗口变成紫色主题。
+- **Controls:** 关闭、置顶、开始、结束按钮复用状态窗口和右键菜单的 hover 规律：玉色 hover 用左侧/底部细线或浅玉背景，危险/关闭 hover 用 `--color-crimson-soft`。
+- **Motion:** 打开窗口使用类似 `panelSlideIn` 的 0.35-0.4s ease-out；菜单式小控件可用 `menuReveal` 的轻弹感。倒计时本身不做持续闪烁，避免分心。
 
-中立软件不计入违规，也不打断番茄钟：
+### Window Shape
 
-- Windows Shell、任务栏、桌面、开始菜单
-- 文件资源管理器、文件打开/保存对话框
-- 输入法、系统设置、系统通知、杀毒安全软件
-- 桌宠自身窗口和状态窗口
-- 无法识别且持续时间少于宽限阈值的临时窗口
+- BrowserWindow 建议内容区约 `420 x 520`，最小约 `360 x 460`，最大约 `520 x 640`。
+- `body` 保持透明背景和 10px padding，主容器为 `.pomodoro-panel`，使用与 `status-panel` 相同的外壳结构。
+- 标题栏可拖拽，右侧放两个 icon button：置顶切换和关闭。按钮大小 30px，8px 圆角，`app-region: no-drag`。
 
-### 默认非工作软件
+### Layout States
 
-默认非工作软件包括：
+**Setup state**
 
-- 游戏平台/游戏：Steam、Epic Games、Battle.net、常见游戏进程
-- 短视频/娱乐：抖音、Bilibili、YouTube、Netflix、Twitch 等娱乐域名
-- 社交聊天：Discord、QQ、微信、Telegram、微博等，除非用户加入工作清单
-- 购物/外卖/娱乐网站：淘宝、京东、Amazon、娱乐网站等
+```text
+┌──────────────────────────────┐
+│ 苍穹静修              pin  × │
+├──────────────────────────────┤
+│        [双宠静修插图]        │
+│                              │
+│       本次闭关多久？         │
+│        [-]  25  [+]          │
+│          开始静修            │
+│    上次时长会自动记住        │
+└──────────────────────────────┘
+```
 
-### 判定策略
+- 中央先显示两只静态宠物，左右相对，尺寸约 96-120px，高度固定，避免切换状态时窗口跳动。
+- 分钟输入用一个 `.pomodoro-duration-stepper`，由减号按钮、数字输入、加号按钮组成；数字输入宽 72px，居中，monospace，字号约 24px。
+- 主按钮使用玉色渐变背景、深玉文字或白字，宽度约 180px，高度 40px，10px 圆角。
+- 辅助文案只保留一句短提示，不解释功能，不写长说明。
 
-MVP 采用“允许清单优先 + 常见分心黑名单”的平衡模式：
+**Running state**
 
-- 明确命中 `workApps` 或 `workDomains`：判定为 `work`
-- 明确命中 `neutralApps`：判定为 `neutral`
-- 明确命中 `distractionApps` 或 `distractionDomains`：判定为 `nonWork`
-- 未知普通应用连续前台超过 `20s`：判定为 `nonWork`
-- 黑名单应用连续前台超过 `5s`：判定为 `nonWork`
-- 单次切换少于阈值：只记录，不触发嘲讽
+```text
+┌──────────────────────────────┐
+│ 苍穹静修              pin  × │
+├──────────────────────────────┤
+│        24:18                 │
+│      [细玉色进度环/条]       │
+│   岳清源       沈清秋          │
+│  [静态宠物]   [静态宠物]     │
+│          结束本次闭关         │
+└──────────────────────────────┘
+```
 
-### “频繁切换”的定义
+- 倒计时为主视觉，字号约 54-64px，monospace，`font-variant-numeric: tabular-nums`，颜色 `--color-ink`。
+- 进度表现用细玉色进度环或 6px 高横向进度条；优先横向条，和状态窗口 stat bar 一致，减少新图形语言。
+- 宠物区位于倒计时下方，放在浅色内嵌块中，背景和 `.pet-status-block` 接近。不要再套一层大卡片。
+- 结束按钮使用低强调 ghost button，避免误点；hover 使用浅 crimson，但默认不红。
 
-沈九不因一次误触立刻嘲讽。默认触发条件：
+**Completed state**
 
-- 以 `10min` 为滚动窗口统计行为
-- 窗口内非工作软件切换次数 `>= 3` 次，触发警告
-- 或窗口内累计非工作时长 `>= 90s`，触发警告
-- 警告后进入 `3min` 冷却期，冷却期内继续记录但不重复刷屏
+```text
+┌──────────────────────────────┐
+│ 苍穹静修              pin  × │
+├──────────────────────────────┤
+│          已完成              │
+│    [双宠静修/轻微光晕]        │
+│         修为大有精进         │
+│          出关                │
+└──────────────────────────────┘
+```
 
-### 用户自定义规则
+- 完成标题用 `--font-display`，字号约 26px，颜色 `--color-jade-deep`。
+- 鼓励台词一行到两行，正文色 `--color-ink-light`，不要嘲讽、评分或制造失败感。
+- 完成按钮沿用主按钮样式，文案为“收起静室”或等价 i18n。
+- 可以给宠物加一次性淡入光晕，但不做循环粒子或长时间动画。
 
-用户配置优先级高于默认配置。后续 UI 可以暴露以下配置：
+### Component Inventory
 
-- 添加/移除工作软件
-- 添加/移除非工作软件
-- 添加/移除工作域名和非工作域名
-- 调整未知应用宽限时间
-- 调整警告阈值和冷却时间
+- `.pomodoro-panel`: 状态窗口同款玻璃玉牌外壳。
+- `.pomodoro-titlebar`: 标题、置顶按钮、关闭按钮；拖拽区。
+- `.pomodoro-icon-button`: 30x30 icon button，用 SVG pin / unpin / close 或现有关闭符号。
+- `.pomodoro-pets`: 固定高度宠物展示区，setup/running/completed 共用。
+- `.pomodoro-duration-stepper`: 减少、输入、增加的紧凑控制组。
+- `.pomodoro-timer`: 大号 tabular countdown。
+- `.pomodoro-progress`: 与 stat bar 同源的细进度条。
+- `.pomodoro-primary-button` / `.pomodoro-ghost-button`: 开始、完成、结束按钮。
+- `.pomodoro-message`: 完成态鼓励台词。
+
+### Visual QA Criteria
+
+- 与 `src/status.css` 的 `status-panel` 放在一起看，应像同一套窗口，而不是新页面。
+- 与 `src/context-menu.css` 的 hover、边框、阴影和玉色强调一致。
+- 桌面截图中，倒计时数字是唯一强焦点；宠物和控件陪衬，不抢注意力。
+- 360px 宽时按钮文字、倒计时、宠物不会重叠或溢出。
+- 置顶按钮的 pinned/unpinned 状态只靠图标形态和 aria/title 文案区分，不新增长说明文字。
+
+## Key Assumptions to Validate
+
+- [ ] 用户愿意在独立小窗口里输入时长，而不是必须在托盘菜单中直接选择预设时间。验证：手动跑通窗口输入流程。
+- [ ] 静态修炼图足够表达“宠物进入窗口陪伴”。验证：用当前三套皮肤检查资源是否齐全，缺失时 fallback 正常。
+- [ ] 专注期间隐藏桌面宠物不会让用户困惑。验证：完成/关闭后能稳定恢复，托盘状态文案能说明当前正在专注。
+- [ ] 不做监督仍然有价值。验证：MVP 只衡量用户是否愿意打开它进行倒计时，而不是是否减少分心。
+
+## MVP Scope
+
+### In
+
+- 托盘菜单增加“开启番茄钟”入口。
+- 番茄钟窗口支持用户输入分钟数。
+- 记住上次使用的专注分钟数，并作为下次默认值。
+- 支持开始、倒计时、完成、手动结束。
+- 番茄钟窗口默认置顶，并提供置顶切换。
+- 倒计时窗口显示两只静止宠物。
+- 完成态显示一句温和鼓励台词。
+- 专注期间桌面宠物暂停/隐藏，结束后恢复。
+- 基础多语言文案。
+- 单元测试覆盖倒计时状态机和主进程窗口边界。
+
+### Out
+
+- 不检查当前前台窗口。
+- 不识别工作软件、娱乐网站或聊天软件。
+- 不做非工作软件分类规则。
+- 不做沈九警告台词。
+- 不做专注失败判定。
+- 不保存历史统计或生成报表。
+- 不新增配置页。
 
 ## Architecture Decisions
 
-- 前台窗口识别放在 Electron 主进程中实现，渲染进程通过 IPC 请求当前窗口摘要。
-- 分类逻辑做成纯函数，便于测试，也避免把 UI、计时器和系统 API 混在一起。
-- 新增 `FocusSystem` 管理番茄钟生命周期、采样、分类、违规统计和警告冷却。
-- 沈九的“闭关”动画优先复用已有 `meditating` 状态和 `right_cultivate.png`，避免 MVP 阶段新增素材阻塞。
-- 台词放进 `src/data/dialogues.js`，与现有对话系统保持一致。
-- 专注模式只做提醒，不阻止用户使用任何软件，避免过度侵入。
+- 番茄钟窗口使用独立 `BrowserWindow`，类似现有状态窗口和更新窗口的边界，但有自己的 `pomodoro.html` / `pomodoroWindow.js` / `pomodoro.css`。
+- 倒计时核心放入 `PomodoroSystem`，用 `startAt`、`durationMs`、`endAt` 推导快照，避免依赖 `setInterval` 的累计误差。
+- 主进程拥有番茄钟窗口生命周期，保证窗口关闭、应用退出、托盘刷新都能走同一套恢复逻辑。
+- 桌面宠物窗口不迁移真实 DOM。专注窗口只渲染当前皮肤的静态宠物图片，减少跨窗口状态同步。
+- 当前皮肤由主进程或 preload 提供给番茄钟窗口；资源缺失时使用 `assets/default/`。
+- 不接入 `activeWindowProvider.js`、`activeWindowAwareness.js` 或 `WindowAwarenessSystem.js`。
 
 ## Task List
 
-### Phase 1: 配置与分类模型
+### Phase 1: 倒计时核心
 
-#### Task 1: 新增番茄钟默认配置
+#### Task 1: 新增 PomodoroSystem
 
-**Description:** 在配置层增加番茄钟参数和软件分类默认清单。
+**Description:** 新增可单测的倒计时状态机，管理输入时长、开始、停止、完成和快照。
 
 **Acceptance criteria:**
-- [ ] 存在 `FOCUS_CONFIG` 或等价配置对象
-- [ ] 包含时长、采样间隔、宽限时间、滚动窗口、冷却时间
-- [ ] 包含 `workApps`、`workDomains`、`neutralApps`、`distractionApps`、`distractionDomains`
+- [ ] 支持 `start(durationMinutes, now)` 或等价 API。
+- [ ] 返回 `idle`、`running`、`completed` 状态。
+- [ ] 快照包含 `durationMs`、`startedAt`、`endAt`、`remainingMs`、`progress`。
+- [ ] `remainingMs` 基于 `endAt - now` 计算，不能依赖 interval 累加。
+- [ ] 非法时长有安全 fallback 或明确错误。
 
 **Verification:**
-- [ ] `npm test` 通过
-- [ ] 配置可被单元测试直接导入
+- [ ] fake clock 测试开始、倒计时推进、完成、停止。
+- [ ] `node --test test/pomodoroSystem.test.js` 通过。
 
 **Dependencies:** None
 
 **Files likely touched:**
-- `src/data/config.js`
-- `test/focusClassification.test.js`
+- `src/systems/PomodoroSystem.js`
+- `test/pomodoroSystem.test.js`
 
 **Estimated scope:** Small
 
-#### Task 2: 实现前台窗口分类函数
+#### Task 2: 定义番茄钟 IPC 合约
 
-**Description:** 新增纯函数 `classifyForegroundWindow(windowInfo, focusConfig)`，返回 `work`、`neutral` 或 `nonWork`，并附带命中原因。
-
-**Acceptance criteria:**
-- [ ] 工作应用命中时返回 `work`
-- [ ] 中立应用命中时返回 `neutral`
-- [ ] 黑名单应用/域名命中时返回 `nonWork`
-- [ ] 未知应用按宽限时间处理
-- [ ] 空窗口或无法识别窗口默认返回 `neutral`
-
-**Verification:**
-- [ ] 覆盖工作软件、中立软件、非工作软件、未知软件、浏览器域名场景
-- [ ] `npm test -- --test-name-pattern "focus"` 通过
-
-**Dependencies:** Task 1
-
-**Files likely touched:**
-- `src/systems/FocusSystem.js`
-- `test/focusClassification.test.js`
-
-**Estimated scope:** Medium
-
-### Checkpoint: 分类基础
-
-- [ ] 所有分类测试通过
-- [ ] 默认规则不会把系统窗口和桌宠自身判为非工作
-- [ ] 文档中的“非工作软件定义”与代码配置一致
-
-### Phase 2: 前台窗口识别
-
-#### Task 3: 主进程接入前台窗口读取能力
-
-**Description:** 在 Electron 主进程中读取当前前台窗口信息，并通过 IPC 暴露给渲染进程。
+**Description:** 在 preload 和主进程之间定义最小 IPC：打开窗口、开始、结束、读取/保存上次时长、切换置顶、订阅状态变化。
 
 **Acceptance criteria:**
-- [ ] 新增 IPC handler，例如 `get-active-window-info`
-- [ ] 返回标准化窗口摘要：`processName`、`ownerName`、`title`、`url/domain`、`sampledAt`
-- [ ] 读取失败时返回 `{ classificationHint: 'neutral', error: true }` 或等价安全结果
-- [ ] 不向普通 UI 展示完整可执行路径
+- [ ] preload 暴露番茄钟相关最小 API。
+- [ ] IPC channel 命名清晰，例如 `pomodoro-start`、`pomodoro-stop`、`pomodoro-state`。
+- [ ] 支持读取和保存 `lastPomodoroMinutes`，首次使用 fallback 为 `25`。
+- [ ] 支持切换番茄钟窗口 `alwaysOnTop` 状态。
+- [ ] 新增或迁移后的 invoke 优先返回 `{ success, data }` / `{ success, error }` 形状。
+- [ ] renderer 无法直接访问 Node API。
 
 **Verification:**
-- [ ] DevTools 可调用 `window.electronAPI.getActiveWindowInfo()`
-- [ ] 读取失败时应用不崩溃
-- [ ] `npm test` 通过
+- [ ] preload 订阅测试覆盖新增 channel。
+- [ ] IPC handler 测试覆盖成功和失败结果。
 
 **Dependencies:** Task 1
 
 **Files likely touched:**
 - `main.js`
 - `preload.js`
-- `package.json`
-- `package-lock.json`
+- `ipcContracts.js`
+- `test/preloadSubscriptions.test.js`
+- `test/ipcContracts.test.js`
+
+**Estimated scope:** Small
+
+### Checkpoint: 核心可测
+
+- [ ] 倒计时状态机不依赖 Electron。
+- [ ] IPC 边界明确。
+- [ ] 还没有引入前台窗口读取或软件分类。
+
+### Phase 2: 番茄钟窗口
+
+#### Task 3: 新增番茄钟窗口文件
+
+**Description:** 新增 `pomodoro.html`、`pomodoroWindow.js` 和 `pomodoro.css`，实现输入态、倒计时态和完成态。
+
+**Acceptance criteria:**
+- [ ] UI 符合本计划的 `UI Design Specification`，复用状态窗口和右键菜单的视觉系统。
+- [ ] 主容器、标题栏、按钮、内嵌宠物区的圆角、阴影、边框和字体与 `status.css` / `context-menu.css` 保持一致。
+- [ ] 输入态包含分钟输入框和开始按钮。
+- [ ] 分钟输入框默认显示上次使用的专注时长，首次使用显示 `25`。
+- [ ] 倒计时态显示 `MM:SS` 或 `HH:MM:SS`。
+- [ ] 窗口内有置顶切换控件，当前状态可见。
+- [ ] 完成态显示完成文案、温和鼓励台词和关闭按钮。
+- [ ] 关闭按钮调用 preload 暴露的结束/关闭 API。
+- [ ] UI 不依赖主桌宠窗口 DOM。
+
+**Verification:**
+- [ ] 静态测试确认关键 DOM id/class 和脚本引用存在。
+- [ ] 手动视觉检查：番茄钟窗口与状态窗口、右键菜单同屏时风格一致。
+- [ ] `npm run dev` 手动验证默认时长、输入、倒计时刷新、置顶切换和完成态。
+
+**Dependencies:** Task 1, Task 2
+
+**Files likely touched:**
+- `src/pomodoro.html`
+- `src/pomodoroWindow.js`
+- `src/pomodoro.css`
+- `test/pomodoroWindow.test.js`
 
 **Estimated scope:** Medium
 
-### Phase 3: FocusSystem 核心
+#### Task 4: 渲染两只静态宠物
 
-#### Task 4: 实现番茄钟生命周期
-
-**Description:** 新增 `FocusSystem`，管理专注开始、停止、完成、剩余时间和状态快照。
+**Description:** 番茄钟窗口根据当前皮肤显示两只静态宠物，优先使用修炼姿态。
 
 **Acceptance criteria:**
-- [ ] 支持开始 25 分钟专注
-- [ ] 支持手动结束专注
-- [ ] 支持完成状态
-- [ ] 可返回剩余时间和当前统计
+- [ ] 显示岳清源和沈九两只宠物。
+- [ ] 当前皮肤存在 `left_cultivate.webp` / `right_cultivate.webp` 时优先使用。
+- [ ] 当前皮肤资源缺失时 fallback 到 `assets/default/`。
+- [ ] 图片有固定尺寸约束，窗口缩放时不挤压倒计时文本。
 
 **Verification:**
-- [ ] fake clock 测试开始、倒计时、完成
-- [ ] `npm test -- --test-name-pattern "FocusSystem"` 通过
+- [ ] 测试覆盖资源路径 fallback。
+- [ ] 手动切换皮肤后打开番茄钟，确认窗口内宠物跟随当前皮肤。
 
-**Dependencies:** Task 1
+**Dependencies:** Task 3
 
 **Files likely touched:**
-- `src/systems/FocusSystem.js`
-- `test/focusSystem.test.js`
+- `main.js`
+- `src/pomodoroWindow.js`
+- `src/pomodoro.css`
+- `test/pomodoroWindow.test.js`
+
+**Estimated scope:** Small
+
+### Phase 3: 主进程窗口与托盘集成
+
+#### Task 5: 创建和管理 Pomodoro BrowserWindow
+
+**Description:** 在主进程中创建独立番茄钟窗口，并管理打开、聚焦、关闭、完成后的生命周期。
+
+**Acceptance criteria:**
+- [ ] 重复点击托盘入口不会创建多个番茄钟窗口。
+- [ ] 已存在窗口时聚焦已有窗口。
+- [ ] 窗口创建后默认 `alwaysOnTop: true`。
+- [ ] 置顶切换只影响番茄钟窗口，不改变主透明桌宠窗口层级策略。
+- [ ] 窗口启用 `contextIsolation`、`sandbox`、禁用 Node integration。
+- [ ] 窗口关闭时停止本次专注并触发桌面宠物恢复。
+- [ ] 应用退出时清理窗口和 timer。
+
+**Verification:**
+- [ ] 主进程测试覆盖单例窗口创建和关闭清理。
+- [ ] `npm test` 通过。
+
+**Dependencies:** Task 2, Task 3
+
+**Files likely touched:**
+- `main.js`
+- `test/pomodoroTray.test.js`
+- `test/updateProgressSecurity.test.js`
 
 **Estimated scope:** Medium
 
-#### Task 5: 实现非工作切换统计与警告事件
+#### Task 6: 托盘菜单增加番茄钟入口
 
-**Description:** `FocusSystem` 定期采样前台窗口，按分类规则累计非工作次数和时长，达到阈值时发出警告事件。
-
-**Acceptance criteria:**
-- [ ] `10min` 内非工作切换 `>=3` 次触发警告
-- [ ] `10min` 内累计非工作时长 `>=90s` 触发警告
-- [ ] 警告后 `3min` 内不重复触发
-- [ ] 工作软件和中立软件不计入违规
-
-**Verification:**
-- [ ] 单元测试覆盖次数阈值、时长阈值、冷却期、宽限期
-- [ ] `npm test` 通过
-
-**Dependencies:** Task 2, Task 4
-
-**Files likely touched:**
-- `src/systems/FocusSystem.js`
-- `test/focusSystem.test.js`
-
-**Estimated scope:** Medium
-
-### Checkpoint: 核心逻辑
-
-- [ ] FocusSystem 测试通过
-- [ ] 不依赖真实系统窗口也能完成核心逻辑测试
-- [ ] 采样失败不会误判为非工作
-
-### Phase 4: 桌宠行为与 UI 集成
-
-#### Task 6: 接入 app.js 游戏循环
-
-**Description:** 在渲染进程初始化 `FocusSystem`，专注中按固定间隔获取前台窗口信息并更新系统状态。
+**Description:** 在托盘菜单中增加番茄钟入口和运行中状态展示。
 
 **Acceptance criteria:**
-- [ ] 专注模式开启后沈九进入 `meditating`
-- [ ] 专注模式结束后沈九恢复自然行为
-- [ ] 达到警告阈值后触发沈九台词
-- [ ] `isPaused`、隐藏宠物、状态窗口不破坏番茄钟计时
+- [ ] 空闲时显示“开启番茄钟”。
+- [ ] 运行中显示剩余分钟或“番茄钟进行中”。
+- [ ] 运行中点击可打开/聚焦番茄钟窗口。
+- [ ] 托盘菜单刷新不影响皮肤、暂停、隐藏、更新、退出入口。
 
 **Verification:**
-- [ ] DevTools 可通过 debug 方法模拟非工作窗口并触发警告
-- [ ] 手动开启专注后能看到闭关状态
-- [ ] `npm test` 通过
+- [ ] `skinTray.test.js` 或 `pomodoroTray.test.js` 覆盖菜单结构。
+- [ ] 手动验证托盘入口和运行中状态。
 
-**Dependencies:** Task 3, Task 5
+**Dependencies:** Task 5
 
 **Files likely touched:**
+- `main.js`
+- `src/data/i18n.js`
+- `test/pomodoroTray.test.js`
+
+**Estimated scope:** Small
+
+#### Task 7: 专注期间隐藏/恢复桌面宠物
+
+**Description:** 专注开始时记录桌面宠物原始可见/暂停状态并隐藏或暂停主透明窗口，结束后恢复。
+
+**Acceptance criteria:**
+- [ ] 专注开始后桌面上不再显示两只移动宠物。
+- [ ] 专注结束后恢复到开始前的可见状态。
+- [ ] 如果用户开始前已经隐藏宠物，结束后仍保持隐藏。
+- [ ] 如果用户开始前已经暂停走动，结束后仍保持暂停。
+- [ ] 恢复逻辑在完成、手动结束、窗口关闭、应用退出前路径一致。
+
+**Verification:**
+- [ ] 主进程测试覆盖开始前可见/隐藏/暂停组合。
+- [ ] 手动验证完成和手动关闭都会恢复正确。
+
+**Dependencies:** Task 5
+
+**Files likely touched:**
+- `main.js`
 - `src/app.js`
-- `src/debug.js`
-- `src/pet/Pet.js`
-
-**Estimated scope:** Medium
-
-#### Task 7: 新增沈九监督台词
-
-**Description:** 增加专注开始、警告、完成和失败相关台词池。
-
-**Acceptance criteria:**
-- [ ] 新增 `focusStart`
-- [ ] 新增 `focusWarn`
-- [ ] 新增 `focusSuccess`
-- [ ] 新增 `focusFail`
-- [ ] `focusWarn.shenjiu` 风格为冷嘲热讽，但不辱骂用户
-
-**Verification:**
-- [ ] 触发警告时从 `focusWarn.shenjiu` 随机取台词
-- [ ] 无台词时有安全 fallback
-
-**Dependencies:** Task 6
-
-**Files likely touched:**
-- `src/data/dialogues.js`
-- `test/dialogBubble.test.js`
-
-**Estimated scope:** Small
-
-#### Task 8: 托盘菜单增加番茄钟入口
-
-**Description:** 在系统托盘中增加开始/结束闭关入口和专注状态展示。
-
-**Acceptance criteria:**
-- [ ] 空闲时显示“开启闭关 25 分钟”
-- [ ] 专注中显示剩余分钟
-- [ ] 专注中可手动“结束闭关”
-- [ ] 托盘菜单刷新不影响现有皮肤、暂停、隐藏、更新、退出入口
-
-**Verification:**
-- [ ] `skinTray.test.js` 或新增托盘测试覆盖菜单结构
-- [ ] 手动点击托盘可开始/结束专注
-- [ ] `npm test` 通过
-
-**Dependencies:** Task 4, Task 6
-
-**Files likely touched:**
-- `main.js`
 - `preload.js`
-- `test/skinTray.test.js`
+- `test/pomodoroTray.test.js`
 
 **Estimated scope:** Medium
 
 ### Checkpoint: 可用 MVP
 
-- [ ] 用户可以从托盘开启专注
-- [ ] 沈九进入闭关状态
-- [ ] 切到工作软件不触发警告
-- [ ] 频繁切到非工作软件会触发沈九台词
-- [ ] 用户可以结束专注
+- [ ] 用户可以从托盘打开番茄钟。
+- [ ] 用户输入分钟数后看到倒计时。
+- [ ] 两只宠物显示在倒计时窗口里。
+- [ ] 桌面宠物在专注期间不重复出现。
+- [ ] 完成或关闭后桌面宠物恢复。
 
-### Phase 5: 持久化与配置扩展
+### Phase 4: 文案、完成体验和文档
 
-#### Task 9: 保存用户配置和最近专注结果
+#### Task 8: 增加番茄钟文案
 
-**Description:** 使用现有 `electron-store` 保存番茄钟配置、用户自定义软件分类和最近一次专注结果。
+**Description:** 为托盘、输入态、倒计时态、完成态增加 i18n 文案。
 
 **Acceptance criteria:**
-- [ ] 用户自定义规则优先级高于默认规则
-- [ ] 重启后配置保留
-- [ ] 未完成的番茄钟默认不自动恢复为进行中
-- [ ] 旧存档缺少番茄钟字段时安全 fallback
+- [ ] 中文、英文、日文 UI key 均存在。
+- [ ] 缺少翻译时 fallback 不显示 raw key。
+- [ ] 完成态包含一句温和鼓励台词，不评价用户是否成功专注。
+- [ ] 置顶/取消置顶控件文案可翻译。
 
 **Verification:**
-- [ ] TimeSystem 或 FocusSystem 持久化测试覆盖旧数据兼容
-- [ ] `npm test` 通过
+- [ ] i18n fallback 测试通过。
+- [ ] 手动切换语言后番茄钟窗口文案刷新或下次打开生效。
 
-**Dependencies:** Task 5
+**Dependencies:** Task 3, Task 6
 
 **Files likely touched:**
-- `src/systems/TimeSystem.js`
-- `src/systems/FocusSystem.js`
-- `test/timeSystem.test.js`
+- `src/data/i18n.js`
+- `test/i18nFallback.test.js`
 
-**Estimated scope:** Medium
+**Estimated scope:** Small
 
-#### Task 10: 更新架构文档
+#### Task 9: 更新架构文档
 
-**Description:** 将番茄钟系统写入项目结构文档，记录数据流和隐私边界。
+**Description:** 将轻量番茄钟窗口和隐私边界写入结构文档。
 
 **Acceptance criteria:**
-- [ ] `docs/structure.md` 包含 FocusSystem 描述
-- [ ] 文档说明只采样前台窗口，不扫描后台进程
-- [ ] 文档说明非工作软件分类规则和用户覆盖关系
+- [ ] `docs/structure.md` 包含 PomodoroSystem 和番茄钟窗口说明。
+- [ ] 文档说明番茄钟不检查前台窗口、不读取 URL、不记录软件使用。
+- [ ] 文档说明桌面宠物隐藏/恢复由主进程管理。
 
 **Verification:**
-- [ ] 文档链接和文件名正确
-- [ ] 与本计划保持一致
+- [ ] 文档链接和文件名正确。
+- [ ] 与本计划保持一致。
 
-**Dependencies:** Task 1-9
+**Dependencies:** Task 1-8
 
 **Files likely touched:**
 - `docs/structure.md`
@@ -400,25 +471,37 @@ MVP 采用“允许清单优先 + 常见分心黑名单”的平衡模式：
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| 前台窗口读取库在 Windows/Electron 中不稳定 | High | 把读取能力封装在主进程，失败时 neutral fallback；核心逻辑用 fake provider 测试 |
-| 浏览器 URL 获取不稳定或涉及隐私 | Medium | URL/domain 作为可选增强；默认不展示完整 URL；获取不到时按进程和标题退化 |
-| 误判工作聊天软件为非工作 | Medium | 用户配置优先；默认把未知应用设置宽限时间，不立即警告 |
-| 台词过于打扰 | Medium | 增加 3 分钟冷却；只在频繁切换后触发，不因一次误触提醒 |
-| 专注状态与现有暂停/隐藏冲突 | Medium | 番茄钟计时独立于渲染暂停；宠物隐藏时继续计时但不显示台词，恢复后显示摘要 |
+| 系统睡眠或窗口卡顿导致倒计时不准 | Medium | 使用 `endAt - Date.now()` 推导剩余时间，不累计 interval tick |
+| 番茄钟窗口关闭后桌面宠物没有恢复 | High | 主进程集中管理 `finishPomodoroSession()`，完成、关闭、退出都调用同一路径 |
+| 当前皮肤缺少修炼静态图 | Medium | 资源路径 fallback 到 `assets/default/`，并为缺失资源加测试 |
+| 用户开始前已经隐藏或暂停宠物 | Medium | 开始时记录原状态，结束时按原状态恢复，而不是一律显示/恢复走动 |
+| 新窗口抢占太多注意力 | Low | 窗口保持小尺寸、简洁布局，只显示输入/倒计时/完成，不做弹窗刷屏 |
 
 ## Test Scenarios
 
-- VS Code 前台 25 分钟：不触发警告，专注完成。
-- PowerShell 与浏览器 GitHub 之间切换：不触发警告。
-- 误点一次娱乐网站 3 秒后返回工作软件：不触发警告。
-- 黑名单应用前台超过 5 秒，且 10 分钟内累计 3 次：触发沈九警告。
-- 未知应用前台超过 20 秒，累计达到 90 秒：触发沈九警告。
-- 前台窗口 API 报错：分类为 neutral，不触发警告。
-- 警告触发后 3 分钟内继续切换非工作软件：不重复刷屏。
-- 重启应用后：用户规则保留，未完成番茄钟不自动恢复为进行中。
+- 首次从托盘打开番茄钟：输入框默认 `25`。
+- 输入 `30` 并开始，结束后再次打开：输入框默认 `30`。
+- 输入非法值、空值或过大值：显示校验提示或使用安全范围，不崩溃。
+- 倒计时进行中再次点击托盘入口：聚焦已有窗口，不创建第二个窗口。
+- 番茄钟窗口默认置顶；点击取消置顶后窗口不再保持在最前，再次点击可恢复置顶。
+- 倒计时进行中桌面宠物隐藏，窗口内显示两只静态宠物。
+- 倒计时完成：窗口显示完成态和温和鼓励台词，关闭后桌面宠物恢复。
+- 倒计时未完成时关闭窗口：本次专注结束，桌面宠物恢复。
+- 开始前用户已隐藏宠物：倒计时结束后仍保持隐藏。
+- 开始前用户已暂停走动：倒计时结束后仍保持暂停。
+- 切换皮肤后打开番茄钟：窗口内宠物使用当前皮肤，缺失时 fallback。
+- 系统睡眠/恢复后：剩余时间按真实时间推进，不出现负数或卡住。
 
-## Open Questions
+## Not Doing
 
-- 是否需要在托盘里提供“本次允许当前软件”快捷操作？
-- 微信/QQ/Discord 这类既可能工作也可能分心的软件，默认应放入中立、非工作，还是交给用户首次选择？
-- 是否需要给番茄钟完成后增加奖励台词或灵力收益？
+- 不做前台窗口检查。
+- 不做工作/非工作软件分类。
+- 不读取窗口标题、进程路径、浏览器 URL 或域名。
+- 不做分心统计、警告冷却或沈九监督台词。
+- 不阻止用户使用任何软件。
+- 不做历史记录、日历同步、云同步或账号系统。
+- 不为了番茄钟修改 `activeWindowProvider.js`、`activeWindowAwareness.js` 或 `WindowAwarenessSystem.js`。
+
+## Future Considerations
+
+- 后续可以再决定是否记住“取消置顶”的偏好；MVP 每次打开都默认置顶，只在当前窗口会话内允许用户取消或恢复置顶。

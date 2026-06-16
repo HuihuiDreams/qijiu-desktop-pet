@@ -24,6 +24,7 @@ const {
   createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
+  normalizePomodoroMinutes,
   normalizeStatusWindowSize,
   normalizeWindowMigrationDirection,
 } = require('./ipcContracts');
@@ -34,6 +35,7 @@ const {
 } = require('./breakReminderService');
 const { createPresentationGuard } = require('./presentationGuard');
 const { createMeetingDetector } = require('./meetingDetector');
+const { PomodoroSystem } = require('./src/systems/PomodoroSystem');
 const { I18N } = require('./src/data/i18n');
 
 // 常量定义
@@ -46,6 +48,7 @@ const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
 const LOGIN_ITEM_NAME = '七九爱宠';
 const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
+const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
@@ -94,6 +97,7 @@ function getSkinDisplayName(skinId) {
 
 let mainWindow = null;
 let statusWindow = null;
+let pomodoroWindow = null;
 let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
@@ -118,6 +122,11 @@ let finalSaveRequestId = 0;
 let currentPetDisplay = null;
 let dragPollTimer = null;
 let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
+let pomodoroSystem = new PomodoroSystem();
+let pomodoroTickTimer = null;
+let pomodoroAlwaysOnTop = true;
+let pomodoroFocusSnapshot = null;
+let pomodoroPetHidden = false;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 const displayFitScheduler = createDisplayFitScheduler({
   fitNow: fitWindowToAllDisplays,
@@ -617,6 +626,169 @@ function resizeStatusWindow(size) {
   statusWindow.setContentSize(width, height);
 }
 
+function getStoredPomodoroMinutes() {
+  if (!store) return normalizePomodoroMinutes(null);
+  return normalizePomodoroMinutes(store.get(POMODORO_LAST_MINUTES_KEY));
+}
+
+function savePomodoroMinutes(minutes) {
+  if (!store) return;
+  store.set(POMODORO_LAST_MINUTES_KEY, normalizePomodoroMinutes(minutes));
+}
+
+function resolvePomodoroAsset(skinId, filename) {
+  const safeSkinId = isAllowedSkinId(skinId, scanAvailableSkins()) ? skinId : 'default';
+  const candidatePath = path.join(__dirname, 'src', 'assets', safeSkinId, filename);
+  if (fs.existsSync(candidatePath)) {
+    return `assets/${safeSkinId}/${filename}`;
+  }
+  return `assets/default/${filename}`;
+}
+
+function getPomodoroAssets() {
+  return {
+    yueqi: resolvePomodoroAsset(currentSkinId, 'left_cultivate.webp'),
+    shenjiu: resolvePomodoroAsset(currentSkinId, 'right_cultivate.webp'),
+  };
+}
+
+function getPomodoroSnapshot(now) {
+  const snapshot = pomodoroSystem.getSnapshot(now);
+  return {
+    ...snapshot,
+    lastPomodoroMinutes: snapshot.durationMinutes || getStoredPomodoroMinutes(),
+    isAlwaysOnTop: pomodoroAlwaysOnTop,
+    skinId: currentSkinId,
+    assets: getPomodoroAssets(),
+  };
+}
+
+function sendPomodoroState() {
+  if (!pomodoroWindow || pomodoroWindow.isDestroyed()) return;
+  pomodoroWindow.webContents.send('pomodoro-state', getPomodoroSnapshot());
+}
+
+function stopPomodoroTicker() {
+  if (pomodoroTickTimer) {
+    clearInterval(pomodoroTickTimer);
+    pomodoroTickTimer = null;
+  }
+}
+
+function startPomodoroTicker() {
+  stopPomodoroTicker();
+  pomodoroTickTimer = setInterval(() => {
+    const snapshot = getPomodoroSnapshot();
+    sendPomodoroState();
+    if (snapshot.status === 'completed') {
+      stopPomodoroTicker();
+      restorePomodoroPetFocus();
+      refreshTrayMenu();
+    }
+  }, 1000);
+}
+
+function getInitialPomodoroWindowBounds() {
+  const width = 420;
+  const height = 520;
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+
+  return {
+    width,
+    height,
+    x: Math.round(x + (areaWidth - width) / 2),
+    y: Math.round(y + (areaHeight - height) / 2),
+  };
+}
+
+function createPomodoroWindow() {
+  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) return pomodoroWindow;
+
+  const bounds = getInitialPomodoroWindowBounds();
+  pomodoroWindow = new BrowserWindow({
+    ...bounds,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: pomodoroAlwaysOnTop,
+    skipTaskbar: false,
+    resizable: false,
+    minimizable: true,
+    maximizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, 'floating');
+  pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  pomodoroWindow.loadFile(path.join(__dirname, 'src', 'pomodoro.html'));
+
+  pomodoroWindow.webContents.on('did-finish-load', sendPomodoroState);
+  pomodoroWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  pomodoroWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  pomodoroWindow.on('closed', () => {
+    pomodoroWindow = null;
+    stopPomodoroSession();
+  });
+
+  return pomodoroWindow;
+}
+
+function openPomodoroWindow() {
+  const win = createPomodoroWindow();
+  if (!win.isVisible()) {
+    win.show();
+  }
+  win.moveTop();
+  win.focus();
+  sendPomodoroState();
+  return win;
+}
+
+async function startPomodoroSession(minutes) {
+  await initStore();
+  const normalizedMinutes = normalizePomodoroMinutes(minutes, getStoredPomodoroMinutes());
+  savePomodoroMinutes(normalizedMinutes);
+  const snapshot = pomodoroSystem.start(normalizedMinutes);
+  enterPomodoroPetFocus();
+  startPomodoroTicker();
+  refreshTrayMenu();
+  sendPomodoroState();
+  return snapshot;
+}
+
+function stopPomodoroSession() {
+  stopPomodoroTicker();
+  const snapshot = pomodoroSystem.stop();
+  restorePomodoroPetFocus();
+  refreshTrayMenu();
+  sendPomodoroState();
+  return snapshot;
+}
+
+function closePomodoroWindow() {
+  stopPomodoroSession();
+  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
+    pomodoroWindow.close();
+  }
+  return getPomodoroSnapshot();
+}
+
+function setPomodoroAlwaysOnTop(enabled) {
+  pomodoroAlwaysOnTop = Boolean(enabled);
+  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
+    pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, 'floating');
+  }
+  sendPomodoroState();
+  return getPomodoroSnapshot();
+}
+
 function requestRendererFinalSave(win) {
   if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
     return Promise.resolve(false);
@@ -672,7 +844,7 @@ function installFinalSaveBeforeClose(win) {
 }
 
 function isPetCurrentlyHidden() {
-  return petHidden || meetingHidden;
+  return petHidden || meetingHidden || pomodoroPetHidden;
 }
 
 function sendPetVisibility(visible) {
@@ -680,10 +852,36 @@ function sendPetVisibility(visible) {
   mainWindow.webContents.send('toggle-pet-visibility', visible);
 }
 
+function enterPomodoroPetFocus() {
+  if (!pomodoroFocusSnapshot) {
+    pomodoroFocusSnapshot = { wasPaused: isPaused };
+  }
+  pomodoroPetHidden = true;
+  sendPetVisibility(false);
+  if (!isPaused) {
+    isPaused = true;
+    if (mainWindow) mainWindow.webContents.send('toggle-pause', true);
+  }
+  refreshTrayMenu();
+}
+
+function restorePomodoroPetFocus() {
+  if (!pomodoroFocusSnapshot && !pomodoroPetHidden) return;
+  const wasPaused = pomodoroFocusSnapshot ? pomodoroFocusSnapshot.wasPaused : isPaused;
+  pomodoroPetHidden = false;
+  if (isPaused !== wasPaused) {
+    isPaused = wasPaused;
+    if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
+  }
+  sendPetVisibility(!isPetCurrentlyHidden());
+  pomodoroFocusSnapshot = null;
+  refreshTrayMenu();
+}
+
 function showPetManually() {
   petHidden = false;
   meetingHidden = false;
-  sendPetVisibility(true);
+  sendPetVisibility(!isPetCurrentlyHidden());
   refreshTrayMenu();
 }
 
@@ -697,7 +895,7 @@ function hidePetManually() {
 function hidePetForMeeting() {
   if (meetingHidden) return;
   meetingHidden = true;
-  if (!petHidden) {
+  if (!petHidden && !pomodoroPetHidden) {
     sendPetVisibility(false);
   }
   refreshTrayMenu();
@@ -706,7 +904,7 @@ function hidePetForMeeting() {
 function showPetAfterMeeting() {
   if (!meetingHidden) return;
   meetingHidden = false;
-  if (!petHidden) {
+  if (!petHidden && !pomodoroPetHidden) {
     sendPetVisibility(true);
   }
   refreshTrayMenu();
@@ -832,6 +1030,9 @@ function createWindow() {
     if (statusWindow && !statusWindow.isDestroyed()) {
       statusWindow.close();
     }
+    if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
+      pomodoroWindow.close();
+    }
     mainWindow = null;
   });
 
@@ -875,6 +1076,18 @@ function scanAvailableSkins() {
   }
 }
 
+function getPomodoroTrayLabel() {
+  const snapshot = getPomodoroSnapshot();
+  if (snapshot.status === 'running') {
+    const minutes = Math.max(1, Math.ceil(snapshot.remainingMs / 60000));
+    return `${trayText('trayPomodoroRunning', 'Pomodoro')} ${minutes} ${trayMenuLabel('trayMinuteUnit')}`;
+  }
+  if (snapshot.status === 'completed') {
+    return trayMenuLabel('trayPomodoroCompleted', 'Pomodoro complete');
+  }
+  return trayMenuLabel('trayPomodoroOpen');
+}
+
 function buildTrayMenu() {
   const updateMenuState = getUpdateMenuState();
   const appVersion = app.getVersion();
@@ -888,6 +1101,7 @@ function buildTrayMenu() {
     click: () => {
       currentSkinId = skinId;
       if (mainWindow) mainWindow.webContents.send('switch-skin', skinId);
+      sendPomodoroState();
       refreshTrayMenu();
     },
   }));
@@ -910,6 +1124,9 @@ function buildTrayMenu() {
       if (statusWindow && !statusWindow.isDestroyed()) {
         statusWindow.webContents.send('locale-changed', lang);
       }
+      if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
+        pomodoroWindow.webContents.send('locale-changed', lang);
+      }
     },
   }));
 
@@ -926,6 +1143,12 @@ function buildTrayMenu() {
       },
     },
     {
+      label: getPomodoroTrayLabel(),
+      click: () => {
+        openPomodoroWindow();
+      },
+    },
+    {
       label: trayMenuLabel('traySwitchSkin'),
       submenu: skinSubmenu,
     },
@@ -939,6 +1162,7 @@ function buildTrayMenu() {
     },
     {
       label: isPetCurrentlyHidden() ? trayMenuLabel('trayShowPet') : trayMenuLabel('trayHidePet'),
+      enabled: !pomodoroPetHidden,
       click: () => {
         if (isPetCurrentlyHidden()) {
           showPetManually();
@@ -1217,6 +1441,7 @@ const ALLOWED_STORE_KEYS = [
   'petState',
   'locale',
   BREAK_REMINDER_STORE_KEY,
+  POMODORO_LAST_MINUTES_KEY,
 ];
 
 ipcMain.handle('save-data', async (_event, key, value) => {
@@ -1272,6 +1497,7 @@ ipcMain.handle('set-current-skin', async (_event, skinId) => {
   }
   try {
     currentSkinId = skinId;
+    sendPomodoroState();
     refreshTrayMenu();
     return createIpcSuccess({ skinId });
   } catch (error) {
@@ -1281,6 +1507,65 @@ ipcMain.handle('set-current-skin', async (_event, skinId) => {
 });
 
 // 多语言系统 IPC
+ipcMain.handle('pomodoro-open-window', async () => {
+  try {
+    await initStore();
+    openPomodoroWindow();
+    return createIpcSuccess(getPomodoroSnapshot());
+  } catch (error) {
+    console.error('Failed to open pomodoro window:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to open pomodoro window');
+  }
+});
+
+ipcMain.handle('pomodoro-get-state', async () => {
+  try {
+    await initStore();
+    return createIpcSuccess(getPomodoroSnapshot());
+  } catch (error) {
+    console.error('Failed to read pomodoro state:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to read pomodoro state');
+  }
+});
+
+ipcMain.handle('pomodoro-start', async (_event, minutes) => {
+  try {
+    await startPomodoroSession(minutes);
+    return createIpcSuccess(getPomodoroSnapshot());
+  } catch (error) {
+    console.error('Failed to start pomodoro:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to start pomodoro');
+  }
+});
+
+ipcMain.handle('pomodoro-stop', async () => {
+  try {
+    stopPomodoroSession();
+    return createIpcSuccess(getPomodoroSnapshot());
+  } catch (error) {
+    console.error('Failed to stop pomodoro:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to stop pomodoro');
+  }
+});
+
+ipcMain.handle('pomodoro-close-window', async () => {
+  try {
+    return createIpcSuccess(closePomodoroWindow());
+  } catch (error) {
+    console.error('Failed to close pomodoro window:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to close pomodoro window');
+  }
+});
+
+ipcMain.handle('pomodoro-set-always-on-top', async (_event, enabled) => {
+  try {
+    return createIpcSuccess(setPomodoroAlwaysOnTop(enabled));
+  } catch (error) {
+    console.error('Failed to update pomodoro pin state:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to update pomodoro pin state');
+  }
+});
+
 ipcMain.handle('get-locale', () => currentLocale);
 
 ipcMain.handle('set-locale', async (_event, lang) => {
@@ -1292,6 +1577,9 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
   if (statusWindow && !statusWindow.isDestroyed()) {
     statusWindow.webContents.send('locale-changed', lang);
+  }
+  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
+    pomodoroWindow.webContents.send('locale-changed', lang);
   }
   return { success: true, locale: lang };
 });
@@ -1310,7 +1598,10 @@ if (!hasSingleInstanceLock) {
 
 
   app.on('second-instance', showExistingInstance);
-  app.on('before-quit', stopMeetingDetector);
+  app.on('before-quit', () => {
+    stopMeetingDetector();
+    stopPomodoroTicker();
+  });
 
   app.whenReady().then(async () => {
     disableApplicationMenu();

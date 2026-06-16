@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
+  <title data-i18n="pomodoroTitle">苍穹静修</title>
+  <link rel="stylesheet" href="pomodoro.css">
+</head>
+
+<body>
+  <main id="pomodoro-panel" class="pomodoro-panel" aria-live="polite">
+    <header class="pomodoro-titlebar">
+      <span data-i18n="pomodoroTitle">苍穹静修</span>
+      <div class="pomodoro-window-actions">
+        <button id="pomodoro-pin" class="pomodoro-icon-button" type="button" aria-pressed="true" data-i18n-title="pomodoroUnpin" title="取消置顶">
+          <svg class="pomodoro-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 4h8l-1 6 4 4v2h-6v5h-2v-5H5v-2l4-4-1-6z"></path>
+          </svg>
+        </button>
+        <button id="pomodoro-close" class="pomodoro-icon-button pomodoro-icon-button--danger" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
+          <svg class="pomodoro-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="pomodoro-content">
+      <div id="pomodoro-setup" class="pomodoro-state">
+        <div class="pomodoro-pets" aria-hidden="true">
+          <img id="pomodoro-setup-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
+          <img id="pomodoro-setup-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
+        </div>
+        <h1 class="pomodoro-heading" data-i18n="pomodoroPrompt">本次闭关多久？</h1>
+        <div class="pomodoro-duration-stepper">
+          <button id="pomodoro-decrease" class="pomodoro-step-button" type="button" data-i18n-title="pomodoroDecrease" title="减少">-</button>
+          <label class="pomodoro-minutes-label" for="pomodoro-minutes">
+            <input id="pomodoro-minutes" class="pomodoro-minutes-input" type="number" min="1" max="240" step="1" inputmode="numeric" value="25">
+            <span data-i18n="trayMinuteUnit">分钟</span>
+          </label>
+          <button id="pomodoro-increase" class="pomodoro-step-button" type="button" data-i18n-title="pomodoroIncrease" title="增加">+</button>
+        </div>
+        <button id="pomodoro-start" class="pomodoro-primary-button" type="button" data-i18n="pomodoroStart">开始静修</button>
+        <p class="pomodoro-helper" data-i18n="pomodoroLastHint">上次时长会自动记住</p>
+      </div>
+
+      <div id="pomodoro-running" class="pomodoro-state pomodoro-state--hidden">
+        <div id="pomodoro-timer" class="pomodoro-timer">25:00</div>
+        <div class="pomodoro-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="pomodoro-progress-fill" class="pomodoro-progress-fill"></div>
+        </div>
+        <div class="pomodoro-pets pomodoro-pets--running" aria-hidden="true">
+          <figure class="pomodoro-pet-figure">
+            <img id="pomodoro-running-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
+            <figcaption data-i18n="nicknameYueqi">岳七</figcaption>
+          </figure>
+          <figure class="pomodoro-pet-figure">
+            <img id="pomodoro-running-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
+            <figcaption data-i18n="nicknameShenjiu">沈九</figcaption>
+          </figure>
+        </div>
+        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">结束本次</button>
+      </div>
+
+      <div id="pomodoro-completed" class="pomodoro-state pomodoro-state--hidden">
+        <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">已完成</h1>
+        <div class="pomodoro-pets pomodoro-pets--complete" aria-hidden="true">
+          <img id="pomodoro-complete-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
+          <img id="pomodoro-complete-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
+        </div>
+        <p id="pomodoro-message" class="pomodoro-message" data-i18n="pomodoroCompleteMessage">今日这一段，已经很好了。</p>
+        <button id="pomodoro-finish" class="pomodoro-primary-button" type="button" data-i18n="pomodoroFinish">收起静室</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="data/i18n.js"></script>
+  <script src="pomodoroWindow.js"></script>
+</body>
+
+</html>

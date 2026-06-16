@@ -3,6 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **轻量番茄钟 MVP**：新增托盘入口、独立 `pomodoro.html` 番茄钟窗口、`PomodoroSystem` 倒计时状态机和安全 preload IPC。用户可输入专注分钟数，窗口默认置顶且可取消置顶；专注期间桌面宠物临时隐藏并在窗口内显示两只静止修炼宠物，完成后显示温和鼓励台词。
+- **番茄钟测试覆盖**：新增倒计时状态机、番茄钟窗口结构、托盘入口、IPC 合约和 preload API 测试，覆盖上次时长 fallback、置顶切换通道、窗口 sandbox/CSP 和宠物隐藏恢复边界。
+
+### Changed
+- **番茄钟计划与架构文档同步**：更新 [cangqiong-pomodoro-plan.md](docs/plan/cangqiong-pomodoro-plan.md) 和 [structure.md](docs/structure.md)，记录 MVP 范围、UI 设计规格、隐私边界、窗口生命周期和不检查前台窗口/URL/进程的约束。
 
 ## [0.6.4] - 2026-06-16
 ### Added

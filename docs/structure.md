@@ -2,11 +2,11 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-09
+最后更新：2026-06-16
 
 ## 1. 架构总览
 
-DeskPet 是一个 Electron 桌面宠物应用。主进程负责窗口、系统托盘、持久化、更新、跨屏边界和 IPC；渲染进程负责宠物状态、移动、交互、动画、UI 和状态窗口渲染。
+DeskPet 是一个 Electron 桌面宠物应用。主进程负责窗口、系统托盘、持久化、更新、跨屏边界、番茄钟和 IPC；渲染进程负责宠物状态、移动、交互、动画、UI 和状态窗口渲染。
 
 ```mermaid
 graph TB
@@ -14,6 +14,7 @@ graph TB
         MainJs["main.js"]
         MainJs --> PetWindow["Transparent Pet BrowserWindow"]
         MainJs --> StatusWindow["Independent Status BrowserWindow"]
+        MainJs --> PomodoroWindow["Pomodoro BrowserWindow"]
         MainJs --> Tray["System Tray Menu"]
         MainJs --> Store["electron-store"]
         MainJs --> IPC["IPC Handlers"]
@@ -45,8 +46,13 @@ graph TB
         StatusHtml["src/status.html + status.css"] --> StatusJs["src/statusWindow.js"]
     end
 
+    subgraph Pomodoro["Pomodoro Renderer Process"]
+        PomodoroHtml["src/pomodoro.html + pomodoro.css"] --> PomodoroJs["src/pomodoroWindow.js"]
+    end
+
     Preload["preload.js"] --> Renderer
     Preload --> Status
+    Preload --> Pomodoro
     UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
@@ -55,7 +61,7 @@ graph TB
 
 ```text
 qijiu-desktop-pet/
-├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口
+├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口、番茄钟
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
@@ -88,6 +94,9 @@ qijiu-desktop-pet/
 │  ├─ status.html                       # 独立状态窗口 HTML
 │  ├─ status.css                        # 独立状态窗口样式
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
+│  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
+│  ├─ pomodoro.css                      # 番茄钟窗口样式，复用状态窗口视觉系统
+│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换和完成态
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
 │  ├─ update-progress.js                # 更新进度窗口渲染，通过 textContent 和样式属性更新进度
@@ -103,6 +112,7 @@ qijiu-desktop-pet/
 │  │  ├─ InteractionSystem.js           # 双人距离检测、CP 互动、冷却、互动效果
 │  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
+│  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
@@ -142,6 +152,7 @@ qijiu-desktop-pet/
 
 - 创建透明、无边框、可置顶的主宠物窗口。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据。
+- 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复。
 - 维护系统托盘菜单，包括显示/隐藏、恢复走动、重置位置、皮肤切换、语言切换、开机启动、检查更新和退出。
 - 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据。
 - 使用 `app.requestSingleInstanceLock()` 保证单实例运行，并在二次启动时唤回已有窗口。
@@ -243,6 +254,7 @@ src/assets/{skinId}/
 - 主进程维护当前语言，并把托盘菜单、tooltip、更新弹窗等文本翻译到对应语言。
 - 渲染进程通过 `window.t()` 和 `data-i18n` 刷新主窗口 UI。
 - 独立状态窗口保存 `lastRenderData`，语言变化时可用当前状态重新渲染。
+- 独立番茄钟窗口使用 `data-i18n` 和 `data-i18n-title` 刷新标题、按钮、完成台词和置顶按钮说明。
 - `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange` 等 IPC API。
 
 ### 3.10 更新系统
@@ -282,12 +294,25 @@ src/assets/{skinId}/
 - 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
 - `tools/measure-meeting-udp.js` 可用于后续校准 Zoom、Slack、Discord 或不同 Teams 版本的阈值。
 
-### 3.13 安全边界
+### 3.13 轻量番茄钟
+
+轻量番茄钟是本地陪伴型倒计时功能，不是监督型专注检测。设计计划记录在 [cangqiong-pomodoro-plan.md](./plan/cangqiong-pomodoro-plan.md)。
+
+- `src/systems/PomodoroSystem.js` 是纯倒计时状态机，使用 `startedAt`、`durationMs` 和 `endAt` 推导 `remainingMs` 与 `progress`，避免依赖 interval 累计。
+- `main.js` 拥有番茄钟窗口生命周期：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。
+- 窗口使用 `src/pomodoro.html`、`src/pomodoro.css` 和 `src/pomodoroWindow.js`，视觉上复用状态窗口和右键菜单的玉色玻璃系统。
+- 分钟输入默认使用 `electron-store` 中的 `lastPomodoroMinutes`，首次使用或非法输入时回退到 25 分钟，并将单次时长限制在安全范围内。
+- 专注开始时，主进程记录 `pomodoroFocusSnapshot.wasPaused`，设置独立的 `pomodoroPetHidden` 覆盖态，隐藏桌面宠物并暂停移动；完成、手动停止或关闭窗口后恢复到专注前的隐藏/暂停状态。
+- 番茄钟窗口内的两只宠物不是主窗口 DOM 迁移，而是根据当前皮肤显示 `left_cultivate.webp` / `right_cultivate.webp` 静态图，缺失时回退到 `assets/default/`。
+- 置顶状态只影响番茄钟窗口；主透明桌宠窗口仍沿用自己的置顶守卫策略。
+- 隐私边界：番茄钟不检查前台窗口、不读取窗口标题、不读取浏览器 URL、不扫描进程、不记录用户使用的软件或网页。
+
+### 3.14 安全边界
 
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 主窗口、状态窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
+- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道集中在 `main.js`，便于审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
@@ -312,6 +337,7 @@ npm test
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
 - `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。
+- `PomodoroSystem`、番茄钟窗口结构、preload API、托盘入口和宠物隐藏/恢复边界。
 - `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
 

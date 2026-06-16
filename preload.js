@@ -23,6 +23,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateStatusWindow: (data) => ipcRenderer.send('update-status-window', data),
   closeStatusWindow: () => ipcRenderer.send('hide-status-window'),
   resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
+  openPomodoroWindow: () => ipcRenderer.invoke('pomodoro-open-window'),
+  getPomodoroState: () => ipcRenderer.invoke('pomodoro-get-state'),
+  startPomodoro: (minutes) => ipcRenderer.invoke('pomodoro-start', minutes),
+  stopPomodoro: () => ipcRenderer.invoke('pomodoro-stop'),
+  closePomodoroWindow: () => ipcRenderer.invoke('pomodoro-close-window'),
+  setPomodoroAlwaysOnTop: (enabled) => ipcRenderer.invoke('pomodoro-set-always-on-top', enabled),
+  onPomodoroState: (callback) => {
+    return subscribeIpc('pomodoro-state', (_event, data) => callback(data));
+  },
   onSaveBeforeQuit: (callback) => {
     const listener = async (_event, requestId) => {
       let success = false;

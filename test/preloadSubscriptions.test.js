@@ -25,6 +25,7 @@ test('preload on* APIs return cleanup functions from subscribeIpc', () => {
     'toggle-status-panel',
     'status-window-data',
     'status-window-closed',
+    'pomodoro-state',
     'toggle-pause',
     'reset-positions',
     'toggle-pet-visibility',
@@ -51,5 +52,13 @@ test('preload exposes platform info through electronAPI', () => {
     /platform:\s*process\.platform/,
     'preload should expose process.platform through electronAPI'
   );
+});
+
+test('preload exposes pomodoro command APIs through electronAPI', () => {
+  assert.match(preloadSource, /openPomodoroWindow:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-open-window'\)/);
+  assert.match(preloadSource, /getPomodoroState:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-get-state'\)/);
+  assert.match(preloadSource, /startPomodoro:\s*\(minutes\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-start', minutes\)/);
+  assert.match(preloadSource, /stopPomodoro:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-stop'\)/);
+  assert.match(preloadSource, /setPomodoroAlwaysOnTop:\s*\(enabled\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-set-always-on-top', enabled\)/);
 });
 
