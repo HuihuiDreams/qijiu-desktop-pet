@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.6.4] - 2026-06-16
 ### Added
 - **第三套皮肤“猫兔七九·紫萤”**：
   - 新增了 `src/assets/animal_ears/` 资源目录，通过 FFmpeg padding 缩放策略维持原始图片比例，避免人脸变宽。
@@ -12,6 +14,7 @@
 - **托盘版本号显示**：在托盘菜单底部新增带图标的禁用版本号行，方便 macOS 用户手动更新前快速确认当前安装版本；日语文案使用 `現行版`，更贴合修仙题材的古风气质。
 
 ### Changed
+- **README 与三语说明同步实际托盘菜单**：更新 `README.md`、`readme.txt`、`readme_en.txt` 和 `readme_ja.txt`，按 `main.js` 实际托盘菜单顺序和 `src/data/i18n.js` 中日英文案统一状态面板、切换屏幕、久坐提醒、界面感知、语言、开机启动、检查更新、开发者工具、退出和版本号等菜单项说明。
 - **跨平台换行配置**：新增 `.gitattributes` 固定文本文件使用 LF，并在 [git-workflow.md](docs/git-workflow.md) 记录 Windows、WSL 和 macOS 新机器建议执行的 Git 配置，减少换行符导致的全仓库 modified 噪音。
 - **文档维护与 ADR 格式校验**：将 [ADR-036](docs/decisions/ADR-036-cp-interaction-anti-overlap.md) 统一为项目要求的 ADR 标题格式，收紧 `scripts/fix_adrs.py`，避免标题规范化时吞掉空行，并同步保持当前计划文档与已归档、已验证工作一致。
 - **会议自动隐藏测试与计划同步**：补充 `test/meetingDetector.test.js` 自动测试，覆盖 Windows 未达 UDP 阈值、macOS `pgrep`/`lsof` 路径、非支持平台 fallback，以及扫描失败时保持当前会议状态；同步更新 [meeting-auto-hide-plan.md](docs/plan/meeting-auto-hide-plan.md)，勾选已由自动测试和文档检查证明的任务，保留真实会议、EDR、CPU 和 macOS 权限等手动 QA 项。

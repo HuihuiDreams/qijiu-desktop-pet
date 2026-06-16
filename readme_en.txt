@@ -35,20 +35,45 @@ After launch, both characters will appear on your desktop.
 
 The tray menu lets you:
 - "📊 Show Status Panel"
-- "🎨 Switch Skin"
+- "🎨 Switch Skin": currently includes Default Skin, Cute Birds, and Cat & Bunny, with artist credits shown in the menu.
 - "⏸️ Pause Walking" or "🚶 Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
-- "📺 Switch Screen": move pets between displays (macOS multi-display only)
-- "🚀 Launch at Login" or "🚀 Disable Auto-launch"
+- "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
+- "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder"
+- "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
-- "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", plus "⏰ Reminder Interval"
 - "🌐 Language": choose "中文", "English", or "日本語"
-- "📦 Check for Updates"
+- "🚀 Launch at Login" or "🚀 Disable Auto-launch"
+- "📦 Check for Updates": packaged Windows builds show download progress and support automatic upgrade; macOS guides you to download and replace the DMG manually.
+- "🛠️ Developer Tools": shown only in development mode.
 - "❌ Quit"
+- "🏷️ Version": shows the current app version at the bottom of the tray menu.
 
 If you use multiple monitors, you can drag characters or the status panel to a secondary display.
 When you switch language from the tray menu, the main window, right-click menus, status panel, and update prompts refresh together.
+
+========================================
+🎨 Skins & Display
+========================================
+
+The app currently includes three built-in skins:
+- Default Skin - (Artist) Hamster Salad
+- Cute Birds - (Artist) Hamster Salad
+- Cat & Bunny - (Artist) Violetfirefly
+
+Skins replace standing, walking, hungry, sleeping, feeding, cultivating, care, kiss, hug, and share-food visuals together.
+If one action asset is missing from a skin, the app tries to fall back to the default asset so switching skins does not leave a blank sprite.
+
+When pets move between displays with different scale factors, the character sprites, right-click menu, and Qi effects scale with the current display to keep their visual size consistent.
+
+========================================
+📦 Updates
+========================================
+
+- Windows packaged builds: use "📦 Check for Updates" from the tray menu to check GitHub Releases. When a new version is available, a progress window is shown during download, and you can restart to install after it finishes.
+- macOS: because the app is not currently signed with an Apple Developer ID certificate, update checks show the current and latest version, then guide you to open Releases, download the new DMG, and replace the app manually.
+- Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
 
 ========================================
 🪟 Realm Awareness
@@ -59,6 +84,18 @@ During idle walking, they may stroll to the top edge of the active window, the a
 
 You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
 If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
+
+========================================
+📹 Meeting Auto-Hide
+========================================
+
+Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
+
+- The current MVP is mainly calibrated against Windows Teams. Zoom detection paths exist, but still need more real-world calibration.
+- After the meeting ends, pets usually reappear within about 15 seconds.
+- If you manually hid the pets before the meeting, they will not be shown automatically afterward.
+- If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
+- The detector only uses meeting app process names and UDP endpoint counts. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
 
 ========================================
 ⏰ Break Reminder
@@ -165,5 +202,6 @@ You can also judge their status visually without keeping the status panel open:
 1. Remember to use "🍎 Feed": being too hungry affects Rest and Mood.
 2. Try dragging them closer: interactions are easier within 180 pixels.
 3. Interactions have a 1-minute cooldown: they will not trigger again immediately.
-4. No manual save is needed: the app automatically saves character stats and positions.
-5. If you cannot find them, use "🔄 Reset Position" in the tray menu.
+4. Interaction poses separate automatically: even if you drag them onto the same spot, the app nudges them apart when an interaction starts so kiss, hug, greet, and other animations do not overlap badly.
+5. No manual save is needed: the app automatically saves character stats and positions.
+6. If you cannot find them, use "🔄 Reset Position" in the tray menu.
