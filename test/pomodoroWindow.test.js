@@ -49,6 +49,14 @@ test('pomodoro CSS reuses the status window visual system', () => {
   assert.match(css, /0 12px 30px rgba\(30,\s*42,\s*54,\s*0\.16\)/);
 });
 
+test('pomodoro CSS keeps the English title compact in the small window', () => {
+  const css = readSource('src/pomodoro.css');
+
+  assert.match(css, /html\[lang="en"\] \.pomodoro-titlebar>span/);
+  assert.match(css, /white-space:\s*nowrap/);
+  assert.match(css, /text-overflow:\s*ellipsis/);
+});
+
 test('pomodoro renderer uses safe DOM APIs for dynamic text and images', () => {
   const source = readSource('src/pomodoroWindow.js');
 

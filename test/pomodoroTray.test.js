@@ -19,6 +19,11 @@ test('main process creates a sandboxed pomodoro BrowserWindow from local files',
   assert.match(mainSource, /stopPomodoroTicker\(\)/);
 });
 
+test('pomodoro window uses a compact corner-friendly default size', () => {
+  assert.match(mainSource, /const width = 336/);
+  assert.match(mainSource, /const height = 360/);
+});
+
 test('tray menu exposes pomodoro entry and running state labels', () => {
   assert.match(mainSource, /trayMenuLabel\('trayPomodoroOpen'\)/);
   assert.match(mainSource, /trayText\('trayPomodoroRunning'/);
