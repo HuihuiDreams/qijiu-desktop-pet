@@ -35,6 +35,7 @@ After launch, both characters will appear on your desktop.
 
 The tray menu lets you:
 - "📊 Show Status Panel"
+- "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
 - "🎨 Switch Skin": currently includes Default Skin, Cute Birds, and Cat & Bunny, with artist credits shown in the menu.
 - "⏸️ Pause Walking" or "🚶 Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
@@ -84,6 +85,18 @@ During idle walking, they may stroll to the top edge of the active window, the a
 
 You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
 If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
+
+========================================
+🧘🏻‍♂️ Cang Qiong Seclusion
+========================================
+
+Cang Qiong Seclusion is the lightweight Pomodoro feature.
+Open it from the tray menu with "🧘🏻‍♂️ Cang Qiong Seclusion"; while running, the tray menu shows "🧘🏻‍♂️ In Seclusion N min", and after completion it shows "🧘🏻‍♂️ Seclusion Complete".
+
+Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
+After you start, Yue Qi and Shen Jiu leave the desktop and appear inside the countdown window as two still pets, alongside the timer and progress bar.
+The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
+When the session completes, the window shows a gentle encouragement message. If you exit early or close the window, the pets return to their previous visibility and walking state.
 
 ========================================
 📹 Meeting Auto-Hide
