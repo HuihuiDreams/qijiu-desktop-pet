@@ -51,6 +51,10 @@ function unwrapResult(result) {
   return result || null;
 }
 
+function isIpcFailure(result) {
+  return result?.success === false;
+}
+
 function updateI18nElements() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.textContent = t(el.dataset.i18n);
@@ -183,8 +187,23 @@ closeBtn.addEventListener('click', () => {
 });
 
 pinBtn.addEventListener('click', async () => {
-  const result = await window.electronAPI.setPomodoroAlwaysOnTop(!currentState.isAlwaysOnTop);
-  renderState(unwrapResult(result));
+  const nextIsAlwaysOnTop = !currentState.isAlwaysOnTop;
+  renderState({ isAlwaysOnTop: nextIsAlwaysOnTop });
+  pinBtn.disabled = true;
+
+  try {
+    const result = await window.electronAPI.setPomodoroAlwaysOnTop(nextIsAlwaysOnTop);
+    if (isIpcFailure(result)) {
+      renderState({ isAlwaysOnTop: !nextIsAlwaysOnTop });
+      return;
+    }
+    renderState(unwrapResult(result));
+  } catch (error) {
+    console.error('Failed to toggle pomodoro pin state:', error);
+    renderState({ isAlwaysOnTop: !nextIsAlwaysOnTop });
+  } finally {
+    pinBtn.disabled = false;
+  }
 });
 
 window.electronAPI.onPomodoroState((state) => {

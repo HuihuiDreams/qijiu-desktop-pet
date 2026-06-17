@@ -7,10 +7,16 @@ const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8'
 
 test('main process creates a sandboxed pomodoro BrowserWindow from local files', () => {
   assert.match(mainSource, /function createPomodoroWindow\(\)/);
+  assert.match(mainSource, /if \(pomodoroWindow && !pomodoroWindow\.isDestroyed\(\)\) return pomodoroWindow/);
+  assert.match(mainSource, /pomodoroAlwaysOnTop = true/);
   assert.match(mainSource, /pomodoroWindow = new BrowserWindow/);
   assert.match(mainSource, /pomodoroWindow\.loadFile\(path\.join\(__dirname, 'src', 'pomodoro\.html'\)\)/);
-  assert.match(mainSource, /pomodoroWindow\.setAlwaysOnTop\(pomodoroAlwaysOnTop, 'floating'\)/);
+  assert.match(mainSource, /const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver'/);
+  assert.match(mainSource, /pomodoroWindow\.setAlwaysOnTop\(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL\)/);
   assert.match(mainSource, /sandbox: true/);
+  assert.match(mainSource, /pomodoroWindow\.on\('closed'/);
+  assert.match(mainSource, /stopPomodoroSession\(\)/);
+  assert.match(mainSource, /stopPomodoroTicker\(\)/);
 });
 
 test('tray menu exposes pomodoro entry and running state labels', () => {
@@ -32,9 +38,29 @@ test('main process registers pomodoro IPC handlers', () => {
   }
 });
 
+test('toggling pomodoro pin state keeps the window reachable', () => {
+  assert.match(mainSource, /function applyPomodoroWindowPinState\(shouldRaise = false\)/);
+  assert.match(mainSource, /applyPomodoroWindowPinState\(true\)/);
+  assert.match(mainSource, /pomodoroWindow\.restore\(\)/);
+  assert.match(mainSource, /pomodoroWindow\.show\(\)/);
+  assert.match(mainSource, /pomodoroWindow\.moveTop\(\)/);
+  assert.match(mainSource, /pomodoroWindow\.focus\(\)/);
+});
+
+test('pomodoro pet assets use current skin with default fallback', () => {
+  assert.match(mainSource, /function resolvePomodoroAsset\(skinId, filename\)/);
+  assert.match(mainSource, /fs\.existsSync\(candidatePath\)/);
+  assert.match(mainSource, /return `assets\/\$\{safeSkinId\}\/\$\{filename\}`/);
+  assert.match(mainSource, /return `assets\/default\/\$\{filename\}`/);
+  assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'left_cultivate\.webp'\)/);
+  assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'right_cultivate\.webp'\)/);
+});
+
 test('pomodoro session hides pets temporarily and restores previous pause state', () => {
   assert.match(mainSource, /let pomodoroPetHidden = false/);
   assert.match(mainSource, /function enterPomodoroPetFocus\(\)/);
   assert.match(mainSource, /function restorePomodoroPetFocus\(\)/);
   assert.match(mainSource, /pomodoroFocusSnapshot\.wasPaused/);
+  assert.match(mainSource, /return petHidden \|\| meetingHidden \|\| pomodoroPetHidden/);
+  assert.match(mainSource, /sendPetVisibility\(!isPetCurrentlyHidden\(\)\)/);
 });

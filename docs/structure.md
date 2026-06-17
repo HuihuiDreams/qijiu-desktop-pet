@@ -371,6 +371,7 @@ npm test
 - [ADR-034](./decisions/ADR-034-ui-performance-and-visual-upgrades.md)：UI 性能优化与高级视觉升级。
 - [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)：会议自动隐藏检测。
 - [ADR-036](./decisions/ADR-036-cp-interaction-anti-overlap.md)：CP 互动防交叠机制。
+- [ADR-037](./decisions/ADR-037-lightweight-pomodoro-companion.md)：轻量番茄钟陪伴模式。
 
 ## 6. 维护提示
 

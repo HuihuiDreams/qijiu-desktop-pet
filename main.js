@@ -128,6 +128,7 @@ let pomodoroAlwaysOnTop = true;
 let pomodoroFocusSnapshot = null;
 let pomodoroPetHidden = false;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
+const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 const displayFitScheduler = createDisplayFitScheduler({
   fitNow: fitWindowToAllDisplays,
   delayMs: DISPLAY_METRICS_SETTLE_MS,
@@ -706,6 +707,7 @@ function getInitialPomodoroWindowBounds() {
 function createPomodoroWindow() {
   if (pomodoroWindow && !pomodoroWindow.isDestroyed()) return pomodoroWindow;
 
+  pomodoroAlwaysOnTop = true;
   const bounds = getInitialPomodoroWindowBounds();
   pomodoroWindow = new BrowserWindow({
     ...bounds,
@@ -725,7 +727,7 @@ function createPomodoroWindow() {
     },
   });
 
-  pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, 'floating');
+  applyPomodoroWindowPinState();
   pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   pomodoroWindow.loadFile(path.join(__dirname, 'src', 'pomodoro.html'));
 
@@ -780,11 +782,26 @@ function closePomodoroWindow() {
   return getPomodoroSnapshot();
 }
 
+function applyPomodoroWindowPinState(shouldRaise = false) {
+  if (!pomodoroWindow || pomodoroWindow.isDestroyed()) return;
+
+  pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL);
+
+  if (!shouldRaise) return;
+
+  if (pomodoroWindow.isMinimized()) {
+    pomodoroWindow.restore();
+  }
+  if (!pomodoroWindow.isVisible()) {
+    pomodoroWindow.show();
+  }
+  pomodoroWindow.moveTop();
+  pomodoroWindow.focus();
+}
+
 function setPomodoroAlwaysOnTop(enabled) {
   pomodoroAlwaysOnTop = Boolean(enabled);
-  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
-    pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, 'floating');
-  }
+  applyPomodoroWindowPinState(true);
   sendPomodoroState();
   return getPomodoroSnapshot();
 }

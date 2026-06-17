@@ -56,3 +56,16 @@ test('pomodoro renderer uses safe DOM APIs for dynamic text and images', () => {
   assert.match(source, /textContent/);
   assert.match(source, /setPetImage/);
 });
+
+test('pomodoro pin button updates optimistically while IPC confirms the window level', () => {
+  const source = readSource('src/pomodoroWindow.js');
+
+  assert.match(source, /const nextIsAlwaysOnTop = !currentState\.isAlwaysOnTop/);
+  assert.match(source, /renderState\(\{ isAlwaysOnTop: nextIsAlwaysOnTop \}\)/);
+  assert.match(source, /pinBtn\.disabled = true/);
+  assert.match(source, /setPomodoroAlwaysOnTop\(nextIsAlwaysOnTop\)/);
+  assert.match(source, /function isIpcFailure\(result\)/);
+  assert.match(source, /if \(isIpcFailure\(result\)\)/);
+  assert.match(source, /renderState\(\{ isAlwaysOnTop: !nextIsAlwaysOnTop \}\)/);
+  assert.match(source, /pinBtn\.disabled = false/);
+});

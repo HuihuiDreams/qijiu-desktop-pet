@@ -90,7 +90,6 @@ const I18N = {
       pomodoroCompleted: '静修圆满',
       pomodoroCompleteMessage: '闭关结束，修为又大有精进。',
       pomodoroFinish: '出关',
-      pomodoroLastHint: '上次时长会自动记住',
 
       // 更新提示框
       updateErrTitle: '更新失败',
@@ -357,7 +356,6 @@ const I18N = {
       pomodoroCompleted: 'Seclusion Complete',
       pomodoroCompleteMessage: 'Seclusion complete. Your cultivation has advanced significantly.',
       pomodoroFinish: 'Exit Seclusion',
-      pomodoroLastHint: 'Previous duration is remembered',
 
       // Update Dialogs
       updateErrTitle: 'Update Failed',
@@ -625,7 +623,6 @@ const I18N = {
       pomodoroCompleted: '静修円満',
       pomodoroCompleteMessage: '閉関終了。修行がまた一段と進みました。',
       pomodoroFinish: '出関',
-      pomodoroLastHint: '前回の時間を自動で記憶します',
 
       // 更新ダイアログ
       updateErrTitle: '更新失敗',

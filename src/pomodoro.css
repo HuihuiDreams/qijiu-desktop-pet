@@ -330,7 +330,6 @@ input {
   color: var(--color-jade-deep);
 }
 
-.pomodoro-helper,
 .pomodoro-message {
   max-width: 280px;
   margin: 0;

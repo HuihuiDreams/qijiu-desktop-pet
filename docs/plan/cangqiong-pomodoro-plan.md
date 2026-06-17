@@ -65,6 +65,26 @@
 
 先用 fake clock 测 `PomodoroSystem` 的开始、剩余时间、完成和停止；再测 `main.js` 的托盘入口、窗口创建、关闭恢复、上次时长偏好和 IPC 注册。番茄钟 UI 用静态 DOM/字符串测试覆盖关键元素，真实窗口用 `npm run dev` 手动验证输入时长、倒计时、置顶切换、完成态台词和宠物恢复。
 
+### Automated Verification Run
+
+- [x] Focused tests: `node --test test/pomodoroSystem.test.js test/pomodoroWindow.test.js test/pomodoroTray.test.js test/pomodoroI18n.test.js test/ipcContracts.test.js test/preloadSubscriptions.test.js` 通过（31 tests）。
+- [x] Test all: `npm test` 通过（283 tests）。
+- [x] Build: `npm run build` 通过，生成 Windows unpacked 和 NSIS 安装包；构建日志仅有 Electron Builder 依赖链的 `DEP0190` warning。
+- [x] 文档/静态核对：确认 `ADR-037`、`docs/structure.md`、番茄钟 i18n key、`activeWindowProvider.js` / `WindowAwarenessSystem.js` 非接入边界均可追踪。
+
+### Manual Verification Remaining
+
+- [x] 从托盘打开番茄钟，确认入口位置、空闲文案和运行中文案符合预期。
+- [x] 首次打开确认输入框默认 `25`；输入 `30` 并开始后，再次打开默认 `30`。
+- [x] 运行 1 分钟短倒计时，确认倒计时刷新、完成态、鼓励台词和关闭流程自然。
+- [ ] 运行中点击取消置顶/重新置顶，确认只影响番茄钟窗口。
+- [x] 番茄钟窗口与状态窗口、右键菜单同屏查看，确认视觉风格一致，360px 左右宽度下不重叠溢出。
+- [x] 专注期间桌面宠物隐藏且不重复出现；完成、提前结束、直接关闭窗口后恢复到开始前状态。
+- [ ] 开始前分别测试“宠物已隐藏”和“走动已暂停”，确认结束后仍保持原状态。
+- [x] 切换 default / birds / animal_ears 皮肤后打开番茄钟，确认窗口内静态宠物跟随皮肤；缺失资源时 fallback 不破图。
+- [x] 切换中文、英文、日文后打开或刷新番茄钟，确认窗口文案和置顶/关闭 tooltip 更新。
+- [x] 判断用户是否接受“独立小窗口输入时长 + 不做监督”的产品体验。
+
 ## Overview
 
 “苍穹山派轻量番茄钟”是陪伴型专注模式，不是监督型专注模式。用户主动设定一个专注时长，随后看到一个小窗口：中央是倒计时，两侧或下方是岳清源和沈九的静态修炼姿态。桌面上的宠物在这段时间暂停并隐藏，避免出现“桌面也有、窗口也有”的重复感。
@@ -239,8 +259,8 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 非法时长有安全 fallback 或明确错误。
 
 **Verification:**
-- [ ] fake clock 测试开始、倒计时推进、完成、停止。
-- [ ] `node --test test/pomodoroSystem.test.js` 通过。
+- [x] fake clock 测试开始、倒计时推进、完成、停止。
+- [x] `node --test test/pomodoroSystem.test.js` 通过。
 
 **Dependencies:** None
 
@@ -263,8 +283,8 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] renderer 无法直接访问 Node API。
 
 **Verification:**
-- [ ] preload 订阅测试覆盖新增 channel。
-- [ ] IPC handler 测试覆盖成功和失败结果。
+- [x] preload 订阅测试覆盖新增 channel。
+- [x] IPC handler 测试覆盖成功和失败结果。
 
 **Dependencies:** Task 1
 
@@ -279,9 +299,9 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 
 ### Checkpoint: 核心可测
 
-- [ ] 倒计时状态机不依赖 Electron。
-- [ ] IPC 边界明确。
-- [ ] 还没有引入前台窗口读取或软件分类。
+- [x] 倒计时状态机不依赖 Electron。
+- [x] IPC 边界明确。
+- [x] 还没有引入前台窗口读取或软件分类。
 
 ### Phase 2: 番茄钟窗口
 
@@ -301,7 +321,7 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] UI 不依赖主桌宠窗口 DOM。
 
 **Verification:**
-- [ ] 静态测试确认关键 DOM id/class 和脚本引用存在。
+- [x] 静态测试确认关键 DOM id/class 和脚本引用存在。
 - [ ] 手动视觉检查：番茄钟窗口与状态窗口、右键菜单同屏时风格一致。
 - [ ] `npm run dev` 手动验证默认时长、输入、倒计时刷新、置顶切换和完成态。
 
@@ -326,7 +346,7 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 图片有固定尺寸约束，窗口缩放时不挤压倒计时文本。
 
 **Verification:**
-- [ ] 测试覆盖资源路径 fallback。
+- [x] 测试覆盖资源路径 fallback。
 - [ ] 手动切换皮肤后打开番茄钟，确认窗口内宠物跟随当前皮肤。
 
 **Dependencies:** Task 3
@@ -355,8 +375,8 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 应用退出时清理窗口和 timer。
 
 **Verification:**
-- [ ] 主进程测试覆盖单例窗口创建和关闭清理。
-- [ ] `npm test` 通过。
+- [x] 主进程测试覆盖单例窗口创建和关闭清理。
+- [x] `npm test` 通过。
 
 **Dependencies:** Task 2, Task 3
 
@@ -378,7 +398,7 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 托盘菜单刷新不影响皮肤、暂停、隐藏、更新、退出入口。
 
 **Verification:**
-- [ ] `skinTray.test.js` 或 `pomodoroTray.test.js` 覆盖菜单结构。
+- [x] `skinTray.test.js` 或 `pomodoroTray.test.js` 覆盖菜单结构。
 - [ ] 手动验证托盘入口和运行中状态。
 
 **Dependencies:** Task 5
@@ -402,7 +422,7 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 恢复逻辑在完成、手动结束、窗口关闭、应用退出前路径一致。
 
 **Verification:**
-- [ ] 主进程测试覆盖开始前可见/隐藏/暂停组合。
+- [x] 主进程测试覆盖开始前可见/隐藏/暂停组合。
 - [ ] 手动验证完成和手动关闭都会恢复正确。
 
 **Dependencies:** Task 5
@@ -436,7 +456,7 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 置顶/取消置顶控件文案可翻译。
 
 **Verification:**
-- [ ] i18n fallback 测试通过。
+- [x] i18n fallback 测试通过。
 - [ ] 手动切换语言后番茄钟窗口文案刷新或下次打开生效。
 
 **Dependencies:** Task 3, Task 6
@@ -457,8 +477,8 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 - [ ] 文档说明桌面宠物隐藏/恢复由主进程管理。
 
 **Verification:**
-- [ ] 文档链接和文件名正确。
-- [ ] 与本计划保持一致。
+- [x] 文档链接和文件名正确。
+- [x] 与本计划保持一致。
 
 **Dependencies:** Task 1-8
 
