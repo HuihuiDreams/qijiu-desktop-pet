@@ -3,6 +3,11 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
+
+### Changed
+- **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
 ## [0.7.0] - 2026-06-18
 ### Added

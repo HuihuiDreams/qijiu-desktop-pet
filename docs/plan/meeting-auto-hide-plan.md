@@ -169,7 +169,7 @@
 **Acceptance criteria:**
 - [x] 提供一个可在终端运行的调试脚本 `tools/measure-meeting-udp.js`。
 - [x] 脚本输出格式：进程名、PID、UDP 连接数、连接详情。
-- [ ] 记录测量结果：应用打开未开会 vs 开会中 vs 共享屏幕中的 UDP 连接数差异。
+- [x] 记录测量结果：应用打开未开会 vs 开会中 vs 共享屏幕中的 UDP 连接数差异。
 - [x] 根据测量结果确定 `meetingDetector.js` 中的阈值常量。
 
 **Current measurement note (Windows / Teams / 2026-06-08):**
@@ -242,7 +242,7 @@
 
 - [x] 能在真实环境中打开 Teams/Zoom 开始会议，桌宠自动隐藏。
 - [x] 结束会议后桌宠自动恢复。
-- [ ] 手动隐藏/显示与会议检测互不干扰。
+- [x] 手动隐藏/显示与会议检测互不干扰。
 
 ### Phase 3: 跨平台 QA 与文档
 

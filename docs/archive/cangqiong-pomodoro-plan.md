@@ -67,8 +67,8 @@
 
 ### Automated Verification Run
 
-- [x] Focused tests: `node --test test/pomodoroSystem.test.js test/pomodoroWindow.test.js test/pomodoroTray.test.js test/pomodoroI18n.test.js test/ipcContracts.test.js test/preloadSubscriptions.test.js` 通过（31 tests）。
-- [x] Test all: `npm test` 通过（283 tests）。
+- [x] Focused tests: `node --test test/pomodoroSystem.test.js test/pomodoroWindow.test.js test/pomodoroTray.test.js test/pomodoroI18n.test.js test/ipcContracts.test.js test/preloadSubscriptions.test.js` 通过（35 tests）。
+- [x] Test all: `npm test` 通过（287 tests）。
 - [x] Build: `npm run build` 通过，生成 Windows unpacked 和 NSIS 安装包；构建日志仅有 Electron Builder 依赖链的 `DEP0190` warning。
 - [x] 文档/静态核对：确认 `ADR-037`、`docs/structure.md`、番茄钟 i18n key、`activeWindowProvider.js` / `WindowAwarenessSystem.js` 非接入边界均可追踪。
 
@@ -77,10 +77,10 @@
 - [x] 从托盘打开番茄钟，确认入口位置、空闲文案和运行中文案符合预期。
 - [x] 首次打开确认输入框默认 `25`；输入 `30` 并开始后，再次打开默认 `30`。
 - [x] 运行 1 分钟短倒计时，确认倒计时刷新、完成态、鼓励台词和关闭流程自然。
-- [ ] 运行中点击取消置顶/重新置顶，确认只影响番茄钟窗口。
+- [x] 运行中点击取消置顶/重新置顶，确认只影响番茄钟窗口。
 - [x] 番茄钟窗口与状态窗口、右键菜单同屏查看，确认视觉风格一致，360px 左右宽度下不重叠溢出。
 - [x] 专注期间桌面宠物隐藏且不重复出现；完成、提前结束、直接关闭窗口后恢复到开始前状态。
-- [ ] 开始前分别测试“宠物已隐藏”和“走动已暂停”，确认结束后仍保持原状态。
+- [x] 开始前分别测试“宠物已隐藏”和“走动已暂停”，确认结束后仍保持原状态。
 - [x] 切换 default / birds / animal_ears 皮肤后打开番茄钟，确认窗口内静态宠物跟随皮肤；缺失资源时 fallback 不破图。
 - [x] 切换中文、英文、日文后打开或刷新番茄钟，确认窗口文案和置顶/关闭 tooltip 更新。
 - [x] 判断用户是否接受“独立小窗口输入时长 + 不做监督”的产品体验。
@@ -204,10 +204,10 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 
 ## Key Assumptions to Validate
 
-- [ ] 用户愿意在独立小窗口里输入时长，而不是必须在托盘菜单中直接选择预设时间。验证：手动跑通窗口输入流程。
-- [ ] 静态修炼图足够表达“宠物进入窗口陪伴”。验证：用当前三套皮肤检查资源是否齐全，缺失时 fallback 正常。
-- [ ] 专注期间隐藏桌面宠物不会让用户困惑。验证：完成/关闭后能稳定恢复，托盘状态文案能说明当前正在专注。
-- [ ] 不做监督仍然有价值。验证：MVP 只衡量用户是否愿意打开它进行倒计时，而不是是否减少分心。
+- [x] 用户愿意在独立小窗口里输入时长，而不是必须在托盘菜单中直接选择预设时间。验证：手动跑通窗口输入流程。
+- [x] 静态修炼图足够表达“宠物进入窗口陪伴”。验证：用当前三套皮肤检查资源是否齐全，缺失时 fallback 正常。
+- [x] 专注期间隐藏桌面宠物不会让用户困惑。验证：完成/关闭后能稳定恢复，托盘状态文案能说明当前正在专注。
+- [x] 不做监督仍然有价值。验证：MVP 只衡量用户是否愿意打开它进行倒计时，而不是是否减少分心。
 
 ## MVP Scope
 
@@ -252,11 +252,11 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 新增可单测的倒计时状态机，管理输入时长、开始、停止、完成和快照。
 
 **Acceptance criteria:**
-- [ ] 支持 `start(durationMinutes, now)` 或等价 API。
-- [ ] 返回 `idle`、`running`、`completed` 状态。
-- [ ] 快照包含 `durationMs`、`startedAt`、`endAt`、`remainingMs`、`progress`。
-- [ ] `remainingMs` 基于 `endAt - now` 计算，不能依赖 interval 累加。
-- [ ] 非法时长有安全 fallback 或明确错误。
+- [x] 支持 `start(durationMinutes, now)` 或等价 API。
+- [x] 返回 `idle`、`running`、`completed` 状态。
+- [x] 快照包含 `durationMs`、`startedAt`、`endAt`、`remainingMs`、`progress`。
+- [x] `remainingMs` 基于 `endAt - now` 计算，不能依赖 interval 累加。
+- [x] 非法时长有安全 fallback 或明确错误。
 
 **Verification:**
 - [x] fake clock 测试开始、倒计时推进、完成、停止。
@@ -275,12 +275,12 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 在 preload 和主进程之间定义最小 IPC：打开窗口、开始、结束、读取/保存上次时长、切换置顶、订阅状态变化。
 
 **Acceptance criteria:**
-- [ ] preload 暴露番茄钟相关最小 API。
-- [ ] IPC channel 命名清晰，例如 `pomodoro-start`、`pomodoro-stop`、`pomodoro-state`。
-- [ ] 支持读取和保存 `lastPomodoroMinutes`，首次使用 fallback 为 `25`。
-- [ ] 支持切换番茄钟窗口 `alwaysOnTop` 状态。
-- [ ] 新增或迁移后的 invoke 优先返回 `{ success, data }` / `{ success, error }` 形状。
-- [ ] renderer 无法直接访问 Node API。
+- [x] preload 暴露番茄钟相关最小 API。
+- [x] IPC channel 命名清晰，例如 `pomodoro-start`、`pomodoro-stop`、`pomodoro-state`。
+- [x] 支持读取和保存 `lastPomodoroMinutes`，首次使用 fallback 为 `25`。
+- [x] 支持切换番茄钟窗口 `alwaysOnTop` 状态。
+- [x] 新增或迁移后的 invoke 优先返回 `{ success, data }` / `{ success, error }` 形状。
+- [x] renderer 无法直接访问 Node API。
 
 **Verification:**
 - [x] preload 订阅测试覆盖新增 channel。
@@ -310,20 +310,20 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 新增 `pomodoro.html`、`pomodoroWindow.js` 和 `pomodoro.css`，实现输入态、倒计时态和完成态。
 
 **Acceptance criteria:**
-- [ ] UI 符合本计划的 `UI Design Specification`，复用状态窗口和右键菜单的视觉系统。
-- [ ] 主容器、标题栏、按钮、内嵌宠物区的圆角、阴影、边框和字体与 `status.css` / `context-menu.css` 保持一致。
-- [ ] 输入态包含分钟输入框和开始按钮。
-- [ ] 分钟输入框默认显示上次使用的专注时长，首次使用显示 `25`。
-- [ ] 倒计时态显示 `MM:SS` 或 `HH:MM:SS`。
-- [ ] 窗口内有置顶切换控件，当前状态可见。
-- [ ] 完成态显示完成文案、温和鼓励台词和关闭按钮。
-- [ ] 关闭按钮调用 preload 暴露的结束/关闭 API。
-- [ ] UI 不依赖主桌宠窗口 DOM。
+- [x] UI 符合本计划的 `UI Design Specification`，复用状态窗口和右键菜单的视觉系统。
+- [x] 主容器、标题栏、按钮、内嵌宠物区的圆角、阴影、边框和字体与 `status.css` / `context-menu.css` 保持一致。
+- [x] 输入态包含分钟输入框和开始按钮。
+- [x] 分钟输入框默认显示上次使用的专注时长，首次使用显示 `25`。
+- [x] 倒计时态显示 `MM:SS` 或 `HH:MM:SS`。
+- [x] 窗口内有置顶切换控件，当前状态可见。
+- [x] 完成态显示完成文案、温和鼓励台词和关闭按钮。
+- [x] 关闭按钮调用 preload 暴露的结束/关闭 API。
+- [x] UI 不依赖主桌宠窗口 DOM。
 
 **Verification:**
 - [x] 静态测试确认关键 DOM id/class 和脚本引用存在。
-- [ ] 手动视觉检查：番茄钟窗口与状态窗口、右键菜单同屏时风格一致。
-- [ ] `npm run dev` 手动验证默认时长、输入、倒计时刷新、置顶切换和完成态。
+- [x] 手动视觉检查：番茄钟窗口与状态窗口、右键菜单同屏时风格一致。
+- [x] `npm run dev` 手动验证默认时长、输入、倒计时刷新、置顶切换和完成态。
 
 **Dependencies:** Task 1, Task 2
 
@@ -335,19 +335,19 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 
 **Estimated scope:** Medium
 
-#### Task 4: 渲染两只静态宠物
+#### Task 4: 渲染静态陪伴宠物
 
-**Description:** 番茄钟窗口根据当前皮肤显示两只静态宠物，优先使用修炼姿态。
+**Description:** 番茄钟窗口根据当前皮肤显示静态陪伴宠物：初始页保留两只单人修炼图，倒计时页显示 `cultivate.webp` 组合图，完成页显示 `kiss.webp`。
 
 **Acceptance criteria:**
-- [ ] 显示岳清源和沈九两只宠物。
-- [ ] 当前皮肤存在 `left_cultivate.webp` / `right_cultivate.webp` 时优先使用。
-- [ ] 当前皮肤资源缺失时 fallback 到 `assets/default/`。
-- [ ] 图片有固定尺寸约束，窗口缩放时不挤压倒计时文本。
+- [x] 初始页显示岳清源和沈九两只宠物。
+- [x] 当前皮肤存在 `left_cultivate.webp` / `right_cultivate.webp` / `cultivate.webp` / `kiss.webp` 时优先使用。
+- [x] 当前皮肤资源缺失时 fallback 到 `assets/default/`。
+- [x] 图片有固定尺寸约束，窗口缩放时不挤压倒计时文本。
 
 **Verification:**
 - [x] 测试覆盖资源路径 fallback。
-- [ ] 手动切换皮肤后打开番茄钟，确认窗口内宠物跟随当前皮肤。
+- [x] 手动切换皮肤后打开番茄钟，确认窗口内宠物跟随当前皮肤。
 
 **Dependencies:** Task 3
 
@@ -366,13 +366,13 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 在主进程中创建独立番茄钟窗口，并管理打开、聚焦、关闭、完成后的生命周期。
 
 **Acceptance criteria:**
-- [ ] 重复点击托盘入口不会创建多个番茄钟窗口。
-- [ ] 已存在窗口时聚焦已有窗口。
-- [ ] 窗口创建后默认 `alwaysOnTop: true`。
-- [ ] 置顶切换只影响番茄钟窗口，不改变主透明桌宠窗口层级策略。
-- [ ] 窗口启用 `contextIsolation`、`sandbox`、禁用 Node integration。
-- [ ] 窗口关闭时停止本次专注并触发桌面宠物恢复。
-- [ ] 应用退出时清理窗口和 timer。
+- [x] 重复点击托盘入口不会创建多个番茄钟窗口。
+- [x] 已存在窗口时聚焦已有窗口。
+- [x] 窗口创建后默认 `alwaysOnTop: true`。
+- [x] 置顶切换只影响番茄钟窗口，不改变主透明桌宠窗口层级策略。
+- [x] 窗口启用 `contextIsolation`、`sandbox`、禁用 Node integration。
+- [x] 窗口关闭时停止本次专注并触发桌面宠物恢复。
+- [x] 应用退出时清理窗口和 timer。
 
 **Verification:**
 - [x] 主进程测试覆盖单例窗口创建和关闭清理。
@@ -392,14 +392,14 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 在托盘菜单中增加番茄钟入口和运行中状态展示。
 
 **Acceptance criteria:**
-- [ ] 空闲时显示“开启番茄钟”。
-- [ ] 运行中显示剩余分钟或“番茄钟进行中”。
-- [ ] 运行中点击可打开/聚焦番茄钟窗口。
-- [ ] 托盘菜单刷新不影响皮肤、暂停、隐藏、更新、退出入口。
+- [x] 空闲时显示“开启番茄钟”。
+- [x] 运行中显示剩余分钟或“番茄钟进行中”。
+- [x] 运行中点击可打开/聚焦番茄钟窗口。
+- [x] 托盘菜单刷新不影响皮肤、暂停、隐藏、更新、退出入口。
 
 **Verification:**
 - [x] `skinTray.test.js` 或 `pomodoroTray.test.js` 覆盖菜单结构。
-- [ ] 手动验证托盘入口和运行中状态。
+- [x] 手动验证托盘入口和运行中状态。
 
 **Dependencies:** Task 5
 
@@ -415,15 +415,15 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 专注开始时记录桌面宠物原始可见/暂停状态并隐藏或暂停主透明窗口，结束后恢复。
 
 **Acceptance criteria:**
-- [ ] 专注开始后桌面上不再显示两只移动宠物。
-- [ ] 专注结束后恢复到开始前的可见状态。
-- [ ] 如果用户开始前已经隐藏宠物，结束后仍保持隐藏。
-- [ ] 如果用户开始前已经暂停走动，结束后仍保持暂停。
-- [ ] 恢复逻辑在完成、手动结束、窗口关闭、应用退出前路径一致。
+- [x] 专注开始后桌面上不再显示两只移动宠物。
+- [x] 专注结束后恢复到开始前的可见状态。
+- [x] 如果用户开始前已经隐藏宠物，结束后仍保持隐藏。
+- [x] 如果用户开始前已经暂停走动，结束后仍保持暂停。
+- [x] 恢复逻辑在完成、手动结束、窗口关闭、应用退出前路径一致。
 
 **Verification:**
 - [x] 主进程测试覆盖开始前可见/隐藏/暂停组合。
-- [ ] 手动验证完成和手动关闭都会恢复正确。
+- [x] 手动验证完成和手动关闭都会恢复正确。
 
 **Dependencies:** Task 5
 
@@ -437,11 +437,11 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 
 ### Checkpoint: 可用 MVP
 
-- [ ] 用户可以从托盘打开番茄钟。
-- [ ] 用户输入分钟数后看到倒计时。
-- [ ] 两只宠物显示在倒计时窗口里。
-- [ ] 桌面宠物在专注期间不重复出现。
-- [ ] 完成或关闭后桌面宠物恢复。
+- [x] 用户可以从托盘打开番茄钟。
+- [x] 用户输入分钟数后看到倒计时。
+- [x] 宠物显示在倒计时窗口里。
+- [x] 桌面宠物在专注期间不重复出现。
+- [x] 完成或关闭后桌面宠物恢复。
 
 ### Phase 4: 文案、完成体验和文档
 
@@ -450,14 +450,14 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 为托盘、输入态、倒计时态、完成态增加 i18n 文案。
 
 **Acceptance criteria:**
-- [ ] 中文、英文、日文 UI key 均存在。
-- [ ] 缺少翻译时 fallback 不显示 raw key。
-- [ ] 完成态包含一句温和鼓励台词，不评价用户是否成功专注。
-- [ ] 置顶/取消置顶控件文案可翻译。
+- [x] 中文、英文、日文 UI key 均存在。
+- [x] 缺少翻译时 fallback 不显示 raw key。
+- [x] 完成态包含一句温和鼓励台词，不评价用户是否成功专注。
+- [x] 置顶/取消置顶控件文案可翻译。
 
 **Verification:**
 - [x] i18n fallback 测试通过。
-- [ ] 手动切换语言后番茄钟窗口文案刷新或下次打开生效。
+- [x] 手动切换语言后番茄钟窗口文案刷新或下次打开生效。
 
 **Dependencies:** Task 3, Task 6
 
@@ -472,9 +472,9 @@ MVP 的价值在于低打扰和低风险：它不用判断用户是否在工作�
 **Description:** 将轻量番茄钟窗口和隐私边界写入结构文档。
 
 **Acceptance criteria:**
-- [ ] `docs/structure.md` 包含 PomodoroSystem 和番茄钟窗口说明。
-- [ ] 文档说明番茄钟不检查前台窗口、不读取 URL、不记录软件使用。
-- [ ] 文档说明桌面宠物隐藏/恢复由主进程管理。
+- [x] `docs/structure.md` 包含 PomodoroSystem 和番茄钟窗口说明。
+- [x] 文档说明番茄钟不检查前台窗口、不读取 URL、不记录软件使用。
+- [x] 文档说明桌面宠物隐藏/恢复由主进程管理。
 
 **Verification:**
 - [x] 文档链接和文件名正确。
