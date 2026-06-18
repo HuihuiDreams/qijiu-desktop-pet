@@ -21,6 +21,20 @@ const CONFIG = {
   WINDOW_AWARENESS_PLATFORM_CHANCE: 0.7,
   TASKBAR_PLATFORM_WEIGHT: 120,
 
+  // === 天气与时空同步配置 (Weather & Time Sync) ===
+  WEATHER_MIN_REFRESH_MINUTES: 30,    // 最短刷新间隔 (分钟)
+  WEATHER_TIMEOUT_MS: 4000,           // API 请求超时 (毫秒)
+  WEATHER_BACKOFF_MS: 1200000,        // 连续失败后的退避冷却时间 (20分钟，即 1200000 毫秒)
+  
+  // === 本地时段划分 (Time Phases) ===
+  TIME_PHASES: {
+    morning: { startHour: 5, startMinute: 0 },   // 05:00 - 10:59
+    day:     { startHour: 11, startMinute: 0 },  // 11:00 - 16:59
+    dusk:    { startHour: 17, startMinute: 0 },  // 17:00 - 19:59
+    evening: { startHour: 20, startMinute: 0 },  // 20:00 - 23:59
+    night:   { startHour: 0, startMinute: 0 },   // 00:00 - 04:59
+  },
+
   // === 互动相关 (Interaction) ===
   INTERACTION_DISTANCE: 180,          // 触发CP互动的判定距离
   INTERACTION_COOLDOWN: 60000,        // 两次互动之间的冷却时间

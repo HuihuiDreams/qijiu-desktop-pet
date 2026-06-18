@@ -1,4 +1,4 @@
-﻿# DeskPet 项目结构与架构说明
+# DeskPet 项目结构与架构说明
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
@@ -26,6 +26,7 @@ graph TB
         MainJs --> BreakReminder["breakReminderService.js"]
         MainJs --> PresentGuard["presentationGuard.js"]
         MainJs --> MeetingDetector["meetingDetector.js"]
+        MainJs --> WeatherSync["weatherSyncService.js"]
     end
 
     subgraph Renderer["Pet Renderer Process"]
@@ -35,6 +36,7 @@ graph TB
         App --> Interaction["InteractionSystem"]
         App --> Time["TimeSystem"]
         App --> Awareness["WindowAwarenessSystem"]
+        App --> WeatherAwareness["WeatherAwarenessSystem"]
         App --> Skin["SkinManager"]
         App --> Pet["Pet / PetRenderer / SpriteView"]
         App --> UI["ContextMenu / StatusBar / DialogBubble"]
@@ -73,6 +75,7 @@ qijiu-desktop-pet/
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
 ├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
 ├─ meetingDetector.js                   # 会议自动隐藏检测：已知会议进程 + UDP 端点数量轮询与防抖状态机
+├─ weatherSyncService.js                # 天气感知与时空同步服务主进程：网络请求、缓存、节流和降级
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
 ├─ CHANGELOG.md                         # 版本变更记录
@@ -115,6 +118,7 @@ qijiu-desktop-pet/
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
+│  │  ├─ WeatherAwarenessSystem.js      # 接收并应用主进程下发的天气和时段抽象 payload
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
 │  ├─ ui/
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
@@ -372,6 +376,7 @@ npm test
 - [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)：会议自动隐藏检测。
 - [ADR-036](./decisions/ADR-036-cp-interaction-anti-overlap.md)：CP 互动防交叠机制。
 - [ADR-037](./decisions/ADR-037-lightweight-pomodoro-companion.md)：轻量番茄钟陪伴模式。
+- [ADR-038](./decisions/ADR-038-weather-sync.md)：天气感知与时空同步系统架构与隐私边界。
 
 ## 6. 维护提示
 

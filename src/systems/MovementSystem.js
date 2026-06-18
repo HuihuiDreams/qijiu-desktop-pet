@@ -514,6 +514,12 @@ class MovementSystem {
       case 'idle':
         pet.idleTimer -= deltaMs;
         if (pet.idleTimer <= 0) {
+          // 深夜时段：70% 概率不移动，继续睡觉（加长发呆时间）
+          if (pet.timePhase === 'night' && Math.random() < 0.7) {
+            pet.idleTimer = this.randomIdleDuration() * 2;
+            break;
+          }
+
           // 发呆结束，设置新目标开始行走
           this.randomTarget(pet);
           pet.direction = pet.targetX > pet.x ? 'right' : 'left';

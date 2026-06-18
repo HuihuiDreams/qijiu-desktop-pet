@@ -142,6 +142,9 @@ class InteractionSystem {
     if (petA.isDragging || petB.isDragging) return null;
     if (this.cooldownTimer > 0) return null;
 
+    // 深夜时段：降低主动互动触发的概率 (50% 概率直接跳过)
+    if (petA.timePhase === 'night' && Math.random() < 0.5) return null;
+
     // 距离检测
     const distance = this.getDistance(petA, petB);
     if (distance < CONFIG.INTERACTION_DISTANCE) {

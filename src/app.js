@@ -108,6 +108,7 @@ function applyI18n() {
     enabled: CONFIG.WINDOW_AWARENESS_ENABLED !== false,
     ttlMs: CONFIG.WINDOW_AWARENESS_PLATFORM_TTL_MS,
   });
+  const weatherAwarenessSystem = new WeatherAwarenessSystem(CONFIG);
   const nurtureSystemA = new NurtureSystem();
   const nurtureSystemB = new NurtureSystem();
   const interactionSystem = new InteractionSystem();
@@ -498,6 +499,12 @@ function applyI18n() {
           deltaMs = 16;
         }
 
+        // 更新本地时段
+        weatherAwarenessSystem.updateLocalTimePhase(Date.now());
+        const weatherState = weatherAwarenessSystem.getCurrentState();
+        yueqi.timePhase = weatherState.timePhase;
+        shenjiu.timePhase = weatherState.timePhase;
+
         // 更新移动
         movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
         movementSystem.update(yueqi, deltaMs);
@@ -606,7 +613,28 @@ function applyI18n() {
           const pet = Math.random() > 0.5 ? yueqi : shenjiu;
           if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)
               && !pet.isHungry() && !pet.isLowQi() && !pet.isLowMood()) {
-            dialogBubble.showIdleChatter(pet);
+            
+            // 时段专属闲聊
+            if (pet.timePhase === 'morning' && Math.random() < 0.3) {
+              const text = pet.id === 'yueqi'
+                ? (window.t('morningYueqi') || '早安。')
+                : (window.t('morningShenjiu') || '哼，起得倒早。');
+              dialogBubble.show(pet, text, 5000);
+            } else if (pet.timePhase === 'dusk' && Math.random() < 0.3) {
+              const text = pet.id === 'yueqi'
+                ? (window.t('duskYueqi') || '黄昏了，一日又要结束了。')
+                : (window.t('duskShenjiu') || '天色暗了。');
+              dialogBubble.show(pet, text, 5000);
+            } else if (pet.timePhase === 'evening' && Math.random() < 0.3) {
+              const text = pet.id === 'yueqi'
+                ? (window.t('eveningYueqi') || '夜幕已降，早点歇息吧。')
+                : (window.t('eveningShenjiu') || '…少烦我，滚去睡觉。');
+              dialogBubble.show(pet, text, 5000);
+            } else if (pet.timePhase === 'night' && Math.random() < 0.5) {
+              // 深夜有 50% 概率保持安静，不发任何气泡
+            } else {
+              dialogBubble.showIdleChatter(pet);
+            }
           }
         }
 

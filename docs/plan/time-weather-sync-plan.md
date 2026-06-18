@@ -61,11 +61,11 @@ Not doing:
 ### Dependencies
 
 - MVP 候选天气源：Open-Meteo Forecast API。
-- Open-Meteo 官方文档显示 `/v1/forecast` 通过经纬度、变量列表返回 JSON 天气数据，支持 current、hourly、daily 等变量，并包含 `weather_code`、`is_day`、降水、降雪、风速、云量等字段。
-- Open-Meteo 覆盖中国气象模型和中国地区天气数据，不等于中国大陆网络访问稳定；`open-meteo.com` / `api.open-meteo.com` 属于境外服务，可能受运营商、地区、DNS 或跨境链路影响。
+- **中国大陆网络不稳定对策（零配置策略）**：考虑到绝大部分休闲用户不会自行申请 API Key，MVP **放弃强制使用国内 API + Key 的方案**。默认使用免 Key 的 Open-Meteo。
+- **静默降级机制（Graceful Degradation）**：由于 Open-Meteo 在国内部分节点会超时，主进程请求必须设置严格超时（如 4 秒）。若超时或网络不可达，**禁止弹窗报错**，程序静默回退到“本地时段（早中晚）”模式。对网络不好的小白用户来说，只会体验到时段的更替，不会感知到错误。
 - 官方文档也说明商业保留 API 资源可能需要 `apikey`，因此实现前需要再次确认许可证、调用额度、归属说明和是否适合当前发布形态。
 - 第一版不建议新增 npm 天气 SDK，优先用主进程内置 `fetch` 或 Electron/Node 可用的标准请求能力，减少依赖面。
-- 天气 provider 必须可替换。Open-Meteo 只能作为首个 provider，不能写死为唯一数据源；面向中国大陆用户时应预留国内天气源或自托管代理的接入点。
+- 天气 provider 必须可替换。高级用户自定义接口（如自带和风天气 Key）可作为后续版本的增强项，不阻塞 MVP。
 
 ### Privacy & Permissions
 
@@ -200,15 +200,15 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 ## Weather Mapping
 
-| Normalized kind | 输入来源 | MVP 表现 | 资产要求 |
-|---|---|---|---|
-| `clear` | 晴、低云量 | 晒太阳台词、轻微暖光 | 全局 CSS fallback；不要求皮肤帧 |
-| `cloudy` | 阴、多云、雾 | 安静 idle、低饱和滤镜 | 全局 CSS fallback；不要求皮肤帧 |
-| `rain` | 雨、阵雨、降水量 | 雨滴特效、避雨台词 | 全局 overlay；伞动作后置且可选 |
-| `snow` | 雪、降雪量 | 雪粒子、怕冷台词 | 全局 overlay；披风后置且可选 |
-| `wind` | 风速或阵风较高 | 吐槽台词、轻微位移动效 | 可先仅台词；不要求衣摆/发丝分层 |
-| `storm` | 雷暴或强降水 | 降低活跃度、短台词 | 不做吓人弹窗 |
-| `unknown` | 无数据或失败 | 只用本地时段 | 无 |
+| Normalized kind | 输入来源         | MVP 表现               | 资产要求                        |
+| --------------- | ---------------- | ---------------------- | ------------------------------- |
+| `clear`         | 晴、低云量       | 晒太阳台词、轻微暖光   | 全局 CSS fallback；不要求皮肤帧 |
+| `cloudy`        | 阴、多云、雾     | 安静 idle、低饱和滤镜  | 全局 CSS fallback；不要求皮肤帧 |
+| `rain`          | 雨、阵雨、降水量 | 雨滴特效、避雨台词     | 全局 overlay；伞动作后置且可选  |
+| `snow`          | 雪、降雪量       | 雪粒子、怕冷台词       | 全局 overlay；披风后置且可选    |
+| `wind`          | 风速或阵风较高   | 吐槽台词、轻微位移动效 | 可先仅台词；不要求衣摆/发丝分层 |
+| `storm`         | 雷暴或强降水     | 降低活跃度、短台词     | 不做吓人弹窗                    |
+| `unknown`       | 无数据或失败     | 只用本地时段           | 无                              |
 
 ### Art Asset Policy
 
@@ -233,12 +233,12 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 初版时段可以先用本地系统时间，不依赖天气 API：
 
-| Phase | 建议时间 | 角色表现 |
-|---|---:|---|
-| `morning` | 05:00-10:59 | 轻快问候、整理衣冠 |
-| `day` | 11:00-16:59 | 普通活跃状态 |
-| `dusk` | 17:00-20:59 | 柔和台词、归山氛围 |
-| `night` | 21:00-04:59 | 低活跃、休息或小声台词 |
+| Phase     |    建议时间 | 角色表现               |
+| --------- | ----------: | ---------------------- |
+| `morning` | 05:00-10:59 | 轻快问候、整理衣冠     |
+| `day`     | 11:00-16:59 | 普通活跃状态           |
+| `dusk`    | 17:00-20:59 | 柔和台词、归山氛围     |
+| `night`   | 21:00-04:59 | 低活跃、休息或小声台词 |
 
 时间段只是默认值。实现时应放进配置常量，方便后续根据用户反馈调整。
 
@@ -251,21 +251,25 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 明确本地时段、天气状态、payload 字段、TTL、隐私边界和 fallback 行为，为后续实现建立稳定接口。
 
 **Acceptance criteria:**
-- [ ] 文档记录 `timePhase`、`weatherKind`、`intensity`、`stale`、`sampledAt`、`expiresAt` 字段。
-- [ ] 合约明确 renderer 不接收原始天气 API 响应。
-- [ ] 合约明确天气同步默认关闭，本地时间状态默认可用。
-- [ ] 合约记录禁用、未配置位置、请求失败、缓存过期的 fallback。
-- [ ] 合约记录性能预算：最小刷新间隔、请求超时、payload 大小、IPC 发送时机和特效节点上限。
+- [x] 文档记录 `timePhase`、`weatherKind`、`intensity`、`stale`、`sampledAt`、`expiresAt` 字段。
+- [x] 合约明确 renderer 不接收原始天气 API 响应。
+- [x] 合约明确天气同步默认关闭，本地时间状态默认可用。
+- [x] 合约记录禁用、未配置位置、请求失败、缓存过期的 fallback。
+- [x] 合约记录性能预算：最小刷新间隔、请求超时、payload 大小、IPC 发送时机和特效节点上限。
+- [x] 将 `WEATHER_MIN_REFRESH_MINUTES`（默认 30）、请求超时（默认 4000 ms）、退避冷却（默认 20 分钟）定义为 `src/data/config.js` 中的具名常量，供 Task 4/5 直接引用，不允许各自内联硬编码。
+- [x] ADR 编号已从现有 `docs/decisions/` 目录中最大编号 +1 确认，文件名占坑（当前最新为 ADR-037，天气同步 ADR 应为 ADR-038）。
 
 **Verification:**
-- [ ] 计划/ADR review 确认隐私边界清楚。
-- [ ] 后续任务都只消费抽象 payload。
-- [ ] 计划/ADR review 确认不需要每帧计算天气或发送 IPC。
+- [x] 计划/ADR review 确认隐私边界清楚。
+- [x] 配置文件包含所有要求的常量，且没有拼写错误。
+- [x] 计划/ADR review 确认不需要每帧计算天气或发送 IPC。
+- [x] `src/data/config.js` 中存在上述三个具名常量，Task 4/5 的实现引用它们而非内联数字。
 
 **Dependencies:** None
 
 **Files likely touched:**
 - `docs/decisions/ADR-0XX-weather-sync.md`
+- `src/data/config.js`
 - `docs/structure.md`
 
 **Estimated scope:** Small
@@ -275,16 +279,16 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 增加纯逻辑函数或 renderer system，根据本地时间计算 `morning`、`day`、`dusk`、`night`，并支持 fake clock 测试。
 
 **Acceptance criteria:**
-- [ ] 能根据本地时间返回稳定 `timePhase`。
-- [ ] 边界时间不会抖动或返回未知状态。
-- [ ] 系统时间变化后，下一次 tick 能更新 phase。
-- [ ] 不需要联网或位置配置。
-- [ ] 本地时段计算按分钟或状态过期时间触发，不在 animation frame 中重复构造时间对象。
+- [x] 能根据本地时间返回稳定 `timePhase`。
+- [x] 边界时间不会抖动或返回未知状态。
+- [x] 系统时间变化后，下一次 tick 能更新 phase。
+- [x] 不需要联网或位置配置。
+- [x] 本地时段计算按分钟或状态过期时间触发，不在 animation frame 中重复构造时间对象。
 
 **Verification:**
-- [ ] `node --test test/weatherAwarenessSystem.test.js`
-- [ ] 测试覆盖四个 phase 和边界时间。
-- [ ] Fake clock 测试覆盖一分钟内重复读取不会重复计算或重复发事件。
+- [x] `node --test test/weatherAwarenessSystem.test.js`
+- [x] 测试覆盖四个 phase 和边界时间。
+- [x] Fake clock 测试覆盖一分钟内重复读取不会重复计算或重复发事件。
 
 **Dependencies:** Task 1
 
@@ -300,15 +304,15 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 让 renderer 在不联网的情况下消费 `timePhase`，影响低频台词、idle 倾向或睡眠表现。
 
 **Acceptance criteria:**
-- [ ] 深夜状态会降低自动移动或互动频率，但用户主动操作仍可用。
-- [ ] 早晨/黄昏可以触发低频台词。
-- [ ] 时段表现不打断拖拽、右键菜单、番茄钟和已有互动。
-- [ ] 缺少专用动画时回退到现有 idle/rest/cultivate。
+- [x] 深夜状态会降低自动移动或互动频率，但用户主动操作仍可用。
+- [x] 早晨/黄昏可以触发低频台词。
+- [x] 时段表现不打断拖拽、右键菜单、番茄钟和已有互动。
+- [x] 缺少专用动画时回退到现有 idle/rest/cultivate。
 
 **Verification:**
-- [ ] Renderer 单元测试覆盖 phase hint 到行为 hint 的映射。
-- [ ] 手动调整系统时间或使用 debug hook 检查四个 phase。
-- [ ] `npm test`
+- [x] Renderer 单元测试覆盖 phase hint 到行为 hint 的映射。
+- [x] 手动调整系统时间或使用 debug hook 检查四个 phase。
+- [x] `npm test`
 
 **Dependencies:** Task 2
 
@@ -325,6 +329,15 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 - [ ] 不联网也能触发本地时段状态。
 - [ ] 深夜状态不会破坏拖拽、点击穿透和用户主动互动。
 - [ ] 所有新增逻辑可单元测试。
+
+### Pre-Phase 2 前置确认（Gate）
+
+> **Phase 2 任何 Task 均不得在以下两项确认完成前开始编码。**
+
+- [ ] **静默降级策略确认**：由于小白用户不会配置 API Key，确认采用“默认 Open-Meteo + 严格超时 + 静默降级到本地时段”的零配置模式。
+- [ ] **Open Questions 关键决策锁定**：在开始 Task 4 前，明确回答以下两个问题并写入计划或 ADR：
+  1. 天气设置 UI 入口放在哪里？托盘子菜单、现有状态窗口页签，还是独立设置窗口？（只需承载开关和城市名称，影响 Task 8 实现路径）
+  2. 针对 Open-Meteo 的城市经纬度转换，是让用户直接填经纬度，还是在应用内调一个免 key 的 Geocoding API 把拼音/城市名转成坐标？
 
 ### Phase 2: Weather Service
 
@@ -372,7 +385,7 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 - [ ] Mock fetch 测试成功、失败、DNS/连接错误、超时、缓存命中、缓存过期。
 - [ ] Mock 测试覆盖相同 payload 不重复发送 IPC。
 - [ ] 单元测试断言 renderer payload 不包含原始 forecast arrays。
-- [ ] 手动记录至少一次中国大陆网络环境下的 Open-Meteo 访问结果；若不可用，确认 fallback 不影响本地时段。
+- [ ] 确认 Pre-Phase 2 Gate 中的大陆网络实测结果已记录；若实测为不可达，当前 Task 使用的 provider 已在 Gate 阶段替换，不在此步骤临时决策。
 - [ ] `node --test test/weatherSyncService.test.js`
 
 **Dependencies:** Task 4
@@ -442,7 +455,9 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 #### Task 8: 新增托盘/设置入口
 
-**Description:** 增加天气同步开关和位置配置入口。MVP 可以先用简单窗口、状态窗口页签或托盘子菜单中的预设/手动输入方案。
+> **前置条件：** 开始本 Task 前，Pre-Phase 2 Gate 中的两个关键决策（大陆可用性承诺 + UI 入口位置）必须已锁定。UI 入口形式未确认时，不得开始本 Task 的实现，否则文件选择将不确定，容易产生废弃代码。
+
+**Description:** 增加天气同步开关和位置配置入口。入口形式由 Pre-Phase 2 Gate 决策决定（托盘子菜单 / 状态窗口页签 / 独立设置窗口），本 Task 按决策结果选择对应文件，不自行决定。
 
 **Acceptance criteria:**
 - [ ] 用户可以开启/关闭天气同步。
@@ -455,7 +470,7 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 - [ ] i18n fallback 测试覆盖天气菜单文案。
 - [ ] `node --test test/i18nFallback.test.js test/skinTray.test.js`
 
-**Dependencies:** Task 4, Task 7
+**Dependencies:** Task 4, Task 7, Pre-Phase 2 Gate（UI 入口决策已锁定）
 
 **Files likely touched:**
 - `main.js`
@@ -468,24 +483,27 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 #### Task 9: 接入天气视觉特效
 
-**Description:** 在 renderer 中根据 `weatherKind` 和 `intensity` 添加轻量 CSS/DOM 特效，优先保证性能和可关闭。
+**Description:** 在 renderer 中根据 `weatherKind` 和 `intensity` 添加轻量天气视觉表现。**MVP 基线是"静态 CSS class"**：通过给透明窗口根节点添加 `data-weather` / `data-phase` 属性，配合 `effects.css` 中的静态样式实现氛围变化（暖光、低饱和、冷色调等）。粒子特效（雨滴、雪花动画）为**可选增强（opt-in）**，只有在以下条件全部满足时才在同一版本中实现：基线静态 CSS 已稳定合并、有充足时间做 DevTools 录制验证、且 10 分钟手动观察无节点增长或 long task。否则粒子特效推迟到下一阶段，不进入天气 MVP。
 
-**Acceptance criteria:**
-- [ ] 雨、雪、晴光至少有一种轻量表现。
-- [ ] 特效强度受 `intensity` 控制。
-- [ ] 低性能或禁用时不渲染特效节点。
-- [ ] 特效应用 `scaleRatio` 或 viewport 约束，不在多显示器/DPI 场景明显错位。
+**MVP 基线（必须完成）：**
+- [ ] 根节点 `data-weather` / `data-phase` 属性随 payload 更新。
+- [ ] `effects.css` 中晴/多云/雨/雪/深夜至少各有一条静态 class 规则（滤镜、色温、背景色等）。
+- [ ] 天气禁用或 payload 过期后属性清除，CSS 回到默认状态。
 - [ ] 特效是全局 overlay 或 CSS class，不要求修改任何现有皮肤素材。
-- [ ] 雨/雪粒子节点数量有配置上限，切换天气、禁用、隐藏宠物或 payload 过期时会清理。
+- [ ] 特效应用 `scaleRatio` 或 viewport 约束，不在多显示器/DPI 场景明显错位。
+
+**可选增强（粒子特效，仅在基线稳定后评估）：**
+- [ ] 雨/雪粒子节点数量有配置上限（初始保守值，根据 DevTools 录制调整）。
+- [ ] 切换天气、禁用、隐藏宠物或 payload 过期时，粒子节点清理。
 - [ ] 特效实现避免 layout thrashing，不在动画循环中交替读取布局和写入样式。
-- [ ] 如果 10 分钟手动观察中出现 DOM 节点增长、明显掉帧或超过 50ms long task，MVP 降级为“台词 + 静态 CSS class”，粒子特效推迟。
+- [ ] 10 分钟手动观察 DOM 节点数量稳定、无超过 50ms 的 long task。
+- [ ] 如果上述任一条件不满足，粒子特效立即推迟，基线静态 CSS 仍正常发布。
 
 **Verification:**
-- [ ] 单元测试或 DOM 测试覆盖启用/禁用和节点清理。
-- [ ] 手动切换当前所有已存在皮肤，确认没有天气专用素材时也能正常展示 fallback。
-- [ ] 手动检查雨雪特效不挡住菜单和状态窗口。
-- [ ] DevTools Performance 录制覆盖天气切换和雨/雪特效运行；记录是否存在超过 50ms 的 long task。
-- [ ] 手动检查 10 分钟后 DOM 节点数量稳定。
+- [ ] 单元测试或 DOM 测试覆盖 `data-weather` 属性设置、清除和禁用路径。
+- [ ] 手动切换当前所有已存在皮肤，确认没有天气专用素材时也能正常展示基线 fallback。
+- [ ] 手动检查特效不挡住菜单和状态窗口。
+- [ ] 若实现粒子：DevTools Performance 录制覆盖天气切换和雨/雪特效运行，记录是否存在超过 50ms 的 long task。
 - [ ] `npm test`
 
 **Dependencies:** Task 7
@@ -598,19 +616,19 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 ## Risks and Mitigations
 
-| Risk | Impact | Mitigation |
-|---|---:|---|
-| 用户担心定位隐私 | 高 | 默认关闭天气同步；只支持手动城市/模糊坐标；不请求系统定位 |
-| 外部 API 不稳定或政策变化 | 中 | 把 API 隔离在主进程服务；实现前复核官方文档；提供本地时间 fallback |
-| Open-Meteo 在中国大陆网络不可用或不稳定 | 高 | 不把 Open-Meteo 写死为唯一 provider；大陆网络实测；短超时、退避、最近成功缓存和本地时段 fallback；预留国内天气源或代理方案 |
-| 天气请求或 IPC 过频 | 中 | 默认刷新间隔不低于 30 分钟；相同 payload 不重复广播；连续失败进入冷却窗口 |
-| 天气特效影响性能 | 中 | 低粒子数量；可关闭；只在 renderer 渲染抽象状态；节点定期清理；未达预算时降级为台词/静态 class |
-| DOM 或 listener 泄漏 | 中 | 特效节点有上限和清理路径；preload 订阅必须可退订；10 分钟观察 DOM 节点稳定 |
-| 天气素材乘以皮肤套数 | 高 | MVP 禁止逐皮肤必填天气帧；只用全局 overlay、CSS、台词和现有状态 fallback；伞/披风等道具后置到配件系统 |
-| 天气状态抢占角色互动 | 中 | 明确状态优先级；天气只作为 hint，不覆盖主动交互和关键系统状态 |
-| 多语言文案缺失 | 低 | 使用 i18n fallback 测试；中文先完整，英文/日文可回退 |
-| 时区和本地时间不一致 | 中 | 本地时段用系统时间；天气数据使用用户配置 timezone；payload 标记 sampledAt/expiresAt |
-| 过度功能化 | 中 | MVP 不做完整天气面板、不做预警、不做数值惩罚 |
+| Risk                                    | Impact | Mitigation                                                                                                                 |
+| --------------------------------------- | -----: | -------------------------------------------------------------------------------------------------------------------------- |
+| 用户担心定位隐私                        |     高 | 默认关闭天气同步；只支持手动城市/模糊坐标；不请求系统定位                                                                  |
+| 外部 API 不稳定或政策变化               |     中 | 把 API 隔离在主进程服务；实现前复核官方文档；提供本地时间 fallback                                                         |
+| Open-Meteo 在中国大陆网络不可用或不稳定 |     高 | 不把 Open-Meteo 写死为唯一 provider；大陆网络实测；短超时、退避、最近成功缓存和本地时段 fallback；预留国内天气源或代理方案 |
+| 天气请求或 IPC 过频                     |     中 | 默认刷新间隔不低于 30 分钟；相同 payload 不重复广播；连续失败进入冷却窗口                                                  |
+| 天气特效影响性能                        |     中 | 低粒子数量；可关闭；只在 renderer 渲染抽象状态；节点定期清理；未达预算时降级为台词/静态 class                              |
+| DOM 或 listener 泄漏                    |     中 | 特效节点有上限和清理路径；preload 订阅必须可退订；10 分钟观察 DOM 节点稳定                                                 |
+| 天气素材乘以皮肤套数                    |     高 | MVP 禁止逐皮肤必填天气帧；只用全局 overlay、CSS、台词和现有状态 fallback；伞/披风等道具后置到配件系统                      |
+| 天气状态抢占角色互动                    |     中 | 明确状态优先级；天气只作为 hint，不覆盖主动交互和关键系统状态                                                              |
+| 多语言文案缺失                          |     低 | 使用 i18n fallback 测试；中文先完整，英文/日文可回退                                                                       |
+| 时区和本地时间不一致                    |     中 | 本地时段用系统时间；天气数据使用用户配置 timezone；payload 标记 sampledAt/expiresAt                                        |
+| 过度功能化                              |     中 | MVP 不做完整天气面板、不做预警、不做数值惩罚                                                                               |
 
 ## Test Scenarios
 
@@ -628,14 +646,16 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 ## Open Questions
 
-- 天气同步首版是否只支持手动输入城市/坐标，还是需要做城市搜索？
-- 首版是否面向中国大陆用户承诺天气同步？如果要承诺，需要优先验证 Open-Meteo 可达性，或直接准备国内 provider。
-- 用户界面入口放在托盘子菜单、状态窗口设置页，还是单独设置窗口？
-- 位置保存精度是否需要统一截断到小数点后两位，进一步降低精度？
-- 雨雪天气是否应该影响角色移动频率，还是只影响视觉和台词？
-- 雨/雪粒子默认上限要定多少？建议实现时先用很保守的上限，再根据 DevTools 录制调整。
-- 低性能模式是否需要显式设置，还是先复用“禁用天气同步/禁用特效”的开关？
-- 天气同步是否允许未来成为随机奇遇和图鉴触发条件？
+> **标注说明：** 🔴 = 必须在对应 Gate/Task 前锁定；🟡 = 可在实现阶段决策；⬜ = 可推迟到后续版本。
+
+- 🔴 **（Pre-Phase 2 Gate 前锁定）** 天气设置 UI 入口放在哪里？托盘子菜单、状态窗口设置页，还是单独设置窗口？需先确认 `src/statusWindow.js` / `src/status.html` 是否已存在，再决定入口形式，否则 Task 8 文件改动范围不确定。
+- 🔴 **（Task 5 开始前锁定）** Open-Meteo 仅支持经纬度查询，对于不想查坐标的小白用户，是否需要在主进程内置调用一次免 Key 的 Geocoding API（例如 Open-Meteo 官方自带的地理编码 API）来支持直接输入拼音/汉字城市名？
+- 🟡 天气同步首版是否只支持手动输入城市/坐标，还是需要做城市搜索？MVP 建议先做手动输入，城市搜索后置。
+- 🟡 位置保存精度是否需要统一截断到小数点后两位，进一步降低精度？
+- 🟡 雨雪天气是否应该影响角色移动频率，还是只影响视觉和台词？
+- 🟡 雨/雪粒子默认上限要定多少？实现时先用很保守的上限（建议 ≤ 30 个节点），根据 DevTools 录制再调整。
+- ⬜ 低性能模式是否需要显式设置，还是先复用“禁用天气同步/禁用特效”的开关？
+- ⬜ 天气同步是否允许未来成为随机奇遇和图鉴触发条件？
 
 ## Parallelization Opportunities
 

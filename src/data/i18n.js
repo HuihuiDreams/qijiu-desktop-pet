@@ -149,6 +149,14 @@ const I18N = {
       // 回归欢迎
       returnYueqi: (n) => `你走了${n}个时辰…`,
       returnShenjiu: '…哼，终于回来了。',
+
+      // 时段闲聊
+      morningYueqi: '早安。',
+      morningShenjiu: '哼，起得倒早。',
+      duskYueqi: '黄昏了，一日又要结束了。',
+      duskShenjiu: '天色暗了。',
+      eveningYueqi: '夜幕已降，早点歇息吧。',
+      eveningShenjiu: '…少烦我，滚去睡觉。',
     },
     dialogues: {
       greet: {
@@ -415,6 +423,14 @@ const I18N = {
       // Return welcome
       returnYueqi: (n) => `You were gone for ${n} shi-chen…`,
       returnShenjiu: '...hmph, you\'re finally back.',
+
+      // Time phase chatter
+      morningYueqi: 'Good morning.',
+      morningShenjiu: 'Hmph, you\'re up early.',
+      duskYueqi: 'It is dusk. Another day is ending.',
+      duskShenjiu: 'It\'s getting dark.',
+      eveningYueqi: 'Night has fallen, aren\'t you going to rest?',
+      eveningShenjiu: '...Don\'t bother me, go to sleep.',
     },
     dialogues: {
       // 🚧 Placeholder — will be replaced after official translation wordlist
@@ -682,6 +698,14 @@ const I18N = {
       // 帰還の挨拶
       returnYueqi: (n) => `此処を離れてより、${n}時辰が経ったよ…`,
       returnShenjiu: '…ふん、ようやく戻ってきたか。',
+
+      // 時段の雑談
+      morningYueqi: 'おはようございます。',
+      morningShenjiu: 'ふん、起きるのが早いな。',
+      duskYueqi: '夕暮れだ。また一日が終わるね。',
+      duskShenjiu: '日が暮れたな。',
+      eveningYueqi: '夜が更けた。まだ休まないのか。',
+      eveningShenjiu: '…煩わしい、さっさと寝ろ。',
     },
     dialogues: {
       greet: {

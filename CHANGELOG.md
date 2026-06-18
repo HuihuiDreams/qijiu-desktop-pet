@@ -5,6 +5,12 @@
 ## [Unreleased]
 ### Added
 - **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
+- **本地时段感知与作息系统 (Offline MVP)**：新增 `WeatherAwarenessSystem.js`，实现五分段本地时段计算 (`morning`, `day`, `dusk`, `evening`, `night`)。
+  - **无副作用休眠表现**：当处于深夜 (`night` 00:00 - 04:59) 且状态为 `idle` 时，`SpriteView` 自动映射到睡觉贴图，不触发任何真实养成数值消耗与惩罚。
+  - **夜间惰性移动与互动**：在深夜时段，移动系统有 70% 概率不走路并加倍发呆时长；互动系统有 50% 概率拒绝主动双人互动，但仍保留玩家手动拖拽和指令干预能力。
+  - **时段专属闲聊台词**：早晨、黄昏和晚上 (`evening` 20:00 - 23:59) 的发呆闲聊有几率触发专属台词，并已在 `i18n.js` 补齐中日英三语翻译。
+  - **时间读取性能截流**：在高频帧同步 (`requestAnimationFrame`) 中引入 `10000ms` 冷却机制，大幅减少了 `new Date()` 的实例化，避免造成 GC 压力和卡顿。
+  - **全集成测试覆盖**：新增 `timeWeatherRendererIntegration.test.js` 和 `weatherAwarenessSystem.test.js`，通过时钟 mock 和概率 mock 覆盖了跨午夜、系统联动与拦截测试。
 
 ### Changed
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。

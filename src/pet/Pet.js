@@ -24,6 +24,7 @@ class Pet {
     this.previousState = 'idle'; // 上一个状态
     this.stateTimer = 0;        // 当前定时状态的剩余时间 (毫秒)
     this.idleTimer = 0;         // 距离下一次行走的剩余时间 (毫秒)
+    this.timePhase = 'day';     // 环境感知此时的时段 (morning | day | dusk | night)
 
     // 养成属性 (修仙主题)
     this.stats = {

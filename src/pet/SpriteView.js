@@ -122,6 +122,7 @@ class SpriteView {
 
   _resolveSpriteKey(pet) {
     if (pet.isHungry() && pet.state === 'idle') return 'hungry';
+    if (pet.state === 'idle' && pet.timePhase === 'night') return 'sleeping';
     if (pet.state === 'walking') {
       return pet.direction === 'left' ? 'walkingLeft' : 'walkingRight';
     }
@@ -133,7 +134,11 @@ class SpriteView {
 
   _resolveResource(pet) {
     let stateKey = pet.state;
-    if (pet.isHungry() && pet.state === 'idle') stateKey = 'hungry';
+    if (pet.isHungry() && pet.state === 'idle') {
+      stateKey = 'hungry';
+    } else if (pet.state === 'idle' && pet.timePhase === 'night') {
+      stateKey = 'sleeping';
+    }
     if (pet.state === 'walking') {
       stateKey = pet.direction === 'left' ? 'walkingLeft' : 'walkingRight';
     }
