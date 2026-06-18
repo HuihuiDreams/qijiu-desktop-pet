@@ -199,12 +199,20 @@ async function collectWindowsSnapshot(options) {
     };
   }
 
-  const { stdout: netstatOutput } = await runExecFile(
-    execFileImpl,
-    'netstat',
-    ['-ano', '-p', 'udp'],
-    commandTimeoutMs,
-  );
+  let netstatOutput = '';
+  let udpStateUnknown = false;
+  try {
+    const result = await runExecFile(
+      execFileImpl,
+      'netstat',
+      ['-ano', '-p', 'udp'],
+      commandTimeoutMs,
+    );
+    netstatOutput = result.stdout;
+  } catch {
+    udpStateUnknown = true;
+    netstatOutput = '';
+  }
   const endpoints = parseWindowsUdpEndpoints(netstatOutput);
   const apps = appsWithProcesses.map((appInfo) => {
     const appProcesses = appInfo.processes.map((processInfo) => {
@@ -226,6 +234,7 @@ async function collectWindowsSnapshot(options) {
   return {
     platform: 'win32',
     isActive: apps.some((appInfo) => appInfo.active),
+    isUnknown: udpStateUnknown,
     detectedApps: apps.filter((appInfo) => appInfo.active).map((appInfo) => appInfo.name),
     apps,
   };
@@ -344,6 +353,9 @@ function createMeetingDetector(options = {}) {
     try {
       const snapshot = await getSnapshot();
       const currentTime = now();
+      if (snapshot?.isUnknown) {
+        return getState();
+      }
       if (snapshot?.isActive) {
         const wasInMeeting = state.isInMeeting;
         consecutiveActiveSamples += 1;

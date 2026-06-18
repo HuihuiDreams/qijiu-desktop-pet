@@ -9,6 +9,9 @@
 ### Changed
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
+### Fixed
+- **会议检测 netstat 权限降级**：当 Windows 已发现会议应用进程但 `netstat -ano -p udp` 被权限策略拒绝或返回失败时，检测会把本次 UDP 状态标记为 unknown 并保留当前会议隐藏状态，避免开发模式每 5 秒刷 `Meeting detector scan failed: Command failed: netstat -ano -p udp`，也避免把未知状态误判为会议结束。
+
 ## [0.7.0] - 2026-06-18
 ### Added
 - **轻量番茄钟 MVP**：新增托盘入口、独立 `pomodoro.html` 番茄钟窗口、`PomodoroSystem` 倒计时状态机和安全 preload IPC。用户可输入专注分钟数，窗口默认置顶且可取消置顶；专注期间桌面宠物临时隐藏并在窗口内显示两只静止修炼宠物，完成后显示温和鼓励台词。

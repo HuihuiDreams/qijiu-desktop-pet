@@ -178,6 +178,84 @@ test('Windows snapshot returns inactive when process lookup commands are denied'
   });
 });
 
+test('Windows snapshot marks UDP state unknown when netstat is denied', async () => {
+  const execFile = createExecFileStub({
+    'tasklist /fo csv /nh': [
+      '"ms-teams.exe","7712","Console","1","10,000 K"',
+    ],
+    'netstat -ano -p udp': [
+      new Error('Command failed: netstat -ano -p udp'),
+    ],
+  });
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'win32',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.deepEqual(snapshot, {
+    platform: 'win32',
+    isActive: false,
+    isUnknown: true,
+    detectedApps: [],
+    apps: [
+      {
+        name: 'Teams',
+        processNames: ['ms-teams.exe', 'Teams.exe'],
+        active: false,
+        processes: [
+          {
+            processName: 'ms-teams.exe',
+            pid: '7712',
+            udpCount: 0,
+            udpEndpoints: [],
+          },
+        ],
+      },
+    ],
+  });
+});
+
+test('meeting detector keeps current state when a snapshot is unknown', async () => {
+  let now = 0;
+  const starts = [];
+  const ends = [];
+  const errors = [];
+  const samples = [
+    { isActive: true, detectedApps: ['Teams'], apps: [] },
+    { isActive: true, detectedApps: ['Teams'], apps: [] },
+    { isActive: false, isUnknown: true, detectedApps: [], apps: [] },
+    { isActive: false, detectedApps: [], apps: [] },
+  ];
+
+  const detector = createMeetingDetector({
+    getSnapshot: async () => samples.shift(),
+    now: () => now,
+    startConfirmations: 2,
+    endGraceMs: 15000,
+    onMeetingStart: (payload) => starts.push(payload),
+    onMeetingEnd: (payload) => ends.push(payload),
+    onError: (error) => errors.push(error),
+  });
+
+  await detector.sampleOnce();
+  now = 5000;
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, true);
+  assert.equal(starts.length, 1);
+
+  now = 20000;
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, true);
+  assert.equal(errors.length, 0);
+  assert.equal(ends.length, 0);
+
+  await detector.sampleOnce();
+  assert.equal(detector.getState().isInMeeting, false);
+  assert.equal(ends.length, 1);
+});
+
 test('macOS snapshot counts UDP endpoints from pgrep and lsof', async () => {
   const execFile = createExecFileStub({
     'pgrep -x zoom.us': ['4242\n'],
