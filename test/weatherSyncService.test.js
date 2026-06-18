@@ -1,0 +1,171 @@
+const { describe, it, beforeEach } = require('node:test');
+const assert = require('node:assert');
+const { normalizeSettings, DEFAULT_WEATHER_SYNC_SETTINGS } = require('../weatherSyncService');
+
+describe('WeatherSyncService - Settings Normalization', () => {
+  it('should return default settings for invalid or missing inputs', () => {
+    assert.deepStrictEqual(normalizeSettings(null), DEFAULT_WEATHER_SYNC_SETTINGS);
+    assert.deepStrictEqual(normalizeSettings(undefined), DEFAULT_WEATHER_SYNC_SETTINGS);
+    assert.deepStrictEqual(normalizeSettings('invalid'), DEFAULT_WEATHER_SYNC_SETTINGS);
+    assert.deepStrictEqual(normalizeSettings(123), DEFAULT_WEATHER_SYNC_SETTINGS);
+  });
+
+  it('should use default for fields that are missing in the object', () => {
+    const raw = {};
+    const result = normalizeSettings(raw);
+    assert.strictEqual(result.enabled, false);
+    assert.strictEqual(result.city, '');
+    assert.strictEqual(result.lat, null);
+    assert.strictEqual(result.lon, null);
+    assert.strictEqual(result.refreshIntervalMinutes, 60);
+    assert.strictEqual(result.schemaVersion, 1);
+  });
+
+  it('should preserve valid fields', () => {
+    const raw = {
+      enabled: true,
+      city: ' Shanghai ',
+      lat: 31.22,
+      lon: 121.46,
+      refreshIntervalMinutes: 120,
+      schemaVersion: 1
+    };
+    const result = normalizeSettings(raw);
+    assert.strictEqual(result.enabled, true);
+    assert.strictEqual(result.city, 'Shanghai'); // trims
+    assert.strictEqual(result.lat, 31.22);
+    assert.strictEqual(result.lon, 121.46);
+    assert.strictEqual(result.refreshIntervalMinutes, 120);
+    assert.strictEqual(result.schemaVersion, 1);
+  });
+
+  it('should drop invalid types for lat and lon', () => {
+    const raw = {
+      lat: '31.22', // string
+      lon: NaN,
+    };
+    const result = normalizeSettings(raw);
+    assert.strictEqual(result.lat, null);
+    assert.strictEqual(result.lon, null);
+  });
+
+  it('should clamp refresh interval to lower bound of 30', () => {
+    const raw = { refreshIntervalMinutes: 10 };
+    const result = normalizeSettings(raw);
+    assert.strictEqual(result.refreshIntervalMinutes, 30);
+  });
+
+  it('should use default interval if interval is NaN', () => {
+    const raw = { refreshIntervalMinutes: 'abc' };
+    const result = normalizeSettings(raw);
+    assert.strictEqual(result.refreshIntervalMinutes, 60);
+  });
+});
+
+describe('WeatherSyncService - fetchWeather', () => {
+  const { fetchWeather, resetWeatherCache } = require('../weatherSyncService');
+
+  beforeEach(() => {
+    resetWeatherCache();
+  });
+
+  it('should return inactive if disabled or missing coordinates', async () => {
+    assert.deepStrictEqual(await fetchWeather({ enabled: false }), { active: false });
+    assert.deepStrictEqual(await fetchWeather({ enabled: true, lat: null, lon: 10 }), { active: false });
+  });
+
+  it('should fetch and return simplified payload', async () => {
+    const mockProvider = {
+      async fetch(lat, lon, controller) {
+        return {
+          current_weather: {
+            temperature: 25.5,
+            weathercode: 3,
+            is_day: 1
+          }
+        };
+      }
+    };
+
+    const result = await fetchWeather({ enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 }, mockProvider);
+    assert.strictEqual(result.active, true);
+    assert.strictEqual(result.temperature, 25.5);
+    assert.strictEqual(result.weatherCode, 3);
+    assert.strictEqual(result.isDay, true);
+    assert.strictEqual(result.fallback, false);
+    assert.ok(result.timestamp > 0);
+  });
+
+  it('should return fallback payload on provider error', async () => {
+    const mockProvider = {
+      async fetch(lat, lon, controller) {
+        throw new Error('Network Error');
+      }
+    };
+
+    const result = await fetchWeather({ enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 }, mockProvider);
+    assert.strictEqual(result.active, true);
+    assert.strictEqual(result.temperature, null);
+    assert.strictEqual(result.weatherCode, -1);
+    assert.strictEqual(result.fallback, true);
+  });
+
+  it('should cache successful responses within TTL', async () => {
+    let callCount = 0;
+    const mockProvider = {
+      async fetch() {
+        callCount++;
+        return { current_weather: { temperature: 20 } };
+      }
+    };
+
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+    await fetchWeather(settings, mockProvider);
+    await fetchWeather(settings, mockProvider);
+
+    assert.strictEqual(callCount, 1);
+  });
+});
+
+describe('WeatherSyncService - processSettingsChange', () => {
+  const { processSettingsChange, resetWeatherCache } = require('../weatherSyncService');
+
+  beforeEach(() => {
+    resetWeatherCache();
+  });
+
+  it('should not geocode if disabled', async () => {
+    const mockProvider = {
+      async geocode() { throw new Error('Should not be called'); }
+    };
+    const newSettings = { enabled: false, city: 'Shanghai', lat: null, lon: null };
+    const result = await processSettingsChange(newSettings, mockProvider);
+    assert.strictEqual(result.lat, null);
+  });
+
+  it('should perform geocode if city provided but no coordinates', async () => {
+    const mockProvider = {
+      async geocode(city) {
+        if (city === 'Shanghai') return { lat: 31.22, lon: 121.46 };
+        return null;
+      }
+    };
+    
+    const newSettings = { enabled: true, city: 'Shanghai', lat: null, lon: null };
+    const result = await processSettingsChange(newSettings, mockProvider);
+    assert.strictEqual(result.lat, 31.22);
+    assert.strictEqual(result.lon, 121.46);
+  });
+
+  it('should handle geocode failure gracefully without crashing', async () => {
+    const mockProvider = {
+      async geocode() { throw new Error('API Error'); }
+    };
+    
+    const newSettings = { enabled: true, city: 'Shanghai', lat: null, lon: null };
+    const result = await processSettingsChange(newSettings, mockProvider);
+    assert.strictEqual(result.lat, null);
+    assert.strictEqual(result.lon, null);
+  });
+});
+

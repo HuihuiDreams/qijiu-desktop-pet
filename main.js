@@ -37,6 +37,12 @@ const { createPresentationGuard } = require('./presentationGuard');
 const { createMeetingDetector } = require('./meetingDetector');
 const { PomodoroSystem } = require('./src/systems/PomodoroSystem');
 const { I18N } = require('./src/data/i18n');
+const {
+  DEFAULT_WEATHER_SYNC_SETTINGS,
+  normalizeSettings: normalizeWeatherSyncSettings,
+  fetchWeather,
+  processSettingsChange,
+} = require('./weatherSyncService');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
@@ -49,6 +55,7 @@ const LOGIN_ITEM_NAME = '七九爱宠';
 const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
+const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
 
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
@@ -118,6 +125,8 @@ let breakReminderService = null;
 let meetingDetector = null;
 let breakReminderEnabled = true;
 let breakReminderIntervalMinutes = 60;
+let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
+let weatherSyncIntervalTimer = null;
 let finalSaveRequestId = 0;
 let currentPetDisplay = null;
 let dragPollTimer = null;
@@ -635,6 +644,45 @@ function getStoredPomodoroMinutes() {
 function savePomodoroMinutes(minutes) {
   if (!store) return;
   store.set(POMODORO_LAST_MINUTES_KEY, normalizePomodoroMinutes(minutes));
+}
+
+function getStoredWeatherSyncSettings() {
+  if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
+  const raw = store.get(WEATHER_SYNC_STORE_KEY);
+  return normalizeWeatherSyncSettings(raw);
+}
+
+function saveWeatherSyncSettings(settings) {
+  if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
+  const normalized = normalizeWeatherSyncSettings(settings);
+  store.set(WEATHER_SYNC_STORE_KEY, normalized);
+  return normalized;
+}
+
+async function startWeatherSync() {
+  if (weatherSyncIntervalTimer) {
+    clearInterval(weatherSyncIntervalTimer);
+    weatherSyncIntervalTimer = null;
+  }
+  if (!weatherSyncSettings.enabled) return;
+
+  const doFetch = async () => {
+    const payload = await fetchWeather(weatherSyncSettings);
+    if (mainWindow && !mainWindow.isDestroyed() && payload) {
+      mainWindow.webContents.send('weather-update', payload);
+    }
+  };
+
+  await doFetch(); // immediately fetch
+  const intervalMs = weatherSyncSettings.refreshIntervalMinutes * 60 * 1000;
+  weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
+}
+
+async function updateWeatherSyncSettings(newSettings) {
+  weatherSyncSettings = await processSettingsChange(newSettings);
+  saveWeatherSyncSettings(weatherSyncSettings);
+  refreshTrayMenu();
+  startWeatherSync();
 }
 
 function resolvePomodoroAsset(skinId, filename) {
@@ -1235,6 +1283,22 @@ function buildTrayMenu() {
         },
       })),
     },
+    { type: 'separator' },
+    {
+      label: weatherSyncSettings.enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
+      click: () => {
+        const newSettings = { ...weatherSyncSettings, enabled: !weatherSyncSettings.enabled };
+        updateWeatherSyncSettings(newSettings);
+      },
+    },
+    {
+      label: trayMenuLabel('trayWeatherSyncConfig'),
+      click: async () => {
+        await initStore();
+        if (store) store.openInEditor();
+      },
+    },
+    { type: 'separator' },
     {
       label: (process.platform === 'win32' || process.platform === 'darwin')
         ? (windowAwarenessEnabled ? trayMenuLabel('trayWindowAwarenessOff') : trayMenuLabel('trayWindowAwarenessOn'))
@@ -1649,6 +1713,15 @@ if (!hasSingleInstanceLock) {
     const breakSettings = normalizeBreakReminderSettings(storedBreakSettings);
     breakReminderEnabled = breakSettings.enabled;
     breakReminderIntervalMinutes = breakSettings.intervalMinutes;
+
+    weatherSyncSettings = getStoredWeatherSyncSettings();
+    startWeatherSync();
+
+    // Listen to config changes if users open the editor and save it
+    store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
+      // only if they manually edited the file, we reload it
+      updateWeatherSyncSettings(newValue);
+    });
 
     const presentationGuard = createPresentationGuard({
       platform: process.platform,

@@ -113,4 +113,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onSystemResume: (callback) => {
     return subscribeIpc('system-resumed', (_event, data) => callback(data));
   },
+
+  // 天气同步
+  onWeatherUpdate: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    return subscribeIpc('weather-update', listener);
+  },
 });

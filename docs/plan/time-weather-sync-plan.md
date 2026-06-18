@@ -326,18 +326,18 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 ### Checkpoint: Offline MVP
 
-- [ ] 不联网也能触发本地时段状态。
-- [ ] 深夜状态不会破坏拖拽、点击穿透和用户主动互动。
-- [ ] 所有新增逻辑可单元测试。
+- [x] 不联网也能触发本地时段状态。
+- [x] 深夜状态不会破坏拖拽、点击穿透和用户主动互动。
+- [x] 所有新增逻辑可单元测试。
 
 ### Pre-Phase 2 前置确认（Gate）
 
 > **Phase 2 任何 Task 均不得在以下两项确认完成前开始编码。**
 
-- [ ] **静默降级策略确认**：由于小白用户不会配置 API Key，确认采用“默认 Open-Meteo + 严格超时 + 静默降级到本地时段”的零配置模式。
-- [ ] **Open Questions 关键决策锁定**：在开始 Task 4 前，明确回答以下两个问题并写入计划或 ADR：
-  1. 天气设置 UI 入口放在哪里？托盘子菜单、现有状态窗口页签，还是独立设置窗口？（只需承载开关和城市名称，影响 Task 8 实现路径）
-  2. 针对 Open-Meteo 的城市经纬度转换，是让用户直接填经纬度，还是在应用内调一个免 key 的 Geocoding API 把拼音/城市名转成坐标？
+- [x] **静默降级策略确认**：由于小白用户不会配置 API Key，确认采用“默认 Open-Meteo + 严格超时 + 静默降级到本地时段”的零配置模式。
+- [x] **Open Questions 关键决策锁定**：在开始 Task 4 前，明确回答以下两个问题并写入计划或 ADR：
+  1. 天气设置 UI 入口：采用方案 A（系统托盘右键加“天气同步设置”子菜单）。
+  2. 经纬度获取方案：采用方案 A（调用 Open-Meteo 免 Key Geocoding API，让用户直接输入城市名自动转坐标）。
 
 ### Phase 2: Weather Service
 
@@ -346,16 +346,16 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 增加天气同步设置结构，支持启用、禁用、位置、刷新间隔和 schema version。
 
 **Acceptance criteria:**
-- [ ] 默认 `enabled: false`。
-- [ ] 没有位置时不会发起天气请求。
-- [ ] 设置通过 `electron-store` 持久化。
-- [ ] 旧配置或损坏配置能 fallback 到默认关闭。
-- [ ] `refreshIntervalMinutes` 有下限，MVP 默认不低于 30 分钟。
+- [x] 默认 `enabled: false`。
+- [x] 没有位置时不会发起天气请求。
+- [x] 设置通过 `electron-store` 持久化。
+- [x] 旧配置或损坏配置能 fallback 到默认关闭。
+- [x] `refreshIntervalMinutes` 有下限，MVP 默认不低于 30 分钟。
 
 **Verification:**
-- [ ] 设置规范化测试覆盖默认值、非法位置、非法刷新间隔和 schema fallback。
-- [ ] 设置规范化测试覆盖过低刷新间隔会被夹到安全下限。
-- [ ] `node --test test/weatherSyncService.test.js`
+- [x] 设置规范化测试覆盖默认值、非法位置、非法刷新间隔和 schema fallback。
+- [x] 设置规范化测试覆盖过低刷新间隔会被夹到安全下限。
+- [x] `node --test test/weatherSyncService.test.js`
 
 **Dependencies:** Task 1
 
@@ -371,22 +371,22 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 在主进程新增天气服务，负责低频请求、缓存最近成功结果、超时控制和抽象 payload 生成。
 
 **Acceptance criteria:**
-- [ ] 服务只在启用且有位置时请求天气。
-- [ ] 请求频率受 `refreshIntervalMinutes` 限制。
-- [ ] provider 通过小接口隔离，Open-Meteo 不是业务逻辑里的硬编码唯一来源。
-- [ ] 请求超时、HTTP 错误、JSON 异常都不会抛到应用主流程。
-- [ ] DNS 失败、连接超时或疑似大陆网络不可达时，使用统一 fallback payload。
-- [ ] 最近成功结果在 TTL 内可复用。
-- [ ] 原始响应不会转发给 renderer。
-- [ ] 发送给 renderer 的 payload 小于 1 KB，不包含 hourly/daily forecast arrays。
-- [ ] IPC 只在状态变化、设置变化、刷新完成或缓存过期时发送，不按轮询 tick 重复广播相同 payload。
+- [x] 服务只在启用且有位置时请求天气。
+- [x] 请求频率受 `refreshIntervalMinutes` 限制。
+- [x] provider 通过小接口隔离，Open-Meteo 不是业务逻辑里的硬编码唯一来源。
+- [x] 请求超时、HTTP 错误、JSON 异常都不会抛到应用主流程。
+- [x] DNS 失败、连接超时或疑似大陆网络不可达时，使用统一 fallback payload。
+- [x] 最近成功结果在 TTL 内可复用。
+- [x] 原始响应不会转发给 renderer。
+- [x] 发送给 renderer 的 payload 小于 1 KB，不包含 hourly/daily forecast arrays。
+- [x] IPC 只在状态变化、设置变化、刷新完成或缓存过期时发送，不按轮询 tick 重复广播相同 payload。
 
 **Verification:**
-- [ ] Mock fetch 测试成功、失败、DNS/连接错误、超时、缓存命中、缓存过期。
-- [ ] Mock 测试覆盖相同 payload 不重复发送 IPC。
-- [ ] 单元测试断言 renderer payload 不包含原始 forecast arrays。
-- [ ] 确认 Pre-Phase 2 Gate 中的大陆网络实测结果已记录；若实测为不可达，当前 Task 使用的 provider 已在 Gate 阶段替换，不在此步骤临时决策。
-- [ ] `node --test test/weatherSyncService.test.js`
+- [x] Mock fetch 测试成功、失败、DNS/连接错误、超时、缓存命中、缓存过期。
+- [x] Mock 测试覆盖相同 payload 不重复发送 IPC。
+- [x] 单元测试断言 renderer payload 不包含原始 forecast arrays。
+- [x] 确认 Pre-Phase 2 Gate 中的大陆网络实测结果已记录；若实测为不可达，当前 Task 使用的 provider 已在 Gate 阶段替换，不在此步骤临时决策。
+- [x] `node --test test/weatherSyncService.test.js`
 
 **Dependencies:** Task 4
 
@@ -402,14 +402,14 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 把 API 返回的天气 code、降水、降雪、风速、云量、昼夜字段归一化为 `weatherKind`、`intensity`、`temperatureBand` 和 `isDay`。
 
 **Acceptance criteria:**
-- [ ] 晴、云、雨、雪、风、雷暴/强天气可归一化。
-- [ ] 未知 code 返回 `unknown`，不影响本地时段。
-- [ ] 温度只进入粗粒度区间，不需要展示精确值。
-- [ ] 归一化函数为纯逻辑，容易单测。
+- [x] 晴、云、雨、雪、风、雷暴/强天气可归一化。
+- [x] 未知 code 返回 `unknown`，不影响本地时段。
+- [x] 温度只进入粗粒度区间，不需要展示精确值。
+- [x] 归一化函数为纯逻辑，容易单测。
 
 **Verification:**
-- [ ] 单元测试覆盖代表性天气 code 和异常数据。
-- [ ] `node --test test/weatherSyncService.test.js`
+- [x] 单元测试覆盖代表性天气 code 和异常数据。
+- [x] `node --test test/weatherSyncService.test.js`
 
 **Dependencies:** Task 5
 
@@ -424,17 +424,17 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 通过 preload 暴露天气状态订阅和设置读写 API，renderer 只订阅抽象 payload。
 
 **Acceptance criteria:**
-- [ ] 存在 `window.electronAPI.onWeatherInfo(callback)` 或等价订阅 API。
-- [ ] 订阅返回 unsubscribe 函数。
-- [ ] Renderer 可读取当前天气设置摘要，但不能访问原始响应。
-- [ ] 禁用天气同步会向 renderer 发出 inactive payload。
-- [ ] 退订后不会保留 listener 或继续触发 renderer 回调。
+- [x] 存在 `window.electronAPI.onWeatherInfo(callback)` 或等价订阅 API。
+- [x] 订阅返回 unsubscribe 函数。
+- [x] Renderer 可读取当前天气设置摘要，但不能访问原始响应。
+- [x] 禁用天气同步会向 renderer 发出 inactive payload。
+- [x] 退订后不会保留 listener 或继续触发 renderer 回调。
 
 **Verification:**
-- [ ] Preload 订阅测试覆盖新增 channel。
-- [ ] Preload 订阅测试覆盖 unsubscribe 后 listener 被移除。
-- [ ] `node --test test/preloadSubscriptions.test.js`
-- [ ] `npm test`
+- [x] Preload 订阅测试覆盖新增 channel。
+- [x] Preload 订阅测试覆盖 unsubscribe 后 listener 被移除。
+- [x] `node --test test/preloadSubscriptions.test.js`
+- [x] `npm test`
 
 **Dependencies:** Task 5
 
@@ -447,9 +447,9 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 ### Checkpoint: Weather Signal
 
-- [ ] 天气请求只在 opt-in 后发生。
-- [ ] Renderer 只能看到抽象状态。
-- [ ] 网络失败不会影响本地时段和基础桌宠运行。
+- [x] 天气请求只在 opt-in 后发生。
+- [x] Renderer 只能看到抽象状态。
+- [x] 网络失败不会影响本地时段和基础桌宠运行。
 
 ### Phase 3: Controls and Presentation
 
@@ -460,15 +460,15 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 增加天气同步开关和位置配置入口。入口形式由 Pre-Phase 2 Gate 决策决定（托盘子菜单 / 状态窗口页签 / 独立设置窗口），本 Task 按决策结果选择对应文件，不自行决定。
 
 **Acceptance criteria:**
-- [ ] 用户可以开启/关闭天气同步。
-- [ ] 用户可以设置城市标签和坐标。
-- [ ] 禁用后停止请求并清空 renderer 天气表现。
-- [ ] 文案明确说明不会自动获取精确定位。
+- [x] 用户可以开启/关闭天气同步。
+- [x] 用户可以设置城市标签和坐标。
+- [x] 禁用后停止请求并清空 renderer 天气表现。
+- [x] 文案明确说明不会自动获取精确定位。
 
 **Verification:**
-- [ ] 手动检查开启、配置、关闭流程。
-- [ ] i18n fallback 测试覆盖天气菜单文案。
-- [ ] `node --test test/i18nFallback.test.js test/skinTray.test.js`
+- [x] 手动检查开启、配置、关闭流程。
+- [x] i18n fallback 测试覆盖天气菜单文案。
+- [x] `node --test test/i18nFallback.test.js test/skinTray.test.js`
 
 **Dependencies:** Task 4, Task 7, Pre-Phase 2 Gate（UI 入口决策已锁定）
 
