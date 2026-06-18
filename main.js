@@ -1714,8 +1714,8 @@ if (!hasSingleInstanceLock) {
     breakReminderEnabled = breakSettings.enabled;
     breakReminderIntervalMinutes = breakSettings.intervalMinutes;
 
-    weatherSyncSettings = getStoredWeatherSyncSettings();
-    startWeatherSync();
+    // Trigger geocoding if lat/lon are missing on startup
+    updateWeatherSyncSettings(getStoredWeatherSyncSettings());
 
     // Listen to config changes if users open the editor and save it
     store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {

@@ -23,6 +23,8 @@ class WeatherAwarenessSystem {
       stale: false
     };
 
+    this.weatherPayload = null;
+
     this._lastComputedMinute = -1; // 用于按分钟更新 phase
     this._lastCheckTimestamp = 0;  // 用于避免高频分配 Date 对象的绝对时间戳 (毫秒)
   }
@@ -85,8 +87,57 @@ class WeatherAwarenessSystem {
     return 'night'; // [00:00 - 04:59]
   }
 
+  setWeatherPayload(payload) {
+    if (!payload || !payload.active || payload.stale) {
+      this.weatherPayload = null;
+      // 立即重置强制更新本地时段
+      this._lastComputedMinute = -1;
+      this.updateLocalTimePhase();
+    } else {
+      this.weatherPayload = payload;
+    }
+  }
+
+  static parseWeatherCode(code) {
+    if (code === 0) return 'clear';
+    if (code === 1 || code === 2 || code === 3 || code === 45 || code === 48) return 'cloudy';
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code === 95) return 'rain';
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86 || code === 96 || code === 99) return 'snow';
+    return 'unknown';
+  }
+
   getCurrentState() {
-    return this.currentState;
+    if (this.weatherPayload && !this.weatherPayload.stale) {
+      // 从 weatherPayload 中的 weatherCode 解析出 weatherKind
+      const parsedKind = this.weatherPayload.fallback 
+        ? 'unknown' 
+        : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
+
+      // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
+      let phase = this.currentState.timePhase;
+      
+      // 如果天气服务明确告知现在天黑了 (!isDay)，但在本地时间里还是白天，就强制转入 night
+      if (!this.weatherPayload.fallback && this.weatherPayload.isDay === false) {
+        if (phase === 'morning' || phase === 'day' || phase === 'dusk') {
+           phase = 'night';
+        }
+      }
+
+      return {
+        ...this.currentState,
+        timePhase: phase,
+        weatherKind: parsedKind,
+        intensity: 'normal',
+        temperatureBand: this.weatherPayload.temperature || null,
+        isDay: this.weatherPayload.isDay,
+        stale: false,
+      };
+    }
+    return {
+      ...this.currentState,
+      weatherKind: 'unknown',
+      intensity: 'none'
+    };
   }
 }
 

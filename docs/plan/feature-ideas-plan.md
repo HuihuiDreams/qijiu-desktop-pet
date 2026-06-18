@@ -1,4 +1,4 @@
-﻿# 桌面宠物功能扩展 - Feature Candidate Plan
+# 桌面宠物功能扩展 - Feature Candidate Plan
 
 > 状态：Proposed  
 > 文档类型：Feature Candidate Pool，不是单个可执行 spec  
@@ -402,6 +402,7 @@
 - 是否允许联网请求。
 - 离线 fallback 规则。
 - 天气状态到视觉表现的映射表。
+- **UI 优化（待实现）**：增加一个可视化的城市名称输入框（弹窗或独立配置页），替代原本只能手动打开 `config.json` 填写的简陋交互，防止用户误改配置文件的其他关键字段。
 
 ---
 

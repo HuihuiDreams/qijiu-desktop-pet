@@ -3,6 +3,8 @@ const assert = require('node:assert');
 const { SpriteView } = require('../src/pet/SpriteView.js');
 const { MovementSystem } = require('../src/systems/MovementSystem.js');
 const { InteractionSystem } = require('../src/systems/InteractionSystem.js');
+const WeatherAwarenessSystem = require('../src/systems/WeatherAwarenessSystem.js');
+const { DialogBubble } = require('../src/ui/DialogBubble.js');
 
 // Mock Pet
 class MockPet {
@@ -110,6 +112,74 @@ test('Time Weather Renderer Integration', async (t) => {
     result = is.update(petA, petB, 16);
     assert.ok(result !== null, 'Should trigger interaction during evening');
     assert.strictEqual(result.key, 'greet');
+
+    Math.random = originalRandom;
+  });
+
+  await t.test('WeatherAwarenessSystem: payload sets and clears correctly', () => {
+    const config = {};
+    const was = new WeatherAwarenessSystem(config);
+
+    // default
+    assert.strictEqual(was.getCurrentState().weatherKind, 'unknown');
+
+    // apply valid payload
+    was.setWeatherPayload({ active: true, stale: false, timePhase: 'night', weatherKind: 'rain', intensity: 'heavy' });
+    let state = was.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'rain');
+    assert.strictEqual(state.timePhase, 'night');
+    assert.strictEqual(state.intensity, 'heavy');
+
+    // clear payload
+    was.setWeatherPayload({ active: false });
+    state = was.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'unknown');
+    // timePhase should fallback to local (which will be morning/day/etc depending on Date, but default is "day" if not initialized)
+  });
+
+  await t.test('DialogBubble: shows weather chatter', () => {
+    // Setup globals
+    global.DIALOGUES = {
+      idle: { yueqi: ['idle yueqi'], shenjiu: ['idle shenjiu'] },
+      weather_rain: { yueqi: ['rain yueqi'] }
+    };
+    global.CONFIG = { INTERACTION_DURATION: 3000 };
+
+    // Need a dummy document and element
+    global.document = {
+      createElement: (tag) => {
+        return {
+          className: '',
+          textContent: '',
+          style: {},
+          classList: { add: () => {} },
+          appendChild: () => {},
+          remove: () => {}
+        };
+      }
+    };
+
+    const db = new DialogBubble();
+    const pet = new MockPet('yueqi');
+    pet.element = global.document.createElement('div');
+    pet.weatherKind = 'rain';
+
+    const originalRandom = Math.random;
+    
+    // Test: 30% chance triggers weather dialogue
+    Math.random = () => 0.1; // < 0.3
+    db.showIdleChatter(pet);
+    const bubbleText = db.activeBubbles.get('yueqi')?.textContent;
+    assert.strictEqual(bubbleText, 'rain yueqi', 'Should show rain dialogue when random < 0.3');
+
+    // Reset
+    db.remove('yueqi');
+
+    // Test: normal fallback if > 0.3
+    Math.random = () => 0.5; // > 0.3
+    db.showIdleChatter(pet);
+    const bubbleText2 = db.activeBubbles.get('yueqi')?.textContent;
+    assert.strictEqual(bubbleText2, 'idle yueqi', 'Should fallback to normal idle when random > 0.3');
 
     Math.random = originalRandom;
   });

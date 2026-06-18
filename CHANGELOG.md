@@ -4,22 +4,29 @@
 
 ## [Unreleased]
 ### Added
-- **天气同步与城市定位 (Phase 2 MVP)**：在主进程引入了基于 Open-Meteo 免 Key 接口的天气同步能力，默认关闭以保护隐私。
-  - **静默降级策略**：若用户开启同步但网络超时（设定为 4 秒）或 DNS 无法解析，服务会安静回退到本地时段，不再频繁重试，不打断基础陪伴体验。
-  - **地理编码免配置**：新增城市转坐标功能，小白用户只需输入“北京”、“Tokyo”即可自动获取经纬度，无需申请高德/Google 开发者 Key。
-  - **UI 托盘集成**：在托盘菜单增加“☁️ 天气同步”开关及配置入口，设置变更后自动触发天气更新并广播至渲染进程。
-- **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
 - **本地时段感知与作息系统 (Offline MVP)**：新增 `WeatherAwarenessSystem.js`，实现五分段本地时段计算 (`morning`, `day`, `dusk`, `evening`, `night`)。
   - **无副作用休眠表现**：当处于深夜 (`night` 00:00 - 04:59) 且状态为 `idle` 时，`SpriteView` 自动映射到睡觉贴图，不触发任何真实养成数值消耗与惩罚。
   - **夜间惰性移动与互动**：在深夜时段，移动系统有 70% 概率不走路并加倍发呆时长；互动系统有 50% 概率拒绝主动双人互动，但仍保留玩家手动拖拽和指令干预能力。
   - **时段专属闲聊台词**：早晨、黄昏和晚上 (`evening` 20:00 - 23:59) 的发呆闲聊有几率触发专属台词，并已在 `i18n.js` 补齐中日英三语翻译。
   - **时间读取性能截流**：在高频帧同步 (`requestAnimationFrame`) 中引入 `10000ms` 冷却机制，大幅减少了 `new Date()` 的实例化，避免造成 GC 压力和卡顿。
   - **全集成测试覆盖**：新增 `timeWeatherRendererIntegration.test.js` 和 `weatherAwarenessSystem.test.js`，通过时钟 mock 和概率 mock 覆盖了跨午夜、系统联动与拦截测试。
+- **天气同步与城市定位 (Phase 2 MVP)**：在主进程引入了基于 Open-Meteo 免 Key 接口的天气同步能力，默认关闭以保护隐私。
+  - **静默降级策略**：若用户开启同步但网络超时（设定为 4 秒）或 DNS 无法解析，服务会安静回退到本地时段，不再频繁重试，不打断基础陪伴体验。
+  - **地理编码免配置**：新增城市转坐标功能，小白用户只需输入“北京”、“Tokyo”即可自动获取经纬度，无需申请高德/Google 开发者 Key。
+  - **UI 托盘集成**：在托盘菜单增加“☁️ 天气同步”开关及配置入口，设置变更后自动触发天气更新并广播至渲染进程。
+- **天气视觉表现与交互 (Phase 3 & 4)**：在渲染进程中根据天气和时间阶段动态添加 `data-weather` 和 `data-time-phase` 属性。
+  - **CSS 高性能滤镜特效**：利用 `effects.css` 中的 `filter` (brightness, saturate, contrast 等) 实现无感官消耗的晴、雨、雪、夜间全屏环境氛围变化。全程保持在 50ms 长任务红线以下，未引入任何可能导致内存泄漏的粒子系统或高频 JS 循环，兼顾老旧机器体验。
+  - **天气特化闲聊台词**：扩展了 `DialogBubble.js` 和 i18n 字典，使桌宠发呆闲聊时有 30% 几率随机触发与当前天气对应的台词（自带防刷屏冷却时间）。
+  - **边缘场景与网络保护**：主进程中的请求失败自动进入由 TTL 制导的缓存退避窗口；禁用同步后停止后台轮询；恢复睡眠唤醒后不突发请求；实现平滑静默降级以避免弹窗打扰用户。
+- **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
 
 ### Changed
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
 ### Fixed
+- **天气同步坐标转换时机修复**：修复了用户在应用关闭期间修改 `config.json` 开启天气同步并指定城市后，主程序冷启动时因未触发 geocoding 坐标转换而导致天气永远请求失败的隐蔽 Bug。现在冷启动若检测到有城市无坐标，会自动触发解析并保存。
+- **天气状态类型映射修复**：修复了从主进程接收到天气数字代码（`weatherCode`）后未将其正确翻译为天气特征字符串（`clear`, `cloudy`, `rain`, `snow`）的问题，彻底解决了控制台出现 `weatherKind: undefined` 及相关天气专属发呆台词永远无法被触发的 Bug。
+- **日语天气闲聊台词补齐**：补齐了 `i18n.js` 的 `ja` 字典中遗漏的 `weather_rain`、`weather_snow`、`weather_clear` 和 `weather_cloudy` 翻译。
 - **会议检测 netstat 权限降级**：当 Windows 已发现会议应用进程但 `netstat -ano -p udp` 被权限策略拒绝或返回失败时，检测会把本次 UDP 状态标记为 unknown 并保留当前会议隐藏状态，避免开发模式每 5 秒刷 `Meeting detector scan failed: Command failed: netstat -ano -p udp`，也避免把未知状态误判为会议结束。
 
 ## [0.7.0] - 2026-06-18

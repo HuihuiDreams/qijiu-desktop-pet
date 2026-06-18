@@ -77,7 +77,16 @@ class DialogBubble {
    * 显示宠物的随机闲聊文本。
    */
   showIdleChatter(pet) {
-    const pool = DIALOGUES.idle[pet.id];
+    let pool = DIALOGUES.idle[pet.id];
+    
+    // 有 30% 的概率尝试使用天气相关台词
+    if (pet.weatherKind && pet.weatherKind !== 'unknown' && Math.random() < 0.3) {
+      const weatherKey = `weather_${pet.weatherKind}`;
+      if (DIALOGUES[weatherKey] && DIALOGUES[weatherKey][pet.id]) {
+        pool = DIALOGUES[weatherKey][pet.id];
+      }
+    }
+
     if (!pool || pool.length === 0) return;
     const text = pool[Math.floor(Math.random() * pool.length)];
     this.show(pet, text, 4000);

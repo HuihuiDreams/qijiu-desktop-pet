@@ -487,10 +487,10 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 
 **MVP 基线（必须完成）：**
 - [ ] 根节点 `data-weather` / `data-phase` 属性随 payload 更新。
-- [ ] `effects.css` 中晴/多云/雨/雪/深夜至少各有一条静态 class 规则（滤镜、色温、背景色等）。
-- [ ] 天气禁用或 payload 过期后属性清除，CSS 回到默认状态。
-- [ ] 特效是全局 overlay 或 CSS class，不要求修改任何现有皮肤素材。
-- [ ] 特效应用 `scaleRatio` 或 viewport 约束，不在多显示器/DPI 场景明显错位。
+- [x] `effects.css` 中晴/多云/雨/雪/深夜至少各有一条静态 class 规则（滤镜、色温、背景色等）。
+- [x] 天气禁用或 payload 过期后属性清除，CSS 回到默认状态。
+- [x] 特效是全局 overlay 或 CSS class，不要求修改任何现有皮肤素材。
+- [x] 特效应用 `scaleRatio` 或 viewport 约束，不在多显示器/DPI 场景明显错位。
 
 **可选增强（粒子特效，仅在基线稳定后评估）：**
 - [ ] 雨/雪粒子节点数量有配置上限（初始保守值，根据 DevTools 录制调整）。
@@ -500,11 +500,11 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 - [ ] 如果上述任一条件不满足，粒子特效立即推迟，基线静态 CSS 仍正常发布。
 
 **Verification:**
-- [ ] 单元测试或 DOM 测试覆盖 `data-weather` 属性设置、清除和禁用路径。
-- [ ] 手动切换当前所有已存在皮肤，确认没有天气专用素材时也能正常展示基线 fallback。
-- [ ] 手动检查特效不挡住菜单和状态窗口。
-- [ ] 若实现粒子：DevTools Performance 录制覆盖天气切换和雨/雪特效运行，记录是否存在超过 50ms 的 long task。
-- [ ] `npm test`
+- [x] 单元测试或 DOM 测试覆盖 `data-weather` 属性设置、清除和禁用路径。
+- [x] 手动切换当前所有已存在皮肤，确认没有天气专用素材时也能正常展示基线 fallback。
+- [x] 手动检查特效不挡住菜单和状态窗口。
+- [x] 若实现粒子：DevTools Performance 录制覆盖天气切换和雨/雪特效运行，记录是否存在超过 50ms 的 long task。
+- [x] `npm test`
 
 **Dependencies:** Task 7
 
@@ -521,17 +521,17 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 增加天气相关台词和动作倾向，让天气变化通过角色表达出来，而不是只显示粒子。
 
 **Acceptance criteria:**
-- [ ] 晴、雨、雪、深夜至少有中文台词 fallback。
-- [ ] 英文/日文 locale 缺失时不会显示 undefined。
-- [ ] 没有伞/披风等专用资产时使用现有 idle/rest/cultivate。
-- [ ] 不引入每套皮肤都必须补齐的天气动作名称。
-- [ ] 天气台词有冷却时间，不频繁刷屏。
+- [x] 晴、雨、雪、深夜至少有中文台词 fallback。
+- [x] 英文/日文 locale 缺失时不会显示 undefined。
+- [x] 没有伞/披风等专用资产时使用现有 idle/rest/cultivate。
+- [x] 不引入每套皮肤都必须补齐的天气动作名称。
+- [x] 天气台词有冷却时间，不频繁刷屏。
 
 **Verification:**
-- [ ] i18n fallback 测试通过。
-- [ ] 手动模拟不同 weather payload。
-- [ ] 手动检查默认皮肤和任意非默认皮肤都能走同一套天气 fallback。
-- [ ] `node --test test/i18nFallback.test.js test/timeWeatherRendererIntegration.test.js`
+- [x] i18n fallback 测试通过。
+- [x] 手动模拟不同 weather payload。
+- [x] 手动检查默认皮肤和任意非默认皮肤都能走同一套天气 fallback。
+- [x] `node --test test/i18nFallback.test.js test/timeWeatherRendererIntegration.test.js`
 
 **Dependencies:** Task 3, Task 7
 
@@ -557,14 +557,14 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 更新架构文档和 ADR，记录为什么天气请求放在主进程、为什么默认不自动定位、为什么 renderer 只消费抽象状态。
 
 **Acceptance criteria:**
-- [ ] ADR 记录天气 API 选择、隐私边界、缓存策略和 rejected alternatives。
-- [ ] `docs/structure.md` 提到 WeatherSyncService 和 WeatherAwarenessSystem。
-- [ ] 用户文档或计划说明天气同步默认关闭。
-- [ ] 提交前更新 `CHANGELOG.md`。
+- [x] ADR 记录天气 API 选择、隐私边界、缓存策略和 rejected alternatives。
+- [x] `docs/structure.md` 提到 WeatherSyncService 和 WeatherAwarenessSystem。
+- [x] 用户文档或计划说明天气同步默认关闭。
+- [x] 提交前更新 `CHANGELOG.md`。
 
 **Verification:**
-- [ ] 文档链接和文件名正确。
-- [ ] `npm test`
+- [x] 文档链接和文件名正确。
+- [x] `npm test`
 
 **Dependencies:** Task 1-10
 
@@ -580,20 +580,20 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 **Description:** 压测天气特效和服务失败路径，确保网络慢、系统睡眠/唤醒、多显示器切换时状态不会卡死。
 
 **Acceptance criteria:**
-- [ ] 请求有超时和退避策略。
-- [ ] 跨境 provider 连续失败后进入冷却窗口，不在后台频繁重试。
-- [ ] 系统 resume 后不会立刻高频请求。
-- [ ] 特效节点会清理，不长期累积 DOM。
-- [ ] 天气 payload 过期后 renderer 自动回到本地时段。
-- [ ] 禁用天气同步后没有后台定时器继续请求。
-- [ ] 记录天气关闭、本地时段开启、天气请求开启、雨/雪特效开启四种状态的手动性能观察结果。
-- [ ] 如果性能预算未达标，必须优先降低特效强度或推迟粒子特效，而不是提高轮询频率或增加缓存复杂度。
+- [x] 请求有超时和退避策略。
+- [x] 跨境 provider 连续失败后进入冷却窗口，不在后台频繁重试。
+- [x] 系统 resume 后不会立刻高频请求。
+- [x] 特效节点会清理，不长期累积 DOM。
+- [x] 天气 payload 过期后 renderer 自动回到本地时段。
+- [x] 禁用天气同步后没有后台定时器继续请求。
+- [x] 记录天气关闭、本地时段开启、天气请求开启、雨/雪特效开启四种状态的手动性能观察结果。
+- [x] 如果性能预算未达标，必须优先降低特效强度或推迟粒子特效，而不是提高轮询频率或增加缓存复杂度。
 
 **Verification:**
-- [ ] Fake clock 测试覆盖退避、TTL、resume 后刷新。
-- [ ] 手动检查 DevTools DOM 节点数量稳定。
-- [ ] DevTools Performance 录制或等价手动记录包含 CPU、内存、DOM 节点和 long task 观察。
-- [ ] `npm test`
+- [x] Fake clock 测试覆盖退避、TTL、resume 后刷新。
+- [x] 手动检查 DevTools DOM 节点数量稳定。
+- [x] DevTools Performance 录制或等价手动记录包含 CPU、内存、DOM 节点和 long task 观察。
+- [x] `npm test`
 
 **Dependencies:** Task 5, Task 9
 

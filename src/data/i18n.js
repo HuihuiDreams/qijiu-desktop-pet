@@ -241,7 +241,7 @@ const I18N = {
       idle: {
         yueqi: [
           '小九在哪里呢…',
-          '今日天气不错。',
+          '该去批阅公文了。',
           '该去修炼了。',
           '（整理衣冠）',
           '苍穹山的风景真好。',
@@ -253,6 +253,22 @@ const I18N = {
           '（冷冷地看着远方）',
           '那个人…又没来。',
         ],
+      },
+      weather_rain: {
+        yueqi: ['下雨了，小九当心着凉。', '这雨不知何时能停。'],
+        shenjiu: ['…烦人的雨。', '（在屋檐下避雨）'],
+      },
+      weather_snow: {
+        yueqi: ['下雪了，记得添衣。', '雪景虽好，却也寒冷。'],
+        shenjiu: ['…有点冷。', '（微微缩手）'],
+      },
+      weather_clear: {
+        yueqi: ['今日阳光真好，最适合修炼。', '天朗气清。'],
+        shenjiu: ['阳光刺眼…', '这天倒是不错。'],
+      },
+      weather_cloudy: {
+        yueqi: ['天色阴沉，似乎要变天了。', '起风了。'],
+        shenjiu: ['阴天…让人提不起劲。', '（天气阴沉沉的）'],
       },
       hungry: {
         yueqi: ['有些饿了…', '该用膳了。'],
@@ -519,7 +535,7 @@ const I18N = {
       idle: {
         yueqi: [
           'Where is Xiao Jiu...',
-          'The weather is lovely today.',
+          'I should go review the official documents.',
           'It\'s time to cultivate.',
           '(Adjusting robes)', // 整理衣冠
           'The scenery of Cang Qiong Mountain is beautiful.', // 苍穹山
@@ -531,6 +547,22 @@ const I18N = {
           '(Gazing coldly into the distance)',
           'That person... didn\'t come.',
         ],
+      },
+      weather_rain: {
+        yueqi: ['It\'s raining, don\'t catch a cold.', 'I wonder when the rain will stop.'],
+        shenjiu: ['...Annoying rain.', '(Taking shelter)'],
+      },
+      weather_snow: {
+        yueqi: ['It\'s snowing, remember to wear more clothes.', 'The snow is beautiful, but cold.'],
+        shenjiu: ['...A bit cold.', '(Shrinking hands slightly)'],
+      },
+      weather_clear: {
+        yueqi: ['The sun is great today, perfect for cultivation.', 'Clear sky and fresh air.'],
+        shenjiu: ['The sun is glaring...', 'Not bad today.'],
+      },
+      weather_cloudy: {
+        yueqi: ['It looks gloomy, the weather might change.', 'The wind is picking up.'],
+        shenjiu: ['Cloudy days... make me sluggish.', '(The sky is gloomy)'],
       },
       hungry: {
         yueqi: ['A bit hungry...', 'Time for a meal.'],
@@ -796,7 +828,7 @@ const I18N = {
       idle: {
         yueqi: [
           '小九はどこにいるんだろう…',          // 小九在哪里呢…
-          '今日は良い天気だね。',
+          '公務を処理しに行かねば。',
           'そろそろ修行に行くとするか。',
           '（身なりを整える）',                  // （整理衣冠）
           '蒼穹山の景色は本当に美しい。',        // 苍穹山的风景真好。
@@ -808,6 +840,22 @@ const I18N = {
           '（冷ややかな目で彼方を見遣る）',      // （冷冷地看着远方）
           'あの人…また来なかった。',              // 那个人…又没来。（“あの人”比直呼其名多了很多幽怨和隐藏的期待）
         ],
+      },
+      weather_rain: {
+        yueqi: ['雨が降ってきた、小九、風邪を引かないように。', 'この雨、いつ止むのだろうか。'],
+        shenjiu: ['…忌々しい雨だ。', '（軒下で雨宿り）'],
+      },
+      weather_snow: {
+        yueqi: ['雪が降ってきた、着込むのを忘れないように。', '雪景色は美しいが、やはり冷えるな。'],
+        shenjiu: ['…少し寒いな。', '（微かに手を縮める）'],
+      },
+      weather_clear: {
+        yueqi: ['今日は日差しが良い、修行には最適だ。', '空が晴れ渡り、空気が澄んでいる。'],
+        shenjiu: ['日差しが眩しい…', 'まあ、悪くない天気だ。'],
+      },
+      weather_cloudy: {
+        yueqi: ['空が淀んでいる、天気が崩れそうだな。', '風が出てきたな。'],
+        shenjiu: ['曇り空は…気が滅入る。', '（空がどんよりとしている）'],
       },
       hungry: {
         yueqi: ['少し腹が減ったな…', '膳の時間か。'], // 有些饿了… / 该用膳了。（“膳の時間”很有古风日常感）

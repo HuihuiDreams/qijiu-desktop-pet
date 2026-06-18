@@ -135,6 +135,10 @@ function applyI18n() {
   });
   windowAwarenessSystem.start();
 
+  window.electronAPI.onWeatherUpdate?.((payload) => {
+    weatherAwarenessSystem.setWeatherPayload(payload);
+  });
+
   // macOS: 窗口迁移到新显示器后，调整所有宠物坐标
   window.electronAPI.onWindowMigrated?.((data) => {
     const { offset } = data;
@@ -177,6 +181,25 @@ function applyI18n() {
   contextMenu.getMenuBoundsForPet = getMenuBoundsForPet;
   const statusBar = new StatusBar();
   const dialogBubble = new DialogBubble();
+
+  // === 暴露全局调试方法 ===
+  window.debugTriggerWeather = (petId = 'yueqi') => {
+    const target = petId === 'shenjiu' ? shenjiu : yueqi;
+    if (!target.weatherKind || target.weatherKind === 'unknown') {
+      console.warn(`[Debug] ${target.name} 当前没有有效的天气状态 (weatherKind: ${target.weatherKind})`);
+      return;
+    }
+    const weatherKey = `weather_${target.weatherKind}`;
+    const pool = DIALOGUES[weatherKey]?.[target.id];
+    if (pool && pool.length > 0) {
+      const text = pool[Math.floor(Math.random() * pool.length)];
+      dialogBubble.show(target, text, 5000);
+      console.log(`[Debug] 强制触发天气台词: ${text}`);
+    } else {
+      console.warn(`[Debug] 找不到 ${target.name} 在 ${weatherKey} 天气下的台词。`);
+    }
+  };
+
   const skinTargets = {
     petA: yueqi,
     petB: shenjiu,
@@ -504,6 +527,16 @@ function applyI18n() {
         const weatherState = weatherAwarenessSystem.getCurrentState();
         yueqi.timePhase = weatherState.timePhase;
         shenjiu.timePhase = weatherState.timePhase;
+        yueqi.weatherKind = weatherState.weatherKind;
+        shenjiu.weatherKind = weatherState.weatherKind;
+        
+        // 应用全局环境天气效果
+        if (document.body.dataset.weather !== weatherState.weatherKind) {
+            document.body.dataset.weather = weatherState.weatherKind;
+        }
+        if (document.body.dataset.timePhase !== weatherState.timePhase) {
+            document.body.dataset.timePhase = weatherState.timePhase;
+        }
 
         // 更新移动
         movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
