@@ -33,9 +33,17 @@ test('pomodoro window exposes the expected UI states and controls', () => {
     'pomodoro-start',
     'pomodoro-stop',
     'pomodoro-finish',
+    'pomodoro-running-cultivate',
+    'pomodoro-complete-kiss',
   ]) {
     assert.match(html, new RegExp(`id="${id}"`), `${id} should exist`);
   }
+
+  assert.equal(html.includes('id="pomodoro-running-yueqi"'), false);
+  assert.equal(html.includes('id="pomodoro-running-shenjiu"'), false);
+  assert.equal(html.includes('id="pomodoro-complete-yueqi"'), false);
+  assert.equal(html.includes('id="pomodoro-complete-shenjiu"'), false);
+  assert.equal(html.includes('<figcaption'), false);
 });
 
 test('pomodoro CSS reuses the status window visual system', () => {
@@ -63,6 +71,8 @@ test('pomodoro renderer uses safe DOM APIs for dynamic text and images', () => {
   assert.equal(source.includes('innerHTML'), false);
   assert.match(source, /textContent/);
   assert.match(source, /setPetImage/);
+  assert.match(source, /assets\/default\/cultivate\.webp/);
+  assert.match(source, /assets\/default\/kiss\.webp/);
 });
 
 test('pomodoro pin button updates optimistically while IPC confirms the window level', () => {

@@ -650,6 +650,8 @@ function getPomodoroAssets() {
   return {
     yueqi: resolvePomodoroAsset(currentSkinId, 'left_cultivate.webp'),
     shenjiu: resolvePomodoroAsset(currentSkinId, 'right_cultivate.webp'),
+    cultivate: resolvePomodoroAsset(currentSkinId, 'cultivate.webp'),
+    kiss: resolvePomodoroAsset(currentSkinId, 'kiss.webp'),
   };
 }
 

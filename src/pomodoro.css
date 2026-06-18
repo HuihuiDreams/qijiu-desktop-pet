@@ -239,16 +239,10 @@ html[lang="en"] .pomodoro-titlebar>span {
   transform: translateX(-5px);
 }
 
-.pomodoro-pet-figure {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  gap: 6px;
-  color: var(--color-ink-light);
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 1px;
+.pomodoro-pet--scene {
+  width: min(220px, 100%);
+  height: 112px;
+  transform: none;
 }
 
 .pomodoro-heading,
@@ -404,6 +398,11 @@ html[lang="en"] .pomodoro-titlebar>span {
   .pomodoro-pet {
     width: 96px;
     height: 96px;
+  }
+
+  .pomodoro-pet--scene {
+    width: min(210px, 100%);
+    height: 108px;
   }
 
   .pomodoro-timer {

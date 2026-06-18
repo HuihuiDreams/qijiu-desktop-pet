@@ -59,6 +59,8 @@ test('pomodoro pet assets use current skin with default fallback', () => {
   assert.match(mainSource, /return `assets\/default\/\$\{filename\}`/);
   assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'left_cultivate\.webp'\)/);
   assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'right_cultivate\.webp'\)/);
+  assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'cultivate\.webp'\)/);
+  assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'kiss\.webp'\)/);
 });
 
 test('pomodoro session hides pets temporarily and restores previous pause state', () => {

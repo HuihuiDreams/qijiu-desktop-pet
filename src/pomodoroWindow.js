@@ -8,6 +8,8 @@ const DEFAULT_POMODORO_STATE = {
   assets: {
     yueqi: 'assets/default/left_cultivate.webp',
     shenjiu: 'assets/default/right_cultivate.webp',
+    cultivate: 'assets/default/cultivate.webp',
+    kiss: 'assets/default/kiss.webp',
   },
 };
 
@@ -28,15 +30,6 @@ const finishBtn = document.getElementById('pomodoro-finish');
 const timerEl = document.getElementById('pomodoro-timer');
 const progressEl = document.querySelector('.pomodoro-progress');
 const progressFillEl = document.getElementById('pomodoro-progress-fill');
-
-const petImageIds = [
-  'pomodoro-setup-yueqi',
-  'pomodoro-running-yueqi',
-  'pomodoro-complete-yueqi',
-  'pomodoro-setup-shenjiu',
-  'pomodoro-running-shenjiu',
-  'pomodoro-complete-shenjiu',
-];
 
 let currentLocale = 'zh';
 let currentState = { ...DEFAULT_POMODORO_STATE };
@@ -98,10 +91,13 @@ function setPetImage(id, src) {
 function renderPets(assets = DEFAULT_POMODORO_STATE.assets) {
   const yueqiSrc = assets.yueqi || DEFAULT_POMODORO_STATE.assets.yueqi;
   const shenjiuSrc = assets.shenjiu || DEFAULT_POMODORO_STATE.assets.shenjiu;
+  const cultivateSrc = assets.cultivate || DEFAULT_POMODORO_STATE.assets.cultivate;
+  const kissSrc = assets.kiss || DEFAULT_POMODORO_STATE.assets.kiss;
 
-  petImageIds.forEach(id => {
-    setPetImage(id, id.endsWith('yueqi') ? yueqiSrc : shenjiuSrc);
-  });
+  setPetImage('pomodoro-setup-yueqi', yueqiSrc);
+  setPetImage('pomodoro-setup-shenjiu', shenjiuSrc);
+  setPetImage('pomodoro-running-cultivate', cultivateSrc);
+  setPetImage('pomodoro-complete-kiss', kissSrc);
 }
 
 function renderPinState(isAlwaysOnTop) {

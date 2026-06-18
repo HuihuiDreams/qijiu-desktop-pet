@@ -3,11 +3,14 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.7.0] - 2026-06-18
 ### Added
 - **轻量番茄钟 MVP**：新增托盘入口、独立 `pomodoro.html` 番茄钟窗口、`PomodoroSystem` 倒计时状态机和安全 preload IPC。用户可输入专注分钟数，窗口默认置顶且可取消置顶；专注期间桌面宠物临时隐藏并在窗口内显示两只静止修炼宠物，完成后显示温和鼓励台词。
 - **番茄钟测试覆盖**：新增倒计时状态机、番茄钟窗口结构、托盘入口、IPC 合约和 preload API 测试，覆盖上次时长 fallback、置顶切换通道、窗口 sandbox/CSP 和宠物隐藏恢复边界。
 
 ### Changed
+- **番茄钟修炼画面切换**：保留初始页两张单人打坐图；倒计时开始后改用当前皮肤的 `cultivate.webp` 单张组合图并移除角色名；静修圆满后改用 `kiss.webp`。
 - **番茄钟提示文案精简**：移除番茄钟窗口中“上次时长会自动记住 / Previous duration is remembered / 前回の時間を自動で記憶します”的辅助提示，保留上次时长自动填入行为但不再显示说明文字。
 - **番茄钟计划与架构文档同步**：更新 [cangqiong-pomodoro-plan.md](docs/plan/cangqiong-pomodoro-plan.md)、[structure.md](docs/structure.md) 和 [ADR-037](docs/decisions/ADR-037-lightweight-pomodoro-companion.md)，记录 MVP 范围、UI 设计规格、隐私边界、窗口生命周期和不检查前台窗口/URL/进程的约束。
 - **番茄钟与打坐文案/Emoji 优化**：将托盘与打坐状态的 Emoji 替换为黑头发白皮肤的 `🧘🏻‍♂️`；番茄钟（苍穹静修）窗口的“结束本次”按钮改简称为“结束”（后进一步修改为更有修仙氛围的“提前出关 / Exit Early / 早期出関”），“收起静室”关闭按钮改为“出关”；完成语改为更符合修仙设定的“闭关结束，修为又大有精进。”；界面角色名由“岳七”、“沈九”改为正式大名“岳清源”、“沈清秋”。

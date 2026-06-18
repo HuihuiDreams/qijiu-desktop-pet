@@ -47,7 +47,7 @@ Accepted
 ### Static Pet Assets
 
 - 番茄钟窗口不迁移主窗口里的宠物 DOM。
-- 窗口内宠物使用当前皮肤的 `left_cultivate.webp` 和 `right_cultivate.webp`。
+- 窗口内宠物使用当前皮肤素材：初始页保留 `left_cultivate.webp` 和 `right_cultivate.webp`，倒计时页使用 `cultivate.webp`，完成页使用 `kiss.webp`。
 - 当前皮肤缺少对应资源时，回退到 `assets/default/`。
 
 ### Privacy Boundary

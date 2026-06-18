@@ -303,7 +303,7 @@ src/assets/{skinId}/
 - 窗口使用 `src/pomodoro.html`、`src/pomodoro.css` 和 `src/pomodoroWindow.js`，视觉上复用状态窗口和右键菜单的玉色玻璃系统。
 - 分钟输入默认使用 `electron-store` 中的 `lastPomodoroMinutes`，首次使用或非法输入时回退到 25 分钟，并将单次时长限制在安全范围内。
 - 专注开始时，主进程记录 `pomodoroFocusSnapshot.wasPaused`，设置独立的 `pomodoroPetHidden` 覆盖态，隐藏桌面宠物并暂停移动；完成、手动停止或关闭窗口后恢复到专注前的隐藏/暂停状态。
-- 番茄钟窗口内的两只宠物不是主窗口 DOM 迁移，而是根据当前皮肤显示 `left_cultivate.webp` / `right_cultivate.webp` 静态图，缺失时回退到 `assets/default/`。
+- 番茄钟窗口内的宠物不是主窗口 DOM 迁移，而是根据当前皮肤显示素材：初始页使用 `left_cultivate.webp` / `right_cultivate.webp`，倒计时页使用 `cultivate.webp`，完成页使用 `kiss.webp`，缺失时回退到 `assets/default/`。
 - 置顶状态只影响番茄钟窗口；主透明桌宠窗口仍沿用自己的置顶守卫策略。
 - 隐私边界：番茄钟不检查前台窗口、不读取窗口标题、不读取浏览器 URL、不扫描进程、不记录用户使用的软件或网页。
 
