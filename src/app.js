@@ -94,6 +94,11 @@ function applyI18n() {
   const getVisualScaleForPet = (pet) => (
     getVisualScaleForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
   );
+  const getWeatherEffectScale = () => {
+    const primaryArea = screenInfo.walkAreas.find(area => area.isPrimary) || screenInfo.walkAreas[0];
+    const scaleRatio = Number(primaryArea?.scaleRatio);
+    return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
+  };
   const getMenuBoundsForPet = (pet) => (
     getWalkAreaForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
     || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }
@@ -181,6 +186,7 @@ function applyI18n() {
   contextMenu.getMenuBoundsForPet = getMenuBoundsForPet;
   const statusBar = new StatusBar();
   const dialogBubble = new DialogBubble();
+  const weatherParticleLayer = new WeatherParticleLayer(document.body, CONFIG);
 
   // === 暴露全局调试方法 ===
   window.debugTriggerWeather = (petId = 'yueqi') => {
@@ -322,6 +328,9 @@ function applyI18n() {
     const petStage = document.getElementById('pet-stage');
     petStage.style.display = visible ? '' : 'none';
     isPaused = !visible;
+    if (!visible) {
+      weatherParticleLayer.clear();
+    }
   });
 
   window.electronAPI.onSwitchSkin((skinId) => {
@@ -537,6 +546,11 @@ function applyI18n() {
         if (document.body.dataset.timePhase !== weatherState.timePhase) {
             document.body.dataset.timePhase = weatherState.timePhase;
         }
+        weatherParticleLayer.sync(weatherState, {
+            visible: !isPaused,
+            scaleRatio: getWeatherEffectScale(),
+            pets,
+        });
 
         // 更新移动
         movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
@@ -729,6 +743,45 @@ function applyI18n() {
   window.__DEBUG_SKIN_MANAGER = skinManager;
   window.__DEBUG_MOVEMENT = movementSystem;
   window.__DEBUG_WINDOW_AWARENESS = windowAwarenessSystem;
+  window.__DEBUG_WEATHER = {
+    set(payload = {}) {
+      const now = Date.now();
+      weatherAwarenessSystem.setWeatherPayload({
+        active: true,
+        source: 'debug-console',
+        stale: false,
+        sampledAt: now,
+        expiresAt: now + 10 * 60 * 1000,
+        ...payload,
+      });
+      const state = weatherAwarenessSystem.getCurrentState();
+      document.body.dataset.weather = state.weatherKind;
+      document.body.dataset.timePhase = state.timePhase;
+      yueqi.timePhase = state.timePhase;
+      shenjiu.timePhase = state.timePhase;
+      yueqi.weatherKind = state.weatherKind;
+      shenjiu.weatherKind = state.weatherKind;
+      weatherParticleLayer.sync(state, {
+        visible: !isPaused,
+        scaleRatio: getWeatherEffectScale(),
+        pets,
+      });
+      return state;
+    },
+    clear() {
+      weatherAwarenessSystem.setWeatherPayload({ active: false });
+      const state = weatherAwarenessSystem.getCurrentState();
+      document.body.dataset.weather = state.weatherKind;
+      document.body.dataset.timePhase = state.timePhase;
+      yueqi.weatherKind = state.weatherKind;
+      shenjiu.weatherKind = state.weatherKind;
+      weatherParticleLayer.clear();
+      return state;
+    },
+    getState() {
+      return weatherAwarenessSystem.getCurrentState();
+    },
+  };
   window.__DEBUG_BREAK_REMINDER = {
     trigger: () => {
       handleBreakReminderTriggered({ triggeredAt: Date.now(), intervalMinutes: 60 });

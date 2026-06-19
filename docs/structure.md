@@ -329,7 +329,7 @@ src/assets/{skinId}/
 - **无打扰休眠**：处于 `night`（00:00 - 04:59）且状态为 `idle` 时，宠物自动切换至睡觉动作，不触发消耗与养成惩罚；大幅降低夜间主动双人互动概率。
 - **天气与地理服务**：默认关闭以保护隐私；开启后基于 Open-Meteo 免 Key 接口，通过 `weatherSyncService.js` 发起。
 - **城市设置独立 UI**：提供沙盒化的高颜值独立窗口（`citySettingWindow`）进行城市输入。用户输入后由主进程发起地名解析（Geocoding）并实时回传结果，避免直接暴露底层 `config.json`（见 [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)）。
-- **高性能静态渲染**：渲染进程收到天气特征（如 `rain`, `snow`, `clear`）和时段后，通过 `data-weather` 和 `data-time-phase` 属性配合纯 CSS 滤镜（`filter`）无感切换场景氛围，不引入粒子系统以兼顾老旧机器性能。
+- **局部天气渲染**：渲染进程收到天气特征（如 `rain`, `snow`, `clear`）和时段后，通过 `data-weather` 和 `data-time-phase` 保留状态语义；雨雪使用 `WeatherParticleLayer` 在桌宠附近创建有上限的局部粒子组，动画交给 CSS `transform`，切换、隐藏或禁用时立即清理。天气效果不改变整屏亮度、对比度或饱和度。
 - **静默降级策略**：遇到网络不通、DNS 无法解析或接口限流时，服务安静回退到纯本地时段模式；请求失败自动进入 TTL 退避；恢复休眠后不突发请求，绝不用错误弹窗打断用户的陪伴体验。
 
 ### 3.15 安全边界

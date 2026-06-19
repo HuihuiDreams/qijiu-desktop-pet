@@ -384,5 +384,64 @@ window.testBreakReminder = function () {
   }
 };
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+function setDebugWeather(weatherKind, options = {}) {
+  if (!window.__DEBUG_WEATHER || typeof window.__DEBUG_WEATHER.set !== 'function') {
+    console.warn('[debug] 天气调试对象未就绪，请确认应用已完全启动。');
+    return null;
+  }
+
+  const payload = {
+    weatherKind,
+    intensity: options.intensity || 'normal',
+    timePhase: options.timePhase || 'day',
+    isDay: options.isDay !== false,
+  };
+  const state = window.__DEBUG_WEATHER.set(payload);
+  const particleCount = document.querySelectorAll('.weather-particle').length;
+  console.log('[debug] weather effect applied', { state, particleCount });
+  return { state, particleCount };
+}
+
+window.testWeatherClear = function () {
+  return setDebugWeather('clear', { intensity: 'none', timePhase: 'day', isDay: true });
+};
+
+window.testWeatherCloudy = function () {
+  return setDebugWeather('cloudy', { intensity: 'normal', timePhase: 'day', isDay: true });
+};
+
+window.testWeatherRain = function (intensity = 'heavy') {
+  return setDebugWeather('rain', { intensity, timePhase: 'day', isDay: true });
+};
+
+window.testWeatherSnow = function (intensity = 'medium') {
+  return setDebugWeather('snow', { intensity, timePhase: 'day', isDay: true });
+};
+
+window.testWeatherNight = function (weatherKind = 'unknown') {
+  return setDebugWeather(weatherKind, { intensity: weatherKind === 'unknown' ? 'none' : 'normal', timePhase: 'night', isDay: false });
+};
+
+window.clearWeatherEffect = function () {
+  if (!window.__DEBUG_WEATHER || typeof window.__DEBUG_WEATHER.clear !== 'function') {
+    console.warn('[debug] 天气调试对象未就绪，请确认应用已完全启动。');
+    return null;
+  }
+  const state = window.__DEBUG_WEATHER.clear();
+  console.log('[debug] weather effect cleared', { state });
+  return state;
+};
+
+window.testWeatherEffects = function () {
+  return {
+    clear: 'testWeatherClear()',
+    cloudy: 'testWeatherCloudy()',
+    rain: "testWeatherRain('heavy')",
+    snow: "testWeatherSnow('medium')",
+    night: 'testWeatherNight()',
+    clearEffect: 'clearWeatherEffect()',
+  };
+};
+
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherEffects(), testWeatherRain(), testWeatherSnow(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
 

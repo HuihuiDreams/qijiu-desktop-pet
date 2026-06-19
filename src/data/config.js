@@ -25,6 +25,8 @@ const CONFIG = {
   WEATHER_MIN_REFRESH_MINUTES: 30,    // 最短刷新间隔 (分钟)
   WEATHER_TIMEOUT_MS: 4000,           // API 请求超时 (毫秒)
   WEATHER_BACKOFF_MS: 1200000,        // 连续失败后的退避冷却时间 (20分钟，即 1200000 毫秒)
+  WEATHER_RAIN_PARTICLE_MAX: 48,      // 雨天局部粒子节点上限
+  WEATHER_SNOW_PARTICLE_MAX: 40,      // 雪天局部粒子节点上限
   
   // === 本地时段划分 (Time Phases) ===
   TIME_PHASES: {

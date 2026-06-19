@@ -105,3 +105,83 @@
   }
 }
 
+/* ============================================
+   Weather Particles — Local Pet Effects
+   ============================================ */
+
+.weather-particle-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 20;
+  contain: strict;
+}
+
+.weather-particle-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 44%;
+  will-change: transform;
+}
+
+.weather-particle {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  pointer-events: none;
+  opacity: var(--weather-particle-opacity, 0.42);
+  will-change: transform;
+  animation-delay: var(--weather-particle-delay, 0s);
+  animation-duration: var(--weather-particle-duration, 2s);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+.weather-particle--rain {
+  width: calc(2px * var(--weather-effect-scale, 1));
+  height: calc(30px * var(--weather-effect-scale, 1));
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(221, 242, 252, 0), rgba(166, 215, 238, 0.92));
+  box-shadow: 0 0 5px rgba(166, 215, 238, 0.36);
+  transform: rotate(10deg);
+  animation-name: weatherRainFall;
+}
+
+.weather-particle--snow {
+  width: calc(8px * var(--weather-effect-scale, 1));
+  height: calc(8px * var(--weather-effect-scale, 1));
+  border-radius: 50%;
+  background: rgba(250, 254, 255, 0.96);
+  box-shadow: 0 0 9px rgba(226, 241, 248, 0.72);
+  animation-name: weatherSnowFall;
+}
+
+@keyframes weatherRainFall {
+  from {
+    transform: translate3d(0, -24px, 0) rotate(10deg);
+  }
+
+  to {
+    transform: translate3d(var(--weather-particle-drift, 12px), 170px, 0) rotate(10deg);
+  }
+}
+
+@keyframes weatherSnowFall {
+  from {
+    transform: translate3d(0, -20px, 0);
+  }
+
+  to {
+    transform: translate3d(var(--weather-particle-drift, 18px), 150px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-particle-layer {
+    display: none;
+  }
+}

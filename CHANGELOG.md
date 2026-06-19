@@ -3,6 +3,13 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- 雨雪天气粒子层：新增 `WeatherParticleLayer`，根据 renderer 的天气状态创建有上限的全局雨滴/雪粒子，并在天气切换、隐藏桌宠或禁用天气时清理节点。
+- 天气特效 DevTools 调试入口：新增 `testWeatherClear()`、`testWeatherCloudy()`、`testWeatherRain()`、`testWeatherSnow()`、`testWeatherNight()`、`clearWeatherEffect()` 和 `testWeatherEffects()`，方便开发者在 Console 中模拟晴、阴、雨、雪和夜间氛围。
+- 提升天气视觉可见度并 bump renderer 资源版本号，避免 Electron 复用旧的 `effects.css` / `app.js` / `debug.js` 缓存导致 Console 调试时看不到新效果。
+- 天气视觉范围改为仅围绕桌宠自身显示雨雪粒子，移除全屏亮度、对比度、饱和度和背景氛围变化。
+- 调整雨雪粒子四档强度曲线，让 `light`、`normal`、`medium`、`heavy` 从稀疏到密集有更明显的数量差异。
+- 移除运行时 PNG 图标资源中的异常 `iCCP` 色彩配置块，避免启动时出现 `libpng warning: iCCP: known incorrect sRGB profile`。
 
 ## [0.8.0] - 2026-06-19
 ### Added
@@ -17,7 +24,7 @@
   - **地理编码免配置**：新增城市转坐标功能，小白用户只需输入“北京”、“Tokyo”即可自动获取经纬度，无需申请高德/Google 开发者 Key。
   - **UI 托盘集成**：在托盘菜单增加“🌤️ 天气同步”开关及配置入口，设置变更后自动触发天气更新并广播至渲染进程。
 - **天气视觉表现与交互 (Phase 3 & 4)**：在渲染进程中根据天气和时间阶段动态添加 `data-weather` 和 `data-time-phase` 属性。
-  - **CSS 高性能滤镜特效**：利用 `effects.css` 中的 `filter` (brightness, saturate, contrast 等) 实现无感官消耗的晴、雨、雪、夜间全屏环境氛围变化。全程保持在 50ms 长任务红线以下，未引入任何可能导致内存泄漏的粒子系统或高频 JS 循环，兼顾老旧机器体验。
+  - **CSS 高性能滤镜特效**：利用 `effects.css` 中的 `filter` (brightness, saturate, contrast 等) 实现无感官消耗的晴、雨、雪、夜间全屏环境氛围变化。雨雪粒子作为后续可选增强实现时必须有节点上限，并避免高频 JS 动画循环。
   - **天气特化闲聊台词**：扩展了 `DialogBubble.js` 和 i18n 字典，使桌宠发呆闲聊时有 30% 几率随机触发与当前天气对应的台词（自带防刷屏冷却时间）。
   - **边缘场景与网络保护**：主进程中的请求失败自动进入由 TTL 制导的缓存退避窗口；禁用同步后停止后台轮询；恢复睡眠唤醒后不突发请求；实现平滑静默降级以避免弹窗打扰用户。
   - **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
