@@ -106,15 +106,23 @@ class WeatherAwarenessSystem {
     return 'unknown';
   }
 
+  static isKnownWeatherKind(kind) {
+    return ['clear', 'cloudy', 'rain', 'snow', 'unknown'].includes(kind);
+  }
+
   getCurrentState() {
     if (this.weatherPayload && !this.weatherPayload.stale) {
       // 从 weatherPayload 中的 weatherCode 解析出 weatherKind
-      const parsedKind = this.weatherPayload.fallback 
-        ? 'unknown' 
-        : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
+      const parsedKind = this.weatherPayload.fallback
+        ? 'unknown'
+        : WeatherAwarenessSystem.isKnownWeatherKind(this.weatherPayload.weatherKind)
+          ? this.weatherPayload.weatherKind
+          : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
 
       // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
-      let phase = this.currentState.timePhase;
+      let phase = this.TIME_PHASES[this.weatherPayload.timePhase]
+        ? this.weatherPayload.timePhase
+        : this.currentState.timePhase;
       
       // 如果天气服务明确告知现在天黑了 (!isDay)，但在本地时间里还是白天，就强制转入 night
       if (!this.weatherPayload.fallback && this.weatherPayload.isDay === false) {
@@ -127,7 +135,7 @@ class WeatherAwarenessSystem {
         ...this.currentState,
         timePhase: phase,
         weatherKind: parsedKind,
-        intensity: 'normal',
+        intensity: typeof this.weatherPayload.intensity === 'string' ? this.weatherPayload.intensity : 'normal',
         temperatureBand: this.weatherPayload.temperature || null,
         isDay: this.weatherPayload.isDay,
         stale: false,

@@ -161,6 +161,8 @@ html, body {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+  transform: scale(var(--pet-image-scale, 1));
+  transform-origin: center center;
   transition: filter 0.4s ease;
   filter: drop-shadow(0 0 0 transparent);
   will-change: filter, opacity;

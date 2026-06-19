@@ -22,6 +22,7 @@ function createFakePet(id = 'yueqi') {
     isHungry: () => false,
     updateSkin(skinPaths) {
       if (skinPaths.image) this.image = skinPaths.image;
+      this.imageScale = Number.isFinite(skinPaths.imageScale) && skinPaths.imageScale > 0 ? skinPaths.imageScale : 1;
       if (skinPaths.sprites) this.sprites = skinPaths.sprites;
     },
   };
@@ -67,9 +68,19 @@ test('SkinManager builds custom WebP skin paths', () => {
   const paths = sm.buildPaths('qban');
 
   assert.equal(paths.petA.image, 'assets/qban/left.webp');
+  assert.equal(paths.petA.imageScale, 1);
   assert.equal(paths.petB.image, 'assets/qban/right.webp');
+  assert.equal(paths.petB.imageScale, 1);
   assert.equal(paths.petA.sprites.walkingRight.frames[2], 'assets/qban/yueqi/walk_right03.webp');
   assert.equal(paths.imageMap.shenjiu.hungry, 'assets/qban/right_hungry.webp');
+});
+
+test('SkinManager gives animal ears skin a larger image scale', () => {
+  const sm = new SkinManager();
+  const paths = sm.buildPaths('animal_ears');
+
+  assert.equal(paths.petA.imageScale, 1.08);
+  assert.equal(paths.petB.imageScale, 1.08);
 });
 
 test('SkinManager.applySkin updates current skin and pets', async () => {
@@ -82,6 +93,8 @@ test('SkinManager.applySkin updates current skin and pets', async () => {
   assert.equal(sm.getCurrentSkin(), 'qban');
   assert.equal(petA.image, 'assets/qban/left.webp');
   assert.equal(petB.image, 'assets/qban/right.webp');
+  assert.equal(petA.imageScale, 1);
+  assert.equal(petB.imageScale, 1);
   assert.equal(petA.sprites.idle.frames[0], 'assets/qban/left.webp');
 });
 

@@ -24,6 +24,11 @@
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
 ### Fixed
+- 修复天气同步在 Zscaler/企业证书环境下 geocoding 请求失败的问题：主进程优先使用 Electron `net` 请求 Open-Meteo，并保留 Node `https` 作为测试/非 Electron fallback。
+- 修复天气城市解析在代理认证后首次握手较慢时被 4 秒超时提前中止的问题：将 geocoding 超时独立放宽到 30 秒，并补充请求耗时与 transport 诊断日志。
+- 修复启动时天气同步托盘状态先显示为关闭的问题：启动读取持久化设置后先刷新内存状态和托盘，再异步执行 geocoding，并防止慢请求覆盖后续开关操作。
+- 修复 `WeatherAwarenessSystem` 不能识别已归一化 `weatherKind` / `timePhase` / `intensity` payload，导致天气集成测试把雨天错误显示为 `unknown` 的问题。
+- **animal_ears 皮肤显示偏小**：为 `animal_ears` 主宠图片应用 `1.08` 倍皮肤级 `imageScale`，减少左右透明留白带来的偏小观感，同时不影响其他皮肤和外层移动缩放。
 - **天气同步坐标转换时机修复**：修复了用户在应用关闭期间修改 `config.json` 开启天气同步并指定城市后，主程序冷启动时因未触发 geocoding 坐标转换而导致天气永远请求失败的隐蔽 Bug。现在冷启动若检测到有城市无坐标，会自动触发解析并保存。
 - **天气状态类型映射修复**：修复了从主进程接收到天气数字代码（`weatherCode`）后未将其正确翻译为天气特征字符串（`clear`, `cloudy`, `rain`, `snow`）的问题，彻底解决了控制台出现 `weatherKind: undefined` 及相关天气专属发呆台词永远无法被触发的 Bug。
 - **日语天气闲聊台词补齐**：补齐了 `i18n.js` 的 `ja` 字典中遗漏的 `weather_rain`、`weather_snow`、`weather_clear` 和 `weather_cloudy` 翻译。

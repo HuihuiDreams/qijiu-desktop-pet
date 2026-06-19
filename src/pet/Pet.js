@@ -9,6 +9,7 @@ class Pet {
     this.nickname = config.nickname;
     this.emoji = config.emoji;
     this.image = config.image;
+    this.imageScale = Number.isFinite(config.imageScale) && config.imageScale > 0 ? config.imageScale : 1;
     this.sprites = config.sprites || null;  // 序列帧配置，由 SpriteView 使用
 
     // 位置信息
@@ -71,6 +72,7 @@ class Pet {
    */
   updateSkin(skinPaths) {
     if (skinPaths.image) this.image = skinPaths.image;
+    this.imageScale = Number.isFinite(skinPaths.imageScale) && skinPaths.imageScale > 0 ? skinPaths.imageScale : 1;
     if (skinPaths.sprites) this.sprites = skinPaths.sprites;
   }
 

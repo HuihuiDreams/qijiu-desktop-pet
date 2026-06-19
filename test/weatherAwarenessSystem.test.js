@@ -104,4 +104,32 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(computeCount, 1, 'Should not recompute in the same minute even if GC window passed');
     assert.strictEqual(system.getCurrentState().timePhase, 'day');
   });
+
+  await t.test('accepts normalized weather payload fields', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      timePhase: 'night',
+      weatherKind: 'rain',
+      intensity: 'heavy',
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'rain');
+    assert.strictEqual(state.timePhase, 'night');
+    assert.strictEqual(state.intensity, 'heavy');
+  });
+
+  await t.test('continues to derive weather kind from Open-Meteo weather codes', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 71,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'snow');
+    assert.strictEqual(state.intensity, 'normal');
+  });
 });

@@ -1,6 +1,8 @@
 const { describe, it, beforeEach } = require('node:test');
 const assert = require('node:assert');
-const { normalizeSettings, DEFAULT_WEATHER_SYNC_SETTINGS } = require('../weatherSyncService');
+const Module = require('node:module');
+const { EventEmitter } = require('node:events');
+const { normalizeSettings, DEFAULT_WEATHER_SYNC_SETTINGS, GEOCODE_TIMEOUT_MS } = require('../weatherSyncService');
 
 describe('WeatherSyncService - Settings Normalization', () => {
   it('should return default settings for invalid or missing inputs', () => {
@@ -167,5 +169,52 @@ describe('WeatherSyncService - processSettingsChange', () => {
     assert.strictEqual(result.lat, null);
     assert.strictEqual(result.lon, null);
   });
-});
 
+  it('should allow geocoding more time than regular weather fetches', () => {
+    assert.ok(GEOCODE_TIMEOUT_MS >= 30000);
+  });
+
+  it('should use Electron net for default geocode requests when available', async () => {
+    const originalLoad = Module._load;
+    let requestedUrl = null;
+
+    Module._load = function(request, parent, isMain) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request(url) {
+              requestedUrl = url;
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from(JSON.stringify({
+                    results: [{ latitude: 35.68, longitude: 139.76 }]
+                  })));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await processSettingsChange({ enabled: true, city: 'Tokyo', lat: null, lon: null });
+      assert.match(requestedUrl, /^https:\/\/geocoding-api\.open-meteo\.com\/v1\/search/);
+      assert.strictEqual(result.lat, 35.68);
+      assert.strictEqual(result.lon, 139.76);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+});

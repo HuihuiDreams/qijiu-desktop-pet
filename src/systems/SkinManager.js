@@ -15,10 +15,14 @@ class SkinManager {
    */
   static SKIN_NAMES = {
     'default': '默认皮肤·凉拌仓鼠',
-    'birds': '鸟塑七九・凉拌仓鼠',
+    'birds': '鸟塑七九·凉拌仓鼠',
     'animal_ears': '猫兔七九·紫萤',
     // 新增皮肤时在此添加映射，例如：
     // 'qban': 'Q版·萌系',
+  };
+
+  static SKIN_IMAGE_SCALES = {
+    animal_ears: 1.08,
   };
 
   constructor() {
@@ -103,10 +107,12 @@ class SkinManager {
    */
   buildPaths(skinId) {
     const base = `assets/${skinId}`;
+    const imageScale = SkinManager.SKIN_IMAGE_SCALES[skinId] || 1;
 
     return {
       petA: {
         image: `${base}/left.webp`,
+        imageScale,
         sprites: {
           idle: { frames: [`${base}/left.webp`], fps: 1 },
           walkingLeft: {
@@ -131,6 +137,7 @@ class SkinManager {
       },
       petB: {
         image: `${base}/right.webp`,
+        imageScale,
         sprites: {
           idle: { frames: [`${base}/right.webp`], fps: 1 },
           walkingLeft: {

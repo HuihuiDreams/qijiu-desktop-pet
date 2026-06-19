@@ -127,6 +127,7 @@ let breakReminderEnabled = true;
 let breakReminderIntervalMinutes = 60;
 let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
 let weatherSyncIntervalTimer = null;
+let weatherSyncSettingsUpdateId = 0;
 let finalSaveRequestId = 0;
 let currentPetDisplay = null;
 let dragPollTimer = null;
@@ -679,7 +680,14 @@ async function startWeatherSync() {
 }
 
 async function updateWeatherSyncSettings(newSettings) {
-  weatherSyncSettings = await processSettingsChange(newSettings);
+  const updateId = ++weatherSyncSettingsUpdateId;
+  weatherSyncSettings = normalizeWeatherSyncSettings(newSettings);
+  refreshTrayMenu();
+
+  const processedSettings = await processSettingsChange(weatherSyncSettings);
+  if (updateId !== weatherSyncSettingsUpdateId) return;
+
+  weatherSyncSettings = processedSettings;
   saveWeatherSyncSettings(weatherSyncSettings);
   refreshTrayMenu();
   startWeatherSync();

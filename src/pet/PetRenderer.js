@@ -34,6 +34,11 @@ class PetRenderer {
     return Number.isFinite(visualScale) && visualScale > 0 ? visualScale : 1;
   }
 
+  getPetImageScale(pet) {
+    const imageScale = Number(pet?.imageScale);
+    return Number.isFinite(imageScale) && imageScale > 0 ? imageScale : 1;
+  }
+
   getPetVisualCenter(pet) {
     const visualScale = this.getPetVisualScale(pet);
     return {
@@ -89,6 +94,7 @@ class PetRenderer {
     // 初始位置，使用 transform 控制位置以启用 GPU 硬件加速并避免布局重排
     const visualScale = this.getPetVisualScale(pet);
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
+    el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
 
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
@@ -201,6 +207,7 @@ class PetRenderer {
     // 优化：使用 transform 代替 left/top，极大地减少布局重排 (Layout Thrashing) 的性能开销
     const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
+    el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
 
     // 优化：仅当状态真正发生改变时才操作 DOM classList，减少重绘与垃圾回收
     const stateChanged = pet._renderedState !== pet.state;

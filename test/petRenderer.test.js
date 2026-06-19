@@ -23,10 +23,15 @@ function createFakeElement(initialClasses = []) {
 }
 
 function createFakeDomElement() {
+  const style = {};
+  style.setProperty = (name, value) => {
+    style[name] = value;
+  };
+
   return {
     id: '',
     className: '',
-    style: {},
+    style,
     children: [],
     listeners: {},
     classList: {
@@ -133,6 +138,63 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
 
     assert.deepEqual(calls[0], [false, undefined]);
     assert.deepEqual(calls[1], [true, { forward: true }]);
+  } finally {
+    delete global.window;
+    delete global.document;
+  }
+});
+
+test('pet image scale is exposed as a CSS variable', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  });
+  const pet = {
+    id: 'yueqi',
+    nickname: 'Yue Qi',
+    image: 'assets/animal_ears/left.webp',
+    imageScale: 1.08,
+    x: 100,
+    y: 100,
+    size: 96,
+    state: 'idle',
+    isDragging: false,
+    isHungry() {
+      return false;
+    },
+    isLowMood() {
+      return false;
+    },
+    setState() {},
+  };
+
+  global.window = {
+    innerWidth: 1920,
+    innerHeight: 1080,
+    electronAPI: {
+      setIgnoreMouseEvents() {},
+    },
+    addEventListener() {},
+  };
+  global.document = {
+    createElement() {
+      return createFakeDomElement();
+    },
+    addEventListener() {},
+    getElementById() {
+      return createFakeElement(['hidden']);
+    },
+  };
+
+  try {
+    renderer.createPetElement(pet);
+    assert.equal(appended[0].style['--pet-image-scale'], 1.08);
+
+    pet.imageScale = 1;
+    renderer.update(pet);
+    assert.equal(appended[0].style['--pet-image-scale'], 1);
   } finally {
     delete global.window;
     delete global.document;

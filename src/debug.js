@@ -5,9 +5,15 @@
  * 用法：在 DevTools Console 输入 testKiss() 并回车。
  */
 
-window.testInteraction = function (type) {
+window.testInteraction = function (type = 'kiss') {
   if (!window.__DEBUG_PETS || !window.__DEBUG_RENDERER) {
     console.warn('[debug] 调试变量未就绪，请确保应用已完全启动');
+    return;
+  }
+
+  const validOverlayTypes = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'];
+  if (!validOverlayTypes.includes(type)) {
+    console.warn(`[debug] unsupported interaction overlay: ${type}. Use one of: ${validOverlayTypes.join(', ')}`);
     return;
   }
 
