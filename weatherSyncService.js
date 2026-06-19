@@ -56,6 +56,8 @@ let lastWeatherFetchTime = 0;
 let fetchTimeoutController = null;
 const WEATHER_FETCH_TIMEOUT_MS = 4000;
 const GEOCODE_TIMEOUT_MS = 30000;
+// 请求失败后的短 TTL：最多 10 分钟后重试，不必等满整个刷新周期
+const FALLBACK_TTL_MS = 10 * 60 * 1000;
 
 function getElectronNet() {
   try {
@@ -233,7 +235,8 @@ async function fetchWeather(settings, provider = defaultProvider) {
       timestamp: now
     };
     currentWeatherData = fallback;
-    lastWeatherFetchTime = now;
+    // 失败后只缓存 FALLBACK_TTL_MS（10 分钟），让短暂断网后尽快重试
+    lastWeatherFetchTime = now - (settings.refreshIntervalMinutes * 60 * 1000) + FALLBACK_TTL_MS;
     return fallback;
   } finally {
     clearTimeout(timeoutId);
@@ -289,6 +292,7 @@ module.exports = {
   DEFAULT_WEATHER_SYNC_SETTINGS,
   MIN_REFRESH_INTERVAL_MINUTES,
   GEOCODE_TIMEOUT_MS,
+  FALLBACK_TTL_MS,
   normalizeSettings,
   fetchWeather,
   resetWeatherCache,

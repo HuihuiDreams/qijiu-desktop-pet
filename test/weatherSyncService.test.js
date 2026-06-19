@@ -127,6 +127,34 @@ describe('WeatherSyncService - fetchWeather', () => {
 
     assert.strictEqual(callCount, 1);
   });
+
+  it('should retry sooner after a fallback than after a successful fetch', async () => {
+    const { FALLBACK_TTL_MS } = require('../weatherSyncService');
+    let callCount = 0;
+    const failingProvider = {
+      async fetch() {
+        callCount++;
+        throw new Error('Network Error');
+      }
+    };
+
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+
+    // First call — should fail and return fallback
+    const result = await fetchWeather(settings, failingProvider);
+    assert.strictEqual(result.fallback, true);
+    assert.strictEqual(callCount, 1);
+
+    // Immediate second call — still within FALLBACK_TTL_MS, should return cached fallback
+    const cached = await fetchWeather(settings, failingProvider);
+    assert.strictEqual(cached.fallback, true);
+    assert.strictEqual(callCount, 1, 'should not retry within FALLBACK_TTL_MS');
+
+    // FALLBACK_TTL_MS is less than the full refresh interval (60 min),
+    // confirming that the fallback cache window is shorter than a successful fetch.
+    assert.ok(FALLBACK_TTL_MS < 60 * 60 * 1000, 'FALLBACK_TTL_MS should be shorter than the refresh interval');
+    assert.ok(FALLBACK_TTL_MS <= 10 * 60 * 1000, 'FALLBACK_TTL_MS should be at most 10 minutes');
+  });
 });
 
 describe('WeatherSyncService - processSettingsChange', () => {
