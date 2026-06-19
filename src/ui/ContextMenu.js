@@ -143,6 +143,7 @@ class ContextMenu {
    * 在指定位置显示特定宠物的右键菜单。
    */
   show(pet, x, y) {
+    document.body?.classList?.add('weather-interaction-muted');
     this.currentPet = pet;
     const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
     const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
@@ -218,6 +219,7 @@ class ContextMenu {
 
   hide() {
     this.menuEl.classList.add('hidden');
+    document.body?.classList?.remove('weather-interaction-muted');
     this.currentPet = null;
 
     // 菜单关闭后，检查是否有其他交互面板开着（如状态面板）

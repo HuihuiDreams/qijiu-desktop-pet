@@ -50,6 +50,26 @@ function createFakeDomElement() {
   };
 }
 
+function createFakeClassList(initialClasses = []) {
+  const classes = new Set(initialClasses);
+  return {
+    add(className) {
+      classes.add(className);
+    },
+    remove(className) {
+      classes.delete(className);
+    },
+    contains(className) {
+      return classes.has(className);
+    },
+    toggle(className, force) {
+      const shouldAdd = force === undefined ? !classes.has(className) : Boolean(force);
+      if (shouldAdd) classes.add(className);
+      else classes.delete(className);
+      return shouldAdd;
+    },
+  };
+}
 
 test('qi aura size follows the pet visual scale', () => {
   const appended = [];
@@ -88,6 +108,7 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
   const calls = [];
   const listeners = {};
   const appended = [];
+  const bodyClassList = createFakeClassList();
   const renderer = new PetRenderer({
     appendChild(element) {
       appended.push(element);
@@ -120,6 +141,9 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
     },
   };
   global.document = {
+    body: {
+      classList: bodyClassList,
+    },
     createElement() {
       return createFakeDomElement();
     },
@@ -134,10 +158,12 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
   try {
     renderer.createPetElement(pet);
     appended[0].listeners.mouseenter();
+    assert.equal(bodyClassList.contains('weather-interaction-muted'), true);
     appended[0].listeners.mouseleave();
 
     assert.deepEqual(calls[0], [false, undefined]);
     assert.deepEqual(calls[1], [true, { forward: true }]);
+    assert.equal(bodyClassList.contains('weather-interaction-muted'), false);
   } finally {
     delete global.window;
     delete global.document;
@@ -179,6 +205,9 @@ test('pet image scale is exposed as a CSS variable', () => {
     addEventListener() {},
   };
   global.document = {
+    body: {
+      classList: createFakeClassList(),
+    },
     createElement() {
       return createFakeDomElement();
     },

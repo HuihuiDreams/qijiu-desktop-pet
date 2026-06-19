@@ -101,9 +101,13 @@ class PetRenderer {
     pet._renderedDirection = null;
     pet._renderedHungry = null;
     pet._renderedLowMood = null;
+    const setWeatherInteractionMuted = (muted) => {
+      document.body?.classList?.toggle('weather-interaction-muted', muted);
+    };
 
     // 鼠标事件：切换点击穿透 (防止遮挡后方窗口)
     el.addEventListener('mouseenter', () => {
+      setWeatherInteractionMuted(true);
       window.electronAPI.setIgnoreMouseEvents(false);
     });
 
@@ -112,6 +116,7 @@ class PetRenderer {
       const menuOpen = !document.getElementById('context-menu').classList.contains('hidden');
       const panelOpen = !document.getElementById('status-panel').classList.contains('hidden');
       if (!pet.isDragging && !menuOpen && !panelOpen) {
+        setWeatherInteractionMuted(false);
         window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
       }
     });
@@ -121,6 +126,7 @@ class PetRenderer {
     let dragOffsetY = 0;
     let dragWatchdogTimer = null;
     const restoreMousePassthrough = () => {
+      setWeatherInteractionMuted(false);
       window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
     };
     const keepPetReachable = () => {
@@ -168,6 +174,7 @@ class PetRenderer {
       if (e.button !== 0) return; // 仅支持左键拖拽
       e.preventDefault();
       pet.isDragging = true;
+      setWeatherInteractionMuted(true);
       pet.setState('idle');
       pet.idleTimer = 3000; // 拖拽放下后暂停行走一段时间
       dragOffsetX = e.clientX - pet.x;

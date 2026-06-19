@@ -116,6 +116,12 @@
   pointer-events: none;
   z-index: 20;
   contain: strict;
+  opacity: 1;
+  transition: opacity 0.14s ease;
+}
+
+body.weather-interaction-muted .weather-particle-layer {
+  opacity: 0;
 }
 
 .weather-particle-group {
