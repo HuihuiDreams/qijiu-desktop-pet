@@ -1,0 +1,10 @@
+{
+	"weatherSyncSettings": {
+		"enabled": false,
+		"city": "Beijing",
+		"lat": 39.9,
+		"lon": 116.4,
+		"refreshIntervalMinutes": 60,
+		"schemaVersion": 1
+	}
+}

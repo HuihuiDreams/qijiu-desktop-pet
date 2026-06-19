@@ -1295,7 +1295,8 @@ function buildTrayMenu() {
     {
       label: weatherSyncSettings.enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
       click: () => {
-        const newSettings = { ...weatherSyncSettings, enabled: !weatherSyncSettings.enabled };
+        const currentStored = getStoredWeatherSyncSettings();
+        const newSettings = { ...currentStored, enabled: !weatherSyncSettings.enabled };
         updateWeatherSyncSettings(newSettings);
       },
     },
@@ -1727,7 +1728,8 @@ if (!hasSingleInstanceLock) {
 
     // Listen to config changes if users open the editor and save it
     store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
-      // only if they manually edited the file, we reload it
+      // Ignore undefined/null newValue which can happen during atomic file writes
+      if (!newValue) return;
       updateWeatherSyncSettings(newValue);
     });
 
