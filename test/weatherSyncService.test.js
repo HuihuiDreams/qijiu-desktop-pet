@@ -190,6 +190,7 @@ describe('WeatherSyncService - processSettingsChange', () => {
                 const res = new EventEmitter();
                 res.statusCode = 200;
                 res.resume = () => {};
+                res.setEncoding = () => {};
 
                 setImmediate(() => {
                   req.emit('response', res);

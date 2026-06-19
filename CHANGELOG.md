@@ -12,6 +12,9 @@
 - 移除运行时 PNG 图标资源中的异常 `iCCP` 色彩配置块，避免启动时出现 `libpng warning: iCCP: known incorrect sRGB profile`。
 - 雨雪效果在鼠标靠近桌宠、拖拽或右键菜单打开时自动淡出，避免影响右键点击和菜单操作。
 
+### Fixed
+- **天气地名解析数据截断修复**：在 `weatherSyncService.js` 中显式设置 `res.setEncoding('utf8')`，彻底避免主进程通过 Open-Meteo Geocoding 接口获取含有双字节汉字（如城市名）时，因 chunk 切分导致的乱码或解析失败风险。
+
 ## [0.8.0] - 2026-06-19
 ### Added
 - **本地时段感知与作息系统 (Offline MVP)**：新增 `WeatherAwarenessSystem.js`，实现五分段本地时段计算 (`morning`, `day`, `dusk`, `evening`, `night`)。
