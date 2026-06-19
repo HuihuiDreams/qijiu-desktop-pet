@@ -644,14 +644,18 @@ function applyI18n() {
         if (chatterTimer <= 0) {
           chatterTimer = 20000 + Math.random() * 40000;
           const pet = Math.random() > 0.5 ? yueqi : shenjiu;
-          if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)
-              && !pet.isHungry() && !pet.isLowQi() && !pet.isLowMood()) {
+          if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)) {
             
-            // 时段专属闲聊
+            // 时段专属闲聊 (即使状态低落也有概率触发)
             if (pet.timePhase === 'morning' && Math.random() < 0.3) {
               const text = pet.id === 'yueqi'
                 ? (window.t('morningYueqi') || '早安。')
                 : (window.t('morningShenjiu') || '哼，起得倒早。');
+              dialogBubble.show(pet, text, 5000);
+            } else if (pet.timePhase === 'day' && Math.random() < 0.3) {
+              const text = pet.id === 'yueqi'
+                ? (window.t('dayYueqi') || '白日漫长，莫要太过劳累。')
+                : (window.t('dayShenjiu') || '…大白天的，别到处乱晃。');
               dialogBubble.show(pet, text, 5000);
             } else if (pet.timePhase === 'dusk' && Math.random() < 0.3) {
               const text = pet.id === 'yueqi'
@@ -664,8 +668,15 @@ function applyI18n() {
                 : (window.t('eveningShenjiu') || '…少烦我，滚去睡觉。');
               dialogBubble.show(pet, text, 5000);
             } else if (pet.timePhase === 'night' && Math.random() < 0.5) {
-              // 深夜有 50% 概率保持安静，不发任何气泡
-            } else {
+              // 深夜有 50% 概率保持安静，另外 50% 触发深夜专属台词
+              if (Math.random() < 0.5) {
+                const text = pet.id === 'yueqi'
+                  ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
+                  : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
+                dialogBubble.show(pet, text, 5000);
+              }
+            } else if (!pet.isHungry() && !pet.isLowQi() && !pet.isLowMood()) {
+              // 只有在状态健康时，才会进行普通的随机闲聊
               dialogBubble.showIdleChatter(pet);
             }
           }

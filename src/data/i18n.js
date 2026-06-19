@@ -156,10 +156,14 @@ const I18N = {
       // 时段闲聊
       morningYueqi: '早安。',
       morningShenjiu: '哼，起得倒早。',
+      dayYueqi: '白日漫长，莫要太过劳累。',
+      dayShenjiu: '…大白天的，别到处乱晃。',
       duskYueqi: '黄昏了，一日又要结束了。',
       duskShenjiu: '天色暗了。',
       eveningYueqi: '夜幕已降，早点歇息吧。',
       eveningShenjiu: '…少烦我，滚去睡觉。',
+      nightYueqi: '夜深了，早些休息吧。',
+      nightShenjiu: '…还不睡？想猝死吗。',
     },
     dialogues: {
       greet: {
@@ -449,10 +453,14 @@ const I18N = {
       // Time phase chatter
       morningYueqi: 'Good morning.',
       morningShenjiu: 'Hmph, you\'re up early.',
+      dayYueqi: 'The day is long. Do not overexert yourself.',
+      dayShenjiu: '...It is broad daylight. Stop wandering around.',
       duskYueqi: 'It is dusk. Another day is ending.',
       duskShenjiu: 'It\'s getting dark.',
       eveningYueqi: 'Night has fallen, aren\'t you going to rest?',
       eveningShenjiu: '...Don\'t bother me, go to sleep.',
+      nightYueqi: 'It is late. You should rest.',
+      nightShenjiu: '...Still awake? Do you want to drop dead?',
     },
     dialogues: {
       // 🚧 Placeholder — will be replaced after official translation wordlist
@@ -743,10 +751,14 @@ const I18N = {
       // 時段の雑談
       morningYueqi: 'おはようございます。',
       morningShenjiu: 'ふん、起きるのが早いな。',
+      dayYueqi: 'まだ日は高い。あまり無理をしないように。',
+      dayShenjiu: '…真昼間から、うろちょろするな。',
       duskYueqi: '夕暮れだ。また一日が終わるね。',
       duskShenjiu: '日が暮れたな。',
       eveningYueqi: '夜が更けた。まだ休まないのか。',
       eveningShenjiu: '…煩わしい、さっさと寝ろ。',
+      nightYueqi: 'もうこんな時間だ。早く休むといい。',
+      nightShenjiu: '…まだ起きているのか？死ぬ気か。',
     },
     dialogues: {
       greet: {

@@ -24,6 +24,7 @@
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
 ### Fixed
+- **补齐白天与深夜时段台词及触发优先级**：修复了原逻辑中完全遗漏 `day` (白天 11:00-17:00) 时段专属台词分支，以及 `night` (深夜) 缺乏专属台词导致 100% 退回普通闲聊的 Bug，并在中英日三语 `i18n.js` 中补齐了相关文案；同时调整了时段问候的触发优先级，使其即使在宠物因离线衰减陷入饥饿/低心境状态时，依然有概率触发（如早安问候），修复了早晨打开桌宠时因状态低迷而完全屏蔽时段问候的问题。
 - 修复天气同步在 Zscaler/企业证书环境下 geocoding 请求失败的问题：主进程优先使用 Electron `net` 请求 Open-Meteo，并保留 Node `https` 作为测试/非 Electron fallback。
 - 修复天气城市解析在代理认证后首次握手较慢时被 4 秒超时提前中止的问题：将 geocoding 超时独立放宽到 30 秒，并补充请求耗时与 transport 诊断日志。
 - 修复启动时天气同步托盘状态先显示为关闭的问题：启动读取持久化设置后先刷新内存状态和托盘，再异步执行 geocoding，并防止慢请求覆盖后续开关操作。
