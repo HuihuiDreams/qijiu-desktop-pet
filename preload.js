@@ -119,4 +119,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_event, payload) => callback(payload);
     return subscribeIpc('weather-update', listener);
   },
+
+  // 城市设置
+  getCitySettings: () => ipcRenderer.invoke('get-city-settings'),
+  setCityName: (name) => ipcRenderer.invoke('set-city-name', name),
+  closeCitySettingWindow: () => ipcRenderer.invoke('close-city-setting-window'),
 });

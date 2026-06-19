@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
+  <title data-i18n="citySettingTitle">城市设置</title>
+  <link rel="stylesheet" href="city-setting.css">
+</head>
+
+<body>
+  <main id="city-panel" class="city-panel" aria-live="polite">
+    <header class="city-titlebar">
+      <span data-i18n="citySettingTitle">城市设置</span>
+      <button id="city-close" class="city-close-button" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
+        <svg class="city-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </header>
+
+    <div class="city-content">
+      <div class="city-current">
+        <span data-i18n="citySettingCurrent">当前城市</span>
+        <span id="city-current-value" class="city-current-value" data-i18n="citySettingNone">未设置</span>
+      </div>
+
+      <div class="city-input-row">
+        <input
+          id="city-input"
+          class="city-input"
+          type="text"
+          maxlength="100"
+          autocomplete="off"
+          spellcheck="false"
+          data-i18n-placeholder="citySettingPlaceholder"
+          placeholder="请输入城市名"
+        >
+        <button id="city-confirm" class="city-confirm-button" type="button" data-i18n="citySettingConfirm">确认</button>
+      </div>
+
+      <div id="city-status" class="city-status" aria-live="assertive"></div>
+    </div>
+  </main>
+
+  <script src="data/i18n.js"></script>
+  <script src="citySettingWindow.js"></script>
+</body>
+
+</html>

@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.8.0] - 2026-06-19
 ### Added
 - **本地时段感知与作息系统 (Offline MVP)**：新增 `WeatherAwarenessSystem.js`，实现五分段本地时段计算 (`morning`, `day`, `dusk`, `evening`, `night`)。
   - **无副作用休眠表现**：当处于深夜 (`night` 00:00 - 04:59) 且状态为 `idle` 时，`SpriteView` 自动映射到睡觉贴图，不触发任何真实养成数值消耗与惩罚。
@@ -18,9 +20,16 @@
   - **CSS 高性能滤镜特效**：利用 `effects.css` 中的 `filter` (brightness, saturate, contrast 等) 实现无感官消耗的晴、雨、雪、夜间全屏环境氛围变化。全程保持在 50ms 长任务红线以下，未引入任何可能导致内存泄漏的粒子系统或高频 JS 循环，兼顾老旧机器体验。
   - **天气特化闲聊台词**：扩展了 `DialogBubble.js` 和 i18n 字典，使桌宠发呆闲聊时有 30% 几率随机触发与当前天气对应的台词（自带防刷屏冷却时间）。
   - **边缘场景与网络保护**：主进程中的请求失败自动进入由 TTL 制导的缓存退避窗口；禁用同步后停止后台轮询；恢复睡眠唤醒后不突发请求；实现平滑静默降级以避免弹窗打扰用户。
-- **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
+  - **天气感知与时空同步计划**：新增 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md)，拆分本地时段、天气服务、设置入口、视觉表现、性能/失败场景和文档硬化任务。
+- **城市设置独立 UI 窗口**：废弃了原托盘菜单“修改城市”直接调用 `store.openInEditor()` 暴露底层 `config.json` 的粗暴方式，新增了专用的、高颜值的城市设置浮窗 (`citySettingWindow`)。
+  - **交互体验升级**：在沙箱窗口内输入城市名后，敲击回车或点击确认即可实时看到 Open-Meteo geocoding 的“查找中”、“已设置”或“未找到”的验证反馈，并在成功后自动延时关闭。
+  - **视觉设计复用**：UI 样式完全复用并对齐了番茄钟的仙侠 glassmorphism 设计系统（玉色与金色渐变），确保全局设计语言统一。
+  - **多语言全覆盖**：同步在 `i18n.js` 中新增了中英日三语的界面文本支持，并实现了随主菜单无缝热切换的能力。
+  - **全链路测试覆盖**：新增了完整的单元测试与集成测试套件，涵盖了 HTML/CSS 安全性、DOM API 防护、IPC 合约以及生命周期清理。
+  - **架构决策记录**：新增 [ADR-039](docs/decisions/ADR-039-city-setting-ui-window.md) 记录城市设置 UI 窗口的安全隔离与架构设计。
 
 ### Changed
+- **托盘菜单架构重组与分类优化**：移除了之前过于零碎的分割线，将托盘菜单的所有功能按“独立功能/窗口”、“桌宠交互与控制”、“环境感知与自动化”、“系统与应用设置”以及“退出与版本”五大逻辑区块进行了重新聚合与排版，提升了设置项的视觉动线和查找效率。
 - **天气候选功能边界**：更新 [feature-ideas-plan.md](docs/plan/feature-ideas-plan.md)，将天气 / 时空同步标记为已拆分；在 [time-weather-sync-plan.md](docs/plan/time-weather-sync-plan.md) 补充 Open-Meteo 中国大陆可达性不保证、天气 provider 可替换、性能预算、失败降级和不新增逐皮肤天气素材的约束。
 
 ### Fixed
@@ -35,6 +44,7 @@
 - **日语天气闲聊台词补齐**：补齐了 `i18n.js` 的 `ja` 字典中遗漏的 `weather_rain`、`weather_snow`、`weather_clear` 和 `weather_cloudy` 翻译。
 - **会议检测 netstat 权限降级**：当 Windows 已发现会议应用进程但 `netstat -ano -p udp` 被权限策略拒绝或返回失败时，检测会把本次 UDP 状态标记为 unknown 并保留当前会议隐藏状态，避免开发模式每 5 秒刷 `Meeting detector scan failed: Command failed: netstat -ano -p udp`，也避免把未知状态误判为会议结束。
 - **天气同步禁用时城市丢失修复**：修复了用户在托盘菜单关闭天气同步时，因并发原子文件写入导致文件系统观察者（`fs.watch`）瞬时读取到空值，从而引发防抖回退机制将城市字段错误清空的竞态条件 Bug；同时使托盘开关不再依赖可能陈旧的内存状态，严格以最新持久化配置为基准。
+- **城市设置状态泄漏修复**：修复了在“修改城市” UI 中输入新城市名后，如果此前天气同步处于关闭状态会被意外强行开启的 Bug。此问题源于 IPC 中为了触发地名验证而临时设置了 `enabled: true` 却错误地将其持久化。现已在保存前严格重置回用户的真实状态偏好。
 
 ## [0.7.0] - 2026-06-18
 ### Added

@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-16
+最后更新：2026-06-19
 
 ## 1. 架构总览
 
@@ -15,6 +15,7 @@ graph TB
         MainJs --> PetWindow["Transparent Pet BrowserWindow"]
         MainJs --> StatusWindow["Independent Status BrowserWindow"]
         MainJs --> PomodoroWindow["Pomodoro BrowserWindow"]
+        MainJs --> CitySettingWindow["City Setting BrowserWindow"]
         MainJs --> Tray["System Tray Menu"]
         MainJs --> Store["electron-store"]
         MainJs --> IPC["IPC Handlers"]
@@ -52,9 +53,14 @@ graph TB
         PomodoroHtml["src/pomodoro.html + pomodoro.css"] --> PomodoroJs["src/pomodoroWindow.js"]
     end
 
+    subgraph CitySetting["City Setting Renderer Process"]
+        CitySettingHtml["src/city-setting.html + city-setting.css"] --> CitySettingJs["src/citySettingWindow.js"]
+    end
+
     Preload["preload.js"] --> Renderer
     Preload --> Status
     Preload --> Pomodoro
+    Preload --> CitySetting
     UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
@@ -100,6 +106,9 @@ qijiu-desktop-pet/
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
 │  ├─ pomodoro.css                      # 番茄钟窗口样式，复用状态窗口视觉系统
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换和完成态
+│  ├─ city-setting.html                 # 城市设置独立窗口 HTML
+│  ├─ city-setting.css                  # 城市设置独立窗口样式
+│  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
 │  ├─ update-progress.js                # 更新进度窗口渲染，通过 textContent 和样式属性更新进度
@@ -157,6 +166,7 @@ qijiu-desktop-pet/
 - 创建透明、无边框、可置顶的主宠物窗口。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复。
+- 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果。
 - 维护系统托盘菜单，包括显示/隐藏、恢复走动、重置位置、皮肤切换、语言切换、开机启动、检查更新和退出。
 - 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据。
 - 使用 `app.requestSingleInstanceLock()` 保证单实例运行，并在二次启动时唤回已有窗口。
@@ -311,7 +321,18 @@ src/assets/{skinId}/
 - 置顶状态只影响番茄钟窗口；主透明桌宠窗口仍沿用自己的置顶守卫策略。
 - 隐私边界：番茄钟不检查前台窗口、不读取窗口标题、不读取浏览器 URL、不扫描进程、不记录用户使用的软件或网页。
 
-### 3.14 安全边界
+### 3.14 天气感知与时空同步
+
+`weatherSyncService.js` 与 `WeatherAwarenessSystem.js` 构成了桌宠的天气与本地时段感知系统，设计约束记录在 [ADR-038](./decisions/ADR-038-weather-sync.md)。
+
+- **本地时段感知**：无需网络，根据本地系统时间计算五个阶段（`morning`, `day`, `dusk`, `evening`, `night`）。
+- **无打扰休眠**：处于 `night`（00:00 - 04:59）且状态为 `idle` 时，宠物自动切换至睡觉动作，不触发消耗与养成惩罚；大幅降低夜间主动双人互动概率。
+- **天气与地理服务**：默认关闭以保护隐私；开启后基于 Open-Meteo 免 Key 接口，通过 `weatherSyncService.js` 发起。
+- **城市设置独立 UI**：提供沙盒化的高颜值独立窗口（`citySettingWindow`）进行城市输入。用户输入后由主进程发起地名解析（Geocoding）并实时回传结果，避免直接暴露底层 `config.json`（见 [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)）。
+- **高性能静态渲染**：渲染进程收到天气特征（如 `rain`, `snow`, `clear`）和时段后，通过 `data-weather` 和 `data-time-phase` 属性配合纯 CSS 滤镜（`filter`）无感切换场景氛围，不引入粒子系统以兼顾老旧机器性能。
+- **静默降级策略**：遇到网络不通、DNS 无法解析或接口限流时，服务安静回退到纯本地时段模式；请求失败自动进入 TTL 退避；恢复休眠后不突发请求，绝不用错误弹窗打断用户的陪伴体验。
+
+### 3.15 安全边界
 
 当前安全边界以 Electron 推荐模式为基础：
 
@@ -377,6 +398,7 @@ npm test
 - [ADR-036](./decisions/ADR-036-cp-interaction-anti-overlap.md)：CP 互动防交叠机制。
 - [ADR-037](./decisions/ADR-037-lightweight-pomodoro-companion.md)：轻量番茄钟陪伴模式。
 - [ADR-038](./decisions/ADR-038-weather-sync.md)：天气感知与时空同步系统架构与隐私边界。
+- [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)：城市设置 UI 独立窗口与配置隔离。
 
 ## 6. 维护提示
 

@@ -105,6 +105,7 @@ function getSkinDisplayName(skinId) {
 let mainWindow = null;
 let statusWindow = null;
 let pomodoroWindow = null;
+let citySettingWindow = null;
 let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
@@ -693,6 +694,66 @@ async function updateWeatherSyncSettings(newSettings) {
   startWeatherSync();
 }
 
+// --- 城市设置窗口 ---
+
+function createCitySettingWindow() {
+  if (citySettingWindow && !citySettingWindow.isDestroyed()) return citySettingWindow;
+
+  const width = 360;
+  const height = 200;
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+
+  citySettingWindow = new BrowserWindow({
+    width,
+    height,
+    x: Math.round(x + (areaWidth - width) / 2),
+    y: Math.round(y + (areaHeight - height) / 2),
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: false,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  citySettingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  citySettingWindow.loadFile(path.join(__dirname, 'src', 'city-setting.html'));
+
+  citySettingWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  citySettingWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  citySettingWindow.on('closed', () => {
+    citySettingWindow = null;
+  });
+
+  return citySettingWindow;
+}
+
+function openCitySettingWindow() {
+  const win = createCitySettingWindow();
+  if (!win.isVisible()) {
+    win.show();
+  }
+  win.moveTop();
+  win.focus();
+  return win;
+}
+
+function closeCitySettingWindow() {
+  if (citySettingWindow && !citySettingWindow.isDestroyed()) {
+    citySettingWindow.close();
+  }
+}
+
 function resolvePomodoroAsset(skinId, filename) {
   const safeSkinId = isAllowedSkinId(skinId, scanAvailableSkins()) ? skinId : 'default';
   const candidatePath = path.join(__dirname, 'src', 'assets', safeSkinId, filename);
@@ -1108,6 +1169,7 @@ function createWindow() {
     if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
       pomodoroWindow.close();
     }
+    closeCitySettingWindow();
     mainWindow = null;
   });
 
@@ -1202,6 +1264,9 @@ function buildTrayMenu() {
       if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
         pomodoroWindow.webContents.send('locale-changed', lang);
       }
+      if (citySettingWindow && !citySettingWindow.isDestroyed()) {
+        citySettingWindow.webContents.send('locale-changed', lang);
+      }
     },
   }));
 
@@ -1211,6 +1276,8 @@ function buildTrayMenu() {
       enabled: false,
     },
     { type: 'separator' },
+
+    // --- 独立功能 / 窗口 ---
     {
       label: trayMenuLabel('trayStatusPanel'),
       click: () => {
@@ -1223,6 +1290,9 @@ function buildTrayMenu() {
         openPomodoroWindow();
       },
     },
+    { type: 'separator' },
+
+    // --- 桌宠交互与控制 ---
     {
       label: trayMenuLabel('traySwitchSkin'),
       submenu: skinSubmenu,
@@ -1264,6 +1334,8 @@ function buildTrayMenu() {
       })),
     }] : []),
     { type: 'separator' },
+
+    // --- 环境感知与自动化 ---
     {
       label: breakReminderEnabled ? trayMenuLabel('trayBreakReminderOn') : trayMenuLabel('trayBreakReminderOff'),
       click: async () => {
@@ -1291,7 +1363,6 @@ function buildTrayMenu() {
         },
       })),
     },
-    { type: 'separator' },
     {
       label: weatherSyncSettings.enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
       click: () => {
@@ -1302,12 +1373,10 @@ function buildTrayMenu() {
     },
     {
       label: trayMenuLabel('trayWeatherSyncConfig'),
-      click: async () => {
-        await initStore();
-        if (store) store.openInEditor();
+      click: () => {
+        openCitySettingWindow();
       },
     },
-    { type: 'separator' },
     {
       label: (process.platform === 'win32' || process.platform === 'darwin')
         ? (windowAwarenessEnabled ? trayMenuLabel('trayWindowAwarenessOff') : trayMenuLabel('trayWindowAwarenessOn'))
@@ -1315,6 +1384,9 @@ function buildTrayMenu() {
       enabled: process.platform === 'win32' || process.platform === 'darwin',
       click: () => setWindowAwarenessEnabled(!windowAwarenessEnabled),
     },
+    { type: 'separator' },
+
+    // --- 系统与应用设置 ---
     {
       label: trayMenuLabel('trayLanguage'),
       submenu: langSubmenu,
@@ -1344,6 +1416,9 @@ function buildTrayMenu() {
         },
       },
     ] : []),
+    { type: 'separator' },
+
+    // --- 退出与版本 ---
     {
       label: trayMenuLabel('trayQuit'),
       click: () => {
@@ -1674,7 +1749,58 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
     pomodoroWindow.webContents.send('locale-changed', lang);
   }
+  if (citySettingWindow && !citySettingWindow.isDestroyed()) {
+    citySettingWindow.webContents.send('locale-changed', lang);
+  }
   return { success: true, locale: lang };
+});
+
+// 城市设置 IPC
+ipcMain.handle('get-city-settings', () => {
+  return { city: weatherSyncSettings.city || '' };
+});
+
+ipcMain.handle('set-city-name', async (_event, cityName) => {
+  if (typeof cityName !== 'string' || !cityName.trim()) {
+    return { success: false };
+  }
+
+  const trimmed = cityName.trim().slice(0, 100);
+  const currentStored = getStoredWeatherSyncSettings();
+  
+  // Force enabled to true temporarily to bypass processSettingsChange's fast-return
+  // and ensure geocoding validation runs.
+  const newSettings = {
+    ...currentStored,
+    city: trimmed,
+    lat: null,
+    lon: null,
+    enabled: true,
+  };
+
+  try {
+    const processed = await processSettingsChange(newSettings);
+    if (processed.lat === null || processed.lon === null) {
+      return { success: false };
+    }
+
+    // Restore the user's actual enabled preference before saving
+    processed.enabled = currentStored.enabled;
+
+    weatherSyncSettings = processed;
+    saveWeatherSyncSettings(weatherSyncSettings);
+    refreshTrayMenu();
+    startWeatherSync();
+    return { success: true, city: processed.city };
+  } catch (err) {
+    console.error('Failed to set city:', err);
+    return { success: false };
+  }
+});
+
+ipcMain.handle('close-city-setting-window', () => {
+  closeCitySettingWindow();
+  return { success: true };
 });
 
 // 久坐提醒 IPC
