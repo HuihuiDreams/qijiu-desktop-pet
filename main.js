@@ -106,6 +106,7 @@ let mainWindow = null;
 let statusWindow = null;
 let pomodoroWindow = null;
 let citySettingWindow = null;
+let citySettingTopPulseTimer = null;
 let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
@@ -140,6 +141,8 @@ let pomodoroFocusSnapshot = null;
 let pomodoroPetHidden = false;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const CITY_SETTING_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const CITY_SETTING_TOP_PULSE_MS = 180;
 const displayFitScheduler = createDisplayFitScheduler({
   fitNow: fitWindowToAllDisplays,
   delayMs: DISPLAY_METRICS_SETTLE_MS,
@@ -696,6 +699,39 @@ async function updateWeatherSyncSettings(newSettings) {
 
 // --- 城市设置窗口 ---
 
+function pulseCitySettingWindowTop() {
+  if (!citySettingWindow || citySettingWindow.isDestroyed()) return;
+
+  if (citySettingTopPulseTimer) {
+    clearTimeout(citySettingTopPulseTimer);
+    citySettingTopPulseTimer = null;
+  }
+
+  citySettingWindow.setAlwaysOnTop(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL);
+  citySettingWindow.moveTop();
+  citySettingTopPulseTimer = setTimeout(() => {
+    citySettingTopPulseTimer = null;
+    if (citySettingWindow && !citySettingWindow.isDestroyed()) {
+      citySettingWindow.setAlwaysOnTop(false);
+    }
+  }, CITY_SETTING_TOP_PULSE_MS);
+}
+
+function raiseCitySettingWindow() {
+  if (!citySettingWindow || citySettingWindow.isDestroyed()) return null;
+
+  if (citySettingWindow.isMinimized()) {
+    citySettingWindow.restore();
+  }
+  if (!citySettingWindow.isVisible()) {
+    citySettingWindow.show();
+  }
+
+  pulseCitySettingWindowTop();
+  citySettingWindow.focus();
+  return citySettingWindow;
+}
+
 function createCitySettingWindow() {
   if (citySettingWindow && !citySettingWindow.isDestroyed()) return citySettingWindow;
 
@@ -712,7 +748,7 @@ function createCitySettingWindow() {
     y: Math.round(y + (areaHeight - height) / 2),
     transparent: true,
     frame: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     skipTaskbar: false,
     resizable: false,
     minimizable: false,
@@ -731,7 +767,20 @@ function createCitySettingWindow() {
 
   citySettingWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   citySettingWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  citySettingWindow.on('focus', () => {
+    pulseCitySettingWindowTop();
+  });
+  citySettingWindow.on('show', () => {
+    pulseCitySettingWindowTop();
+  });
+  citySettingWindow.on('restore', () => {
+    raiseCitySettingWindow();
+  });
   citySettingWindow.on('closed', () => {
+    if (citySettingTopPulseTimer) {
+      clearTimeout(citySettingTopPulseTimer);
+      citySettingTopPulseTimer = null;
+    }
     citySettingWindow = null;
   });
 
@@ -739,13 +788,8 @@ function createCitySettingWindow() {
 }
 
 function openCitySettingWindow() {
-  const win = createCitySettingWindow();
-  if (!win.isVisible()) {
-    win.show();
-  }
-  win.moveTop();
-  win.focus();
-  return win;
+  createCitySettingWindow();
+  return raiseCitySettingWindow();
 }
 
 function closeCitySettingWindow() {

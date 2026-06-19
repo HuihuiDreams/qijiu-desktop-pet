@@ -194,6 +194,7 @@ input {
 
 .city-input {
   flex: 1;
+  min-width: 0;
   height: 38px;
   padding: 0 14px;
   border: 1px solid rgba(110, 198, 160, 0.25);
@@ -220,8 +221,10 @@ input {
 }
 
 .city-confirm-button {
+  flex: 0 0 auto;
   height: 38px;
-  min-width: 72px;
+  min-width: 88px;
+  padding: 0 12px;
   border: 1px solid rgba(61, 139, 107, 0.34);
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(110, 198, 160, 0.92), rgba(201, 162, 77, 0.62));
@@ -231,7 +234,9 @@ input {
     inset 0 1px 0 rgba(255, 255, 255, 0.42);
   cursor: pointer;
   font-weight: 700;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  white-space: nowrap;
   transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 

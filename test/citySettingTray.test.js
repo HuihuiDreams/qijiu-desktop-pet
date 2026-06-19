@@ -23,6 +23,20 @@ test('city setting window uses a compact size for simple city input', () => {
   assert.match(funcBody, /const height = 200/);
 });
 
+test('city setting window briefly pulses top level when opened or reactivated', () => {
+  assert.match(mainSource, /const CITY_SETTING_ALWAYS_ON_TOP_LEVEL = 'screen-saver'/);
+  assert.match(mainSource, /const CITY_SETTING_TOP_PULSE_MS = 180/);
+  assert.match(mainSource, /function pulseCitySettingWindowTop\(\)/);
+  assert.match(mainSource, /function raiseCitySettingWindow\(\)/);
+  assert.match(mainSource, /citySettingWindow\.setAlwaysOnTop\(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL\)/);
+  assert.match(mainSource, /citySettingWindow\.setAlwaysOnTop\(false\)/);
+  assert.match(mainSource, /citySettingWindow\.moveTop\(\)/);
+  assert.match(mainSource, /alwaysOnTop:\s*false/);
+  assert.match(mainSource, /citySettingWindow\.on\('focus'/);
+  assert.match(mainSource, /citySettingWindow\.on\('show'/);
+  assert.match(mainSource, /citySettingWindow\.on\('restore'/);
+});
+
 test('tray menu calls openCitySettingWindow instead of openInEditor', () => {
   assert.match(mainSource, /trayMenuLabel\('trayWeatherSyncConfig'\)/);
   assert.match(mainSource, /openCitySettingWindow\(\)/);

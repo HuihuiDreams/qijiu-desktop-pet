@@ -60,7 +60,10 @@ test('city setting CSS includes input, button, and status feedback styles', () =
   const css = readSource('src/city-setting.css');
 
   assert.match(css, /\.city-input/);
+  assert.match(css, /\.city-input\s*\{[\s\S]*min-width:\s*0/);
   assert.match(css, /\.city-confirm-button/);
+  assert.match(css, /\.city-confirm-button\s*\{[\s\S]*min-width:\s*88px/);
+  assert.match(css, /\.city-confirm-button\s*\{[\s\S]*white-space:\s*nowrap/);
   assert.match(css, /\.city-status--searching/);
   assert.match(css, /\.city-status--success/);
   assert.match(css, /\.city-status--error/);
