@@ -110,6 +110,20 @@ class WeatherAwarenessSystem {
     return ['clear', 'cloudy', 'rain', 'snow', 'unknown'].includes(kind);
   }
 
+  /**
+   * 将摄氏度温度转为粗粒度区间标签，供 renderer 台词/表现使用。
+   * 不暴露精确温度值，符合隐私和 payload 精简约定。
+   */
+  static temperatureToBand(celsius) {
+    const t = Number(celsius);
+    if (!Number.isFinite(t)) return null;
+    if (t < 5)  return 'cold';
+    if (t < 15) return 'cool';
+    if (t < 25) return 'mild';
+    if (t < 33) return 'warm';
+    return 'hot';
+  }
+
   getCurrentState() {
     if (this.weatherPayload && !this.weatherPayload.stale) {
       // 从 weatherPayload 中的 weatherCode 解析出 weatherKind
@@ -136,7 +150,7 @@ class WeatherAwarenessSystem {
         timePhase: phase,
         weatherKind: parsedKind,
         intensity: typeof this.weatherPayload.intensity === 'string' ? this.weatherPayload.intensity : 'normal',
-        temperatureBand: this.weatherPayload.temperature || null,
+        temperatureBand: WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature),
         isDay: this.weatherPayload.isDay,
         stale: false,
       };

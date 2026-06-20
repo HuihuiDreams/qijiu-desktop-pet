@@ -15,6 +15,7 @@
 ### Fixed
 - **天气地名解析数据截断修复**：在 `weatherSyncService.js` 中显式设置 `res.setEncoding('utf8')`，彻底避免主进程通过 Open-Meteo Geocoding 接口获取含有双字节汉字（如城市名）时，因 chunk 切分导致的乱码或解析失败风险。
 - **天气请求失败后缩短重试等待**：网络请求失败时，天气缓存的有效期由整个刷新周期（最长 60 分钟）缩短为固定的 10 分钟（`FALLBACK_TTL_MS`），使短暂断网或超时后最多等 10 分钟即可自动恢复真实天气数据，而不必等满完整轮询周期。
+- **`temperatureBand` 字段修复**：`WeatherAwarenessSystem.getCurrentState()` 此前将原始摄氏度数值（如 `21.6`）直接透传给 renderer，违反了 payload 数据合约中"温度只进入粗粒度区间"的约定。现已修正为统一转换为标签字符串（`cold` / `cool` / `mild` / `warm` / `hot`），不再暴露精确温度值。
 
 ## [0.8.0] - 2026-06-19
 ### Added
