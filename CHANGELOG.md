@@ -17,6 +17,10 @@
 - **天气请求失败后缩短重试等待**：网络请求失败时，天气缓存的有效期由整个刷新周期（最长 60 分钟）缩短为固定的 10 分钟（`FALLBACK_TTL_MS`），使短暂断网或超时后最多等 10 分钟即可自动恢复真实天气数据，而不必等满完整轮询周期。
 - **`temperatureBand` 字段修复**：`WeatherAwarenessSystem.getCurrentState()` 此前将原始摄氏度数值（如 `21.6`）直接透传给 renderer，违反了 payload 数据合约中"温度只进入粗粒度区间"的约定。现已修正为统一转换为标签字符串（`cold` / `cool` / `mild` / `warm` / `hot`），不再暴露精确温度值。
 
+### Changed
+- **三语说明与 README 文档更新**：在 `README.md`、`readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中全面补充了“天气感知与时空同步”系统的说明段落，清晰解释了基于本地时间的时段切换氛围、可选的实时天气感知功能，以及托盘菜单中新增的开关与城市配置入口。
+
+
 ## [0.8.0] - 2026-06-19
 ### Added
 - **本地时段感知与作息系统 (Offline MVP)**：新增 `WeatherAwarenessSystem.js`，实现五分段本地时段计算 (`morning`, `day`, `dusk`, `evening`, `night`)。

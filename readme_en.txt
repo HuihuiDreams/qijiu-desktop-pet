@@ -1,4 +1,4 @@
-﻿DeskPet: YueQi & ShenJiu Desktop Pet
+DeskPet: YueQi & ShenJiu Desktop Pet
 
 This is a desktop pet app themed around The Scum Villain's Self-Saving System.
 Yue Qingyuan (Yue Qi) and Shen Qingqiu (Shen Jiu) can walk, rest, cultivate, and occasionally interact on your desktop.
@@ -43,6 +43,8 @@ The tray menu lets you:
 - "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
 - "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder"
 - "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes
+- "🌤️ Enable Weather Sync" or "🌤️ Disable Weather Sync"
+- "🌤️ Set City"
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
 - "🌐 Language": choose "中文", "English", or "日本語"
 - "🚀 Launch at Login" or "🚀 Disable Auto-launch"
@@ -85,6 +87,17 @@ During idle walking, they may stroll to the top edge of the active window, the a
 
 You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
 If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
+
+========================================
+🌤️ Weather Awareness & Time Sync
+========================================
+
+Pets automatically transition through morning, day, dusk, and night based on your local time.
+During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions.
+
+If you want them to sense real-world weather, choose "🌤️ Enable Weather Sync" from the tray menu and use "🌤️ Set City".
+When it rains or snows, lightweight particle effects will fall from the top of the screen, and characters may trigger weather-specific dialogue.
+If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
 🧘🏻‍♂️ Cang Qiong Seclusion
