@@ -1,47 +1,47 @@
-# ADR-039: City Setting UI Window
+# ADR-039: 城市设置UI窗口
 
 ## Status
-Accepted
+已接受
 
 ## Date
 2026-06-19
 
 ## Context
-In previous iterations (Phase 2 MVP of Weather Sync), the "Set City" (修改城市) option in the system tray menu opened the raw `config.json` file in the user's default text editor. This approach had several drawbacks:
-- Exposing the raw JSON file increases the risk of users accidentally corrupting other settings (e.g., breaking JSON syntax, modifying internal variables).
-- There was no immediate feedback or validation of the city name until the file was saved and the main process read it, which could silently fail.
-- It was not user-friendly for a polished, immersive desktop pet application.
+在之前的迭代（天气同步的第二阶段MVP）中，系统托盘菜单中的“修改城市”选项会使用用户默认的文本编辑器直接打开 `config.json` 文件。这种做法有几个缺点：
+- 暴露原始 JSON 文件增加了用户意外破坏其他设置的风险（例如，破坏 JSON 语法，修改内部变量）。
+- 除非文件被保存并且主进程读取它（这可能会静默失败），否则没有对城市名称进行即时反馈或验证。
+- 对于一个精美、沉浸式的桌面宠物应用来说，这不够用户友好。
 
-A dedicated, sandboxed UI window was needed to safely capture the city name input, immediately trigger geocoding validation, and provide real-time status feedback (success/error) before closing itself.
+需要一个专用的、沙盒化的 UI 窗口来安全地捕获城市名称输入，立即触发地理编码验证，并在关闭自身之前提供实时状态反馈（成功/错误）。
 
 ## Decision
-We implemented a dedicated **City Setting UI Window** (`citySettingWindow`) replacing the `store.openInEditor()` fallback.
+我们实现了一个专用的**城市设置UI窗口**（`citySettingWindow`），以取代 `store.openInEditor()` 这个后备方案。
 
-1. **Window Lifecycle and Security**:
-   - The window is created on-demand as a frameless, transparent, `alwaysOnTop` Electron `BrowserWindow`.
-   - It is strictly sandboxed (`sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`) with a strict CSP.
-   - It is properly cleaned up when the `mainWindow` is closed.
+1. **窗口生命周期与安全**：
+   - 该窗口按需创建为一个无边框、透明、永远置顶（`alwaysOnTop`）的 Electron `BrowserWindow`。
+   - 它被严格沙盒化（`sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`），并具有严格的内容安全策略 (CSP)。
+   - 当 `mainWindow` 关闭时，它会被正确清理。
 
-2. **Visual Design System**:
-   - The UI reuses the established "xianxia glassmorphism" design system from the Pomodoro feature (`pomodoro.css`).
-   - It relies entirely on standard CSS, avoiding heavy frameworks, maintaining high performance and visual consistency (jade/gold palette).
+2. **视觉设计系统**：
+   - 该 UI 复用了番茄钟功能（`pomodoro.css`）中已建立的“仙侠拟态玻璃”设计系统。
+   - 它完全依赖标准 CSS，避免使用笨重的框架，保持了高性能和视觉一致性（玉/金调色板）。
 
-3. **IPC Architecture**:
-   - Exposed three minimal, purpose-built APIs via `preload.js`: `getCitySettings`, `setCityName`, and `closeCitySettingWindow`.
-   - `setCityName` handles input validation (length limits, trimming) and directly calls `processSettingsChange` in the main process to execute the Open-Meteo geocoding request.
-   - The IPC returns a strictly shaped object (`{ success: true/false, city: string }`) matching the conventions established in [ADR-032](./ADR-032-ipc-result-shape.md).
+3. **IPC架构**：
+   - 通过 `preload.js` 暴露了三个最小化的专用 API：`getCitySettings`、`setCityName` 和 `closeCitySettingWindow`。
+   - `setCityName` 处理输入验证（长度限制、去除首尾空格），并直接调用主进程中的 `processSettingsChange` 来执行 Open-Meteo 地理编码请求。
+   - IPC 返回一个具有严格结构的响应对象（`{ success: true/false, city: string }`），这符合 [ADR-032](./ADR-032-ipc-result-shape.md) 中确立的约定。
 
-4. **I18n (Multilingual Support)**:
-   - Full support for Chinese (zh), English (en), and Japanese (ja) dictionaries.
-   - The renderer updates elements dynamically via `data-i18n` attributes.
-   - Locale changes triggered from the main tray menu are forwarded to this window seamlessly.
+4. **国际化（多语言支持）**：
+   - 全面支持中文 (zh)、英文 (en) 和日文 (ja) 字典。
+   - 渲染进程通过 `data-i18n` 属性动态更新元素。
+   - 从主托盘菜单触发的语言环境更改会被无缝转发到这个窗口。
 
 ## Consequences
-- **Positive**: Eliminates the risk of users breaking their configuration files.
-- **Positive**: Provides a significantly better UX with immediate visual feedback (e.g., "Searching...", "Set to Tokyo", or "City not found").
-- **Positive**: Keeps the design consistent with the rest of the application (like the Pomodoro and Status windows).
-- **Negative**: Increases the complexity of the main process window management slightly, adding another floating window to track and clean up.
+- **正面影响**：消除了用户破坏其配置文件的风险。
+- **正面影响**：提供了明显更好的用户体验，具有即时的视觉反馈（如“搜索中...”、“设置为东京”或“未找到城市”）。
+- **正面影响**：使设计与应用程序的其余部分（如番茄钟和状态窗口）保持一致。
+- **负面影响**：略微增加了主进程窗口管理的复杂性，增加了一个需要跟踪和清理的浮动窗口。
 
 ## Alternatives Considered
-- **HTML Dialog in Main Window**: Instead of a separate OS-level window, we could have drawn an overlay in the main transparent pet window. *Rejected* because the main window's click-through behavior and `ignoreMouseEvents` complexity make interactive forms difficult to maintain and error-prone. A separate BrowserWindow is safer and matches the Pomodoro architecture.
-- **Input via Native OS Prompt**: Use an external dependency or VBScript/AppleScript to trigger a native OS input box. *Rejected* because it breaks cross-platform consistency and looks entirely out of place for a xianxia-themed application.
+- **主窗口中的 HTML 对话框**：与其创建一个单独的操作系统级别窗口，我们本可以在主透明宠物窗口中绘制一个叠加层。*被拒绝*，因为主窗口的鼠标穿透行为和 `ignoreMouseEvents` 复杂性使得交互式表单难以维护且容易出错。单独的 BrowserWindow 更安全，且与番茄钟架构匹配。
+- **原生操作系统提示输入框**：使用外部依赖或 VBScript/AppleScript 触发原生 OS 输入框。*被拒绝*，因为它破坏了跨平台一致性，而且对于一个仙侠主题的应用来说，外观显得格格不入。
