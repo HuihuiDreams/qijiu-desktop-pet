@@ -685,9 +685,9 @@ const I18N = {
       trayVersion: '🏷️ 現行版',
 
       // 休憩リマインダー
-      trayBreakReminderOn: '⏰ 休息喚起を無効化',
-      trayBreakReminderOff: '⏰ 休息喚起を有効化',
-      trayBreakReminderInterval: '⏰ 喚起間隔',
+      trayBreakReminderOn: '⏰ 休憩通知を無効化',
+      trayBreakReminderOff: '⏰ 休憩通知を有効化',
+      trayBreakReminderInterval: '⏰ 通知間隔',
       trayWeatherSyncOn: '🌤️ 天気同期を無効化',
       trayWeatherSyncOff: '🌤️ 天気同期を有効化',
       trayWeatherSyncConfig: '🌤️ 都市設定',
