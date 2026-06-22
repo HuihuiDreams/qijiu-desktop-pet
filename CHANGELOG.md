@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.8.1] - 2026-06-22
 ### Added
 - 雨雪天气粒子层：新增 `WeatherParticleLayer`，根据 renderer 的天气状态创建有上限的全局雨滴/雪粒子，并在天气切换、隐藏桌宠或禁用天气时清理节点。
 - 天气特效 DevTools 调试入口：新增 `testWeatherClear()`、`testWeatherCloudy()`、`testWeatherRain()`、`testWeatherSnow()`、`testWeatherNight()`、`clearWeatherEffect()` 和 `testWeatherEffects()`，方便开发者在 Console 中模拟晴、阴、雨、雪和夜间氛围。
@@ -15,9 +17,11 @@
 ### Fixed
 - **天气地名解析数据截断修复**：在 `weatherSyncService.js` 中显式设置 `res.setEncoding('utf8')`，彻底避免主进程通过 Open-Meteo Geocoding 接口获取含有双字节汉字（如城市名）时，因 chunk 切分导致的乱码或解析失败风险。
 - **天气请求失败后缩短重试等待**：网络请求失败时，天气缓存的有效期由整个刷新周期（最长 60 分钟）缩短为固定的 10 分钟（`FALLBACK_TTL_MS`），使短暂断网或超时后最多等 10 分钟即可自动恢复真实天气数据，而不必等满完整轮询周期。
+- **天气缓存过期回归验证补强**：新增 fake clock 自动测试，覆盖成功天气缓存过期后的重新请求，以及失败 fallback 缓存超过 `FALLBACK_TTL_MS` 后的重试恢复，避免缓存过期场景依赖手动等待验证。
 - **`temperatureBand` 字段修复**：`WeatherAwarenessSystem.getCurrentState()` 此前将原始摄氏度数值（如 `21.6`）直接透传给 renderer，违反了 payload 数据合约中"温度只进入粗粒度区间"的约定。现已修正为统一转换为标签字符串（`cold` / `cool` / `mild` / `warm` / `hot`），不再暴露精确温度值。
 
 ### Changed
+- **走路弹跳动画幅度收敛**：将行走状态下图片的横向与纵向缩放范围统一收敛到 `0.98` - `1.02`，减少压缩拉伸幅度，让步行动画更轻柔稳定。
 - **三语说明与 README 文档更新**：在 `README.md`、`readme.txt`、`readme_en.txt` 和 `readme_ja.txt` 中全面补充了“天气感知与时空同步”系统的说明段落，清晰解释了基于本地时间的时段切换氛围、可选的实时天气感知功能，以及托盘菜单中新增的开关与城市配置入口。
 
 

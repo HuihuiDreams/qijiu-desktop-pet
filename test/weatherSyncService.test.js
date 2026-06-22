@@ -65,7 +65,7 @@ describe('WeatherSyncService - Settings Normalization', () => {
 });
 
 describe('WeatherSyncService - fetchWeather', () => {
-  const { fetchWeather, resetWeatherCache } = require('../weatherSyncService');
+  const { FALLBACK_TTL_MS, fetchWeather, resetWeatherCache } = require('../weatherSyncService');
 
   beforeEach(() => {
     resetWeatherCache();
@@ -128,8 +128,39 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(callCount, 1);
   });
 
+  it('should refetch after successful cache expires', async () => {
+    const originalNow = Date.now;
+    let now = 1000000;
+    Date.now = () => now;
+
+    try {
+      let callCount = 0;
+      const mockProvider = {
+        async fetch() {
+          callCount++;
+          return { current_weather: { temperature: 20 + callCount } };
+        }
+      };
+
+      const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 30 };
+      const first = await fetchWeather(settings, mockProvider);
+      const cached = await fetchWeather(settings, mockProvider);
+
+      assert.strictEqual(callCount, 1);
+      assert.strictEqual(first.temperature, 21);
+      assert.strictEqual(cached.temperature, 21);
+
+      now += 30 * 60 * 1000 + 1;
+      const refreshed = await fetchWeather(settings, mockProvider);
+
+      assert.strictEqual(callCount, 2);
+      assert.strictEqual(refreshed.temperature, 22);
+    } finally {
+      Date.now = originalNow;
+    }
+  });
+
   it('should retry sooner after a fallback than after a successful fetch', async () => {
-    const { FALLBACK_TTL_MS } = require('../weatherSyncService');
     let callCount = 0;
     const failingProvider = {
       async fetch() {
@@ -154,6 +185,40 @@ describe('WeatherSyncService - fetchWeather', () => {
     // confirming that the fallback cache window is shorter than a successful fetch.
     assert.ok(FALLBACK_TTL_MS < 60 * 60 * 1000, 'FALLBACK_TTL_MS should be shorter than the refresh interval');
     assert.ok(FALLBACK_TTL_MS <= 10 * 60 * 1000, 'FALLBACK_TTL_MS should be at most 10 minutes');
+  });
+
+  it('should retry after fallback cache expires', async () => {
+    const originalNow = Date.now;
+    let now = 2000000;
+    Date.now = () => now;
+
+    try {
+      let callCount = 0;
+      const provider = {
+        async fetch() {
+          callCount++;
+          if (callCount === 1) throw new Error('Network Error');
+          return { current_weather: { temperature: 18, weathercode: 0, is_day: 1 } };
+        }
+      };
+
+      const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+      const fallback = await fetchWeather(settings, provider);
+      const cachedFallback = await fetchWeather(settings, provider);
+
+      assert.strictEqual(fallback.fallback, true);
+      assert.strictEqual(cachedFallback.fallback, true);
+      assert.strictEqual(callCount, 1);
+
+      now += FALLBACK_TTL_MS + 1;
+      const retried = await fetchWeather(settings, provider);
+
+      assert.strictEqual(callCount, 2);
+      assert.strictEqual(retried.fallback, false);
+      assert.strictEqual(retried.temperature, 18);
+    } finally {
+      Date.now = originalNow;
+    }
   });
 });
 

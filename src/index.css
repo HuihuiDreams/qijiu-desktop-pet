@@ -191,7 +191,7 @@ html, body {
 
 @keyframes walkBounce {
   0%, 100% { transform: translateY(0) scale(1, 1); }
-  35% { transform: translateY(-8px) scale(0.96, 1.04); } /* Squash & Stretch */
+  35% { transform: translateY(-8px) scale(0.98, 1.02); } /* Squash & Stretch */
   70% { transform: translateY(-1px) scale(1.02, 0.98); }
 }
 

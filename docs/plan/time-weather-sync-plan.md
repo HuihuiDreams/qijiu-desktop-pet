@@ -549,7 +549,7 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 - [x] 用户可以手动开启天气同步并配置位置。（2026-06-20 实测：城市设置窗口输入东京，Geocode succeeded after 1058ms，坐标解析成功并持久化。）
 - [x] 天气状态可以影响视觉或台词。（2026-06-20 实测：Open-Meteo 返回 weathercode:2→cloudy 正确显示；`__DEBUG_WEATHER.set({weatherKind:'rain',intensity:'heavy'})` 验证雨滴粒子正常出现在桌宠周围。）
 - [ ] API 失败、禁用、离线都能回退到本地时段。
-- [ ] 菜单、拖拽、点击穿透、番茄钟和现有互动不退化。
+- [x] 菜单、拖拽、点击穿透、番茄钟和现有互动不退化。
 
 ### Phase 4: Documentation and Hardening
 
@@ -610,8 +610,9 @@ MVP 推荐先做“本地时段 + 手动城市 + 低频天气刷新”。
 ### Checkpoint: Complete
 
 - [x] All tests pass: `npm test`。（360/360 通过，2026-06-20）
-- [x] Focused tests pass: `node --test test/weatherSyncService.test.js test/weatherAwarenessSystem.test.js test/timeWeatherRendererIntegration.test.js`。（31/31 通过，2026-06-20）
-- [ ] 手动验证禁用、未配置、请求成功、请求失败、缓存过期、深夜状态。
+- [x] Focused tests pass: `node --test test/weatherSyncService.test.js test/weatherAwarenessSystem.test.js test/timeWeatherRendererIntegration.test.js`。（33/33 通过，2026-06-22）
+- [x] 自动验证禁用、未配置、请求成功、请求失败、缓存命中、缓存过期、失败缓存过期、深夜状态。（2026-06-22：新增成功缓存过期和失败缓存过期 fake clock 测试）
+- [ ] 手动 smoke test 托盘开关、城市配置、真实网络降级、雨雪视觉和拖拽/点击穿透。
 - [x] 隐私和架构文档已更新。（`ADR-038-weather-sync.md` 已存在；`docs/structure.md` 已提及 WeatherSyncService 和 WeatherAwarenessSystem；验证于 2026-06-20）
 - [x] `CHANGELOG.md` 已按 Added/Changed/Fixed/Removed 更新。（共 23 处天气相关条目，涵盖 Added/Fixed；验证于 2026-06-20）
 
