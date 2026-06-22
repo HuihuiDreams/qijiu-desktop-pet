@@ -89,9 +89,13 @@ qijiu-desktop-pet/
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
 ├─ build/
 │  └─ installer.nsh                     # Windows NSIS 安装器定制脚本
-├─ scripts/
-│  ├─ afterPack.js                      # 打包后处理
-│  ├─ convert_images.js                 # 图片转换辅助脚本
+├─ scripts/                             # 项目自动化脚本：npm 命令、打包发布钩子和维护检查
+│  ├─ afterPack.js                      # Electron Builder 打包后处理
+│  ├─ check_adrs.js                     # ADR 格式检查脚本
+│  ├─ check_lang.py / check_lang2.py    # 文案语言检查辅助脚本
+│  ├─ convert_images.js                 # 图片转换维护脚本
+│  ├─ fix_adrs.js / fix_adrs.py         # ADR 标题格式修复脚本
+│  ├─ generate_replacements.js          # ADR 标题替换片段生成脚本
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
@@ -140,7 +144,7 @@ qijiu-desktop-pet/
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner 单元/集成测试
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
-├─ tools/
+├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具

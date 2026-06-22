@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- 新增 `docs/plan/ui-optimization-proposal-plan.md`，记录桌宠 UI 优化提案，覆盖面板分层、右键菜单扫读、角色化状态窗口、工具窗口降噪、本地化可靠性、动效层级和设计 Token 收敛建议。
 
 ## [0.8.1] - 2026-06-22
 ### Added
