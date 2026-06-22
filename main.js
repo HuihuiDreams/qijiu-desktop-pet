@@ -669,7 +669,12 @@ async function startWeatherSync() {
     clearInterval(weatherSyncIntervalTimer);
     weatherSyncIntervalTimer = null;
   }
-  if (!weatherSyncSettings.enabled) return;
+  if (!weatherSyncSettings.enabled) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('weather-update', { active: false });
+    }
+    return;
+  }
 
   const doFetch = async () => {
     const payload = await fetchWeather(weatherSyncSettings);
