@@ -1,0 +1,519 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 875379e..ac5e974 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -6,6 +6,13 @@
+ ### Added
+ - 新增 `docs/plan/ui-optimization-proposal-plan.md`，记录桌宠 UI 优化提案，覆盖面板分层、右键菜单扫读、角色化状态窗口、工具窗口降噪、本地化可靠性、动效层级和设计 Token 收敛建议。
+ 
++### Fixed
++- **P0 文案与乱码审计**：修复 `pomodoro.html`、`city-setting.html`、`index.html` 中 HTML fallback 文案与 i18n 字典不一致的问题；为 `status.html` 的 `<title>` 和 footer 添加 `data-i18n` 属性使其支持多语言热切换；在 i18n.js 三语字典中新增 `statusFooter` key；新增 `i18nKeyCompleteness.test.js` 确保 zh/en/ja 三种语言的全部 UI key 完整覆盖且无乱码。
++
++### Changed
++- **§8 CSS 变量收敛**：将 `status.css`、`pomodoro.css`、`city-setting.css` 中重复的 `:root` 变量和面板样式（背景、边框、阴影、装饰伪元素）提取为 `index.css` 中的 `--panel-bg`、`--panel-border`、`--panel-shadow`、`--panel-deco-bg`、`--panel-deco-border`、`--panel-deco-lines` 共享 Token；三个子窗口 HTML 新增 `index.css` 引入，子窗口 CSS 移除重复 `:root` 块并通过 `var()` 引用统一 Token。零视觉变化。
++- **§7 动效整理与无障碍适配**：根据评估与用户反馈，确定跳过该项的无障碍减弱动效适配（对未开启减弱动效的普通用户无影响，且本软件尚未公开发布）。
++
+ ## [0.8.1] - 2026-06-22
+ ### Added
+ - 雨雪天气粒子层：新增 `WeatherParticleLayer`，根据 renderer 的天气状态创建有上限的全局雨滴/雪粒子，并在天气切换、隐藏桌宠或禁用天气时清理节点。
+diff --git a/src/city-setting.css b/src/city-setting.css
+index 2f3861f..47c7afe 100644
+--- a/src/city-setting.css
++++ b/src/city-setting.css
+@@ -1,36 +1,12 @@
+-:root {
+-  --font-display: "Ma Shan Zheng", "ZCOOL KuaiLe", "KaiTi", cursive;
+-  --font-body: "Noto Serif SC", "Noto Sans SC", "Microsoft YaHei", serif;
+-  --color-jade: #6ec6a0;
+-  --color-jade-deep: #3d8b6b;
+-  --color-jade-mist: rgba(110, 198, 160, 0.12);
+-  --color-gold: #c9a24d;
+-  --color-glass-border: rgba(126, 200, 169, 0.25);
+-  --color-ink: #1e2a36;
+-  --color-ink-light: #546a7b;
+-  --color-ink-faint: rgba(30, 42, 54, 0.06);
+-  --color-mist: rgba(240, 245, 252, 0.92);
+-}
+-
+-* {
+-  box-sizing: border-box;
+-}
+-
+-html,
+-body {
+-  width: 100%;
+-  height: 100%;
++/* Override index.css transparent-overlay resets for this standalone window */
++html, body {
++  pointer-events: auto;
+   margin: 0;
+-  overflow: hidden;
+-  background: transparent;
+-  -webkit-user-select: none;
+-  user-select: none;
+-  font-family: var(--font-body);
+-  color: var(--color-ink);
+ }
+ 
+ body {
+   padding: 8px;
++  color: var(--color-ink);
+ }
+ 
+ button,
+@@ -46,17 +22,10 @@ input {
+   height: 100%;
+   overflow: hidden;
+   padding: 16px 18px 14px;
+-  background:
+-    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)),
+-    radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%),
+-    var(--color-mist);
+-  border: 1px solid rgba(61, 139, 107, 0.3);
+-  border-radius: 14px;
+-  box-shadow:
+-    0 12px 30px rgba(30, 42, 54, 0.16),
+-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+-    inset 0 -12px 24px rgba(61, 139, 107, 0.06);
++  background: var(--panel-bg);
++  border: var(--panel-border);
++  border-radius: var(--radius-lg);
++  box-shadow: var(--panel-shadow);
+   animation: cityPanelIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+ }
+ 
+@@ -69,20 +38,14 @@ input {
+ 
+ .city-panel::before {
+   inset: 9px;
+-  border: 1px solid rgba(61, 139, 107, 0.16);
+-  border-radius: 10px;
+-  background:
+-    radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
++  border: var(--panel-deco-border);
++  border-radius: var(--radius-md);
++  background: var(--panel-deco-bg);
+ }
+ 
+ .city-panel::after {
+   inset: 0;
+-  background:
+-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat,
+-    linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
++  background: var(--panel-deco-lines);
+ }
+ 
+ .city-panel > * {
+diff --git a/src/city-setting.html b/src/city-setting.html
+index d8bb546..a930078 100644
+--- a/src/city-setting.html
++++ b/src/city-setting.html
+@@ -6,6 +6,7 @@
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
+   <title data-i18n="citySettingTitle">城市设置</title>
++  <link rel="stylesheet" href="index.css">
+   <link rel="stylesheet" href="city-setting.css">
+ </head>
+ 
+@@ -22,7 +23,7 @@
+ 
+     <div class="city-content">
+       <div class="city-current">
+-        <span data-i18n="citySettingCurrent">当前城市</span>
++        <span data-i18n="citySettingCurrent">当前城市：</span>
+         <span id="city-current-value" class="city-current-value" data-i18n="citySettingNone">未设置</span>
+       </div>
+ 
+diff --git a/src/data/i18n.js b/src/data/i18n.js
+index 43f3421..867977d 100644
+--- a/src/data/i18n.js
++++ b/src/data/i18n.js
+@@ -34,6 +34,7 @@ const I18N = {
+       statHunger: '饱腹',
+       statQi: '灵力',
+       statMood: '心境',
++      statusFooter: 'Make QiJiu Great Again!',
+ 
+       // 宠物名
+       nameYueqi: '岳清源',
+@@ -339,6 +340,7 @@ const I18N = {
+       statHunger: 'Satiety',
+       statQi: 'Qi',
+       statMood: 'Mood',
++      statusFooter: 'Make QiJiu Great Again!',
+ 
+       // Pet names
+       nameYueqi: 'Yue Qingyuan',
+@@ -645,6 +647,7 @@ const I18N = {
+       statHunger: '満腹度',
+       statQi: '霊力',
+       statMood: '道心',
++      statusFooter: 'Make QiJiu Great Again!',
+ 
+       // ペット名
+       nameYueqi: '岳清源',
+diff --git a/src/index.css b/src/index.css
+index ab5ddc1..e54285b 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -65,6 +65,14 @@
+   --radius-md: 10px;
+   --radius-lg: 14px;
+ 
++  /* === Shared Panel Styles === */
++  --panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)), radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%), var(--color-mist);
++  --panel-border: 1px solid rgba(61, 139, 107, 0.3);
++  --panel-shadow: 0 12px 30px rgba(30, 42, 54, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 -12px 24px rgba(61, 139, 107, 0.06);
++  --panel-deco-bg: radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px), radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px), radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px), radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
++  --panel-deco-border: 1px solid rgba(61, 139, 107, 0.16);
++  --panel-deco-lines: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat, linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
++
+   /* Purple / Yueqi — 紫玉 / 岳七专属 */
+   --color-yueqi: #9b59b6;
+   --color-yueqi-deep: #5b2c70;
+@@ -249,19 +257,12 @@ html, body {
+   left: 50%;
+   transform: translate(-50%, -50%);
+   overflow: hidden;
+-  background:
+-    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)),
+-    radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%),
+-    var(--color-mist);
+-  border: 1px solid rgba(61, 139, 107, 0.3);
+-  border-radius: 14px;
++  background: var(--panel-bg);
++  border: var(--panel-border);
++  border-radius: var(--radius-lg);
+   padding: 24px 26px 20px;
+   min-width: 360px;
+-  box-shadow: 
+-    0 12px 30px rgba(30, 42, 54, 0.16),
+-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+-    inset 0 -12px 24px rgba(61, 139, 107, 0.06);
++  box-shadow: var(--panel-shadow);
+   z-index: 10000;
+   pointer-events: auto;
+   animation: panelSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+@@ -276,20 +277,14 @@ html, body {
+ 
+ .status-panel::before {
+   inset: 9px;
+-  border: 1px solid rgba(61, 139, 107, 0.16);
+-  border-radius: 10px;
+-  background:
+-    radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
++  border: var(--panel-deco-border);
++  border-radius: var(--radius-md);
++  background: var(--panel-deco-bg);
+ }
+ 
+ .status-panel::after {
+   inset: 0;
+-  background:
+-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat,
+-    linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
++  background: var(--panel-deco-lines);
+ }
+ 
+ .status-panel > * {
+diff --git a/src/index.html b/src/index.html
+index 86018a7..7078538 100644
+--- a/src/index.html
++++ b/src/index.html
+@@ -22,7 +22,7 @@
+   <div id="context-menu" class="context-menu hidden">
+     <div class="menu-header" id="menu-header">角色名</div>
+     <div class="menu-item" data-action="feed"   data-i18n="feed">🍎 喂食</div>
+-    <div class="menu-item" data-action="meditate" data-i18n="meditate">🧘🏻‍♂️打坐修炼</div>
++    <div class="menu-item" data-action="meditate" data-i18n="meditate">🧘🏻‍♂️ 打坐修炼</div>
+     <div class="menu-item" data-action="pet"   data-i18n-pet>🤚 摸头</div>
+     <div class="menu-item" data-action="rest"   data-i18n="rest">💤 休息</div>
+     <div class="menu-separator"></div>
+diff --git a/src/pomodoro.css b/src/pomodoro.css
+index 16c048c..976adae 100644
+--- a/src/pomodoro.css
++++ b/src/pomodoro.css
+@@ -1,36 +1,12 @@
+-:root {
+-  --font-display: "Ma Shan Zheng", "ZCOOL KuaiLe", "KaiTi", cursive;
+-  --font-body: "Noto Serif SC", "Noto Sans SC", "Microsoft YaHei", serif;
+-  --color-jade: #6ec6a0;
+-  --color-jade-deep: #3d8b6b;
+-  --color-jade-mist: rgba(110, 198, 160, 0.12);
+-  --color-gold: #c9a24d;
+-  --color-glass-border: rgba(126, 200, 169, 0.25);
+-  --color-ink: #1e2a36;
+-  --color-ink-light: #546a7b;
+-  --color-ink-faint: rgba(30, 42, 54, 0.06);
+-  --color-mist: rgba(240, 245, 252, 0.92);
+-}
+-
+-* {
+-  box-sizing: border-box;
+-}
+-
+-html,
+-body {
+-  width: 100%;
+-  height: 100%;
++/* Override index.css transparent-overlay resets for this standalone window */
++html, body {
++  pointer-events: auto;
+   margin: 0;
+-  overflow: hidden;
+-  background: transparent;
+-  -webkit-user-select: none;
+-  user-select: none;
+-  font-family: var(--font-body);
+-  color: var(--color-ink);
+ }
+ 
+ body {
+   padding: 8px;
++  color: var(--color-ink);
+ }
+ 
+ button,
+@@ -45,17 +21,10 @@ input {
+   height: 100%;
+   overflow: hidden;
+   padding: 16px 18px 10px;
+-  background:
+-    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)),
+-    radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%),
+-    var(--color-mist);
+-  border: 1px solid rgba(61, 139, 107, 0.3);
+-  border-radius: 14px;
+-  box-shadow:
+-    0 12px 30px rgba(30, 42, 54, 0.16),
+-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+-    inset 0 -12px 24px rgba(61, 139, 107, 0.06);
++  background: var(--panel-bg);
++  border: var(--panel-border);
++  border-radius: var(--radius-lg);
++  box-shadow: var(--panel-shadow);
+   animation: pomodoroPanelIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+ }
+ 
+@@ -68,20 +37,14 @@ input {
+ 
+ .pomodoro-panel::before {
+   inset: 9px;
+-  border: 1px solid rgba(61, 139, 107, 0.16);
+-  border-radius: 10px;
+-  background:
+-    radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
++  border: var(--panel-deco-border);
++  border-radius: var(--radius-md);
++  background: var(--panel-deco-bg);
+ }
+ 
+ .pomodoro-panel::after {
+   inset: 0;
+-  background:
+-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat,
+-    linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
++  background: var(--panel-deco-lines);
+ }
+ 
+ .pomodoro-panel>* {
+diff --git a/src/pomodoro.html b/src/pomodoro.html
+index b17263a..dfa0a54 100644
+--- a/src/pomodoro.html
++++ b/src/pomodoro.html
+@@ -6,6 +6,7 @@
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:;">
+   <title data-i18n="pomodoroTitle">苍穹静修</title>
++  <link rel="stylesheet" href="index.css">
+   <link rel="stylesheet" href="pomodoro.css">
+ </head>
+ 
+@@ -53,11 +54,11 @@
+         <div class="pomodoro-pets pomodoro-pets--running" aria-hidden="true">
+           <img id="pomodoro-running-cultivate" class="pomodoro-pet pomodoro-pet--scene" alt="">
+         </div>
+-        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">结束</button>
++        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">提前出关</button>
+       </div>
+ 
+       <div id="pomodoro-completed" class="pomodoro-state pomodoro-state--hidden">
+-        <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">已完成</h1>
++        <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">静修圆满</h1>
+         <div class="pomodoro-pets pomodoro-pets--complete" aria-hidden="true">
+           <img id="pomodoro-complete-kiss" class="pomodoro-pet pomodoro-pet--scene" alt="">
+         </div>
+diff --git a/src/status.css b/src/status.css
+index 95a3702..933a4b8 100644
+--- a/src/status.css
++++ b/src/status.css
+@@ -1,34 +1,7 @@
+-:root {
+-  --font-display: "Ma Shan Zheng", "ZCOOL KuaiLe", "KaiTi", cursive;
+-  --font-body: "Noto Serif SC", "Noto Sans SC", "Microsoft YaHei", serif;
+-  --color-jade: #6ec6a0;
+-  --color-jade-deep: #3d8b6b;
+-  --color-jade-mist: rgba(110, 198, 160, 0.12);
+-  --color-gold: #c9a24d;
+-  --color-glass-border: rgba(126, 200, 169, 0.25);
+-  --color-ink: #1e2a36;
+-  --color-ink-light: #546a7b;
+-  --color-ink-faint: rgba(30, 42, 54, 0.06);
+-  --color-mist: rgba(240, 245, 252, 0.92);
+-  --color-cloud: rgba(252, 252, 255, 0.96);
+-  --color-crimson: #b5342a;
+-  --color-crimson-soft: rgba(181, 52, 42, 0.15);
+-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+-}
+-
+-* {
+-  box-sizing: border-box;
+-}
+-
+-html,
+-body {
+-  width: 100%;
++/* Override index.css transparent-overlay resets for this standalone window */
++html, body {
++  pointer-events: auto;
+   margin: 0;
+-  overflow: hidden;
+-  background: transparent;
+-  -webkit-user-select: none;
+-  user-select: none;
+-  font-family: var(--font-body);
+ }
+ 
+ body {
+@@ -47,17 +20,10 @@ body {
+   max-width: 480px;
+   overflow: hidden;
+   padding: 24px 26px 20px;
+-  background:
+-    linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)),
+-    radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%),
+-    var(--color-mist);
+-  border: 1px solid rgba(61, 139, 107, 0.3);
+-  border-radius: 14px;
+-  box-shadow:
+-    0 12px 30px rgba(30, 42, 54, 0.16),
+-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+-    inset 0 -12px 24px rgba(61, 139, 107, 0.06);
++  background: var(--panel-bg);
++  border: var(--panel-border);
++  border-radius: var(--radius-lg);
++  box-shadow: var(--panel-shadow);
+ }
+ 
+ .status-panel::before,
+@@ -69,20 +35,14 @@ body {
+ 
+ .status-panel::before {
+   inset: 9px;
+-  border: 1px solid rgba(61, 139, 107, 0.16);
+-  border-radius: 10px;
+-  background:
+-    radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px),
+-    radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
++  border: var(--panel-deco-border);
++  border-radius: var(--radius-md);
++  background: var(--panel-deco-bg);
+ }
+ 
+ .status-panel::after {
+   inset: 0;
+-  background:
+-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat,
+-    linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
++  background: var(--panel-deco-lines);
+ }
+ 
+ .status-panel > * {
+diff --git a/src/status.html b/src/status.html
+index 4b653c6..20b86bb 100644
+--- a/src/status.html
++++ b/src/status.html
+@@ -5,7 +5,8 @@
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+-  <title>修仙状态</title>
++  <title data-i18n="statusTitle">修仙状态</title>
++  <link rel="stylesheet" href="index.css">
+   <link rel="stylesheet" href="status.css">
+ </head>
+ 
+@@ -16,7 +17,7 @@
+       <button id="status-close" class="status-close" type="button" aria-label="关闭">×</button>
+     </header>
+     <section id="status-content" class="status-content"></section>
+-    <footer class="status-footer">Make QiJiu Great Again!</footer>
++    <footer class="status-footer" data-i18n="statusFooter">Make QiJiu Great Again!</footer>
+   </main>
+ 
+   <script src="data/i18n.js"></script>
+diff --git a/test/citySettingWindow.test.js b/test/citySettingWindow.test.js
+index 7afed32..c302d72 100644
+--- a/test/citySettingWindow.test.js
++++ b/test/citySettingWindow.test.js
+@@ -44,16 +44,16 @@ test('city setting window uses data-i18n attributes for translation', () => {
+   assert.match(html, /data-i18n-placeholder="citySettingPlaceholder"/);
+ });
+ 
+-test('city setting CSS reuses the pomodoro visual design system', () => {
++test('city setting CSS reuses the shared panel design tokens', () => {
+   const css = readSource('src/city-setting.css');
+ 
+   assert.match(css, /\.city-panel/);
+   assert.match(css, /--font-display/);
+   assert.match(css, /--color-jade/);
+   assert.match(css, /--color-jade-deep/);
+-  assert.match(css, /rgba\(61,\s*139,\s*107,\s*0\.3\)/);
+-  assert.match(css, /border-radius:\s*14px/);
+-  assert.match(css, /0 12px 30px rgba\(30,\s*42,\s*54,\s*0\.16\)/);
++  assert.match(css, /var\(--panel-bg\)/);
++  assert.match(css, /var\(--panel-border\)/);
++  assert.match(css, /var\(--panel-shadow\)/);
+ });
+ 
+ test('city setting CSS includes input, button, and status feedback styles', () => {
+diff --git a/test/pomodoroWindow.test.js b/test/pomodoroWindow.test.js
+index 86cfd25..5bfb7f5 100644
+--- a/test/pomodoroWindow.test.js
++++ b/test/pomodoroWindow.test.js
+@@ -46,15 +46,15 @@ test('pomodoro window exposes the expected UI states and controls', () => {
+   assert.equal(html.includes('<figcaption'), false);
+ });
+ 
+-test('pomodoro CSS reuses the status window visual system', () => {
++test('pomodoro CSS reuses the shared panel design tokens', () => {
+   const css = readSource('src/pomodoro.css');
+ 
+   assert.match(css, /\.pomodoro-panel/);
+   assert.match(css, /--font-display/);
+   assert.match(css, /--color-jade/);
+-  assert.match(css, /rgba\(61,\s*139,\s*107,\s*0\.3\)/);
+-  assert.match(css, /border-radius:\s*14px/);
+-  assert.match(css, /0 12px 30px rgba\(30,\s*42,\s*54,\s*0\.16\)/);
++  assert.match(css, /var\(--panel-bg\)/);
++  assert.match(css, /var\(--panel-border\)/);
++  assert.match(css, /var\(--panel-shadow\)/);
+ });
+ 
+ test('pomodoro CSS keeps the English title compact in the small window', () => {

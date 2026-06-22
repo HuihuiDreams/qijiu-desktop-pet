@@ -6,6 +6,13 @@
 ### Added
 - 新增 `docs/plan/ui-optimization-proposal-plan.md`，记录桌宠 UI 优化提案，覆盖面板分层、右键菜单扫读、角色化状态窗口、工具窗口降噪、本地化可靠性、动效层级和设计 Token 收敛建议。
 
+### Fixed
+- **P0 文案与乱码审计**：修复 `pomodoro.html`、`city-setting.html`、`index.html` 中 HTML fallback 文案与 i18n 字典不一致的问题；为 `status.html` 的 `<title>` 和 footer 添加 `data-i18n` 属性使其支持多语言热切换；在 i18n.js 三语字典中新增 `statusFooter` key；新增 `i18nKeyCompleteness.test.js` 确保 zh/en/ja 三种语言的全部 UI key 完整覆盖且无乱码。
+
+### Changed
+- **§8 CSS 变量收敛**：将 `status.css`、`pomodoro.css`、`city-setting.css` 中重复的 `:root` 变量和面板样式（背景、边框、阴影、装饰伪元素）提取为 `index.css` 中的 `--panel-bg`、`--panel-border`、`--panel-shadow`、`--panel-deco-bg`、`--panel-deco-border`、`--panel-deco-lines` 共享 Token；三个子窗口 HTML 新增 `index.css` 引入，子窗口 CSS 移除重复 `:root` 块并通过 `var()` 引用统一 Token。零视觉变化。
+- **§7 动效整理与无障碍适配**：根据评估与用户反馈，确定跳过该项的无障碍减弱动效适配（对未开启减弱动效的普通用户无影响，且本软件尚未公开发布）。
+
 ## [0.8.1] - 2026-06-22
 ### Added
 - 雨雪天气粒子层：新增 `WeatherParticleLayer`，根据 renderer 的天气状态创建有上限的全局雨滴/雪粒子，并在天气切换、隐藏桌宠或禁用天气时清理节点。

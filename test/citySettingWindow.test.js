@@ -44,16 +44,16 @@ test('city setting window uses data-i18n attributes for translation', () => {
   assert.match(html, /data-i18n-placeholder="citySettingPlaceholder"/);
 });
 
-test('city setting CSS reuses the pomodoro visual design system', () => {
+test('city setting CSS reuses the shared panel design tokens', () => {
   const css = readSource('src/city-setting.css');
 
   assert.match(css, /\.city-panel/);
   assert.match(css, /--font-display/);
   assert.match(css, /--color-jade/);
   assert.match(css, /--color-jade-deep/);
-  assert.match(css, /rgba\(61,\s*139,\s*107,\s*0\.3\)/);
-  assert.match(css, /border-radius:\s*14px/);
-  assert.match(css, /0 12px 30px rgba\(30,\s*42,\s*54,\s*0\.16\)/);
+  assert.match(css, /var\(--panel-bg\)/);
+  assert.match(css, /var\(--panel-border\)/);
+  assert.match(css, /var\(--panel-shadow\)/);
 });
 
 test('city setting CSS includes input, button, and status feedback styles', () => {

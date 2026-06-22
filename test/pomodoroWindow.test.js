@@ -46,15 +46,15 @@ test('pomodoro window exposes the expected UI states and controls', () => {
   assert.equal(html.includes('<figcaption'), false);
 });
 
-test('pomodoro CSS reuses the status window visual system', () => {
+test('pomodoro CSS reuses the shared panel design tokens', () => {
   const css = readSource('src/pomodoro.css');
 
   assert.match(css, /\.pomodoro-panel/);
   assert.match(css, /--font-display/);
   assert.match(css, /--color-jade/);
-  assert.match(css, /rgba\(61,\s*139,\s*107,\s*0\.3\)/);
-  assert.match(css, /border-radius:\s*14px/);
-  assert.match(css, /0 12px 30px rgba\(30,\s*42,\s*54,\s*0\.16\)/);
+  assert.match(css, /var\(--panel-bg\)/);
+  assert.match(css, /var\(--panel-border\)/);
+  assert.match(css, /var\(--panel-shadow\)/);
 });
 
 test('pomodoro CSS keeps the English title compact in the small window', () => {

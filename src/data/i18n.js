@@ -34,6 +34,7 @@ const I18N = {
       statHunger: '饱腹',
       statQi: '灵力',
       statMood: '心境',
+      statusFooter: 'Make QiJiu Great Again!',
 
       // 宠物名
       nameYueqi: '岳清源',
@@ -339,6 +340,7 @@ const I18N = {
       statHunger: 'Satiety',
       statQi: 'Qi',
       statMood: 'Mood',
+      statusFooter: 'Make QiJiu Great Again!',
 
       // Pet names
       nameYueqi: 'Yue Qingyuan',
@@ -645,6 +647,7 @@ const I18N = {
       statHunger: '満腹度',
       statQi: '霊力',
       statMood: '道心',
+      statusFooter: 'Make QiJiu Great Again!',
 
       // ペット名
       nameYueqi: '岳清源',
