@@ -637,6 +637,16 @@ function applyI18n() {
           renderer.hideOverlay(yueqi, shenjiu);
         }
 
+        // 检查是否有排队的动作 (在宠物恢复 idle 状态时执行)
+        [ { pet: yueqi, ns: nurtureSystemA }, { pet: shenjiu, ns: nurtureSystemB } ].forEach(({ pet, ns }) => {
+          if (pet.state === 'idle' && pet.queuedAction) {
+            const action = pet.queuedAction;
+            pet.queuedAction = null;
+            contextMenu.nurtureSystem = ns;
+            contextMenu.handleAction(action, pet);
+          }
+        });
+
         // 状态警告计时器：优先处理低状态的宠物
         statWarningTimer -= deltaMs;
         if (statWarningTimer <= 0) {

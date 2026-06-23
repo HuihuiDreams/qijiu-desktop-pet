@@ -230,9 +230,16 @@ class ContextMenu {
     }
   }
 
-  handleAction(action) {
-    if (!this.currentPet) return;
-    const pet = this.currentPet;
+  handleAction(action, targetPet = null) {
+    const pet = targetPet || this.currentPet;
+    if (!pet) return;
+
+    // 如果目标宠物正在进行自发互动，则将动作暂存进队列，避免被直接丢弃
+    if (pet.state === 'interacting') {
+      pet.queuedAction = action;
+      return;
+    }
+
     const t = (key, fallback) => (window.t ? window.t(key) : fallback);
 
     switch (action) {

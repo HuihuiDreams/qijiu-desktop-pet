@@ -230,3 +230,29 @@ test('ContextMenu.handleAction runs nurture actions and status callbacks', () =>
   ]);
   assert.equal(statusClicks, 1);
 }));
+
+test('ContextMenu.handleAction queues the action instead of executing if the target pet is interacting', () => withContextMenuHarness(() => {
+  const nurtureCalls = [];
+  const contextMenu = new ContextMenu({
+    feed(pet) {
+      nurtureCalls.push(['feed', pet.id]);
+      return true;
+    },
+  });
+  
+  const pet = createPet({ state: 'interacting' });
+  contextMenu.currentPet = pet;
+  
+  contextMenu.handleAction('feed');
+  
+  assert.equal(nurtureCalls.length, 0);
+  assert.equal(pet.calls.length, 0);
+  assert.equal(pet.queuedAction, 'feed');
+  
+  const anotherPet = createPet({ state: 'interacting' });
+  contextMenu.handleAction('meditate', anotherPet);
+  
+  assert.equal(nurtureCalls.length, 0);
+  assert.equal(anotherPet.queuedAction, 'meditate');
+}));
+

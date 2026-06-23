@@ -23,6 +23,7 @@ class Pet {
     // 状态机
     this.state = 'idle';        // 当前状态：idle (发呆) | walking (行走) | eating (进食) | sleeping (睡眠) | meditating (打坐) | working (工作) | interacting (互动)
     this.previousState = 'idle'; // 上一个状态
+    this.queuedAction = null;    // 暂存被其他高优事件（如自发互动）打断的用户操作
     this.stateTimer = 0;        // 当前定时状态的剩余时间 (毫秒)
     this.idleTimer = 0;         // 距离下一次行走的剩余时间 (毫秒)
     this.timePhase = 'day';     // 环境感知此时的时段 (morning | day | dusk | night)
