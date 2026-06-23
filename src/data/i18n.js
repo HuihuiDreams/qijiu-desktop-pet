@@ -935,6 +935,30 @@ const I18N = {
   },
 };
 
+const DICTIONARY = Object.fromEntries(
+  Object.entries(I18N).map(([locale, dictionary]) => {
+    const ui = dictionary.ui;
+    return [
+      locale,
+      {
+        ...ui,
+        trayShow: ui.trayShowPet,
+        trayHide: ui.trayHidePet,
+        trayExit: ui.trayQuit,
+        trayDesc: ui.statusFooter,
+        updateTitle: ui.updateAvailTitle,
+        updateMessage: ui.updateAvailMsgNoVer,
+        updateCancel: ui.updateBtnLater,
+        updateInstall: ui.updateBtnInstall,
+        contextMenuFeed: ui.feed,
+        contextMenuCultivate: ui.meditate,
+        contextMenuRest: ui.rest,
+        contextMenuStatus: ui.status,
+      },
+    ];
+  }),
+);
+
 if (typeof module !== 'undefined') {
-  module.exports = { I18N };
+  module.exports = { I18N, DICTIONARY };
 }

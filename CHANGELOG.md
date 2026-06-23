@@ -4,9 +4,13 @@
 
 ## [Unreleased]
 ### Added
+- 补充测试覆盖率：为 `NurtureSystem`、`SpriteView`、`WindowAwarenessSystem`、`ContextMenu`、`DialogBubble`、`PetRenderer` 和 `updateManager` 增加聚焦单元测试，使 `node --test --experimental-test-coverage` 的总体行覆盖率提升到 92% 以上。
+
 - 新增 `docs/plan/ui-optimization-proposal-plan.md`，记录桌宠 UI 优化提案，覆盖面板分层、右键菜单扫读、角色化状态窗口、工具窗口降噪、本地化可靠性、动效层级和设计 Token 收敛建议。
 
 ### Fixed
+- 修复 `src/data/i18n.js` 的 CommonJS 兼容导出，新增扁平化 `DICTIONARY` 别名以兼容旧测试期望，同时保留现有 `I18N[locale].ui` 运行时结构。
+
 - **天气同步禁用时效果清除修复**：修复了通过托盘菜单关闭天气同步时，因主进程未向渲染进程下发失活状态（`{ active: false }`），导致桌面宠物周围的雨雪粒子效果无法及时被清除的 Bug。
 - **P0 文案与乱码审计**：修复 `pomodoro.html`、`city-setting.html`、`index.html` 中 HTML fallback 文案与 i18n 字典不一致的问题；为 `status.html` 的 `<title>` 和 footer 添加 `data-i18n` 属性使其支持多语言热切换；在 i18n.js 三语字典中新增 `statusFooter` key；新增 `i18nKeyCompleteness.test.js` 确保 zh/en/ja 三种语言的全部 UI key 完整覆盖且无乱码。
 

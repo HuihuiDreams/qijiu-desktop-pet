@@ -28,6 +28,45 @@ function createFakePet(id = 'yueqi') {
   };
 }
 
+function createFakePetElement() {
+  const image = {
+    className: '',
+    alt: '',
+    _src: '',
+    set src(value) {
+      this._src = value;
+    },
+    get src() {
+      return this._src;
+    },
+    getAttribute(name) {
+      return name === 'src' ? this._src : null;
+    },
+  };
+  const body = {
+    textContent: 'initial',
+    children: [],
+    appendChild(child) {
+      this.children.push(child);
+    },
+    querySelector(selector) {
+      if (selector === '.pet-image') {
+        return this.children.find((child) => child.className === 'pet-image') || null;
+      }
+      return null;
+    },
+  };
+  return {
+    body,
+    querySelector(selector) {
+      return selector === '.pet-body' ? body : null;
+    },
+    createImage() {
+      return image;
+    },
+  };
+}
+
 test('SkinManager initializes with default skin', () => {
   const sm = new SkinManager();
   assert.equal(sm.getCurrentSkin(), 'default');
@@ -119,6 +158,116 @@ test('SpriteView.updateImageMap replaces the image map', () => {
 
   assert.equal(sv.imageMap.shenjiu.meditating, 'assets/qban/right_cultivate.webp');
   assert.equal(sv.imageMap.yueqi.meditating, 'assets/qban/left_cultivate.webp');
+});
+
+test('SpriteView.attach initializes animation state and preloads resources when Image exists', () => {
+  const originalImage = global.Image;
+  const loaded = [];
+  class FakeImage {
+    set src(value) {
+      this._src = value;
+      loaded.push(value);
+    }
+    get src() {
+      return this._src;
+    }
+  }
+  global.Image = FakeImage;
+
+  try {
+    const sv = new SpriteView({
+      imageMap: {
+        yueqi: { hungry: 'assets/default/left_hungry.webp' },
+      },
+    });
+    const pet = createFakePet('yueqi');
+    pet.sprites.walkingLeft = { frames: ['walk-1.webp', 'walk-2.webp'], fps: 4 };
+    pet._sv_lastResource = 'old.webp';
+    pet._sv_frameIndex = 2;
+
+    sv.attach(pet);
+
+    assert.equal(pet._sv_lastResource, null);
+    assert.equal(pet._sv_frameIndex, 0);
+    assert.deepEqual(loaded, [
+      'assets/default/left.webp',
+      'walk-1.webp',
+      'walk-2.webp',
+      'assets/default/left_hungry.webp',
+    ]);
+  } finally {
+    global.Image = originalImage;
+  }
+});
+
+test('SpriteView.update safely ignores pets without an element', () => {
+  const sv = new SpriteView();
+  const pet = createFakePet('yueqi');
+
+  assert.doesNotThrow(() => sv.update(pet, 1000));
+  assert.equal(pet._sv_lastResource, null);
+});
+
+test('SpriteView.update advances multi-frame sprites using elapsed time', () => {
+  const originalDocument = global.document;
+  const fakeElement = createFakePetElement();
+  global.document = {
+    createElement(tag) {
+      assert.equal(tag, 'img');
+      return fakeElement.createImage();
+    },
+  };
+
+  try {
+    const sv = new SpriteView();
+    const pet = createFakePet('yueqi');
+    pet.element = fakeElement;
+    pet.state = 'walking';
+    pet.direction = 'left';
+    pet.sprites.walkingLeft = { frames: ['walk-1.webp', 'walk-2.webp'], fps: 4 };
+
+    sv.update(pet, 250);
+
+    assert.equal(pet._sv_frameIndex, 1);
+    assert.equal(fakeElement.body.children[0].src, 'walk-2.webp');
+    assert.equal(fakeElement.body.children[0].alt, '');
+  } finally {
+    global.document = originalDocument;
+  }
+});
+
+test('SpriteView.update renders emoji fallback when no image resource is available', () => {
+  const sv = new SpriteView({
+    imageMap: {},
+    emojiMap: {
+      unknown: {
+        idle: 'idle-emoji',
+        working: 'work-emoji',
+      },
+    },
+  });
+  const pet = createFakePet('unknown');
+  const fakeElement = createFakePetElement();
+  pet.element = fakeElement;
+  pet.image = null;
+  pet.state = 'working';
+
+  sv.update(pet, 16);
+
+  assert.equal(fakeElement.body.textContent, 'work-emoji');
+  assert.equal(pet._sv_lastResource, 'work-emoji');
+});
+
+test('SpriteView.update reuses the existing resource without rewriting DOM', () => {
+  const sv = new SpriteView();
+  const pet = createFakePet('yueqi');
+  const fakeElement = createFakePetElement();
+  pet.element = fakeElement;
+  pet._sv_lastResource = pet.image;
+
+  sv.update(pet, 16);
+
+  assert.equal(fakeElement.body.children.length, 0);
 });
 
 test('SpriteView uses direction-specific second walking frames for visible greetings', () => {

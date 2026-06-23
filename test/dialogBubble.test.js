@@ -118,3 +118,120 @@ test('remove clears scheduled bubble timers', () => {
     }
   });
 });
+
+test('show removes an existing bubble and safely returns when the pet has no element', () => {
+  withFakeDocument(() => {
+    const dialogBubble = new DialogBubble();
+    const pet = { id: 'yueqi', element: createFakeElement() };
+
+    dialogBubble.show(pet, 'visible', 1000);
+    const firstBubble = dialogBubble.activeBubbles.get(pet.id);
+
+    pet.element = null;
+    dialogBubble.show(pet, 'hidden', 1000);
+
+    assert.equal(firstBubble.removed, true);
+    assert.equal(dialogBubble.activeBubbles.has(pet.id), false);
+  });
+});
+
+test('show applies horizontal offset when rendering interaction bubbles', () => {
+  withFakeDocument(() => {
+    const dialogBubble = new DialogBubble();
+    const pet = { id: 'yueqi', element: createFakeElement() };
+
+    dialogBubble.show(pet, 'offset bubble', 1000, 24);
+
+    const bubble = dialogBubble.activeBubbles.get(pet.id);
+    assert.equal(bubble.textContent, 'offset bubble');
+    assert.equal(bubble.style.left, 'calc(50% + 24px)');
+  });
+});
+
+test('showIdleChatter prefers weather chatter when the weather roll succeeds', () => {
+  withFakeDocument(() => {
+    const originalDialogues = global.DIALOGUES;
+    const originalRandom = Math.random;
+    global.DIALOGUES = {
+      idle: { yueqi: ['idle text'] },
+      weather_rain: { yueqi: ['rain text'] },
+    };
+    Math.random = () => 0;
+
+    try {
+      const dialogBubble = new DialogBubble();
+      const pet = { id: 'yueqi', weatherKind: 'rain', element: createFakeElement() };
+
+      dialogBubble.showIdleChatter(pet);
+
+      assert.equal(dialogBubble.activeBubbles.get(pet.id).textContent, 'rain text');
+    } finally {
+      global.DIALOGUES = originalDialogues;
+      Math.random = originalRandom;
+    }
+  });
+});
+
+test('showStatWarning renders the first matching low-stat warning', () => {
+  withFakeDocument(() => {
+    const originalDialogues = global.DIALOGUES;
+    const originalRandom = Math.random;
+    global.DIALOGUES = {
+      hungry: { yueqi: ['hungry text'] },
+      lowQi: { yueqi: ['low qi text'] },
+      lowMood: { yueqi: ['low mood text'] },
+    };
+    Math.random = () => 0;
+
+    try {
+      const dialogBubble = new DialogBubble();
+      const pet = {
+        id: 'yueqi',
+        element: createFakeElement(),
+        isHungry: () => false,
+        isLowQi: () => true,
+        isLowMood: () => true,
+      };
+
+      dialogBubble.showStatWarning(pet);
+
+      assert.equal(dialogBubble.activeBubbles.get(pet.id).textContent, 'low qi text');
+    } finally {
+      global.DIALOGUES = originalDialogues;
+      Math.random = originalRandom;
+    }
+  });
+});
+
+test('showInteraction centers close interaction bubbles around the shared overlay', () => {
+  withFakeDocument(() => {
+    const originalDialogues = global.DIALOGUES;
+    const originalConfig = global.CONFIG;
+    const originalRandom = Math.random;
+    global.DIALOGUES = {
+      hug: {
+        yueqi: ['yueqi hug'],
+        shenjiu: ['shenjiu hug'],
+      },
+    };
+    global.CONFIG = { INTERACTION_DURATION: 4000 };
+    Math.random = () => 0;
+
+    try {
+      const dialogBubble = new DialogBubble();
+      const yueqi = { id: 'yueqi', x: 100, size: 96, element: createFakeElement() };
+      const shenjiu = { id: 'shenjiu', x: 260, size: 96, element: createFakeElement() };
+
+      dialogBubble.showInteraction(yueqi, shenjiu, 'hug');
+
+      assert.equal(dialogBubble.activeBubbles.get('yueqi').textContent, 'yueqi hug');
+      assert.equal(dialogBubble.activeBubbles.get('shenjiu').textContent, 'shenjiu hug');
+      assert.equal(dialogBubble.activeBubbles.get('yueqi').style.left, 'calc(50% + 35px)');
+      assert.equal(dialogBubble.activeBubbles.get('shenjiu').style.left, 'calc(50% + -35px)');
+    } finally {
+      global.DIALOGUES = originalDialogues;
+      global.CONFIG = originalConfig;
+      Math.random = originalRandom;
+    }
+  });
+});

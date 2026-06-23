@@ -73,6 +73,71 @@ test('WindowAwarenessSystem keeps taskbar surfaces available before first active
   assert.equal(system.isSurfaceAwarenessEnabled(), true);
 });
 
+test('WindowAwarenessSystem normalizes invalid platform payloads to null', () => {
+  const system = new WindowAwarenessSystem(null, { ttlMs: 2500, now: () => 1234 });
+
+  system.setActiveWindowInfo({
+    active: true,
+    sampledAt: 'not-a-number',
+    platform: { x: 0, y: 0, width: 0, height: 48 },
+  });
+
+  assert.equal(system.getDebugInfo().info.sampledAt, 1234);
+  assert.equal(system.getCurrentPlatform(1235), null);
+});
+
+test('WindowAwarenessSystem start is a no-op when disabled or missing electron API', () => {
+  const disabled = new WindowAwarenessSystem({
+    onActiveWindowInfo() {
+      throw new Error('should not subscribe while disabled');
+    },
+  }, { enabled: false });
+  const missingApi = new WindowAwarenessSystem(null);
+
+  assert.doesNotThrow(() => disabled.start());
+  assert.doesNotThrow(() => missingApi.start());
+});
+
+test('WindowAwarenessSystem records unavailable info when initial request fails', async () => {
+  const system = new WindowAwarenessSystem({
+    async getActiveWindowInfo() {
+      throw new Error('boom');
+    },
+  }, { ttlMs: 2500, now: () => 5000 });
+
+  system.start();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(system.getDebugInfo().info.active, false);
+  assert.equal(system.getDebugInfo().info.reason, 'request-failed');
+  assert.equal(system.getDebugInfo().info.sampledAt, 5000);
+});
+
+test('WindowAwarenessSystem setEnabled clears state and restarts subscriptions', () => {
+  let subscribeCount = 0;
+  let unsubscribeCount = 0;
+  const system = new WindowAwarenessSystem({
+    onActiveWindowInfo() {
+      subscribeCount += 1;
+      return () => {
+        unsubscribeCount += 1;
+      };
+    },
+  }, { ttlMs: 2500, now: () => 1000 });
+
+  system.setActiveWindowInfo(activeInfo(1000));
+  system.setEnabled(false);
+
+  assert.equal(system.getDebugInfo().info, null);
+  assert.equal(unsubscribeCount, 0);
+
+  system.setEnabled(true);
+  assert.equal(subscribeCount, 1);
+  system.stop();
+  assert.equal(unsubscribeCount, 1);
+});
+
 test('WindowAwarenessSystem subscribes to push updates and requests an initial value', async () => {
   let listener = null;
   let removed = false;

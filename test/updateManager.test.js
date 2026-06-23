@@ -163,6 +163,40 @@ test('manual update check opens a visible checking progress window', async () =>
   assert.equal(progressEvents[0][1].title, 'Checking for Updates');
 });
 
+test('manual update check requires initialization', async () => {
+  const manager = createUpdateManager({
+    getAutoUpdater: () => new EventEmitter(),
+    getLog: () => ({ error() {} }),
+  });
+
+  await assert.rejects(
+    () => manager.checkForUpdatesFromTray(),
+    /Update manager is not initialized/,
+  );
+});
+
+test('manual update check reports an in-progress checking state', async () => {
+  const { manager, updater, messages } = createHarness();
+
+  updater.emit('checking-for-update');
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(messages[0].title, 'updateInProgressTitle');
+  assert.equal(messages[0].message, 'updateCheckingMsg');
+  assert.equal(manager.getUpdateMenuState().enabled, false);
+});
+
+test('manual update check reports an in-progress downloading state', async () => {
+  const { manager, updater, messages } = createHarness();
+
+  updater.emit('download-progress', { percent: 10 });
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(messages[0].title, 'updateInProgressTitle');
+  assert.equal(messages[0].message, 'updateDownloadingMsg');
+  assert.equal(manager.getUpdateMenuState().enabled, false);
+});
+
 test('metadata not found only shows the latest-version message once', async () => {
   const notFoundError = Object.assign(new Error('Cannot find latest.yml, 404'), { statusCode: 404 });
   const { manager, messages, logErrors } = createHarness({
@@ -197,6 +231,29 @@ test('update-downloaded asks before quit and install', async () => {
   assert.equal(progressEvents[0][0], 'close');
 });
 
+test('update-downloaded respects a user cancel', async () => {
+  const { updater, messages } = createHarness({
+    responses: [{ response: 1 }],
+  });
+
+  updater.emit('update-downloaded', { releaseName: '0.1.8' });
+  await tick();
+
+  assert.equal(messages[0].message, 'updateReadyMsg'.replace('{version}', '0.1.8'));
+  assert.equal(updater.quitAndInstallArgs, undefined);
+});
+
+test('update-available uses no-version copy when metadata has no version', async () => {
+  const { updater, messages } = createHarness({
+    responses: [{ response: 1 }],
+  });
+
+  updater.emit('update-available', {});
+  await tick();
+
+  assert.equal(messages[0].message, 'updateAvailMsgNoVer');
+});
+
 test('download-progress updates the main window progress when available', async () => {
   const progressValues = [];
   const { updater, progressEvents } = createHarness({
@@ -211,6 +268,22 @@ test('download-progress updates the main window progress when available', async 
 
   assert.deepEqual(progressValues, [0.42]);
   assert.deepEqual(progressEvents, [['progress', 42]]);
+});
+
+test('download-progress skips destroyed main windows but still updates progress UI', async () => {
+  const progressValues = [];
+  const { updater, progressEvents } = createHarness({
+    mainWindow: {
+      isDestroyed: () => true,
+      setProgressBar: (value) => progressValues.push(value),
+    },
+  });
+
+  updater.emit('download-progress', { percent: 65 });
+  await tick();
+
+  assert.deepEqual(progressValues, []);
+  assert.deepEqual(progressEvents, [['progress', 65]]);
 });
 
 test('error event records log details and exposes a user-safe message', async () => {

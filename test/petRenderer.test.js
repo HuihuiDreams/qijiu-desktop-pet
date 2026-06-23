@@ -319,3 +319,158 @@ test('interaction overlay bubbles follow the overlay visual scale', () => {
   delete global.document;
   global.setTimeout = originalSetTimeout;
 });
+
+test('PetRenderer falls back to scale 1 for invalid visual and image scales', () => {
+  const renderer = new PetRenderer(null, null, () => -2);
+
+  assert.equal(renderer.getPetVisualScale({ imageScale: 0 }), 1);
+  assert.equal(renderer.getPetImageScale({ imageScale: 'not-a-number' }), 1);
+  assert.deepEqual(renderer.getPetVisualCenter({ x: 10, y: 20, size: 100, imageScale: 0 }), {
+    x: 60,
+    y: 70,
+    scale: 1,
+  });
+});
+
+test('createPetElement renders emoji pets and updates state classes', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  });
+  const pet = {
+    id: 'emoji',
+    nickname: 'Emoji Pet',
+    emoji: ':)',
+    image: null,
+    x: 10,
+    y: 20,
+    size: 96,
+    state: 'idle',
+    direction: 'right',
+    imageScale: 1,
+    isDragging: false,
+    isHungry: () => true,
+    isLowMood: () => true,
+    setState() {},
+  };
+
+  global.window = {
+    innerWidth: 800,
+    innerHeight: 600,
+    electronAPI: { setIgnoreMouseEvents() {} },
+    addEventListener() {},
+  };
+  global.document = {
+    body: { classList: createFakeClassList() },
+    createElement() {
+      const element = createFakeDomElement();
+      element.classList = createFakeClassList();
+      return element;
+    },
+    addEventListener() {},
+    getElementById() {
+      return createFakeElement(['hidden']);
+    },
+  };
+
+  try {
+    const el = renderer.createPetElement(pet);
+    assert.equal(el.children[0].textContent, ':)');
+
+    pet.state = 'sleeping';
+    renderer.update(pet);
+
+    assert.equal(el.classList.contains('pet--sleeping'), true);
+    assert.equal(el.classList.contains('pet--hungry'), true);
+    assert.equal(el.classList.contains('pet--low-mood'), true);
+
+    pet.state = 'idle';
+    pet.isHungry = () => false;
+    pet.isLowMood = () => false;
+    renderer.update(pet);
+
+    assert.equal(el.classList.contains('pet--sleeping'), false);
+    assert.equal(el.classList.contains('pet--hungry'), false);
+    assert.equal(el.classList.contains('pet--low-mood'), false);
+  } finally {
+    delete global.window;
+    delete global.document;
+  }
+});
+
+test('spawnEffect creates three particles and removes them on animation end', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  }, null, () => 0.5);
+  const originalDocument = global.document;
+  const originalRandom = Math.random;
+  Math.random = () => 0.5;
+  global.document = {
+    createElement() {
+      const element = createFakeDomElement();
+      element.remove = () => {
+        element.removed = true;
+      };
+      return element;
+    },
+  };
+
+  try {
+    renderer.spawnEffect({ x: 100, y: 100, size: 96 }, '*');
+
+    assert.equal(appended.length, 3);
+    assert.equal(appended[0].textContent, '*');
+    assert.equal(appended[0].style.top, '90px');
+    assert.equal(appended[0].style.fontSize, '12px');
+
+    appended[0].listeners.animationend();
+    assert.equal(appended[0].removed, true);
+  } finally {
+    global.document = originalDocument;
+    Math.random = originalRandom;
+  }
+});
+
+test('hideOverlay fades overlay and restores pet body visibility', () => {
+  const renderer = new PetRenderer(null);
+  const overlay = createFakeDomElement();
+  overlay.style.opacity = '1';
+  overlay.style.transform = 'scale(1)';
+  overlay.remove = () => {
+    overlay.removed = true;
+  };
+  const bodyA = { style: { visibility: 'hidden' } };
+  const bodyB = { style: { visibility: 'hidden' } };
+  const originalDocument = global.document;
+  const originalSetTimeout = global.setTimeout;
+  global.document = {
+    getElementById(id) {
+      return id === 'interaction-overlay' ? overlay : null;
+    },
+  };
+  global.setTimeout = (callback) => {
+    callback();
+    return 1;
+  };
+
+  try {
+    renderer.hideOverlay(
+      { element: { querySelector: () => bodyA } },
+      { element: { querySelector: () => bodyB } },
+    );
+
+    assert.equal(overlay.style.opacity, '0');
+    assert.equal(overlay.style.transform, 'scale(0.92)');
+    assert.equal(overlay.removed, true);
+    assert.equal(bodyA.style.visibility, '');
+    assert.equal(bodyB.style.visibility, '');
+  } finally {
+    global.document = originalDocument;
+    global.setTimeout = originalSetTimeout;
+  }
+});

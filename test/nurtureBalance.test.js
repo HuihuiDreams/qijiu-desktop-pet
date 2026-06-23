@@ -78,6 +78,97 @@ test('rest restores mood and a small amount of qi at a hunger cost', () => {
   assert.equal(pet.stateTimer, CONFIG.REST_DURATION);
 });
 
+test('nurture update waits for the decay interval before changing stats', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+
+  nurtureSystem.update(pet, CONFIG.DECAY_INTERVAL - 1);
+
+  assert.equal(pet.stats.hunger, 80);
+  assert.equal(pet.stats.qi, 100);
+  assert.equal(pet.stats.mood, 70);
+  assert.equal(pet.stats.affection, 0);
+});
+
+test('nurture update applies decay and extra mood penalties at low hunger and qi', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  pet.stats.hunger = 29;
+  pet.stats.qi = 19;
+
+  nurtureSystem.update(pet, CONFIG.DECAY_INTERVAL);
+
+  assert.equal(pet.stats.hunger, 27);
+  assert.equal(pet.stats.qi, 17);
+  assert.equal(pet.stats.mood, 66);
+});
+
+test('nurture update returns timed actions to idle when their timer expires', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  pet.state = 'eating';
+  pet.stateTimer = 500;
+
+  nurtureSystem.update(pet, 600);
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.stateTimer, 0);
+  assert.equal(pet.idleTimer, 2000);
+});
+
+test('feed, head pat, and meditate reject busy pets', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  pet.state = 'sleeping';
+
+  assert.equal(nurtureSystem.feed(pet), false);
+  assert.equal(nurtureSystem.headPat(pet), false);
+  assert.equal(nurtureSystem.meditate(pet), false);
+  assert.equal(pet.state, 'sleeping');
+});
+
+test('feed and head pat apply their configured rewards and action states', () => {
+  const nurtureSystem = new NurtureSystem();
+  const fedPet = createPet();
+  fedPet.stats.hunger = 50;
+  fedPet.stats.mood = 50;
+
+  assert.equal(nurtureSystem.feed(fedPet), true);
+  assert.equal(fedPet.stats.hunger, 75);
+  assert.equal(fedPet.stats.mood, 55);
+  assert.equal(fedPet.state, 'eating');
+  assert.equal(fedPet.stateTimer, 3000);
+
+  const pattedPet = createPet();
+  pattedPet.stats.affection = 10;
+  pattedPet.stats.mood = 50;
+
+  assert.equal(nurtureSystem.headPat(pattedPet), true);
+  assert.equal(pattedPet.stats.affection, 13);
+  assert.equal(pattedPet.stats.mood, 55);
+  assert.equal(pattedPet.state, 'patted');
+  assert.equal(pattedPet.stateTimer, 3000);
+});
+
+test('meditate starts a timed qi recovery state', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+
+  assert.equal(nurtureSystem.meditate(pet), true);
+  assert.equal(pet.state, 'meditating');
+  assert.equal(pet.stateTimer, CONFIG.MEDITATE_DURATION);
+});
+
+test('rest rejects pets that are too hungry', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  pet.stats.hunger = CONFIG.REST_HUNGER_COST + 4;
+
+  assert.equal(nurtureSystem.rest(pet), false);
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.stats.hunger, CONFIG.REST_HUNGER_COST + 4);
+});
+
 test('automatic interactions can happen once per minute', () => {
   assert.equal(CONFIG.INTERACTION_COOLDOWN, 60 * 1000);
 });
