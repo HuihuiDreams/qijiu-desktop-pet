@@ -14,7 +14,7 @@ import os
 import glob
 
 # ─── 配置区 ──────────────────────────────────────────────
-INPUT_GLOB   = "src/assets/shenjiu/walk*.png"  # 要处理的文件（glob 模式）
+INPUT_GLOB   = "src/assets/animal_ears/**/*.png"  # 要处理的文件（glob 模式）
 PADDING      = 12                               # 裁剪后四周保留的透明边距（像素）
 BG_THRESHOLD = 240                              # 亮度阈值，超过此值视为白色背景
 # ─────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ def trim_and_normalize(paths: list[str], padding: int, threshold: int):
 
     for path in paths:
         img = Image.open(path).convert("RGBA")
-        img = remove_white_bg(img, threshold)
+        # img = remove_white_bg(img, threshold)  # DONT REMOVE WHITE PIXELS!
         bbox = img.getbbox()
         imgs.append(img)
         bboxes.append(bbox)
@@ -74,7 +74,7 @@ def trim_and_normalize(paths: list[str], padding: int, threshold: int):
 
 
 if __name__ == "__main__":
-    paths = sorted(glob.glob(INPUT_GLOB))
+    paths = sorted(glob.glob(INPUT_GLOB, recursive=True))
     if not paths:
         print(f"未找到匹配文件：{INPUT_GLOB}")
     else:

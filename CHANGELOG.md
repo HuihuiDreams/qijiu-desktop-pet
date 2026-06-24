@@ -17,6 +17,8 @@
 - **P0 文案与乱码审计**：修复 `pomodoro.html`、`city-setting.html`、`index.html` 中 HTML fallback 文案与 i18n 字典不一致的问题；为 `status.html` 的 `<title>` 和 footer 添加 `data-i18n` 属性使其支持多语言热切换；在 i18n.js 三语字典中新增 `statusFooter` key；新增 `i18nKeyCompleteness.test.js` 确保 zh/en/ja 三种语言的全部 UI key 完整覆盖且无乱码。
 
 ### Changed
+- **皮肤素材处理工具优化与 `animal_ears` 修复**：修改 `tools/trim_sprites.py`，移除了破坏性的 `remove_white_bg` 逻辑（防止掏空人物身上的白色像素）；新增 `tools/run_trim.py` 分组批量处理脚本，按动画分组精准切除多余透明边距并归一化画布；彻底修复 `animal_ears` 皮肤因为白边过大导致的显示偏小问题，使其在 `SkinManager.js` 的 `1.08` 倍缩放配置下，达到与 `birds` 完美对齐的视觉尺寸。
+- **皮肤处理流程文档**：新增 `docs/skin-pipeline-guide.md` 记录标准的素材切图与尺寸调整工作流，避免遗留白边与像素损坏问题。
 - **§8 CSS 变量收敛**：将 `status.css`、`pomodoro.css`、`city-setting.css` 中重复的 `:root` 变量和面板样式（背景、边框、阴影、装饰伪元素）提取为 `index.css` 中的 `--panel-bg`、`--panel-border`、`--panel-shadow`、`--panel-deco-bg`、`--panel-deco-border`、`--panel-deco-lines` 共享 Token；三个子窗口 HTML 新增 `index.css` 引入，子窗口 CSS 移除重复 `:root` 块并通过 `var()` 引用统一 Token。零视觉变化。
 - **§7 动效整理与无障碍适配**：根据评估与用户反馈，确定跳过该项的无障碍减弱动效适配（对未开启减弱动效的普通用户无影响，且本软件尚未公开发布）。
 
