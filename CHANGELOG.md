@@ -3,6 +3,11 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Fixed
+- **行走动画精确对齐**：通过脚本精细计算 Bounding Box，对 `animal_ears/shenjiu` 的步行序列帧进行了严格的水平居中处理，彻底修复了因左右留白不一致导致的行走动画横向不自然抖动问题。
+
+### Changed
+- **皮肤处理流程文档更新**：在 `docs/skin-pipeline-guide.md` 中补充了“行走动画帧必须严格水平居中”的规范要求，防止人物位移时产生抖动。
 
 ## [0.8.2] - 2026-06-24
 ### Added
