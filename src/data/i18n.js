@@ -195,7 +195,7 @@ const I18N = {
         yueqi: [
           '小九，这个给你吃。',
           '我不饿，你多吃一些。',
-          '清秋，尝尝这个灵果。',
+          '清秋，尝尝这个。',
         ],
         shenjiu: [
           '…谁要你的东西。',
@@ -502,7 +502,7 @@ const I18N = {
         yueqi: [
           'Xiao Jiu, this is for you.',
           'I am not hungry, you should eat more.',
-          'Qingqiu, try this spiritual fruit.',
+          'Qingqiu, try this.',
         ],
         shenjiu: [
           '...Who wants your stuff.',
@@ -808,7 +808,7 @@ const I18N = {
         yueqi: [
           '小九、これをお食べ。',                // 小九，这个给你吃。（“お食べ”有种长辈/师兄哄着投喂的宠溺感）
           '私は空いていないから、もっと食べるといい。', // 我不饿，你多吃一些。
-          '清秋、この霊菓を食べてごらん。',        // 清秋，尝尝这个灵果。（霊菓）
+          '清秋、これを食べてごらん。',          // 清秋，尝尝这个。
         ],
         shenjiu: [
           '…誰がお前の物など。',                // …谁要你的东西。

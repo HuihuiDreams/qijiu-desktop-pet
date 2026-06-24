@@ -181,6 +181,10 @@ class SpriteView {
         body.textContent = '';
         image = document.createElement('img');
         image.className = 'pet-image';
+        image.onerror = () => {
+          image.remove();
+          body.textContent = pet.emoji || '';
+        };
         body.appendChild(image);
       }
       if (image.getAttribute('src') !== resource) {

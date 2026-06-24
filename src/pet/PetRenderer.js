@@ -81,6 +81,10 @@ class PetRenderer {
       image.src = pet.image;
       image.alt = pet.nickname || '';
       image.className = 'pet-image';
+      image.onerror = () => {
+        image.remove();
+        body.textContent = pet.emoji || '';
+      };
       body.appendChild(image);
     } else {
       body.textContent = pet.emoji || '';

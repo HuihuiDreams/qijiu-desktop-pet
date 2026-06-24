@@ -55,6 +55,12 @@ function renderPetStats(pet) {
     const icon = document.createElement('img');
     icon.className = 'status-pet-icon';
     icon.alt = '';
+    icon.onerror = () => {
+      icon.remove();
+      const span = document.createElement('span');
+      span.textContent = pet.emoji || '';
+      nameEl.insertBefore(span, nameEl.firstChild);
+    };
     icon.src = pet.image;
     nameEl.appendChild(icon);
   } else {

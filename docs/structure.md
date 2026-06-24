@@ -102,6 +102,9 @@ qijiu-desktop-pet/
 ├─ src/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
+│  ├─ effects.css                       # 天气与粒子动效独立样式
+│  ├─ context-menu.css                  # 右键菜单样式
+│  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ app.js                            # 渲染进程编排：初始化、game loop、保存、皮肤切换、状态同步
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
 │  ├─ status.html                       # 独立状态窗口 HTML
@@ -136,17 +139,20 @@ qijiu-desktop-pet/
 │  ├─ ui/
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
 │  │  ├─ DialogBubble.js                # 对话气泡
-│  │  └─ StatusBar.js                   # 主窗口内嵌状态条
+│  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
+│  │  └─ WeatherParticleLayer.js        # 渲染层天气粒子效果生成与管理
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
-│     └─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
+│     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
+│     └─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner 单元/集成测试
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
+│  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
