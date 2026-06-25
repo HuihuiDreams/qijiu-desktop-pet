@@ -145,6 +145,27 @@ function getTranslatedText(t, key, fallback) {
   return value === key ? fallback : value;
 }
 
+// Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
+function verifyDownloadedPackageIntegrity(info) {
+  if (!info || !info.downloadedFile) {
+    return true;
+  }
+  const expectedSha512 = info.sha512 || info.files?.[0]?.sha512;
+  if (!expectedSha512) {
+    return true;
+  }
+  try {
+    const fs = require('fs');
+    const crypto = require('crypto');
+    const fileBuffer = fs.readFileSync(info.downloadedFile);
+    const actualHash = crypto.createHash('sha512').update(fileBuffer).digest('base64');
+    const actualHex = crypto.createHash('sha512').update(fileBuffer).digest('hex');
+    return actualHash === expectedSha512 || actualHex === expectedSha512.toLowerCase();
+  } catch (_err) {
+    return false;
+  }
+}
+
 /**
  * macOS 专用：无证书环境下的手动更新管理器。
  * 对外暴露与 createUpdateManager 完全一致的 API，
@@ -482,6 +503,19 @@ function createUpdateManager(options = {}) {
   }
 
   async function handleUpdateDownloaded(info) {
+    // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
+    if (!verifyDownloadedPackageIntegrity(info)) {
+      setState({
+        checking: false,
+        downloading: false,
+        downloaded: false,
+        error: 'integrity-check-failed',
+      });
+      setMainWindowProgress(-1);
+      closeProgressUi();
+      return;
+    }
+
     const latestVersion = getUpdateVersion(info) || state.latestVersion;
     setState({
       checking: false,
@@ -636,4 +670,5 @@ module.exports = {
   classifyUpdateError,
   createUpdateManager,
   createMacManualUpdateManager,
+  verifyDownloadedPackageIntegrity,
 };

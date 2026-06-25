@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Security
+- **远程升级包应用层完整性哈希硬校验 (TH-01 / SBP-001)**：在 `updateManager.js` 中新增 `verifyDownloadedPackageIntegrity()` 机制。当远程升级包下载完成且触发安装前，显式计算本地二进制文件的 SHA512 摘要（支持 Base64 与 Hex 双格式比对），并拦截不匹配或损坏的升级包，彻底阻断无签名更新机制下的流量劫持与恶意覆盖安装风险。
+
 ### Changed
 - **子进程执行环境变量最小 PATH 白名单锁死 (SBP-003)**：在 `meetingDetector.js` 与 `activeWindowProvider.js` 中新增 `getSafeChildProcessEnv()` 约束，在调用 `execFile` 执行底层探测命令时显式注入受控的 `PATH` 环境白名单，进一步巩固后台扫描服务的执行边界安全。
 - **后台扫描子进程绝对路径锁死 (TH-03)**：在 `meetingDetector.js` 与 `activeWindowProvider.js` 中将底层命令（`pgrep`、`tasklist`、`netstat`、`powershell.exe` 等）调用统一绑定至系统绝对路径，彻底封锁本地 PATH 劫持攻击路径，并落地项目安全威胁建模报告文档。

@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const test = require('node:test');
 
-const { classifyUpdateError, createUpdateManager } = require('../updateManager');
+const { classifyUpdateError, createUpdateManager, verifyDownloadedPackageIntegrity } = require('../updateManager');
 
 function tick() {
   return new Promise((resolve) => setImmediate(resolve));
@@ -404,4 +404,39 @@ test('update manager applies injected translations to error detail prefixes', as
   assert.equal(messages[0].message, 'Server unavailable.');
   assert.equal(messages[0].detail, 'Reason: Cannot download installer');
   assert.deepEqual(messages[0].buttons, ['OK']);
+});
+
+test('verifyDownloadedPackageIntegrity verifies base64 and hex sha512 (SBP-001)', () => {
+  const os = require('node:os');
+  const path = require('node:path');
+  const fs = require('node:fs');
+  const crypto = require('node:crypto');
+
+  const tmpFile = path.join(os.tmpdir(), 'deskpet-test-update.bin');
+  fs.writeFileSync(tmpFile, 'deskpet-secure-update-content');
+  const hashBase64 = crypto.createHash('sha512').update('deskpet-secure-update-content').digest('base64');
+  const badHash = 'badhash';
+
+  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashBase64 }), true);
+  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: badHash }), false);
+
+  if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+});
+
+test('update-downloaded intercepts corrupted package integrity (SBP-001)', async () => {
+  const os = require('node:os');
+  const path = require('node:path');
+  const fs = require('node:fs');
+
+  const tmpFile = path.join(os.tmpdir(), 'deskpet-corrupt-update.bin');
+  fs.writeFileSync(tmpFile, 'deskpet-corrupt-content');
+
+  const { updater, manager, messages } = createHarness();
+  updater.emit('update-downloaded', { downloadedFile: tmpFile, sha512: 'invalid-hash' });
+  await tick();
+
+  assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
+  assert.equal(messages.length, 0);
+
+  if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
 });
