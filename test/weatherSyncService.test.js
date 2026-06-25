@@ -220,6 +220,24 @@ describe('WeatherSyncService - fetchWeather', () => {
       Date.now = originalNow;
     }
   });
+
+  it('should sanitize malformed and out-of-range weather values (TH-02 / SBP-002)', async () => {
+    const provider = {
+      async fetch() {
+        return {
+          current_weather: {
+            temperature: 9999, // out of bounds
+            weathercode: 'malformed_string', // invalid number
+            is_day: 1
+          }
+        };
+      }
+    };
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+    const result = await fetchWeather(settings, provider);
+    assert.strictEqual(result.temperature, null);
+    assert.strictEqual(result.weatherCode, -1);
+  });
 });
 
 describe('WeatherSyncService - processSettingsChange', () => {
@@ -307,6 +325,45 @@ describe('WeatherSyncService - processSettingsChange', () => {
       assert.match(requestedUrl, /^https:\/\/geocoding-api\.open-meteo\.com\/v1\/search/);
       assert.strictEqual(result.lat, 35.68);
       assert.strictEqual(result.lon, 139.76);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  it('should ignore malformed or out-of-bounds geocoding API payloads (TH-02 / SBP-002)', async () => {
+    const originalLoad = Module._load;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from(JSON.stringify({
+                    results: [{ latitude: 999, longitude: 'invalid' }]
+                  })));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await processSettingsChange({ enabled: true, city: 'Atlantis', lat: null, lon: null });
+      assert.strictEqual(result.lat, null);
+      assert.strictEqual(result.lon, null);
     } finally {
       Module._load = originalLoad;
     }

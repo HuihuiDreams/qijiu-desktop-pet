@@ -172,10 +172,13 @@ function resolveCityToCoordinates(cityName, controller) {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodedName}&count=1&language=zh&format=json`;
   return requestJson(url, controller).then((parsed) => {
     if (parsed.results && parsed.results.length > 0) {
-      return {
-        lat: parsed.results[0].latitude,
-        lon: parsed.results[0].longitude,
-      };
+      // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
+      const first = parsed.results[0];
+      const lat = Number(first?.latitude);
+      const lon = Number(first?.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+        return { lat, lon };
+      }
     }
 
     return null; // Not found
@@ -212,10 +215,16 @@ async function fetchWeather(settings, provider = defaultProvider) {
     const response = await provider.fetch(settings.lat, settings.lon, fetchTimeoutController);
     const cw = response.current_weather || {};
     
+    // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
+    const rawCode = Number(cw.weathercode);
+    const rawTemp = Number(cw.temperature);
+    const weatherCode = Number.isFinite(rawCode) && rawCode >= 0 && rawCode <= 99 ? Math.floor(rawCode) : -1;
+    const temperature = Number.isFinite(rawTemp) && rawTemp >= -100 && rawTemp <= 100 ? Number(rawTemp.toFixed(1)) : null;
+
     const payload = {
       active: true,
-      weatherCode: cw.weathercode ?? -1,
-      temperature: cw.temperature ?? null,
+      weatherCode,
+      temperature,
       isDay: cw.is_day === 1,
       timestamp: now,
       fallback: false
