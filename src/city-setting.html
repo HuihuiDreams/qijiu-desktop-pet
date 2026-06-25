@@ -11,10 +11,10 @@
 </head>
 
 <body>
-  <main id="city-panel" class="city-panel" aria-live="polite">
-    <header class="city-titlebar">
+  <main id="city-panel" class="city-panel ui-panel" aria-live="polite">
+    <header class="city-titlebar ui-titlebar">
       <span data-i18n="citySettingTitle">城市设置</span>
-      <button id="city-close" class="city-close-button" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
+      <button id="city-close" class="city-close-button ui-icon-button" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
         <svg class="city-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 6l12 12M18 6L6 18"></path>
         </svg>
@@ -30,7 +30,7 @@
       <div class="city-input-row">
         <input
           id="city-input"
-          class="city-input"
+          class="city-input ui-input"
           type="text"
           maxlength="100"
           autocomplete="off"
@@ -38,10 +38,10 @@
           data-i18n-placeholder="citySettingPlaceholder"
           placeholder="请输入城市名"
         >
-        <button id="city-confirm" class="city-confirm-button" type="button" data-i18n="citySettingConfirm">确认</button>
+        <button id="city-confirm" class="city-confirm-button ui-primary-button" type="button" data-i18n="citySettingConfirm">确认</button>
       </div>
 
-      <div id="city-status" class="city-status" aria-live="assertive"></div>
+      <div id="city-status" class="city-status ui-feedback" aria-live="assertive"></div>
     </div>
   </main>
 

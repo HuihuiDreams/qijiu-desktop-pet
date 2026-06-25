@@ -4,9 +4,11 @@
 
 ## [Unreleased]
 ### Fixed
+- Status window English metric labels no longer overlap progress bars, and the compact layout now uses scoped child-window CSS overrides to avoid global `.stat-*` collisions.
 - **行走动画精确对齐**：通过脚本精细计算 Bounding Box，对 `animal_ears/shenjiu` 的步行序列帧进行了严格的水平居中处理，彻底修复了因左右留白不一致导致的行走动画横向不自然抖动问题。
 
 ### Changed
+- Revised the frontend UI optimization plans to pause broad visual alignment and make future Phase 3 work defect-driven, scoped, and manually verified.
 - **皮肤处理流程文档更新**：在 `docs/skin-pipeline-guide.md` 中补充了“行走动画帧必须严格水平居中”的规范要求，防止人物位移时产生抖动。
 
 ## [0.8.2] - 2026-06-24

@@ -97,11 +97,9 @@ body {
 }
 
 .pet-status-block {
-  display: grid;
-  grid-template-columns: max-content 1fr 32px;
-  align-items: center;
-  row-gap: 7px;
-  column-gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   margin-bottom: 16px;
   padding: 12px 14px;
   background:
@@ -119,7 +117,6 @@ body {
 }
 
 .pet-status-name {
-  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -138,20 +135,28 @@ body {
   object-fit: cover;
 }
 
-.stat-row {
-  display: contents;
+.status-panel .stat-row {
+  display: grid;
+  grid-template-columns: minmax(88px, max-content) minmax(164px, 1fr) 34px;
+  align-items: center;
+  column-gap: 10px;
+  margin-bottom: 0;
 }
 
-.stat-label {
+.status-panel .stat-label {
+  width: auto;
+  min-width: 88px;
   color: var(--color-ink-light);
+  font-family: var(--font-body);
   font-size: 12px;
   text-align: right;
   white-space: nowrap;
 }
 
-.stat-bar {
+.status-panel .stat-bar {
   position: relative;
-  flex: 1;
+  width: 100%;
+  min-width: 164px;
   height: 10px;
   overflow: hidden;
   border-radius: 5px;
@@ -182,9 +187,11 @@ body {
 .stat-bar-fill--qi { background: linear-gradient(90deg, #71339f, #9655c7); }
 .stat-bar-fill--mood { background: linear-gradient(90deg, #249e58, #4dca7c); }
 
-.stat-value {
+.status-panel .stat-value {
+  width: 34px;
   color: var(--color-ink-light);
   font-size: 11px;
+  text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   font-family: 'JetBrains Mono', 'Geist Mono', monospace;
