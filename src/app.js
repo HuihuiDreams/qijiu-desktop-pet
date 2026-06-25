@@ -119,6 +119,23 @@ function applyI18n() {
   const interactionSystem = new InteractionSystem();
   const timeSystem = new TimeSystem();
   const skinManager = new SkinManager();
+  window.__DEBUG_VISIBILITY = {
+    visible: true,
+    reason: 'visible',
+    sources: { manual: false, meeting: false, pomodoro: false },
+  };
+
+  const setDebugVisibility = (visible, state = null) => {
+    window.__DEBUG_VISIBILITY = state || {
+      visible: Boolean(visible),
+      reason: visible ? 'visible' : 'unknown',
+      sources: { manual: false, meeting: false, pomodoro: false },
+    };
+  };
+
+  window.electronAPI.getPetVisibilityState()
+    .then((state) => setDebugVisibility(state?.visible, state))
+    .catch(() => {});
 
   // 监听主进程的屏幕信息更新事件
   window.electronAPI.onScreenInfo((info) => {
@@ -324,7 +341,8 @@ function applyI18n() {
   });
 
   // 隐藏/显示桌宠（来自系统托盘菜单）
-  window.electronAPI.onTogglePetVisibility((visible) => {
+  window.electronAPI.onTogglePetVisibility((visible, state) => {
+    setDebugVisibility(visible, state);
     const petStage = document.getElementById('pet-stage');
     petStage.style.display = visible ? '' : 'none';
     isPaused = !visible;

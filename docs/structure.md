@@ -369,6 +369,16 @@ npm test
 - `SkinManager`、托盘皮肤扫描和渲染集成。
 - `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
+
+### 4.1 Playwright Electron QA
+
+修改 Electron 窗口、渲染入口或桌面交互行为前后，优先运行隔离的冒烟检查：
+
+```bash
+npm run qa:electron:smoke
+```
+
+该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。它会确认主渲染进程已就绪，输出 QA 可读的桌宠可见性状态，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
 - `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。

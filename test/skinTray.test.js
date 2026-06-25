@@ -7,16 +7,39 @@ const path = require('path');
 //  Phase 2 单元测试：主进程皮肤集成
 // ═══════════════════════════════════════════════════════════════════
 
-// 复现 main.js 中 scanAvailableSkins 的核心逻辑，验证其行为
+// 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
+const SKIN_NAME_KEYS = {
+  'default': 'skinDefault',
+  'birds': 'skinBirds',
+  'animal_ears': 'skinAnimalEars',
+};
+
+/**
+ * 复现 main.js 中 scanAvailableSkins 的核心逻辑，验证其行为
+ * @param {string} assetsDir 
+ * @returns {string[]}
+ */
 function scanAvailableSkins(assetsDir) {
   try {
-    const entries = fs.readdirSync(assetsDir);
-    return entries.filter(entry => {
+    const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
+    return entries.filter(dirent => {
+      if (!dirent.isDirectory()) return false;
+      const entry = path.basename(dirent.name);
       try {
-        return fs.statSync(path.join(assetsDir, entry)).isDirectory();
+        const fullPath = path.join(assetsDir, entry);
+        if (!fullPath.startsWith(assetsDir)) return false;
+        return fs.statSync(fullPath).isDirectory();
       } catch {
         return false;
       }
+    }).map(dirent => dirent.name).sort((a, b) => {
+      const keys = Object.keys(SKIN_NAME_KEYS);
+      const indexA = keys.indexOf(a);
+      const indexB = keys.indexOf(b);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.localeCompare(b);
     });
   } catch {
     return ['default'];
@@ -34,6 +57,12 @@ test('main.js escapes literal ampersands in Electron menu labels', () => {
 });
 
 // --- 目录扫描测试 ---
+
+test('scanAvailableSkins: 能够按 SKIN_NAME_KEYS 中定义的顺序正确排序', () => {
+  const skins = scanAvailableSkins(ASSETS_DIR);
+  const expectedOrder = ['default', 'birds', 'animal_ears'];
+  assert.deepStrictEqual(skins.slice(0, expectedOrder.length), expectedOrder, '皮肤列表应按预设顺序排列');
+});
 
 test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
   const skins = scanAvailableSkins(ASSETS_DIR);

@@ -57,6 +57,17 @@ const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
 
+function configureQaUserDataPath() {
+  const qaUserDataDir = process.env.DESKTOP_PET_USER_DATA_DIR;
+  if (!qaUserDataDir) return;
+
+  const resolvedDir = path.resolve(qaUserDataDir);
+  fs.mkdirSync(resolvedDir, { recursive: true });
+  app.setPath('userData', resolvedDir);
+}
+
+configureQaUserDataPath();
+
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
@@ -1035,9 +1046,22 @@ function isPetCurrentlyHidden() {
   return petHidden || meetingHidden || pomodoroPetHidden;
 }
 
+function getPetVisibilityState() {
+  const sources = {
+    manual: petHidden,
+    meeting: meetingHidden,
+    pomodoro: pomodoroPetHidden,
+  };
+
+  if (petHidden) return { visible: false, reason: 'manual', sources };
+  if (meetingHidden) return { visible: false, reason: 'meeting', sources };
+  if (pomodoroPetHidden) return { visible: false, reason: 'pomodoro', sources };
+  return { visible: true, reason: 'visible', sources };
+}
+
 function sendPetVisibility(visible) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.webContents.send('toggle-pet-visibility', visible);
+  mainWindow.webContents.send('toggle-pet-visibility', visible, getPetVisibilityState());
 }
 
 function enterPomodoroPetFocus() {
@@ -1241,16 +1265,19 @@ function createWindow() {
 function scanAvailableSkins() {
   try {
     const assetsDir = path.join(__dirname, 'src', 'assets');
-    const entries = fs.readdirSync(assetsDir);
-    return entries.filter(entry => {
+    const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
+    return entries.filter(dirent => {
+      if (!dirent.isDirectory()) return false;
+      const entry = path.basename(dirent.name); // Sanitize to prevent traversal
       try {
-        const fullPath = path.normalize(path.join(assetsDir, entry));
+        const fullPath = path.join(assetsDir, entry);
         if (!fullPath.startsWith(assetsDir)) return false;
         return fs.statSync(fullPath).isDirectory();
       } catch {
         return false;
       }
-    }).sort((a, b) => {
+
+    }).map(dirent => dirent.name).sort((a, b) => {
       const keys = Object.keys(SKIN_NAME_KEYS);
       const indexA = keys.indexOf(a);
       const indexB = keys.indexOf(b);
@@ -1709,6 +1736,10 @@ ipcMain.handle('get-available-skins', () => {
 ipcMain.handle('get-active-window-info', async () => {
   if (!activeWindowSampler) startActiveWindowAwareness();
   return activeWindowSampler.sampleOnce();
+});
+
+ipcMain.handle('get-pet-visibility-state', () => {
+  return getPetVisibilityState();
 });
 
 ipcMain.handle('set-current-skin', async (_event, skinId) => {

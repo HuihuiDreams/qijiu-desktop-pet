@@ -71,8 +71,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onResetPositions: (callback) => {
     return subscribeIpc('reset-positions', () => callback());
   },
+  getPetVisibilityState: () => ipcRenderer.invoke('get-pet-visibility-state'),
   onTogglePetVisibility: (callback) => {
-    return subscribeIpc('toggle-pet-visibility', (_event, visible) => callback(visible));
+    return subscribeIpc('toggle-pet-visibility', (_event, visible, state) => callback(visible, state));
   },
 
   // 皮肤系统

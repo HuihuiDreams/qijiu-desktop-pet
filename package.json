@@ -1,11 +1,12 @@
 {
   "name": "desktop-pet",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "岳清源 & 沈清秋 桌面爱宠",
   "main": "main.js",
   "scripts": {
     "dev": "electron .",
     "test": "node --test",
+    "qa:electron:smoke": "node tools/playwright-electron-smoke.js",
     "build": "electron-builder",
     "verify:installer": "node scripts/verify-installer.js",
     "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1"
@@ -14,7 +15,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^42.2.0",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "playwright": "^1.61.1"
   },
   "dependencies": {
     "electron-log": "^5.4.3",

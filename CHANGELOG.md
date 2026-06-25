@@ -3,12 +3,25 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.8.3] - 2026-06-25
+### Added
+- **Playwright Electron QA 流程**：新增隔离的 `npm run qa:electron:smoke` 命令，用于可重复地运行 Electron 冒烟检查，避免占用真实桌宠用户配置目录。
+- **桌宠可见性诊断**：通过 preload API 和 renderer 调试状态暴露 QA 可读的可见性状态，使 Playwright 能区分正常显示、手动隐藏、会议自动隐藏和番茄钟隐藏。
+- **QA 文档**：在 `docs/structure.md` 中记录隔离的 Playwright Electron 验证流程。
+
+### Security
+- **主进程安全加固**：修复了 `main.js` 中因动态属性访问和路径拼接可能导致的潜在对象注入与路径遍历风险。通过对 `skinId` 和 `locale` 增加白名单校验，并对皮肤目录扫描路径进行严格的净化与边界检查，提升了应用的安全性。
+
 ### Fixed
+- **皮肤扫描与排序逻辑修复**：修复了在安全加固过程中引入的 `scanAvailableSkins` 函数返回类型错误，导致皮肤设置无法持久化的问题。同时修正了排序比较逻辑，确保皮肤菜单顺序严格遵循预设定义。
+- **Playwright QA 配置隔离修复**：修复 Electron 冒烟检查只隔离 Chromium profile、未强制隔离 `electron-store` userData 的问题，避免 QA 实例覆盖真实 `config.json` 中的皮肤等用户配置。
 - **状态面板文本溢出修复**：修复了状态窗口在英文语言下，标签文本（如 Affection）过长导致与右侧数值进度条发生重叠的问题；通过覆盖并取消 `.stat-label` 的固定宽度，使其在 Grid 布局下能够自适应内容长度。
 - **状态面板托盘菜单同步刷新修复**：重构并拆分了多语言键值（如 `trayShowStatusPanel` / `trayHideStatusPanel`），修复了在通过托盘菜单或窗口按钮切换状态面板显隐时，托盘菜单文本未能动态更新的问题。
 - **行走动画精确对齐**：通过脚本精细计算 Bounding Box，对 `animal_ears/shenjiu` 的步行序列帧进行了严格的水平居中处理，彻底修复了因左右留白不一致导致的行走动画横向不自然抖动问题。
 
 ### Changed
+- **右键菜单可读性优化**：提升透明桌面窗口上右键菜单的对比度，并通过淡灰斜纹和状态条让禁用菜单项在保持可读的同时更明确地呈现为暂不可用。
 - **皮肤处理流程文档更新**：在 `docs/skin-pipeline-guide.md` 中补充了“行走动画帧必须严格水平居中”的规范要求，防止人物位移时产生抖动。
 
 ## [0.8.2] - 2026-06-24
