@@ -49,7 +49,8 @@ const I18N = {
 
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
-      trayStatusPanel: '📊 显示状态面板',
+      trayShowStatusPanel: '📊 显示状态面板',
+      trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',
       trayPauseWalk: '⏸️ 暂停走动',
       trayResumeWalk: '🚶 恢复走动',
@@ -355,7 +356,8 @@ const I18N = {
 
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
-      trayStatusPanel: '📊 Show Status Panel',
+      trayShowStatusPanel: '📊 Show Status Panel',
+      trayHideStatusPanel: '📊 Hide Status Panel',
       traySwitchSkin: '🎨 Switch Skin',
       trayPauseWalk: '⏸️ Pause Walking',
       trayResumeWalk: '🚶 Resume Walking',
@@ -662,7 +664,8 @@ const I18N = {
 
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',
-      trayStatusPanel: '📊 状態表示',  // 状态面板改为“修为盘”
+      trayShowStatusPanel: '📊 状態表示',
+      trayHideStatusPanel: '📊 状態非表示',
       traySwitchSkin: '🎨 装束変更',      // “装束（しょうぞく）”完美平替现代外来语“スキン（Skin）皮肤”
       trayPauseWalk: '⏸️ 歩行停止',
       trayResumeWalk: '🚶 歩行再開',

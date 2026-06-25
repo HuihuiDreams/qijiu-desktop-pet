@@ -605,6 +605,7 @@ function createStatusWindow() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('status-window-closed');
     }
+    refreshTrayMenu();
   });
 
   return statusWindow;
@@ -615,6 +616,7 @@ function showStatusWindow(data) {
   const win = createStatusWindow();
   if (!win.isVisible()) {
     win.show();
+    refreshTrayMenu();
   }
   win.moveTop();
   sendStatusWindowData();
@@ -628,6 +630,7 @@ function updateStatusWindow(data) {
 function hideStatusWindow() {
   if (statusWindow && !statusWindow.isDestroyed()) {
     statusWindow.hide();
+    refreshTrayMenu();
   }
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('status-window-closed');
@@ -1328,7 +1331,7 @@ function buildTrayMenu() {
 
     // --- 独立功能 / 窗口 ---
     {
-      label: trayMenuLabel('trayStatusPanel'),
+      label: (statusWindow && !statusWindow.isDestroyed() && statusWindow.isVisible()) ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
       click: () => {
         if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
       },
