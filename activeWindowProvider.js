@@ -1,4 +1,5 @@
 const { execFile } = require('child_process');
+const path = require('path');
 
 const UNAVAILABLE_SOURCE = 'unavailable';
 
@@ -76,9 +77,20 @@ function parseWindowsProviderOutput(stdout, sampledAt) {
   }
 }
 
+function getSystemPowerShellPath(execFileImpl) {
+  if (execFileImpl && execFileImpl !== execFile) {
+    return 'powershell.exe';
+  }
+  if (process.platform !== 'win32') {
+    return 'powershell.exe';
+  }
+  const sysRoot = process.env.SystemRoot || process.env.windir || 'C:\\Windows';
+  return path.join(sysRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+}
+
 function createWindowsActiveWindowProvider(options = {}) {
   const execFileImpl = options.execFile || execFile;
-  const powershellPath = options.powershellPath || 'powershell.exe';
+  const powershellPath = options.powershellPath || getSystemPowerShellPath(execFileImpl);
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 5000;
   const currentPid = Number.isFinite(options.currentPid) ? options.currentPid : process.pid;
 
@@ -195,6 +207,7 @@ module.exports = {
   createActiveWindowProvider,
   createUnavailableActiveWindowProvider,
   createWindowsActiveWindowProvider,
+  getSystemPowerShellPath,
   normalizeActiveWindowInfo,
   parseWindowsProviderOutput,
   unavailableActiveWindowInfo,

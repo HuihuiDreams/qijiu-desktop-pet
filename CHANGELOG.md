@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **后台扫描子进程绝对路径锁死 (TH-03)**：在 `meetingDetector.js` 与 `activeWindowProvider.js` 中将底层命令（`pgrep`、`tasklist`、`netstat`、`powershell.exe` 等）调用统一绑定至系统绝对路径，彻底封锁本地 PATH 劫持攻击路径，并落地项目安全威胁建模报告文档。
 
 ## [0.8.3] - 2026-06-25
 ### Added

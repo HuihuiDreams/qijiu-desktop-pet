@@ -4,6 +4,7 @@ const test = require('node:test');
 const {
   collectMeetingUdpSnapshot,
   createMeetingDetector,
+  getSystemBinaryPath,
 } = require('../meetingDetector');
 
 function createExecFileStub(outputsByCommand) {
@@ -417,4 +418,16 @@ test('meeting detector keeps current state when a scan fails', async () => {
   await detector.sampleOnce();
   assert.equal(detector.getState().isInMeeting, false);
   assert.equal(ends.length, 1);
+});
+
+test('getSystemBinaryPath resolves absolute paths to protect against PATH hijacking (TH-03)', () => {
+  if (process.platform === 'win32') {
+    const p1 = getSystemBinaryPath('tasklist');
+    assert.match(p1, /System32[/\\]tasklist\.exe$/i);
+    const p2 = getSystemBinaryPath('powershell.exe');
+    assert.match(p2, /WindowsPowerShell[/\\]v1\.0[/\\]powershell\.exe$/i);
+  } else if (process.platform === 'darwin') {
+    const p1 = getSystemBinaryPath('pgrep');
+    assert.match(p1, /^[/\\](usr[/\\]bin|bin)[/\\]pgrep$/);
+  }
 });

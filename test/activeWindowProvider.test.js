@@ -5,6 +5,7 @@ const {
   createActiveWindowProvider,
   createUnavailableActiveWindowProvider,
   createWindowsActiveWindowProvider,
+  getSystemPowerShellPath,
   normalizeActiveWindowInfo,
 } = require('../activeWindowProvider');
 
@@ -109,4 +110,13 @@ test('Windows provider can skip the app window and continue down z-order', async
   assert.match(script, /\$GW_HWNDNEXT = 2/);
   assert.match(script, /\$sawIgnoredWindow = \$false/);
   assert.match(script, /\$handle = \[NativeWindow\]::GetWindow\(\$handle, \$GW_HWNDNEXT\)/);
+});
+
+test('getSystemPowerShellPath resolves absolute path on win32 (TH-03)', () => {
+  const p = getSystemPowerShellPath();
+  if (process.platform === 'win32') {
+    assert.match(p, /WindowsPowerShell[/\\]v1\.0[/\\]powershell\.exe$/i);
+  } else {
+    assert.equal(p, 'powershell.exe');
+  }
 });

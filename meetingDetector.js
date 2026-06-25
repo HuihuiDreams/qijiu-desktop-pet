@@ -1,4 +1,6 @@
 const { execFile } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 const DEFAULT_INTERVAL_MS = 5000;
 const DEFAULT_COMMAND_TIMEOUT_MS = 3000;
@@ -34,9 +36,41 @@ const MEETING_APPS = [
   },
 ];
 
+function getSystemBinaryPath(command) {
+  if (process.platform === 'win32') {
+    const sysRoot = process.env.SystemRoot || process.env.windir || 'C:\\Windows';
+    const system32 = path.join(sysRoot, 'System32');
+    const lower = command.toLowerCase();
+    if (lower === 'powershell.exe' || lower === 'powershell') {
+      return path.join(system32, 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    }
+    const nameWithExe = command.endsWith('.exe') ? command : `${command}.exe`;
+    return path.join(system32, nameWithExe);
+  }
+
+  if (process.platform === 'darwin') {
+    if (command === 'pgrep') {
+      return fs.existsSync('/usr/bin/pgrep') ? '/usr/bin/pgrep' : '/bin/pgrep';
+    }
+    if (command === 'lsof') {
+      return fs.existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : '/usr/bin/lsof';
+    }
+  }
+
+  return command;
+}
+
+function resolveSystemCommand(command, execFileImpl) {
+  if (execFileImpl && execFileImpl !== execFile) {
+    return command;
+  }
+  return getSystemBinaryPath(command);
+}
+
 function runExecFile(execFileImpl, command, args, timeoutMs) {
+  const actualCommand = resolveSystemCommand(command, execFileImpl);
   return new Promise((resolve, reject) => {
-    execFileImpl(command, args, { timeout: timeoutMs }, (error, stdout, stderr) => {
+    execFileImpl(actualCommand, args, { timeout: timeoutMs }, (error, stdout, stderr) => {
       if (error) {
         reject(error);
         return;
@@ -425,6 +459,7 @@ module.exports = {
   MEETING_APPS,
   collectMeetingUdpSnapshot,
   createMeetingDetector,
+  getSystemBinaryPath,
   parseTasklistCsv,
   parseWindowsUdpEndpoints,
 };
