@@ -147,6 +147,7 @@ body {
   font-size: 12px;
   text-align: right;
   white-space: nowrap;
+  width: auto;
 }
 
 .stat-bar {
