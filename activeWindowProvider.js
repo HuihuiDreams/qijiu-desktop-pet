@@ -1,5 +1,6 @@
 const { execFile } = require('child_process');
 const path = require('path');
+const { getSafeChildProcessEnv } = require('./meetingDetector');
 
 const UNAVAILABLE_SOURCE = 'unavailable';
 
@@ -178,7 +179,7 @@ if ($sawIgnoredWindow) { $reason = "ignored-window" }
         execFileImpl(
           powershellPath,
           ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
-          { timeout: timeoutMs, windowsHide: true, maxBuffer: 1024 * 64 },
+          { timeout: timeoutMs, windowsHide: true, maxBuffer: 1024 * 64, env: getSafeChildProcessEnv() },
           (error, stdout, stderr) => {
             if (error) {
               resolve(unavailableActiveWindowInfo('provider-failed', sampledAt, {
@@ -207,6 +208,7 @@ module.exports = {
   createActiveWindowProvider,
   createUnavailableActiveWindowProvider,
   createWindowsActiveWindowProvider,
+  getSafeChildProcessEnv,
   getSystemPowerShellPath,
   normalizeActiveWindowInfo,
   parseWindowsProviderOutput,

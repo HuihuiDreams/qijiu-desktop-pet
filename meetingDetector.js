@@ -67,10 +67,29 @@ function resolveSystemCommand(command, execFileImpl) {
   return getSystemBinaryPath(command);
 }
 
+function getSafeChildProcessEnv() {
+  const baseEnv = { ...process.env };
+  if (process.platform === 'win32') {
+    const sysRoot = baseEnv.SystemRoot || baseEnv.windir || 'C:\\Windows';
+    const system32 = path.join(sysRoot, 'System32');
+    const safePath = [
+      system32,
+      sysRoot,
+      path.join(system32, 'Wbem'),
+      path.join(system32, 'WindowsPowerShell', 'v1.0'),
+    ].join(';');
+    baseEnv.PATH = safePath;
+    baseEnv.Path = safePath;
+  } else {
+    baseEnv.PATH = '/usr/bin:/bin:/usr/sbin';
+  }
+  return baseEnv;
+}
+
 function runExecFile(execFileImpl, command, args, timeoutMs) {
   const actualCommand = resolveSystemCommand(command, execFileImpl);
   return new Promise((resolve, reject) => {
-    execFileImpl(actualCommand, args, { timeout: timeoutMs }, (error, stdout, stderr) => {
+    execFileImpl(actualCommand, args, { timeout: timeoutMs, env: getSafeChildProcessEnv() }, (error, stdout, stderr) => {
       if (error) {
         reject(error);
         return;
@@ -459,6 +478,7 @@ module.exports = {
   MEETING_APPS,
   collectMeetingUdpSnapshot,
   createMeetingDetector,
+  getSafeChildProcessEnv,
   getSystemBinaryPath,
   parseTasklistCsv,
   parseWindowsUdpEndpoints,

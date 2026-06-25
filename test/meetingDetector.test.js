@@ -4,6 +4,7 @@ const test = require('node:test');
 const {
   collectMeetingUdpSnapshot,
   createMeetingDetector,
+  getSafeChildProcessEnv,
   getSystemBinaryPath,
 } = require('../meetingDetector');
 
@@ -429,5 +430,15 @@ test('getSystemBinaryPath resolves absolute paths to protect against PATH hijack
   } else if (process.platform === 'darwin') {
     const p1 = getSystemBinaryPath('pgrep');
     assert.match(p1, /^[/\\](usr[/\\]bin|bin)[/\\]pgrep$/);
+  }
+});
+
+test('getSafeChildProcessEnv returns restricted PATH whitelist (SBP-003)', () => {
+  const env = getSafeChildProcessEnv();
+  if (process.platform === 'win32') {
+    assert.match(env.PATH, /System32/i);
+    assert.match(env.Path, /System32/i);
+  } else {
+    assert.equal(env.PATH, '/usr/bin:/bin:/usr/sbin');
   }
 });
