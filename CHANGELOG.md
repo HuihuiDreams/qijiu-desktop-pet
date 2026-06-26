@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
+
 ### Security
 - **第三方天气外部 HTTP API 响应数据值域强过滤与清洗 (TH-02 / SBP-002)**：在 `weatherSyncService.js` 中对 `resolveCityToCoordinates` 与 `fetchWeather` 拿到的 Open-Meteo 响应数据新增强类型归一化与物理值域范围过滤（如经纬度规范边界、地球合理温度区间及 WMO 天气代码 `[0, 99]` 值域校验），彻底屏蔽 DNS 劫持或公网 Wi-Fi 污染下恶意超长控制字符与畸形 Payload 的内存与 DOM 注入风险。
 - **远程升级包应用层完整性哈希硬校验 (TH-01 / SBP-001)**：在 `updateManager.js` 中新增 `verifyDownloadedPackageIntegrity()` 机制。当远程升级包下载完成且触发安装前，显式计算本地二进制文件的 SHA512 摘要（支持 Base64 与 Hex 双格式比对），并拦截不匹配或损坏的升级包，彻底阻断无签名更新机制下的流量劫持与恶意覆盖安装风险。
