@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **可视化选肤弹窗规划方案**：在 `docs/plan/visual-skin-selector-plan.md` 中完成了轻量级可视化选肤窗口的架构设计与 MVP 规划。确定采用按需即用的“极速选图弹窗 (Spotlight / Gallery 模式)”方向，支持网格封面图预览、即点即换与失焦自动隐藏；并且明确规定该窗体在 Electron 属性（透明、无边框、浮动顶层）和前端 UI（磨砂玻璃面板、双层边框纹理、青金渐变底线）上必须与现有修仙状态窗口 (`statusWindow`) 保持严格对齐。
+
 ### Changed
 - **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
 
