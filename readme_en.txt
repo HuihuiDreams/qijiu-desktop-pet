@@ -19,7 +19,7 @@ This app supports both Windows and macOS:
     - Quit the current app from the tray menu first.
     - Open the new `.dmg`, drag "七九爱宠" into Applications, and choose to replace the old version.
     - If macOS blocks the updated app on first launch, allow it again in Privacy & Security or rerun `xattr -cr /Applications/七九爱宠.app`.
-  - Bypass "Unidentified Developer / Damaged" Warning:
+  - Bypass "Unidentified Developer / Damaged" Warning (Note: As an independent developer distributing this program on a small scale, I cannot afford Apple's annual $99 developer certificate fee, so users need to manually bypass security settings. Please rest assured that this program is open-source and contains absolutely no malicious code):
     - Method 1: Go to "System Settings -> Privacy & Security", scroll down to find the blocked "七九爱宠", click "Open Anyway", and enter your password.
     - Method 2: Open Terminal and run: `xattr -cr /Applications/七九爱宠.app`
 
