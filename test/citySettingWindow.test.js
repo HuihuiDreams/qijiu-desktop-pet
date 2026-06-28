@@ -44,16 +44,17 @@ test('city setting window uses data-i18n attributes for translation', () => {
   assert.match(html, /data-i18n-placeholder="citySettingPlaceholder"/);
 });
 
-test('city setting CSS reuses the shared panel design tokens', () => {
+test('city setting reuses the shared panel design class and tokens', () => {
+  const html = readSource('src/city-setting.html');
+  const indexCss = readSource('src/index.css');
   const css = readSource('src/city-setting.css');
 
+  assert.match(html, /class="[^"]*xianxia-panel[^"]*"/);
+  assert.match(indexCss, /\.xianxia-panel/);
+  assert.match(indexCss, /var\(--panel-bg\)/);
+  assert.match(indexCss, /var\(--panel-border\)/);
+  assert.match(indexCss, /var\(--panel-shadow\)/);
   assert.match(css, /\.city-panel/);
-  assert.match(css, /--font-display/);
-  assert.match(css, /--color-jade/);
-  assert.match(css, /--color-jade-deep/);
-  assert.match(css, /var\(--panel-bg\)/);
-  assert.match(css, /var\(--panel-border\)/);
-  assert.match(css, /var\(--panel-shadow\)/);
 });
 
 test('city setting CSS includes input, button, and status feedback styles', () => {

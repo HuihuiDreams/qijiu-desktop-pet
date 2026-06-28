@@ -1,4 +1,4 @@
-﻿# ADR-033: Frontend UI Engineering & Theme Color Swap
+# ADR-033: Frontend UI Engineering & Theme Color Swap
 
 ## Status
 Accepted
@@ -19,6 +19,7 @@ Accepted
 - `context-menu.css`：管理自定义右键菜单。
 - `dialog-bubble.css`：管理单人、双人对话气泡。
 - `effects.css`：管理修仙灵力汇聚、悬浮光晕等所有纯视觉效果。
+- `stat-bar.css`：统一管理修仙状态属性进度条组件（`.stat-bar`、`.stat-bar-fill`、`.stat-value`），供主窗口嵌入面板与独立状态面板复用。
 
 ### 2. 引入设计令牌 (Design Tokens)
 在 `index.css` 的 `:root` 节点下，我们系统化地补充了 Design Tokens：
@@ -35,6 +36,9 @@ Accepted
 
 ### 4. 逻辑面条代码消除
 在拆分 CSS 的同时，顺带清理了 `app.js` 中关于时间跳跃、离线结算的三处重复逻辑，将其统一提取为 `handleOfflineReturn(offlineMs)` 方法，进一步降低了 UI/交互逻辑的耦合度。
+
+### 5. 跨窗口样式解耦与基类复用 (Cross-Window CSS Decoupling)
+在后续迭代新增多窗口（`statusWindow`、`pomodoroWindow`、`citySettingWindow`）过程中，我们在 `index.css` 中进一步抽象了 `.xianxia-panel` 基础装饰类，消除了各窗口样式表中重复编写的边框纹理伪元素 (`::before`/`::after`)；同时将所有样式拆分严格与自动化测试挂钩，为每个样式模块建立专属的自动化测试文件（如 `statBarCss.test.js`、`indexCss.test.js`），巩固了前端架构的严谨性与健壮性。
 
 ## Alternatives Considered
 ### 仅在 CSS 中交换颜色值而不改变量名

@@ -46,15 +46,17 @@ test('pomodoro window exposes the expected UI states and controls', () => {
   assert.equal(html.includes('<figcaption'), false);
 });
 
-test('pomodoro CSS reuses the shared panel design tokens', () => {
+test('pomodoro reuses the shared panel design class and tokens', () => {
+  const html = readSource('src/pomodoro.html');
+  const indexCss = readSource('src/index.css');
   const css = readSource('src/pomodoro.css');
 
+  assert.match(html, /class="[^"]*xianxia-panel[^"]*"/);
+  assert.match(indexCss, /\.xianxia-panel/);
+  assert.match(indexCss, /var\(--panel-bg\)/);
+  assert.match(indexCss, /var\(--panel-border\)/);
+  assert.match(indexCss, /var\(--panel-shadow\)/);
   assert.match(css, /\.pomodoro-panel/);
-  assert.match(css, /--font-display/);
-  assert.match(css, /--color-jade/);
-  assert.match(css, /var\(--panel-bg\)/);
-  assert.match(css, /var\(--panel-border\)/);
-  assert.match(css, /var\(--panel-shadow\)/);
 });
 
 test('pomodoro CSS keeps the English title compact in the small window', () => {

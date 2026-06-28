@@ -11,6 +11,7 @@
 - **互动对话气泡距离缩近**：将互动叠加层（亲亲、拥抱、双修等）对话气泡与图片之间的间距从 48px 缩减至 16px，使气泡更贴近人物头部，视觉关联更紧密。
 - **状态映射逻辑去重**：在 `SpriteView.js` 中提取统一的 `_resolveStateKey` 方法，收敛并复用了 `_resolveSpriteKey` 与 `_resolveResource` 之间重复的角色状态（饥饿、睡眠、行走、互动）映射逻辑。
 - **子窗口 HTML 默认语言规范化**：将 `pomodoro.html`、`status.html` 和 `city-setting.html` 中的 `<html lang>` 属性从硬编码 `zh-CN` 统一规范为 `zh`，与主页面保持对齐。
+- **状态进度条与修仙面板样式去重解耦**：将 `status.css` 与 `index.css` 中重复的 `.stat-bar` 组件样式提取至独立的 `stat-bar.css`，并新增专项测试文件 `statBarCss.test.js`；同时在 `index.css` 中提取 `.xianxia-panel` 基础装饰类，消除了 4 个窗口样式文件中的面板伪元素 (`::before`/`::after`) 重复定义。
 - **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
 
 ### Fixed
