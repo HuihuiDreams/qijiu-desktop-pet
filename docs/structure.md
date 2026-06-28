@@ -105,16 +105,17 @@ qijiu-desktop-pet/
 │  ├─ effects.css                       # 天气与粒子动效独立样式
 │  ├─ context-menu.css                  # 右键菜单样式
 │  ├─ dialog-bubble.css                 # 对话气泡样式
+│  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
 │  ├─ app.js                            # 渲染进程编排：初始化、game loop、保存、皮肤切换、状态同步
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
 │  ├─ status.html                       # 独立状态窗口 HTML
-│  ├─ status.css                        # 独立状态窗口样式
+│  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口样式，复用状态窗口视觉系统
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换和完成态
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
-│  ├─ city-setting.css                  # 城市设置独立窗口样式
+│  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
