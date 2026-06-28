@@ -313,8 +313,8 @@ test('interaction overlay bubbles follow the overlay visual scale', () => {
   assert.equal(appended.length, 2);
   assert.equal(appended[0].style['--bubble-scale'], 2 / 3);
   assert.equal(appended[1].style['--bubble-scale'], 2 / 3);
-  assert.equal(appended[0].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
-  assert.equal(appended[1].style.bottom, `${600 - overlayPos.y + 48 * (2 / 3)}px`);
+  assert.equal(appended[0].style.bottom, `${600 - overlayPos.y + 16 * (2 / 3)}px`);
+  assert.equal(appended[1].style.bottom, `${600 - overlayPos.y + 16 * (2 / 3)}px`);
 
   delete global.document;
   global.setTimeout = originalSetTimeout;
@@ -472,5 +472,54 @@ test('hideOverlay fades overlay and restores pet body visibility', () => {
   } finally {
     global.document = originalDocument;
     global.setTimeout = originalSetTimeout;
+  }
+});
+
+test('hideOverlay clears overlay bubbles and cancels timers', () => {
+  const clearedTimers = [];
+  const activeBubbles = [];
+  const stage = {
+    appendChild(el) {
+      if (el && typeof el.className === 'string' && el.className.includes('overlay-bubble')) {
+        el.remove = () => {
+          const idx = activeBubbles.indexOf(el);
+          if (idx !== -1) activeBubbles.splice(idx, 1);
+        };
+        activeBubbles.push(el);
+      }
+    },
+    querySelectorAll(selector) {
+      return selector === '.overlay-bubble' ? [...activeBubbles] : [];
+    }
+  };
+  const renderer = new PetRenderer(stage);
+
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  const originalDocument = global.document;
+
+  let timerIdCounter = 100;
+  global.setTimeout = () => ++timerIdCounter;
+  global.clearTimeout = (id) => clearedTimers.push(id);
+  global.document = {
+    createElement() {
+      return { className: '', style: { setProperty() {} }, classList: { add() {} }, remove() {} };
+    },
+    getElementById() { return null; }
+  };
+
+  try {
+    renderer.showOverlayBubbles('hello', 'world', { x: 0, y: 0, width: 100, scale: 1 }, 1000);
+    assert.equal(renderer._overlayBubbleTimers.length, 4);
+    assert.equal(activeBubbles.length, 2);
+
+    renderer.hideOverlay({ element: null }, { element: null });
+    assert.equal(clearedTimers.length, 4);
+    assert.equal(renderer._overlayBubbleTimers.length, 0);
+    assert.equal(activeBubbles.length, 0);
+  } finally {
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+    global.document = originalDocument;
   }
 });

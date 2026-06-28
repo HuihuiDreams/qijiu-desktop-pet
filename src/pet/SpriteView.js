@@ -120,7 +120,11 @@ class SpriteView {
     return sprites[this._resolveSpriteKey(pet)] || null;
   }
 
-  _resolveSpriteKey(pet) {
+  /**
+   * 统一的状态 → 视觉 key 映射。
+   * _resolveSpriteKey 和 _resolveResource 共用此方法，避免逻辑重复。
+   */
+  _resolveStateKey(pet) {
     if (pet.isHungry() && pet.state === 'idle') return 'hungry';
     if (pet.state === 'idle' && pet.timePhase === 'night') return 'sleeping';
     if (pet.state === 'walking') {
@@ -132,16 +136,12 @@ class SpriteView {
     return pet.state || 'idle';
   }
 
+  _resolveSpriteKey(pet) {
+    return this._resolveStateKey(pet);
+  }
+
   _resolveResource(pet) {
-    let stateKey = pet.state;
-    if (pet.isHungry() && pet.state === 'idle') {
-      stateKey = 'hungry';
-    } else if (pet.state === 'idle' && pet.timePhase === 'night') {
-      stateKey = 'sleeping';
-    }
-    if (pet.state === 'walking') {
-      stateKey = pet.direction === 'left' ? 'walkingLeft' : 'walkingRight';
-    }
+    const stateKey = this._resolveStateKey(pet);
 
     const stateImage = this.imageMap[pet.id]?.[stateKey] || null;
     if (stateImage) {

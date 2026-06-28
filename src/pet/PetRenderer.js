@@ -19,6 +19,8 @@ class PetRenderer {
     this.getVisualScaleForPet = typeof getVisualScaleForPet === 'function' ? getVisualScaleForPet : null;
     /** @type {string} 当前皮肤的路径前缀，用于叠加层图片 */
     this.skinPrefix = 'assets/default/';
+    /** @type {number[]} 活跃的覆盖层气泡定时器 ID */
+    this._overlayBubbleTimers = [];
   }
 
   /**
@@ -348,6 +350,7 @@ class PetRenderer {
    * @param {number} duration   - 气泡显示时长（毫秒）
    */
   showOverlayBubbles(shenjuText, yueqiText, overlayPos, duration) {
+    this._clearOverlayBubbles();
     const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
 
     const makeOverlayBubble = (text, headXRatio) => {
@@ -367,9 +370,11 @@ class PetRenderer {
       el.style.pointerEvents = 'none';
       this.stage.appendChild(el);
 
-      // 淡出动画
-      setTimeout(() => el.classList.add('dialog-bubble--fade-out'), duration - 500);
-      setTimeout(() => el.remove(), duration);
+      // 淡出动画（定时器被追踪，以便 hideOverlay 时清理）
+      this._overlayBubbleTimers.push(
+        setTimeout(() => el.classList.add('dialog-bubble--fade-out'), duration - 500),
+        setTimeout(() => el.remove(), duration),
+      );
     };
 
     if (shenjuText) makeOverlayBubble(shenjuText, INTERACTION_BUBBLE_HEAD_X.shenjiu);
@@ -380,6 +385,8 @@ class PetRenderer {
    * 隐藏互动叠加层图片并恢复两只宠物原本的身体。
    */
   hideOverlay(petA, petB) {
+    this._clearOverlayBubbles();
+
     const overlay = document.getElementById('interaction-overlay');
     if (overlay) {
       overlay.style.opacity = '0';
@@ -390,6 +397,17 @@ class PetRenderer {
     // 恢复宠物身体显示
     if (petA.element) petA.element.querySelector('.pet-body').style.visibility = '';
     if (petB.element) petB.element.querySelector('.pet-body').style.visibility = '';
+  }
+
+  /**
+   * 清除所有活跃的覆盖层气泡及其定时器。
+   */
+  _clearOverlayBubbles() {
+    this._overlayBubbleTimers.forEach(id => clearTimeout(id));
+    this._overlayBubbleTimers = [];
+    if (this.stage && typeof this.stage.querySelectorAll === 'function') {
+      this.stage.querySelectorAll('.overlay-bubble').forEach(el => el.remove());
+    }
   }
 }
 
