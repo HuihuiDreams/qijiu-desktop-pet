@@ -51,7 +51,7 @@ JS 侧需要添加：
 +<button id="status-close" class="status-close" aria-label="关闭状态面板">✕</button>
 ```
 
-#### 3. `focus-visible` 样式不完整
+#### ~~3. `focus-visible` 样式不完整~~ ✅（已修复）
 
 [pomodoro.css](file:///Users/huihui/Documents/qijiu-desktop-pet/src/pomodoro.css#L257-L264) 和 [city-setting.css](file:///Users/huihui/Documents/qijiu-desktop-pet/src/city-setting.css#L222-L227) 有 `focus-visible` 样式，但主窗口的 [index.css](file:///Users/huihui/Documents/qijiu-desktop-pet/src/index.css) 中完全没有。`.status-close` 按钮没有 focus 样式。
 
@@ -144,7 +144,7 @@ setTimeout(() => el.remove(), duration);
 
 **建议（低优先级）**：如果未来有精力，可以引入简单的打包工具（如 esbuild 单文件打包），用 `import`/`export` 替代全局变量。这不是当务之急。
 
-#### 10. `<html lang>` 在子窗口中硬编码为 `zh-CN`
+#### ~~10. `<html lang>` 在子窗口中硬编码为 `zh-CN`~~ ✅（已修复）
 
 [pomodoro.html](file:///Users/huihui/Documents/qijiu-desktop-pet/src/pomodoro.html#L2), [status.html](file:///Users/huihui/Documents/qijiu-desktop-pet/src/status.html#L2), [city-setting.html](file:///Users/huihui/Documents/qijiu-desktop-pet/src/city-setting.html) 都写死了 `lang="zh-CN"`，而主窗口 [index.html](file:///Users/huihui/Documents/qijiu-desktop-pet/src/index.html#L2) 是 `lang="zh"`（且 `applyI18n()` 会动态更新它）。
 
@@ -154,7 +154,7 @@ setTimeout(() => el.remove(), duration);
 
 ### P5 — 小细节
 
-#### 11. `context-menu.css` 中 `.menu-item:active` 有 `transform: scale(0.98)` 但缺少 `transition`
+#### ~~11. `context-menu.css` 中 `.menu-item:active` 有 `transform: scale(0.98)` 但缺少 `transition`~~ ✅（已修复）
 
 ```css
 .menu-item:active {
@@ -176,11 +176,11 @@ setTimeout(() => el.remove(), duration);
  }
 ```
 
-#### 12. `status-footer` 颜色为白色半透明 `rgba(255, 255, 255, 0.9)`
+#### ~~12. `status-footer` 颜色为白色半透明 `rgba(255, 255, 255, 0.9)`~~ ➖（无需修改）
 
 [status.css L197](file:///Users/huihui/Documents/qijiu-desktop-pet/src/status.css#L197) — 在浅色面板背景上，白色文字几乎不可见。这看起来是有意为之（隐蔽水印），如果确实如此则无需修改。
 
-#### 13. 缺少全局 `prefers-color-scheme` 处理
+#### ~~13. 缺少全局 `prefers-color-scheme` 处理~~ ➖（无需修改）
 
 `effects.css` 对 `prefers-reduced-motion` 做了处理 ✅，但没有对暗色模式做任何处理。在 Electron 桌宠这个场景下可能不需要（透明背景），但如果子窗口（pomodoro、status）在深色系统主题下显示，可能会不协调。
 
@@ -192,13 +192,13 @@ setTimeout(() => el.remove(), duration);
 |--------|--------|-----------|
 | 🔴 P1 | 右键菜单键盘导航 + ARIA | 约 1 小时 |
 | 🔴 P1 | 状态面板关闭按钮 `aria-label` | 5 分钟 |
-| 🔴 P1 | 主窗口 `focus-visible` 样式 | 15 分钟 |
+| 🟢 ~~P1~~ | ~~主窗口 `focus-visible` 样式~~ | ✅ 已完成 |
 | 🟡 P2 | `update-progress.css` 接入设计系统 | 30 分钟 |
 | 🟡 P2 | 提取共享面板装饰基类 | 45 分钟 |
 | 🟢 ~~P3~~ | ~~overlay bubble 定时器清理~~ | ✅ 已完成 |
 | 🟢 ~~P3~~ | ~~SpriteView 状态映射去重~~ | ✅ 已完成 |
-| ⚪ P4 | 子窗口 lang 属性同步 | 10 分钟 |
-| ⚪ P5 | 菜单项 active 过渡动画 | 5 分钟 |
+| ⚪ ~~P4~~ | ~~子窗口 lang 属性同步~~ | ✅ 已完成 |
+| ⚪ ~~P5~~ | ~~菜单项 active 过渡动画~~ | ✅ 已完成 |
 
 > [!TIP]
 > 整体 UI 工程质量很好。上面的大多数改进是"锦上添花"。如果要从中选最值得做的 **3 件事**，我推荐：**右键菜单键盘导航**、**提取面板装饰基类（减少重复）**、**overlay bubble 定时器清理**。

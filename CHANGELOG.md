@@ -14,6 +14,7 @@
 - **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
 
 ### Fixed
+- **主窗口关闭按钮可访问性样式补全**：在 `index.css` 中为 `.status-close` 按钮补充了缺失的 `focus-visible` 焦点样式（绿色高亮外发光），提升了状态面板操作在键盘导航时的可访问性，并在新增的 `indexCss.test.js` 中补充了针对性的单元测试。
 - **互动覆盖层气泡定时器清理**：在 `PetRenderer.js` 中新增 `_overlayBubbleTimers` 追踪覆盖层对话气泡的淡出与移除定时器，并在 `hideOverlay` 时显式清理，防止互动提前结束时残留定时器继续操作已销毁的 DOM 元素。
 - **右键菜单微动效过渡修复**：在 `context-menu.css` 中为 `.menu-item` 补充 `transform 0.1s ease` 过渡规则，修复了点击激活（`:active` 缩放至 0.98）时缺少对应属性平滑过渡的问题，并在 `contextMenuCss.test.js` 中补充了单元测试。
 - **测试期望值对齐与覆盖层单元测试**：修正 `petRenderer.test.js` 中互动气泡间距期望值（从已过期的 48 修正为实际代码中的 16），并新增对 `hideOverlay` 清理气泡及定时器的自动化测试，确保测试套件 100% 通过。

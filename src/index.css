@@ -348,6 +348,11 @@ html, body {
   transform: scale(0.92);
 }
 
+.status-close:focus-visible {
+  outline: 2px solid rgba(110, 198, 160, 0.7);
+  outline-offset: 2px;
+}
+
 .pet-status-block {
   margin-bottom: 18px;
   padding: 12px 14px;
