@@ -10,10 +10,12 @@
 - **README 文档更新**：在 `README.md`、`readme_zh.txt`、`readme_en.txt` 和 `readme_ja.txt` 中补充了关于开发者个人分发、无法负担 Apple $99 证书年费而需要用户手动绕过隐私设置的声明，同时郑重承诺程序绝无恶意代码且已完全开源。
 - **互动对话气泡距离缩近**：将互动叠加层（亲亲、拥抱、双修等）对话气泡与图片之间的间距从 48px 缩减至 16px，使气泡更贴近人物头部，视觉关联更紧密。
 - **状态映射逻辑去重**：在 `SpriteView.js` 中提取统一的 `_resolveStateKey` 方法，收敛并复用了 `_resolveSpriteKey` 与 `_resolveResource` 之间重复的角色状态（饥饿、睡眠、行走、互动）映射逻辑。
+- **子窗口 HTML 默认语言规范化**：将 `pomodoro.html`、`status.html` 和 `city-setting.html` 中的 `<html lang>` 属性从硬编码 `zh-CN` 统一规范为 `zh`，与主页面保持对齐。
 - **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
 
 ### Fixed
 - **互动覆盖层气泡定时器清理**：在 `PetRenderer.js` 中新增 `_overlayBubbleTimers` 追踪覆盖层对话气泡的淡出与移除定时器，并在 `hideOverlay` 时显式清理，防止互动提前结束时残留定时器继续操作已销毁的 DOM 元素。
+- **右键菜单微动效过渡修复**：在 `context-menu.css` 中为 `.menu-item` 补充 `transform 0.1s ease` 过渡规则，修复了点击激活（`:active` 缩放至 0.98）时缺少对应属性平滑过渡的问题，并在 `contextMenuCss.test.js` 中补充了单元测试。
 - **测试期望值对齐与覆盖层单元测试**：修正 `petRenderer.test.js` 中互动气泡间距期望值（从已过期的 48 修正为实际代码中的 16），并新增对 `hideOverlay` 清理气泡及定时器的自动化测试，确保测试套件 100% 通过。
 
 ### Security

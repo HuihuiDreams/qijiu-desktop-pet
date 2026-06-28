@@ -21,3 +21,8 @@ test('disabled context menu items remain readable without whole-item opacity fad
   assert.match(disabledMarkerRule, /background:\s*var\(--menu-disabled-marker\)/);
   assert.doesNotMatch(disabledRule, /opacity:\s*0\.35/);
 });
+
+test('menu items include transform transition for active scaling', () => {
+  const menuItemRule = contextMenuCss.match(/\.menu-item\s*\{[^}]+\}/s)?.[0] || '';
+  assert.match(menuItemRule, /transform\s+0\.1s\s+ease/);
+});
