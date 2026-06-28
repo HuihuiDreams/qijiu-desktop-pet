@@ -8,6 +8,7 @@
 
 ### Changed
 - **README 文档更新**：在 `README.md`、`readme_zh.txt`、`readme_en.txt` 和 `readme_ja.txt` 中补充了关于开发者个人分发、无法负担 Apple $99 证书年费而需要用户手动绕过隐私设置的声明，同时郑重承诺程序绝无恶意代码且已完全开源。
+- **互动对话气泡距离缩近**：将互动叠加层（亲亲、拥抱、双修等）对话气泡与图片之间的间距从 48px 缩减至 16px，使气泡更贴近人物头部，视觉关联更紧密。
 - **安全威胁模型状态同步**：更新 `docs/archive/qijiu-desktop-pet-threat-model.md`，标注 TH-01、TH-02、TH-03 已完成修复；记录 TH-04 为已确认可接受风险，并为 TH-05 补充暂缓修复原因与后续节流、写入体积限制、IPC 接口收敛加固方案。
 
 ### Security

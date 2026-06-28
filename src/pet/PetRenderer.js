@@ -2,7 +2,7 @@
 // by the active walk area's scaleRatio before positioning visual overlay pieces.
 const INTERACTION_OVERLAY_BASE_WIDTH = 176;
 const INTERACTION_OVERLAY_TOP_OFFSET = 64;
-const INTERACTION_BUBBLE_TOP_GAP = 48;
+const INTERACTION_BUBBLE_TOP_GAP = 16;
 const INTERACTION_BUBBLE_HEAD_X = {
   shenjiu: 0.1,
   yueqi: 0.9,
@@ -323,8 +323,8 @@ class PetRenderer {
 
     // 渐显进入（带缩放弹性效果）
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => { 
-        overlay.style.opacity = '1'; 
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
         overlay.style.transform = 'scale(1)';
       });
     });
