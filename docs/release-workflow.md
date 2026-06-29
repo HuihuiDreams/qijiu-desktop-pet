@@ -12,7 +12,7 @@
 发布前先在仓库中准备好版本和文档：
 
 1. 确认 `CHANGELOG.md` 有目标版本段落，例如 `## [0.8.4] - 2026-06-29`，并按 `Added`、`Changed`、`Fixed`、`Removed` 归类。
-2. 更新根目录 `readme.txt`、`readme_en.txt`、`readme_ja.txt`，这些文件会作为 Release 资产上传。
+2. 更新根目录 `readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，这些文件会作为 Release 资产上传。
 3. 如果发布策略、打包行为或更新机制变化，更新相关文档或 ADR，例如 `docs/release-code-signing.md`、`docs/decisions/ADR-020-windows-release-and-code-signing.md`、`docs/decisions/ADR-026-macos-manual-update-executable-name.md`。
 4. 推荐本地先把 `package.json` 和 `package-lock.json` 的 `version` 改到目标版本。`Release Preflight` 的手动运行可以在版本不一致时自动执行 `npm version <version> --no-git-tag-version --allow-same-version` 并推送同步提交，但正式发布前仍要确认提交历史清晰。
 
@@ -86,7 +86,7 @@ Windows Release 资产应至少包含：
 - `desktop-pet-setup-<version>.exe`
 - `.blockmap`
 - `latest.yml`
-- `readme.txt`
+- `readme_zh.txt`
 - `readme_en.txt`
 - `readme_ja.txt`
 - 未签名发布时的 `UNSIGNED-RELEASE.txt`
@@ -101,7 +101,7 @@ macOS Release 资产应至少包含：
 - `desktop-pet-setup-<version>-arm64.dmg`
 - 对应架构的 `.zip`
 - `latest-mac.yml`
-- `readme.txt`
+- `readme_zh.txt`
 - `readme_en.txt`
 - `readme_ja.txt`
 

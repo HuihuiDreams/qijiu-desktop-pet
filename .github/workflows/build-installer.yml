@@ -136,7 +136,7 @@ jobs:
             $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
           }
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
-          gh release upload $tag readme.txt readme_en.txt readme_ja.txt --clobber
+          gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -170,7 +170,7 @@ jobs:
             dist/*.blockmap
             dist/latest.yml
             dist/UNSIGNED-RELEASE.txt
-            readme.txt
+            readme_zh.txt
             readme_en.txt
             readme_ja.txt
           if-no-files-found: error
@@ -316,7 +316,7 @@ jobs:
             dist/*.dmg
             dist/*.zip
             dist/latest-mac.yml
-            readme.txt
+            readme_zh.txt
             readme_en.txt
             readme_ja.txt
           if-no-files-found: error
