@@ -79,17 +79,17 @@ git push -u origin main
 
 准备正式版本发布时，除了上面的 Push Workflow，还必须先同步版本文件：
 
-1. 确认目标版本号，例如 `0.7.0`，并使用同一个版本号贯穿所有文件与 GitHub Actions 输入。
+1. 确认目标版本号，例如 `0.8.4`，并使用同一个版本号贯穿所有文件与 GitHub Actions 输入。
 2. 本地运行：
 
    ```bash
-   npm version 0.7.0 --no-git-tag-version --allow-same-version
+   npm version 0.8.4 --no-git-tag-version --allow-same-version
    ```
 
    这会同时更新 `package.json` 和 `package-lock.json`，避免两者版本不一致。
-3. 将 `CHANGELOG.md` 顶部的 `[Unreleased]` 内容落版为 `## [0.7.0] - YYYY-MM-DD`，并保留新的空 `[Unreleased]` 段供后续开发使用。
+3. 将 `CHANGELOG.md` 顶部的 `[Unreleased]` 内容落版为 `## [0.8.4] - YYYY-MM-DD`，并保留新的空 `[Unreleased]` 段供后续开发使用。
 4. 如果发布说明、安装包行为、自动更新或签名策略变化，同步更新 `docs/release-workflow.md`、`docs/release-code-signing.md` 或相关 ADR。
-5. 提交后先运行 `Release Preflight`，输入 `0.7.0` 或 `v0.7.0`；通过后再运行 `Build Installers`。发布 tag 使用 `v0.7.0` 形式，并且必须与 `package.json` 的 `version` 保持一致。
+5. 提交后先运行 `Release Preflight`，输入 `0.8.4` 或 `v0.8.4`；通过后再运行 `Build Installers`。发布 tag 使用 `v0.8.4` 形式，并且必须与 `package.json` 的 `version` 保持一致。
 
 ---
 

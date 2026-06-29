@@ -11,7 +11,7 @@
 
 发布前先在仓库中准备好版本和文档：
 
-1. 确认 `CHANGELOG.md` 有目标版本段落，例如 `## [0.6.4] - 2026-06-10`，并按 `Added`、`Changed`、`Fixed`、`Removed` 归类。
+1. 确认 `CHANGELOG.md` 有目标版本段落，例如 `## [0.8.4] - 2026-06-29`，并按 `Added`、`Changed`、`Fixed`、`Removed` 归类。
 2. 更新根目录 `readme.txt`、`readme_en.txt`、`readme_ja.txt`，这些文件会作为 Release 资产上传。
 3. 如果发布策略、打包行为或更新机制变化，更新相关文档或 ADR，例如 `docs/release-code-signing.md`、`docs/decisions/ADR-020-windows-release-and-code-signing.md`、`docs/decisions/ADR-026-macos-manual-update-executable-name.md`。
 4. 推荐本地先把 `package.json` 和 `package-lock.json` 的 `version` 改到目标版本。`Release Preflight` 的手动运行可以在版本不一致时自动执行 `npm version <version> --no-git-tag-version --allow-same-version` 并推送同步提交，但正式发布前仍要确认提交历史清晰。
@@ -41,7 +41,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 
 在 GitHub Actions 手动运行 `Release Preflight`：
 
-- `version`: 填目标版本，可写 `0.6.4` 或 `v0.6.4`。
+- `version`: 填目标版本，可写 `0.8.4` 或 `v0.8.4`。
 
 这个 workflow 也会在相关 pull request 上自动运行。手动运行时，它会验证：
 
@@ -57,7 +57,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 
 `Release Preflight` 通过后，手动运行 `Build Installers`：
 
-- `version`: 填同一个版本，可写 `0.6.4` 或 `v0.6.4`。
+- `version`: 填同一个版本，可写 `0.8.4` 或 `v0.8.4`。
 
 手动运行时，workflow 会先执行 `create-release-tag`：
 
