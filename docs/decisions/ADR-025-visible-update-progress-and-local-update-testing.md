@@ -1,10 +1,13 @@
 ﻿# ADR-025: 更新进度弹窗与本地打包更新测试
 
 ## Status
-Accepted
+Accepted; update progress window implementation superseded by ADR-014/ADR-029 hardening
 
 ## Date
 2026-05-22
+
+## Updates
+- 2026-06-09: 本 ADR 中“更新进度窗口使用 `data:` URL 和生成 HTML”的实现方案已被后续安全加固取代。当前进度窗口由 `main.js` 加载本地 `src/update-progress.html`，配合 `src/update-progress.css`、`src/update-progress.js` 和 `updateProgressPreload.js`，通过 IPC 接收进度 payload，不再使用 `data:text/html`、内联脚本或 `webContents.executeJavaScript()`。这次替代记录在 [ADR-014](./ADR-014-electron-security-hardening.md) 与 [ADR-029](./ADR-029-security-audit-and-local-hardening.md) 的补充段落中。本 ADR 的“可见更新进度”和“本地 packaged 更新测试”目标仍然有效。
 
 ## Context
 有用户反馈点击“检查更新”之后看起来没有反应。实际更新检查已经触发，但即时状态只体现在托盘菜单文案里。用户点击菜单项后通常会关闭托盘菜单，因此很容易错过“正在检查更新”的状态反馈。

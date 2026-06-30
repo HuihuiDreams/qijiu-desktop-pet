@@ -1,10 +1,13 @@
 ﻿# ADR-012: 渲染层性能优化与防抖
 
 ## Status
-Accepted
+Accepted; StatusBar rendering section superseded by later independent status window architecture
 
 ## Date
 2026-05-01
+
+## Updates
+- 2026-06-30: 本 ADR 中“`StatusBar` 初始化静态 DOM 并增量更新节点”的决策描述适用于当时的内嵌状态面板。当前架构中，`src/ui/StatusBar.js` 只负责把宠物状态快照发送给独立状态窗口；实际 DOM 渲染由 `src/statusWindow.js` 完成，并在内容变化时使用 `replaceChildren()` 重建状态块。状态窗口的尺寸反馈与稳定性约束以后续 [ADR-027](./ADR-027-status-window-width-growth-fix.md) 和 `docs/structure.md` 为准。`PetRenderer` 的 `transform` 移动、状态 dirty check 和主进程内存优化仍是当前有效指导。
 
 ## Context
 随着游戏的运行，我们发现桌宠应用占用了大量的 CPU 资源，并伴随较高的内存波动。分析后发现，在游戏的主循环（每秒 60 帧）中存在大量的低效 DOM 操作：

@@ -6,6 +6,9 @@ Accepted
 ## Date
 2026-04-28
 
+## Updates
+- 2026-06-30: “推送前必须更新 `CHANGELOG.md`”仍是当前项目规则。最初的自动化落点是 Windows `push.ps1`；后续仓库也提供了 `push.sh`，并在 `docs/git-workflow.md` 中补充了 Windows、WSL、macOS 的跨平台 Git 配置与发布准备流程。因此，本 ADR 中关于 PowerShell 脚本的描述应理解为初始实现，不应排除等价的跨平台脚本或手动遵循同一检查流程。
+
 ## Context
 随着开发迭代加快，开发者（包括 AI Agent）容易在修改代码后忘记更新 `CHANGELOG.md`。这会导致项目版本记录与实际代码脱节，不利于长期维护。
 

@@ -3,6 +3,11 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **ADR 历史决策状态校准**：更新 ADR-001、ADR-002、ADR-003、ADR-008、ADR-009、ADR-012 和 ADR-025，标注好感度衰减、状态窗口渲染和更新进度窗口实现中已被后续架构或安全加固取代的早期决策，同时补充仍有效但范围已扩展的历史决策说明。
+
+### Fixed
+- **ADR 检查脚本路径修复**：将 `scripts/check_adrs.js` 从作者本机绝对路径改为基于仓库根目录解析 `docs/decisions`，并补充回归测试，确保脚本可在 Windows、WSL 和 macOS 工作区中直接运行。
 
 ## [0.8.4] - 2026-06-29
 ### Added

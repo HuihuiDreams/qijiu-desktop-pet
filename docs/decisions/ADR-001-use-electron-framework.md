@@ -6,6 +6,9 @@ Accepted
 ## Date
 2026-04-28
 
+## Updates
+- 2026-06-30: Electron 作为当前桌宠框架的决策仍然有效。后续 [ADR-013](./ADR-013-devtools-memory-optimization.md) 和图片资源复盘表明，短期内资源占用优化优先集中在 DevTools、运行时图片规格、窗口架构和 Electron/Chromium 基础成本上；“未来可考虑迁移到 Tauri”仍可作为长期备选，但不应被理解为当前近期路线。
+
 ## Context
 需要为《人渣反派自救系统》的岳清源和沈清秋构建一个双角色桌面宠物应用。核心需求包括：
 - 透明无边框窗口覆盖整个屏幕

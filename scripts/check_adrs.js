@@ -1,9 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const adrDir = '/Users/huihui/Documents/qijiu-desktop-pet/docs/decisions';
-const files = fs.readdirSync(adrDir).filter(f => f.startsWith('ADR-') && f.endsWith('.md'));
-
 const requiredHeaders = [
   { regex: /^# ADR-\d+: .+/, name: 'Title/Header' },
   { regex: /^## Status/m, name: 'Status' },
@@ -14,25 +11,49 @@ const requiredHeaders = [
   { regex: /^## Consequences/m, name: 'Consequences' }
 ];
 
-const report = [];
-
-for (const file of files) {
-  const content = fs.readFileSync(path.join(adrDir, file), 'utf-8');
-  const missing = [];
-  
-  if (!requiredHeaders[0].regex.test(content.split('\n')[0])) {
-    missing.push('Title/Header');
-  }
-  
-  for (let i = 1; i < requiredHeaders.length; i++) {
-    if (!requiredHeaders[i].regex.test(content)) {
-      missing.push(requiredHeaders[i].name);
-    }
-  }
-  
-  if (missing.length > 0) {
-    report.push({ file, missing });
-  }
+function getAdrDir(repoRoot = process.cwd()) {
+  return path.join(repoRoot, 'docs', 'decisions');
 }
 
-console.log(JSON.stringify(report, null, 2));
+function stripBom(content) {
+  return content.replace(/^\uFEFF/, '');
+}
+
+function checkAdrFiles(adrDir = getAdrDir()) {
+  const files = fs.readdirSync(adrDir)
+    .filter(f => f.startsWith('ADR-') && f.endsWith('.md'))
+    .sort();
+
+  const report = [];
+
+  for (const file of files) {
+    const content = stripBom(fs.readFileSync(path.join(adrDir, file), 'utf-8'));
+    const missing = [];
+
+    if (!requiredHeaders[0].regex.test(content.split('\n')[0])) {
+      missing.push('Title/Header');
+    }
+
+    for (let i = 1; i < requiredHeaders.length; i++) {
+      if (!requiredHeaders[i].regex.test(content)) {
+        missing.push(requiredHeaders[i].name);
+      }
+    }
+
+    if (missing.length > 0) {
+      report.push({ file, missing });
+    }
+  }
+
+  return report;
+}
+
+if (require.main === module) {
+  console.log(JSON.stringify(checkAdrFiles(), null, 2));
+}
+
+module.exports = {
+  checkAdrFiles,
+  getAdrDir,
+  stripBom,
+};
