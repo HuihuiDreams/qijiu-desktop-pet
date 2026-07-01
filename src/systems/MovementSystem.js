@@ -258,6 +258,24 @@ class MovementSystem {
     return this.findAreaContainingPoint(x + pet.size / 2, y + pet.size / 2);
   }
 
+  getScaleRatioForArea(area) {
+    const scaleRatio = Number(area?.scaleRatio);
+    return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
+  }
+
+  getMovementScaleForPet(pet) {
+    const centerX = pet.x + pet.size / 2;
+    const centerY = pet.y + pet.size / 2;
+    const walkArea = this.getWalkAreas().find((area) => (
+      centerX >= area.x
+      && centerX <= area.x + area.width
+      && centerY >= area.y
+      && centerY <= area.y + area.height
+    ));
+
+    return this.getScaleRatioForArea(walkArea);
+  }
+
   clampTargetToArea(pet, area) {
     if (!area) return;
     const range = this.getReachableTargetRange(area, pet, 0) || this.getTargetRange(area, pet, 0);
@@ -460,7 +478,7 @@ class MovementSystem {
 
     // 将速度进行帧率无关的归一化 (以 60 帧 16.66ms 为基准)
     const timeScale = deltaMs / 16.666;
-    const moveDist = pet.speed * timeScale;
+    const moveDist = pet.speed * timeScale * this.getMovementScaleForPet(pet);
 
     if (dist <= moveDist || dist === 0) {
       // 已经到达目标位置

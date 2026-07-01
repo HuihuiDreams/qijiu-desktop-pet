@@ -1,6 +1,8 @@
 /**
  * DialogBubble — 显示在宠物头上方的对话气泡。
  */
+const PERSONAL_BUBBLE_OVERLAP_GAP = 8;
+
 class DialogBubble {
   constructor() {
     this.activeBubbleTimers = new Map(); // petId -> scheduled fade/remove timers
@@ -31,6 +33,7 @@ class DialogBubble {
     pet.element.appendChild(bubble);
 
     this.activeBubbles.set(pet.id, bubble);
+    this.avoidPersonalBubbleOverlap(pet.id, bubble);
 
     // 在移除前开始淡出动画
     const fadeDelay = Math.max(0, duration - 500);
@@ -71,6 +74,48 @@ class DialogBubble {
 
   removeForPets(pets) {
     pets.forEach((pet) => this.remove(pet.id));
+  }
+
+  avoidPersonalBubbleOverlap(petId, bubble) {
+    if (!bubble || typeof bubble.getBoundingClientRect !== 'function') return;
+
+    let rect = bubble.getBoundingClientRect();
+    let stackOffset = 0;
+
+    for (const [otherPetId, otherBubble] of this.activeBubbles.entries()) {
+      if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
+        continue;
+      }
+
+      const otherRect = otherBubble.getBoundingClientRect();
+      if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
+
+      const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
+      if (lift <= 0) continue;
+
+      stackOffset += lift;
+      rect = {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top - lift,
+        bottom: rect.bottom - lift,
+      };
+    }
+
+    if (stackOffset > 0) {
+      if (typeof bubble.style?.setProperty === 'function') {
+        bubble.style.setProperty('--bubble-stack-offset', `${Math.ceil(stackOffset)}px`);
+      } else if (bubble.style) {
+        bubble.style['--bubble-stack-offset'] = `${Math.ceil(stackOffset)}px`;
+      }
+    }
+  }
+
+  static rectsOverlap(a, b) {
+    return a.left < b.right
+      && a.right > b.left
+      && a.top < b.bottom
+      && a.bottom > b.top;
   }
 
   /**

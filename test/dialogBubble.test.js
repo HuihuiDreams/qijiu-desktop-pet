@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
 const { DialogBubble } = require('../src/ui/DialogBubble');
@@ -7,10 +9,15 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function createFakeElement() {
+function createFakeElement(rect = null) {
   const classes = new Set();
+  const style = {};
+  style.setProperty = (name, value) => {
+    style[name] = value;
+  };
   const element = {
     children: [],
+    style,
     classList: {
       add(className) {
         classes.add(className);
@@ -27,15 +34,17 @@ function createFakeElement() {
       element.removed = true;
     },
   };
+  if (rect) {
+    element.getBoundingClientRect = () => rect;
+  }
   return element;
 }
 
-function withFakeDocument(run) {
+function withFakeDocument(run, createElement = createFakeElement) {
   const originalDocument = global.document;
   global.document = {
     createElement() {
-      const element = createFakeElement();
-      element.style = {};
+      const element = createElement();
       element.remove = function remove() {
         element.removed = true;
         if (element.parentElement) {
@@ -52,6 +61,52 @@ function withFakeDocument(run) {
     global.document = originalDocument;
   }
 }
+
+test('personal dialog bubbles wrap long English text', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'dialog-bubble.css'), 'utf8');
+  const rule = css.match(/\.dialog-bubble\s*\{[^}]+\}/s)?.[0] || '';
+
+  assert.match(rule, /width:\s*max-content/);
+  assert.match(rule, /max-width:\s*min\(/);
+  assert.match(rule, /white-space:\s*pre-wrap/);
+  assert.match(rule, /overflow-wrap:\s*break-word/);
+});
+
+test('showInteraction lifts overlapping greet bubbles', () => {
+  const bubbleRects = [
+    { left: 100, right: 260, top: 100, bottom: 150 },
+    { left: 170, right: 330, top: 110, bottom: 160 },
+  ];
+
+  withFakeDocument(() => {
+    const originalDialogues = global.DIALOGUES;
+    const originalConfig = global.CONFIG;
+    const originalRandom = Math.random;
+    global.DIALOGUES = {
+      greet: {
+        yueqi: ['Xiao-Jiu, are you also here?'],
+        shenjiu: ['Hmph. Why are you everywhere?'],
+      },
+    };
+    global.CONFIG = { INTERACTION_DURATION: 4000 };
+    Math.random = () => 0;
+
+    const dialogBubble = new DialogBubble();
+    const yueqi = { id: 'yueqi', element: createFakeElement() };
+    const shenjiu = { id: 'shenjiu', element: createFakeElement() };
+
+    try {
+      dialogBubble.showInteraction(yueqi, shenjiu, 'greet');
+    } finally {
+      global.DIALOGUES = originalDialogues;
+      global.CONFIG = originalConfig;
+      Math.random = originalRandom;
+    }
+
+    const secondBubble = dialogBubble.activeBubbles.get('shenjiu');
+    assert.equal(secondBubble.style['--bubble-stack-offset'], '68px');
+  }, () => createFakeElement(bubbleRects.shift()));
+});
 
 test('stale bubble timers do not remove a newer bubble for the same pet', async () => {
   await withFakeDocument(async () => {

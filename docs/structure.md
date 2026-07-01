@@ -249,7 +249,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 拖拽中不触发互动，避免误判。
 - 互动动作会锁定双方动作状态，避免移动系统立即覆盖。
 - 互动有全局冷却，防止短时间重复触发。
-- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典。
+- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，并在与现有普通气泡重叠时向上错开，避免 `greet` 等非 overlay 双宠互动重叠。
 
 ### 3.8 皮肤系统
 

@@ -5,7 +5,8 @@
   position: absolute;
   /* 1x design scale; overlay bubbles override it with the active display scaleRatio. */
   --bubble-scale: 1;
-  bottom: calc(100% + 10px);
+  --bubble-stack-offset: 0px;
+  bottom: calc(100% + 10px + var(--bubble-stack-offset));
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-cloud);
@@ -15,7 +16,11 @@
   font-size: calc(12.5px * var(--bubble-scale));
   font-family: var(--font-body);
   color: var(--color-ink);
-  white-space: nowrap;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(calc(220px * var(--bubble-scale)), calc(100vw - 24px));
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   box-shadow: 
     var(--shadow-md),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);

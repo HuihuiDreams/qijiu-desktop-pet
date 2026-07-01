@@ -64,7 +64,7 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 
 ### 8. UI 适配
 
-- **单人对话气泡**：保持 `white-space: nowrap`，单行自然延展，不限制宽度。
+- **单人对话气泡**：使用 `width: max-content` 保持自然内容宽度，再用受控 `max-width` 封顶；较长英文文本通过 `white-space: pre-wrap` 和 `overflow-wrap: break-word` 换行，避免被宠物自身窄容器压成竖条。`DialogBubble` 在插入新气泡后按实际 DOM 矩形检测现有普通气泡，必要时通过 `--bubble-stack-offset` 向上错开，避免 `greet` 等双宠普通互动在高度接近时重叠。
 - **双人互动气泡** (`.overlay-bubble`)：使用 `white-space: pre-wrap`、`max-width: 130px`、`word-wrap: break-word`，英文长文本受限折行后向上增长（`bottom` 定位），避免两人气泡重叠。
 - **状态面板** (`.stat-label`)：宽度从 72px 增至 85px，加 `white-space: nowrap`，确保英文标签（如 "❤️ Affection"）不折行，所有属性名右对齐。
 

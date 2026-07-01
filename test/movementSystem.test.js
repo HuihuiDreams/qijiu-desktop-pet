@@ -81,6 +81,28 @@ test('walk area primary flag survives normalization', () => {
   ]);
 });
 
+test('walking speed follows the current display scale ratio', () => {
+  const movementSystem = new MovementSystem(3640, 1920, [
+    { x: 0, y: 0, width: 2560, height: 1392, scaleRatio: 1 },
+    { x: 2560, y: 0, width: 720, height: 1248, scaleRatio: 2 / 3 },
+  ]);
+  const pet = {
+    x: 2600,
+    y: 120,
+    targetX: 2800,
+    targetY: 120,
+    targetArea: { x: 2560, y: 0, width: 720, height: 1248, scaleRatio: 2 / 3 },
+    size: 96,
+    speed: 12,
+    direction: 'right',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16.666);
+
+  assert.equal(pet.x, 2608);
+  assert.equal(pet.y, 120);
+});
+
 test('macOS edge migration triggers at the walk target margin near an adjacent display', () => {
   const pet = {
     x: 1824,
