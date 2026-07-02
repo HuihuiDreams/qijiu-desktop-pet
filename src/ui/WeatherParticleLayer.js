@@ -237,7 +237,7 @@ class WeatherParticleLayer {
 
   getOpacity(weatherKind, index, total) {
     const spread = total > 0 ? index / total : 0;
-    if (weatherKind === 'wind') return (0.34 + (spread % 0.34)).toFixed(2);
+    if (weatherKind === 'wind') return (0.52 + (spread % 0.30)).toFixed(2);
     const base = weatherKind === 'snow' ? 0.34 : 0.28;
     return (base + (spread % 0.38)).toFixed(2);
   }

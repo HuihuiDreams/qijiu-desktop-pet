@@ -169,13 +169,6 @@ class WeatherAwarenessSystem {
       let phase = this.TIME_PHASES[this.weatherPayload.timePhase]
         ? this.weatherPayload.timePhase
         : this.currentState.timePhase;
-      
-      // 如果天气服务明确告知现在天黑了 (!isDay)，但在本地时间里还是白天，就强制转入 night
-      if (!this.weatherPayload.fallback && this.weatherPayload.isDay === false) {
-        if (phase === 'morning' || phase === 'day' || phase === 'dusk') {
-           phase = 'night';
-        }
-      }
 
       return {
         ...this.currentState,

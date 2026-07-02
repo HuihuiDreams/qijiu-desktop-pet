@@ -225,4 +225,22 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.weatherKind, 'rain');
     assert.strictEqual(state.windIntensity, 'heavy');
   });
+
+  await t.test('does not override dusk time phase to night when weather reports isDay: false after sunset', () => {
+    system._lastComputedMinute = -1;
+    system._lastCheckTimestamp = 0;
+    system._getCurrentDate = () => new Date(2026, 6, 2, 19, 30, 0); // 19:30 is dusk
+    system.updateLocalTimePhase(999999);
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      isDay: false,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.timePhase, 'dusk');
+    assert.strictEqual(state.isDay, false);
+  });
 });
