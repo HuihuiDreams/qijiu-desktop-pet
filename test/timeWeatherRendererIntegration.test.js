@@ -130,6 +130,16 @@ test('Time Weather Renderer Integration', async (t) => {
     assert.strictEqual(state.timePhase, 'night');
     assert.strictEqual(state.intensity, 'heavy');
 
+    was.setWeatherPayload({ active: true, stale: false, weatherCode: 0, windSpeed: 20, windGusts: 0 });
+    state = was.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'windy');
+    assert.strictEqual(state.windIntensity, 'normal');
+
+    was.setWeatherPayload({ active: true, stale: false, weatherKind: 'rain', windIntensity: 'heavy' });
+    state = was.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'rain');
+    assert.strictEqual(state.windIntensity, 'heavy');
+
     // clear payload
     was.setWeatherPayload({ active: false });
     state = was.getCurrentState();

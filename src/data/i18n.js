@@ -284,6 +284,14 @@ const I18N = {
         yueqi: ['天色阴沉，似乎要变天了。', '起风了。'],
         shenjiu: ['阴天…让人提不起劲。', '（天气阴沉沉的）'],
       },
+      weather_windy: {
+        yueqi: ['风有些大，小九别站在风口。', '山风急了，衣袂都乱了。'],
+        shenjiu: ['…风吵得人心烦。', '（拢了拢衣袖）'],
+      },
+      weather_thunderstorm: {
+        yueqi: ['雷声近了，小九别怕。', '这场雷雨来得急，先避一避。'],
+        shenjiu: ['…打雷而已，有什么好怕。', '（被雷光照得皱了皱眉）'],
+      },
       hungry: {
         yueqi: ['有些饿了…', '该用膳了。'],
         shenjiu: ['…肚子叫了。', '辟谷也该有个限度。'],
@@ -592,6 +600,14 @@ const I18N = {
         yueqi: ['It looks gloomy, the weather might change.', 'The wind is picking up.'],
         shenjiu: ['Cloudy days... make me sluggish.', '(The sky is gloomy)'],
       },
+      weather_windy: {
+        yueqi: ['The wind is strong, Xiao Jiu. Stay out of the draft.', 'The mountain wind is tugging at our sleeves.'],
+        shenjiu: ['...The wind is noisy enough to be annoying.', '(Pulling sleeves closer)'],
+      },
+      weather_thunderstorm: {
+        yueqi: ['The thunder is close. Xiao Jiu, do not be afraid.', 'This storm came quickly. Let us take shelter first.'],
+        shenjiu: ['...It is only thunder. What is there to fear?', '(Frowning under the flash of lightning)'],
+      },
       hungry: {
         yueqi: ['A bit hungry...', 'Time for a meal.'],
         shenjiu: ['...My stomach is growling.', 'Inedia should have its limits.'], // 辟谷的标准玄幻词是 Inedia 或 Fasting，Inedia 古风感更强
@@ -898,6 +914,14 @@ const I18N = {
       weather_cloudy: {
         yueqi: ['空が淀んでいる、天気が崩れそうだな。', '風が出てきたな。'],
         shenjiu: ['曇り空は…気が滅入る。', '（空がどんよりとしている）'],
+      },
+      weather_windy: {
+        yueqi: ['風が強いな、小九、風口には立たぬように。', '山風が急で、袖まで乱れてしまうな。'],
+        shenjiu: ['…風の音が耳障りだ。', '（袖を引き寄せる）'],
+      },
+      weather_thunderstorm: {
+        yueqi: ['雷が近いな。小九、怖がらなくていい。', 'この雷雨は急だ、まず避けよう。'],
+        shenjiu: ['…雷くらいで騒ぐな。', '（稲光に眉をひそめる）'],
       },
       hungry: {
         yueqi: ['少し腹が減ったな…', '膳の時間か。'], // 有些饿了… / 该用膳了。（“膳の時間”很有古风日常感）

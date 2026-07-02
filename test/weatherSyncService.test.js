@@ -83,7 +83,9 @@ describe('WeatherSyncService - fetchWeather', () => {
           current_weather: {
             temperature: 25.5,
             weathercode: 3,
-            is_day: 1
+            is_day: 1,
+            windspeed: 32.25,
+            winddirection: 185
           }
         };
       }
@@ -94,8 +96,36 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(result.temperature, 25.5);
     assert.strictEqual(result.weatherCode, 3);
     assert.strictEqual(result.isDay, true);
+    assert.strictEqual(result.windSpeed, 32.3);
+    assert.strictEqual(result.windDirection, 185);
+    assert.strictEqual(result.windGusts, null);
     assert.strictEqual(result.fallback, false);
     assert.ok(result.timestamp > 0);
+  });
+
+  it('should fetch current Open-Meteo payload fields including wind gusts', async () => {
+    const mockProvider = {
+      async fetch() {
+        return {
+          current: {
+            temperature_2m: 18.74,
+            weather_code: 95,
+            is_day: 0,
+            wind_speed_10m: 41.25,
+            wind_direction_10m: 275,
+            wind_gusts_10m: 62.88
+          }
+        };
+      }
+    };
+
+    const result = await fetchWeather({ enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 }, mockProvider);
+    assert.strictEqual(result.temperature, 18.7);
+    assert.strictEqual(result.weatherCode, 95);
+    assert.strictEqual(result.isDay, false);
+    assert.strictEqual(result.windSpeed, 41.3);
+    assert.strictEqual(result.windDirection, 275);
+    assert.strictEqual(result.windGusts, 62.9);
   });
 
   it('should return fallback payload on provider error', async () => {
@@ -225,10 +255,13 @@ describe('WeatherSyncService - fetchWeather', () => {
     const provider = {
       async fetch() {
         return {
-          current_weather: {
-            temperature: 9999, // out of bounds
-            weathercode: 'malformed_string', // invalid number
-            is_day: 1
+          current: {
+            temperature_2m: 9999, // out of bounds
+            weather_code: 'malformed_string', // invalid number
+            is_day: 1,
+            wind_speed_10m: -1,
+            wind_direction_10m: 999,
+            wind_gusts_10m: 'fast'
           }
         };
       }
@@ -237,6 +270,9 @@ describe('WeatherSyncService - fetchWeather', () => {
     const result = await fetchWeather(settings, provider);
     assert.strictEqual(result.temperature, null);
     assert.strictEqual(result.weatherCode, -1);
+    assert.strictEqual(result.windSpeed, null);
+    assert.strictEqual(result.windDirection, null);
+    assert.strictEqual(result.windGusts, null);
   });
 
   it('should abort an in-flight weather request before starting a new one', async () => {

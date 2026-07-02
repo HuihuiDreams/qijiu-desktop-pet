@@ -395,8 +395,13 @@ function setDebugWeather(weatherKind, options = {}) {
     intensity: options.intensity || 'normal',
     timePhase: options.timePhase || 'day',
     isDay: options.isDay !== false,
+    windIntensity: options.windIntensity,
+    windSpeed: options.windSpeed,
+    windGusts: options.windGusts,
   };
-  const state = window.__DEBUG_WEATHER.set(payload);
+  const state = typeof window.__DEBUG_WEATHER.force === 'function'
+    ? window.__DEBUG_WEATHER.force(weatherKind, payload)
+    : window.__DEBUG_WEATHER.set(payload);
   const particleCount = document.querySelectorAll('.weather-particle').length;
   console.log('[debug] weather effect applied', { state, particleCount });
   return { state, particleCount };
@@ -416,6 +421,18 @@ window.testWeatherRain = function (intensity = 'heavy') {
 
 window.testWeatherSnow = function (intensity = 'medium') {
   return setDebugWeather('snow', { intensity, timePhase: 'day', isDay: true });
+};
+
+window.testWeatherWindy = function (windIntensity = 'normal') {
+  return setDebugWeather('windy', { intensity: 'normal', windIntensity, timePhase: 'day', isDay: true });
+};
+
+window.testWeatherThunderstorm = function (intensity = 'heavy') {
+  return setDebugWeather('thunderstorm', { intensity, timePhase: 'day', isDay: true });
+};
+
+window.testWeatherRainWind = function (intensity = 'heavy', windIntensity = 'normal') {
+  return setDebugWeather('rain', { intensity, windIntensity, timePhase: 'day', isDay: true });
 };
 
 window.testWeatherNight = function (weatherKind = 'unknown') {
@@ -438,10 +455,13 @@ window.testWeatherEffects = function () {
     cloudy: 'testWeatherCloudy()',
     rain: "testWeatherRain('heavy')",
     snow: "testWeatherSnow('medium')",
+    windy: "testWeatherWindy('normal')",
+    thunderstorm: "testWeatherThunderstorm('heavy')",
+    rainWind: "testWeatherRainWind('heavy', 'normal')",
     night: 'testWeatherNight()',
     clearEffect: 'clearWeatherEffect()',
   };
 };
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherEffects(), testWeatherRain(), testWeatherSnow(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherEffects(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
 

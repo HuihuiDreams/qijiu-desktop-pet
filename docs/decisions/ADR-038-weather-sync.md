@@ -6,6 +6,9 @@ Accepted
 ## Date
 2026-06-18
 
+## Updates
+- 2026-07-02: 天气同步扩展 Open-Meteo `current` 查询字段，主进程额外清洗并下发 `windSpeed`、`windDirection`、`windGusts`；渲染进程新增 `windy`、`thunderstorm` 和 `windIntensity` 归一化，仍保持局部粒子表现和无行为惩罚边界。
+
 ## Context
 我们希望为桌宠引入天气感知能力（如根据本地时间进入清晨、白天、黄昏、深夜；根据天气展示特效、台词）。但在桌面端引入网络功能面临以下挑战：
 1. **隐私问题**：自动定位或上传本地状态可能引发用户隐私担忧。
@@ -28,7 +31,9 @@ Accepted
    - 绝对不上传任何桌面宠物当前状态、截图或用户的标识数据到天气接口。
 
 4. **Payload 合约**：
-   - 包含字段：`active`, `source`, `timePhase`, `weatherKind`, `intensity`, `temperatureBand`, `isDay`, `stale`, `sampledAt`, `expiresAt`。
+   - 包含字段：`active`, `source`, `timePhase`, `weatherKind`, `intensity`, `windIntensity`, `temperatureBand`, `isDay`, `stale`, `sampledAt`, `expiresAt`。
+   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `unknown` 等稳定状态。
+   - 大风是氛围修饰：晴/阴且强风时可成为 `windy`；雨、雪和雷暴保持原主天气，同时通过 `windIntensity` 叠加风痕粒子。
    - 性能约束：`WEATHER_MIN_REFRESH_MINUTES` 为 30 分钟，网络超时 `WEATHER_TIMEOUT_MS` 为 4000ms，连续失败冷却 `WEATHER_BACKOFF_MS` 为 20 分钟（常量统一维护在 `src/data/config.js`）。
 
 ## Alternatives Considered

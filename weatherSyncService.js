@@ -163,7 +163,15 @@ function getRequestTransportLabel() {
 }
 
 function fetchOpenMeteoWeather(lat, lon, controller) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+  const currentFields = [
+    'temperature_2m',
+    'is_day',
+    'weather_code',
+    'wind_speed_10m',
+    'wind_direction_10m',
+    'wind_gusts_10m',
+  ].join(',');
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=${currentFields}&wind_speed_unit=kmh`;
   return requestJson(url, controller);
 }
 
@@ -190,6 +198,26 @@ const defaultProvider = {
   geocode: resolveCityToCoordinates
 };
 
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function normalizeRangeNumber(value, min, max) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < min || number > max) return null;
+  return Number(number.toFixed(1));
+}
+
+function normalizeWindDirection(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0 || number > 360) return null;
+  return Math.round(number);
+}
+
 async function fetchWeather(settings, provider = defaultProvider) {
   if (!settings.enabled || settings.lat === null || settings.lon === null) {
     return { active: false };
@@ -213,19 +241,36 @@ async function fetchWeather(settings, provider = defaultProvider) {
 
   try {
     const response = await provider.fetch(settings.lat, settings.lon, fetchTimeoutController);
-    const cw = response.current_weather || {};
+    const current = response.current || {};
+    const legacy = response.current_weather || {};
     
     // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
-    const rawCode = Number(cw.weathercode);
-    const rawTemp = Number(cw.temperature);
+    const rawCode = firstFiniteNumber(current.weather_code, current.weathercode, legacy.weathercode);
+    const rawTemp = firstFiniteNumber(current.temperature_2m, current.temperature, legacy.temperature);
     const weatherCode = Number.isFinite(rawCode) && rawCode >= 0 && rawCode <= 99 ? Math.floor(rawCode) : -1;
     const temperature = Number.isFinite(rawTemp) && rawTemp >= -100 && rawTemp <= 100 ? Number(rawTemp.toFixed(1)) : null;
+    const windSpeed = normalizeRangeNumber(
+      current.wind_speed_10m ?? legacy.windspeed ?? legacy.wind_speed_10m,
+      0,
+      500,
+    );
+    const windDirection = normalizeWindDirection(
+      current.wind_direction_10m ?? legacy.winddirection ?? legacy.wind_direction_10m,
+    );
+    const windGusts = normalizeRangeNumber(
+      current.wind_gusts_10m ?? legacy.windgusts ?? legacy.wind_gusts_10m,
+      0,
+      500,
+    );
 
     const payload = {
       active: true,
       weatherCode,
       temperature,
-      isDay: cw.is_day === 1,
+      isDay: (current.is_day ?? legacy.is_day) === 1,
+      windSpeed,
+      windDirection,
+      windGusts,
       timestamp: now,
       fallback: false
     };
@@ -240,6 +285,9 @@ async function fetchWeather(settings, provider = defaultProvider) {
       weatherCode: -1,
       temperature: null,
       isDay: true,
+      windSpeed: null,
+      windDirection: null,
+      windGusts: null,
       fallback: true,
       timestamp: now
     };

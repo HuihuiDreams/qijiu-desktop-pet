@@ -132,4 +132,97 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.weatherKind, 'snow');
     assert.strictEqual(state.intensity, 'normal');
   });
+
+  await t.test('maps thunderstorm weather codes to thunderstorm', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 95,
+      isDay: true,
+    });
+
+    assert.strictEqual(system.getCurrentState().weatherKind, 'thunderstorm');
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 99,
+      isDay: true,
+    });
+
+    assert.strictEqual(system.getCurrentState().weatherKind, 'thunderstorm');
+  });
+
+  await t.test('uses strong wind as primary weather for clear and cloudy payloads', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 1,
+      windSpeed: 19.8,
+      windGusts: 0,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'windy');
+    assert.strictEqual(state.windIntensity, 'normal');
+  });
+
+  await t.test('does not show wind effects below the ambience threshold', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 1,
+      windSpeed: 19.7,
+      windGusts: 28.7,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'cloudy');
+    assert.strictEqual(state.windIntensity, 'none');
+  });
+
+  await t.test('uses gusts to derive wind intensity', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      windSpeed: 0,
+      windGusts: 28.8,
+      isDay: true,
+    });
+
+    let state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'windy');
+    assert.strictEqual(state.windIntensity, 'normal');
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      windSpeed: 0,
+      windGusts: 45,
+      isDay: true,
+    });
+
+    state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'windy');
+    assert.strictEqual(state.windIntensity, 'heavy');
+  });
+
+  await t.test('keeps precipitation primary weather while exposing wind intensity', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 61,
+      windSpeed: 28.8,
+      windGusts: 0,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'rain');
+    assert.strictEqual(state.windIntensity, 'heavy');
+  });
 });

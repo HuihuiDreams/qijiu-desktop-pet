@@ -96,7 +96,7 @@ Pets automatically transition through morning, day, dusk, and night based on you
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions.
 
 If you want them to sense real-world weather, choose "🌤️ Enable Weather Sync" from the tray menu and use "🌤️ Set City".
-When it rains or snows, lightweight particle effects will fall from the top of the screen, and characters may trigger weather-specific dialogue.
+When it rains, snows, gets windy, or thunderstorms, lightweight local particle effects appear near the pets. Thunderstorms render rain with brief lightning flashes, and windy weather adds slanted airflow wisps. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================

@@ -796,6 +796,17 @@ function applyI18n() {
       });
       return state;
     },
+    force(weatherKind = 'unknown', options = {}) {
+      return this.set({
+        weatherKind,
+        intensity: options.intensity || (weatherKind === 'unknown' ? 'none' : 'normal'),
+        windIntensity: options.windIntensity,
+        windSpeed: options.windSpeed,
+        windGusts: options.windGusts,
+        timePhase: options.timePhase || 'day',
+        isDay: options.isDay !== false,
+      });
+    },
     clear() {
       weatherAwarenessSystem.setWeatherPayload({ active: false });
       const state = weatherAwarenessSystem.getCurrentState();

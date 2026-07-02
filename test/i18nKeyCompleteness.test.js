@@ -58,6 +58,12 @@ test('ui string values contain no replacement-character garble (U+FFFD)', () => 
 const REQUIRED_DIALOGUE_CATEGORIES = [
   'greet',
   'idle',
+  'weather_rain',
+  'weather_snow',
+  'weather_clear',
+  'weather_cloudy',
+  'weather_windy',
+  'weather_thunderstorm',
   'hungry',
   'lowQi',
   'lowMood',

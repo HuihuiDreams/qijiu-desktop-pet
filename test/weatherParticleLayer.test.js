@@ -154,3 +154,113 @@ test('WeatherParticleLayer clears particles when hidden or switched to snow', ()
     delete global.document;
   }
 });
+
+test('WeatherParticleLayer creates bounded wind particles for windy weather', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_WIND_PARTICLE_MAX: 12,
+    });
+
+    layer.sync(
+      { weatherKind: 'windy', intensity: 'normal', windIntensity: 'normal' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const weatherLayer = root.children[0];
+    const group = weatherLayer.children[0];
+    assert.equal(weatherLayer.dataset.weather, 'windy');
+    assert.equal(weatherLayer.dataset.windIntensity, 'normal');
+    assert.equal(group.children.length, 5);
+    assert.ok(group.children.every(child => child.className.includes('weather-particle--wind')));
+  } finally {
+    delete global.document;
+  }
+});
+
+test('WeatherParticleLayer default windy weather is visually noticeable', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root);
+
+    layer.sync(
+      { weatherKind: 'windy', intensity: 'normal', windIntensity: 'normal' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const windParticles = root.children[0].children[0].children
+      .filter(child => child.className.includes('weather-particle--wind'));
+    assert.equal(windParticles.length, 8);
+    assert.ok(Number(windParticles[0].style['--weather-particle-opacity']) >= 0.34);
+  } finally {
+    delete global.document;
+  }
+});
+
+test('WeatherParticleLayer keeps rain primary and adds wind particles when wind is present', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_RAIN_PARTICLE_MAX: 10,
+      WEATHER_WIND_PARTICLE_MAX: 10,
+    });
+
+    layer.sync(
+      { weatherKind: 'rain', intensity: 'light', windIntensity: 'normal' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const group = root.children[0].children[0];
+    assert.equal(root.children[0].dataset.weather, 'rain');
+    assert.equal(root.children[0].dataset.windIntensity, 'normal');
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--rain')).length, 2);
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--wind')).length, 4);
+  } finally {
+    delete global.document;
+  }
+});
+
+test('WeatherParticleLayer renders thunderstorm as rain plus local lightning', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_RAIN_PARTICLE_MAX: 10,
+    });
+
+    layer.sync(
+      { weatherKind: 'thunderstorm', intensity: 'light' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const group = root.children[0].children[0];
+    assert.equal(root.children[0].dataset.weather, 'thunderstorm');
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--rain')).length, 2);
+    assert.equal(group.children.filter(child => child.className.includes('weather-lightning')).length, 2);
+  } finally {
+    delete global.document;
+  }
+});

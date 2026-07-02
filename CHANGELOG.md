@@ -3,7 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **大风与雷暴天气氛围 MVP**：天气同步新增风速、风向和阵风字段清洗；渲染进程新增 `windy` / `thunderstorm` 天气状态、大风风痕粒子、雷暴局部闪电，以及中英日三语大风/打雷闲聊台词。
+
 ### Changed
+- **天气 API 当前条件查询扩展**：Open-Meteo 请求从旧 `current_weather=true` 扩展为 `current=temperature_2m,is_day,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m`，同时保留旧响应形状兼容，确保天气失败时仍静默降级。
+- **天气大风触发阈值调优**：将 `windy` 普通风效阈值从约 `8.33 m/s` 降到 `5.5 m/s`，heavy 风效从约 `12.5 m/s` 降到 `8.0 m/s`，让桌宠天气更偏氛围优先而不是只在强风天气出现。
 - **Test coverage hardening**: Added behavior-focused unit tests for ContextMenu interactions, weather sync request/cache handling, and the macOS manual update flow to raise coverage on the prior weak spots.
 - **ADR 历史决策状态校准**：更新 ADR-001、ADR-002、ADR-003、ADR-008、ADR-009、ADR-012 和 ADR-025，标注好感度衰减、状态窗口渲染和更新进度窗口实现中已被后续架构或安全加固取代的早期决策，同时补充仍有效但范围已扩展的历史决策说明。
 

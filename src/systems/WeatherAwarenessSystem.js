@@ -19,6 +19,7 @@ class WeatherAwarenessSystem {
       timePhase: 'day',
       weatherKind: 'clear',
       intensity: 'normal',
+      windIntensity: 'none',
       isDay: true,
       stale: false
     };
@@ -101,13 +102,38 @@ class WeatherAwarenessSystem {
   static parseWeatherCode(code) {
     if (code === 0) return 'clear';
     if (code === 1 || code === 2 || code === 3 || code === 45 || code === 48) return 'cloudy';
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code === 95) return 'rain';
-    if ((code >= 71 && code <= 77) || code === 85 || code === 86 || code === 96 || code === 99) return 'snow';
+    if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
     return 'unknown';
   }
 
   static isKnownWeatherKind(kind) {
-    return ['clear', 'cloudy', 'rain', 'snow', 'unknown'].includes(kind);
+    return ['clear', 'cloudy', 'rain', 'snow', 'windy', 'thunderstorm', 'unknown'].includes(kind);
+  }
+
+  static windToIntensity(windSpeed, windGusts) {
+    const speed = Number(windSpeed);
+    const gusts = Number(windGusts);
+    const validSpeed = Number.isFinite(speed) && speed >= 0 ? speed : 0;
+    const validGusts = Number.isFinite(gusts) && gusts >= 0 ? gusts : 0;
+
+    if (validSpeed >= 28.8 || validGusts >= 45) return 'heavy';
+    if (validSpeed >= 19.8 || validGusts >= 28.8) return 'normal';
+    return 'none';
+  }
+
+  static normalizeWindIntensity(windIntensity, windSpeed, windGusts) {
+    if (Object.prototype.hasOwnProperty.call({
+      none: true,
+      light: true,
+      normal: true,
+      medium: true,
+      heavy: true,
+    }, windIntensity)) {
+      return windIntensity;
+    }
+    return WeatherAwarenessSystem.windToIntensity(windSpeed, windGusts);
   }
 
   /**
@@ -132,6 +158,16 @@ class WeatherAwarenessSystem {
         : WeatherAwarenessSystem.isKnownWeatherKind(this.weatherPayload.weatherKind)
           ? this.weatherPayload.weatherKind
           : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
+      const windIntensity = this.weatherPayload.fallback
+        ? 'none'
+        : WeatherAwarenessSystem.normalizeWindIntensity(
+          this.weatherPayload.windIntensity,
+          this.weatherPayload.windSpeed,
+          this.weatherPayload.windGusts,
+        );
+      const weatherKind = (windIntensity !== 'none' && (parsedKind === 'clear' || parsedKind === 'cloudy'))
+        ? 'windy'
+        : parsedKind;
 
       // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
       let phase = this.TIME_PHASES[this.weatherPayload.timePhase]
@@ -148,8 +184,9 @@ class WeatherAwarenessSystem {
       return {
         ...this.currentState,
         timePhase: phase,
-        weatherKind: parsedKind,
+        weatherKind,
         intensity: typeof this.weatherPayload.intensity === 'string' ? this.weatherPayload.intensity : 'normal',
+        windIntensity,
         temperatureBand: WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature),
         isDay: this.weatherPayload.isDay,
         stale: false,
@@ -158,6 +195,7 @@ class WeatherAwarenessSystem {
     return {
       ...this.currentState,
       weatherKind: 'unknown',
+      windIntensity: 'none',
       intensity: 'none'
     };
   }

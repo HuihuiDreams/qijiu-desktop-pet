@@ -20,6 +20,8 @@ test('dialogues init falls back without throwing when I18N is absent', () => {
   assert.doesNotThrow(() => vm.runInContext("initDialogues('en')", context));
   assert.ok(Array.isArray(context.window.DIALOGUES.greet.yueqi));
   assert.equal(context.window.DIALOGUES.greet.yueqi[0], '小九，你也在这里。');
+  assert.ok(Array.isArray(context.window.DIALOGUES.weather_windy.yueqi));
+  assert.ok(Array.isArray(context.window.DIALOGUES.weather_thunderstorm.shenjiu));
 });
 
 test('renderer i18n fallback avoids direct optional chaining on an undeclared I18N global', () => {
