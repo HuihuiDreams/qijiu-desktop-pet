@@ -275,6 +275,34 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(result.windGusts, null);
   });
 
+  it('should treat null and empty string fields as missing and fall back without coercing to 0', async () => {
+    const provider = {
+      async fetch() {
+        return {
+          current: {
+            temperature_2m: null,
+            weather_code: null,
+            is_day: 1,
+            wind_speed_10m: null,
+            wind_direction_10m: '',
+            wind_gusts_10m: null
+          },
+          current_weather: {
+            temperature: 22.5,
+            weathercode: 3
+          }
+        };
+      }
+    };
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+    const result = await fetchWeather(settings, provider);
+    assert.strictEqual(result.temperature, 22.5);
+    assert.strictEqual(result.weatherCode, 3);
+    assert.strictEqual(result.windSpeed, null);
+    assert.strictEqual(result.windDirection, null);
+    assert.strictEqual(result.windGusts, null);
+  });
+
   it('should abort an in-flight weather request before starting a new one', async () => {
     let firstController = null;
     let callCount = 0;

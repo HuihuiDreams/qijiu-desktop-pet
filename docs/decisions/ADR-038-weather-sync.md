@@ -7,7 +7,7 @@ Accepted
 2026-06-18
 
 ## Updates
-- 2026-07-02: 天气同步扩展 Open-Meteo `current` 查询字段，主进程额外清洗并下发 `windSpeed`、`windDirection`、`windGusts`；渲染进程新增 `windy`、`thunderstorm` 和 `windIntensity` 归一化，仍保持局部粒子表现和无行为惩罚边界。
+- 2026-07-02: 天气同步扩展 Open-Meteo `current` 查询字段，主进程严格过滤 `null` 与空字符串并下发清洗后的 `windSpeed`、`windDirection`、`windGusts`；渲染进程新增 `windy`、`thunderstorm` 和 `windIntensity` 归一化，仍保持局部粒子表现和无行为惩罚边界。
 
 ## Context
 我们希望为桌宠引入天气感知能力（如根据本地时间进入清晨、白天、黄昏、深夜；根据天气展示特效、台词）。但在桌面端引入网络功能面临以下挑战：

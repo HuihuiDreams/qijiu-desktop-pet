@@ -198,23 +198,34 @@ const defaultProvider = {
   geocode: resolveCityToCoordinates
 };
 
+function toValidNumber(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+  return null;
+}
+
 function firstFiniteNumber(...values) {
   for (const value of values) {
-    const number = Number(value);
-    if (Number.isFinite(number)) return number;
+    const number = toValidNumber(value);
+    if (number !== null) return number;
   }
   return null;
 }
 
 function normalizeRangeNumber(value, min, max) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < min || number > max) return null;
+  const number = toValidNumber(value);
+  if (number === null || number < min || number > max) return null;
   return Number(number.toFixed(1));
 }
 
 function normalizeWindDirection(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0 || number > 360) return null;
+  const number = toValidNumber(value);
+  if (number === null || number < 0 || number > 360) return null;
   return Math.round(number);
 }
 

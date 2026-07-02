@@ -3,6 +3,8 @@
  * 负责接收和解析天气/时段状态。
  * 在断网或未配置的情况下，回退到基于本地时间的清晨、白天、黄昏、深夜划分。
  */
+const VALID_WIND_INTENSITIES = new Set(['none', 'light', 'normal', 'medium', 'heavy']);
+
 class WeatherAwarenessSystem {
   constructor(config) {
     this.config = config;
@@ -124,13 +126,7 @@ class WeatherAwarenessSystem {
   }
 
   static normalizeWindIntensity(windIntensity, windSpeed, windGusts) {
-    if (Object.prototype.hasOwnProperty.call({
-      none: true,
-      light: true,
-      normal: true,
-      medium: true,
-      heavy: true,
-    }, windIntensity)) {
+    if (VALID_WIND_INTENSITIES.has(windIntensity)) {
       return windIntensity;
     }
     return WeatherAwarenessSystem.windToIntensity(windSpeed, windGusts);
