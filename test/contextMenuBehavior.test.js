@@ -256,3 +256,99 @@ test('ContextMenu.handleAction queues the action instead of executing if the tar
   assert.equal(anotherPet.queuedAction, 'meditate');
 }));
 
+test('ContextMenu mouse events keep the menu interactive only while needed', () => withContextMenuHarness(({ menu, mouseCalls }) => {
+  new ContextMenu({});
+
+  menu.listeners.mouseenter();
+  assert.deepEqual(mouseCalls.at(-1), [false, { leaseMs: 10000 }]);
+
+  menu.classList.remove('hidden');
+  menu.listeners.mousemove();
+  assert.deepEqual(mouseCalls.at(-1), [false, { leaseMs: 10000 }]);
+
+  mouseCalls.length = 0;
+  menu.listeners.mouseleave();
+  assert.equal(mouseCalls.length, 0);
+
+  menu.classList.add('hidden');
+  menu.listeners.mouseleave();
+  assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
+}));
+
+test('ContextMenu pointer and outside-click handlers trigger actions and close the menu', () => withContextMenuHarness(({ menu, items, mouseCalls }) => {
+  const nurtureCalls = [];
+  const contextMenu = new ContextMenu({
+    feed(pet) {
+      nurtureCalls.push(['feed', pet.id]);
+      return true;
+    },
+  });
+  contextMenu.currentPet = createPet();
+  menu.classList.remove('hidden');
+
+  items.find((item) => item.dataset.action === 'feed').listeners.pointerdown({
+    button: 0,
+    pointerType: 'mouse',
+    currentTarget: items.find((item) => item.dataset.action === 'feed'),
+  });
+
+  assert.deepEqual(nurtureCalls, [['feed', 'yueqi']]);
+  assert.equal(menu.classList.contains('hidden'), true);
+  assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
+
+  menu.classList.remove('hidden');
+  global.document.listeners.mousedown({ target: createElement() });
+  assert.equal(menu.classList.contains('hidden'), true);
+}));
+
+test('ContextMenu.show falls back to emoji and pet names when image and translations are missing', () => withContextMenuHarness(({ header }) => {
+  const originalT = global.window.t;
+  global.window.t = null;
+  const contextMenu = new ContextMenu({}, null, () => ({ x: 0, y: 0, width: 800, height: 600 }));
+  const pet = createPet({
+    image: '',
+    emoji: '*',
+    name: 'Fallback Name',
+    nickname: 'Fallback Nick',
+  });
+
+  try {
+    contextMenu.show(pet, 120, 180);
+  } finally {
+    global.window.t = originalT;
+  }
+
+  assert.equal(header.children[0].textContent, '*');
+  assert.match(header.children[1].textContent, /Fallback Name/);
+  assert.match(header.children[1].textContent, /Fallback Nick/);
+}));
+
+test('ContextMenu.handleAction runs meditate, pet, and successful rest effects', () => withContextMenuHarness(() => {
+  const contextMenu = new ContextMenu({
+    meditate() {
+      return true;
+    },
+    headPat() {
+      return true;
+    },
+    rest() {
+      return true;
+    },
+  });
+  const pet = createPet({ id: 'shenjiu' });
+  contextMenu.currentPet = pet;
+
+  contextMenu.handleAction('meditate');
+  contextMenu.handleAction('pet');
+  contextMenu.handleAction('rest');
+  contextMenu.handleAction('unknown');
+
+  assert.deepEqual(pet.calls, [
+    ['bubble', 'bubbleMeditateShenjiu'],
+    ['effect', '✨', 'meditate'],
+    ['bubble', 'bubblePetShenjiu'],
+    ['effect', '💕', 'pet'],
+    ['bubble', 'bubbleRestShenjiu'],
+    ['effect', '💤', 'rest'],
+  ]);
+}));

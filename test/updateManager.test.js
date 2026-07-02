@@ -1,8 +1,14 @@
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
+const Module = require('node:module');
 const test = require('node:test');
 
-const { classifyUpdateError, createUpdateManager, verifyDownloadedPackageIntegrity } = require('../updateManager');
+const {
+  classifyUpdateError,
+  createMacManualUpdateManager,
+  createUpdateManager,
+  verifyDownloadedPackageIntegrity,
+} = require('../updateManager');
 
 function tick() {
   return new Promise((resolve) => setImmediate(resolve));
@@ -439,4 +445,157 @@ test('update-downloaded intercepts corrupted package integrity (SBP-001)', async
   assert.equal(messages.length, 0);
 
   if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+});
+
+test('mac manual update opens the release page when a newer version is accepted', async () => {
+  const originalFetch = global.fetch;
+  const originalLoad = Module._load;
+  const messages = [];
+  const progressEvents = [];
+  const openedUrls = [];
+
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { tag_name: 'v0.2.0' };
+    },
+  });
+  Module._load = function(request) {
+    if (request === 'electron') {
+      return {
+        shell: {
+          openExternal(url) {
+            openedUrls.push(url);
+          },
+        },
+      };
+    }
+    return originalLoad.apply(this, arguments);
+  };
+
+  try {
+    const manager = createMacManualUpdateManager();
+    manager.initUpdateManager({
+      app: {
+        isPackaged: true,
+        getVersion: () => '0.1.0',
+      },
+      dialog: {
+        showMessageBox: async (options) => {
+          messages.push(options);
+          return { response: 0 };
+        },
+      },
+      updateProgressUi: {
+        showChecking: (payload) => progressEvents.push(['checking', payload]),
+        close: () => progressEvents.push(['close']),
+      },
+      t: (key) => ({
+        updateMacManualTitle: 'Manual update',
+        updateMacManualMsg: 'Download and replace the app.',
+        updateMacManualBtn: 'Open releases',
+        updateBtnLater: 'Later',
+      })[key] || key,
+    });
+
+    await manager.checkForUpdatesFromTray();
+
+    assert.equal(messages[0].title, 'Manual update');
+    assert.match(messages[0].message, /0\.1\.0/);
+    assert.match(messages[0].message, /0\.2\.0/);
+    assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest']);
+    assert.deepEqual(progressEvents.map(([name]) => name), ['checking', 'close']);
+  } finally {
+    global.fetch = originalFetch;
+    Module._load = originalLoad;
+  }
+});
+
+test('mac manual update reports current version when no newer release exists', async () => {
+  const originalFetch = global.fetch;
+  const messages = [];
+
+  global.fetch = async () => ({
+    ok: true,
+    async json() {
+      return { tag_name: 'v0.1.0' };
+    },
+  });
+
+  try {
+    const manager = createMacManualUpdateManager();
+    manager.initUpdateManager({
+      app: {
+        isPackaged: true,
+        getVersion: () => '0.1.0',
+      },
+      dialog: {
+        showMessageBox: async (options) => {
+          messages.push(options);
+          return { response: 0 };
+        },
+      },
+      t: (key) => ({
+        updateNotAvailTitle: 'Up to date',
+        updateNotAvailMsg: 'Version {version} is current.',
+        updateBtnOk: 'OK',
+      })[key] || key,
+    });
+
+    await manager.checkForUpdatesFromTray();
+
+    assert.equal(messages[0].title, 'Up to date');
+    assert.equal(messages[0].message, 'Version 0.1.0 is current.');
+    assert.deepEqual(messages[0].buttons, ['OK']);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('mac manual update surfaces fetch errors and closes progress', async () => {
+  const originalFetch = global.fetch;
+  const messages = [];
+  const progressEvents = [];
+
+  global.fetch = async () => ({
+    ok: false,
+    status: 503,
+  });
+
+  try {
+    const manager = createMacManualUpdateManager();
+    manager.initUpdateManager({
+      app: {
+        isPackaged: true,
+        getVersion: () => '0.1.0',
+      },
+      dialog: {
+        showMessageBox: async (options) => {
+          messages.push(options);
+          return { response: 0 };
+        },
+      },
+      updateProgressUi: {
+        showChecking: (payload) => progressEvents.push(['checking', payload]),
+        close: () => progressEvents.push(['close']),
+      },
+      t: (key) => ({
+        updateErrTitle: 'Update failed',
+        updateErrServer: 'Server unavailable.',
+        updateErrGeneric: 'Could not check for updates.',
+        updateErrDetailPrefix: 'Reason: ',
+        updateBtnOk: 'OK',
+      })[key] || key,
+    });
+
+    await manager.checkForUpdatesFromTray();
+
+    assert.equal(messages[0].title, 'Update failed');
+    assert.equal(messages[0].message, 'Could not check for updates.');
+    assert.match(messages[0].detail, /GitHub API error: 503/);
+    assert.equal(manager.getUpdateMenuState().checking, false);
+    assert.deepEqual(progressEvents.map(([name]) => name), ['checking', 'close']);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

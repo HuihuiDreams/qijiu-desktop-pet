@@ -238,10 +238,79 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(result.temperature, null);
     assert.strictEqual(result.weatherCode, -1);
   });
+
+  it('should abort an in-flight weather request before starting a new one', async () => {
+    let firstController = null;
+    let callCount = 0;
+    const provider = {
+      fetch(lat, lon, controller) {
+        callCount++;
+        if (callCount === 1) {
+          firstController = controller;
+          return new Promise((resolve, reject) => {
+            controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+          });
+        }
+
+        return Promise.resolve({ current_weather: { temperature: 18, weathercode: 1, is_day: 0 } });
+      }
+    };
+
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+    const firstRequest = fetchWeather(settings, provider);
+    const second = await fetchWeather(settings, provider);
+    const first = await firstRequest;
+
+    assert.strictEqual(firstController.signal.aborted, true);
+    assert.strictEqual(first.fallback, true);
+    assert.strictEqual(second.fallback, false);
+    assert.strictEqual(second.temperature, 18);
+    assert.strictEqual(callCount, 2);
+  });
+
+  it('should fetch weather through the default HTTPS transport when Electron net is unavailable', async () => {
+    const https = require('https');
+    const originalGet = https.get;
+    const originalLoad = Module._load;
+    let requestedUrl = null;
+
+    Module._load = function(request) {
+      if (request === 'electron') {
+        throw new Error('electron unavailable');
+      }
+      return originalLoad.apply(this, arguments);
+    };
+    https.get = (url, options, callback) => {
+      requestedUrl = url;
+      const req = new EventEmitter();
+      setImmediate(() => {
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        res.setEncoding = () => {};
+        callback(res);
+        res.emit('data', JSON.stringify({
+          current_weather: { temperature: 16.25, weathercode: 2, is_day: 1 }
+        }));
+        res.emit('end');
+      });
+      return req;
+    };
+
+    try {
+      const result = await fetchWeather({ enabled: true, lat: 35.6, lon: 139.7, refreshIntervalMinutes: 60 });
+      assert.match(requestedUrl, /^https:\/\/api\.open-meteo\.com\/v1\/forecast/);
+      assert.strictEqual(result.temperature, 16.3);
+      assert.strictEqual(result.weatherCode, 2);
+      assert.strictEqual(result.isDay, true);
+    } finally {
+      https.get = originalGet;
+      Module._load = originalLoad;
+    }
+  });
 });
 
 describe('WeatherSyncService - processSettingsChange', () => {
-  const { processSettingsChange, resetWeatherCache } = require('../weatherSyncService');
+  const { processSettingsChange, resetWeatherCache, fetchWeather } = require('../weatherSyncService');
 
   beforeEach(() => {
     resetWeatherCache();
@@ -367,5 +436,131 @@ describe('WeatherSyncService - processSettingsChange', () => {
     } finally {
       Module._load = originalLoad;
     }
+  });
+
+  it('should handle non-2xx Electron net geocode responses as failed lookups', async () => {
+    const originalLoad = Module._load;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 500;
+                res.resume = () => {
+                  res.resumed = true;
+                };
+                setImmediate(() => {
+                  req.emit('response', res);
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await processSettingsChange({ enabled: true, city: 'Server Error City', lat: null, lon: null });
+      assert.strictEqual(result.lat, null);
+      assert.strictEqual(result.lon, null);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  it('should handle invalid Electron net JSON as a failed geocode lookup', async () => {
+    const originalLoad = Module._load;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from('{bad json'));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await processSettingsChange({ enabled: true, city: 'Malformed City', lat: null, lon: null });
+      assert.strictEqual(result.lat, null);
+      assert.strictEqual(result.lon, null);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  it('should reset cached weather when coordinates change explicitly', async () => {
+    let callCount = 0;
+    const provider = {
+      async fetch() {
+        callCount++;
+        return { current_weather: { temperature: 10 + callCount, weathercode: 0, is_day: 1 } };
+      }
+    };
+
+    const first = await fetchWeather({ enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 }, provider);
+    const updatedSettings = await processSettingsChange({
+      enabled: true,
+      city: '',
+      lat: 11,
+      lon: 21,
+      _oldLat: 10,
+      _oldLon: 20,
+      refreshIntervalMinutes: 60,
+    });
+    const second = await fetchWeather(updatedSettings, provider);
+
+    assert.strictEqual(first.temperature, 11);
+    assert.strictEqual(second.temperature, 12);
+    assert.strictEqual(callCount, 2);
+  });
+
+  it('should keep cached weather when coordinates are unchanged', async () => {
+    let callCount = 0;
+    const provider = {
+      async fetch() {
+        callCount++;
+        return { current_weather: { temperature: 20 + callCount, weathercode: 0, is_day: 1 } };
+      }
+    };
+
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+    const first = await fetchWeather(settings, provider);
+    const unchangedSettings = await processSettingsChange({
+      enabled: true,
+      city: '',
+      lat: 10,
+      lon: 20,
+      _oldLat: 10,
+      _oldLon: 20,
+      refreshIntervalMinutes: 60,
+    });
+    const second = await fetchWeather(unchangedSettings, provider);
+
+    assert.strictEqual(first.temperature, 21);
+    assert.strictEqual(second.temperature, 21);
+    assert.strictEqual(callCount, 1);
   });
 });

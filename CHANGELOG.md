@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 ### Changed
+- **Test coverage hardening**: Added behavior-focused unit tests for ContextMenu interactions, weather sync request/cache handling, and the macOS manual update flow to raise coverage on the prior weak spots.
 - **ADR 历史决策状态校准**：更新 ADR-001、ADR-002、ADR-003、ADR-008、ADR-009、ADR-012 和 ADR-025，标注好感度衰减、状态窗口渲染和更新进度窗口实现中已被后续架构或安全加固取代的早期决策，同时补充仍有效但范围已扩展的历史决策说明。
 
 ### Fixed
