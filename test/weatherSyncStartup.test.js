@@ -23,3 +23,22 @@ test('weather sync tray state updates before async geocoding completes', () => {
   assert.ok(refreshIndex < geocodeIndex);
   assert.match(source, /if \(updateId !== weatherSyncSettingsUpdateId\) return;/);
 });
+
+test('weather sync first fetch waits until the renderer has loaded', () => {
+  const readyStart = mainSource.indexOf('app.whenReady().then(async () => {');
+  const createWindowIndex = mainSource.indexOf('createWindow();', readyStart);
+  const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
+  const storedSettingsIndex = mainSource.indexOf('weatherSyncSettings = getStoredWeatherSyncSettings();', readyStart);
+  const startupSyncIndex = mainSource.indexOf('updateWeatherSyncSettings(weatherSyncSettings);', loadHandlerIndex);
+  const legacyEarlySyncIndex = mainSource.indexOf('updateWeatherSyncSettings(getStoredWeatherSyncSettings());', readyStart);
+
+  assert.notStrictEqual(readyStart, -1);
+  assert.notStrictEqual(createWindowIndex, -1);
+  assert.notStrictEqual(loadHandlerIndex, -1);
+  assert.notStrictEqual(storedSettingsIndex, -1);
+  assert.notStrictEqual(startupSyncIndex, -1);
+  assert.strictEqual(legacyEarlySyncIndex, -1);
+  assert.ok(storedSettingsIndex < createWindowIndex);
+  assert.ok(startupSyncIndex > loadHandlerIndex);
+  assert.ok(startupSyncIndex < mainSource.indexOf('});', loadHandlerIndex));
+});

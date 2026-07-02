@@ -1213,6 +1213,7 @@ function createWindow() {
     sendScreenInfo();
     sendActiveWindowInfo(activeWindowSampler?.getLastPayload());
     sendPetVisibility(!isPetCurrentlyHidden());
+    updateWeatherSyncSettings(weatherSyncSettings);
     keepPetWindowOnTop();
     startMeetingDetector();
   });
@@ -1932,8 +1933,9 @@ if (!hasSingleInstanceLock) {
     breakReminderEnabled = breakSettings.enabled;
     breakReminderIntervalMinutes = breakSettings.intervalMinutes;
 
-    // Trigger geocoding if lat/lon are missing on startup
-    updateWeatherSyncSettings(getStoredWeatherSyncSettings());
+    // Load persisted weather settings for the tray; the first fetch waits until renderer load.
+    weatherSyncSettings = getStoredWeatherSyncSettings();
+    refreshTrayMenu();
 
     // Listen to config changes if users open the editor and save it
     store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
