@@ -111,6 +111,10 @@ describe('WeatherSyncService - fetchWeather', () => {
             temperature_2m: 18.74,
             weather_code: 95,
             is_day: 0,
+            precipitation: 3.24,
+            rain: 2.15,
+            showers: 1.05,
+            snowfall: 0,
             wind_speed_10m: 41.25,
             wind_direction_10m: 275,
             wind_gusts_10m: 62.88
@@ -123,6 +127,10 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(result.temperature, 18.7);
     assert.strictEqual(result.weatherCode, 95);
     assert.strictEqual(result.isDay, false);
+    assert.strictEqual(result.precipitation, 3.2);
+    assert.strictEqual(result.rain, 2.1);
+    assert.strictEqual(result.showers, 1.1);
+    assert.strictEqual(result.snowfall, 0);
     assert.strictEqual(result.windSpeed, 41.3);
     assert.strictEqual(result.windDirection, 275);
     assert.strictEqual(result.windGusts, 62.9);
@@ -259,6 +267,10 @@ describe('WeatherSyncService - fetchWeather', () => {
             temperature_2m: 9999, // out of bounds
             weather_code: 'malformed_string', // invalid number
             is_day: 1,
+            precipitation: 9999,
+            rain: -1,
+            showers: 'heavy',
+            snowfall: -0.1,
             wind_speed_10m: -1,
             wind_direction_10m: 999,
             wind_gusts_10m: 'fast'
@@ -270,6 +282,10 @@ describe('WeatherSyncService - fetchWeather', () => {
     const result = await fetchWeather(settings, provider);
     assert.strictEqual(result.temperature, null);
     assert.strictEqual(result.weatherCode, -1);
+    assert.strictEqual(result.precipitation, null);
+    assert.strictEqual(result.rain, null);
+    assert.strictEqual(result.showers, null);
+    assert.strictEqual(result.snowfall, null);
     assert.strictEqual(result.windSpeed, null);
     assert.strictEqual(result.windDirection, null);
     assert.strictEqual(result.windGusts, null);
@@ -283,6 +299,10 @@ describe('WeatherSyncService - fetchWeather', () => {
             temperature_2m: null,
             weather_code: null,
             is_day: 1,
+            precipitation: null,
+            rain: '',
+            showers: null,
+            snowfall: null,
             wind_speed_10m: null,
             wind_direction_10m: '',
             wind_gusts_10m: null
@@ -298,6 +318,10 @@ describe('WeatherSyncService - fetchWeather', () => {
     const result = await fetchWeather(settings, provider);
     assert.strictEqual(result.temperature, 22.5);
     assert.strictEqual(result.weatherCode, 3);
+    assert.strictEqual(result.precipitation, null);
+    assert.strictEqual(result.rain, null);
+    assert.strictEqual(result.showers, null);
+    assert.strictEqual(result.snowfall, null);
     assert.strictEqual(result.windSpeed, null);
     assert.strictEqual(result.windDirection, null);
     assert.strictEqual(result.windGusts, null);

@@ -167,6 +167,10 @@ function fetchOpenMeteoWeather(lat, lon, controller) {
     'temperature_2m',
     'is_day',
     'weather_code',
+    'precipitation',
+    'rain',
+    'showers',
+    'snowfall',
     'wind_speed_10m',
     'wind_direction_10m',
     'wind_gusts_10m',
@@ -273,12 +277,20 @@ async function fetchWeather(settings, provider = defaultProvider) {
       0,
       500,
     );
+    const precipitation = normalizeRangeNumber(current.precipitation, 0, 500);
+    const rain = normalizeRangeNumber(current.rain, 0, 500);
+    const showers = normalizeRangeNumber(current.showers, 0, 500);
+    const snowfall = normalizeRangeNumber(current.snowfall, 0, 500);
 
     const payload = {
       active: true,
       weatherCode,
       temperature,
       isDay: (current.is_day ?? legacy.is_day) === 1,
+      precipitation,
+      rain,
+      showers,
+      snowfall,
       windSpeed,
       windDirection,
       windGusts,
@@ -296,6 +308,10 @@ async function fetchWeather(settings, provider = defaultProvider) {
       weatherCode: -1,
       temperature: null,
       isDay: true,
+      precipitation: null,
+      rain: null,
+      showers: null,
+      snowfall: null,
       windSpeed: null,
       windDirection: null,
       windGusts: null,

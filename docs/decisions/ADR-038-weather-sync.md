@@ -7,6 +7,7 @@ Accepted
 2026-06-18
 
 ## Updates
+- 2026-07-03: 天气同步扩展 Open-Meteo `current` 查询字段，额外清洗 `precipitation`、`rain`、`showers`、`snowfall`，渲染进程用雨/雪量对 WMO code 做保守相态纠偏，避免 API 边界条件把实际下雨误显示为下雪。
 - 2026-07-02: 天气同步扩展 Open-Meteo `current` 查询字段，主进程严格过滤 `null` 与空字符串并下发清洗后的 `windSpeed`、`windDirection`、`windGusts`；渲染进程新增 `windy`、`thunderstorm` 和 `windIntensity` 归一化，仍保持局部粒子表现和无行为惩罚边界。
 
 ## Context
@@ -32,7 +33,7 @@ Accepted
 
 4. **Payload 合约**：
    - 包含字段：`active`, `source`, `timePhase`, `weatherKind`, `intensity`, `windIntensity`, `temperatureBand`, `isDay`, `stale`, `sampledAt`, `expiresAt`。
-   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `unknown` 等稳定状态。
+   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `precipitation`, `rain`, `showers`, `snowfall`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `unknown` 等稳定状态。
    - 大风是氛围修饰：晴/阴且强风时可成为 `windy`；雨、雪和雷暴保持原主天气，同时通过 `windIntensity` 叠加风痕粒子。
    - 性能约束：`WEATHER_MIN_REFRESH_MINUTES` 为 30 分钟，网络超时 `WEATHER_TIMEOUT_MS` 为 4000ms，连续失败冷却 `WEATHER_BACKOFF_MS` 为 20 分钟（常量统一维护在 `src/data/config.js`）。
 

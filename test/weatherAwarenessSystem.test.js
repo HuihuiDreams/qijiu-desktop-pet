@@ -133,11 +133,27 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.intensity, 'normal');
   });
 
+  await t.test('uses precipitation phase fields to correct snow codes that are actually rain', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 85,
+      rain: 1.2,
+      showers: 0.4,
+      snowfall: 0,
+      isDay: true,
+    });
+
+    assert.strictEqual(system.getCurrentState().weatherKind, 'rain');
+  });
+
   await t.test('maps thunderstorm weather codes to thunderstorm', () => {
     system.setWeatherPayload({
       active: true,
       stale: false,
       weatherCode: 95,
+      rain: 3,
+      snowfall: 0,
       isDay: true,
     });
 

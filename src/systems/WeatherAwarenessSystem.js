@@ -110,6 +110,22 @@ class WeatherAwarenessSystem {
     return 'unknown';
   }
 
+  static precipitationToWeatherKind(payload, fallbackKind) {
+    if (fallbackKind !== 'rain' && fallbackKind !== 'snow') return fallbackKind;
+
+    const rain = Number(payload.rain);
+    const showers = Number(payload.showers);
+    const snowfall = Number(payload.snowfall);
+    const rainTotal = (Number.isFinite(rain) && rain > 0 ? rain : 0)
+      + (Number.isFinite(showers) && showers > 0 ? showers : 0);
+    const snowTotal = Number.isFinite(snowfall) && snowfall > 0 ? snowfall : 0;
+
+    if (rainTotal <= 0 && snowTotal <= 0) return fallbackKind;
+    if (rainTotal > snowTotal) return 'rain';
+    if (snowTotal > rainTotal) return 'snow';
+    return fallbackKind;
+  }
+
   static isKnownWeatherKind(kind) {
     return ['clear', 'cloudy', 'rain', 'snow', 'windy', 'thunderstorm', 'unknown'].includes(kind);
   }
@@ -154,6 +170,7 @@ class WeatherAwarenessSystem {
         : WeatherAwarenessSystem.isKnownWeatherKind(this.weatherPayload.weatherKind)
           ? this.weatherPayload.weatherKind
           : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
+      const precipKind = WeatherAwarenessSystem.precipitationToWeatherKind(this.weatherPayload, parsedKind);
       const windIntensity = this.weatherPayload.fallback
         ? 'none'
         : WeatherAwarenessSystem.normalizeWindIntensity(
@@ -161,9 +178,9 @@ class WeatherAwarenessSystem {
           this.weatherPayload.windSpeed,
           this.weatherPayload.windGusts,
         );
-      const weatherKind = (windIntensity !== 'none' && (parsedKind === 'clear' || parsedKind === 'cloudy'))
+      const weatherKind = (windIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
         ? 'windy'
-        : parsedKind;
+        : precipKind;
 
       // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
       let phase = this.TIME_PHASES[this.weatherPayload.timePhase]

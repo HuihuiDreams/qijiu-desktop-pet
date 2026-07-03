@@ -14,6 +14,7 @@
 - **ADR 历史决策状态校准**：更新 ADR-001、ADR-002、ADR-003、ADR-008、ADR-009、ADR-012 和 ADR-025，标注好感度衰减、状态窗口渲染和更新进度窗口实现中已被后续架构或安全加固取代的早期决策，同时补充仍有效但范围已扩展的历史决策说明。
 
 ### Fixed
+- **雨天误显示雪花修复**：天气同步请求和清洗 Open-Meteo `precipitation`、`rain`、`showers`、`snowfall` 当前条件字段；渲染进程在 WMO `weatherCode` 映射后用雨/雪量做保守相态纠偏，避免 API 边界天气把实际下雨误渲染成下雪。
 - **日落黑夜错误覆盖日常作息时段修复**：移除 `WeatherAwarenessSystem` 中当天气接口返回日落黑夜 (`isDay: false`) 时强制将白天或黄昏时段覆盖为深夜 (`night`) 的逻辑，解耦光照状态 (`isDay`) 与宠物修仙作息表 (`timePhase`)，修复用户在傍晚或夜晚未满 24 点打开桌宠时两只小人直接进入睡眠的问题。
 - **天气字段类型清洗与归一化优化**：修复 `WeatherSyncService` 中 `firstFiniteNumber`、`normalizeRangeNumber` 及风向转换在遭遇 `null` 或空字符串时被 JS 隐式转换为 `0` 的缺陷，确保缺失字段正确降级而非误报晴天或 `0°C`；将 `WeatherAwarenessSystem.normalizeWindIntensity` 校验重构为模块级 `Set` 查询，消除冗余对象分配。
 - **天气同步启动时序修复**：将持久化天气设置的首次同步延后到 renderer 加载完成后执行，避免首个 `weather-update` 在页面订阅 IPC 前被发送并丢失，确保下雨效果无需手动关闭/开启天气同步即可出现。
