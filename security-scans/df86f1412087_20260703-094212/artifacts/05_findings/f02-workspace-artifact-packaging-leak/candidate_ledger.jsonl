@@ -1,0 +1,3 @@
+{"stage": "discovery", "status": "reportable", "summary": "发现宽泛打包规则与 `git add .` 推送辅助脚本，且当前仓库存在可泄漏内部产物。", "evidence": ["package.json:30-35", ".gitignore:11-19", "push.ps1:36-45", "push.sh:46-55", ".codex/migrate-to-codex-report.txt:1-13"]}
+{"stage": "validation", "status": "confirmed", "method": "config_review_and_workspace_inspection", "summary": "当前工作树与扫描工件直接证明隐藏目录与扫描输出可进入后续链路。", "proof_gap": ""}
+{"stage": "attack_path", "status": "reportable", "summary": "本地构建或辅助推送可把内部工作区与扫描内容暴露给发行包接收者或仓库读者。", "impact": "information_disclosure"}
