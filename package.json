@@ -32,6 +32,12 @@
       "!docs/**",
       "!test/**",
       "!.github/**",
+      "!.codex/**",
+      "!.agents/**",
+      "!security-scans/**",
+      "!tools/**",
+      "!scripts/**",
+      "!push.*",
       "!dist/**"
     ],
     "win": {

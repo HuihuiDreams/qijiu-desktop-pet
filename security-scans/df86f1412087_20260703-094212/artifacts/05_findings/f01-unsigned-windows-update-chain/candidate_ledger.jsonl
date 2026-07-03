@@ -1,3 +1,0 @@
-{"stage": "discovery", "status": "reportable", "summary": "发现 unsigned Windows 发布路径与同通道 hash-only 校验组合。", "evidence": ["updateManager.js:145-159", "updateManager.js:497-536", ".github/workflows/build-installer.yml:91-117", "package.json:75-80"]}
-{"stage": "validation", "status": "confirmed", "method": "static_trace_and_workflow_review", "summary": "源码与工作流直接证明问题存在；未发现带外签名验证。", "proof_gap": ""}
-{"stage": "attack_path", "status": "reportable", "summary": "发布通道被拿下后可向 Windows 自动更新用户投递恶意安装包。", "impact": "arbitrary_code_execution"}

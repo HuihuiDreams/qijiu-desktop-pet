@@ -8,7 +8,8 @@ build/*
 .env.local
 .env.*.local
 *.log
-.codex/tmp-*/
+.codex/
+security-scans/
 *.key
 *.cer
 *.crt

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory=$true)]
     [string]$commitMessage
 )
@@ -34,6 +34,18 @@ if (-not ($status -match "CHANGELOG\.md")) {
 Write-Host "✅ 检测到 CHANGELOG.md 已更新。准备提交流程..." -ForegroundColor Green
 
 git add .
+
+# 安全检查：防止将未被忽略的扫描产物或内部工作区误提交
+$stagedSensitive = git diff --cached --name-only --diff-filter=ACMR | Select-String "(^\.codex/|^\.agents/|^security-scans/)"
+if ($stagedSensitive) {
+    Write-Host "==========================================" -ForegroundColor Red
+    Write-Host "❌ 拦截 Push: 暂存区包含内部或扫描产物目录 (.codex / .agents / security-scans)！" -ForegroundColor Red
+    Write-Host "已自动为您执行 git reset 取消暂存，请检查并在 .gitignore 排除敏感目录。" -ForegroundColor Yellow
+    Write-Host "==========================================" -ForegroundColor Red
+    git reset
+    exit 1
+}
+
 git commit -m "$commitMessage"
 
 if ($LASTEXITCODE -ne 0) {

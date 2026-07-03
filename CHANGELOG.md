@@ -22,8 +22,8 @@
 
 - **多显示器混合 DPI 走路速度归一化**：`MovementSystem` 现在会按宠物当前所在 `walkArea.scaleRatio` 调整每帧移动距离，使主屏、副屏或不同缩放比例屏幕上的物理观感步速保持一致；新增 mixed-DPI 回归测试防止速度再次只按固定 renderer 像素推进。
 ### Security
-- **security-scans 快照**：新增 `security-scans/` 目录，包含近期自动化安全扫描输出（例如 `df86f1412087_20260703-094212/`），用于审计与威胁建模记录。
-  - 注意：此行为自动推送占位，便于 CI 与发布审计识别。
+- **构建与推送敏感产物防泄露加固（中危修复 CWE-538）**：修改 `package.json` 的打包过滤规则显式排除 `.codex/`、`.agents/`、`security-scans/`、`tools/`、`scripts/` 等内部和构建辅助目录，确保 `app.asar` 发行包不泄露内部工作区或扫描产物；将 `security-scans/` 与 `.codex/` 从 Git 版本控制中解除跟踪并添加至 `.gitignore`；增强 `push.ps1` 和 `push.sh` 提交脚本，自动拦截暂存区中的敏感缓存目录。
+
 ## [0.8.4] - 2026-06-29
 ### Added
 - **可视化选肤弹窗规划方案**：在 `docs/plan/visual-skin-selector-plan.md` 中完成了轻量级可视化选肤窗口的架构设计与 MVP 规划。确定采用按需即用的“极速选图弹窗 (Spotlight / Gallery 模式)”方向，支持网格封面图预览、即点即换与失焦自动隐藏；并且明确规定该窗体在 Electron 属性（透明、无边框、浮动顶层）和前端 UI（磨砂玻璃面板、双层边框纹理、青金渐变底线）上必须与现有修仙状态窗口 (`statusWindow`) 保持严格对齐。
