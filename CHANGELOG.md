@@ -21,6 +21,8 @@
 - **ADR 检查脚本路径修复**：将 `scripts/check_adrs.js` 从作者本机绝对路径改为基于仓库根目录解析 `docs/decisions`，并补充回归测试，确保脚本可在 Windows、WSL 和 macOS 工作区中直接运行。
 
 - **多显示器混合 DPI 走路速度归一化**：`MovementSystem` 现在会按宠物当前所在 `walkArea.scaleRatio` 调整每帧移动距离，使主屏、副屏或不同缩放比例屏幕上的物理观感步速保持一致；新增 mixed-DPI 回归测试防止速度再次只按固定 renderer 像素推进。
+### Security
+- **security-scans 快照**：新增 `security-scans/` 目录，包含近期自动化安全扫描输出（例如 `df86f1412087_20260703-094212/`），用于审计与威胁建模记录。
 ## [0.8.4] - 2026-06-29
 ### Added
 - **可视化选肤弹窗规划方案**：在 `docs/plan/visual-skin-selector-plan.md` 中完成了轻量级可视化选肤窗口的架构设计与 MVP 规划。确定采用按需即用的“极速选图弹窗 (Spotlight / Gallery 模式)”方向，支持网格封面图预览、即点即换与失焦自动隐藏；并且明确规定该窗体在 Electron 属性（透明、无边框、浮动顶层）和前端 UI（磨砂玻璃面板、双层边框纹理、青金渐变底线）上必须与现有修仙状态窗口 (`statusWindow`) 保持严格对齐。
