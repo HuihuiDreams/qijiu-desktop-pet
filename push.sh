@@ -7,6 +7,27 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+is_wsl() {
+    grep -qi "microsoft\|wsl" /proc/version 2>/dev/null
+}
+
+push_origin_main() {
+    git push origin main
+    local status=$?
+
+    if [ $status -eq 0 ]; then
+        return 0
+    fi
+
+    if is_wsl && command -v git.exe >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️ WSL Git 推送失败，正在尝试使用 Windows Git 凭据重试...${NC}"
+        git.exe push origin main
+        return $?
+    fi
+
+    return $status
+}
+
 # 检查是否提供了 commit message
 if [ -z "$1" ]; then
     echo -e "${RED}错误: 必须提供提交信息 (commit message)。${NC}"
@@ -63,7 +84,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo -e "${CYAN}⬆️ 正在推送到远程仓库 origin main...${NC}"
-git push origin main
+push_origin_main
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}🎉 Push 成功完成！${NC}"
