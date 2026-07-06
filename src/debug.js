@@ -6,6 +6,7 @@
  */
 
 window.testInteraction = function (type = 'kiss') {
+  const forceShareFood = arguments[1] === true;
   if (!window.__DEBUG_PETS || !window.__DEBUG_RENDERER) {
     console.warn('[debug] 调试变量未就绪，请确保应用已完全启动');
     return;
@@ -22,7 +23,7 @@ window.testInteraction = function (type = 'kiss') {
   let overlayType = type;
   let debugDialogue = null;
 
-  if (type === 'shareFood' && petBObj.stats.hunger + CONFIG.INTERACTIONS.shareFood.hungerB > 100) {
+  if (type === 'shareFood' && !forceShareFood && petBObj.stats.hunger + CONFIG.INTERACTIONS.shareFood.hungerB > 100) {
     overlayType = 'throwup';
     const throwupPool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES.throwup : null;
     const pick = (arr) => (Array.isArray(arr) && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : null;
@@ -69,7 +70,7 @@ window.testInteraction = function (type = 'kiss') {
 window.testKiss = () => window.testInteraction('kiss');
 window.testHug = () => window.testInteraction('hug');
 window.testCultivate = () => window.testInteraction('cultivate');
-window.testShareFood = () => window.testInteraction('shareFood');
+window.testShareFood = () => window.testInteraction('shareFood', true);
 window.testsharefood = window.testShareFood;
 window.testGreet = function () {
   if (!window.__DEBUG_PETS || !window.__DEBUG_DIALOG || !window.__DEBUG_RENDERER || !window.__DEBUG_SPRITE_VIEW) {

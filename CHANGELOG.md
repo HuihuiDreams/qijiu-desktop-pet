@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **控制台调试交互优化**：修改 `testShareFood()` 与 `testsharefood()` 调试指令，调用时直接展示 `shareFood` 互动气泡与贴图，跳过基于宠物饥饿度阈值的判断（不再因饥饿度过高误触发 `throwup` 呕吐分支）；保留 `testShareFoodThrowup()` 专用于验证饥饿度上限过载。
+- **校园 AU 皮肤素材规范化与翻转更新**：更新了 `school_au` 皮肤的左右行走及喂食切图素材，完成原画方向水平翻转与内容边距裁切对齐，并统一转为标准 `256x256 WebP` 格式。
 
 ## [0.8.5] - 2026-07-06
 ### Added
