@@ -76,7 +76,7 @@ function readWebpSize(filePath) {
 
 test('runtime WebP skin assets are capped at 256px on their longest edge', () => {
   const assetsDir = path.join(__dirname, '..', 'src', 'assets');
-  const skinDirs = ['default', 'animal_ears', 'birds'];
+  const skinDirs = ['default', 'animal_ears', 'birds', 'school_au'];
   const oversized = skinDirs.flatMap((skinId) => {
     const skinDir = path.join(assetsDir, skinId);
     return listWebpFiles(skinDir)
@@ -93,6 +93,23 @@ test('runtime WebP skin assets are capped at 256px on their longest edge', () =>
 test('animal_ears source-backed runtime assets are present as 256px WebP files', () => {
   const sourceDir = path.join(__dirname, '..', 'docs', 'source-assets', 'animal_ears');
   const runtimeDir = path.join(__dirname, '..', 'src', 'assets', 'animal_ears');
+  const missingOrWrongSize = listPngFiles(sourceDir)
+    .filter((filePath) => {
+      const relativePath = path.relative(sourceDir, filePath);
+      const runtimePath = path.join(runtimeDir, relativePath.replace(/\.png$/i, '.webp'));
+      if (!fs.existsSync(runtimePath)) return true;
+
+      const { width, height } = readWebpSize(runtimePath);
+      return width !== 256 || height !== 256;
+    })
+    .map((filePath) => path.relative(sourceDir, filePath).replaceAll(path.sep, '/'));
+
+  assert.deepEqual(missingOrWrongSize, []);
+});
+
+test('school_au source-backed runtime assets are present as 256px WebP files', () => {
+  const sourceDir = path.join(__dirname, '..', 'docs', 'source-assets', 'school_au');
+  const runtimeDir = path.join(__dirname, '..', 'src', 'assets', 'school_au');
   const missingOrWrongSize = listPngFiles(sourceDir)
     .filter((filePath) => {
       const relativePath = path.relative(sourceDir, filePath);

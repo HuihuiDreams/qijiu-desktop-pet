@@ -17,12 +17,12 @@ class SkinManager {
     'default': '默认皮肤·凉拌仓鼠',
     'birds': '鸟塑七九·凉拌仓鼠',
     'animal_ears': '猫兔七九·紫萤',
-    // 新增皮肤时在此添加映射，例如：
-    // 'qban': 'Q版·萌系',
+    'school_au': '校园七九·幕汤汤',
   };
 
   static SKIN_IMAGE_SCALES = {
     animal_ears: 1.08,
+    school_au: 1.08,
   };
 
   constructor() {

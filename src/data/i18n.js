@@ -46,6 +46,7 @@ const I18N = {
       skinDefault: '默认皮肤·凉拌仓鼠',
       skinBirds: '鸟塑七九·凉拌仓鼠',
       skinAnimalEars: '猫兔七九·紫萤',
+      skinSchoolAu: '校园七九·幕汤汤',
 
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
@@ -361,6 +362,7 @@ const I18N = {
       skinDefault: 'Default Skin - (Artist) Hamster Salad',
       skinBirds: 'Cute Birds - (Artist) Hamster Salad',
       skinAnimalEars: 'Cat & Bunny - (Artist) Violetfirefly',
+      skinSchoolAu: 'School AU - (Artist) M_Shang',
 
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
@@ -677,6 +679,7 @@ const I18N = {
       skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
       skinBirds: '小鳥七九・(絵師) Hamster Salad',
       skinAnimalEars: '猫兎七九・(絵師) Violetfirefly',
+      skinSchoolAu: '学園七九・(絵師) M_Shang',
 
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',

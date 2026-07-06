@@ -73,8 +73,7 @@ const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
   'birds': 'skinBirds',
   'animal_ears': 'skinAnimalEars',
-  // 新增皮肤时在此添加映射，例如：
-  // 'qban': 'skinQban',
+  'school_au': 'skinSchoolAu',
 };
 
 /**

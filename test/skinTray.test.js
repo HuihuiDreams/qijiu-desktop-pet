@@ -12,6 +12,7 @@ const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
   'birds': 'skinBirds',
   'animal_ears': 'skinAnimalEars',
+  'school_au': 'skinSchoolAu',
 };
 
 /**
@@ -60,7 +61,7 @@ test('main.js escapes literal ampersands in Electron menu labels', () => {
 
 test('scanAvailableSkins: 能够按 SKIN_NAME_KEYS 中定义的顺序正确排序', () => {
   const skins = scanAvailableSkins(ASSETS_DIR);
-  const expectedOrder = ['default', 'birds', 'animal_ears'];
+  const expectedOrder = ['default', 'birds', 'animal_ears', 'school_au'];
   assert.deepStrictEqual(skins.slice(0, expectedOrder.length), expectedOrder, '皮肤列表应按预设顺序排列');
 });
 

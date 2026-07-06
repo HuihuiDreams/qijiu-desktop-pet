@@ -22,6 +22,12 @@ groups = [
     "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/walk_right*.png",
     "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/left*.png",
     "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/right*.png",
+    "src/assets/school_au/left*.png",
+    "src/assets/school_au/right*.png",
+    "src/assets/school_au/shenjiu/walk_left*.png",
+    "src/assets/school_au/shenjiu/walk_right*.png",
+    "src/assets/school_au/yueqi/walk_left*.png",
+    "src/assets/school_au/yueqi/walk_right*.png",
 ]
 
 for g in groups:
@@ -33,7 +39,7 @@ for g in groups:
     for p in glob.glob(g):
         handled.add(os.path.abspath(p))
 
-all_pngs = glob.glob("src/assets/animal_ears/**/*.png", recursive=True)
+all_pngs = glob.glob("src/assets/animal_ears/**/*.png", recursive=True) + glob.glob("src/assets/school_au/**/*.png", recursive=True)
 for p in all_pngs:
     abs_p = os.path.abspath(p)
     if abs_p not in handled:

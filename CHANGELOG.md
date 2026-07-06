@@ -3,7 +3,10 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.8.5] - 2026-07-06
 ### Added
+- **新增皮肤“校园七九·幕汤汤”**：集成一套基于校园 AU 题材的新皮肤，支持中英日多语言名称（英文名 School AU - (Artist) M_Shang，日文名 学園七九・(絵師) M_Shang），并配置了 1.08 的全局显示倍率与专属规格化切图资源。
 - **大风与雷暴天气氛围 MVP**：天气同步新增风速、风向和阵风字段清洗；渲染进程新增 `windy` / `thunderstorm` 天气状态、大风风痕粒子、雷暴局部闪电，以及中英日三语大风/打雷闲聊台词。
 
 ### Changed
