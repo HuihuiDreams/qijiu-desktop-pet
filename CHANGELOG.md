@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+### Fixed
+- **macOS 睡眠唤醒"你走了X个时辰"时间计算错误**：修复了 macOS Dark Wake（系统后台维护唤醒）导致回归对白仅反映最后一段碎片化睡眠时长（如一整晚却只说"走了1个时辰"）的 Bug。根因：macOS 睡眠期间系统会定期触发 Dark Wake，每次都经由 `powerMonitor.on('resume')` 执行离线结算并更新存档时间戳，切断了真实的离线时长。修复方案：新增 `lastVisibleTime` 持久化字段，仅在用户真正可见（`document.visibilityState === 'visible'`）时更新，回归对白改用 `Date.now() - lastVisibleTime` 计算真实不在时长。数值衰减不受影响（分段累加数学等价）。兼容旧存档。
 ## [0.8.6] - 2026-07-06
 ### Changed
 - **控制台调试交互优化**：修改 `testShareFood()` 与 `testsharefood()` 调试指令，调用时直接展示 `shareFood` 互动气泡与贴图，跳过基于宠物饥饿度阈值的判断（不再因饥饿度过高误触发 `throwup` 呕吐分支）；保留 `testShareFoodThrowup()` 专用于验证饥饿度上限过载。

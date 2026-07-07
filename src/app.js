@@ -230,6 +230,7 @@ function applyI18n() {
     renderer,
   };
   let skinSwitchInProgress = false;
+  let lastVisibleTime = Date.now(); // 用户上次可见时的墙钟时间（跨 Dark Wake 不重置）
 
   async function refreshAvailableSkins() {
     try {
@@ -243,7 +244,7 @@ function applyI18n() {
   }
 
   function saveCurrentState() {
-    return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin());
+    return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin(), lastVisibleTime);
   }
 
   async function applySkinById(skinId, options = {}) {
@@ -468,8 +469,13 @@ function applyI18n() {
     nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
     nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
 
-    const shichensAway = Math.floor(offlineMs / 7200000); // 7200000ms = 2小时 = 1时辰
-    if (shichensAway >= 1) {
+    // 用“距离用户上次可见”的真实时长计算时辰，而不是本次碎片化的 offlineMs。
+    // 这避免了 macOS Dark Wake 将完整睡眠切割成碎片导致对白少报。
+    const realAwayMs = Date.now() - lastVisibleTime;
+    const shichensAway = Math.floor(realAwayMs / 7200000); // 7200000ms = 2小时 = 1时辰
+    const isUserPresent = document.visibilityState === 'visible';
+
+    if (shichensAway >= 1 && isUserPresent) {
       const returnMsgYueqi = window.I18N_UI?.returnYueqi
         ? (typeof window.I18N_UI.returnYueqi === 'function'
           ? window.I18N_UI.returnYueqi(shichensAway)
@@ -484,6 +490,10 @@ function applyI18n() {
       }, 3000);
     }
 
+    if (isUserPresent) {
+      lastVisibleTime = Date.now();
+    }
+
     saveCurrentState();
   }
 
@@ -492,6 +502,9 @@ function applyI18n() {
   // 所以游戏循环内的 deltaMs > 60000 检测永远不会触发。
   // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
   window.electronAPI.onSystemSuspend?.(() => {
+    if (document.visibilityState === 'visible') {
+      lastVisibleTime = Date.now();
+    }
     saveCurrentState(); // 睡前即时存档，锁定新鲜 timestamp
   });
 
@@ -506,6 +519,7 @@ function applyI18n() {
   await refreshAvailableSkins();
   const savedState = await timeSystem.load();
   if (savedState) {
+    lastVisibleTime = savedState.lastVisibleTime ?? Date.now();
     timeSystem.deserializePet(yueqi, savedState.petAData);
     timeSystem.deserializePet(shenjiu, savedState.petBData);
 

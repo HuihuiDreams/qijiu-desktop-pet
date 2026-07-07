@@ -61,12 +61,13 @@ class TimeSystem {
   /**
    * 保存两只宠物的状态。
    */
-  async save(petA, petB, skinId = 'default') {
+  async save(petA, petB, skinId = 'default', lastVisibleTime) {
     const data = {
       petA: this.serializePet(petA),
       petB: this.serializePet(petB),
       skinId,
-      savedAt: Date.now()
+      savedAt: Date.now(),
+      lastVisibleTime: lastVisibleTime ?? Date.now()
     };
     await window.electronAPI.saveData('petState', data);
     this.lastSaveTime = Date.now();
@@ -82,7 +83,8 @@ class TimeSystem {
       petAData: data.petA,
       petBData: data.petB,
       skinId: data.skinId || 'default',
-      offlineMs: this.getOfflineTime(data.savedAt)
+      offlineMs: this.getOfflineTime(data.savedAt),
+      lastVisibleTime: data.lastVisibleTime
     };
   }
 }
