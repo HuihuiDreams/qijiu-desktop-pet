@@ -909,7 +909,6 @@ function createPomodoroWindow() {
   });
 
   applyPomodoroWindowPinState();
-  pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   pomodoroWindow.loadFile(path.join(__dirname, 'src', 'pomodoro.html'));
 
   pomodoroWindow.webContents.on('did-finish-load', sendPomodoroState);
@@ -968,6 +967,12 @@ function applyPomodoroWindowPinState(shouldRaise = false) {
 
   pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL);
 
+  if (pomodoroAlwaysOnTop) {
+    pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } else {
+    pomodoroWindow.setVisibleOnAllWorkspaces(false);
+  }
+
   if (!shouldRaise) return;
 
   if (pomodoroWindow.isMinimized()) {
@@ -982,7 +987,9 @@ function applyPomodoroWindowPinState(shouldRaise = false) {
 
 function setPomodoroAlwaysOnTop(enabled) {
   pomodoroAlwaysOnTop = Boolean(enabled);
-  applyPomodoroWindowPinState(true);
+  // Only raise when pinning; when unpinning the user is already looking at the
+  // window and moveTop()/focus() would re-promote it into macOS fullscreen Spaces.
+  applyPomodoroWindowPinState(pomodoroAlwaysOnTop);
   sendPomodoroState();
   return getPomodoroSnapshot();
 }

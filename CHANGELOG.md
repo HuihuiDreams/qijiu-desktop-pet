@@ -3,9 +3,13 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
 
 ### Fixed
 - **macOS 睡眠唤醒"你走了X个时辰"时间计算错误**：修复了 macOS Dark Wake（系统后台维护唤醒）导致回归对白仅反映最后一段碎片化睡眠时长（如一整晚却只说"走了1个时辰"）的 Bug。根因：macOS 睡眠期间系统会定期触发 Dark Wake，每次都经由 `powerMonitor.on('resume')` 执行离线结算并更新存档时间戳，切断了真实的离线时长。修复方案：新增 `lastVisibleTime` 持久化字段，仅在用户真正可见（`document.visibilityState === 'visible'`）时更新，回归对白改用 `Date.now() - lastVisibleTime` 计算真实不在时长。数值衰减不受影响（分段累加数学等价）。兼容旧存档。
+- **macOS 番茄钟取消置顶后全屏仍被强制置顶**：修复了番茄钟窗口取消置顶后，当其他窗口进入全屏时番茄钟再次被强制置顶且无法取消的 Bug。根因：`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })` 在窗口创建时设置后取消置顶时从未重置，macOS 持续将窗口拉入全屏 Space。修复方案：在 `applyPomodoroWindowPinState` 中根据置顶状态动态切换 `setVisibleOnAllWorkspaces`，取消置顶时传 `false` 阻止窗口跟随用户进入全屏 Space，并仅在启用置顶时执行 `moveTop()`/`focus()`。已知限制：若在 macOS 全屏 Space 中打开番茄钟后再取消置顶，窗口仍会留在该全屏 Space 上方（macOS 不支持将已存在于全屏 Space 中的窗口移出）。Windows 不受影响。
+
 ## [0.8.6] - 2026-07-06
 ### Changed
 - **控制台调试交互优化**：修改 `testShareFood()` 与 `testsharefood()` 调试指令，调用时直接展示 `shareFood` 互动气泡与贴图，跳过基于宠物饥饿度阈值的判断（不再因饥饿度过高误触发 `throwup` 呕吐分支）；保留 `testShareFoodThrowup()` 专用于验证饥饿度上限过载。

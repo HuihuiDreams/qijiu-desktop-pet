@@ -45,11 +45,24 @@ test('main process registers pomodoro IPC handlers', () => {
 
 test('toggling pomodoro pin state keeps the window reachable', () => {
   assert.match(mainSource, /function applyPomodoroWindowPinState\(shouldRaise = false\)/);
-  assert.match(mainSource, /applyPomodoroWindowPinState\(true\)/);
+  assert.match(mainSource, /applyPomodoroWindowPinState\(pomodoroAlwaysOnTop\)/);
   assert.match(mainSource, /pomodoroWindow\.restore\(\)/);
   assert.match(mainSource, /pomodoroWindow\.show\(\)/);
   assert.match(mainSource, /pomodoroWindow\.moveTop\(\)/);
   assert.match(mainSource, /pomodoroWindow\.focus\(\)/);
+});
+
+test('unpinning pomodoro removes it from macOS fullscreen Spaces', () => {
+  assert.match(
+    mainSource,
+    /setVisibleOnAllWorkspaces\(true,\s*\{\s*visibleOnFullScreen:\s*true\s*\}\)/,
+    'pinned state enables visibleOnFullScreen'
+  );
+  assert.match(
+    mainSource,
+    /setVisibleOnAllWorkspaces\(false\)/,
+    'unpinned state fully removes window from all-workspaces overlay'
+  );
 });
 
 test('pomodoro pet assets use current skin with default fallback', () => {

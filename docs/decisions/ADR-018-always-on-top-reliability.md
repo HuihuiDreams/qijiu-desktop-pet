@@ -1,4 +1,4 @@
-﻿# ADR-018: 窗口始终置顶可靠性增强策略
+# ADR-018: 窗口始终置顶可靠性增强策略
 
 ## Status
 已接受 (Accepted)
@@ -29,6 +29,8 @@ Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工�
 4. **`moveTop()` 配合调用**：在 `setAlwaysOnTop` 之后额外调用 `moveTop()`，强制将窗口移至同层级中的最顶层。
 5. **`focusable: false`**：将窗口设置为不可聚焦，防止宠物窗口因意外获得焦点而与用户当前操作的程序产生竞争。
 6. **`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`**：使窗口在所有虚拟桌面和全屏应用场景下均可见（主要对 macOS 生效，Windows 环境作为保留配置）。
+
+> **注意（子窗口）**：对于支持用户切换置顶状态的子窗口（如番茄钟），取消置顶时必须调用 `setVisibleOnAllWorkspaces(false)` 移除全屏 Space 覆盖，并避免在取消置顶后调用 `moveTop()`/`focus()`。启用置顶时再恢复 `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`。**已知限制**：若窗口已存在于 macOS 全屏 Space 中，`setVisibleOnAllWorkspaces(false)` 仅阻止窗口跟随到其他 Space，但不会将其从当前全屏 Space 中移除。Electron 未提供将窗口从全屏 Space 移出的可靠 API。
 
 ## Alternatives Considered
 ### 仅依赖 `alwaysOnTop: true` 窗口选项

@@ -36,7 +36,7 @@ After launch, both characters will appear on your desktop.
 The tray menu lets you:
 - "📊 Show Status Panel"
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
-- "🎨 Switch Skin": currently includes Default Skin, Cute Birds, and Cat & Bunny, with artist credits shown in the menu.
+- "🎨 Switch Skin": currently includes Default Skin, Cute Birds, Cat & Bunny, and School AU, with artist credits shown in the menu.
 - "⏸️ Pause Walking" or "🚶 Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
@@ -60,10 +60,11 @@ When you switch language from the tray menu, the main window, right-click menus,
 🎨 Skins & Display
 ========================================
 
-The app currently includes three built-in skins:
+The app currently includes four built-in skins:
 - Default Skin - (Artist) Hamster Salad
 - Cute Birds - (Artist) Hamster Salad
 - Cat & Bunny - (Artist) Violetfirefly
+- School AU - (Artist) M_Shang
 
 Skins replace standing, walking, hungry, sleeping, feeding, cultivating, care, kiss, hug, and share-food visuals together.
 If one action asset is missing from a skin, the app tries to fall back to the default asset so switching skins does not leave a blank sprite.

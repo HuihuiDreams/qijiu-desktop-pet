@@ -146,7 +146,8 @@ qijiu-desktop-pet/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
 │     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
-│     └─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
+│     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
+│     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner 单元/集成测试
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
