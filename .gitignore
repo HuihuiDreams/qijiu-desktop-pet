@@ -19,3 +19,4 @@ security-scans/
 *.pfx
 *.pem
 .agents/
+docs/source-assets/
