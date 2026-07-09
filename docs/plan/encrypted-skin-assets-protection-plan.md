@@ -149,7 +149,7 @@
 
 **验证方式：**
 - [x] 专项测试通过：`node --test test/protectedAssetProtocol.test.js`
-- [ ] Electron 冒烟检查通过：`npm run qa:electron:smoke`
+- [x] Electron 冒烟检查通过：`npm run qa:electron:smoke`
 - [ ] 人工检查开发环境主窗口和番茄钟窗口图片正常显示。
 
 **依赖关系：** 任务 3
@@ -235,7 +235,7 @@
 - [x] `npm run build` 前自动或显式运行资源保护脚本。
 - [x] 打包产物包含 `protected-assets/manifest.json` 和 `.dat`。
 - [x] 打包产物中不包含 `src/assets/{skinId}/**/*.webp` 明文角色素材。
-- [ ] Windows NSIS 和 macOS app 路径解析均通过统一资源根目录逻辑。
+- [x] Windows NSIS 和 macOS app 路径解析均通过统一资源根目录逻辑。
 
 **验证方式：**
 - [x] 构建通过：`npm run build`
@@ -264,7 +264,7 @@
 
 **验证方式：**
 - [x] 全量测试通过：`npm test`
-- [ ] Electron 冒烟检查通过：`npm run qa:electron:smoke`
+- [x] Electron 冒烟检查通过：`npm run qa:electron:smoke`
 - [ ] 手动性能检查：启动、切换皮肤、触发互动、打开番茄钟，观察无明显卡顿。
 
 **依赖关系：** 任务 7
@@ -279,9 +279,9 @@
 
 ### 里程碑检查点：发布可验收 (Checkpoint: Release Readiness)
 
-- [ ] `npm test`、`npm run qa:electron:smoke` 和 `npm run build` 通过。
+- [x] `npm test`、`npm run qa:electron:smoke` 和 `npm run build` 通过。
 - [x] 打包产物中没有可直接打开的角色皮肤 `.webp`。
-- [ ] Windows 和 macOS 的资源根目录解析都有测试或人工验证记录。
+- [x] Windows 和 macOS 的资源根目录解析都有测试或人工验证记录。
 - [x] 变更已记录到 `CHANGELOG.md`、`docs/structure.md` 和相关 ADR。
 
 ## 风险与缓解 (Risks and Mitigations)
