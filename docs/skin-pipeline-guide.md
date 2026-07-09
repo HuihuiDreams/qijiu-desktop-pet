@@ -75,3 +75,20 @@ static SKIN_IMAGE_SCALES = {
   animal_ears: 1.08, // 大于 1 放大，小于 1 缩小，如果不配置则默认为 1.0
 };
 ```
+
+### 5. 皮肤素材加密与开发/构建须知
+
+本项目采用了受保护皮肤资产机制（通过 `pet-asset://` 协议与 `protected-assets/*.dat` 密文加载，详见 `ADR-040`）。在转换完 WebP 后，你需要注意以下运行与构建行为：
+
+- **开发调试 (`npm run dev`)**：
+  - **新增全新皮肤**：如果本地 `protected-assets/` 清单中还不存在你的新皮肤，主进程会自动触发开发环境回退机制，直接读取 `src/assets/<YOUR_SKIN_NAME>/*.webp` 明文图片，可以直接启动调试。
+  - **修改已有皮肤（重要防坑）**：如果你是在调优修改**原本就已经存在**的皮肤 WebP（如 `default/left.webp`），并且本地由于之前的构建或生成操作已经存在了 `protected-assets/` 目录，主进程会优先匹配并加载密文缓存，这会导致你在 `npm run dev` 中看到的依然是修改前的旧图。此时只需手动执行一次加密更新命令即可刷新预览：
+    ```powershell
+    npm run protect:assets
+    ```
+    *(或者直接删除 `protected-assets/` 目录，让主进程自动走明文回退加载。)*
+
+- **发版打包 (`npm run build`)**：
+  - `package.json` 中已经配置了 `"prebuild": "node scripts/protect-assets.js"` 自动钩子。
+  - **无需手动先跑加密**：每次运行构建打包（`npm run build` / `electron-builder`）时，系统会在打包前自动将 `src/assets/` 下的所有最新皮肤 WebP 加密输出到 `protected-assets/` 目录，并从最终生成的安装包产物（asar / 安装目录）中自动剔除明文 `*.webp`，保障安全与包体积瘦身。
+

@@ -121,6 +121,9 @@ jobs:
       - name: Security audit
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Generate protected skin assets
+        run: npm run protect:assets
+
       - name: Build unsigned Windows smoke package
         run: npx electron-builder --win --dir --config.win.signAndEditExecutable=false
         env:
@@ -145,6 +148,9 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+
+      - name: Generate protected skin assets
+        run: npm run protect:assets
 
       - name: Build unsigned macOS smoke package
         run: npx electron-builder --mac --dir

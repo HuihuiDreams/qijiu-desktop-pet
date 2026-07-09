@@ -99,6 +99,9 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
+      - name: Generate protected skin assets
+        run: npm run protect:assets
+
       - name: Build and publish signed release
         if: env.SIGNING_ENABLED == 'true'
         run: npx electron-builder --config.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
@@ -205,6 +208,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate protected skin assets
+        run: npm run protect:assets
 
       - name: Build unsigned macOS release
         run: npx electron-builder --mac --publish never
