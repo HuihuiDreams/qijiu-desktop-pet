@@ -11,6 +11,7 @@
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
 - 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
 - **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
+- `protectedAssetLoader` 性能优化：manifest.json 解析结果缓存到内存（随 `clearProtectedAssetCache` 一并清空），消除每次 `pet-asset://` 请求的同步磁盘读取；缓存写入时不再多余复制 Buffer，仅在读取返回时做单次 clone 保护原始数据。
 
 ### Fixed
 - **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。

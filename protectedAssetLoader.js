@@ -11,6 +11,8 @@ const DEFAULT_MAX_CACHE_BYTES = 16 * 1024 * 1024;
 
 const assetCache = new Map();
 let cachedBytes = 0;
+let manifestCache = null;
+let manifestCacheDir = null;
 
 function createAssetUrl(assetId) {
   return `pet-asset://${assetId}`;
@@ -43,13 +45,20 @@ function readManifest(options = {}) {
   const protectedAssetsDir = findProtectedAssetsDir(options);
   if (!protectedAssetsDir) return null;
 
-  const manifestPath = path.join(protectedAssetsDir, MANIFEST_NAME);
+  const resolvedDir = path.resolve(protectedAssetsDir);
+  if (manifestCache && manifestCacheDir === resolvedDir) {
+    return { manifest: manifestCache, protectedAssetsDir: resolvedDir };
+  }
+
+  const manifestPath = path.join(resolvedDir, MANIFEST_NAME);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   if (manifest.version !== 1 || manifest.algorithm !== 'aes-256-gcm' || !manifest.assets) {
     throw new Error('Unsupported protected asset manifest');
   }
 
-  return { manifest, protectedAssetsDir };
+  manifestCache = manifest;
+  manifestCacheDir = resolvedDir;
+  return { manifest, protectedAssetsDir: resolvedDir };
 }
 
 function cloneAsset(asset) {
@@ -86,7 +95,7 @@ function setCachedAsset(cacheKey, asset, maxCacheBytes = DEFAULT_MAX_CACHE_BYTES
 
   const bytes = asset.size;
   assetCache.set(cacheKey, {
-    asset: cloneAsset(asset),
+    asset,
     bytes,
   });
   cachedBytes += bytes;
@@ -101,6 +110,8 @@ function setCachedAsset(cacheKey, asset, maxCacheBytes = DEFAULT_MAX_CACHE_BYTES
 function clearProtectedAssetCache() {
   assetCache.clear();
   cachedBytes = 0;
+  manifestCache = null;
+  manifestCacheDir = null;
 }
 
 function getProtectedAssetCacheStats() {
@@ -175,7 +186,7 @@ function loadProtectedAsset(assetId, options = {}) {
     size: data.length,
   };
   setCachedAsset(cacheKey, asset, options.maxCacheBytes);
-  return cloneAsset(asset);
+  return cloneAsset(asset);  // clone once on cache miss to protect cached buffer
 }
 
 module.exports = {
