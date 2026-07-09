@@ -86,16 +86,17 @@ class SkinManager {
     if (petA) petA.updateSkin(paths.petA);
     if (petB) petB.updateSkin(paths.petB);
 
-    // 2. 更新 SpriteView 的 imageMap
+    // 2. 更新 PetRenderer 的叠加层路径前缀（并触发互动覆盖层图片预加载）
+    if (renderer) renderer.setSkinPrefix(paths.overlayPrefix);
+
+    // 3. 更新 SpriteView 的 imageMap 并并发预加载两只宠物的新皮肤素材
     if (spriteView) {
       spriteView.updateImageMap(paths.imageMap);
-      // 3. 异步预加载新皮肤图片，等待完成后再渲染
-      if (petA) await spriteView.reattach(petA);
-      if (petB) await spriteView.reattach(petB);
+      await Promise.all([
+        petA ? spriteView.reattach(petA) : Promise.resolve(),
+        petB ? spriteView.reattach(petB) : Promise.resolve(),
+      ]);
     }
-
-    // 4. 更新 PetRenderer 的叠加层路径前缀
-    if (renderer) renderer.setSkinPrefix(paths.overlayPrefix);
 
     return paths;
   }
@@ -106,7 +107,7 @@ class SkinManager {
    * @returns {object} SkinPaths
    */
   buildPaths(skinId) {
-    const base = `assets/${skinId}`;
+    const base = `pet-asset://skin/${skinId}`;
     const imageScale = SkinManager.SKIN_IMAGE_SCALES[skinId] || 1;
 
     return {

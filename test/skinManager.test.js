@@ -9,9 +9,9 @@ function createFakePet(id = 'yueqi') {
   const baseName = id === 'yueqi' ? 'left' : 'right';
   return {
     id,
-    image: `assets/default/${baseName}.webp`,
+    image: `pet-asset://skin/default/${baseName}.webp`,
     sprites: {
-      idle: { frames: [`assets/default/${baseName}.webp`], fps: 1 },
+      idle: { frames: [`pet-asset://skin/default/${baseName}.webp`], fps: 1 },
     },
     _sv_lastResource: null,
     _sv_frameIndex: 0,
@@ -93,25 +93,25 @@ test('SkinManager builds default WebP paths', () => {
   const sm = new SkinManager();
   const paths = sm.buildPaths('default');
 
-  assert.equal(paths.petA.image, 'assets/default/left.webp');
-  assert.equal(paths.petB.image, 'assets/default/right.webp');
-  assert.equal(paths.overlayPrefix, 'assets/default/');
-  assert.deepEqual(paths.petA.sprites.idle.frames, ['assets/default/left.webp']);
-  assert.equal(paths.petA.sprites.walkingLeft.frames[0], 'assets/default/yueqi/walk_left01.webp');
-  assert.equal(paths.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.webp');
-  assert.equal(paths.imageMap.yueqi.eating, 'assets/default/left_eat.webp');
+  assert.equal(paths.petA.image, 'pet-asset://skin/default/left.webp');
+  assert.equal(paths.petB.image, 'pet-asset://skin/default/right.webp');
+  assert.equal(paths.overlayPrefix, 'pet-asset://skin/default/');
+  assert.deepEqual(paths.petA.sprites.idle.frames, ['pet-asset://skin/default/left.webp']);
+  assert.equal(paths.petA.sprites.walkingLeft.frames[0], 'pet-asset://skin/default/yueqi/walk_left01.webp');
+  assert.equal(paths.imageMap.shenjiu.meditating, 'pet-asset://skin/default/right_cultivate.webp');
+  assert.equal(paths.imageMap.yueqi.eating, 'pet-asset://skin/default/left_eat.webp');
 });
 
 test('SkinManager builds custom WebP skin paths', () => {
   const sm = new SkinManager();
   const paths = sm.buildPaths('qban');
 
-  assert.equal(paths.petA.image, 'assets/qban/left.webp');
+  assert.equal(paths.petA.image, 'pet-asset://skin/qban/left.webp');
   assert.equal(paths.petA.imageScale, 1);
-  assert.equal(paths.petB.image, 'assets/qban/right.webp');
+  assert.equal(paths.petB.image, 'pet-asset://skin/qban/right.webp');
   assert.equal(paths.petB.imageScale, 1);
-  assert.equal(paths.petA.sprites.walkingRight.frames[2], 'assets/qban/yueqi/walk_right03.webp');
-  assert.equal(paths.imageMap.shenjiu.hungry, 'assets/qban/right_hungry.webp');
+  assert.equal(paths.petA.sprites.walkingRight.frames[2], 'pet-asset://skin/qban/yueqi/walk_right03.webp');
+  assert.equal(paths.imageMap.shenjiu.hungry, 'pet-asset://skin/qban/right_hungry.webp');
 });
 
 test('SkinManager gives animal ears skin a larger image scale', () => {
@@ -130,11 +130,11 @@ test('SkinManager.applySkin updates current skin and pets', async () => {
   await sm.applySkin('qban', { petA, petB, spriteView: null, renderer: null });
 
   assert.equal(sm.getCurrentSkin(), 'qban');
-  assert.equal(petA.image, 'assets/qban/left.webp');
-  assert.equal(petB.image, 'assets/qban/right.webp');
+  assert.equal(petA.image, 'pet-asset://skin/qban/left.webp');
+  assert.equal(petB.image, 'pet-asset://skin/qban/right.webp');
   assert.equal(petA.imageScale, 1);
   assert.equal(petB.imageScale, 1);
-  assert.equal(petA.sprites.idle.frames[0], 'assets/qban/left.webp');
+  assert.equal(petA.sprites.idle.frames[0], 'pet-asset://skin/qban/left.webp');
 });
 
 test('SkinManager.applySkin updates renderer prefix', async () => {
@@ -143,21 +143,21 @@ test('SkinManager.applySkin updates renderer prefix', async () => {
 
   await sm.applySkin('qban', { petA: null, petB: null, spriteView: null, renderer });
 
-  assert.equal(renderer.skinPrefix, 'assets/qban/');
+  assert.equal(renderer.skinPrefix, 'pet-asset://skin/qban/');
 });
 
 test('SpriteView.updateImageMap replaces the image map', () => {
   const sv = new SpriteView();
 
-  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/default/right_cultivate.webp');
+  assert.equal(sv.imageMap.shenjiu.meditating, 'pet-asset://skin/default/right_cultivate.webp');
 
   sv.updateImageMap({
-    shenjiu: { meditating: 'assets/qban/right_cultivate.webp' },
-    yueqi: { meditating: 'assets/qban/left_cultivate.webp' },
+    shenjiu: { meditating: 'pet-asset://skin/qban/right_cultivate.webp' },
+    yueqi: { meditating: 'pet-asset://skin/qban/left_cultivate.webp' },
   });
 
-  assert.equal(sv.imageMap.shenjiu.meditating, 'assets/qban/right_cultivate.webp');
-  assert.equal(sv.imageMap.yueqi.meditating, 'assets/qban/left_cultivate.webp');
+  assert.equal(sv.imageMap.shenjiu.meditating, 'pet-asset://skin/qban/right_cultivate.webp');
+  assert.equal(sv.imageMap.yueqi.meditating, 'pet-asset://skin/qban/left_cultivate.webp');
 });
 
 test('SpriteView.attach initializes animation state and preloads resources when Image exists', () => {
@@ -177,7 +177,7 @@ test('SpriteView.attach initializes animation state and preloads resources when 
   try {
     const sv = new SpriteView({
       imageMap: {
-        yueqi: { hungry: 'assets/default/left_hungry.webp' },
+        yueqi: { hungry: 'pet-asset://skin/default/left_hungry.webp' },
       },
     });
     const pet = createFakePet('yueqi');
@@ -190,10 +190,10 @@ test('SpriteView.attach initializes animation state and preloads resources when 
     assert.equal(pet._sv_lastResource, null);
     assert.equal(pet._sv_frameIndex, 0);
     assert.deepEqual(loaded, [
-      'assets/default/left.webp',
+      'pet-asset://skin/default/left.webp',
       'walk-1.webp',
       'walk-2.webp',
-      'assets/default/left_hungry.webp',
+      'pet-asset://skin/default/left_hungry.webp',
     ]);
   } finally {
     global.Image = originalImage;
@@ -278,24 +278,24 @@ test('SpriteView uses direction-specific second walking frames for visible greet
   yueqi.state = 'interacting';
   yueqi.direction = 'right';
   yueqi.sprites.walkingRight = {
-    frames: ['assets/default/yueqi/walk_right01.webp', 'assets/default/yueqi/walk_right02.webp'],
+    frames: ['pet-asset://skin/default/yueqi/walk_right01.webp', 'pet-asset://skin/default/yueqi/walk_right02.webp'],
     fps: 4,
   };
 
   shenjiu.state = 'interacting';
   shenjiu.direction = 'left';
   shenjiu.sprites.walkingLeft = {
-    frames: ['assets/default/shenjiu/walk_left01.webp', 'assets/default/shenjiu/walk_left02.webp'],
+    frames: ['pet-asset://skin/default/shenjiu/walk_left01.webp', 'pet-asset://skin/default/shenjiu/walk_left02.webp'],
     fps: 4,
   };
 
   assert.deepEqual(
     sv._resolveResource(yueqi),
-    { src: 'assets/default/yueqi/walk_right02.webp', type: 'image' }
+    { src: 'pet-asset://skin/default/yueqi/walk_right02.webp', type: 'image' }
   );
   assert.deepEqual(
     sv._resolveResource(shenjiu),
-    { src: 'assets/default/shenjiu/walk_left02.webp', type: 'image' }
+    { src: 'pet-asset://skin/default/shenjiu/walk_left02.webp', type: 'image' }
   );
 });
 
@@ -303,7 +303,7 @@ test('SpriteView.reattach clears render cache', async () => {
   const sv = new SpriteView();
   const pet = createFakePet('yueqi');
 
-  pet._sv_lastResource = 'assets/default/left.webp';
+  pet._sv_lastResource = 'pet-asset://skin/default/left.webp';
   pet._sv_frameIndex = 3;
   pet._sv_frameTimer = 123;
   pet._sv_lastSpriteKey = 'walkingLeft';
@@ -338,15 +338,15 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
     const sv = new SpriteView({
       imageMap: {
         yueqi: {
-          hungry: 'assets/default/left_hungry.webp',
+          hungry: 'pet-asset://skin/default/left_hungry.webp',
         },
       },
     });
     const pet = createFakePet('yueqi');
     pet.sprites.walkingLeft = {
       frames: [
-        'assets/default/yueqi/walk_left01.webp',
-        'assets/default/yueqi/walk_left02.webp',
+        'pet-asset://skin/default/yueqi/walk_left01.webp',
+        'pet-asset://skin/default/yueqi/walk_left02.webp',
       ],
       fps: 4,
     };
@@ -357,10 +357,10 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
     assert.deepEqual(
       pet._sv_preloadedImages.map((image) => image.src),
       [
-        'assets/default/left.webp',
-        'assets/default/yueqi/walk_left01.webp',
-        'assets/default/yueqi/walk_left02.webp',
-        'assets/default/left_hungry.webp',
+        'pet-asset://skin/default/left.webp',
+        'pet-asset://skin/default/yueqi/walk_left01.webp',
+        'pet-asset://skin/default/yueqi/walk_left02.webp',
+        'pet-asset://skin/default/left_hungry.webp',
       ]
     );
   } finally {
@@ -368,10 +368,61 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
   }
 });
 
-test('PetRenderer defaults and updates skin prefix', () => {
-  const renderer = new PetRenderer(null);
-  assert.equal(renderer.skinPrefix, 'assets/default/');
+test('SpriteView.reattach cleans up previous preloaded images event handlers', async () => {
+  const originalImage = global.Image;
+  try {
+    const cleanedHandlers = [];
+    class FakeImage {
+      set onload(handler) {
+        this._onload = handler;
+        if (handler === null) cleanedHandlers.push('onload');
+      }
+      get onload() { return this._onload; }
+      set onerror(handler) {
+        this._onerror = handler;
+        if (handler === null) cleanedHandlers.push('onerror');
+      }
+      get onerror() { return this._onerror; }
+      set src(value) {
+        this._src = value;
+        if (this._onload) setTimeout(() => this._onload(), 0);
+      }
+      get src() { return this._src; }
+    }
+    global.Image = FakeImage;
 
-  renderer.setSkinPrefix('assets/qban/');
-  assert.equal(renderer.skinPrefix, 'assets/qban/');
+    const sv = new SpriteView({ imageMap: { yueqi: {} } });
+    const pet = createFakePet('yueqi');
+    await sv.reattach(pet);
+    const firstPreloads = pet._sv_preloadedImages;
+    assert.ok(firstPreloads.length > 0);
+
+    // Reattach again to verify cleanup of firstPreloads
+    await sv.reattach(pet);
+    assert.ok(cleanedHandlers.length > 0);
+  } finally {
+    global.Image = originalImage;
+  }
+});
+
+test('PetRenderer defaults and updates skin prefix with overlay preloading', () => {
+  const originalImage = global.Image;
+  try {
+    const preloadedSrcs = [];
+    global.Image = class FakeImage {
+      set src(val) { preloadedSrcs.push(val); }
+    };
+
+    const renderer = new PetRenderer(null);
+    assert.equal(renderer.skinPrefix, 'pet-asset://skin/default/');
+
+    renderer.setSkinPrefix('pet-asset://skin/qban/');
+    assert.equal(renderer.skinPrefix, 'pet-asset://skin/qban/');
+    assert.deepEqual(preloadedSrcs, [
+      'pet-asset://skin/qban/cultivate.webp',
+      'pet-asset://skin/qban/kiss.webp',
+    ]);
+  } finally {
+    global.Image = originalImage;
+  }
 });

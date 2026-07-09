@@ -18,17 +18,38 @@ class PetRenderer {
     this.keepPetReachable = typeof keepPetReachable === 'function' ? keepPetReachable : null;
     this.getVisualScaleForPet = typeof getVisualScaleForPet === 'function' ? getVisualScaleForPet : null;
     /** @type {string} 当前皮肤的路径前缀，用于叠加层图片 */
-    this.skinPrefix = 'assets/default/';
+    this.skinPrefix = 'pet-asset://skin/default/';
     /** @type {number[]} 活跃的覆盖层气泡定时器 ID */
     this._overlayBubbleTimers = [];
   }
 
   /**
    * 设置皮肤路径前缀（由 SkinManager 调用）。
-   * @param {string} prefix - 如 'assets/qban/'
+   * @param {string} prefix - 如 'pet-asset://skin/qban/'
    */
   setSkinPrefix(prefix) {
-    this.skinPrefix = prefix;
+    if (this.skinPrefix !== prefix) {
+      if (Array.isArray(this._preloadedOverlays)) {
+        this._preloadedOverlays.forEach((img) => {
+          img.onload = null;
+          img.onerror = null;
+        });
+      }
+      this.skinPrefix = prefix;
+      if (typeof Image !== 'undefined') {
+        this._preloadedOverlays = ['cultivate.webp', 'kiss.webp'].map((filename) => {
+          const img = new Image();
+          const done = () => {
+            img.onload = null;
+            img.onerror = null;
+          };
+          img.onload = done;
+          img.onerror = done;
+          img.src = `${prefix}${filename}`;
+          return img;
+        });
+      }
+    }
   }
 
   getPetVisualScale(pet) {

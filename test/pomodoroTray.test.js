@@ -68,8 +68,8 @@ test('unpinning pomodoro removes it from macOS fullscreen Spaces', () => {
 test('pomodoro pet assets use current skin with default fallback', () => {
   assert.match(mainSource, /function resolvePomodoroAsset\(skinId, filename\)/);
   assert.match(mainSource, /fs\.existsSync\(candidatePath\)/);
-  assert.match(mainSource, /return `assets\/\$\{safeSkinId\}\/\$\{filename\}`/);
-  assert.match(mainSource, /return `assets\/default\/\$\{filename\}`/);
+  assert.match(mainSource, /createAssetUrl\(protectedAssetId\)/);
+  assert.match(mainSource, /createAssetUrl\(`skin\/default\/\$\{filename\}`\)/);
   assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'left_cultivate\.webp'\)/);
   assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'right_cultivate\.webp'\)/);
   assert.match(mainSource, /resolvePomodoroAsset\(currentSkinId, 'cultivate\.webp'\)/);

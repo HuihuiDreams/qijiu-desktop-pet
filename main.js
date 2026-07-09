@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const {
@@ -36,6 +36,8 @@ const {
 const { createPresentationGuard } = require('./presentationGuard');
 const { createMeetingDetector } = require('./meetingDetector');
 const { PomodoroSystem } = require('./src/systems/PomodoroSystem');
+const { createAssetUrl, hasProtectedAsset, listAvailableSkinIds } = require('./protectedAssetLoader');
+const { registerProtectedAssetProtocol } = require('./protectedAssetProtocol');
 const { I18N } = require('./src/data/i18n');
 const {
   DEFAULT_WEATHER_SYNC_SETTINGS,
@@ -56,6 +58,15 @@ const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
+
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'pet-asset',
+  privileges: {
+    standard: true,
+    secure: true,
+    supportFetchAPI: true,
+  },
+}]);
 
 function configureQaUserDataPath() {
   const qaUserDataDir = process.env.DESKTOP_PET_USER_DATA_DIR;
@@ -818,20 +829,34 @@ function closeCitySettingWindow() {
 
 function resolvePomodoroAsset(skinId, filename) {
   const safeSkinId = isAllowedSkinId(skinId, scanAvailableSkins()) ? skinId : 'default';
+  const protectedAssetId = `skin/${safeSkinId}/${filename}`;
+  if (hasProtectedAsset(protectedAssetId, { appRoot: __dirname, resourcesPath: process.resourcesPath })) {
+    return createAssetUrl(protectedAssetId);
+  }
+
   const candidatePath = path.join(__dirname, 'src', 'assets', safeSkinId, filename);
   if (fs.existsSync(candidatePath)) {
-    return `assets/${safeSkinId}/${filename}`;
+    return createAssetUrl(protectedAssetId);
   }
-  return `assets/default/${filename}`;
+  return createAssetUrl(`skin/default/${filename}`);
 }
 
+let cachedPomodoroAssets = null;
+let cachedPomodoroAssetsSkinId = null;
+
 function getPomodoroAssets() {
-  return {
+  if (cachedPomodoroAssets && cachedPomodoroAssetsSkinId === currentSkinId) {
+    return cachedPomodoroAssets;
+  }
+  const assets = {
     yueqi: resolvePomodoroAsset(currentSkinId, 'left_cultivate.webp'),
     shenjiu: resolvePomodoroAsset(currentSkinId, 'right_cultivate.webp'),
     cultivate: resolvePomodoroAsset(currentSkinId, 'cultivate.webp'),
     kiss: resolvePomodoroAsset(currentSkinId, 'kiss.webp'),
   };
+  cachedPomodoroAssets = assets;
+  cachedPomodoroAssetsSkinId = currentSkinId;
+  return assets;
 }
 
 function getPomodoroSnapshot(now) {
@@ -1269,11 +1294,29 @@ function createWindow() {
  * 扫描 src/assets/ 下的子目录，返回可用皮肤 ID 列表。
  * 使用 fs.statSync 过滤，仅返回文件夹名，排除非目录文件。
  */
-function scanAvailableSkins() {
+let cachedAvailableSkins = null;
+let cachedAvailableSkinsTimestamp = 0;
+const SKINS_CACHE_TTL_MS = 2000;
+
+function scanAvailableSkins(forceRefresh = false) {
+  if (!forceRefresh && cachedAvailableSkins && Date.now() - cachedAvailableSkinsTimestamp < SKINS_CACHE_TTL_MS) {
+    return cachedAvailableSkins;
+  }
   try {
+    const protectedSkinIds = listAvailableSkinIds({
+      appRoot: __dirname,
+      resourcesPath: process.resourcesPath,
+      appPath: typeof app?.getAppPath === 'function' ? app.getAppPath() : null,
+    });
+    if (protectedSkinIds.length > 0) {
+      cachedAvailableSkins = protectedSkinIds.sort(sortSkinIds);
+      cachedAvailableSkinsTimestamp = Date.now();
+      return cachedAvailableSkins;
+    }
+
     const assetsDir = path.join(__dirname, 'src', 'assets');
     const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
-    return entries.filter(dirent => {
+    cachedAvailableSkins = entries.filter(dirent => {
       if (!dirent.isDirectory()) return false;
       const entry = path.basename(dirent.name); // Sanitize to prevent traversal
       try {
@@ -1284,19 +1327,23 @@ function scanAvailableSkins() {
         return false;
       }
 
-    }).map(dirent => dirent.name).sort((a, b) => {
-      const keys = Object.keys(SKIN_NAME_KEYS);
-      const indexA = keys.indexOf(a);
-      const indexB = keys.indexOf(b);
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      if (indexA !== -1) return -1;
-      if (indexB !== -1) return 1;
-      return a.localeCompare(b);
-    });
+    }).map(dirent => dirent.name).sort(sortSkinIds);
+    cachedAvailableSkinsTimestamp = Date.now();
+    return cachedAvailableSkins;
   } catch (error) {
     console.error('Failed to scan skins:', error);
     return ['default'];
   }
+}
+
+function sortSkinIds(a, b) {
+  const keys = Object.keys(SKIN_NAME_KEYS);
+  const indexA = keys.indexOf(a);
+  const indexB = keys.indexOf(b);
+  if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+  if (indexA !== -1) return -1;
+  if (indexB !== -1) return 1;
+  return a.localeCompare(b);
 }
 
 function getPomodoroTrayLabel() {
@@ -1914,6 +1961,7 @@ if (!hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     disableApplicationMenu();
+    registerProtectedAssetProtocol({ protocol, app });
 
     // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
     if (process.platform === 'darwin') {

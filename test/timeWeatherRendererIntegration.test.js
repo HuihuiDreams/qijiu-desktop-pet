@@ -52,7 +52,7 @@ test('Time Weather Renderer Integration', async (t) => {
     // Night time + Idle -> Sleeping
     pet.timePhase = 'night';
     assert.strictEqual(sv._resolveSpriteKey(pet), 'sleeping');
-    assert.strictEqual(sv._resolveResource(pet).src, 'assets/default/left_sleep.webp');
+    assert.strictEqual(sv._resolveResource(pet).src, 'pet-asset://skin/default/left_sleep.webp');
 
     // Evening + Idle -> Normal Idle
     pet.timePhase = 'evening';

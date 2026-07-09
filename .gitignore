@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-update-test/
+protected-assets/
 build/*
 !build/installer.nsh
 .DS_Store
@@ -18,3 +19,4 @@ security-scans/
 *.pfx
 *.pem
 .agents/
+docs/source-assets/

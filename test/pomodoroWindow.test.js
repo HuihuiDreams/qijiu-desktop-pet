@@ -73,8 +73,8 @@ test('pomodoro renderer uses safe DOM APIs for dynamic text and images', () => {
   assert.equal(source.includes('innerHTML'), false);
   assert.match(source, /textContent/);
   assert.match(source, /setPetImage/);
-  assert.match(source, /assets\/default\/cultivate\.webp/);
-  assert.match(source, /assets\/default\/kiss\.webp/);
+  assert.match(source, /pet-asset:\/\/skin\/default\/cultivate\.webp/);
+  assert.match(source, /pet-asset:\/\/skin\/default\/kiss\.webp/);
 });
 
 test('pomodoro pin button updates optimistically while IPC confirms the window level', () => {
