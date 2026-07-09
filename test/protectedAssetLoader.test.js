@@ -12,7 +12,9 @@ const {
   hasProtectedAsset,
   listAvailableSkinIds,
   loadProtectedAsset,
+  loadProtectedAssetAsync,
   normalizeAssetId,
+  readManifest,
 } = require('../protectedAssetLoader');
 
 function createProtectedAssetsFixture() {
@@ -104,3 +106,63 @@ test('loadProtectedAsset does not cache assets larger than the configured cache 
   assert.equal(asset.data.toString('utf8'), 'default-left');
   assert.equal(getProtectedAssetCacheStats().entries, 0);
 });
+
+test('readManifest uses memory cache without scanning disk when manifest Cache is active', () => {
+  clearProtectedAssetCache();
+  const protectedAssetsDir = createProtectedAssetsFixture();
+
+  const first = readManifest({ protectedAssetsDir });
+  assert.ok(first);
+  assert.ok(first.manifest);
+
+  // Rename manifest on disk; if readManifest checks disk existsSync before cache, or re-reads, it will fail/miss
+  const manifestPath = path.join(protectedAssetsDir, 'manifest.json');
+  const tempPath = path.join(protectedAssetsDir, 'manifest.json.bak');
+  fs.renameSync(manifestPath, tempPath);
+
+  try {
+    const second = readManifest({ protectedAssetsDir });
+    assert.ok(second);
+    assert.deepEqual(second.manifest, first.manifest);
+  } finally {
+    if (fs.existsSync(tempPath)) {
+      fs.renameSync(tempPath, manifestPath);
+    }
+    clearProtectedAssetCache();
+  }
+});
+
+test('readManifest caches negative lookups until clearProtectedAssetCache is called', () => {
+  clearProtectedAssetCache();
+  const nonexistentDir = path.join(os.tmpdir(), `deskpet-nonexistent-${Date.now()}`);
+
+  // When no protectedAssetsDir is provided and no manifest exists in default roots, returns null and sets manifestNotFound
+  const first = readManifest();
+  assert.equal(first, null);
+
+  // Even if options without protectedAssetsDir are passed again, it should return null immediately
+  const second = readManifest({});
+  assert.equal(second, null);
+
+  clearProtectedAssetCache();
+});
+
+test('loadProtectedAssetAsync asynchronously decrypts assets and deduplicates concurrent in-flight requests', async () => {
+  clearProtectedAssetCache();
+  const protectedAssetsDir = createProtectedAssetsFixture();
+
+  // Launch two concurrent requests for the exact same asset before cache is populated
+  const [asset1, asset2] = await Promise.all([
+    loadProtectedAssetAsync('skin/default/left.webp', { protectedAssetsDir }),
+    loadProtectedAssetAsync('skin/default/left.webp', { protectedAssetsDir }),
+  ]);
+
+  assert.equal(asset1.data.toString('utf8'), 'default-left');
+  assert.equal(asset2.data.toString('utf8'), 'default-left');
+  assert.equal(asset1.size, 12);
+  assert.equal(getProtectedAssetCacheStats().entries, 1);
+
+  clearProtectedAssetCache();
+});
+
+

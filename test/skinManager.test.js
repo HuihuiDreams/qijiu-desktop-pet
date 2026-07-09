@@ -368,10 +368,61 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
   }
 });
 
-test('PetRenderer defaults and updates skin prefix', () => {
-  const renderer = new PetRenderer(null);
-  assert.equal(renderer.skinPrefix, 'pet-asset://skin/default/');
+test('SpriteView.reattach cleans up previous preloaded images event handlers', async () => {
+  const originalImage = global.Image;
+  try {
+    const cleanedHandlers = [];
+    class FakeImage {
+      set onload(handler) {
+        this._onload = handler;
+        if (handler === null) cleanedHandlers.push('onload');
+      }
+      get onload() { return this._onload; }
+      set onerror(handler) {
+        this._onerror = handler;
+        if (handler === null) cleanedHandlers.push('onerror');
+      }
+      get onerror() { return this._onerror; }
+      set src(value) {
+        this._src = value;
+        if (this._onload) setTimeout(() => this._onload(), 0);
+      }
+      get src() { return this._src; }
+    }
+    global.Image = FakeImage;
 
-  renderer.setSkinPrefix('pet-asset://skin/qban/');
-  assert.equal(renderer.skinPrefix, 'pet-asset://skin/qban/');
+    const sv = new SpriteView({ imageMap: { yueqi: {} } });
+    const pet = createFakePet('yueqi');
+    await sv.reattach(pet);
+    const firstPreloads = pet._sv_preloadedImages;
+    assert.ok(firstPreloads.length > 0);
+
+    // Reattach again to verify cleanup of firstPreloads
+    await sv.reattach(pet);
+    assert.ok(cleanedHandlers.length > 0);
+  } finally {
+    global.Image = originalImage;
+  }
+});
+
+test('PetRenderer defaults and updates skin prefix with overlay preloading', () => {
+  const originalImage = global.Image;
+  try {
+    const preloadedSrcs = [];
+    global.Image = class FakeImage {
+      set src(val) { preloadedSrcs.push(val); }
+    };
+
+    const renderer = new PetRenderer(null);
+    assert.equal(renderer.skinPrefix, 'pet-asset://skin/default/');
+
+    renderer.setSkinPrefix('pet-asset://skin/qban/');
+    assert.equal(renderer.skinPrefix, 'pet-asset://skin/qban/');
+    assert.deepEqual(preloadedSrcs, [
+      'pet-asset://skin/qban/cultivate.webp',
+      'pet-asset://skin/qban/kiss.webp',
+    ]);
+  } finally {
+    global.Image = originalImage;
+  }
 });

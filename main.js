@@ -841,13 +841,22 @@ function resolvePomodoroAsset(skinId, filename) {
   return createAssetUrl(`skin/default/${filename}`);
 }
 
+let cachedPomodoroAssets = null;
+let cachedPomodoroAssetsSkinId = null;
+
 function getPomodoroAssets() {
-  return {
+  if (cachedPomodoroAssets && cachedPomodoroAssetsSkinId === currentSkinId) {
+    return cachedPomodoroAssets;
+  }
+  const assets = {
     yueqi: resolvePomodoroAsset(currentSkinId, 'left_cultivate.webp'),
     shenjiu: resolvePomodoroAsset(currentSkinId, 'right_cultivate.webp'),
     cultivate: resolvePomodoroAsset(currentSkinId, 'cultivate.webp'),
     kiss: resolvePomodoroAsset(currentSkinId, 'kiss.webp'),
   };
+  cachedPomodoroAssets = assets;
+  cachedPomodoroAssetsSkinId = currentSkinId;
+  return assets;
 }
 
 function getPomodoroSnapshot(now) {
@@ -1285,7 +1294,14 @@ function createWindow() {
  * 扫描 src/assets/ 下的子目录，返回可用皮肤 ID 列表。
  * 使用 fs.statSync 过滤，仅返回文件夹名，排除非目录文件。
  */
-function scanAvailableSkins() {
+let cachedAvailableSkins = null;
+let cachedAvailableSkinsTimestamp = 0;
+const SKINS_CACHE_TTL_MS = 2000;
+
+function scanAvailableSkins(forceRefresh = false) {
+  if (!forceRefresh && cachedAvailableSkins && Date.now() - cachedAvailableSkinsTimestamp < SKINS_CACHE_TTL_MS) {
+    return cachedAvailableSkins;
+  }
   try {
     const protectedSkinIds = listAvailableSkinIds({
       appRoot: __dirname,
@@ -1293,12 +1309,14 @@ function scanAvailableSkins() {
       appPath: typeof app?.getAppPath === 'function' ? app.getAppPath() : null,
     });
     if (protectedSkinIds.length > 0) {
-      return protectedSkinIds.sort(sortSkinIds);
+      cachedAvailableSkins = protectedSkinIds.sort(sortSkinIds);
+      cachedAvailableSkinsTimestamp = Date.now();
+      return cachedAvailableSkins;
     }
 
     const assetsDir = path.join(__dirname, 'src', 'assets');
     const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
-    return entries.filter(dirent => {
+    cachedAvailableSkins = entries.filter(dirent => {
       if (!dirent.isDirectory()) return false;
       const entry = path.basename(dirent.name); // Sanitize to prevent traversal
       try {
@@ -1310,6 +1328,8 @@ function scanAvailableSkins() {
       }
 
     }).map(dirent => dirent.name).sort(sortSkinIds);
+    cachedAvailableSkinsTimestamp = Date.now();
+    return cachedAvailableSkins;
   } catch (error) {
     console.error('Failed to scan skins:', error);
     return ['default'];

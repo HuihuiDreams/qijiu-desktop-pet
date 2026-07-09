@@ -10,9 +10,11 @@ const VALID_ASSET_ID = /^skin\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+
 const DEFAULT_MAX_CACHE_BYTES = 16 * 1024 * 1024;
 
 const assetCache = new Map();
+const inFlightLoads = new Map();
 let cachedBytes = 0;
 let manifestCache = null;
 let manifestCacheDir = null;
+let manifestNotFound = false;
 
 function createAssetUrl(assetId) {
   return `pet-asset://${assetId}`;
@@ -42,8 +44,23 @@ function findProtectedAssetsDir(options = {}) {
 }
 
 function readManifest(options = {}) {
+  if (manifestCache && manifestCacheDir) {
+    if (!options.protectedAssetsDir || path.resolve(options.protectedAssetsDir) === manifestCacheDir) {
+      return { manifest: manifestCache, protectedAssetsDir: manifestCacheDir };
+    }
+  }
+
+  if (manifestNotFound && !options.protectedAssetsDir) {
+    return null;
+  }
+
   const protectedAssetsDir = findProtectedAssetsDir(options);
-  if (!protectedAssetsDir) return null;
+  if (!protectedAssetsDir) {
+    if (!options.protectedAssetsDir) {
+      manifestNotFound = true;
+    }
+    return null;
+  }
 
   const resolvedDir = path.resolve(protectedAssetsDir);
   if (manifestCache && manifestCacheDir === resolvedDir) {
@@ -58,6 +75,7 @@ function readManifest(options = {}) {
 
   manifestCache = manifest;
   manifestCacheDir = resolvedDir;
+  manifestNotFound = false;
   return { manifest, protectedAssetsDir: resolvedDir };
 }
 
@@ -109,9 +127,11 @@ function setCachedAsset(cacheKey, asset, maxCacheBytes = DEFAULT_MAX_CACHE_BYTES
 
 function clearProtectedAssetCache() {
   assetCache.clear();
+  inFlightLoads.clear();
   cachedBytes = 0;
   manifestCache = null;
   manifestCacheDir = null;
+  manifestNotFound = false;
 }
 
 function getProtectedAssetCacheStats() {
@@ -189,6 +209,67 @@ function loadProtectedAsset(assetId, options = {}) {
   return cloneAsset(asset);  // clone once on cache miss to protect cached buffer
 }
 
+async function loadProtectedAssetAsync(assetId, options = {}) {
+  const normalized = normalizeAssetId(assetId);
+  if (!normalized) {
+    throw new Error('Invalid protected asset id');
+  }
+
+  const result = readManifest(options);
+  const entry = result?.manifest.assets[normalized];
+  if (!result || !entry) {
+    throw new Error('Protected asset not found');
+  }
+
+  const fileName = path.basename(entry.file);
+  if (fileName !== entry.file) {
+    throw new Error('Invalid protected asset file name');
+  }
+
+  const cacheKey = createCacheKey(result.protectedAssetsDir, normalized);
+  const cached = getCachedAsset(cacheKey);
+  if (cached) return cached;
+
+  let inFlightPromise = inFlightLoads.get(cacheKey);
+  if (!inFlightPromise) {
+    inFlightPromise = (async () => {
+      try {
+        const encrypted = await fs.promises.readFile(path.join(result.protectedAssetsDir, fileName));
+        const decipher = crypto.createDecipheriv(
+          'aes-256-gcm',
+          KEY,
+          Buffer.from(entry.iv, 'base64'),
+        );
+        decipher.setAAD(Buffer.from(normalized));
+        decipher.setAuthTag(Buffer.from(entry.authTag, 'base64'));
+        const data = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+
+        if (Number.isFinite(entry.size) && data.length !== entry.size) {
+          throw new Error('Protected asset size mismatch');
+        }
+        if (entry.sha256) {
+          const hash = crypto.createHash('sha256').update(data).digest('hex');
+          if (hash !== entry.sha256) throw new Error('Protected asset hash mismatch');
+        }
+
+        const asset = {
+          data,
+          contentType: entry.contentType || 'application/octet-stream',
+          size: data.length,
+        };
+        setCachedAsset(cacheKey, asset, options.maxCacheBytes);
+        return asset;
+      } finally {
+        inFlightLoads.delete(cacheKey);
+      }
+    })();
+    inFlightLoads.set(cacheKey, inFlightPromise);
+  }
+
+  const asset = await inFlightPromise;
+  return cloneAsset(asset);
+}
+
 module.exports = {
   clearProtectedAssetCache,
   createAssetUrl,
@@ -197,6 +278,7 @@ module.exports = {
   hasProtectedAsset,
   listAvailableSkinIds,
   loadProtectedAsset,
+  loadProtectedAssetAsync,
   normalizeAssetId,
   readManifest,
 };

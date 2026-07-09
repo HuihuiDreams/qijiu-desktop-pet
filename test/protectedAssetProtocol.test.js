@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { PROTOCOL_SCHEME, assetIdFromUrl, registerProtectedAssetProtocol } = require('../protectedAssetProtocol');
+const { protectAssets } = require('../scripts/protect-assets');
 
 test('assetIdFromUrl maps pet-asset skin URLs to manifest ids', () => {
   assert.equal(PROTOCOL_SCHEME, 'pet-asset');
@@ -104,4 +105,32 @@ test('registerProtectedAssetProtocol installs one protocol handler', () => {
   assert.equal(calls.length, 1);
   assert.equal(calls[0].scheme, 'pet-asset');
   assert.equal(typeof calls[0].handler, 'function');
+});
+
+test('protocol handler asynchronously serves protected assets from encrypted files', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-protected-protocol-async-'));
+  const inputDir = path.join(root, 'src', 'assets');
+  const skinDir = path.join(inputDir, 'default');
+  fs.mkdirSync(skinDir, { recursive: true });
+  fs.writeFileSync(path.join(skinDir, 'cultivate.webp'), Buffer.from('encrypted-async-webp'));
+  const protectedAssetsDir = path.join(root, 'protected-assets');
+  protectAssets({ inputDir, outputDir: protectedAssetsDir });
+
+  const calls = [];
+  const fakeProtocol = {
+    handle(scheme, handler) {
+      calls.push({ scheme, handler });
+    },
+  };
+
+  registerProtectedAssetProtocol({
+    protocol: fakeProtocol,
+    protectedAssetsDir,
+  });
+
+  const response = await calls[0].handler({ url: 'pet-asset://skin/default/cultivate.webp' });
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('Content-Type'), 'image/webp');
+  assert.equal(Buffer.from(await response.arrayBuffer()).toString('utf8'), 'encrypted-async-webp');
 });

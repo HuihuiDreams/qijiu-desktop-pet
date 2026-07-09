@@ -11,7 +11,9 @@
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
 - 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
 - **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
-- `protectedAssetLoader` 性能优化：manifest.json 解析结果缓存到内存（随 `clearProtectedAssetCache` 一并清空），消除每次 `pet-asset://` 请求的同步磁盘读取；缓存写入时不再多余复制 Buffer，仅在读取返回时做单次 clone 保护原始数据。
+- `protectedAssetLoader` 与主进程性能进一步优化：`readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定可能引发的高频同步磁盘查询。
+- `protectedAssetProtocol` 全面异步化与防雪崩改造：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将其主进程文件读取改用 `fs.promises.readFile` 异步非阻塞操作；同时引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与阻塞。
+- 渲染层多宠物及双人互动贴图预加载与内存优化：`SkinManager.applySkin` 改为两只宠物与 `PetRenderer` (`cultivate.webp`、`kiss.webp`) 覆盖层贴图并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；同时在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝皮肤频繁切换或长期运行产生未释放的 DOM 节点与事件句柄内存泄漏。
 
 ### Fixed
 - **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。

@@ -28,7 +28,28 @@ class PetRenderer {
    * @param {string} prefix - 如 'pet-asset://skin/qban/'
    */
   setSkinPrefix(prefix) {
-    this.skinPrefix = prefix;
+    if (this.skinPrefix !== prefix) {
+      if (Array.isArray(this._preloadedOverlays)) {
+        this._preloadedOverlays.forEach((img) => {
+          img.onload = null;
+          img.onerror = null;
+        });
+      }
+      this.skinPrefix = prefix;
+      if (typeof Image !== 'undefined') {
+        this._preloadedOverlays = ['cultivate.webp', 'kiss.webp'].map((filename) => {
+          const img = new Image();
+          const done = () => {
+            img.onload = null;
+            img.onerror = null;
+          };
+          img.onload = done;
+          img.onerror = done;
+          img.src = `${prefix}${filename}`;
+          return img;
+        });
+      }
+    }
   }
 
   getPetVisualScale(pet) {

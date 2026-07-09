@@ -435,7 +435,7 @@ npm run qa:electron:smoke
 
 - `scripts/protect-assets.js` 从 `src/assets/{skinId}/**/*.webp` 生成 `protected-assets/manifest.json` 和加密后的 `protected-assets/*.dat`。
 - `protectedAssetLoader.js` 校验 `skin/{skinId}/...webp` manifest 资源 ID，在主进程中解密 AES-256-GCM 数据，并校验 size 与 SHA-256 完整性。
-- `protectedAssetLoader.js` 对已解密资源使用有大小上限的内存 LRU 缓存，并提供清理入口，避免同一皮肤帧在运行期重复读盘和解密。
-- `protectedAssetProtocol.js` 注册 Electron `pet-asset://skin/...` 协议；`SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口都通过该协议加载运行时皮肤图片。
+- `protectedAssetLoader.js` 对已解密资源使用有大小上限的内存 LRU 缓存，并对 manifest 结果及缺失检查 (`manifestNotFound`) 实施全内存缓冲，避免运行期或番茄钟心跳触发重复读盘和解密。
+- `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，配合 `loadProtectedAssetAsync` 的异步读盘与在途请求 (`inFlightLoads`) 去重机制，支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与双修/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
 - renderer 运行时代码应使用 `pet-asset://skin/...` URL 加载皮肤 WebP，不能直接使用 Node 文件系统 API。源素材仍保留在 `src/assets/` 便于编辑；打包产物排除明文皮肤 WebP，并包含 `protected-assets/`。
 - 架构决策见 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
