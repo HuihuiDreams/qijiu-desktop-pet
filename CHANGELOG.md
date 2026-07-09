@@ -5,6 +5,7 @@
 ## [Unreleased]
 ### Added
 - 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
+- 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
 
 ### Changed
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
@@ -12,6 +13,7 @@
 - **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
 
 ### Fixed
+- **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。
 - **macOS 睡眠唤醒"你走了X个时辰"时间计算错误**：修复了 macOS Dark Wake（系统后台维护唤醒）导致回归对白仅反映最后一段碎片化睡眠时长（如一整晚却只说"走了1个时辰"）的 Bug。根因：macOS 睡眠期间系统会定期触发 Dark Wake，每次都经由 `powerMonitor.on('resume')` 执行离线结算并更新存档时间戳，切断了真实的离线时长。修复方案：新增 `lastVisibleTime` 持久化字段，仅在用户真正可见（`document.visibilityState === 'visible'`）时更新，回归对白改用 `Date.now() - lastVisibleTime` 计算真实不在时长。数值衰减不受影响（分段累加数学等价）。兼容旧存档。
 - **macOS 番茄钟取消置顶后全屏仍被强制置顶**：修复了番茄钟窗口取消置顶后，当其他窗口进入全屏时番茄钟再次被强制置顶且无法取消的 Bug。根因：`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })` 在窗口创建时设置后取消置顶时从未重置，macOS 持续将窗口拉入全屏 Space。修复方案：在 `applyPomodoroWindowPinState` 中根据置顶状态动态切换 `setVisibleOnAllWorkspaces`，取消置顶时传 `false` 阻止窗口跟随用户进入全屏 Space，并仅在启用置顶时执行 `moveTop()`/`focus()`。已知限制：若在 macOS 全屏 Space 中打开番茄钟后再取消置顶，窗口仍会留在该全屏 Space 上方（macOS 不支持将已存在于全屏 Space 中的窗口移出）。Windows 不受影响。
 

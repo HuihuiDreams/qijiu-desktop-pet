@@ -66,6 +66,18 @@ function protectAssets(options = {}) {
   const outputDir = options.outputDir || DEFAULT_OUTPUT_DIR;
   const assets = collectSkinAssets(inputDir);
 
+  if (assets.length === 0) {
+    throw new Error(`No skin assets found in ${inputDir}`);
+  }
+
+  const seen = new Set();
+  for (const asset of assets) {
+    if (seen.has(asset.assetId)) {
+      throw new Error(`Duplicate asset ID: ${asset.assetId}`);
+    }
+    seen.add(asset.assetId);
+  }
+
   fs.mkdirSync(outputDir, { recursive: true });
 
   const manifest = {

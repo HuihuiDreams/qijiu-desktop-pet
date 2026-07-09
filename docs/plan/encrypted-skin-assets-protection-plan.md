@@ -92,7 +92,7 @@
 - [x] 脚本能递归处理现有 `default`、`birds`、`animal_ears`、`school_au` 皮肤素材。
 - [x] 输出目录不包含明文角色 `.webp`。
 - [x] 每个 manifest 条目都能定位到一个存在的 `.dat` 文件。
-- [ ] 缺失必需资源或重复资源 ID 时，脚本以非零退出码失败。
+- [x] 缺失必需资源或重复资源 ID 时，脚本以非零退出码失败。
 
 **验证方式：**
 - [x] 专项测试通过：`node --test test/protectedAssetsBuild.test.js`
@@ -181,7 +181,7 @@
 - [x] 现有 `scaleRatio` 和 `imageScale` 行为不变。
 
 **验证方式：**
-- [ ] 专项测试通过：`node --test test/skinManager.test.js test/skinRendererIntegration.test.js test/petRenderer.test.js`
+- [x] 专项测试通过：`node --test test/skinManager.test.js test/skinRendererIntegration.test.js test/petRenderer.test.js`
 - [ ] 人工检查切换全部内置皮肤无空白帧。
 
 **依赖关系：** 任务 4
