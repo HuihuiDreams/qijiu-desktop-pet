@@ -6,10 +6,10 @@ const DEFAULT_POMODORO_STATE = {
   isAlwaysOnTop: true,
   lastPomodoroMinutes: 25,
   assets: {
-    yueqi: 'assets/default/left_cultivate.webp',
-    shenjiu: 'assets/default/right_cultivate.webp',
-    cultivate: 'assets/default/cultivate.webp',
-    kiss: 'assets/default/kiss.webp',
+    yueqi: 'pet-asset://skin/default/left_cultivate.webp',
+    shenjiu: 'pet-asset://skin/default/right_cultivate.webp',
+    cultivate: 'pet-asset://skin/default/cultivate.webp',
+    kiss: 'pet-asset://skin/default/kiss.webp',
   },
 };
 

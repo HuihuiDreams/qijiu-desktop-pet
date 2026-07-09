@@ -117,7 +117,7 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
   const pet = {
     id: 'yueqi',
     nickname: 'Yue Qi',
-    image: 'assets/default/left.webp',
+    image: 'pet-asset://skin/default/left.webp',
     x: 100,
     y: 100,
     size: 96,
@@ -180,7 +180,7 @@ test('pet image scale is exposed as a CSS variable', () => {
   const pet = {
     id: 'yueqi',
     nickname: 'Yue Qi',
-    image: 'assets/animal_ears/left.webp',
+    image: 'pet-asset://skin/animal_ears/left.webp',
     imageScale: 1.08,
     x: 100,
     y: 100,

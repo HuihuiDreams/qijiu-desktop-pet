@@ -106,7 +106,7 @@ class SkinManager {
    * @returns {object} SkinPaths
    */
   buildPaths(skinId) {
-    const base = `assets/${skinId}`;
+    const base = `pet-asset://skin/${skinId}`;
     const imageScale = SkinManager.SKIN_IMAGE_SCALES[skinId] || 1;
 
     return {

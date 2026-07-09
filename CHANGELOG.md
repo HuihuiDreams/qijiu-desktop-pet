@@ -3,7 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
+
 ### Changed
+- 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
+- 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
 - **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
 
 ### Fixed

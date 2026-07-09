@@ -6,18 +6,18 @@ class SpriteView {
   constructor(options = {}) {
     this.imageMap = options.imageMap || {
       shenjiu: {
-        meditating: 'assets/default/right_cultivate.webp',
-        hungry: 'assets/default/right_hungry.webp',
-        sleeping: 'assets/default/right_sleep.webp',
-        eating: 'assets/default/right_eat.webp',
-        patted: 'assets/default/right_pat.webp',
+        meditating: 'pet-asset://skin/default/right_cultivate.webp',
+        hungry: 'pet-asset://skin/default/right_hungry.webp',
+        sleeping: 'pet-asset://skin/default/right_sleep.webp',
+        eating: 'pet-asset://skin/default/right_eat.webp',
+        patted: 'pet-asset://skin/default/right_pat.webp',
       },
       yueqi: {
-        meditating: 'assets/default/left_cultivate.webp',
-        hungry: 'assets/default/left_hungry.webp',
-        sleeping: 'assets/default/left_sleep.webp',
-        eating: 'assets/default/left_eat.webp',
-        patted: 'assets/default/left_pat.webp',
+        meditating: 'pet-asset://skin/default/left_cultivate.webp',
+        hungry: 'pet-asset://skin/default/left_hungry.webp',
+        sleeping: 'pet-asset://skin/default/left_sleep.webp',
+        eating: 'pet-asset://skin/default/left_eat.webp',
+        patted: 'pet-asset://skin/default/left_pat.webp',
       },
     };
 

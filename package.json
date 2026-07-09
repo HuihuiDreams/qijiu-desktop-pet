@@ -7,6 +7,8 @@
     "dev": "electron .",
     "test": "node --test",
     "qa:electron:smoke": "node tools/playwright-electron-smoke.js",
+    "protect:assets": "node scripts/protect-assets.js",
+    "prebuild": "node scripts/protect-assets.js",
     "build": "electron-builder",
     "verify:installer": "node scripts/verify-installer.js",
     "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1"
@@ -37,6 +39,8 @@
       "!security-scans/**",
       "!tools/**",
       "!scripts/**",
+      "!src/assets/*/*.webp",
+      "!src/assets/*/*/*.webp",
       "!push.*",
       "!dist/**"
     ],
