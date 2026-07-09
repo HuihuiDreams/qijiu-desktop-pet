@@ -3,7 +3,6 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
-## [0.8.7] - 2026-07-09
 ### Added
 - 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
@@ -11,7 +10,6 @@
 ### Changed
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
 - 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
-- **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
 - `protectedAssetLoader` 与主进程性能进一步优化：`readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定可能引发的高频同步磁盘查询。
 - `protectedAssetProtocol` 全面异步化与防雪崩改造：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将其主进程文件读取改用 `fs.promises.readFile` 异步非阻塞操作；同时引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与阻塞。
 - 渲染层多宠物及双人互动贴图预加载与内存优化：`SkinManager.applySkin` 改为两只宠物与 `PetRenderer` (`cultivate.webp`、`kiss.webp`) 覆盖层贴图并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；同时在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝皮肤频繁切换或长期运行产生未释放的 DOM 节点与事件句柄内存泄漏。
@@ -20,6 +18,10 @@
 ### Fixed
 - **CI 自动化打包流程未生成加密资产导致安装包丢失所有皮肤**：修复 `.github/workflows/release-preflight.yml` 和 `build-installer.yml` 直接执行 `npx electron-builder` 打包时不会触发 npm `prebuild` 钩子，导致打包产物既无明文也没有密文皮肤文件的 Bug。修复方案：在 Windows 与 macOS 预检及构建流程的 `npx electron-builder` 步骤之前显式增加 `npm run protect:assets` 步骤。
 - **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。
+
+## [0.8.7] - 2026-07-09
+### Changed
+- **说明文档及皮肤列表全面同步**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 和 `docs/structure.md`，把新内置皮肤“校园七九·幕汤汤”补充到中英日四语的功能介绍及皮肤说明章节中；同时对多屏混合 DPI、番茄钟取消置顶、久坐提醒等功能表述进行了全面校验和对齐。
 - **macOS 睡眠唤醒"你走了X个时辰"时间计算错误**：修复了 macOS Dark Wake（系统后台维护唤醒）导致回归对白仅反映最后一段碎片化睡眠时长（如一整晚却只说"走了1个时辰"）的 Bug。根因：macOS 睡眠期间系统会定期触发 Dark Wake，每次都经由 `powerMonitor.on('resume')` 执行离线结算并更新存档时间戳，切断了真实的离线时长。修复方案：新增 `lastVisibleTime` 持久化字段，仅在用户真正可见（`document.visibilityState === 'visible'`）时更新，回归对白改用 `Date.now() - lastVisibleTime` 计算真实不在时长。数值衰减不受影响（分段累加数学等价）。兼容旧存档。
 - **macOS 番茄钟取消置顶后全屏仍被强制置顶**：修复了番茄钟窗口取消置顶后，当其他窗口进入全屏时番茄钟再次被强制置顶且无法取消的 Bug。根因：`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })` 在窗口创建时设置后取消置顶时从未重置，macOS 持续将窗口拉入全屏 Space。修复方案：在 `applyPomodoroWindowPinState` 中根据置顶状态动态切换 `setVisibleOnAllWorkspaces`，取消置顶时传 `false` 阻止窗口跟随用户进入全屏 Space，并仅在启用置顶时执行 `moveTop()`/`focus()`。已知限制：若在 macOS 全屏 Space 中打开番茄钟后再取消置顶，窗口仍会留在该全屏 Space 上方（macOS 不支持将已存在于全屏 Space 中的窗口移出）。Windows 不受影响。
 
