@@ -150,7 +150,7 @@
 **验证方式：**
 - [x] 专项测试通过：`node --test test/protectedAssetProtocol.test.js`
 - [x] Electron 冒烟检查通过：`npm run qa:electron:smoke`
-- [ ] 人工检查开发环境主窗口和番茄钟窗口图片正常显示。
+- [x] 人工检查开发环境主窗口和番茄钟窗口图片正常显示。
 
 **依赖关系：** 任务 3
 
@@ -182,7 +182,7 @@
 
 **验证方式：**
 - [x] 专项测试通过：`node --test test/skinManager.test.js test/skinRendererIntegration.test.js test/petRenderer.test.js`
-- [ ] 人工检查切换全部内置皮肤无空白帧。
+- [x] 人工检查切换全部内置皮肤无空白帧。
 
 **依赖关系：** 任务 4
 
@@ -207,7 +207,7 @@
 
 **验证方式：**
 - [x] 专项测试通过：`node --test test/pomodoroSystem.test.js test/pomodoroWindow.test.js test/petRenderer.test.js`
-- [ ] 人工检查互动叠加图和番茄钟窗口显示正常。
+- [x] 人工检查互动叠加图和番茄钟窗口显示正常。
 
 **依赖关系：** 任务 5
 
@@ -265,7 +265,7 @@
 **验证方式：**
 - [x] 全量测试通过：`npm test`
 - [x] Electron 冒烟检查通过：`npm run qa:electron:smoke`
-- [ ] 手动性能检查：启动、切换皮肤、触发互动、打开番茄钟，观察无明显卡顿。
+- [x] 手动性能检查：启动、切换皮肤、触发互动、打开番茄钟，观察无明显卡顿。
 
 **依赖关系：** 任务 7
 
