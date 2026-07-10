@@ -88,6 +88,22 @@ const SKIN_NAME_KEYS = {
   'school_au': 'skinSchoolAu',
 };
 
+// 皮肤选择器用：皮肤名（不含画师）
+const SKIN_LABEL_KEYS = {
+  'default': 'skinDefaultLabel',
+  'birds': 'skinBirdsLabel',
+  'animal_ears': 'skinAnimalEarsLabel',
+  'school_au': 'skinSchoolAuLabel',
+};
+
+// 皮肤选择器用：画师名
+const SKIN_ARTIST_KEYS = {
+  'default': 'skinDefaultArtist',
+  'birds': 'skinBirdsArtist',
+  'animal_ears': 'skinAnimalEarsArtist',
+  'school_au': 'skinSchoolAuArtist',
+};
+
 /**
  * 根据 app.getLocale() 的返回值推断语言代码。
  * 规则：zh-Hans-* / zh-CN → 'zh'；zh-Hant-* / zh-TW / zh-HK → 'zh'；ja-* → 'ja'；其余 → 'en'
@@ -124,10 +140,21 @@ function getSkinGalleryDisplayName(skinId) {
   return key ? trayT(key) : skinId;
 }
 
+function getSkinLabel(skinId) {
+  const key = SKIN_LABEL_KEYS[skinId];
+  return key ? trayT(key) : skinId;
+}
+
+function getSkinArtistName(skinId) {
+  const key = SKIN_ARTIST_KEYS[skinId];
+  return key ? trayT(key) : '';
+}
+
 let mainWindow = null;
 let statusWindow = null;
 let skinSelectorWindow = null;
 let skinSelectorSelectionInProgress = false;
+let skinSelectorOriginalSkinId = null;
 let pomodoroWindow = null;
 let citySettingWindow = null;
 let citySettingTopPulseTimer = null;
@@ -719,17 +746,19 @@ function createSkinSelectorWindow() {
   skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   skinSelectorWindow.on('blur', () => {
-    if (!skinSelectorSelectionInProgress) hideSkinSelector();
+    cancelSkinPreview();
   });
   skinSelectorWindow.on('closed', () => {
     skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
+    skinSelectorOriginalSkinId = null;
   });
 
   return skinSelectorWindow;
 }
 
 function openSkinSelector() {
+  skinSelectorOriginalSkinId = currentSkinId;
   const win = createSkinSelectorWindow();
   skinSelectorSelectionInProgress = false;
   win.setBounds(getInitialSkinSelectorWindowBounds());
@@ -737,6 +766,14 @@ function openSkinSelector() {
   win.moveTop();
   win.focus();
   sendSkinSelectorData();
+}
+
+function cancelSkinPreview() {
+  if (skinSelectorOriginalSkinId != null && skinSelectorOriginalSkinId !== currentSkinId) {
+    selectSkin(skinSelectorOriginalSkinId);
+  }
+  skinSelectorOriginalSkinId = null;
+  hideSkinSelector();
 }
 
 function hideSkinSelector() {
@@ -1448,6 +1485,8 @@ function getSkinGalleryItems() {
     skinIds: scanAvailableSkins(),
     currentSkinId,
     getDisplayName: getSkinGalleryDisplayName,
+    getSkinLabel,
+    getArtistName: getSkinArtistName,
     assetExists: hasSkinAsset,
     createAssetUrl,
   });
@@ -1939,8 +1978,39 @@ ipcMain.handle('select-skin', async (_event, skinId) => {
   }
 });
 
+ipcMain.handle('preview-skin', async (_event, skinId) => {
+  if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
+    return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
+  }
+
+  try {
+    skinSelectorSelectionInProgress = true;
+    selectSkin(skinId);
+    return createIpcSuccess({ skinId });
+  } catch (error) {
+    console.error('Failed to preview skin:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to preview skin');
+  }
+});
+
+ipcMain.handle('confirm-skin', async () => {
+  try {
+    skinSelectorOriginalSkinId = null;
+    hideSkinSelector();
+    return createIpcSuccess({ skinId: currentSkinId });
+  } catch (error) {
+    console.error('Failed to confirm skin:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to confirm skin');
+  }
+});
+
+ipcMain.handle('cancel-skin', () => {
+  cancelSkinPreview();
+  return createIpcSuccess();
+});
+
 ipcMain.handle('close-skin-selector', () => {
-  hideSkinSelector();
+  cancelSkinPreview();
   return createIpcSuccess();
 });
 

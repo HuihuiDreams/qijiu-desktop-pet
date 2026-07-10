@@ -147,9 +147,20 @@ button {
 .skin-card-name {
   display: block;
   overflow: hidden;
-  padding: 8px 10px 10px;
+  padding: 6px 10px 2px;
   color: var(--color-ink);
   font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skin-card-artist {
+  display: block;
+  overflow: hidden;
+  padding: 0 10px 8px;
+  color: var(--color-ink-light);
+  font-size: 10px;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -174,4 +185,51 @@ button {
   color: var(--color-ink-light);
   font-size: 14px;
   text-align: center;
+}
+
+.skin-selector-footer {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 4px 0;
+}
+
+.skin-selector-btn {
+  padding: 6px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.skin-selector-btn:active {
+  transform: scale(0.96);
+}
+
+.skin-selector-btn-cancel {
+  border-color: rgba(61, 139, 107, 0.2);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-ink-light);
+}
+
+.skin-selector-btn-cancel:hover {
+  border-color: rgba(61, 139, 107, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--color-ink);
+}
+
+.skin-selector-btn-confirm {
+  border-color: rgba(201, 162, 77, 0.4);
+  background: linear-gradient(135deg, rgba(201, 162, 77, 0.15), rgba(61, 139, 107, 0.12));
+  color: var(--color-jade-deep);
+  font-weight: bold;
+}
+
+.skin-selector-btn-confirm:hover {
+  border-color: var(--color-gold);
+  background: linear-gradient(135deg, rgba(201, 162, 77, 0.25), rgba(61, 139, 107, 0.18));
 }

@@ -1,10 +1,13 @@
 const galleryEl = document.getElementById('skin-gallery');
 const closeBtn = document.getElementById('skin-selector-close');
+const confirmBtn = document.getElementById('skin-selector-confirm');
+const cancelBtn = document.getElementById('skin-selector-cancel');
 const statusEl = document.getElementById('skin-selector-status');
 
 let currentLocale = 'zh';
 let lastItems = [];
-let selectionInFlight = false;
+let previewedSkinId = null;
+let previewInFlight = false;
 
 function t(key) {
   if (typeof I18N === 'undefined') return key;
@@ -30,34 +33,62 @@ function setStatus(message = '') {
 }
 
 function setLoading(loading) {
-  selectionInFlight = loading;
+  previewInFlight = loading;
   galleryEl.querySelectorAll('.skin-card').forEach((card) => {
     card.disabled = loading;
   });
 }
 
-async function selectSkin(skinId) {
-  if (selectionInFlight) return;
+function updateSelectedCard(skinId) {
+  galleryEl.querySelectorAll('.skin-card').forEach((card) => {
+    const isSelected = card.dataset.skinId === skinId;
+    card.setAttribute('aria-pressed', String(isSelected));
+  });
+}
+
+async function previewSkin(skinId) {
+  if (previewInFlight) return;
+  if (skinId === previewedSkinId) return;
 
   setLoading(true);
   setStatus('');
   try {
-    const result = await window.skinSelectorAPI.selectSkin(skinId);
+    const result = await window.skinSelectorAPI.previewSkin(skinId);
     if (!result?.success) {
       setStatus(t('skinSelectorError'));
       setLoading(false);
       return;
     }
-    await window.skinSelectorAPI.close();
+    previewedSkinId = skinId;
+    updateSelectedCard(skinId);
   } catch (error) {
-    console.error('Failed to select skin:', error);
+    console.error('Failed to preview skin:', error);
     setStatus(t('skinSelectorError'));
+  } finally {
     setLoading(false);
   }
 }
 
+async function confirmSelection() {
+  if (previewInFlight) return;
+  try {
+    await window.skinSelectorAPI.confirmSkin();
+  } catch (error) {
+    console.error('Failed to confirm skin:', error);
+  }
+}
+
+async function cancelSelection() {
+  if (previewInFlight) return;
+  try {
+    await window.skinSelectorAPI.cancelSkin();
+  } catch (error) {
+    console.error('Failed to cancel skin:', error);
+  }
+}
+
 function renderGallery(items, { resetSelection = true } = {}) {
-  if (resetSelection) selectionInFlight = false;
+  if (resetSelection) previewInFlight = false;
   lastItems = Array.isArray(items) ? items : [];
   galleryEl.replaceChildren();
   setStatus('');
@@ -70,15 +101,22 @@ function renderGallery(items, { resetSelection = true } = {}) {
     return;
   }
 
+  // Track which skin is initially current
+  if (resetSelection) {
+    const currentItem = lastItems.find((item) => item.isCurrent);
+    previewedSkinId = currentItem ? currentItem.id : null;
+  }
+
   const cards = lastItems.map((item) => {
     const card = document.createElement('button');
     card.className = 'skin-card';
     card.type = 'button';
     card.dataset.skinId = item.id;
-    card.setAttribute('aria-pressed', String(item.isCurrent));
+    const isSelected = item.id === previewedSkinId;
+    card.setAttribute('aria-pressed', String(isSelected));
     card.setAttribute('aria-label', item.isCurrent
-      ? `${item.displayName} — ${t('skinSelectorCurrent')}`
-      : item.displayName);
+      ? `${item.skinLabel} — ${t('skinSelectorCurrent')}`
+      : item.skinLabel);
 
     const preview = document.createElement('img');
     preview.className = 'skin-card-preview';
@@ -87,8 +125,15 @@ function renderGallery(items, { resetSelection = true } = {}) {
 
     const name = document.createElement('span');
     name.className = 'skin-card-name';
-    name.textContent = item.displayName;
+    name.textContent = item.skinLabel;
     card.append(preview, name);
+
+    if (item.artistName) {
+      const artist = document.createElement('span');
+      artist.className = 'skin-card-artist';
+      artist.textContent = `🎨 ${item.artistName}`;
+      card.appendChild(artist);
+    }
 
     if (item.isCurrent) {
       const current = document.createElement('span');
@@ -97,20 +142,21 @@ function renderGallery(items, { resetSelection = true } = {}) {
       card.appendChild(current);
     }
 
-    card.addEventListener('click', () => selectSkin(item.id));
+    card.addEventListener('click', () => previewSkin(item.id));
     return card;
   });
 
   galleryEl.append(...cards);
 }
 
-closeBtn.addEventListener('click', () => {
-  window.skinSelectorAPI.close();
-});
+confirmBtn.addEventListener('click', confirmSelection);
+cancelBtn.addEventListener('click', cancelSelection);
+
+closeBtn.addEventListener('click', cancelSelection);
 
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !selectionInFlight) {
-    window.skinSelectorAPI.close();
+  if (event.key === 'Escape' && !previewInFlight) {
+    cancelSelection();
   }
 });
 

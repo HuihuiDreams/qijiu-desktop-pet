@@ -23,7 +23,7 @@ test('resolveSkinPreviewUrl falls back to the default right portrait', () => {
     createAssetUrl: (assetId) => `pet-asset://${assetId}`,
   });
 
-  assert.equal(previewUrl, 'pet-asset://skin/default/right.webp');
+  assert.equal(previewUrl, 'pet-asset://skin/default/kiss.webp');
 });
 
 test('buildSkinGalleryItems exposes safe localized gallery metadata', () => {
@@ -44,12 +44,16 @@ test('buildSkinGalleryItems exposes safe localized gallery metadata', () => {
     {
       id: 'default',
       displayName: 'Default skin',
+      skinLabel: 'Default skin',
+      artistName: '',
       previewUrl: 'pet-asset://skin/default/right.webp',
       isCurrent: false,
     },
     {
       id: 'birds',
       displayName: 'Bird skin',
+      skinLabel: 'Bird skin',
+      artistName: '',
       previewUrl: 'pet-asset://skin/birds/right.webp',
       isCurrent: true,
     },

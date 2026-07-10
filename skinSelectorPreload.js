@@ -8,6 +8,9 @@ function subscribeIpc(channel, listener) {
 contextBridge.exposeInMainWorld('skinSelectorAPI', {
   getSkinGalleryItems: () => ipcRenderer.invoke('get-skin-gallery-items'),
   selectSkin: (skinId) => ipcRenderer.invoke('select-skin', skinId),
+  previewSkin: (skinId) => ipcRenderer.invoke('preview-skin', skinId),
+  confirmSkin: () => ipcRenderer.invoke('confirm-skin'),
+  cancelSkin: () => ipcRenderer.invoke('cancel-skin'),
   close: () => ipcRenderer.invoke('close-skin-selector'),
   getLocale: () => ipcRenderer.invoke('get-locale'),
   onLocaleChange: (callback) => subscribeIpc('locale-changed', (_event, locale) => callback(locale)),

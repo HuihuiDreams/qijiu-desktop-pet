@@ -1,5 +1,5 @@
-const PREVIEW_FILENAMES = ['right.webp', 'left.webp', 'cultivate.webp'];
-const FALLBACK_PREVIEW_ASSET_ID = 'skin/default/right.webp';
+const PREVIEW_FILENAMES = ['kiss.webp', 'right.webp', 'left.webp', 'cultivate.webp'];
+const FALLBACK_PREVIEW_ASSET_ID = 'skin/default/kiss.webp';
 
 function resolveSkinPreviewUrl(skinId, { assetExists, createAssetUrl }) {
   for (const filename of PREVIEW_FILENAMES) {
@@ -15,12 +15,16 @@ function buildSkinGalleryItems({
   skinIds,
   currentSkinId,
   getDisplayName,
+  getSkinLabel,
+  getArtistName,
   assetExists,
   createAssetUrl,
 }) {
   return skinIds.map((id) => ({
     id,
     displayName: getDisplayName(id),
+    skinLabel: getSkinLabel ? getSkinLabel(id) : getDisplayName(id),
+    artistName: getArtistName ? getArtistName(id) : '',
     previewUrl: resolveSkinPreviewUrl(id, { assetExists, createAssetUrl }),
     isCurrent: id === currentSkinId,
   }));

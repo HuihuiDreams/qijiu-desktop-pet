@@ -32,14 +32,17 @@ test('skin selector uses a dedicated limited preload bridge', () => {
 
   assert.match(preloadSource, /getSkinGalleryItems: \(\) => ipcRenderer\.invoke\('get-skin-gallery-items'\)/);
   assert.match(preloadSource, /selectSkin: \(skinId\) => ipcRenderer\.invoke\('select-skin', skinId\)/);
+  assert.match(preloadSource, /previewSkin: \(skinId\) => ipcRenderer\.invoke\('preview-skin', skinId\)/);
+  assert.match(preloadSource, /confirmSkin: \(\) => ipcRenderer\.invoke\('confirm-skin'\)/);
+  assert.match(preloadSource, /cancelSkin: \(\) => ipcRenderer\.invoke\('cancel-skin'\)/);
   assert.match(preloadSource, /close: \(\) => ipcRenderer\.invoke\('close-skin-selector'\)/);
 });
 
 test('reopening the skin selector clears an earlier selection lock', () => {
   const rendererSource = readProjectFile('src/skinSelectorWindow.js');
   const renderStart = rendererSource.indexOf('function renderGallery');
-  const renderEnd = rendererSource.indexOf("closeBtn.addEventListener", renderStart);
+  const renderEnd = rendererSource.indexOf("confirmBtn.addEventListener", renderStart);
   const renderSource = rendererSource.slice(renderStart, renderEnd);
 
-  assert.match(renderSource, /selectionInFlight = false/);
+  assert.match(renderSource, /previewInFlight = false/);
 });

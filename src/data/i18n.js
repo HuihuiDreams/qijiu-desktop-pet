@@ -48,6 +48,16 @@ const I18N = {
       skinAnimalEars: '猫兔七九·紫萤',
       skinSchoolAu: '校园七九·幕汤汤',
 
+      // 皮肤选择器用（拆分）
+      skinDefaultLabel: '默认皮肤',
+      skinBirdsLabel: '鸟塑七九',
+      skinAnimalEarsLabel: '猫兔七九',
+      skinSchoolAuLabel: '校园七九',
+      skinDefaultArtist: '凉拌仓鼠',
+      skinBirdsArtist: '凉拌仓鼠',
+      skinAnimalEarsArtist: '紫萤',
+      skinSchoolAuArtist: '幕汤汤',
+
       // 托盘菜单
       trayTitle: '岳清源x沈清秋 桌面爱宠',
       trayShowStatusPanel: '📊 显示状态面板',
@@ -58,6 +68,8 @@ const I18N = {
       skinSelectorCurrent: '当前使用',
       skinSelectorEmpty: '暂时没有可用皮肤。',
       skinSelectorError: '切换皮肤失败，请重试。',
+      skinSelectorConfirm: '确定',
+      skinSelectorCancel: '取消',
       trayPauseWalk: '⏸️ 暂停走动',
       trayResumeWalk: '🚶 恢复走动',
       trayHidePet: '👻 隐藏桌宠',
@@ -369,6 +381,16 @@ const I18N = {
       skinAnimalEars: 'Cat & Bunny - (Artist) Violetfirefly',
       skinSchoolAu: 'School AU - (Artist) M_Shang',
 
+      // Skin selector (split)
+      skinDefaultLabel: 'Default Skin',
+      skinBirdsLabel: 'Cute Birds',
+      skinAnimalEarsLabel: 'Cat & Bunny',
+      skinSchoolAuLabel: 'School AU',
+      skinDefaultArtist: 'Hamster Salad',
+      skinBirdsArtist: 'Hamster Salad',
+      skinAnimalEarsArtist: 'Violetfirefly',
+      skinSchoolAuArtist: 'M_Shang',
+
       // Tray menu
       trayTitle: 'YueQi & ShenJiu Desktop Pet',
       trayShowStatusPanel: '📊 Show Status Panel',
@@ -379,6 +401,8 @@ const I18N = {
       skinSelectorCurrent: 'Current',
       skinSelectorEmpty: 'No skins are available.',
       skinSelectorError: 'Could not switch skin. Please try again.',
+      skinSelectorConfirm: 'Confirm',
+      skinSelectorCancel: 'Cancel',
       trayPauseWalk: '⏸️ Pause Walking',
       trayResumeWalk: '🚶 Resume Walking',
       trayHidePet: '👻 Hide Pets',
@@ -691,6 +715,16 @@ const I18N = {
       skinAnimalEars: '猫兎七九・(絵師) Violetfirefly',
       skinSchoolAu: '学園七九・(絵師) M_Shang',
 
+      // 装束選択（分割）
+      skinDefaultLabel: '既定装束',
+      skinBirdsLabel: '小鳥七九',
+      skinAnimalEarsLabel: '猫兎七九',
+      skinSchoolAuLabel: '学園七九',
+      skinDefaultArtist: 'Hamster Salad',
+      skinBirdsArtist: 'Hamster Salad',
+      skinAnimalEarsArtist: 'Violetfirefly',
+      skinSchoolAuArtist: 'M_Shang',
+
       // トレイメニュー
       trayTitle: '岳清源×沈清秋 デスクペット',
       trayShowStatusPanel: '📊 状態表示',
@@ -701,6 +735,8 @@ const I18N = {
       skinSelectorCurrent: '使用中',
       skinSelectorEmpty: '利用できる装束はありません。',
       skinSelectorError: '装束の変更に失敗しました。もう一度お試しください。',
+      skinSelectorConfirm: '決定',
+      skinSelectorCancel: '戻る',
       trayPauseWalk: '⏸️ 歩行停止',
       trayResumeWalk: '🚶 歩行再開',
       trayHidePet: '👻 姿を隠す',      // “隐去身形”，比“隐藏宠物”更有仙术感

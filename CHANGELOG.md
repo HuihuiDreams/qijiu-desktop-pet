@@ -8,7 +8,7 @@
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
 
 ### Changed
-- **可视化皮肤选择窗**：托盘的文字单选皮肤菜单已替换为画廊入口；新窗口使用受控 `pet-asset:` 封面、独立最小权限 preload、统一的主进程切换 IPC、当前屏 `workArea` 定位与失焦竞态保护，支持中英日文案、键盘焦点和当前皮肤标识。
+- **可视化皮肤选择窗 UI 与交互全面改造**：展示图优先选用各皮肤专属 `kiss.webp` (亲亲图)；皮肤名称与画师名 (`🎨 画师名`) 在卡片中独立分行精美展示，同时主进程保留原名称查询以确保托盘菜单「皮肤名·画师名」格式保持不变；新增实时预览 (`preview-skin`) 与底部仙侠风「取消/确定」控制流，点击卡片即时在桌宠换装预览，点击确定后正式提交保存，点击取消、ESC 或失焦自动关窗并无缝恢复原皮肤。
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
 - 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
 - `protectedAssetLoader` 与主进程性能进一步优化：`readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定可能引发的高频同步磁盘查询。
