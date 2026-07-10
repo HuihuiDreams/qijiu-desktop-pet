@@ -3,20 +3,20 @@ param(
     [string]$commitMessage
 )
 
-# 获取 Git 状态中已修改的文件列表，将其合并为一个字符串
+# Collect changed files into a single string.
 $status = (git status --porcelain) -join "`n"
 
-# 检查 CHANGELOG.md 是否在已修改列表里
+# Require a changelog entry before committing.
 if (-not ($status -match "CHANGELOG\.md")) {
     Write-Host "==========================================" -ForegroundColor Red
-    Write-Host "❌ 拦截 Push: CHANGELOG.md 尚未更新！" -ForegroundColor Red
-    Write-Host "根据项目工作流规范，每次提交必须附带更新日志。" -ForegroundColor Yellow
-    Write-Host "正在为您打开 CHANGELOG.md，请填写后保存并关闭文件，然后再运行此脚本..." -ForegroundColor Yellow
+    Write-Host "Push blocked: CHANGELOG.md has not been updated." -ForegroundColor Red
+    Write-Host "Project workflow requires a changelog entry for every commit." -ForegroundColor Yellow
+    Write-Host "Update CHANGELOG.md, then run this script again." -ForegroundColor Yellow
     Write-Host "==========================================" -ForegroundColor Red
 
-    # 获取当前日期并准备占位符
+    # Print a ready-to-copy changelog template.
     $dateStr = Get-Date -Format "yyyy-MM-dd"
-    Write-Host "提示：请在头部添加类似如下格式的内容：" -ForegroundColor Yellow
+    Write-Host "Add a section near the top using this format:" -ForegroundColor Yellow
     Write-Host "## [WIP] - $dateStr"
     Write-Host "### Added"
     Write-Host "- "
@@ -25,22 +25,22 @@ if (-not ($status -match "CHANGELOG\.md")) {
     Write-Host "### Fixed"
     Write-Host "- "
     
-    # 尝试用默认编辑器（如 VSCode 或 Notepad）打开文件
+    # Open the changelog in the default editor.
     Start-Process "CHANGELOG.md"
     exit 1
 }
 
-# 如果包含 CHANGELOG.md，则执行正常的提交和上传逻辑
-Write-Host "✅ 检测到 CHANGELOG.md 已更新。准备提交流程..." -ForegroundColor Green
+# CHANGELOG.md is present, so continue with commit and push.
+Write-Host "CHANGELOG.md detected. Preparing commit..." -ForegroundColor Green
 
 git add .
 
-# 安全检查：防止将未被忽略的扫描产物或内部工作区误提交
+# Prevent internal workspaces and scan output from being committed.
 $stagedSensitive = git diff --cached --name-only --diff-filter=ACMR | Select-String "(^\.codex/|^\.agents/|^security-scans/)"
 if ($stagedSensitive) {
     Write-Host "==========================================" -ForegroundColor Red
-    Write-Host "❌ 拦截 Push: 暂存区包含内部或扫描产物目录 (.codex / .agents / security-scans)！" -ForegroundColor Red
-    Write-Host "已自动为您执行 git reset 取消暂存，请检查并在 .gitignore 排除敏感目录。" -ForegroundColor Yellow
+    Write-Host "Push blocked: staged files include an internal or scan-output directory." -ForegroundColor Red
+    Write-Host "Ran git reset. Review the files and add an appropriate .gitignore rule." -ForegroundColor Yellow
     Write-Host "==========================================" -ForegroundColor Red
     git reset
     exit 1
@@ -49,17 +49,16 @@ if ($stagedSensitive) {
 git commit -m "$commitMessage"
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Commit 失败，请检查。" -ForegroundColor Red
+    Write-Host "Commit failed. Review the Git output above." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
-Write-Host "⬆️ 正在推送到远程仓库 origin main..." -ForegroundColor Cyan
+Write-Host "Pushing to origin main..." -ForegroundColor Cyan
 git push origin main
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "🎉 Push 成功完成！" -ForegroundColor Green
+    Write-Host "Push completed." -ForegroundColor Green
 } else {
-    Write-Host "❌ Push 失败，请检查网络或冲突。" -ForegroundColor Red
+    Write-Host "Push failed. Check network connectivity or Git conflicts." -ForegroundColor Red
 }
-
 
