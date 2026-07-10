@@ -4,26 +4,26 @@
 
 ## [Unreleased]
 ### Added
-- 新增选择皮肤窗口全链条性能测评与长远优化策略记录：创建 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`，对多卡片列表懒加载、预览链路双重 IPC/菜单重构以及隐藏窗口多语言防抖等架构瓶颈与切入点进行了分析与储备，并同步更新 `docs/plan/visual-skin-selector-plan.md` 和 `docs/structure.md`。
 - 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
+- 新增选择皮肤窗口全链条性能测评与长远优化策略记录：创建 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`，对多卡片列表懒加载、预览链路双重 IPC/菜单重构以及隐藏窗口多语言防抖等架构瓶颈与切入点进行了分析与储备，并同步更新 `docs/plan/visual-skin-selector-plan.md` 和 `docs/structure.md`。
 
 ### Changed
 - **可视化皮肤选择窗 UI 与交互全面改造**：展示图优先选用各皮肤专属 `kiss.webp` (亲亲图)；皮肤名称与画师名 (`🎨 画师名`) 在卡片中独立分行精美展示，同时主进程保留原名称查询以确保托盘菜单「皮肤名·画师名」格式保持不变；新增实时预览 (`preview-skin`) 与底部仙侠风「取消/确定」控制流，点击卡片即时在桌宠换装预览，点击确定后正式提交保存，点击取消、ESC 或失焦自动关窗并无缝恢复原皮肤。
-- 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
-- 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
-- `protectedAssetLoader` 与主进程性能进一步优化：`readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定可能引发的高频同步磁盘查询。
-- `protectedAssetProtocol` 全面异步化与防雪崩改造：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将其主进程文件读取改用 `fs.promises.readFile` 异步非阻塞操作；同时引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与阻塞。
-- 渲染层多宠物及双人互动贴图预加载与内存优化：`SkinManager.applySkin` 改为两只宠物与 `PetRenderer` (`cultivate.webp`、`kiss.webp`) 覆盖层贴图并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；同时在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝皮肤频繁切换或长期运行产生未释放的 DOM 节点与事件句柄内存泄漏。
-- 完善 `docs/skin-pipeline-guide.md` 皮肤制作流程文档，新增加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）以及发版打包（`npm run build` 自动加密与排除明文）须知。
+- **加密皮肤资产协议层切换与打包集成**：皮肤与番茄钟图片路径全面升级为 `pet-asset://` 协议，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再直接通过 `assets/...` 路径加载明文 WebP；构建打包流程会在执行前自动运行 `protect:assets` 加密处理，并自最终安装包中排除明文 `src/assets/*/*.webp` 文件。
+- **加密资产加载器与主进程高频查询性能优化**：`protectedAssetLoader.readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定引发的高频同步磁盘查询。
+- **`protectedAssetProtocol` 全面异步化与防并发雪崩改造**：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将主进程图片读取改用 `fs.promises.readFile` 异步非阻塞操作；引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与线程阻塞。
+- **渲染层切肤贴图预加载与内存防泄漏加固**：`SkinManager.applySkin` 改为对两只宠物的常态与覆盖层 (`cultivate.webp`、`kiss.webp`) 贴图进行并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝频繁切肤或长期运行残留未释放的 DOM 节点与事件句柄。
+- **皮肤制作与流程文档更新**：完善 `docs/skin-pipeline-guide.md` 皮肤规范文档，增加加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）与发版打包（`npm run build` 自动加密与排除明文）操作须知。
 
 ### Fixed
+- **选肤窗试穿时切换语言导致当前皮肤标记错误跳转与选项重置**：修复了在选肤窗口点击新皮肤进行试穿期间通过托盘切换多语言 (`locale-changed`) 时，卡片的“当前皮肤” (`isCurrent`) 标记错误跳至试穿中的新皮肤、且用户的试穿选择高亮状态被强制重置的 Bug。根因：主进程查询画廊数据 (`getSkinGalleryItems`) 时未区分预览态中的 `currentSkinId` 与原皮肤快照 `skinSelectorOriginalSkinId`；且多语言触发 `sendSkinSelectorData()` 默认下发了 `resetSelection: true`。修复方案：在 `getSkinGalleryItems()` 内部计算 `isCurrent` 时优先判断 `skinSelectorOriginalSkinId` 锁定真正的原当前皮肤；同时打通预加载与渲染层 `onData` 选项通道，使主进程响应语言切换时下发 `sendSkinSelectorData({ resetSelection: false })`，确保画廊多语言刷新不覆盖试穿高亮与原皮肤徽章。
+- **选肤窗第二次点击无响应**：修复了画廊选肤窗口以 `hide/show` 复用时，首次成功切肤遗留 `selectionInFlight` 状态、导致再次打开后所有卡片点击被忽略的问题。
 - **选肤窗口 IPC 发件方授权**：选肤专用的画廊读取、选择、预览、确定、取消和关闭 IPC 现会校验 `event.sender.id` 是否属于当前选肤窗口；其他 renderer 的同名调用会收到 `FORBIDDEN`，避免未来错误暴露 IPC 时越过专属 preload 的能力边界。
 - **受保护皮肤资源负缓存测试隔离**：修复 `protectedAssetLoader` 的负向 manifest 缓存测试对“默认清单不存在”的环境假设；测试会临时模拟清单缺失、恢复清单并在清缓存后验证重新发现，使其可与仓库内已跟踪的 `protected-assets/manifest.json` 共存。
-- **选肤窗第二次点击无响应**：修复画廊窗口以 `hide/show` 复用时，首次成功切换遗留 `selectionInFlight` 状态、导致再次打开后所有卡片点击被忽略的问题。
-- **Windows PowerShell 推送脚本无法解析**：移除 `push.ps1` 中会被无 BOM UTF-8 / 本地代码页组合错误解析的非 ASCII 提示文本，并新增 Windows PowerShell 语法回归测试，恢复项目规定的提交推送脚本可用性。
-- **CI 自动化打包流程未生成加密资产导致安装包丢失所有皮肤**：修复 `.github/workflows/release-preflight.yml` 和 `build-installer.yml` 直接执行 `npx electron-builder` 打包时不会触发 npm `prebuild` 钩子，导致打包产物既无明文也没有密文皮肤文件的 Bug。修复方案：在 Windows 与 macOS 预检及构建流程的 `npx electron-builder` 步骤之前显式增加 `npm run protect:assets` 步骤。
-- **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。
+- **皮肤图片加载全部失败回退 emoji**：修复了引入 `pet-asset://` 加密协议后，所有皮肤图片无法正常加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，被浏览器安全策略拦截后触发 `onerror` 回退到 emoji。修复方案：为三个窗口 HTML 文件的 CSP `img-src` 补充允许 `pet-asset:`。
+- **CI 自动化打包流程未生成加密资产导致安装包丢失所有皮肤**：修复了 `.github/workflows/release-preflight.yml` 和 `build-installer.yml` 直接执行 `npx electron-builder` 时不触发 npm `prebuild` 钩子，导致最终安装包既无明文也无密文皮肤文件的 Bug。修复方案：在 Windows 与 macOS 预检及构建流程的 `npx electron-builder` 步骤之前显式补充 `npm run protect:assets`。
+- **Windows PowerShell 推送脚本无法解析**：移除了 `push.ps1` 中会被无 BOM UTF-8 / 本地代码页组合错误解析的非 ASCII 提示文本，并新增 Windows PowerShell 语法回归测试，恢复项目规定的安全提交与推送脚本可用性。
 
 ## [0.8.7] - 2026-07-09
 ### Changed

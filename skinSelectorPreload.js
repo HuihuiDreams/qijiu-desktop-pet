@@ -14,5 +14,5 @@ contextBridge.exposeInMainWorld('skinSelectorAPI', {
   close: () => ipcRenderer.invoke('close-skin-selector'),
   getLocale: () => ipcRenderer.invoke('get-locale'),
   onLocaleChange: (callback) => subscribeIpc('locale-changed', (_event, locale) => callback(locale)),
-  onData: (callback) => subscribeIpc('skin-selector-data', (_event, items) => callback(items)),
+  onData: (callback) => subscribeIpc('skin-selector-data', (_event, items, options) => callback(items, options)),
 });

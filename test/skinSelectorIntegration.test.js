@@ -72,3 +72,15 @@ test('reopening the skin selector clears an earlier selection lock', () => {
 
   assert.match(renderSource, /previewInFlight = false/);
 });
+
+test('skin selector maintains original active skin and selection during preview when locale changes', () => {
+  const mainSource = readProjectFile('main.js');
+  const preloadSource = readProjectFile('skinSelectorPreload.js');
+  const rendererSource = readProjectFile('src/skinSelectorWindow.js');
+
+  assert.match(mainSource, /const activeSkinId = skinSelectorOriginalSkinId != null \? skinSelectorOriginalSkinId : currentSkinId;/);
+  assert.match(mainSource, /sendSkinSelectorData\(\{ resetSelection: false \}\)/);
+  assert.match(preloadSource, /onData: \(callback\) => subscribeIpc\('skin-selector-data', \(_event, items, options\) => callback\(items, options\)\)/);
+  assert.match(rendererSource, /window\.skinSelectorAPI\.onData\(\(items, options\) => renderGallery\(items, options\)\)/);
+});
+

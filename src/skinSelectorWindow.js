@@ -160,7 +160,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-window.skinSelectorAPI.onData(renderGallery);
+window.skinSelectorAPI.onData((items, options) => renderGallery(items, options));
 window.skinSelectorAPI.onLocaleChange((locale) => {
   currentLocale = locale;
   document.documentElement.lang = locale;

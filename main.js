@@ -713,9 +713,12 @@ function resizeStatusWindow(size) {
   statusWindow.setContentSize(width, height);
 }
 
-function sendSkinSelectorData() {
+function sendSkinSelectorData(options = { resetSelection: true }) {
   if (!skinSelectorWindow || skinSelectorWindow.isDestroyed()) return;
-  skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems());
+  const sendOptions = (options && typeof options === 'object' && 'resetSelection' in options)
+    ? options
+    : { resetSelection: true };
+  skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems(), sendOptions);
 }
 
 function isSkinSelectorRequest(event) {
@@ -1489,9 +1492,10 @@ function hasSkinAsset(skinId, filename) {
 }
 
 function getSkinGalleryItems() {
+  const activeSkinId = skinSelectorOriginalSkinId != null ? skinSelectorOriginalSkinId : currentSkinId;
   return buildSkinGalleryItems({
     skinIds: scanAvailableSkins(),
-    currentSkinId,
+    currentSkinId: activeSkinId,
     getDisplayName: getSkinGalleryDisplayName,
     getSkinLabel,
     getArtistName: getSkinArtistName,
@@ -1552,7 +1556,7 @@ function buildTrayMenu() {
       }
       if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
         skinSelectorWindow.webContents.send('locale-changed', lang);
-        sendSkinSelectorData();
+        sendSkinSelectorData({ resetSelection: false });
       }
     },
   }));
@@ -2120,7 +2124,7 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   }
   if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
     skinSelectorWindow.webContents.send('locale-changed', lang);
-    sendSkinSelectorData();
+    sendSkinSelectorData({ resetSelection: false });
   }
   return { success: true, locale: lang };
 });
