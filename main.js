@@ -38,6 +38,7 @@ const { createMeetingDetector } = require('./meetingDetector');
 const { PomodoroSystem } = require('./src/systems/PomodoroSystem');
 const { createAssetUrl, hasProtectedAsset, listAvailableSkinIds } = require('./protectedAssetLoader');
 const { registerProtectedAssetProtocol } = require('./protectedAssetProtocol');
+const { buildSkinGalleryItems } = require('./skinGallery');
 const { I18N } = require('./src/data/i18n');
 const {
   DEFAULT_WEATHER_SYNC_SETTINGS,
@@ -118,13 +119,15 @@ function trayMenuLabel(key, fallback) {
   return escapeElectronMenuLabel(value);
 }
 
-function getSkinDisplayName(skinId) {
+function getSkinGalleryDisplayName(skinId) {
   const key = SKIN_NAME_KEYS[skinId];
-  return escapeElectronMenuLabel(key ? trayT(key) : skinId);
+  return key ? trayT(key) : skinId;
 }
 
 let mainWindow = null;
 let statusWindow = null;
+let skinSelectorWindow = null;
+let skinSelectorSelectionInProgress = false;
 let pomodoroWindow = null;
 let citySettingWindow = null;
 let citySettingTopPulseTimer = null;
@@ -587,6 +590,24 @@ function getInitialStatusWindowBounds() {
   };
 }
 
+function getInitialSkinSelectorWindowBounds() {
+  const preferredWidth = 720;
+  const preferredHeight = 520;
+  const edgeMargin = 24;
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+  const width = Math.max(1, Math.min(preferredWidth, areaWidth - edgeMargin));
+  const height = Math.max(1, Math.min(preferredHeight, areaHeight - edgeMargin));
+
+  return {
+    width,
+    height,
+    x: Math.round(x + (areaWidth - width) / 2),
+    y: Math.round(y + (areaHeight - height) / 2),
+  };
+}
+
 function sendStatusWindowData() {
   if (!statusWindow || statusWindow.isDestroyed() || !lastStatusWindowData) return;
   statusWindow.webContents.send('status-window-data', lastStatusWindowData);
@@ -663,6 +684,66 @@ function resizeStatusWindow(size) {
 
   const { width, height } = normalizeStatusWindowSize(size);
   statusWindow.setContentSize(width, height);
+}
+
+function sendSkinSelectorData() {
+  if (!skinSelectorWindow || skinSelectorWindow.isDestroyed()) return;
+  skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems());
+}
+
+function createSkinSelectorWindow() {
+  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) return skinSelectorWindow;
+
+  skinSelectorWindow = new BrowserWindow({
+    ...getInitialSkinSelectorWindowBounds(),
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'skinSelectorPreload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  skinSelectorWindow.setAlwaysOnTop(true, 'floating');
+  skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  skinSelectorWindow.loadFile(path.join(__dirname, 'src', 'skin-selector.html'));
+  skinSelectorWindow.webContents.on('did-finish-load', sendSkinSelectorData);
+  skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  skinSelectorWindow.on('blur', () => {
+    if (!skinSelectorSelectionInProgress) hideSkinSelector();
+  });
+  skinSelectorWindow.on('closed', () => {
+    skinSelectorWindow = null;
+    skinSelectorSelectionInProgress = false;
+  });
+
+  return skinSelectorWindow;
+}
+
+function openSkinSelector() {
+  const win = createSkinSelectorWindow();
+  skinSelectorSelectionInProgress = false;
+  win.setBounds(getInitialSkinSelectorWindowBounds());
+  if (!win.isVisible()) win.show();
+  win.moveTop();
+  win.focus();
+  sendSkinSelectorData();
+}
+
+function hideSkinSelector() {
+  skinSelectorSelectionInProgress = false;
+  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
+    skinSelectorWindow.hide();
+  }
 }
 
 function getStoredPomodoroMinutes() {
@@ -1278,6 +1359,9 @@ function createWindow() {
       pomodoroWindow.close();
     }
     closeCitySettingWindow();
+    if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
+      skinSelectorWindow.close();
+    }
     mainWindow = null;
   });
 
@@ -1346,6 +1430,39 @@ function sortSkinIds(a, b) {
   return a.localeCompare(b);
 }
 
+function hasSkinAsset(skinId, filename) {
+  const assetId = `skin/${skinId}/${filename}`;
+  try {
+    if (hasProtectedAsset(assetId, { appRoot: __dirname, resourcesPath: process.resourcesPath })) {
+      return true;
+    }
+  } catch (error) {
+    console.warn(`Failed to inspect protected skin asset ${assetId}:`, error);
+  }
+
+  return fs.existsSync(path.join(__dirname, 'src', 'assets', skinId, filename));
+}
+
+function getSkinGalleryItems() {
+  return buildSkinGalleryItems({
+    skinIds: scanAvailableSkins(),
+    currentSkinId,
+    getDisplayName: getSkinGalleryDisplayName,
+    assetExists: hasSkinAsset,
+    createAssetUrl,
+  });
+}
+
+function selectSkin(skinId) {
+  currentSkinId = skinId;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('switch-skin', skinId);
+  }
+  sendPomodoroState();
+  refreshTrayMenu();
+  return { skinId };
+}
+
 function getPomodoroTrayLabel() {
   const snapshot = getPomodoroSnapshot();
   if (snapshot.status === 'running') {
@@ -1361,20 +1478,6 @@ function getPomodoroTrayLabel() {
 function buildTrayMenu() {
   const updateMenuState = getUpdateMenuState();
   const appVersion = app.getVersion();
-
-  // 构建皮肤切换子菜单
-  const availableSkins = scanAvailableSkins();
-  const skinSubmenu = availableSkins.map(skinId => ({
-    label: getSkinDisplayName(skinId),
-    type: 'radio',
-    checked: skinId === currentSkinId,
-    click: () => {
-      currentSkinId = skinId;
-      if (mainWindow) mainWindow.webContents.send('switch-skin', skinId);
-      sendPomodoroState();
-      refreshTrayMenu();
-    },
-  }));
 
   // 构建语言切换子菜单
   const langSubmenu = [
@@ -1399,6 +1502,10 @@ function buildTrayMenu() {
       }
       if (citySettingWindow && !citySettingWindow.isDestroyed()) {
         citySettingWindow.webContents.send('locale-changed', lang);
+      }
+      if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
+        skinSelectorWindow.webContents.send('locale-changed', lang);
+        sendSkinSelectorData();
       }
     },
   }));
@@ -1427,8 +1534,10 @@ function buildTrayMenu() {
 
     // --- 桌宠交互与控制 ---
     {
-      label: trayMenuLabel('traySwitchSkin'),
-      submenu: skinSubmenu,
+      label: trayMenuLabel('trayChooseSkin'),
+      click: () => {
+        openSkinSelector();
+      },
     },
     {
       label: isPaused ? trayMenuLabel('trayResumeWalk') : trayMenuLabel('trayPauseWalk'),
@@ -1787,6 +1896,10 @@ ipcMain.handle('get-available-skins', () => {
   return scanAvailableSkins();
 });
 
+ipcMain.handle('get-skin-gallery-items', () => {
+  return getSkinGalleryItems();
+});
+
 ipcMain.handle('get-active-window-info', async () => {
   if (!activeWindowSampler) startActiveWindowAwareness();
   return activeWindowSampler.sampleOnce();
@@ -1809,6 +1922,26 @@ ipcMain.handle('set-current-skin', async (_event, skinId) => {
     console.error('Failed to set current skin:', error);
     return createIpcFailure('INTERNAL_ERROR', 'Failed to set current skin');
   }
+});
+
+ipcMain.handle('select-skin', async (_event, skinId) => {
+  if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
+    return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
+  }
+
+  try {
+    skinSelectorSelectionInProgress = true;
+    return createIpcSuccess(selectSkin(skinId));
+  } catch (error) {
+    skinSelectorSelectionInProgress = false;
+    console.error('Failed to select skin:', error);
+    return createIpcFailure('INTERNAL_ERROR', 'Failed to select skin');
+  }
+});
+
+ipcMain.handle('close-skin-selector', () => {
+  hideSkinSelector();
+  return createIpcSuccess();
 });
 
 // 多语言系统 IPC
@@ -1888,6 +2021,10 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   }
   if (citySettingWindow && !citySettingWindow.isDestroyed()) {
     citySettingWindow.webContents.send('locale-changed', lang);
+  }
+  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
+    skinSelectorWindow.webContents.send('locale-changed', lang);
+    sendSkinSelectorData();
   }
   return { success: true, locale: lang };
 });

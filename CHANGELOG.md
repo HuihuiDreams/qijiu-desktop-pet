@@ -8,7 +8,7 @@
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
 
 ### Changed
-- **可视化皮肤选择窗实施计划**：托盘的文字单选皮肤菜单将替换为画廊入口；计划明确了主进程统一切换 IPC、加密素材预览 URL、独立最小权限 preload、多屏 DPI 定位、失焦竞态处理与分阶段验收标准。
+- **可视化皮肤选择窗**：托盘的文字单选皮肤菜单已替换为画廊入口；新窗口使用受控 `pet-asset:` 封面、独立最小权限 preload、统一的主进程切换 IPC、当前屏 `workArea` 定位与失焦竞态保护，支持中英日文案、键盘焦点和当前皮肤标识。
 - 皮肤与番茄钟图片路径改为 `pet-asset://`，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再通过直接的 `assets/...` URL 加载运行时皮肤 WebP。
 - 打包流程会在构建前运行 `protect:assets`，并从安装产物中排除明文 `src/assets/*/*.webp` 与子目录皮肤 WebP 文件。
 - `protectedAssetLoader` 与主进程性能进一步优化：`readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定可能引发的高频同步磁盘查询。
@@ -17,6 +17,7 @@
 - 完善 `docs/skin-pipeline-guide.md` 皮肤制作流程文档，新增加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）以及发版打包（`npm run build` 自动加密与排除明文）须知。
 
 ### Fixed
+- **选肤窗第二次点击无响应**：修复画廊窗口以 `hide/show` 复用时，首次成功切换遗留 `selectionInFlight` 状态、导致再次打开后所有卡片点击被忽略的问题。
 - **Windows PowerShell 推送脚本无法解析**：移除 `push.ps1` 中会被无 BOM UTF-8 / 本地代码页组合错误解析的非 ASCII 提示文本，并新增 Windows PowerShell 语法回归测试，恢复项目规定的提交推送脚本可用性。
 - **CI 自动化打包流程未生成加密资产导致安装包丢失所有皮肤**：修复 `.github/workflows/release-preflight.yml` 和 `build-installer.yml` 直接执行 `npx electron-builder` 打包时不会触发 npm `prebuild` 钩子，导致打包产物既无明文也没有密文皮肤文件的 Bug。修复方案：在 Windows 与 macOS 预检及构建流程的 `npx electron-builder` 步骤之前显式增加 `npm run protect:assets` 步骤。
 - **皮肤图片加载全部失败回退 emoji**：修复加密资产保护功能引入 `pet-asset://` 自定义协议后，所有皮肤图片无法加载的 Bug。根因：`index.html`、`pomodoro.html`、`status.html` 的 CSP `img-src` 仅允许 `'self' data:`，未包含 `pet-asset:` 协议，浏览器安全策略直接拦截了全部图片请求，触发 `onerror` 回退到 emoji。修复：在三个 HTML 文件的 CSP `img-src` 中添加 `pet-asset:`。

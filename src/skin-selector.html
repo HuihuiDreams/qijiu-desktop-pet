@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: pet-asset:">
+  <title data-i18n="skinSelectorTitle">选择皮肤</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="skin-selector.css">
+</head>
+
+<body>
+  <main class="skin-selector-panel xianxia-panel" aria-live="polite">
+    <header class="skin-selector-titlebar">
+      <h1 data-i18n="skinSelectorTitle">选择皮肤</h1>
+      <button id="skin-selector-close" class="skin-selector-close" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </header>
+    <p id="skin-selector-status" class="skin-selector-status" role="status"></p>
+    <section id="skin-gallery" class="skin-gallery" aria-label="选择皮肤" data-i18n-aria-label="skinSelectorTitle"></section>
+  </main>
+
+  <script src="data/i18n.js"></script>
+  <script src="skinSelectorWindow.js"></script>
+</body>
+
+</html>

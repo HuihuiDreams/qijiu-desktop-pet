@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-06-19
+最后更新：2026-07-10
 
 ## 1. 架构总览
 
@@ -14,6 +14,7 @@ graph TB
         MainJs["main.js"]
         MainJs --> PetWindow["Transparent Pet BrowserWindow"]
         MainJs --> StatusWindow["Independent Status BrowserWindow"]
+        MainJs --> SkinSelectorWindow["Skin Selector BrowserWindow"]
         MainJs --> PomodoroWindow["Pomodoro BrowserWindow"]
         MainJs --> CitySettingWindow["City Setting BrowserWindow"]
         MainJs --> Tray["System Tray Menu"]
@@ -49,6 +50,10 @@ graph TB
         StatusHtml["src/status.html + status.css"] --> StatusJs["src/statusWindow.js"]
     end
 
+    subgraph SkinSelector["Skin Selector Renderer Process"]
+        SkinSelectorHtml["src/skin-selector.html + skin-selector.css"] --> SkinSelectorJs["src/skinSelectorWindow.js"]
+    end
+
     subgraph Pomodoro["Pomodoro Renderer Process"]
         PomodoroHtml["src/pomodoro.html + pomodoro.css"] --> PomodoroJs["src/pomodoroWindow.js"]
     end
@@ -61,6 +66,7 @@ graph TB
     Preload --> Status
     Preload --> Pomodoro
     Preload --> CitySetting
+    SkinSelectorPreload["skinSelectorPreload.js"] --> SkinSelector
     UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
@@ -71,6 +77,8 @@ graph TB
 qijiu-desktop-pet/
 ├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口、番茄钟
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
+├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、切换、关闭与语言订阅
+├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级、默认回退和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
@@ -117,6 +125,9 @@ qijiu-desktop-pet/
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
+│  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
+│  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
+│  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、选择中状态、键盘关闭与 i18n 更新
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
 │  ├─ update-progress.js                # 更新进度窗口渲染，通过 textContent 和样式属性更新进度
@@ -349,6 +360,7 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、皮肤选择、关闭和必要的语言订阅。主进程负责校验皮肤 ID 并构造 `pet-asset:` 预览 URL，渲染层不接触文件系统路径。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道集中在 `main.js`，便于审计。
@@ -369,6 +381,7 @@ npm test
 - `MovementSystem` 移动、暂停、边界和目标选择。
 - `NurtureSystem` 和 `TimeSystem` 数值衰减、保存和离线变化。
 - `SkinManager`、托盘皮肤扫描和渲染集成。
+- `skinGallery.js` 的封面回退和画廊元数据契约，以及选肤窗 IPC、托盘入口和专用 preload。
 - `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
 
@@ -380,7 +393,7 @@ npm test
 npm run qa:electron:smoke
 ```
 
-该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。它会确认主渲染进程已就绪，输出 QA 可读的桌宠可见性状态，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
+该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。它会确认主渲染进程和选肤页都已就绪，校验选肤页专用 preload、内置皮肤卡数量与当前皮肤标记，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
 - `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。

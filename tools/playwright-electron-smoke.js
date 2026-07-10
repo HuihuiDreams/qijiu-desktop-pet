@@ -65,11 +65,47 @@ async function main() {
       throw new Error(`Renderer did not become ready: ${diagnostics.readyState}`);
     }
 
+    await electronApp.evaluate(async ({ app, BrowserWindow }) => {
+      const appRoot = app.getAppPath();
+      const selectorWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: `${appRoot}/skinSelectorPreload.js`,
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true,
+        },
+      });
+      await selectorWindow.loadFile(`${appRoot}/src/skin-selector.html`);
+    });
+
+    const selectorWindow = electronApp.windows().at(-1);
+    await selectorWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    await selectorWindow.waitForTimeout(250);
+    const selectorDiagnostics = await selectorWindow.evaluate(() => ({
+      title: document.title,
+      cardCount: document.querySelectorAll('.skin-card').length,
+      currentCardCount: document.querySelectorAll('.skin-card[aria-pressed="true"]').length,
+      hasSelectorApi: Boolean(window.skinSelectorAPI),
+    }));
+
+    if (!selectorDiagnostics.hasSelectorApi) {
+      throw new Error('Skin selector preload bridge is unavailable');
+    }
+    if (selectorDiagnostics.cardCount < 4) {
+      throw new Error(`Skin selector did not render the built-in skins: ${selectorDiagnostics.cardCount}`);
+    }
+    if (selectorDiagnostics.currentCardCount !== 1) {
+      throw new Error(`Skin selector should mark exactly one current skin: ${selectorDiagnostics.currentCardCount}`);
+    }
+    await selectorWindow.close();
+
     console.log(JSON.stringify({
       ok: true,
       userDataDir,
       appUserDataDir,
       diagnostics,
+      selectorDiagnostics,
     }, null, 2));
   } finally {
     if (electronApp) {

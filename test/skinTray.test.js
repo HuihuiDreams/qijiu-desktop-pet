@@ -54,7 +54,6 @@ test('main.js escapes literal ampersands in Electron menu labels', () => {
 
   assert.ok(mainSource.includes('function escapeElectronMenuLabel'), 'menu labels should have a dedicated Electron escape helper');
   assert.ok(mainSource.includes("replaceAll('&', '&&')"), 'literal ampersands should be doubled for Electron menus');
-  assert.ok(mainSource.includes('return escapeElectronMenuLabel(key ? trayT(key) : skinId)'), 'skin names should be escaped before entering the tray menu');
 });
 
 // --- 目录扫描测试 ---
@@ -112,7 +111,7 @@ test('main.js 中包含皮肤本地化 key 映射', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
   assert.ok(mainSource.includes('SKIN_NAME_KEYS'), '托盘皮肤名应通过本地化 key 映射');
   assert.ok(mainSource.includes("'default': 'skinDefault'"), 'default 皮肤应映射到 skinDefault');
-  assert.ok(mainSource.includes('getSkinDisplayName(skinId)'), '皮肤菜单应通过当前语言生成显示名');
+  assert.ok(mainSource.includes('getSkinGalleryDisplayName(skinId)'), '皮肤画廊应通过当前语言生成显示名');
 });
 
 test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
@@ -122,11 +121,11 @@ test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
 
 // --- 托盘菜单结构验证 ---
 
-test('main.js 中 buildTrayMenu 包含皮肤切换子菜单', () => {
+test('main.js 中 buildTrayMenu 使用皮肤画廊入口替代单选子菜单', () => {
   const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf-8');
-  assert.ok(mainSource.includes("trayMenuLabel('traySwitchSkin')"), '托盘菜单应包含切换皮肤入口');
-  assert.ok(mainSource.includes("submenu: skinSubmenu"), '应使用 submenu 展示皮肤列表');
-  assert.ok(mainSource.includes("type: 'radio'"), '皮肤菜单项应使用 radio 类型');
+  assert.ok(mainSource.includes("trayMenuLabel('trayChooseSkin')"), '托盘菜单应包含选择皮肤入口');
+  assert.ok(mainSource.includes('openSkinSelector()'), '选择皮肤入口应打开画廊窗口');
+  assert.ok(!mainSource.includes('submenu: skinSubmenu'), '不应继续渲染旧的皮肤单选子菜单');
 });
 
 test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
