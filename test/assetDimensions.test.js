@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 function listWebpFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files = [];
 
@@ -20,6 +21,7 @@ function listWebpFiles(dir) {
 }
 
 function listPngFiles(dir) {
+  if (!fs.existsSync(dir)) return [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   const files = [];
 

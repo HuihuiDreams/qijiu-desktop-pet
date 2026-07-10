@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 ### Added
+- 新增选择皮肤窗口全链条性能测评与长远优化策略记录：创建 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`，对多卡片列表懒加载、预览链路双重 IPC/菜单重构以及隐藏窗口多语言防抖等架构瓶颈与切入点进行了分析与储备，并同步更新 `docs/plan/visual-skin-selector-plan.md` 和 `docs/structure.md`。
 - 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
 

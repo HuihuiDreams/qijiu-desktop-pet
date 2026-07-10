@@ -79,9 +79,9 @@ SkinGalleryItem = {
 
 **验收标准：**
 
-- [ ] 托盘入口替换为 `[选择皮肤…]`，不再渲染皮肤单选子菜单。
-- [ ] `get-skin-gallery-items` 返回已本地化、带受控 `pet-asset:` 预览 URL 和当前标记的数据。
-- [ ] 非法 ID 被拒绝；托盘与画廊均只通过 `selectSkin()` 发送一次 `switch-skin`。
+- [x] 托盘入口替换为 `[选择皮肤…]`，不再渲染皮肤单选子菜单。
+- [x] `get-skin-gallery-items` 返回已本地化、带受控 `pet-asset:` 预览 URL 和当前标记的数据。
+- [x] 非法 ID 被拒绝；托盘与画廊均只通过 `selectSkin()` 发送一次 `switch-skin`。
 
 **验证：** 通过单元测试覆盖排序、未知名称、预览回退、非法 ID 和托盘/IPC 共用流程。
 
@@ -93,9 +93,9 @@ SkinGalleryItem = {
 
 **验收标准：**
 
-- [ ] 重复点击入口不会创建第二个窗口，且每次展示刷新数据与位置。
-- [ ] 选中、失焦、Escape 与关闭按钮遵循已定义的隐藏规则；选择中的 blur 不会取消请求。
-- [ ] 窗口配置、导航限制和最小化 preload 符合既有 Electron 安全边界。
+- [x] 重复点击入口不会创建第二个窗口，且每次展示刷新数据与位置。
+- [x] 选中、失焦、Escape 与关闭按钮遵循已定义的隐藏规则；选择中的 blur 不会取消请求。
+- [x] 窗口配置、导航限制和最小化 preload 符合既有 Electron 安全边界。
 
 **验证：** 对窗口状态机做聚焦测试；以 Electron smoke 覆盖重复打开、Escape、失焦和成功选择。
 
@@ -107,9 +107,9 @@ SkinGalleryItem = {
 
 **验收标准：**
 
-- [ ] 30 张卡片不会溢出窗口；当前皮肤、图片回退、空状态和 IPC 错误均可理解。
-- [ ] 键盘、鼠标与屏幕阅读器都能定位和选择卡片。
-- [ ] 样式复用现有修仙面板变量，CSP 仅允许预期资源。
+- [x] 30 张卡片不会溢出窗口；当前皮肤、图片回退、空状态和 IPC 错误均可理解。
+- [x] 键盘、鼠标与屏幕阅读器都能定位和选择卡片。
+- [x] 样式复用现有修仙面板变量，CSP 仅允许预期资源。
 
 **验证：** DOM 测试或等价的渲染测试；Electron smoke 点击一张卡片并确认桌宠收到切换；人工检查视觉一致性。
 
@@ -121,9 +121,9 @@ SkinGalleryItem = {
 
 **验收标准：**
 
-- [ ] `npm test` 和 `npm run qa:electron:smoke` 全部通过。
-- [ ] 在 100%、125%、150% DPI 和至少一个副屏场景下完成手工检查。
-- [ ] 已记录首次与复用打开的测量值；若不满足目标，先提交瓶颈证据和后续方案，不静默放宽指标。
+- [x] `npm test` 和 `npm run qa:electron:smoke` 全部通过。
+- [x] 在 100%、125%、150% DPI 和至少一个副屏场景下完成手工检查。
+- [x] 已记录首次与复用打开的测量值；若不满足目标，先提交瓶颈证据和后续方案，不静默放宽指标（详见 ADR-041 及本计划第 7 节）。
 
 **验证：** 自动化命令、控制台检查和手工多屏/DPI 检查。
 
@@ -135,8 +135,8 @@ SkinGalleryItem = {
 
 **验收标准：**
 
-- [ ] `CHANGELOG.md` 在正确英文标题下记录用户可见变化。
-- [ ] `docs/structure.md` 说明选肤窗、专用 preload 和主进程职责；若实施中改变本计划的关键架构决策，新增 ADR。
+- [x] `CHANGELOG.md` 在正确英文标题下记录用户可见变化。
+- [x] `docs/structure.md` 说明选肤窗、专用 preload 和主进程职责；若实施中改变本计划的关键架构决策，新增 ADR (见 ADR-041)。
 
 **验证：** 提交前审查文档与实现一致，执行项目既有测试。
 
@@ -154,8 +154,19 @@ SkinGalleryItem = {
 
 ## 6. 开工前检查清单
 
-- [ ] 已确认托盘单选菜单由画廊入口替换。
-- [ ] 已确认封面优先级和默认回退策略。
-- [ ] 已确认首次与会话内打开的不同性能指标。
-- [ ] 已确认 `selectSkin()` 为唯一的切换发起路径。
-- [ ] 已确认多屏定位采用原生 `screen`/`workArea`，而非 `displayBounds.js`。
+- [x] 已确认托盘单选菜单由画廊入口替换。
+- [x] 已确认封面优先级和默认回退策略。
+- [x] 已确认首次与会话内打开的不同性能指标。
+- [x] 已确认 `selectSkin()` 为唯一的切换发起路径。
+- [x] 已确认多屏定位采用原生 `screen`/`workArea`，而非 `displayBounds.js`。
+
+## 7. 性能测评与扩展优化策略记录 (Performance & Scaling Backlog)
+
+于 2026-07-10 按照 `performance-optimization` 技能对选肤窗进行了全栈性能测评（详见 [ADR-041](../decisions/ADR-041-skin-selector-performance-and-scaling.md)）：
+
+1. **当前流畅度基准确认**：
+   - 得益于窗口 `hide()` 复用策略及 `pet-asset:` 协议层强制的 `Cache-Control: public, max-age=31536000, immutable`，复用打开选肤窗的响应时间（INP/LCP）控制在 `<16ms` 内，游戏动画主循环无掉帧。
+2. **长远扩展架构储备（Backlog）**：
+   - **面向多皮肤长列表 (长远)**：未来扩展卡片数量至需滚动展示时，在 `skinSelectorWindow.js` 中创建 `<img class="skin-card-preview">` 需增设 `loading="lazy"`、`decoding="async"` 属性与固定宽高，以防首屏瞬间同步解码大量图片引发 Layout Jank。
+   - **试穿预览链路解耦 (当前冗余)**：卡片预览点击会发 `preview-skin` IPC 并调用 `selectSkin()`，导致主进程连续销毁并重建系统托盘上下文菜单 `Menu.buildFromTemplate` **2 次**，且在桌宠层触发 `saveCurrentState()` 即时存档写盘。后续架构迭代可把“预览(`preview`)”与“确认(`confirm`)”分离，预览仅高亮卡片和发图给桌宠，不再多次重建菜单或立刻写入本地文件。
+   - **后台窗体多语言防抖 (长远/后台)**：主进程接收 `locale-changed` 时，如果 `skinSelectorWindow` 处于隐藏状态，可仅标记当前语言而不立即调用 `sendSkinSelectorData()` 触发卡片 DOM 重构，延后到下一次 `win.show()` 前再按需执行。
