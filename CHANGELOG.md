@@ -18,6 +18,8 @@
 - 完善 `docs/skin-pipeline-guide.md` 皮肤制作流程文档，新增加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）以及发版打包（`npm run build` 自动加密与排除明文）须知。
 
 ### Fixed
+- **选肤窗口 IPC 发件方授权**：选肤专用的画廊读取、选择、预览、确定、取消和关闭 IPC 现会校验 `event.sender.id` 是否属于当前选肤窗口；其他 renderer 的同名调用会收到 `FORBIDDEN`，避免未来错误暴露 IPC 时越过专属 preload 的能力边界。
+- **受保护皮肤资源负缓存测试隔离**：修复 `protectedAssetLoader` 的负向 manifest 缓存测试对“默认清单不存在”的环境假设；测试会临时模拟清单缺失、恢复清单并在清缓存后验证重新发现，使其可与仓库内已跟踪的 `protected-assets/manifest.json` 共存。
 - **选肤窗第二次点击无响应**：修复画廊窗口以 `hide/show` 复用时，首次成功切换遗留 `selectionInFlight` 状态、导致再次打开后所有卡片点击被忽略的问题。
 - **Windows PowerShell 推送脚本无法解析**：移除 `push.ps1` 中会被无 BOM UTF-8 / 本地代码页组合错误解析的非 ASCII 提示文本，并新增 Windows PowerShell 语法回归测试，恢复项目规定的提交推送脚本可用性。
 - **CI 自动化打包流程未生成加密资产导致安装包丢失所有皮肤**：修复 `.github/workflows/release-preflight.yml` 和 `build-installer.yml` 直接执行 `npx electron-builder` 打包时不会触发 npm `prebuild` 钩子，导致打包产物既无明文也没有密文皮肤文件的 Bug。修复方案：在 Windows 与 macOS 预检及构建流程的 `npx electron-builder` 步骤之前显式增加 `npm run protect:assets` 步骤。

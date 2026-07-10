@@ -134,17 +134,30 @@ test('readManifest uses memory cache without scanning disk when manifest Cache i
 
 test('readManifest caches negative lookups until clearProtectedAssetCache is called', () => {
   clearProtectedAssetCache();
-  const nonexistentDir = path.join(os.tmpdir(), `deskpet-nonexistent-${Date.now()}`);
+  const defaultManifestPath = path.resolve(__dirname, '..', 'protected-assets', 'manifest.json');
+  const originalExistsSync = fs.existsSync;
+  let hideDefaultManifest = true;
 
-  // When no protectedAssetsDir is provided and no manifest exists in default roots, returns null and sets manifestNotFound
-  const first = readManifest();
-  assert.equal(first, null);
+  fs.existsSync = (candidatePath) => (
+    hideDefaultManifest && path.resolve(candidatePath) === defaultManifestPath
+      ? false
+      : originalExistsSync(candidatePath)
+  );
 
-  // Even if options without protectedAssetsDir are passed again, it should return null immediately
-  const second = readManifest({});
-  assert.equal(second, null);
+  try {
+    // Simulate a missing default manifest, then make it available again.
+    assert.equal(readManifest(), null);
+    hideDefaultManifest = false;
 
-  clearProtectedAssetCache();
+    // The negative lookup remains cached until the cache is explicitly cleared.
+    assert.equal(readManifest({}), null);
+
+    clearProtectedAssetCache();
+    assert.ok(readManifest());
+  } finally {
+    fs.existsSync = originalExistsSync;
+    clearProtectedAssetCache();
+  }
 });
 
 test('loadProtectedAssetAsync asynchronously decrypts assets and deduplicates concurrent in-flight requests', async () => {
@@ -164,5 +177,4 @@ test('loadProtectedAssetAsync asynchronously decrypts assets and deduplicates co
 
   clearProtectedAssetCache();
 });
-
 

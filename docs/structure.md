@@ -360,7 +360,7 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程负责校验皮肤 ID、维护预览期间的原皮肤快照，并构造 `pet-asset:` 预览 URL，渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道集中在 `main.js`，便于审计。
@@ -381,7 +381,7 @@ npm test
 - `MovementSystem` 移动、暂停、边界和目标选择。
 - `NurtureSystem` 和 `TimeSystem` 数值衰减、保存和离线变化。
 - `SkinManager`、托盘皮肤扫描和渲染集成。
-- `skinGallery.js` 的封面回退和画廊元数据契约，以及选肤窗 IPC、托盘入口和专用 preload。
+- `skinGallery.js` 的封面回退和画廊元数据契约，以及选肤窗 IPC 发件窗口授权、托盘入口和专用 preload。
 - `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
 
@@ -398,7 +398,7 @@ npm run qa:electron:smoke
 - `presentationGuard.js` 跨平台全屏检测和隐私边界。
 - `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。
 - `PomodoroSystem`、番茄钟窗口结构、preload API、托盘入口和宠物隐藏/恢复边界。
-- `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象。
+- `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象；`protectedAssetLoader` 的正向/负向 manifest 缓存，其中负向缓存测试会隔离默认受保护资源清单的存在状态。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
 
 ## 5. 架构决策索引

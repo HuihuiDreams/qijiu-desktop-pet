@@ -38,6 +38,32 @@ test('skin selector uses a dedicated limited preload bridge', () => {
   assert.match(preloadSource, /close: \(\) => ipcRenderer\.invoke\('close-skin-selector'\)/);
 });
 
+test('skin selector IPC only accepts requests from the selector window', () => {
+  const mainSource = readProjectFile('main.js');
+
+  assert.match(
+    mainSource,
+    /function isSkinSelectorRequest\(event\)[\s\S]*?event\?\.sender\?\.id === skinSelectorWindow\.webContents\.id/,
+  );
+
+  for (const channel of [
+    'get-skin-gallery-items',
+    'select-skin',
+    'preview-skin',
+    'confirm-skin',
+    'cancel-skin',
+    'close-skin-selector',
+  ]) {
+    const handlerStart = mainSource.indexOf(`ipcMain.handle('${channel}'`);
+    const nextHandler = mainSource.indexOf("ipcMain.handle('", handlerStart + 1);
+    const handlerSource = mainSource.slice(handlerStart, nextHandler === -1 ? undefined : nextHandler);
+
+    assert.ok(handlerStart > -1, `${channel} handler should exist`);
+    assert.match(handlerSource, /if \(!isSkinSelectorRequest\(event\)\)/);
+    assert.match(handlerSource, /createIpcFailure\('FORBIDDEN', 'Skin selector access denied'\)/);
+  }
+});
+
 test('reopening the skin selector clears an earlier selection lock', () => {
   const rendererSource = readProjectFile('src/skinSelectorWindow.js');
   const renderStart = rendererSource.indexOf('function renderGallery');

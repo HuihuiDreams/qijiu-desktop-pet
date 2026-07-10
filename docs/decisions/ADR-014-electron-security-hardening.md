@@ -46,3 +46,11 @@ Accepted
 4. **更严格的更新窗口 CSP**：更新进度页面使用 `script-src 'self'; style-src 'self'`，动态文案通过 `textContent` 渲染。
 
 这保持了可见更新进度窗口的用户体验，同时减少本地页面中可执行字符串和宽松 CSP 的数量。
+
+## 补充：选肤窗口 IPC 发件方授权 (2026-07-10)
+
+选肤窗口虽使用了独立的最小 preload，但 `ipcMain.handle` 通道在主进程中按名称注册；若未来其他 renderer 错误获得直接 IPC 调用能力，仅校验皮肤 ID 不能区分调用者是否拥有选肤窗口的预览、确认或撤销权限。
+
+因此，选肤专属的画廊读取、选择、预览、确定、取消和关闭 handler 还会比较 `event.sender.id` 与当前 `skinSelectorWindow.webContents.id`。不匹配或选肤窗口不存在时，统一返回结构化 `FORBIDDEN`，不改变合法选肤页面的 preload 调用契约。
+
+这一授权检查与皮肤 ID 白名单互补：前者约束“哪个 renderer 可以调用”，后者约束“允许调用什么值”。`skinSelectorIntegration` 测试覆盖全部选肤专属 handler 的授权门，防止后续新增或改动通道时遗漏该边界。

@@ -718,6 +718,14 @@ function sendSkinSelectorData() {
   skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems());
 }
 
+function isSkinSelectorRequest(event) {
+  return Boolean(
+    skinSelectorWindow
+    && !skinSelectorWindow.isDestroyed()
+    && event?.sender?.id === skinSelectorWindow.webContents.id,
+  );
+}
+
 function createSkinSelectorWindow() {
   if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) return skinSelectorWindow;
 
@@ -1935,7 +1943,10 @@ ipcMain.handle('get-available-skins', () => {
   return scanAvailableSkins();
 });
 
-ipcMain.handle('get-skin-gallery-items', () => {
+ipcMain.handle('get-skin-gallery-items', (event) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   return getSkinGalleryItems();
 });
 
@@ -1963,7 +1974,10 @@ ipcMain.handle('set-current-skin', async (_event, skinId) => {
   }
 });
 
-ipcMain.handle('select-skin', async (_event, skinId) => {
+ipcMain.handle('select-skin', async (event, skinId) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
     return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
   }
@@ -1978,7 +1992,10 @@ ipcMain.handle('select-skin', async (_event, skinId) => {
   }
 });
 
-ipcMain.handle('preview-skin', async (_event, skinId) => {
+ipcMain.handle('preview-skin', async (event, skinId) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
     return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
   }
@@ -1993,7 +2010,10 @@ ipcMain.handle('preview-skin', async (_event, skinId) => {
   }
 });
 
-ipcMain.handle('confirm-skin', async () => {
+ipcMain.handle('confirm-skin', async (event) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   try {
     skinSelectorOriginalSkinId = null;
     hideSkinSelector();
@@ -2004,12 +2024,18 @@ ipcMain.handle('confirm-skin', async () => {
   }
 });
 
-ipcMain.handle('cancel-skin', () => {
+ipcMain.handle('cancel-skin', (event) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   cancelSkinPreview();
   return createIpcSuccess();
 });
 
-ipcMain.handle('close-skin-selector', () => {
+ipcMain.handle('close-skin-selector', (event) => {
+  if (!isSkinSelectorRequest(event)) {
+    return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
+  }
   cancelSkinPreview();
   return createIpcSuccess();
 });
