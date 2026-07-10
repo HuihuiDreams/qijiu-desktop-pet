@@ -14,6 +14,7 @@
 - **加密资产加载器与主进程高频查询性能优化**：`protectedAssetLoader.readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定引发的高频同步磁盘查询。
 - **`protectedAssetProtocol` 全面异步化与防并发雪崩改造**：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将主进程图片读取改用 `fs.promises.readFile` 异步非阻塞操作；引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与线程阻塞。
 - **渲染层切肤贴图预加载与内存防泄漏加固**：`SkinManager.applySkin` 改为对两只宠物的常态与覆盖层 (`cultivate.webp`、`kiss.webp`) 贴图进行并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝频繁切肤或长期运行残留未释放的 DOM 节点与事件句柄。
+- **多语言说明文档全面同步选肤画廊交互**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt` 和 `readme_ja.txt`，把皮肤切换的操作描述从原本的托盘子菜单单选列表更新为“🎨 选择皮肤…”仙侠风可视化选肤画廊窗口，并详细说明了分行卡片展示、实时试穿预览、以及确定/取消的控制流。
 - **皮肤制作与流程文档更新**：完善 `docs/skin-pipeline-guide.md` 皮肤规范文档，增加加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）与发版打包（`npm run build` 自动加密与排除明文）操作须知。
 
 ### Fixed

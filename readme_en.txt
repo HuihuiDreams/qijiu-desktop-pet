@@ -36,7 +36,7 @@ After launch, both characters will appear on your desktop.
 The tray menu lets you:
 - "📊 Show Status Panel"
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
-- "🎨 Switch Skin": currently includes Default Skin, Cute Birds, Cat & Bunny, and School AU, with artist credits shown in the menu.
+- "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click any card to instantly preview the skin on your desktop pets, click "Confirm" to apply, or click "Cancel" / press ESC / click outside the window to close and restore the original skin.
 - "⏸️ Pause Walking" or "🚶 Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
@@ -66,6 +66,12 @@ The app currently includes four built-in skins:
 - Cat & Bunny - (Artist) Violetfirefly
 - School AU - (Artist) M_Shang
 
+Visual Skin Gallery:
+Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin gallery window. Each skin card displays the exclusive preview image (kiss sprite), skin name, and artist signature ("🎨 Artist") across separate lines.
+- Live Preview: Clicking any card instantly updates the desktop characters so you can preview the skin in real time.
+- Confirm & Cancel: When you are satisfied with the preview, click "Confirm" to officially save and apply the skin. Clicking "Cancel", pressing ESC, or clicking outside the window (blur) automatically closes the gallery and restores your original skin.
+
+Skin Actions & Fallback:
 Skins replace standing, walking, hungry, sleeping, feeding, cultivating, care, kiss, hug, and share-food visuals together.
 If one action asset is missing from a skin, the app tries to fall back to the default asset so switching skins does not leave a blank sprite.
 
