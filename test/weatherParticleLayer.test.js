@@ -264,3 +264,71 @@ test('WeatherParticleLayer renders thunderstorm as rain plus local lightning', (
     delete global.document;
   }
 });
+
+test('WeatherParticleLayer creates bounded heat particles and bottom glow', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_HEAT_PARTICLE_MAX: 16,
+    });
+
+    layer.sync(
+      { weatherKind: 'heat', intensity: 'heavy' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const group = root.children[0].children[0];
+    assert.equal(root.children[0].dataset.weather, 'heat');
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--heat')).length, 16);
+    assert.equal(group.children.filter(child => child.className.includes('weather-heat-glow')).length, 2);
+  } finally {
+    delete global.document;
+  }
+});
+
+test('WeatherParticleLayer merges and centers particle groups during pet interaction to avoid old separate glow circles', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+    getElementById() {
+      return null;
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, { WEATHER_HEAT_PARTICLE_MAX: 16 });
+    const pets = [
+      { x: 100, y: 200, size: 96 },
+      { x: 300, y: 200, size: 96 },
+    ];
+
+    layer.sync(
+      { weatherKind: 'heat', intensity: 'normal' },
+      { visible: true, pets, isInteracting: true },
+    );
+
+    const layerEl = root.children[0];
+    const groupA = layerEl.children[0];
+    const groupB = layerEl.children[1];
+
+    assert.equal(groupB.style.opacity, '0');
+    assert.equal(groupB.style.visibility, 'hidden');
+    assert.equal(groupA.style.opacity, '1');
+    assert.equal(groupA.style.visibility, 'visible');
+
+    // cx = ((100 + 48) + (300 + 48)) / 2 = 248. mergedWidth > baseWidthA.
+    // Ensure groupA transform is centered around cx and not left at petA's original x
+    const transformA = groupA.style.transform;
+    assert.ok(transformA && transformA.includes('translate3d('), 'groupA should have translate3d transform');
+  } finally {
+    delete global.document;
+  }
+});

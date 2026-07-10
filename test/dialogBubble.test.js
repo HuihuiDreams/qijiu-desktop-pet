@@ -227,7 +227,7 @@ test('showIdleChatter prefers weather chatter when the weather roll succeeds', (
   });
 });
 
-test('showIdleChatter can use wind and thunderstorm weather chatter', () => {
+test('showIdleChatter can use wind, thunderstorm, and heat weather chatter', () => {
   withFakeDocument(() => {
     const originalDialogues = global.DIALOGUES;
     const originalRandom = Math.random;
@@ -235,6 +235,7 @@ test('showIdleChatter can use wind and thunderstorm weather chatter', () => {
       idle: { yueqi: ['idle text'], shenjiu: ['idle shenjiu'] },
       weather_windy: { yueqi: ['wind text'] },
       weather_thunderstorm: { shenjiu: ['thunder text'] },
+      weather_heat: { yueqi: ['heat yueqi'], shenjiu: ['heat shenjiu'] },
     };
     Math.random = () => 0;
 
@@ -242,12 +243,15 @@ test('showIdleChatter can use wind and thunderstorm weather chatter', () => {
       const dialogBubble = new DialogBubble();
       const yueqi = { id: 'yueqi', weatherKind: 'windy', element: createFakeElement() };
       const shenjiu = { id: 'shenjiu', weatherKind: 'thunderstorm', element: createFakeElement() };
+      const yueqiHeat = { id: 'yueqi', weatherKind: 'heat', element: createFakeElement() };
 
       dialogBubble.showIdleChatter(yueqi);
       dialogBubble.showIdleChatter(shenjiu);
-
       assert.equal(dialogBubble.activeBubbles.get(yueqi.id).textContent, 'wind text');
       assert.equal(dialogBubble.activeBubbles.get(shenjiu.id).textContent, 'thunder text');
+
+      dialogBubble.showIdleChatter(yueqiHeat);
+      assert.equal(dialogBubble.activeBubbles.get(yueqiHeat.id).textContent, 'heat yueqi');
     } finally {
       global.DIALOGUES = originalDialogues;
       Math.random = originalRandom;

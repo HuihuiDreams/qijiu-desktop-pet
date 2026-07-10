@@ -233,6 +233,55 @@ body.weather-interaction-muted .weather-particle-layer {
   top: 68%;
 }
 
+.weather-particle--heat {
+  width: calc(7px * var(--weather-effect-scale, 1));
+  height: calc(46px * var(--weather-effect-scale, 1));
+  border-radius: 50% / 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 45%, rgba(255, 250, 245, 0.5) 85%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(calc(1.4px * var(--weather-effect-scale, 1))) drop-shadow(0 0 6px rgba(255, 255, 255, 0.55));
+  top: 104%;
+  transform-origin: center bottom;
+  animation-name: weatherUniversalHeatRise;
+}
+
+.weather-particle--heat:nth-child(even) {
+  width: calc(12px * var(--weather-effect-scale, 1));
+  height: calc(38px * var(--weather-effect-scale, 1));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 45%, rgba(255, 252, 248, 0.4) 85%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(calc(2.2px * var(--weather-effect-scale, 1)));
+}
+
+.weather-particle--heat:nth-child(3n) {
+  width: calc(4.5px * var(--weather-effect-scale, 1));
+  height: calc(58px * var(--weather-effect-scale, 1));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.92) 38%, rgba(255, 252, 248, 0.58) 82%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(calc(0.9px * var(--weather-effect-scale, 1))) drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
+}
+
+.weather-heat-glow {
+  position: absolute;
+  left: 12%;
+  top: 94%;
+  width: calc(76% * var(--weather-effect-scale, 1));
+  height: calc(32px * var(--weather-effect-scale, 1));
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.62) 0%, rgba(255, 250, 245, 0.3) 45%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(calc(6px * var(--weather-effect-scale, 1)));
+  animation: weatherHeatGlowPulse 3.8s ease-in-out infinite;
+  animation-delay: var(--weather-heat-glow-delay, 0s);
+}
+
+.weather-heat-glow--2 {
+  left: 20%;
+  top: 100%;
+  width: calc(60% * var(--weather-effect-scale, 1));
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.52) 0%, rgba(255, 252, 248, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(calc(4px * var(--weather-effect-scale, 1)));
+  animation-duration: 2.9s;
+}
+
 .weather-lightning {
   position: absolute;
   width: calc(22px * var(--weather-effect-scale, 1));
@@ -357,6 +406,45 @@ body.weather-interaction-muted .weather-particle-layer {
 
   94% {
     opacity: 0.36;
+  }
+}
+
+@keyframes weatherUniversalHeatRise {
+  0% {
+    transform: translate3d(0, 0, 0) scaleX(0.7) scaleY(0.4) skewX(0deg);
+    opacity: 0;
+  }
+
+  20% {
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.4), -30px, 0) scaleX(1.1) scaleY(0.8) skewX(-8deg);
+    opacity: var(--weather-particle-opacity, 0.45);
+  }
+
+  50% {
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * 0.6), -75px, 0) scaleX(1.35) scaleY(1) skewX(6deg);
+    opacity: var(--weather-particle-opacity, 0.45);
+  }
+
+  80% {
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.2), -125px, 0) scaleX(1.5) scaleY(1.15) skewX(-4deg);
+    opacity: calc(var(--weather-particle-opacity, 0.45) * 0.6);
+  }
+
+  100% {
+    transform: translate3d(var(--weather-particle-drift, 8px), -165px, 0) scaleX(1.7) scaleY(1.25) skewX(2deg);
+    opacity: 0;
+  }
+}
+
+@keyframes weatherHeatGlowPulse {
+  0%, 100% {
+    opacity: 0.32;
+    transform: scaleX(0.9) scaleY(0.85);
+  }
+
+  50% {
+    opacity: 0.78;
+    transform: scaleX(1.12) scaleY(1.08);
   }
 }
 

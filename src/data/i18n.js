@@ -310,6 +310,10 @@ const I18N = {
         yueqi: ['雷声近了，小九别怕。', '这场雷雨来得急，先避一避。'],
         shenjiu: ['…打雷而已，有什么好怕。', '（被雷光照得皱了皱眉）'],
       },
+      weather_heat: {
+        yueqi: ['天热日烈，小九当心暑气。', '这般酷热，先来阴凉处歇歇吧。', '天气炎热，记得多进些茶水。'],
+        shenjiu: ['…热得让人心烦。', '（轻摇折扇，微微蹙眉）', '日头这么毒…没事别叫我。'],
+      },
       hungry: {
         yueqi: ['有些饿了…', '该用膳了。'],
         shenjiu: ['…肚子叫了。', '辟谷也该有个限度。'],
@@ -644,6 +648,10 @@ const I18N = {
         yueqi: ['The thunder is close. Xiao Jiu, do not be afraid.', 'This storm came quickly. Let us take shelter first.'],
         shenjiu: ['...It is only thunder. What is there to fear?', '(Frowning under the flash of lightning)'],
       },
+      weather_heat: {
+        yueqi: ["It's scorching outside. Be careful of the heat, Xiao Jiu.", "Such intense heat... let's rest in the shade for a while.", "The weather is sweltering, remember to drink some tea."],
+        shenjiu: ["...This heat is so irritating.", "(Gently waving a fan, frowning slightly)", "The sun is too fierce... don't bother me unless it's urgent."],
+      },
       hungry: {
         yueqi: ['A bit hungry...', 'Time for a meal.'],
         shenjiu: ['...My stomach is growling.', 'Inedia should have its limits.'], // 辟谷的标准玄幻词是 Inedia 或 Fasting，Inedia 古风感更强
@@ -976,6 +984,10 @@ const I18N = {
       weather_thunderstorm: {
         yueqi: ['雷が近いな。小九、怖がらなくていい。', 'この雷雨は急だ、まず避けよう。'],
         shenjiu: ['…雷くらいで騒ぐな。', '（稲光に眉をひそめる）'],
+      },
+      weather_heat: {
+        yueqi: ['猛暑が続くな。小九、暑さに気をつけて。', '酷い暑さだ……木陰で少し涼もう。', '日差しが強いな、しっかりと水分を補給してね。'],
+        shenjiu: ['…暑くて苛立つな。', '（扇子を軽く揺らし、少し眉をひそめる）', '日差しが強すぎる……用がないなら呼ぶな。'],
       },
       hungry: {
         yueqi: ['少し腹が減ったな…', '膳の時間か。'], // 有些饿了… / 该用膳了。（“膳の時間”很有古风日常感）

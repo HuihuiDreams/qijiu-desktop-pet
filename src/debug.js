@@ -123,6 +123,29 @@ window.testShareFoodThrowup = () => {
   window.testInteraction('shareFood');
 };
 
+window.testHungry = (hungerValue = 15) => {
+  if (!window.__DEBUG_PETS) return;
+  Object.values(window.__DEBUG_PETS).forEach((pet) => {
+    pet.stats.hunger = hungerValue;
+  });
+  console.log(`[debug] 宠物饱食度已设置为 ${hungerValue} (< 25 触发饥饿状态与桔红发光框)`);
+};
+
+window.testRecoverStats = () => {
+  if (!window.__DEBUG_PETS) return;
+  Object.values(window.__DEBUG_PETS).forEach((pet) => {
+    pet.stats.hunger = 80;
+    pet.stats.qi = 80;
+    pet.stats.mood = 80;
+  });
+  console.log('[debug] 宠物属性已全部恢复正常水准');
+};
+
+window.testHungryHeat = () => {
+  window.testHungry(15);
+  return typeof window.testWeatherHeat === 'function' ? window.testWeatherHeat() : null;
+};
+
 window.debugWindowAwareness = function () {
   const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : null;
   console.log('[debug] Window Awareness:', screenInfo?.windowAwareness || null);
@@ -432,6 +455,10 @@ window.testWeatherThunderstorm = function (intensity = 'heavy') {
   return setDebugWeather('thunderstorm', { intensity, timePhase: 'day', isDay: true });
 };
 
+window.testWeatherHeat = function () {
+  return setDebugWeather('heat', { intensity: 'normal', timePhase: 'day', isDay: true });
+};
+
 window.testWeatherRainWind = function (intensity = 'heavy', windIntensity = 'normal') {
   return setDebugWeather('rain', { intensity, windIntensity, timePhase: 'day', isDay: true });
 };
@@ -458,6 +485,7 @@ window.testWeatherEffects = function () {
     snow: "testWeatherSnow('medium')",
     windy: "testWeatherWindy('normal')",
     thunderstorm: "testWeatherThunderstorm('heavy')",
+    heat: 'testWeatherHeat()',
     rainWind: "testWeatherRainWind('heavy', 'normal')",
     night: 'testWeatherNight()',
     clearEffect: 'clearWeatherEffect()',

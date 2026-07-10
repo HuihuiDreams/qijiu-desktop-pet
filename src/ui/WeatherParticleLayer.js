@@ -1,7 +1,8 @@
 const DEFAULT_RAIN_PARTICLE_MAX = 48;
 const DEFAULT_SNOW_PARTICLE_MAX = 40;
 const DEFAULT_WIND_PARTICLE_MAX = 20;
-const PARTICLE_WEATHERS = new Set(['rain', 'snow', 'windy', 'thunderstorm']);
+const DEFAULT_HEAT_PARTICLE_MAX = 24;
+const PARTICLE_WEATHERS = new Set(['rain', 'snow', 'windy', 'thunderstorm', 'heat']);
 
 const INTENSITY_FACTORS = {
   none: 0,
@@ -52,6 +53,7 @@ class WeatherParticleLayer {
       && this.windIntensity === windIntensity
       && this.visible === visible
       && this.scaleRatio === scaleRatio
+      && Boolean(this.isInteracting) === Boolean(options.isInteracting || options.interactionOverlayActive)
       && this.hasParticleCounts(particleCounts);
 
     this.weatherKind = weatherKind;
@@ -59,13 +61,14 @@ class WeatherParticleLayer {
     this.windIntensity = windIntensity;
     this.visible = visible;
     this.scaleRatio = scaleRatio;
+    this.isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
     this.particleCounts = particleCounts;
 
     if (!unchanged) {
       this.rebuildLayer(weatherKind, intensity, windIntensity, scaleRatio, particleCounts);
     }
 
-    this.positionGroups(pets, scaleRatio);
+    this.positionGroups(pets, scaleRatio, options);
   }
 
   rebuildLayer(weatherKind, intensity, windIntensity, scaleRatio, particleCounts) {
@@ -100,6 +103,9 @@ class WeatherParticleLayer {
       if (weatherKind === 'thunderstorm') {
         group.appendChild(this.createLightning(groupIndex, 0));
         group.appendChild(this.createLightning(groupIndex, 1));
+      } else if (weatherKind === 'heat') {
+        group.appendChild(this.createHeatGlow(groupIndex, 0));
+        group.appendChild(this.createHeatGlow(groupIndex, 1));
       }
 
       this.layer.appendChild(group);
@@ -177,9 +183,78 @@ class WeatherParticleLayer {
       && currentCounts.every((count, index) => count === nextCounts[index]);
   }
 
-  positionGroups(pets, scaleRatio) {
+  positionGroups(pets, scaleRatio, options = {}) {
     if (!this.layer) return;
-    Array.from(this.layer.children).forEach((group, index) => {
+    const groups = Array.from(this.layer.children);
+    if (!groups.length) return;
+
+    const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
+    const overlayEl = (typeof document !== 'undefined' && typeof document.getElementById === 'function')
+      ? document.getElementById('interaction-overlay')
+      : null;
+    const hasOverlay = Boolean(options.interactionOverlayActive || (isInteracting && overlayEl && overlayEl.style && overlayEl.style.opacity !== '0'));
+
+    if (isInteracting && pets.length >= 2 && pets[0] && pets[1]) {
+      const petA = pets[0];
+      const petB = pets[1];
+      const baseWidthA = Math.max(132, petA.size * 1.65) * scaleRatio;
+      const baseHeightA = Math.max(120, petA.size * 1.45) * scaleRatio;
+      const baseWidthB = Math.max(132, petB.size * 1.65) * scaleRatio;
+      const baseHeightB = Math.max(120, petB.size * 1.45) * scaleRatio;
+
+      let cx, cy, mergedWidth, mergedHeight;
+      if (hasOverlay && overlayEl && overlayEl.style.left) {
+        const overlayLeft = parseFloat(overlayEl.style.left) || 0;
+        const overlayTop = parseFloat(overlayEl.style.top) || 0;
+        const overlayWidth = parseFloat(overlayEl.style.width) || baseWidthA;
+        cx = overlayLeft + overlayWidth / 2;
+        cy = overlayTop + overlayWidth * 0.45;
+        mergedWidth = overlayWidth * 1.35;
+        mergedHeight = baseHeightA * 1.15;
+      } else {
+        const centerAx = petA.x + (petA.size * scaleRatio) / 2;
+        const centerAy = petA.y + (petA.size * scaleRatio) / 2;
+        const centerBx = petB.x + (petB.size * scaleRatio) / 2;
+        const centerBy = petB.y + (petB.size * scaleRatio) / 2;
+        cx = (centerAx + centerBx) / 2;
+        cy = (centerAy + centerBy) / 2;
+        const dist = Math.abs(centerAx - centerBx);
+        mergedWidth = Math.max(baseWidthA * 1.35, dist + baseWidthA * 0.7);
+        mergedHeight = Math.max(baseHeightA, baseHeightB) * 1.1;
+      }
+
+      const left = cx - mergedWidth / 2;
+      const top = cy - mergedHeight * 0.28;
+
+      if (groups[0]) {
+        groups[0].style.width = `${mergedWidth}px`;
+        groups[0].style.height = `${mergedHeight}px`;
+        groups[0].style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        groups[0].style.opacity = '1';
+        groups[0].style.visibility = 'visible';
+      }
+      if (groups[1]) {
+        groups[1].style.opacity = '0';
+        groups[1].style.visibility = 'hidden';
+      }
+      for (let i = 2; i < groups.length; i++) {
+        const group = groups[i];
+        const pet = pets[i];
+        if (!pet) continue;
+        const width = Math.max(132, pet.size * 1.65) * scaleRatio;
+        const height = Math.max(120, pet.size * 1.45) * scaleRatio;
+        const pLeft = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
+        const pTop = pet.y - height * 0.28;
+        group.style.width = `${width}px`;
+        group.style.height = `${height}px`;
+        group.style.transform = `translate3d(${pLeft}px, ${pTop}px, 0)`;
+        group.style.opacity = '1';
+        group.style.visibility = 'visible';
+      }
+      return;
+    }
+
+    groups.forEach((group, index) => {
       const pet = pets[index];
       if (!pet) return;
       const width = Math.max(132, pet.size * 1.65) * scaleRatio;
@@ -189,15 +264,22 @@ class WeatherParticleLayer {
       group.style.width = `${width}px`;
       group.style.height = `${height}px`;
       group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      group.style.opacity = '1';
+      group.style.visibility = 'visible';
     });
   }
 
   getParticleCount(weatherKind, intensity) {
     if (weatherKind === 'windy') return 0;
     const visualWeatherKind = weatherKind === 'thunderstorm' ? 'rain' : weatherKind;
-    const max = visualWeatherKind === 'snow'
-      ? this.getConfiguredMax('WEATHER_SNOW_PARTICLE_MAX', DEFAULT_SNOW_PARTICLE_MAX)
-      : this.getConfiguredMax('WEATHER_RAIN_PARTICLE_MAX', DEFAULT_RAIN_PARTICLE_MAX);
+    let max;
+    if (visualWeatherKind === 'snow') {
+      max = this.getConfiguredMax('WEATHER_SNOW_PARTICLE_MAX', DEFAULT_SNOW_PARTICLE_MAX);
+    } else if (visualWeatherKind === 'heat') {
+      max = this.getConfiguredMax('WEATHER_HEAT_PARTICLE_MAX', DEFAULT_HEAT_PARTICLE_MAX);
+    } else {
+      max = this.getConfiguredMax('WEATHER_RAIN_PARTICLE_MAX', DEFAULT_RAIN_PARTICLE_MAX);
+    }
     return Math.max(0, Math.min(max, Math.ceil(max * INTENSITY_FACTORS[intensity])));
   }
 
@@ -225,12 +307,14 @@ class WeatherParticleLayer {
   getDuration(weatherKind, index) {
     if (weatherKind === 'wind') return (1.85 + (index % 6) * 0.2).toFixed(2);
     if (weatherKind === 'snow') return (4.8 + (index % 6) * 0.45).toFixed(2);
+    if (weatherKind === 'heat') return (1.6 + (index % 6) * 0.28).toFixed(2);
     return (0.85 + (index % 5) * 0.12).toFixed(2);
   }
 
   getDrift(weatherKind, index) {
     const direction = index % 2 === 0 ? 1 : -1;
     if (weatherKind === 'wind') return 92 + (index % 5) * 13;
+    if (weatherKind === 'heat') return direction * (8 + (index % 5) * 4);
     const distance = weatherKind === 'snow' ? 16 + (index % 5) * 7 : 6 + (index % 4) * 3;
     return direction * distance;
   }
@@ -238,6 +322,7 @@ class WeatherParticleLayer {
   getOpacity(weatherKind, index, total) {
     const spread = total > 0 ? index / total : 0;
     if (weatherKind === 'wind') return (0.52 + (spread % 0.30)).toFixed(2);
+    if (weatherKind === 'heat') return (0.38 + (spread % 0.20)).toFixed(2);
     const base = weatherKind === 'snow' ? 0.34 : 0.28;
     return (base + (spread % 0.38)).toFixed(2);
   }
@@ -249,6 +334,13 @@ class WeatherParticleLayer {
     lightning.style.top = `${8 + ((groupIndex + boltIndex) % 2) * 14}%`;
     lightning.style.setProperty('--weather-lightning-delay', `${-((groupIndex * 0.41) + boltIndex * 1.7).toFixed(2)}s`);
     return lightning;
+  }
+
+  createHeatGlow(groupIndex, glowIndex) {
+    const glow = document.createElement('b');
+    glow.className = `weather-heat-glow weather-heat-glow--${glowIndex + 1}`;
+    glow.style.setProperty('--weather-heat-glow-delay', `${-((groupIndex * 0.73) + glowIndex * 1.35).toFixed(2)}s`);
+    return glow;
   }
 }
 

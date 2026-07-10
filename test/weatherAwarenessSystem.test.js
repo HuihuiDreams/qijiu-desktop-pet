@@ -259,4 +259,48 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.timePhase, 'dusk');
     assert.strictEqual(state.isDay, false);
   });
+
+  await t.test('maps hot temperature (>= 35) to heat weather and < 35 to warm/clear when no precipitation present', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      temperature: 34,
+      rain: 0,
+      snowfall: 0,
+      isDay: true,
+    });
+    let state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'clear');
+    assert.strictEqual(state.temperatureBand, 'warm');
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      temperature: 35,
+      rain: 0,
+      snowfall: 0,
+      isDay: true,
+    });
+    state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'heat');
+    assert.strictEqual(state.temperatureBand, 'hot');
+  });
+
+  await t.test('keeps rain primary weather when both raining and hot', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 61,
+      temperature: 36,
+      rain: 3.5,
+      snowfall: 0,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'rain');
+    assert.strictEqual(state.temperatureBand, 'hot');
+  });
 });

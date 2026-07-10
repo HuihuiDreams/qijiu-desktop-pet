@@ -64,6 +64,7 @@ const REQUIRED_DIALOGUE_CATEGORIES = [
   'weather_cloudy',
   'weather_windy',
   'weather_thunderstorm',
+  'weather_heat',
   'hungry',
   'lowQi',
   'lowMood',

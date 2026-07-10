@@ -4,11 +4,14 @@
 
 ## [Unreleased]
 ### Added
+- **专属极端炎热 (`heat`) 天气特效与多语言台词**：新增对 `heat` 天气类型的本地化感知与局部粒子渲染引擎接入 (`WeatherParticleLayer`)。构建了双层视觉渲染：上层为自底向上的清透白金/亮银色阳炎流光 (`.weather-particle--heat`) 配合 S 型自然扭摆升腾；底层为叠加在足底投影区的地表光晕 (`.weather-heat-glow`)；同时为中、英、日三语（`zh`, `en`, `ja`）补充了岳七与沈九的高温避暑及烦躁闲聊专属台词 (`weather_heat`)；记录在决策文档 `docs/decisions/ADR-038-weather-sync.md` 中。
+- **炎热与饥饿控制台一键调试指令**：在 `debug.js` (`window.__DEBUG_`) 体系中新增 `testWeatherHeat()`、`testHungry(15)` 和 `testHungryHeat()` 等一键测试助手，方便实时验证气泡对话、阳炎特效与 `.pet--hungry` 饥饿桔红发光框的双重交错兼容性。
 - 新增受保护皮肤资产加载链路：`scripts/protect-assets.js` 生成加密后的 `protected-assets/*.dat`，`protectedAssetLoader.js` 负责主进程解密、完整性校验与有上限的内存缓存，`protectedAssetProtocol.js` 通过 `pet-asset://skin/...` 向 renderer 提供皮肤图片；设计决策记录在 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
 - 加密脚本 `protect-assets.js` 新增输入校验：无皮肤资产或出现重复资源 ID 时抛出错误并以非零退出码终止，防止构建出空 manifest 或数据冲突。
 - 新增选择皮肤窗口全链条性能测评与长远优化策略记录：创建 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`，对多卡片列表懒加载、预览链路双重 IPC/菜单重构以及隐藏窗口多语言防抖等架构瓶颈与切入点进行了分析与储备，并同步更新 `docs/plan/visual-skin-selector-plan.md` 和 `docs/structure.md`。
 
 ### Changed
+- **高温天气判定阈值与优先级规则**：将极端炎热 (`weatherKind: 'heat'`) 的气温门槛正式调高并固化至 **`≥ 35℃` (`temperatureBand === 'hot'`)**，`25℃ ~ 34.9℃` 归为 `warm` 区间并保持常规多云或晴朗视觉；确立降雨/雪/雷暴优先于高温的高频天气排他规则：`雷阵雨 > 雨/雪 > 炎热 > 大风 > 晴/阴`。
 - **可视化皮肤选择窗 UI 与交互全面改造**：展示图优先选用各皮肤专属 `kiss.webp` (亲亲图)；皮肤名称与画师名 (`🎨 画师名`) 在卡片中独立分行精美展示，同时主进程保留原名称查询以确保托盘菜单「皮肤名·画师名」格式保持不变；新增实时预览 (`preview-skin`) 与底部仙侠风「取消/确定」控制流，点击卡片即时在桌宠换装预览，点击确定后正式提交保存，点击取消、ESC 或失焦自动关窗并无缝恢复原皮肤。
 - **加密皮肤资产协议层切换与打包集成**：皮肤与番茄钟图片路径全面升级为 `pet-asset://` 协议，`SkinManager`、`SpriteView`、`PetRenderer`、`CONFIG` 与番茄钟窗口不再直接通过 `assets/...` 路径加载明文 WebP；构建打包流程会在执行前自动运行 `protect:assets` 加密处理，并自最终安装包中排除明文 `src/assets/*/*.webp` 文件。
 - **加密资产加载器与主进程高频查询性能优化**：`protectedAssetLoader.readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定引发的高频同步磁盘查询。
@@ -18,6 +21,7 @@
 - **皮肤制作与流程文档更新**：完善 `docs/skin-pipeline-guide.md` 皮肤规范文档，增加加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）与发版打包（`npm run build` 自动加密与排除明文）操作须知。
 
 ### Fixed
+- **双人互动时独立暑气圆球留在原地的视觉穿帮**：修复了在极端高温天气下两只宠物进行互动（如亲亲、抱抱、修炼、喂食等叠加层状态 `interactionOverlayActive` 或 `isInteracting`）时，各自独立的底层暑气光圈与阳炎流线仍停留在原本站立位（在原地）的 Bug。修复方案：将主循环 `step()` 中 `weatherParticleLayer.sync()` 的定位时机下调至移动与互动位移计算完成之后；在 `WeatherParticleLayer.positionGroups()` 中动态检测近身互动与图片叠加层状态，双人互动时自动将两组暑气在中心合并并居中为一个开阔升腾气场并隐藏冗余重复圈，在互动结束后立刻平滑拆散跟随各自角色。
 - **选肤窗试穿时切换语言导致当前皮肤标记错误跳转与选项重置**：修复了在选肤窗口点击新皮肤进行试穿期间通过托盘切换多语言 (`locale-changed`) 时，卡片的“当前皮肤” (`isCurrent`) 标记错误跳至试穿中的新皮肤、且用户的试穿选择高亮状态被强制重置的 Bug。根因：主进程查询画廊数据 (`getSkinGalleryItems`) 时未区分预览态中的 `currentSkinId` 与原皮肤快照 `skinSelectorOriginalSkinId`；且多语言触发 `sendSkinSelectorData()` 默认下发了 `resetSelection: true`。修复方案：在 `getSkinGalleryItems()` 内部计算 `isCurrent` 时优先判断 `skinSelectorOriginalSkinId` 锁定真正的原当前皮肤；同时打通预加载与渲染层 `onData` 选项通道，使主进程响应语言切换时下发 `sendSkinSelectorData({ resetSelection: false })`，确保画廊多语言刷新不覆盖试穿高亮与原皮肤徽章。
 - **选肤窗第二次点击无响应**：修复了画廊选肤窗口以 `hide/show` 复用时，首次成功切肤遗留 `selectionInFlight` 状态、导致再次打开后所有卡片点击被忽略的问题。
 - **选肤窗口 IPC 发件方授权**：选肤专用的画廊读取、选择、预览、确定、取消和关闭 IPC 现会校验 `event.sender.id` 是否属于当前选肤窗口；其他 renderer 的同名调用会收到 `FORBIDDEN`，避免未来错误暴露 IPC 时越过专属 preload 的能力边界。

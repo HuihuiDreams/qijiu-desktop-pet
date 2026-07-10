@@ -127,7 +127,7 @@ class WeatherAwarenessSystem {
   }
 
   static isKnownWeatherKind(kind) {
-    return ['clear', 'cloudy', 'rain', 'snow', 'windy', 'thunderstorm', 'unknown'].includes(kind);
+    return ['clear', 'cloudy', 'rain', 'snow', 'windy', 'thunderstorm', 'heat', 'unknown'].includes(kind);
   }
 
   static windToIntensity(windSpeed, windGusts) {
@@ -158,7 +158,7 @@ class WeatherAwarenessSystem {
     if (t < 5)  return 'cold';
     if (t < 15) return 'cool';
     if (t < 25) return 'mild';
-    if (t < 33) return 'warm';
+    if (t < 35) return 'warm';
     return 'hot';
   }
 
@@ -178,9 +178,14 @@ class WeatherAwarenessSystem {
           this.weatherPayload.windSpeed,
           this.weatherPayload.windGusts,
         );
-      const weatherKind = (windIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
+      const temperatureBand = WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature);
+      let weatherKind = (windIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
         ? 'windy'
         : precipKind;
+
+      if ((weatherKind === 'clear' || weatherKind === 'cloudy' || weatherKind === 'windy') && temperatureBand === 'hot') {
+        weatherKind = 'heat';
+      }
 
       // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
       let phase = this.TIME_PHASES[this.weatherPayload.timePhase]
@@ -193,7 +198,7 @@ class WeatherAwarenessSystem {
         weatherKind,
         intensity: typeof this.weatherPayload.intensity === 'string' ? this.weatherPayload.intensity : 'normal',
         windIntensity,
-        temperatureBand: WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature),
+        temperatureBand,
         isDay: this.weatherPayload.isDay,
         stale: false,
       };

@@ -578,11 +578,6 @@ function applyI18n() {
         if (document.body.dataset.timePhase !== weatherState.timePhase) {
             document.body.dataset.timePhase = weatherState.timePhase;
         }
-        weatherParticleLayer.sync(weatherState, {
-            visible: !isPaused,
-            scaleRatio: getWeatherEffectScale(),
-            pets,
-        });
 
         // 更新移动
         movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
@@ -668,6 +663,14 @@ function applyI18n() {
           interactionOverlayActive = false;
           renderer.hideOverlay(yueqi, shenjiu);
         }
+
+        weatherParticleLayer.sync(weatherState, {
+          visible: !isPaused,
+          scaleRatio: getWeatherEffectScale(),
+          pets,
+          interactionOverlayActive,
+          isInteracting: interactionSystem.isInteracting,
+        });
 
         // 检查是否有排队的动作 (在宠物恢复 idle 状态时执行)
         [ { pet: yueqi, ns: nurtureSystemA }, { pet: shenjiu, ns: nurtureSystemB } ].forEach(({ pet, ns }) => {
@@ -807,6 +810,8 @@ function applyI18n() {
         visible: !isPaused,
         scaleRatio: getWeatherEffectScale(),
         pets,
+        interactionOverlayActive,
+        isInteracting: interactionSystem.isInteracting,
       });
       return state;
     },

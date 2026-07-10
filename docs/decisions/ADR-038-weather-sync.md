@@ -7,6 +7,7 @@ Accepted
 2026-06-18
 
 ## Updates
+- 2026-07-10: 天气同步与感知系统扩展对极端高温 (`heat`) 的支持。确定高温判定门槛 (≥35℃，即 `temperatureBand === 'hot'`)，确立降雨/雪/雷暴优先于高温的排他优先级；热浪采用通透白炽亮银/白金阳炎流光 (`S型蛇形摆动`) 与脚底真实投影区 (`top: 94%~100%`) 的地表呼吸光晕，确保不带黄色杂沙感且与饥饿桔红光圈 (`.pet--hungry`) 彻底隔离。同时为中、英、日三语补充专属的 `weather_heat` 炎热闲聊台词。
 - 2026-07-03: 天气同步扩展 Open-Meteo `current` 查询字段，额外清洗 `precipitation`、`rain`、`showers`、`snowfall`，渲染进程用雨/雪量对 WMO code 做保守相态纠偏，避免 API 边界条件把实际下雨误显示为下雪。
 - 2026-07-02: 天气同步扩展 Open-Meteo `current` 查询字段，主进程严格过滤 `null` 与空字符串并下发清洗后的 `windSpeed`、`windDirection`、`windGusts`；渲染进程新增 `windy`、`thunderstorm` 和 `windIntensity` 归一化，仍保持局部粒子表现和无行为惩罚边界。
 
@@ -33,8 +34,8 @@ Accepted
 
 4. **Payload 合约**：
    - 包含字段：`active`, `source`, `timePhase`, `weatherKind`, `intensity`, `windIntensity`, `temperatureBand`, `isDay`, `stale`, `sampledAt`, `expiresAt`。
-   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `precipitation`, `rain`, `showers`, `snowfall`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `unknown` 等稳定状态。
-   - 大风是氛围修饰：晴/阴且强风时可成为 `windy`；雨、雪和雷暴保持原主天气，同时通过 `windIntensity` 叠加风痕粒子。
+   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `precipitation`, `rain`, `showers`, `snowfall`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `heat`, `unknown` 等稳定状态。
+   - 大风与炎热是环境氛围/热力修饰：晴/多云且气温 `≥35℃` 时转为 `heat`；当遇到雨、雪和雷暴时保持降水为主天气（优先级：`雷阵雨 > 雨/雪 > 炎热 > 大风 > 晴/阴`）。大风通过 `windIntensity` 叠加风痕，炎热通过自底向上的清透白金阳炎流线与脚底地表光晕表现，并伴有对应多语言 `weather_heat` 专属台词。
    - 性能约束：`WEATHER_MIN_REFRESH_MINUTES` 为 30 分钟，网络超时 `WEATHER_TIMEOUT_MS` 为 4000ms，连续失败冷却 `WEATHER_BACKOFF_MS` 为 20 分钟（常量统一维护在 `src/data/config.js`）。
 
 ## Alternatives Considered
