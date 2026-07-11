@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.9.0] - 2026-07-12
 ### Added
 - **专属极端炎热 (`heat`) 天气特效与多语言台词**：新增对 `heat` 天气类型的本地化感知与局部粒子渲染引擎接入 (`WeatherParticleLayer`)。构建了双层视觉渲染：上层为自底向上的清透白金/亮银色阳炎流光 (`.weather-particle--heat`) 配合 S 型自然扭摆升腾；底层为叠加在足底投影区的地表光晕 (`.weather-heat-glow`)；同时为中、英、日三语（`zh`, `en`, `ja`）补充了岳七与沈九的高温避暑及烦躁闲聊专属台词 (`weather_heat`)；记录在决策文档 `docs/decisions/ADR-038-weather-sync.md` 中。
 - **炎热与饥饿控制台一键调试指令**：在 `debug.js` (`window.__DEBUG_`) 体系中新增 `testWeatherHeat()`、`testHungry(15)` 和 `testHungryHeat()` 等一键测试助手，方便实时验证气泡对话、阳炎特效与 `.pet--hungry` 饥饿桔红发光框的双重交错兼容性。
@@ -18,6 +20,7 @@
 - **加密资产加载器与主进程高频查询性能优化**：`protectedAssetLoader.readManifest` 在已有内存缓存或负向缓存 (`manifestNotFound`) 状态下，跳过 `findProtectedAssetsDir` 对候选根目录的 6 次磁盘存在性检查 (`fs.existsSync`)；主进程对 `getPomodoroAssets` 和 `scanAvailableSkins` 结果增加按 `currentSkinId` 和短时 TTL 缓冲，彻底消除番茄钟每秒心跳 (`setInterval`) 与资源路径判定引发的高频同步磁盘查询。
 - **`protectedAssetProtocol` 全面异步化与防并发雪崩改造**：新增 `loadProtectedAssetAsync` 与 `loadDevelopmentSourceAssetAsync`，将主进程图片读取改用 `fs.promises.readFile` 异步非阻塞操作；引入 `inFlightLoads` 请求去重映射，当多个宠物或界面窗口并发请求同一帧素材时，共享单次在途读盘与 AES-256-GCM 解密结果，杜绝并发加载导致的重复计算与线程阻塞。
 - **渲染层切肤贴图预加载与内存防泄漏加固**：`SkinManager.applySkin` 改为对两只宠物的常态与覆盖层 (`cultivate.webp`、`kiss.webp`) 贴图进行并发预加载，极大缩短切换皮肤及触发双人互动时的视觉延迟；在 `SpriteView` 与 `PetRenderer` 预加载 `Image` 时主动清理旧 `onload`/`onerror` DOM 事件监听器，杜绝频繁切肤或长期运行残留未释放的 DOM 节点与事件句柄。
+- **多语言说明文档全面同步天气感知炎热特效与会议自动隐藏调整**：在 `README.md`、`readme_zh.txt`、`readme_en.txt` 和 `readme_ja.txt` 的天气同步与感知章节中，全面补充了高温炎热（≥35°C）天气类型的描述（热浪光晕与虚拟暑气粒子及特殊对话）；同时在会议自动隐藏 (`Meeting Auto-Hide`) 说明中暂时移除了对 Zoom 未充分校准的提及，保留以 Teams 核心功能说明，待后续完成 Zoom 实测与校准后再次加入。
 - **多语言说明文档全面同步选肤画廊交互**：更新了 `README.md`、`readme_zh.txt`、`readme_en.txt` 和 `readme_ja.txt`，把皮肤切换的操作描述从原本的托盘子菜单单选列表更新为“🎨 选择皮肤…”仙侠风可视化选肤画廊窗口，并详细说明了分行卡片展示、实时试穿预览、以及确定/取消的控制流。
 - **皮肤制作与流程文档更新**：完善 `docs/skin-pipeline-guide.md` 皮肤规范文档，增加加密素材在本地开发调试（`npm run dev` 降级与缓存刷新）与发版打包（`npm run build` 自动加密与排除明文）操作须知。
 

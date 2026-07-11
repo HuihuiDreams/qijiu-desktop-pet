@@ -103,7 +103,7 @@ Pets automatically transition through morning, day, dusk, and night based on you
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions.
 
 If you want them to sense real-world weather, choose "🌤️ Enable Weather Sync" from the tray menu and use "🌤️ Set City".
-When it rains, snows, gets windy, or thunderstorms, lightweight local particle effects appear near the pets. Thunderstorms render rain with brief lightning flashes, and windy weather adds slanted airflow wisps. Characters may also trigger weather-specific dialogue.
+When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
@@ -124,7 +124,7 @@ When the session completes, the window shows a gentle encouragement message. If 
 
 Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
 
-- The current MVP is mainly calibrated against Windows Teams. Zoom detection paths exist, but still need more real-world calibration.
+- The current MVP is mainly calibrated against Windows Teams.
 - After the meeting ends, pets usually reappear within about 15 seconds.
 - If you manually hid the pets before the meeting, they will not be shown automatically afterward.
 - If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
