@@ -134,26 +134,31 @@ test('readManifest uses memory cache without scanning disk when manifest Cache i
 
 test('readManifest caches negative lookups until clearProtectedAssetCache is called', () => {
   clearProtectedAssetCache();
+  const protectedAssetsDir = createProtectedAssetsFixture();
+  const fixtureRoot = path.dirname(protectedAssetsDir);
+  const fixtureManifestPath = path.join(protectedAssetsDir, 'manifest.json');
   const defaultManifestPath = path.resolve(__dirname, '..', 'protected-assets', 'manifest.json');
   const originalExistsSync = fs.existsSync;
-  let hideDefaultManifest = true;
+  let hideManifest = true;
 
-  fs.existsSync = (candidatePath) => (
-    hideDefaultManifest && path.resolve(candidatePath) === defaultManifestPath
-      ? false
-      : originalExistsSync(candidatePath)
-  );
+  fs.existsSync = (candidatePath) => {
+    const resolved = path.resolve(candidatePath);
+    if (hideManifest && (resolved === fixtureManifestPath || resolved === defaultManifestPath)) {
+      return false;
+    }
+    return originalExistsSync(candidatePath);
+  };
 
   try {
     // Simulate a missing default manifest, then make it available again.
-    assert.equal(readManifest(), null);
-    hideDefaultManifest = false;
+    assert.equal(readManifest({ appRoot: fixtureRoot }), null);
+    hideManifest = false;
 
     // The negative lookup remains cached until the cache is explicitly cleared.
-    assert.equal(readManifest({}), null);
+    assert.equal(readManifest({ appRoot: fixtureRoot }), null);
 
     clearProtectedAssetCache();
-    assert.ok(readManifest());
+    assert.ok(readManifest({ appRoot: fixtureRoot }));
   } finally {
     fs.existsSync = originalExistsSync;
     clearProtectedAssetCache();
