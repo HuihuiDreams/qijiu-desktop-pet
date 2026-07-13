@@ -65,21 +65,16 @@ async function main() {
       throw new Error(`Renderer did not become ready: ${diagnostics.readyState}`);
     }
 
-    await electronApp.evaluate(async ({ app, BrowserWindow }) => {
-      const appRoot = app.getAppPath();
-      const selectorWindow = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: `${appRoot}/skinSelectorPreload.js`,
-          contextIsolation: true,
-          nodeIntegration: false,
-          sandbox: true,
-        },
-      });
-      await selectorWindow.loadFile(`${appRoot}/src/skin-selector.html`);
-    });
-
-    const selectorWindow = electronApp.windows().at(-1);
+    const [selectorWindow] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      electronApp.evaluate(async ({ app }) => {
+        if (typeof app.openSkinSelectorForQA === 'function') {
+          app.openSkinSelectorForQA();
+        } else {
+          throw new Error('app.openSkinSelectorForQA is not exposed by main process');
+        }
+      }),
+    ]);
     await selectorWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
     await selectorWindow.waitForTimeout(250);
     const selectorDiagnostics = await selectorWindow.evaluate(() => ({

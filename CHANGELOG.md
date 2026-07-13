@@ -11,6 +11,7 @@
 
 ### Fixed
 - **地理编码无效坐标被误解析为赤道零点**：修复 `resolveCityToCoordinates` 对 Open-Meteo 返回的 `null`、空白字符串或布尔型经纬度使用 `Number()` 后被错误转换为 `0` 的问题。现在这些候选会被拒绝并保持地理编码失败状态，避免请求或保存错误的 `(0, 0)` 天气位置；已补充回归测试。
+- **选肤冒烟测试因发件方鉴权被拦截致卡片数为零**：修复 E2E 冒烟测试 (`tools/playwright-electron-smoke.js`) 在新版主进程选肤窗口安全鉴权 (`isSkinSelectorRequest`) 下被返回 `FORBIDDEN` 错误的问题。通过在主进程中为自动化回归测试暴露 `app.openSkinSelectorForQA` 原生方法，确保测试用例调起正确的 `skinSelectorWindow` 单例并通过 sender ID 校验，使 E2E 冒烟脚本稳定通过。
 
 ## [0.9.0] - 2026-07-12
 ### Added

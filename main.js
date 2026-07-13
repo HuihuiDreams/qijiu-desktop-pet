@@ -778,6 +778,7 @@ function openSkinSelector() {
   win.focus();
   sendSkinSelectorData();
 }
+app.openSkinSelectorForQA = openSkinSelector;
 
 function cancelSkinPreview() {
   if (skinSelectorOriginalSkinId != null && skinSelectorOriginalSkinId !== currentSkinId) {
