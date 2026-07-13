@@ -171,7 +171,7 @@ class WeatherAwarenessSystem {
           ? this.weatherPayload.weatherKind
           : WeatherAwarenessSystem.parseWeatherCode(this.weatherPayload.weatherCode);
       const precipKind = WeatherAwarenessSystem.precipitationToWeatherKind(this.weatherPayload, parsedKind);
-      const windIntensity = this.weatherPayload.fallback
+      const rawWindIntensity = this.weatherPayload.fallback
         ? 'none'
         : WeatherAwarenessSystem.normalizeWindIntensity(
           this.weatherPayload.windIntensity,
@@ -179,13 +179,16 @@ class WeatherAwarenessSystem {
           this.weatherPayload.windGusts,
         );
       const temperatureBand = WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature);
-      let weatherKind = (windIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
+      let weatherKind = (rawWindIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
         ? 'windy'
         : precipKind;
 
       if ((weatherKind === 'clear' || weatherKind === 'cloudy' || weatherKind === 'windy') && temperatureBand === 'hot') {
         weatherKind = 'heat';
       }
+
+      // 雷暴天气本身包含降雨与闪电双重动态元素，优先级高于大风，避免画面要素过多
+      const windIntensity = weatherKind === 'thunderstorm' ? 'none' : rawWindIntensity;
 
       // 时间阶段(morning/day/dusk/night) 优先用本地计算出来的 currentState.timePhase
       let phase = this.TIME_PHASES[this.weatherPayload.timePhase]

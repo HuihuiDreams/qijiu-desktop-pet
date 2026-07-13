@@ -179,21 +179,74 @@ function fetchOpenMeteoWeather(lat, lon, controller) {
   return requestJson(url, controller);
 }
 
+const WELL_KNOWN_CITY_ALIASES = {
+  '东京': 'Tokyo',
+  '東京': 'Tokyo',
+  '大阪': 'Osaka',
+  '京都': 'Kyoto',
+  '横滨': 'Yokohama',
+  '名古屋': 'Nagoya',
+  '福冈': 'Fukuoka',
+  '札幌': 'Sapporo',
+  '首尔': 'Seoul',
+  '釜山': 'Busan',
+  '伦敦': 'London',
+  '巴黎': 'Paris',
+  '柏林': 'Berlin',
+  '罗马': 'Rome',
+  '马德里': 'Madrid',
+  '莫斯科': 'Moscow',
+  '纽约': 'New York',
+  '洛杉矶': 'Los Angeles',
+  '芝加哥': 'Chicago',
+  '旧金山': 'San Francisco',
+  '西雅图': 'Seattle',
+  '多伦多': 'Toronto',
+  '温哥华': 'Vancouver',
+  '悉尼': 'Sydney',
+  '墨尔本': 'Melbourne',
+  '曼谷': 'Bangkok',
+  '新加坡': 'Singapore',
+  '香港': 'Hong Kong',
+  '澳门': 'Macau',
+  '台北': 'Taipei',
+};
+
 function resolveCityToCoordinates(cityName, controller) {
-  const encodedName = encodeURIComponent(cityName);
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodedName}&count=1&language=zh&format=json`;
+  const trimmedName = (cityName || '').trim();
+  if (!trimmedName) return Promise.resolve(null);
+
+  const lookupName = WELL_KNOWN_CITY_ALIASES[trimmedName] || trimmedName;
+  const encodedName = encodeURIComponent(lookupName);
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodedName}&count=10&language=zh&format=json`;
   return requestJson(url, controller).then((parsed) => {
-    if (parsed.results && parsed.results.length > 0) {
-      // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
-      const first = parsed.results[0];
-      const lat = Number(first?.latitude);
-      const lon = Number(first?.longitude);
-      if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-        return { lat, lon };
-      }
+    if (!parsed || !Array.isArray(parsed.results) || parsed.results.length === 0) {
+      return null;
     }
 
-    return null; // Not found
+    // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
+    const validCandidates = parsed.results.filter((item) => {
+      const lat = Number(item?.latitude);
+      const lon = Number(item?.longitude);
+      return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+    });
+
+    if (validCandidates.length === 0) {
+      return null;
+    }
+
+    // Sort valid candidates by population descending so major cities outrank villages with same name
+    validCandidates.sort((a, b) => {
+      const popA = Number.isFinite(Number(a.population)) ? Number(a.population) : 0;
+      const popB = Number.isFinite(Number(b.population)) ? Number(b.population) : 0;
+      return popB - popA;
+    });
+
+    const best = validCandidates[0];
+    return {
+      lat: Number(best.latitude),
+      lon: Number(best.longitude),
+    };
   });
 }
 
@@ -377,8 +430,10 @@ module.exports = {
   MIN_REFRESH_INTERVAL_MINUTES,
   GEOCODE_TIMEOUT_MS,
   FALLBACK_TTL_MS,
+  WELL_KNOWN_CITY_ALIASES,
   normalizeSettings,
   fetchWeather,
   resetWeatherCache,
   processSettingsChange,
+  resolveCityToCoordinates,
 };

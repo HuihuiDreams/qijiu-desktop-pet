@@ -652,3 +652,97 @@ describe('WeatherSyncService - processSettingsChange', () => {
     assert.strictEqual(callCount, 1);
   });
 });
+
+describe('WeatherSyncService - resolveCityToCoordinates and Aliases', () => {
+  const { resolveCityToCoordinates, WELL_KNOWN_CITY_ALIASES } = require('../weatherSyncService');
+
+  it('should expose common well-known city aliases', () => {
+    assert.strictEqual(WELL_KNOWN_CITY_ALIASES['东京'], 'Tokyo');
+    assert.strictEqual(WELL_KNOWN_CITY_ALIASES['伦敦'], 'London');
+    assert.strictEqual(WELL_KNOWN_CITY_ALIASES['大阪'], 'Osaka');
+  });
+
+  it('should resolve city aliases and sort multiple geocode candidates by population descending', async () => {
+    const originalLoad = Module._load;
+    let requestedUrl = '';
+
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request(url) {
+              requestedUrl = url;
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  const payload = JSON.stringify({
+                    results: [
+                      { name: '东京村', latitude: 32.20, longitude: 119.28, population: undefined },
+                      { name: 'Tokyo', latitude: 35.6895, longitude: 139.6917, population: 9733276 },
+                      { name: 'Tokyo Suburb', latitude: 35.50, longitude: 139.50, population: 150000 },
+                    ]
+                  });
+                  res.emit('data', Buffer.from(payload));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await resolveCityToCoordinates(' 东京 ');
+      assert.ok(requestedUrl.includes('name=Tokyo&count=10'), `Expected URL to query name=Tokyo&count=10, got: ${requestedUrl}`);
+      assert.strictEqual(result.lat, 35.6895);
+      assert.strictEqual(result.lon, 139.6917);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  it('should return null when geocode returns no valid coordinates', async () => {
+    const originalLoad = Module._load;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from(JSON.stringify({ results: [] })));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await resolveCityToCoordinates('UnknownCity12345');
+      assert.strictEqual(result, null);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+});

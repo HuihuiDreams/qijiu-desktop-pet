@@ -133,6 +133,9 @@ class WeatherParticleLayer {
   }
 
   normalizeWindIntensity(windIntensity, weatherKind, intensity) {
+    if (weatherKind === 'thunderstorm') {
+      return 'none';
+    }
     if (Object.prototype.hasOwnProperty.call(INTENSITY_FACTORS, windIntensity)) {
       return windIntensity;
     }
@@ -160,9 +163,10 @@ class WeatherParticleLayer {
   }
 
   getParticleCounts(weatherKind, intensity, windIntensity, petCount) {
+    const effectiveWindIntensity = weatherKind === 'thunderstorm' ? 'none' : windIntensity;
     return {
       weather: this.distributeCount(this.getParticleCount(weatherKind, intensity), petCount),
-      wind: this.distributeCount(this.getWindParticleCount(windIntensity), petCount),
+      wind: this.distributeCount(this.getWindParticleCount(effectiveWindIntensity), petCount),
     };
   }
 

@@ -265,6 +265,36 @@ test('WeatherParticleLayer renders thunderstorm as rain plus local lightning', (
   }
 });
 
+test('WeatherParticleLayer suppresses wind particles during thunderstorm to avoid visual clutter', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_RAIN_PARTICLE_MAX: 10,
+      WEATHER_WIND_PARTICLE_MAX: 10,
+    });
+
+    layer.sync(
+      { weatherKind: 'thunderstorm', intensity: 'normal', windIntensity: 'heavy' },
+      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+    );
+
+    const group = root.children[0].children[0];
+    assert.equal(root.children[0].dataset.weather, 'thunderstorm');
+    assert.equal(root.children[0].dataset.windIntensity, 'none');
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--rain')).length, 4);
+    assert.equal(group.children.filter(child => child.className.includes('weather-particle--wind')).length, 0);
+    assert.equal(group.children.filter(child => child.className.includes('weather-lightning')).length, 2);
+  } finally {
+    delete global.document;
+  }
+});
+
 test('WeatherParticleLayer creates bounded heat particles and bottom glow', () => {
   const root = createFakeElement();
   global.document = {

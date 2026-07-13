@@ -242,6 +242,21 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.windIntensity, 'heavy');
   });
 
+  await t.test('suppresses wind intensity during thunderstorm to prioritize primary weather visuals', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 95,
+      windSpeed: 28.8,
+      windGusts: 0,
+      isDay: true,
+    });
+
+    const state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'thunderstorm');
+    assert.strictEqual(state.windIntensity, 'none');
+  });
+
   await t.test('does not override dusk time phase to night when weather reports isDay: false after sunset', () => {
     system._lastComputedMinute = -1;
     system._lastCheckTimestamp = 0;
