@@ -437,12 +437,14 @@ npm run qa:electron:smoke
 
 ## 6. 维护提示
 
+- 遵循 `AGENTS.md` 与 `.geminirules` 的工程规范：多步骤重构或修复任务 (`/goal`) 必须遵循“改一题 -> 跑回归 -> 更新对应文档”的闭环验证链路，禁止无测试批量攒改。
+- 新增或调整跨系统平台行为（如窗口置顶、多桌面切换、休眠唤醒时间计算等）时，务必考虑 macOS Space 隔离与 Dark Wake 时间突增校验逻辑。
 - 新增跨模块行为时，优先更新对应 ADR 或在 `docs/plan/` 留下计划。
-- 新增皮肤时，保持 `src/assets/{skinId}` 的文件命名契约，并运行资源尺寸测试。
-- 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 和测试覆盖。
+- 新增或更新皮肤时，严格遵守 `docs/skin-pipeline-guide.md`，同步维护 `skinGallery.js`、`protectedAssetLoader.js` 与中/英/日三语 README。
+- 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
-- `.codex/tmp-*` 属于 Codex 临时工作目录，不应作为 gitlink 或源码文件提交。
+- `.codex/tmp-*` 与 `.agents/`、`security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
 
 ## 受保护皮肤资产
 

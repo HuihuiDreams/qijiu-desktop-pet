@@ -5,33 +5,46 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Core Principles
 
 1. **Think First**: Surface assumptions and trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths.
-2. **Use Skills First**: Before writing code, documentation, or designing architecture, you MUST proactively review your available skills list and invoke the appropriate skill (e.g., `documentation-and-adrs`, `frontend-ui-engineering`) via `view_file` to load its instructions.
+2. **Use Skills First**: Before writing code, documentation, or designing architecture, you MUST proactively review your available skills list and invoke the appropriate skill via `view_file` (`debugging-and-error-recovery` for system/bug anomalies, `frontend-ui-engineering` for UI/CSS/animation, `code-review-and-quality` for pre-merge/refactoring, `documentation-and-adrs` for ADRs).
 3. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures.
-3. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
-4. **Goal-Driven**: Define verification steps before coding. Run `npm test` or focused `node --test ...` checks, plus console/manual checks when UI or Electron window behavior changes.
+4. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
+5. **Goal-Driven & Chain Verification**: When executing multi-step tasks (`/goal` or multi-bug fixes):
+   - Solve exactly ONE problem at a time.
+   - After each atomic fix, verify and update corresponding unit tests (`tests/`), run `npm test` or focused `node --test ...` checks, and synchronize related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs).
+   - Never batch changes without running intermediate verification and updating docs for each step.
 
 ## Technical Constraints
 
-1. **Process Separation**:
+1. **Process Separation & Security**:
    - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
    - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
-2. **Game Loop (`src/app.js`)**:
+   - IPC Authorization: All sensitive operations (skin changes, asset loading, filesystem requests) must be validated inside `main.js` IPC handlers.
+2. **Game Loop & Time Skew (`src/app.js`)**:
    - Must wrap step iterations in `try/catch` to prevent renderer crashes.
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
+   - Sleep/Resume Guard: When calculating elapsed time or greetings across frames, clamp or check time deltas to prevent system sleep/wake jumps (e.g., macOS Dark Wake) from causing erroneous state transitions.
 3. **Multi-Display & DPI**:
    - Coordinate conversion via `displayBounds.js`.
    - Window refit/debounce behavior via `displayFit.js`; keep Electron `screen` event coalescing and min/max constraint bridging together.
    - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects to maintain consistent physical sizing across screens.
-4. **Input & Drag**:
+4. **macOS vs Windows Window Management**:
+   - When modifying window `alwaysOnTop` or visibility during fullscreen/space transitions (including sub-windows like pomodoro), account for macOS space isolation to prevent windows from being trapped or hidden.
+5. **Input & Drag**:
    - Default: `setIgnoreMouseEvents(true, { forward: true })`. Toggle to `false` only on hover of interactive elements.
    - Set `isDragging = true` on drag, pausing `MovementSystem` and `InteractionSystem`.
+
+## Asset Pipeline & Skin System (`src/assets/`, `skinGallery.js`)
+
+1. **Pipeline Adherence**: Strictly follow `docs/skin-pipeline-guide.md` when modifying skins/sprites (`webp` format, `walk_left`/`walk_right` prefixes).
+2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`).
+3. **Skin Selector State Machine**: Support `isPreview` workflow (preview without committing; cancel safely restores previous skin).
 
 ## Git Workflow & Versioning
 
 Before commit/push:
-1. **Update CHANGELOG.md**: Group changes under `Added`, `Changed`, `Fixed`, or `Removed`. Link ADRs if applicable.
-2. **Update docs when behavior changes**: Keep `docs/structure.md` and relevant ADRs in sync for architecture or runtime behavior changes.
+1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`). Entries under `Unreleased` must be written in clear Chinese (except code terms/proper nouns) and separated from released tags.
+2. **Update docs when behavior changes**: Keep `docs/structure.md` and relevant ADRs in sync.
 3. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
-4. **Pushing**: Use `.\push.ps1` to automate safety checks.
+4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to run safety checks.

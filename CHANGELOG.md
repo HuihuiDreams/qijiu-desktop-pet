@@ -4,6 +4,7 @@
 
 ## [Unreleased]
 ### Changed
+- **Agent 指令与开发规范自演进 (`SkillOpt Iteration`)**：利用 SkillOpt 机制对历史交互日志进行高频任务和报错模式挖掘，对 `AGENTS.md` 和 `.geminirules` 进行了全面优化更新：新增“多步骤重构与连锁回归测试验证”的强强制约束闭环 (`Goal-Driven Protocol`)；补充了 macOS Dark Wake 休眠唤醒时间突增校验、macOS Fullscreen/Space 视窗隔离及主进程 IPC 安全鉴权等底层技术规范；固化了“切图前缀规范与三语 README 同步”的选肤资产闭环流程，防止跨会话规范遗忘与工程回归。
 - **双修饱腹奖励调整**：触发“一起修炼”（双修）后，岳清源会在原有数值奖励基础上额外恢复 15 点饱腹度；双方好感度、灵力及其余数值变化维持不变。
 - **精简雷暴与大风同步发生时的天气特效优先级 (`WeatherSync`)**：当天气类型为雷暴 (`thunderstorm`) 且伴随刮风或大风时，`WeatherAwarenessSystem` 和 `WeatherParticleLayer` 将 `windIntensity` 自动归一化并抑制为 `'none'`。由于雷暴天气已具备高密度的局部降雨与闪电双重动态元素，此举有效避免了再叠加风痕线条所带来的画面要素堆叠与视觉杂乱问题，确保画面主次分明与交互清爽；设计决策与同步规范见 [ADR-038](./docs/decisions/ADR-038-weather-sync.md)。
 - **强化城市地名解析别名自动转换与常住人口降序择优 (`Geocoding Accuracy`)**：在 `WeatherSyncService` 的 `resolveCityToCoordinates` 模块中新增高频国际大都市别名词典 (`WELL_KNOWN_CITY_ALIASES`)，自动将中文简称（如 `东京`、`大阪`、`首尔`、`伦敦`、`巴黎`、`纽约` 等）准切转换为标准检索词；同时将 Open-Meteo 地理编码查询参数由 `count=1` 放宽至 `count=10`，并在回传多个有效候选项时基于 `population`（常住人口数量）进行降序排序，确保单次输入简称时一击命中真实的国际中心大都会，解决中文简写误匹配到国内或海外重名乡村/次级行政区的痛点。
