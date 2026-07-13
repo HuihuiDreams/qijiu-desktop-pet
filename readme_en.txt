@@ -186,6 +186,9 @@ Yue Qi loses 5 Satiety, and Shen Jiu restores 10 Satiety.
 Share Food only triggers when Yue Qi has at least 5 Satiety, so he will not keep feeding Shen Jiu after his Satiety has bottomed out.
 If they spend a lot of time together, Yue Qi may get hungry faster.
 
+Cultivation benefit:
+When they trigger "Cultivate Together", Yue Qi also restores 15 Satiety. The existing Qi and Affection rewards for both characters are unchanged.
+
 3. 🧘🏻‍♂️ Qi
 
 Qi represents a character's energy.

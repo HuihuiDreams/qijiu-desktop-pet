@@ -184,6 +184,25 @@ test('cultivating together restores more qi than solo meditation', () => {
   assert.ok(pairedMeditationQi > soloMeditationQi);
 });
 
+test('cultivating together restores Yue Qingyuan satiety without changing other rewards', () => {
+  const yueqi = createPet();
+  const shenjiu = createPet();
+  const interactionSystem = new InteractionSystem();
+  yueqi.stats = { affection: 20, hunger: 50, qi: 10, mood: 30 };
+  shenjiu.stats = { affection: 20, hunger: 50, qi: 10, mood: 30 };
+
+  interactionSystem.applyInteraction(yueqi, shenjiu, CONFIG.INTERACTIONS.cultivate);
+
+  assert.equal(yueqi.stats.hunger, 65);
+  assert.equal(shenjiu.stats.hunger, 50);
+  assert.equal(yueqi.stats.qi, 55);
+  assert.equal(shenjiu.stats.qi, 55);
+  assert.equal(yueqi.stats.affection, 23);
+  assert.equal(shenjiu.stats.affection, 23);
+  assert.equal(yueqi.stats.mood, 35);
+  assert.equal(shenjiu.stats.mood, 35);
+});
+
 test('share food uses the updated symmetric mood values', () => {
   const yueqi = createPet();
   const shenjiu = createPet();
