@@ -745,4 +745,46 @@ describe('WeatherSyncService - resolveCityToCoordinates and Aliases', () => {
       Module._load = originalLoad;
     }
   });
+
+  it('should reject null, empty, and boolean coordinates instead of coercing them to zero', async () => {
+    const originalLoad = Module._load;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from(JSON.stringify({
+                    results: [
+                      { latitude: null, longitude: null },
+                      { latitude: '', longitude: '' },
+                      { latitude: false, longitude: false },
+                    ],
+                  })));
+                  res.emit('end');
+                });
+              };
+              return req;
+            }
+          }
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      const result = await resolveCityToCoordinates('InvalidCoordinates');
+      assert.strictEqual(result, null);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
 });

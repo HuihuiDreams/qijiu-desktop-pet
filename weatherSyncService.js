@@ -226,8 +226,19 @@ function resolveCityToCoordinates(cityName, controller) {
 
     // Based on OWASP guidance: Validate all external input at the system boundary (SBP-002 / TH-02)
     const validCandidates = parsed.results.filter((item) => {
-      const lat = Number(item?.latitude);
-      const lon = Number(item?.longitude);
+      const rawLat = item?.latitude;
+      const rawLon = item?.longitude;
+      if (
+        rawLat === null || rawLat === undefined || rawLon === null || rawLon === undefined
+        || typeof rawLat === 'boolean' || typeof rawLon === 'boolean'
+        || (typeof rawLat === 'string' && rawLat.trim() === '')
+        || (typeof rawLon === 'string' && rawLon.trim() === '')
+      ) {
+        return false;
+      }
+
+      const lat = Number(rawLat);
+      const lon = Number(rawLon);
       return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
     });
 

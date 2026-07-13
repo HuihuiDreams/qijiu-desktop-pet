@@ -7,6 +7,9 @@
 - **精简雷暴与大风同步发生时的天气特效优先级 (`WeatherSync`)**：当天气类型为雷暴 (`thunderstorm`) 且伴随刮风或大风时，`WeatherAwarenessSystem` 和 `WeatherParticleLayer` 将 `windIntensity` 自动归一化并抑制为 `'none'`。由于雷暴天气已具备高密度的局部降雨与闪电双重动态元素，此举有效避免了再叠加风痕线条所带来的画面要素堆叠与视觉杂乱问题，确保画面主次分明与交互清爽；设计决策与同步规范见 [ADR-038](./docs/decisions/ADR-038-weather-sync.md)。
 - **强化城市地名解析别名自动转换与常住人口降序择优 (`Geocoding Accuracy`)**：在 `WeatherSyncService` 的 `resolveCityToCoordinates` 模块中新增高频国际大都市别名词典 (`WELL_KNOWN_CITY_ALIASES`)，自动将中文简称（如 `东京`、`大阪`、`首尔`、`伦敦`、`巴黎`、`纽约` 等）准切转换为标准检索词；同时将 Open-Meteo 地理编码查询参数由 `count=1` 放宽至 `count=10`，并在回传多个有效候选项时基于 `population`（常住人口数量）进行降序排序，确保单次输入简称时一击命中真实的国际中心大都会，解决中文简写误匹配到国内或海外重名乡村/次级行政区的痛点。
 
+### Fixed
+- **地理编码无效坐标被误解析为赤道零点**：修复 `resolveCityToCoordinates` 对 Open-Meteo 返回的 `null`、空白字符串或布尔型经纬度使用 `Number()` 后被错误转换为 `0` 的问题。现在这些候选会被拒绝并保持地理编码失败状态，避免请求或保存错误的 `(0, 0)` 天气位置；已补充回归测试。
+
 ## [0.9.0] - 2026-07-12
 ### Added
 - **专属极端炎热 (`heat`) 天气特效与多语言台词**：新增对 `heat` 天气类型的本地化感知与局部粒子渲染引擎接入 (`WeatherParticleLayer`)。构建了双层视觉渲染：上层为自底向上的清透白金/亮银色阳炎流光 (`.weather-particle--heat`) 配合 S 型自然扭摆升腾；底层为叠加在足底投影区的地表光晕 (`.weather-heat-glow`)；同时为中、英、日三语（`zh`, `en`, `ja`）补充了岳七与沈九的高温避暑及烦躁闲聊专属台词 (`weather_heat`)；记录在决策文档 `docs/decisions/ADR-038-weather-sync.md` 中。
