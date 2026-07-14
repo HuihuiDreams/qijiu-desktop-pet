@@ -177,6 +177,7 @@ jobs:
             readme_en.txt
             readme_ja.txt
           if-no-files-found: error
+          retention-days: 7
 
   build-macos-installer:
     name: Build macOS installer
@@ -326,3 +327,4 @@ jobs:
             readme_en.txt
             readme_ja.txt
           if-no-files-found: error
+          retention-days: 7
