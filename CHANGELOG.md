@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- 增加可版本控制的项目维护技能，统一约束发版、自动更新、窗口显示、IPC、皮肤管线和回归验证流程。
+
 ### Changed
 - **Agent 指令与开发规范自演进 (`SkillOpt Iteration`)**：利用 SkillOpt 机制对历史交互日志进行高频任务和报错模式挖掘，对 `AGENTS.md` 和 `.geminirules` 进行了全面优化更新：新增“多步骤重构与连锁回归测试验证”的强强制约束闭环 (`Goal-Driven Protocol`)；补充了 macOS Dark Wake 休眠唤醒时间突增校验、macOS Fullscreen/Space 视窗隔离及主进程 IPC 安全鉴权等底层技术规范；固化了“切图前缀规范与三语 README 同步”的选肤资产闭环流程，防止跨会话规范遗忘与工程回归。
 - **双修饱腹奖励调整**：触发“一起修炼”（双修）后，岳清源会在原有数值奖励基础上额外恢复 15 点饱腹度；双方好感度、灵力及其余数值变化维持不变。

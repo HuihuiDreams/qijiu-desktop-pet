@@ -10,6 +10,7 @@ build/*
 .env.*.local
 *.log
 .codex/
+.skillopt-sleep/
 security-scans/
 *.key
 *.cer
@@ -18,5 +19,8 @@ security-scans/
 *.p12
 *.pfx
 *.pem
-.agents/
+.agents/*
+!.agents/skills/
+!.agents/skills/desktop-pet-maintenance/
+!.agents/skills/desktop-pet-maintenance/**
 docs/source-assets/

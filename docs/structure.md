@@ -75,6 +75,7 @@ graph TB
 
 ```text
 qijiu-desktop-pet/
+|-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 ├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口、番茄钟
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
