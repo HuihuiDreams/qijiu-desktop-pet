@@ -7,6 +7,7 @@
 - 增加可版本控制的项目维护技能，统一约束发版、自动更新、窗口显示、IPC、皮肤管线和回归验证流程。
 
 ### Changed
+- **GitHub Actions Artifact 保留周期优化 (`Actions Quota Optimization`)**：为 `.github/workflows/build-installer.yml` 中的 Windows 与 macOS `actions/upload-artifact` 构建产物上传步骤配置 `retention-days: 7`，将 Workflow Artifact 默认 90 天保留时长缩短至 7 天，避免大体积二进制构建包长期累积占用 GitHub Storage 存储空间与额度。
 - **Agent 指令与开发规范自演进 (`SkillOpt Iteration`)**：利用 SkillOpt 机制对历史交互日志进行高频任务和报错模式挖掘，对 `AGENTS.md` 和 `.geminirules` 进行了全面优化更新：新增“多步骤重构与连锁回归测试验证”的强强制约束闭环 (`Goal-Driven Protocol`)；补充了 macOS Dark Wake 休眠唤醒时间突增校验、macOS Fullscreen/Space 视窗隔离及主进程 IPC 安全鉴权等底层技术规范；固化了“切图前缀规范与三语 README 同步”的选肤资产闭环流程，防止跨会话规范遗忘与工程回归。
 - **双修饱腹奖励调整**：触发“一起修炼”（双修）后，岳清源会在原有数值奖励基础上额外恢复 15 点饱腹度；双方好感度、灵力及其余数值变化维持不变。
 - **精简雷暴与大风同步发生时的天气特效优先级 (`WeatherSync`)**：当天气类型为雷暴 (`thunderstorm`) 且伴随刮风或大风时，`WeatherAwarenessSystem` 和 `WeatherParticleLayer` 将 `windIntensity` 自动归一化并抑制为 `'none'`。由于雷暴天气已具备高密度的局部降雨与闪电双重动态元素，此举有效避免了再叠加风痕线条所带来的画面要素堆叠与视觉杂乱问题，确保画面主次分明与交互清爽；设计决策与同步规范见 [ADR-038](./docs/decisions/ADR-038-weather-sync.md)。
