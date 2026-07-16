@@ -97,6 +97,7 @@ jobs:
             "SIGNING_ENABLED=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             Write-Warning "Windows signing secrets are not configured. Building an unsigned release for small-group distribution."
           }
+        # noinspection YAMLSchemaValidation, GitHubActionsContextInspection
         env:
           WIN_CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
@@ -107,6 +108,7 @@ jobs:
       - name: Build and publish signed release
         if: env.SIGNING_ENABLED == 'true'
         run: npx electron-builder --config.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        # noinspection YAMLSchemaValidation, GitHubActionsContextInspection
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
