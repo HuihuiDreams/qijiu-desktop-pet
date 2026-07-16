@@ -109,8 +109,8 @@ jobs:
             Write-Warning "Windows signing secrets are not configured. Release will be unsigned, which is acceptable for small-group distribution."
           }
         env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
 
       - name: Run unit tests
         run: npm test

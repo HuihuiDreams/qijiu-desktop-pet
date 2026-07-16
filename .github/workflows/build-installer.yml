@@ -58,6 +58,8 @@ jobs:
     needs: create-release-tag
     if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && needs.create-release-tag.result == 'success'))
     runs-on: windows-latest
+    env:
+      SIGNING_ENABLED: 'false'
 
     steps:
       - name: Checkout repository
@@ -96,8 +98,8 @@ jobs:
             Write-Warning "Windows signing secrets are not configured. Building an unsigned release for small-group distribution."
           }
         env:
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
 
       - name: Generate protected skin assets
         run: npm run protect:assets
@@ -107,10 +109,10 @@ jobs:
         run: npx electron-builder --config.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
+          CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
+          WIN_CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
 
       - name: Build and publish unsigned release
         if: env.SIGNING_ENABLED != 'true'

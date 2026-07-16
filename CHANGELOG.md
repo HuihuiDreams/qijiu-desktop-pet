@@ -14,6 +14,7 @@
 - **强化城市地名解析别名自动转换与常住人口降序择优 (`Geocoding Accuracy`)**：在 `WeatherSyncService` 的 `resolveCityToCoordinates` 模块中新增高频国际大都市别名词典 (`WELL_KNOWN_CITY_ALIASES`)，自动将中文简称（如 `东京`、`大阪`、`首尔`、`伦敦`、`巴黎`、`纽约` 等）准切转换为标准检索词；同时将 Open-Meteo 地理编码查询参数由 `count=1` 放宽至 `count=10`，并在回传多个有效候选项时基于 `population`（常住人口数量）进行降序排序，确保单次输入简称时一击命中真实的国际中心大都会，解决中文简写误匹配到国内或海外重名乡村/次级行政区的痛点。
 
 ### Fixed
+- **GitHub Actions Workflow 上下文访问警告修复 (`Workflow Context Validation`)**：修复 `.github/workflows/build-installer.yml` 与 `.github/workflows/release-preflight.yml` 中由 IDE 静态校验工具与 actionlint 报告的 `Context access might be invalid` 警告。在 `build-windows-installer` 任务环境 (`env`) 中显式声明默认 `SIGNING_ENABLED: 'false'` 环境常量，同时将所有对自定义仓库密钥 `secrets.WIN_CSC_LINK` 与 `secrets.WIN_CSC_KEY_PASSWORD` 的点号属性访问改为标准方括号索引语法 (`secrets['...']`)，消除静态校验误报并保持运行时环境及密钥提取逻辑不变。
 - **地理编码无效坐标被误解析为赤道零点**：修复 `resolveCityToCoordinates` 对 Open-Meteo 返回的 `null`、空白字符串或布尔型经纬度使用 `Number()` 后被错误转换为 `0` 的问题。现在这些候选会被拒绝并保持地理编码失败状态，避免请求或保存错误的 `(0, 0)` 天气位置；已补充回归测试。
 - **选肤冒烟测试因发件方鉴权被拦截致卡片数为零**：修复 E2E 冒烟测试 (`tools/playwright-electron-smoke.js`) 在新版主进程选肤窗口安全鉴权 (`isSkinSelectorRequest`) 下被返回 `FORBIDDEN` 错误的问题。通过在主进程中为自动化回归测试暴露 `app.openSkinSelectorForQA` 原生方法，确保测试用例调起正确的 `skinSelectorWindow` 单例并通过 sender ID 校验，使 E2E 冒烟脚本稳定通过。
 
