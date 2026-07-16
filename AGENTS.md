@@ -36,10 +36,12 @@ in this project.
 3. Renderer (`src/`): owns the game loop, systems, and UI rendering. Do not use
    direct Node APIs in renderer code.
 4. IPC Security Boundary: All sensitive operations (skin selection changes, protected asset loading, file system access) must be strictly validated and authorized within `main.js` IPC handlers.
+   When restricting sender ID, always retain/expose E2E QA entry points (e.g., `app.openSkinSelectorForQA`) to avoid smoke test deadlocks.
 
 ## Runtime Constraints
 
 1. Game Loop & Time Skew (`src/app.js`): Wrap step iterations in `try/catch` so renderer crashes do not take down the app. Synchronize sprite orientation on transition frames to avoid visual glitches. When calculating elapsed time or greetings across frames, guard against system sleep/wake time jumps (e.g., macOS Dark Wake or overnight sleep) by clamping or validating maximum allowable time deltas.
+   When parsing external API metrics (e.g., weather coordinates/temperatures), strictly use finite number validation (`firstFiniteNumber`) to prevent implicit `Number(null)` -> `0` coercion.
 2. Multi-Display & DPI Behavior:
    - Use `displayBounds.js` for coordinate conversion.
    - Keep window refit/debounce behavior in `displayFit.js`.
@@ -55,7 +57,7 @@ in this project.
 ## Asset Pipeline & Skin System (`src/assets/`, `skinGallery.js`)
 
 1. Pipeline Adherence: When adding or modifying character skins or sprites, strictly follow `docs/skin-pipeline-guide.md`. Use `webp` format and maintain standard orientation prefixes (`walk_left`, `walk_right`).
-2. Multi-Language & Manifest Synchronization: Any addition or modification of skins must be synchronized across `skinGallery.js`, `protectedAssetLoader.js`, and updated in all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`).
+2. Multi-Language & Manifest Synchronization: Any addition or modification of skins must be synchronized across `skinGallery.js`, `protectedAssetLoader.js`, and updated in all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`). When using `pet-asset://` protocols, ensure all sub-window HTML CSPs allow `pet-asset:`.
 3. Skin Selector State Machine: The skin selector UI (`skinSelectorPreload.js` / `skinGallery.js`) must support a preview-confirm workflow (`isPreview`). Selecting a skin previews it on the active pet without committing; clicking cancel safely restores the previous skin.
 
 ## Documentation And Versioning

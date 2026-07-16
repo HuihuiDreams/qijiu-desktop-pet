@@ -11,7 +11,7 @@ requested behavior and preserve the main/preload/renderer boundary.
 ## Choose the owning layer
 
 - Put native windows, tray behavior, `electron-store`, and privileged IPC
-  validation in `main.js`.
+  validation (`sender.id` check + `app.openSkinSelectorForQA` QA hook) in `main.js`.
 - Expose only safe renderer-facing APIs from `preload.js`; do not use Node APIs
   directly in `src/`.
 - Keep game state, animation, UI, and rendering in `src/`.
@@ -23,10 +23,12 @@ requested behavior and preserve the main/preload/renderer boundary.
   menus, and effects consistently.
 - For movement or interaction changes, keep the window click-through by default
   and pause `MovementSystem` and `InteractionSystem` while dragging.
-- For game-loop changes, catch step errors, synchronize sprite orientation on
-  transitions, and clamp elapsed-time values after sleep/wake.
-- For skins, follow `docs/skin-pipeline-guide.md`, retain WebP and orientation
-  naming, and synchronize the gallery, protected loader, and three readmes.
+- For game-loop and weather changes, catch step errors, synchronize sprite orientation
+  on transitions, clamp elapsed-time (`lastVisibleTime`), strictly validate external
+  metrics (`firstFiniteNumber`) against `0` coercion, and suppress wind particles during thunderstorms.
+- For skins (`pet-asset://`), follow `docs/skin-pipeline-guide.md`, retain WebP
+  naming, ensure sub-window HTML CSP `img-src` allows `pet-asset:`, and synchronize
+  the gallery, protected loader, and three readmes.
 
 ## Release and update workflow
 
@@ -40,8 +42,10 @@ release workflows, version metadata, or installer assets:
 3. Run the smallest applicable checks first: `npm test`, then
    `npm run verify:installer` and `npm run verify:signatures` when packaging or
    signing changes, and `npm run build` for builder configuration changes.
-4. Check the release preflight workflow and document any platform-specific
-   limitation or rollback step before declaring the change complete.
+4. Check release workflows (`.github/workflows/`): run `npm run protect:assets` before
+   `electron-builder`, keep `retention-days: 7` on artifacts, and use `secrets['...']` bracket
+   syntax with `# noinspection` comments to prevent CI quota and IDE check errors.
+5. Document any platform-specific limitation or rollback step before declaring the change complete.
 
 ## Verify each change
 

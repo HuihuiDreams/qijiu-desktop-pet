@@ -35,8 +35,8 @@ Write-Host "CHANGELOG.md detected. Preparing commit..." -ForegroundColor Green
 
 git add .
 
-# Prevent internal workspaces and scan output from being committed.
-$stagedSensitive = git diff --cached --name-only --diff-filter=ACMR | Select-String "(^\.codex/|^\.agents/|^security-scans/)"
+# Prevent internal workspaces and scan output from being committed (allowing version-controlled .agents/skills/).
+$stagedSensitive = git diff --cached --name-only --diff-filter=ACMR | Where-Object { $_ -match "(^\.codex/|^\.agents/|^security-scans/)" -and $_ -notmatch "^\.agents/skills/" }
 if ($stagedSensitive) {
     Write-Host "==========================================" -ForegroundColor Red
     Write-Host "Push blocked: staged files include an internal or scan-output directory." -ForegroundColor Red

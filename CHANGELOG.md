@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **极简高密版 Agent 规范与专属维护技能更新 (`High-Density Guidelines Pruning`)**：遵循“注意力中转衰减 (`Lost in the Middle`)”与“上下文窗口大小不等于注意力预算 (`Context Window ≠ Attention Budget`)”核心原则，对 `AGENTS.md` 和 `.agents/skills/desktop-pet-maintenance/SKILL.md` 进行了分层收敛与高密压缩重构。剔除冗长的叙事说明与非本质流水账，用精简口令严格固化三大底层防线：在主进程选肤鉴权收紧时明确定位并保留 `app.openSkinSelectorForQA` 原生入口以防 E2E 冒烟测试死锁；在解析天气接口和地理编码数值时强制使用 `firstFiniteNumber` 防止空值被 `Number()` 误转为零；针对 `pet-asset://` 加密资源协议要求二级窗体同步复查 CSP `img-src`；同时将 `retention-days: 7` 与 `# noinspection` 等 CI 细节收敛至专属技能，使全局规范保持高轻量与高抗回归能力。
 
 ## [0.9.1] - 2026-07-16
 ### Added
