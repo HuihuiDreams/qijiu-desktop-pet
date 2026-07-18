@@ -3,6 +3,9 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **深夜梦话与双人联动机制 (`Sleep Dream Dialogues`)**：在深夜时段（00:00 - 04:59）的闲聊系统中加入了专属“梦话”池。现在宠物在深夜睡眠时有概率说梦话，好感度达到 80 以上时会触发更亲昵的专属梦话；当沈九触发特定梦话且岳七在场时，会通过异步延迟 (`setTimeout`) 触发岳七的梦中回应，实现双向梦境联动。
+
 ### Changed
 - **极简高密版 Agent 规范与专属维护技能更新 (`High-Density Guidelines Pruning`)**：遵循“注意力中转衰减 (`Lost in the Middle`)”与“上下文窗口大小不等于注意力预算 (`Context Window ≠ Attention Budget`)”核心原则，对 `AGENTS.md` 和 `.agents/skills/desktop-pet-maintenance/SKILL.md` 进行了分层收敛与高密压缩重构。剔除冗长的叙事说明与非本质流水账，用精简口令严格固化三大底层防线：在主进程选肤鉴权收紧时明确定位并保留 `app.openSkinSelectorForQA` 原生入口以防 E2E 冒烟测试死锁；在解析天气接口和地理编码数值时强制使用 `firstFiniteNumber` 防止空值被 `Number()` 误转为零；针对 `pet-asset://` 加密资源协议要求二级窗体同步复查 CSP `img-src`；同时将 `retention-days: 7` 与 `# noinspection` 等 CI 细节收敛至专属技能，使全局规范保持高轻量与高抗回归能力。
 

@@ -99,8 +99,8 @@ If the current system does not support it, the tray menu shows "🪟 Realm Aware
 🌤️ Weather Awareness & Time Sync
 ========================================
 
-Pets automatically transition through morning, day, dusk, and night based on your local time.
-During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions.
+Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
+During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
 
 If you want them to sense real-world weather, choose "🌤️ Enable Weather Sync" from the tray menu and use "🌤️ Set City".
 When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.

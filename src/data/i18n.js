@@ -349,6 +349,42 @@ const I18N = {
           '久坐伤身，不想修练也得走两步。',
         ],
       },
+      dream: {
+        lowAffection: {
+          yueqi: [
+            '（平稳的呼吸声）',
+            '唔…',
+            '（翻了个身）',
+          ],
+          shenjiu: [
+            '…吵死了。',
+            '（微微皱眉）',
+            '…走开。',
+          ],
+        },
+        highAffection: {
+          yueqi: [
+            '想和小九一起睡。',
+            '小九…别走…',
+            '（嘴角带着笑意）',
+          ],
+          shenjiu: [
+            '…笨蛋七哥。',
+            '（睡得毫无防备）',
+            '（下意识地靠过去）',
+          ],
+        },
+        linked: {
+          shenjiu: [
+            '七哥你在哪里…',
+            '…七哥别走。',
+          ],
+          yueqi_reply: [
+            '小九别怕，我在这。',
+            '我在，一直都在。',
+          ]
+        }
+      },
     },
   },
 
@@ -687,6 +723,42 @@ const I18N = {
           'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
         ],
       },
+      dream: {
+        lowAffection: {
+          yueqi: [
+            '(Steady breathing)',
+            'Mmm...',
+            '(Turns over)',
+          ],
+          shenjiu: [
+            '...So noisy.',
+            '(Frowns slightly)',
+            '...Go away.',
+          ],
+        },
+        highAffection: {
+          yueqi: [
+            'I want to sleep with Xiao Jiu.',
+            'Xiao Jiu... don\'t go...',
+            '(Smiling in sleep)',
+          ],
+          shenjiu: [
+            '...Idiot Qi-ge.',
+            '(Sleeping without his guard up)',
+            '(Subconsciously leaning closer)',
+          ],
+        },
+        linked: {
+          shenjiu: [
+            'Qi-ge, where are you...',
+            '...Don\'t go, Qi-ge.',
+          ],
+          yueqi_reply: [
+            'Don\'t be afraid, Xiao Jiu, I am here.',
+            'I am here, always here.',
+          ]
+        }
+      },
     },
   },
 
@@ -1023,6 +1095,42 @@ const I18N = {
           '…ふん、ついでの忠告だ。勘違いするな。',                       // …哼，我只是顺便提醒你一下。（稍微润色加了一句“别误会”，把傲娇度拉满！）
           '長座は体を痛める。修行する気がないなら、少しは歩け。',        // 久坐伤身，不想修练也得走两步。（長座：ちょうざ，久坐的古雅说法）
         ],
+      },
+      dream: {
+        lowAffection: {
+          yueqi: [
+            '（穏やかな寝息）',
+            'ん…',
+            '（寝返りを打つ）',
+          ],
+          shenjiu: [
+            '…うるさい。',
+            '（少し眉をひそめる）',
+            '…あっちへ行け。',
+          ],
+        },
+        highAffection: {
+          yueqi: [
+            '小九と一緒に寝たいな。',
+            '小九…行かないで…',
+            '（口元に微笑み）',
+          ],
+          shenjiu: [
+            '…馬鹿七哥。',
+            '（無防備な寝顔）',
+            '（無意識に寄り添う）',
+          ],
+        },
+        linked: {
+          shenjiu: [
+            '七哥、どこにいるの…',
+            '…行かないで、七哥。',
+          ],
+          yueqi_reply: [
+            '小九、恐れないで。ここにいるよ。',
+            'ここにいる。ずっとここに。',
+          ]
+        }
       },
     },
   },
