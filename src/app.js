@@ -273,6 +273,61 @@ function applyI18n() {
     }
   }
 
+  function showNightDream(pet) {
+    // 读取 dream 词库
+    const dreamPool = typeof DIALOGUES !== 'undefined' ? DIALOGUES.dream : null;
+    if (dreamPool) {
+      let text = '';
+      const affection = pet.stats.affection || 0;
+      const isHighAffection = affection >= 80;
+
+      // 尝试联动梦话 (目前以沈九发起，岳七回应为例)
+      let isLinked = false;
+      if (pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
+        // 沈九有概率触发联动梦话
+        if (Math.random() < 0.3 && dreamPool.linked?.shenjiu) {
+          isLinked = true;
+          const pool = dreamPool.linked.shenjiu;
+          text = pool[Math.floor(Math.random() * pool.length)];
+          // 触发岳七的回应 (延迟几秒)
+          setTimeout(() => {
+            // 确保岳七依然处于合适状态
+            if (!yueqi.isBusy() && yueqi.timePhase === 'night' && yueqi.element.style.display !== 'none') {
+              const replyPool = dreamPool.linked.yueqi_reply;
+              if (replyPool) {
+                const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
+                dialogBubble.show(yueqi, replyText, 4000);
+              }
+            }
+          }, 2500); // 延迟2.5秒回复
+        }
+      }
+
+      if (!isLinked) {
+        const poolCategory = isHighAffection ? dreamPool.highAffection : dreamPool.lowAffection;
+        if (poolCategory && poolCategory[pet.id]) {
+          const pool = poolCategory[pet.id];
+          text = pool[Math.floor(Math.random() * pool.length)];
+        } else {
+          // Fallback
+          text = pet.id === 'yueqi'
+            ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
+            : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
+        }
+      }
+
+      if (text) {
+        dialogBubble.show(pet, text, 5000);
+      }
+    } else {
+      // Fallback
+      const text = pet.id === 'yueqi'
+        ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
+        : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
+      dialogBubble.show(pet, text, 5000);
+    }
+  }
+
   // === 创建 DOM 元素 ===
   renderer.createPetElement(yueqi);
   renderer.createPetElement(shenjiu);
@@ -305,7 +360,11 @@ function applyI18n() {
         return;
       }
       if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)) {
-        dialogBubble.showIdleChatter(pet);
+        if (pet.timePhase === 'night' && pet.state === 'idle') {
+          showNightDream(pet);
+        } else {
+          dialogBubble.showIdleChatter(pet);
+        }
       }
     });
   });
@@ -726,61 +785,10 @@ function applyI18n() {
                 ? (window.t('eveningYueqi') || '夜幕已降，早点歇息吧。')
                 : (window.t('eveningShenjiu') || '…少烦我，滚去睡觉。');
               dialogBubble.show(pet, text, 5000);
-            } else if (pet.timePhase === 'night' && Math.random() < 0.5) {
+            } else if (pet.timePhase === 'night' && pet.state === 'idle' && Math.random() < 0.5) {
               // 深夜有 50% 概率保持安静，另外 50% 触发梦话
               if (Math.random() < 0.5) {
-                // 读取 dream 词库
-                const dreamPool = typeof DIALOGUES !== 'undefined' ? DIALOGUES.dream : null;
-                if (dreamPool) {
-                  let text = '';
-                  const affection = pet.stats.affection || 0;
-                  const isHighAffection = affection >= 80;
-
-                  // 尝试联动梦话 (目前以沈九发起，岳七回应为例)
-                  let isLinked = false;
-                  if (pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
-                    // 沈九有概率触发联动梦话
-                    if (Math.random() < 0.3 && dreamPool.linked?.shenjiu) {
-                      isLinked = true;
-                      const pool = dreamPool.linked.shenjiu;
-                      text = pool[Math.floor(Math.random() * pool.length)];
-                      // 触发岳七的回应 (延迟几秒)
-                      setTimeout(() => {
-                        // 确保岳七依然处于合适状态
-                        if (!yueqi.isBusy() && yueqi.timePhase === 'night' && yueqi.element.style.display !== 'none') {
-                          const replyPool = dreamPool.linked.yueqi_reply;
-                          if (replyPool) {
-                            const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
-                            dialogBubble.show(yueqi, replyText, 4000);
-                          }
-                        }
-                      }, 2500); // 延迟2.5秒回复
-                    }
-                  }
-
-                  if (!isLinked) {
-                    const poolCategory = isHighAffection ? dreamPool.highAffection : dreamPool.lowAffection;
-                    if (poolCategory && poolCategory[pet.id]) {
-                      const pool = poolCategory[pet.id];
-                      text = pool[Math.floor(Math.random() * pool.length)];
-                    } else {
-                      // Fallback
-                      text = pet.id === 'yueqi'
-                        ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
-                        : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
-                    }
-                  }
-
-                  if (text) {
-                    dialogBubble.show(pet, text, 5000);
-                  }
-                } else {
-                  // Fallback
-                  const text = pet.id === 'yueqi'
-                    ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
-                    : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
-                  dialogBubble.show(pet, text, 5000);
-                }
+                showNightDream(pet);
               }
             } else if (!pet.isHungry() && !pet.isLowQi() && !pet.isLowMood()) {
               // 只有在状态健康时，才会进行普通的随机闲聊
