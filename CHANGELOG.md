@@ -6,6 +6,9 @@
 ### Changed
 - **极简高密版 Agent 规范与专属维护技能更新 (`High-Density Guidelines Pruning`)**：遵循“注意力中转衰减 (`Lost in the Middle`)”与“上下文窗口大小不等于注意力预算 (`Context Window ≠ Attention Budget`)”核心原则，对 `AGENTS.md` 和 `.agents/skills/desktop-pet-maintenance/SKILL.md` 进行了分层收敛与高密压缩重构。剔除冗长的叙事说明与非本质流水账，用精简口令严格固化三大底层防线：在主进程选肤鉴权收紧时明确定位并保留 `app.openSkinSelectorForQA` 原生入口以防 E2E 冒烟测试死锁；在解析天气接口和地理编码数值时强制使用 `firstFiniteNumber` 防止空值被 `Number()` 误转为零；针对 `pet-asset://` 加密资源协议要求二级窗体同步复查 CSP `img-src`；同时将 `retention-days: 7` 与 `# noinspection` 等 CI 细节收敛至专属技能，使全局规范保持高轻量与高抗回归能力。
 
+### Fixed
+- **macOS 修仙状态窗口关闭按钮点击穿透修复 (`Status Window macOS Hit Test`)**：修复在 macOS 环境下，修仙状态独立面板右上角关闭按钮（`.status-close`）因处在可拖拽区域 (`-webkit-app-region: drag`) 的 Flex 容器内，导致点击事件被原生系统拦截失效的问题。通过为 `app-region: no-drag` 元素显式添加 `position: relative` 和 `z-index: 10` 创建独立层叠上下文，并配合禁用文本选中，恢复其在 macOS 下的正常点击响应能力。
+
 ## [0.9.1] - 2026-07-16
 ### Added
 - 增加可版本控制的项目维护技能，统一约束发版、自动更新、窗口显示、IPC、皮肤管线和回归验证流程。

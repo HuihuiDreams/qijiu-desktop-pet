@@ -43,6 +43,8 @@ body {
 }
 
 .status-close {
+  position: relative;
+  z-index: 10;
   width: 30px;
   height: 30px;
   border: 1px solid transparent;
@@ -55,6 +57,8 @@ body {
   transition: background 0.2s, border-color 0.2s, color 0.2s;
   -webkit-app-region: no-drag;
   app-region: no-drag;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .status-close:hover {
