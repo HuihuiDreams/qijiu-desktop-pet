@@ -203,7 +203,7 @@ test('coversWorkArea: invalid dimensions returns false', () => {
 
 test('PresentationGuard does not store any window content', () => {
   // The guard source should not reference title/ownerName/url storage
-  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'presentationGuard.js'), 'utf-8');
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'presentationGuard.js'), 'utf8');
   assert.ok(!src.includes('title'), 'should not reference window title');
   assert.ok(!src.includes('ownerName'), 'should not reference owner name');
   assert.ok(!src.includes('url'), 'should not reference URL');

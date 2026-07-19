@@ -10,7 +10,7 @@ function readSource(relativePath) {
 }
 
 test('main process waits for renderer final save before closing the pet window', () => {
-  const mainSource = readSource('main.js');
+  const mainSource = readSource('main.js') + '\n' + readSource('src/main/AppLifecycle.js');
 
   assert.ok(mainSource.includes('installFinalSaveBeforeClose(windowManager.mainWindow)'));
   assert.ok(mainSource.includes("event.preventDefault()"));

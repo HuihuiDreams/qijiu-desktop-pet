@@ -11,24 +11,25 @@ DeskPet 是一个 Electron 桌面宠物应用。主进程负责窗口、系统�
 ```mermaid
 graph TB
     subgraph Main["Electron Main Process"]
-        MainJs["main.js"]
-        MainJs --> PetWindow["Transparent Pet BrowserWindow"]
-        MainJs --> StatusWindow["Independent Status BrowserWindow"]
-        MainJs --> SkinSelectorWindow["Skin Selector BrowserWindow"]
-        MainJs --> PomodoroWindow["Pomodoro BrowserWindow"]
-        MainJs --> CitySettingWindow["City Setting BrowserWindow"]
-        MainJs --> Tray["System Tray Menu"]
-        MainJs --> Store["electron-store"]
-        MainJs --> IPC["IPC Handlers"]
-        MainJs --> Update["updateManager.js"]
-        MainJs --> Bounds["displayBounds.js"]
-        MainJs --> Fit["displayFit.js"]
-        MainJs --> ActiveWindow["activeWindowProvider.js / activeWindowAwareness.js"]
-        MainJs --> AutoLaunch["Login Item / Auto Launch"]
-        MainJs --> BreakReminder["breakReminderService.js"]
-        MainJs --> PresentGuard["presentationGuard.js"]
-        MainJs --> MeetingDetector["meetingDetector.js"]
-        MainJs --> WeatherSync["weatherSyncService.js"]
+        MainJs["main.js (Entry)"]
+        MainJs --> AppLifecycle["src/main/AppLifecycle.js"]
+        
+        AppLifecycle --> WindowManager["src/main/windows/WindowManager.js"]
+        AppLifecycle --> TrayManager["src/main/TrayManager.js"]
+        AppLifecycle --> IpcRouter["src/main/IpcRouter.js"]
+        
+        WindowManager --> PetWindow["Transparent Pet BrowserWindow"]
+        WindowManager --> StatusWindow["Independent Status BrowserWindow"]
+        WindowManager --> SkinSelectorWindow["Skin Selector BrowserWindow"]
+        WindowManager --> PomodoroWindow["Pomodoro BrowserWindow"]
+        WindowManager --> CitySettingWindow["City Setting BrowserWindow"]
+        
+        AppLifecycle --> Store["electron-store"]
+        AppLifecycle --> Bounds["displayBounds.js"]
+        AppLifecycle --> Fit["displayFit.js"]
+        AppLifecycle --> ActiveWindow["activeWindowAwareness.js"]
+        AppLifecycle --> MeetingDetector["meetingDetector.js"]
+        AppLifecycle --> WeatherSync["weatherSyncService.js"]
     end
 
     subgraph Renderer["Pet Renderer Process"]
@@ -76,7 +77,11 @@ graph TB
 ```text
 qijiu-desktop-pet/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
-├─ main.js                              # Electron 主进程入口：窗口、托盘、IPC、单实例、开机启动、置顶、状态窗口、番茄钟
+├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
+├─ src/main/AppLifecycle.js             # 主进程生命周期托管：接管 ready / powerMonitor 事件，组装与初始化各子模块
+├─ src/main/IpcRouter.js                # IPC 路由中心：集中注册和管理所有 ipcMain.handle 和 ipcMain.on 接口
+├─ src/main/TrayManager.js              # 系统托盘管理：构建托盘菜单、处理中英文切换及各菜单项的点击交互
+├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记

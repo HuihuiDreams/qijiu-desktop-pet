@@ -29,7 +29,7 @@ test('Playwright Electron smoke script uses an isolated profile and cleans it up
 });
 
 test('main process redirects app userData when QA isolation is requested', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
 
   assert.match(mainSource, /process\.env\.DESKTOP_PET_USER_DATA_DIR/);
   assert.match(mainSource, /app\.setPath\('userData', resolvedDir\)/);

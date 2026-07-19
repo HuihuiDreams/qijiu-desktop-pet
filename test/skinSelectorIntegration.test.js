@@ -10,7 +10,7 @@ function readProjectFile(relativePath) {
 }
 
 test('main process exposes gallery data and validated skin selection IPC', () => {
-  const mainSource = readProjectFile('main.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/IpcRouter.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js');
 
   assert.match(mainSource, /ipcMain\.handle\('get-skin-gallery-items'/);
   assert.match(mainSource, /ipcMain\.handle\('select-skin'/);
@@ -19,11 +19,14 @@ test('main process exposes gallery data and validated skin selection IPC', () =>
 });
 
 test('tray opens the gallery instead of rendering a skin radio submenu', () => {
-  const mainSource = readProjectFile('main.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/IpcRouter.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js');
   const traySkinEntry = mainSource.indexOf("label: trayMenuLabel('trayChooseSkin')");
 
   assert.ok(traySkinEntry > -1);
-  assert.ok(mainSource.indexOf('click: () => {\n        openSkinSelector();', traySkinEntry) > traySkinEntry);
+  const clickStart = mainSource.indexOf('click:', traySkinEntry);
+  assert.ok(clickStart > traySkinEntry);
+  const clickContent = mainSource.slice(clickStart, clickStart + 100);
+  assert.match(clickContent, /deps\.openSkinSelector\(\)/);
   assert.equal(mainSource.includes('submenu: skinSubmenu'), false);
 });
 
@@ -39,7 +42,7 @@ test('skin selector uses a dedicated limited preload bridge', () => {
 });
 
 test('skin selector IPC only accepts requests from the selector window', () => {
-  const mainSource = readProjectFile('main.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/IpcRouter.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js');
 
   assert.match(
     mainSource,
@@ -74,11 +77,11 @@ test('reopening the skin selector clears an earlier selection lock', () => {
 });
 
 test('skin selector maintains original active skin and selection during preview when locale changes', () => {
-  const mainSource = readProjectFile('main.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/IpcRouter.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js');
   const preloadSource = readProjectFile('skinSelectorPreload.js');
   const rendererSource = readProjectFile('src/skinSelectorWindow.js');
 
-  assert.match(mainSource, /const activeSkinId = skinSelectorOriginalSkinId != null \? skinSelectorOriginalSkinId : currentSkinId;/);
+  assert.match(mainSource, /const activeSkinId = skinSelectorWindowModule\.getSkinSelectorOriginalSkinId\(\) != null \? skinSelectorWindowModule\.getSkinSelectorOriginalSkinId\(\) : currentSkinId;/);
   assert.match(mainSource, /sendSkinSelectorData\(\{ resetSelection: false \}\)/);
   assert.match(preloadSource, /onData: \(callback\) => subscribeIpc\('skin-selector-data', \(_event, items, options\) => callback\(items, options\)\)/);
   assert.match(rendererSource, /window\.skinSelectorAPI\.onData\(\(items, options\) => renderGallery\(items, options\)\)/);

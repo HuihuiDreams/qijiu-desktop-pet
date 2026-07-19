@@ -3,14 +3,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'windows', 'PomodoroWindow.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
 
 test('main process creates a sandboxed pomodoro BrowserWindow from local files', () => {
   assert.match(mainSource, /function createPomodoroWindow\(\)/);
   assert.match(mainSource, /if \(windowManager\.pomodoroWindow && !windowManager\.pomodoroWindow\.isDestroyed\(\)\) return windowManager\.pomodoroWindow/);
-  assert.match(mainSource, /pomodoroAlwaysOnTop = true/);
+  assert.match(mainSource, /pomodoroWindowModule\.isPomodoroAlwaysOnTop\(\)/);
   assert.match(mainSource, /windowManager\.pomodoroWindow = new BrowserWindow/);
-  assert.match(mainSource, /windowManager\.pomodoroWindow\.loadFile\(path\.join\(__dirname, 'src', 'pomodoro\.html'\)\)/);
+  assert.match(mainSource, /windowManager\.pomodoroWindow\.loadFile\(path\.join\(__dirname, ('.*?', )*'src', 'pomodoro\.html'\)\)/);
   assert.match(mainSource, /const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver'/);
   assert.match(mainSource, /windowManager\.pomodoroWindow\.setAlwaysOnTop\(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL\)/);
   assert.match(mainSource, /sandbox: true/);

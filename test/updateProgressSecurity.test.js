@@ -10,7 +10,7 @@ function readSource(relativePath) {
 }
 
 test('update progress window uses local files and IPC instead of string script execution', () => {
-  const mainSource = readSource('main.js');
+  const mainSource = readSource('main.js') + '\n' + readSource('src/main/AppLifecycle.js') + '\n' + readSource('src/main/windows/WindowManager.js') + '\n' + readSource('src/main/windows/StatusWindow.js') + '\n' + readSource('src/main/windows/SkinSelectorWindow.js') + '\n' + readSource('src/main/windows/PomodoroWindow.js') + '\n' + readSource('src/main/windows/CitySettingWindow.js');
 
   assert.equal(mainSource.includes('executeJavaScript'), false);
   assert.equal(mainSource.includes('data:text/html'), false);
@@ -28,7 +28,7 @@ test('update progress page keeps CSP strict for scripts and styles', () => {
 });
 
 test('primary BrowserWindows explicitly enable renderer sandboxing', () => {
-  const mainSource = readSource('main.js');
+  const mainSource = readSource('main.js') + '\n' + readSource('src/main/AppLifecycle.js') + '\n' + readSource('src/main/windows/WindowManager.js') + '\n' + readSource('src/main/windows/StatusWindow.js') + '\n' + readSource('src/main/windows/SkinSelectorWindow.js') + '\n' + readSource('src/main/windows/PomodoroWindow.js') + '\n' + readSource('src/main/windows/CitySettingWindow.js');
 
   const sandboxMatches = mainSource.match(/sandbox: true/g) || [];
   assert.ok(sandboxMatches.length >= 3);

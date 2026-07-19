@@ -8,10 +8,10 @@ const path = require('path');
 // ═══════════════════════════════════════════════════════════════════
 
 const ROOT = path.join(__dirname, '..');
-const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf-8');
-const preloadSource = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf-8');
-const appSource = fs.readFileSync(path.join(ROOT, 'src', 'app.js'), 'utf-8');
-const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf-8');
+const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'IpcRouter.js'), 'utf8');
+const preloadSource = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
+const appSource = fs.readFileSync(path.join(ROOT, 'src', 'app.js'), 'utf8');
+const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf8');
 
 // --- main.js 集成 ---
 
@@ -126,13 +126,13 @@ test('app.js exposes __DEBUG_BREAK_REMINDER', () => {
 // --- i18n 文案池验证 ---
 
 test('breakReminder dialogues exist in all three languages', () => {
-  const i18nSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'i18n.js'), 'utf-8');
+  const i18nSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'i18n.js'), 'utf8');
   const breakReminderCount = (i18nSource.match(/breakReminder:/g) || []).length;
   assert.ok(breakReminderCount >= 3, `should have breakReminder in zh, en, ja (found ${breakReminderCount})`);
 });
 
 test('breakReminder fallback dialogues exist in dialogues.js', () => {
-  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf-8');
+  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
   assert.ok(dialoguesSource.includes('breakReminder'), 'fallback should include breakReminder');
 });
 

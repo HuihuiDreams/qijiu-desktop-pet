@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
 const i18nSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'i18n.js'), 'utf8');
 const debugSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'debug.js'), 'utf8');
 const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.js'), 'utf8');
@@ -13,7 +13,7 @@ test('tray exposes Window Awareness toggle on Windows/macOS and unavailable stat
   assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOn')"));
   assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessUnavailable')"));
   assert.ok(mainSource.includes("enabled: process.platform === 'win32' || process.platform === 'darwin'"));
-  assert.ok(mainSource.includes('setWindowAwarenessEnabled(!windowAwarenessEnabled)'));
+  assert.match(mainSource, /setWindowAwarenessEnabled\(!.*?getWindowAwarenessEnabled\(\)\)/);
 });
 
 test('Window Awareness toggle sends disabled fallback and restarts sampling', () => {

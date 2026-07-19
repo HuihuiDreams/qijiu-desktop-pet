@@ -3,13 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'windows', 'CitySettingWindow.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
 
 test('main process creates a sandboxed city setting BrowserWindow from local files', () => {
   assert.match(mainSource, /function createCitySettingWindow\(\)/);
   assert.match(mainSource, /if \(windowManager.citySettingWindow && !windowManager.citySettingWindow\.isDestroyed\(\)\) return windowManager.citySettingWindow/);
   assert.match(mainSource, /windowManager.citySettingWindow = new BrowserWindow/);
-  assert.match(mainSource, /windowManager.citySettingWindow\.loadFile\(path\.join\(__dirname, 'src', 'city-setting\.html'\)\)/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.loadFile\(path\.join\(__dirname, ('.*?', )*'src', 'city-setting\.html'\)\)/);
   assert.match(mainSource, /sandbox: true/);
   assert.match(mainSource, /windowManager.citySettingWindow\.on\('closed'/);
 });

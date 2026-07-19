@@ -23,7 +23,8 @@
   "dependencies": {
     "electron-log": "^5.4.3",
     "electron-store": "^10.0.0",
-    "electron-updater": "^6.8.3"
+    "electron-updater": "^6.8.3",
+    "glob": "^13.0.6"
   },
   "build": {
     "appId": "com.deskpet.yueqi-shenjiu",
