@@ -34,7 +34,7 @@ test('main process redirects app userData when QA isolation is requested', () =>
   assert.match(mainSource, /process\.env\.DESKTOP_PET_USER_DATA_DIR/);
   assert.match(mainSource, /app\.setPath\('userData', resolvedDir\)/);
   assert.ok(
-    mainSource.indexOf('configureQaUserDataPath();') < mainSource.indexOf('async function initStore'),
+    mainSource.indexOf('configureQaUserDataPath();') < mainSource.indexOf('StoreManager.initStore'),
     'QA userData path must be configured before electron-store initializes',
   );
 });

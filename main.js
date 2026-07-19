@@ -46,6 +46,8 @@ const {
   fetchWeather,
   processSettingsChange,
 } = require('./weatherSyncService');
+const StoreManager = require('./src/main/services/StoreManager');
+const AutoLaunchService = require('./src/main/services/AutoLaunchService');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
@@ -165,7 +167,6 @@ let store = null;
 let petHidden = false;         // 桌宠隐藏状态
 let meetingHidden = false;     // 会议检测导致的自动隐藏状态
 let isPaused = false;          // 走动暂停状态
-let autoLaunchEnabled = false; // 开机自动启动状态
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
 let currentLocale = 'zh';      // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
 let keepOnTopTimer = null;     // 置顶守卫计时器
@@ -213,122 +214,7 @@ configureChromiumMemoryBudget();
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
-/**
- * 初始化持久化存储 (electron-store)
- */
-async function initStore() {
-  if (store) return store;
-  try {
-    const Store = (await import('electron-store')).default;
-    store = new Store();
-  } catch (error) {
-    console.error('Failed to init electron-store:', error);
-  }
-  return store;
-}
 
-/**
- * 获取存储的开机启动首选项
- */
-function getStoredAutoLaunchPreference() {
-  if (!store) return DEFAULT_AUTO_LAUNCH;
-  const value = store.get(AUTO_LAUNCH_KEY);
-  return typeof value === 'boolean' ? value : DEFAULT_AUTO_LAUNCH;
-}
-
-/**
- * 获取当前系统的登录启动状态（Windows / macOS）
- */
-function getLoginItemStatus() {
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return { openAtLogin: false };
-  if (!app.isPackaged) {
-    return { openAtLogin: false, executableWillLaunchAtLogin: false, launchItems: [] };
-  }
-  try {
-    if (process.platform === 'darwin') {
-      return app.getLoginItemSettings();
-    }
-    return app.getLoginItemSettings({
-      path: process.execPath,
-      args: [],
-    });
-  } catch (error) {
-    console.error('Failed to read login item settings:', error);
-    return { openAtLogin: false };
-  }
-}
-
-/**
- * 应用开机启动设置到系统
- */
-function applyAutoLaunchSetting(enabled) {
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return getLoginItemStatus();
-  if (!app.isPackaged) return getLoginItemStatus();
-  try {
-    if (process.platform === 'darwin') {
-      app.setLoginItemSettings({
-        openAtLogin: enabled,
-        openAsHidden: true,   // 开机后以后台方式启动，不弹到前台
-      });
-    } else {
-      const settings = {
-        openAtLogin: enabled,
-        path: process.execPath,
-        args: [],
-        name: LOGIN_ITEM_NAME,
-      };
-      app.setLoginItemSettings(settings);
-    }
-  } catch (error) {
-    console.error('Failed to update login item settings:', error);
-  }
-  return getLoginItemStatus();
-}
-
-/**
- * 同步存储的设置到系统状态
- */
-async function syncAutoLaunchPreference() {
-  await initStore();
-  if (!store) return { preference: DEFAULT_AUTO_LAUNCH, loginItem: getLoginItemStatus() };
-
-  let preference = store.get(AUTO_LAUNCH_KEY);
-  if (typeof preference !== 'boolean') {
-    preference = DEFAULT_AUTO_LAUNCH;
-    store.set(AUTO_LAUNCH_KEY, preference);
-  }
-
-  const loginItem = applyAutoLaunchSetting(preference);
-  return { preference, loginItem };
-}
-
-/**
- * 修改并保存开机启动首选项
- */
-async function setAutoLaunchPreference(enabled) {
-  await initStore();
-  if (!store) return { success: false, preference: DEFAULT_AUTO_LAUNCH, loginItem: getLoginItemStatus() };
-
-  const preference = Boolean(enabled);
-  store.set(AUTO_LAUNCH_KEY, preference);
-  autoLaunchEnabled = preference;
-  const loginItem = applyAutoLaunchSetting(preference);
-  refreshTrayMenu();
-
-  return { success: true, preference, loginItem };
-}
-
-/**
- * 获取当前完整的自启动信息
- */
-async function getAutoLaunchPreference() {
-  await initStore();
-  return {
-    success: Boolean(store),
-    preference: getStoredAutoLaunchPreference(),
-    loginItem: getLoginItemStatus(),
-  };
-}
 
 /**
  * 刷新托盘菜单显示
@@ -1686,10 +1572,9 @@ function buildTrayMenu() {
       submenu: langSubmenu,
     },
     {
-      label: autoLaunchEnabled ? trayMenuLabel('trayAutoLaunchOn') : trayMenuLabel('trayAutoLaunchOff'),
+      label: AutoLaunchService.isAutoLaunchEnabled() ? trayMenuLabel('trayAutoLaunchOn') : trayMenuLabel('trayAutoLaunchOff'),
       click: async () => {
-        autoLaunchEnabled = !autoLaunchEnabled;
-        await setAutoLaunchPreference(autoLaunchEnabled);
+        await AutoLaunchService.setAutoLaunchPreference(!AutoLaunchService.isAutoLaunchEnabled());
         refreshTrayMenu();
       },
     },
@@ -1937,11 +1822,11 @@ ipcMain.handle('load-data', async (_event, key) => {
 });
 
 ipcMain.handle('set-auto-launch', async (_event, enabled) => {
-  return setAutoLaunchPreference(enabled);
+  return AutoLaunchService.setAutoLaunchPreference(enabled);
 });
 
 ipcMain.handle('get-auto-launch', async () => {
-  return getAutoLaunchPreference();
+  return AutoLaunchService.getAutoLaunchPreference();
 });
 
 ipcMain.handle('get-available-skins', () => {
@@ -2212,12 +2097,12 @@ if (!hasSingleInstanceLock) {
       callback(false);
     });
 
-    await initStore();
+    await StoreManager.initStore();
+    store = StoreManager.getStore();
     // 加载持久化语言设置，若无则自动检测
     const storedLocale = store ? store.get(LOCALE_KEY) : null;
     currentLocale = ['zh', 'en', 'ja'].includes(storedLocale) ? storedLocale : detectLocale();
-    const syncResult = await syncAutoLaunchPreference();
-    autoLaunchEnabled = syncResult.preference;
+    await AutoLaunchService.syncAutoLaunchPreference();
 
     // --- 久坐提醒服务初始化 ---
     const storedBreakSettings = store ? store.get(BREAK_REMINDER_STORE_KEY) : null;
