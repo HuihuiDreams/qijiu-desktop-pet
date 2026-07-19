@@ -7,11 +7,11 @@ const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8'
 
 test('main process creates a sandboxed city setting BrowserWindow from local files', () => {
   assert.match(mainSource, /function createCitySettingWindow\(\)/);
-  assert.match(mainSource, /if \(citySettingWindow && !citySettingWindow\.isDestroyed\(\)\) return citySettingWindow/);
-  assert.match(mainSource, /citySettingWindow = new BrowserWindow/);
-  assert.match(mainSource, /citySettingWindow\.loadFile\(path\.join\(__dirname, 'src', 'city-setting\.html'\)\)/);
+  assert.match(mainSource, /if \(windowManager.citySettingWindow && !windowManager.citySettingWindow\.isDestroyed\(\)\) return windowManager.citySettingWindow/);
+  assert.match(mainSource, /windowManager.citySettingWindow = new BrowserWindow/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.loadFile\(path\.join\(__dirname, 'src', 'city-setting\.html'\)\)/);
   assert.match(mainSource, /sandbox: true/);
-  assert.match(mainSource, /citySettingWindow\.on\('closed'/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.on\('closed'/);
 });
 
 test('city setting window uses a compact size for simple city input', () => {
@@ -28,13 +28,13 @@ test('city setting window briefly pulses top level when opened or reactivated', 
   assert.match(mainSource, /const CITY_SETTING_TOP_PULSE_MS = 180/);
   assert.match(mainSource, /function pulseCitySettingWindowTop\(\)/);
   assert.match(mainSource, /function raiseCitySettingWindow\(\)/);
-  assert.match(mainSource, /citySettingWindow\.setAlwaysOnTop\(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL\)/);
-  assert.match(mainSource, /citySettingWindow\.setAlwaysOnTop\(false\)/);
-  assert.match(mainSource, /citySettingWindow\.moveTop\(\)/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.setAlwaysOnTop\(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL\)/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.setAlwaysOnTop\(false\)/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.moveTop\(\)/);
   assert.match(mainSource, /alwaysOnTop:\s*false/);
-  assert.match(mainSource, /citySettingWindow\.on\('focus'/);
-  assert.match(mainSource, /citySettingWindow\.on\('show'/);
-  assert.match(mainSource, /citySettingWindow\.on\('restore'/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.on\('focus'/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.on\('show'/);
+  assert.match(mainSource, /windowManager.citySettingWindow\.on\('restore'/);
 });
 
 test('tray menu calls openCitySettingWindow instead of openInEditor', () => {
@@ -78,11 +78,11 @@ test('set-city-name IPC validates input and performs geocode', () => {
 
 test('city setting window is cleaned up when main window closes', () => {
   // Find the mainWindow.on('closed', ...) handler section
-  const closedIndex = mainSource.indexOf("mainWindow.on('closed'");
-  assert.notEqual(closedIndex, -1, "mainWindow.on('closed') should exist");
+  const closedIndex = mainSource.indexOf("windowManager.mainWindow.on('closed'");
+  assert.notEqual(closedIndex, -1, "windowManager.mainWindow.on('closed') should exist");
 
   // Grab a reasonable chunk after the 'closed' handler start
-  const closedSection = mainSource.slice(closedIndex, closedIndex + 600);
+  const closedSection = mainSource.slice(closedIndex, closedIndex + 1000);
   assert.match(closedSection, /closeCitySettingWindow\(\)/,
     'mainWindow closed handler should clean up city setting window');
 });
@@ -93,6 +93,6 @@ test('locale changes are forwarded to city setting window', () => {
     mainSource.indexOf('langSubmenu'),
     mainSource.indexOf('return Menu.buildFromTemplate'),
   );
-  assert.match(langSubmenuSection, /citySettingWindow.*locale-changed/s,
+  assert.match(langSubmenuSection, /windowManager\.citySettingWindow.*locale-changed/s,
     'tray language submenu should forward locale-changed to city setting window');
 });

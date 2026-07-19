@@ -12,7 +12,7 @@ function readSource(relativePath) {
 test('main process waits for renderer final save before closing the pet window', () => {
   const mainSource = readSource('main.js');
 
-  assert.ok(mainSource.includes('installFinalSaveBeforeClose(mainWindow)'));
+  assert.ok(mainSource.includes('installFinalSaveBeforeClose(windowManager.mainWindow)'));
   assert.ok(mainSource.includes("event.preventDefault()"));
   assert.ok(mainSource.includes("win.webContents.send('save-before-quit', requestId)"));
   assert.ok(mainSource.includes("ipcMain.removeListener('save-before-quit-complete'"));

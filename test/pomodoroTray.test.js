@@ -7,14 +7,14 @@ const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8'
 
 test('main process creates a sandboxed pomodoro BrowserWindow from local files', () => {
   assert.match(mainSource, /function createPomodoroWindow\(\)/);
-  assert.match(mainSource, /if \(pomodoroWindow && !pomodoroWindow\.isDestroyed\(\)\) return pomodoroWindow/);
+  assert.match(mainSource, /if \(windowManager\.pomodoroWindow && !windowManager\.pomodoroWindow\.isDestroyed\(\)\) return windowManager\.pomodoroWindow/);
   assert.match(mainSource, /pomodoroAlwaysOnTop = true/);
-  assert.match(mainSource, /pomodoroWindow = new BrowserWindow/);
-  assert.match(mainSource, /pomodoroWindow\.loadFile\(path\.join\(__dirname, 'src', 'pomodoro\.html'\)\)/);
+  assert.match(mainSource, /windowManager\.pomodoroWindow = new BrowserWindow/);
+  assert.match(mainSource, /windowManager\.pomodoroWindow\.loadFile\(path\.join\(__dirname, 'src', 'pomodoro\.html'\)\)/);
   assert.match(mainSource, /const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver'/);
-  assert.match(mainSource, /pomodoroWindow\.setAlwaysOnTop\(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL\)/);
+  assert.match(mainSource, /windowManager\.pomodoroWindow\.setAlwaysOnTop\(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL\)/);
   assert.match(mainSource, /sandbox: true/);
-  assert.match(mainSource, /pomodoroWindow\.on\('closed'/);
+  assert.match(mainSource, /windowManager\.pomodoroWindow\.on\('closed'/);
   assert.match(mainSource, /stopPomodoroSession\(\)/);
   assert.match(mainSource, /stopPomodoroTicker\(\)/);
 });

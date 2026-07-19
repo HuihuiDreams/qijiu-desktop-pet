@@ -43,7 +43,7 @@ test('skin selector IPC only accepts requests from the selector window', () => {
 
   assert.match(
     mainSource,
-    /function isSkinSelectorRequest\(event\)[\s\S]*?event\?\.sender\?\.id === skinSelectorWindow\.webContents\.id/,
+    /function isSkinSelectorRequest\(event\)[\s\S]*?event\?\.sender\?\.id === windowManager\.skinSelectorWindow\.webContents\.id/,
   );
 
   for (const channel of [

@@ -48,6 +48,7 @@ const {
 } = require('./weatherSyncService');
 const StoreManager = require('./src/main/services/StoreManager');
 const AutoLaunchService = require('./src/main/services/AutoLaunchService');
+const windowManager = require('./src/main/windows/WindowManager');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
@@ -152,15 +153,9 @@ function getSkinArtistName(skinId) {
   return key ? trayT(key) : '';
 }
 
-let mainWindow = null;
-let statusWindow = null;
-let skinSelectorWindow = null;
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
-let pomodoroWindow = null;
-let citySettingWindow = null;
 let citySettingTopPulseTimer = null;
-let updateProgressWindow = null;
 let lastStatusWindowData = null;
 let tray = null;
 let store = null;
@@ -230,14 +225,14 @@ function refreshTrayMenu() {
  * 窗口置顶逻辑 (ADR-018)
  */
 function keepPetWindowOnTop() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
   // screen-saver 级别确保在全屏应用上方
-  mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  mainWindow.moveTop();
+  windowManager.mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  windowManager.mainWindow.moveTop();
 }
 
 function setPetWindowMousePassthrough(ignore, options = {}) {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
 
   if (mousePassthroughResetTimer) {
     clearTimeout(mousePassthroughResetTimer);
@@ -245,14 +240,14 @@ function setPetWindowMousePassthrough(ignore, options = {}) {
   }
 
   const { leaseMs, ...electronOptions } = options || {};
-  mainWindow.setIgnoreMouseEvents(ignore, electronOptions);
+  windowManager.mainWindow.setIgnoreMouseEvents(ignore, electronOptions);
 
   if (!ignore && Number.isFinite(leaseMs) && leaseMs > 0) {
     const timeoutMs = leaseMs;
     mousePassthroughResetTimer = setTimeout(() => {
       mousePassthroughResetTimer = null;
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.setIgnoreMouseEvents(true, { forward: true });
+      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+        windowManager.mainWindow.setIgnoreMouseEvents(true, { forward: true });
       }
     }, timeoutMs);
   }
@@ -285,8 +280,8 @@ function getDesktopWindowBounds() {
 }
 
 function sendScreenInfo() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  const bounds = mainWindow.getBounds();
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
+  const bounds = windowManager.mainWindow.getBounds();
   const displays = screen.getAllDisplays();
   const primaryDisplay = screen.getPrimaryDisplay();
   const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
@@ -318,7 +313,7 @@ function sendScreenInfo() {
     ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
     : [];
 
-  mainWindow.webContents.send('screen-info', {
+  windowManager.mainWindow.webContents.send('screen-info', {
     width: bounds.width,
     height: bounds.height,
     walkAreas,
@@ -349,12 +344,12 @@ function getActiveWindowDisplays() {
 }
 
 function getActiveWindowMainBounds() {
-  return mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : getDesktopWindowBounds();
+  return windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() ? windowManager.mainWindow.getBounds() : getDesktopWindowBounds();
 }
 
 function sendActiveWindowInfo(activeWindowInfo) {
-  if (!mainWindow || mainWindow.isDestroyed() || !activeWindowInfo) return;
-  mainWindow.webContents.send('active-window-info', activeWindowInfo);
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed() || !activeWindowInfo) return;
+  windowManager.mainWindow.webContents.send('active-window-info', activeWindowInfo);
 }
 
 function unavailableActiveWindowPayload(reason) {
@@ -390,7 +385,7 @@ function startActiveWindowAwareness() {
 function setWindowAwarenessEnabled(enabled) {
   if (process.platform !== 'win32' && process.platform !== 'darwin') return;
   windowAwarenessEnabled = Boolean(enabled);
-  if (mainWindow && !mainWindow.isDestroyed()) {
+  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
     startActiveWindowAwareness();
     if (!windowAwarenessEnabled) {
       sendActiveWindowInfo(unavailableActiveWindowPayload('disabled'));
@@ -400,24 +395,24 @@ function setWindowAwarenessEnabled(enabled) {
 }
 
 function lockPetWindowToBounds(bounds) {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
 
-  const currentBounds = mainWindow.getBounds();
+  const currentBounds = windowManager.mainWindow.getBounds();
   if (!areWindowBoundsEqual(currentBounds, bounds)) {
     const bridgeConstraints = getResizeBridgeConstraints(currentBounds, bounds);
     if (bridgeConstraints) {
-      mainWindow.setMinimumSize(bridgeConstraints.minWidth, bridgeConstraints.minHeight);
-      mainWindow.setMaximumSize(bridgeConstraints.maxWidth, bridgeConstraints.maxHeight);
+      windowManager.mainWindow.setMinimumSize(bridgeConstraints.minWidth, bridgeConstraints.minHeight);
+      windowManager.mainWindow.setMaximumSize(bridgeConstraints.maxWidth, bridgeConstraints.maxHeight);
     }
-    mainWindow.setBounds(bounds);
+    windowManager.mainWindow.setBounds(bounds);
   }
 
-  mainWindow.setMinimumSize(bounds.width, bounds.height);
-  mainWindow.setMaximumSize(bounds.width, bounds.height);
+  windowManager.mainWindow.setMinimumSize(bounds.width, bounds.height);
+  windowManager.mainWindow.setMaximumSize(bounds.width, bounds.height);
 }
 
 function fitWindowToAllDisplays() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
 
   if (process.platform === 'darwin') {
     const allDisplays = screen.getAllDisplays();
@@ -441,11 +436,11 @@ function fitWindowToAllDisplays() {
 }
 
 function migrateWindowToDisplay(targetDisplay) {
-  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return null;
   if (!targetDisplay || !targetDisplay.bounds) return null;
   if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
 
-  const oldBounds = mainWindow.getBounds();
+  const oldBounds = windowManager.mainWindow.getBounds();
   const newBounds = targetDisplay.bounds;
 
   const offset = {
@@ -456,7 +451,7 @@ function migrateWindowToDisplay(targetDisplay) {
   currentPetDisplay = targetDisplay;
   lockPetWindowToBounds(newBounds);
 
-  mainWindow.webContents.send('window-migrated', {
+  windowManager.mainWindow.webContents.send('window-migrated', {
     offset,
     displayId: targetDisplay.id,
     displayBounds: newBounds,
@@ -469,7 +464,7 @@ function migrateWindowToDisplay(targetDisplay) {
 function startDragPoll() {
   stopDragPoll();
   dragPollTimer = setInterval(() => {
-    if (!mainWindow || mainWindow.isDestroyed() || !currentPetDisplay) {
+    if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed() || !currentPetDisplay) {
       stopDragPoll();
       return;
     }
@@ -522,15 +517,15 @@ function getInitialSkinSelectorWindowBounds() {
 }
 
 function sendStatusWindowData() {
-  if (!statusWindow || statusWindow.isDestroyed() || !lastStatusWindowData) return;
-  statusWindow.webContents.send('status-window-data', lastStatusWindowData);
+  if (!windowManager.statusWindow || windowManager.statusWindow.isDestroyed() || !lastStatusWindowData) return;
+  windowManager.statusWindow.webContents.send('status-window-data', lastStatusWindowData);
 }
 
 function createStatusWindow() {
-  if (statusWindow && !statusWindow.isDestroyed()) return statusWindow;
+  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) return windowManager.statusWindow;
 
   const bounds = getInitialStatusWindowBounds();
-  statusWindow = new BrowserWindow({
+  windowManager.statusWindow = new BrowserWindow({
     ...bounds,
     transparent: true,
     frame: false,
@@ -548,22 +543,22 @@ function createStatusWindow() {
     },
   });
 
-  statusWindow.setAlwaysOnTop(true, 'floating');
-  statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  statusWindow.loadFile(path.join(__dirname, 'src', 'status.html'));
+  windowManager.statusWindow.setAlwaysOnTop(true, 'floating');
+  windowManager.statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.statusWindow.loadFile(path.join(__dirname, 'src', 'status.html'));
 
-  statusWindow.webContents.on('did-finish-load', sendStatusWindowData);
-  statusWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  statusWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  statusWindow.on('closed', () => {
-    statusWindow = null;
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('status-window-closed');
+  windowManager.statusWindow.webContents.on('did-finish-load', sendStatusWindowData);
+  windowManager.statusWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  windowManager.statusWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.statusWindow.on('closed', () => {
+    windowManager.statusWindow = null;
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('status-window-closed');
     }
     refreshTrayMenu();
   });
 
-  return statusWindow;
+  return windowManager.statusWindow;
 }
 
 function showStatusWindow(data) {
@@ -583,42 +578,42 @@ function updateStatusWindow(data) {
 }
 
 function hideStatusWindow() {
-  if (statusWindow && !statusWindow.isDestroyed()) {
-    statusWindow.hide();
+  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+    windowManager.statusWindow.hide();
     refreshTrayMenu();
   }
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('status-window-closed');
+  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+    windowManager.mainWindow.webContents.send('status-window-closed');
   }
 }
 
 function resizeStatusWindow(size) {
-  if (!statusWindow || statusWindow.isDestroyed()) return;
+  if (!windowManager.statusWindow || windowManager.statusWindow.isDestroyed()) return;
 
   const { width, height } = normalizeStatusWindowSize(size);
-  statusWindow.setContentSize(width, height);
+  windowManager.statusWindow.setContentSize(width, height);
 }
 
 function sendSkinSelectorData(options = { resetSelection: true }) {
-  if (!skinSelectorWindow || skinSelectorWindow.isDestroyed()) return;
+  if (!windowManager.skinSelectorWindow || windowManager.skinSelectorWindow.isDestroyed()) return;
   const sendOptions = (options && typeof options === 'object' && 'resetSelection' in options)
     ? options
     : { resetSelection: true };
-  skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems(), sendOptions);
+  windowManager.skinSelectorWindow.webContents.send('skin-selector-data', getSkinGalleryItems(), sendOptions);
 }
 
 function isSkinSelectorRequest(event) {
   return Boolean(
-    skinSelectorWindow
-    && !skinSelectorWindow.isDestroyed()
-    && event?.sender?.id === skinSelectorWindow.webContents.id,
+    windowManager.skinSelectorWindow
+    && !windowManager.skinSelectorWindow.isDestroyed()
+    && event?.sender?.id === windowManager.skinSelectorWindow.webContents.id,
   );
 }
 
 function createSkinSelectorWindow() {
-  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) return skinSelectorWindow;
+  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) return windowManager.skinSelectorWindow;
 
-  skinSelectorWindow = new BrowserWindow({
+  windowManager.skinSelectorWindow = new BrowserWindow({
     ...getInitialSkinSelectorWindowBounds(),
     transparent: true,
     frame: false,
@@ -636,22 +631,22 @@ function createSkinSelectorWindow() {
     },
   });
 
-  skinSelectorWindow.setAlwaysOnTop(true, 'floating');
-  skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  skinSelectorWindow.loadFile(path.join(__dirname, 'src', 'skin-selector.html'));
-  skinSelectorWindow.webContents.on('did-finish-load', sendSkinSelectorData);
-  skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  skinSelectorWindow.on('blur', () => {
+  windowManager.skinSelectorWindow.setAlwaysOnTop(true, 'floating');
+  windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.skinSelectorWindow.loadFile(path.join(__dirname, 'src', 'skin-selector.html'));
+  windowManager.skinSelectorWindow.webContents.on('did-finish-load', sendSkinSelectorData);
+  windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.skinSelectorWindow.on('blur', () => {
     cancelSkinPreview();
   });
-  skinSelectorWindow.on('closed', () => {
-    skinSelectorWindow = null;
+  windowManager.skinSelectorWindow.on('closed', () => {
+    windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
   });
 
-  return skinSelectorWindow;
+  return windowManager.skinSelectorWindow;
 }
 
 function openSkinSelector() {
@@ -676,8 +671,8 @@ function cancelSkinPreview() {
 
 function hideSkinSelector() {
   skinSelectorSelectionInProgress = false;
-  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
-    skinSelectorWindow.hide();
+  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+    windowManager.skinSelectorWindow.hide();
   }
 }
 
@@ -710,16 +705,16 @@ async function startWeatherSync() {
     weatherSyncIntervalTimer = null;
   }
   if (!weatherSyncSettings.enabled) {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('weather-update', { active: false });
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('weather-update', { active: false });
     }
     return;
   }
 
   const doFetch = async () => {
     const payload = await fetchWeather(weatherSyncSettings);
-    if (mainWindow && !mainWindow.isDestroyed() && payload) {
-      mainWindow.webContents.send('weather-update', payload);
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() && payload) {
+      windowManager.mainWindow.webContents.send('weather-update', payload);
     }
   };
 
@@ -745,40 +740,40 @@ async function updateWeatherSyncSettings(newSettings) {
 // --- 城市设置窗口 ---
 
 function pulseCitySettingWindowTop() {
-  if (!citySettingWindow || citySettingWindow.isDestroyed()) return;
+  if (!windowManager.citySettingWindow || windowManager.citySettingWindow.isDestroyed()) return;
 
   if (citySettingTopPulseTimer) {
     clearTimeout(citySettingTopPulseTimer);
     citySettingTopPulseTimer = null;
   }
 
-  citySettingWindow.setAlwaysOnTop(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL);
-  citySettingWindow.moveTop();
+  windowManager.citySettingWindow.setAlwaysOnTop(true, CITY_SETTING_ALWAYS_ON_TOP_LEVEL);
+  windowManager.citySettingWindow.moveTop();
   citySettingTopPulseTimer = setTimeout(() => {
     citySettingTopPulseTimer = null;
-    if (citySettingWindow && !citySettingWindow.isDestroyed()) {
-      citySettingWindow.setAlwaysOnTop(false);
+    if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
+      windowManager.citySettingWindow.setAlwaysOnTop(false);
     }
   }, CITY_SETTING_TOP_PULSE_MS);
 }
 
 function raiseCitySettingWindow() {
-  if (!citySettingWindow || citySettingWindow.isDestroyed()) return null;
+  if (!windowManager.citySettingWindow || windowManager.citySettingWindow.isDestroyed()) return null;
 
-  if (citySettingWindow.isMinimized()) {
-    citySettingWindow.restore();
+  if (windowManager.citySettingWindow.isMinimized()) {
+    windowManager.citySettingWindow.restore();
   }
-  if (!citySettingWindow.isVisible()) {
-    citySettingWindow.show();
+  if (!windowManager.citySettingWindow.isVisible()) {
+    windowManager.citySettingWindow.show();
   }
 
   pulseCitySettingWindowTop();
-  citySettingWindow.focus();
-  return citySettingWindow;
+  windowManager.citySettingWindow.focus();
+  return windowManager.citySettingWindow;
 }
 
 function createCitySettingWindow() {
-  if (citySettingWindow && !citySettingWindow.isDestroyed()) return citySettingWindow;
+  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) return windowManager.citySettingWindow;
 
   const width = 360;
   const height = 200;
@@ -786,7 +781,7 @@ function createCitySettingWindow() {
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
 
-  citySettingWindow = new BrowserWindow({
+  windowManager.citySettingWindow = new BrowserWindow({
     width,
     height,
     x: Math.round(x + (areaWidth - width) / 2),
@@ -807,29 +802,29 @@ function createCitySettingWindow() {
     },
   });
 
-  citySettingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  citySettingWindow.loadFile(path.join(__dirname, 'src', 'city-setting.html'));
+  windowManager.citySettingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.citySettingWindow.loadFile(path.join(__dirname, 'src', 'city-setting.html'));
 
-  citySettingWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  citySettingWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  citySettingWindow.on('focus', () => {
+  windowManager.citySettingWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  windowManager.citySettingWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.citySettingWindow.on('focus', () => {
     pulseCitySettingWindowTop();
   });
-  citySettingWindow.on('show', () => {
+  windowManager.citySettingWindow.on('show', () => {
     pulseCitySettingWindowTop();
   });
-  citySettingWindow.on('restore', () => {
+  windowManager.citySettingWindow.on('restore', () => {
     raiseCitySettingWindow();
   });
-  citySettingWindow.on('closed', () => {
+  windowManager.citySettingWindow.on('closed', () => {
     if (citySettingTopPulseTimer) {
       clearTimeout(citySettingTopPulseTimer);
       citySettingTopPulseTimer = null;
     }
-    citySettingWindow = null;
+    windowManager.citySettingWindow = null;
   });
 
-  return citySettingWindow;
+  return windowManager.citySettingWindow;
 }
 
 function openCitySettingWindow() {
@@ -838,8 +833,8 @@ function openCitySettingWindow() {
 }
 
 function closeCitySettingWindow() {
-  if (citySettingWindow && !citySettingWindow.isDestroyed()) {
-    citySettingWindow.close();
+  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
+    windowManager.citySettingWindow.close();
   }
 }
 
@@ -887,8 +882,8 @@ function getPomodoroSnapshot(now) {
 }
 
 function sendPomodoroState() {
-  if (!pomodoroWindow || pomodoroWindow.isDestroyed()) return;
-  pomodoroWindow.webContents.send('pomodoro-state', getPomodoroSnapshot());
+  if (!windowManager.pomodoroWindow || windowManager.pomodoroWindow.isDestroyed()) return;
+  windowManager.pomodoroWindow.webContents.send('pomodoro-state', getPomodoroSnapshot());
 }
 
 function stopPomodoroTicker() {
@@ -927,11 +922,11 @@ function getInitialPomodoroWindowBounds() {
 }
 
 function createPomodoroWindow() {
-  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) return pomodoroWindow;
+  if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) return windowManager.pomodoroWindow;
 
   pomodoroAlwaysOnTop = true;
   const bounds = getInitialPomodoroWindowBounds();
-  pomodoroWindow = new BrowserWindow({
+  windowManager.pomodoroWindow = new BrowserWindow({
     ...bounds,
     transparent: true,
     frame: false,
@@ -950,17 +945,17 @@ function createPomodoroWindow() {
   });
 
   applyPomodoroWindowPinState();
-  pomodoroWindow.loadFile(path.join(__dirname, 'src', 'pomodoro.html'));
+  windowManager.pomodoroWindow.loadFile(path.join(__dirname, 'src', 'pomodoro.html'));
 
-  pomodoroWindow.webContents.on('did-finish-load', sendPomodoroState);
-  pomodoroWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  pomodoroWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  pomodoroWindow.on('closed', () => {
-    pomodoroWindow = null;
+  windowManager.pomodoroWindow.webContents.on('did-finish-load', sendPomodoroState);
+  windowManager.pomodoroWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  windowManager.pomodoroWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.pomodoroWindow.on('closed', () => {
+    windowManager.pomodoroWindow = null;
     stopPomodoroSession();
   });
 
-  return pomodoroWindow;
+  return windowManager.pomodoroWindow;
 }
 
 function openPomodoroWindow() {
@@ -997,33 +992,33 @@ function stopPomodoroSession() {
 
 function closePomodoroWindow() {
   stopPomodoroSession();
-  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
-    pomodoroWindow.close();
+  if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
+    windowManager.pomodoroWindow.close();
   }
   return getPomodoroSnapshot();
 }
 
 function applyPomodoroWindowPinState(shouldRaise = false) {
-  if (!pomodoroWindow || pomodoroWindow.isDestroyed()) return;
+  if (!windowManager.pomodoroWindow || windowManager.pomodoroWindow.isDestroyed()) return;
 
-  pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL);
+  windowManager.pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL);
 
   if (pomodoroAlwaysOnTop) {
-    pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   } else {
-    pomodoroWindow.setVisibleOnAllWorkspaces(false);
+    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(false);
   }
 
   if (!shouldRaise) return;
 
-  if (pomodoroWindow.isMinimized()) {
-    pomodoroWindow.restore();
+  if (windowManager.pomodoroWindow.isMinimized()) {
+    windowManager.pomodoroWindow.restore();
   }
-  if (!pomodoroWindow.isVisible()) {
-    pomodoroWindow.show();
+  if (!windowManager.pomodoroWindow.isVisible()) {
+    windowManager.pomodoroWindow.show();
   }
-  pomodoroWindow.moveTop();
-  pomodoroWindow.focus();
+  windowManager.pomodoroWindow.moveTop();
+  windowManager.pomodoroWindow.focus();
 }
 
 function setPomodoroAlwaysOnTop(enabled) {
@@ -1107,8 +1102,8 @@ function getPetVisibilityState() {
 }
 
 function sendPetVisibility(visible) {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.webContents.send('toggle-pet-visibility', visible, getPetVisibilityState());
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
+  windowManager.mainWindow.webContents.send('toggle-pet-visibility', visible, getPetVisibilityState());
 }
 
 function enterPomodoroPetFocus() {
@@ -1119,7 +1114,7 @@ function enterPomodoroPetFocus() {
   sendPetVisibility(false);
   if (!isPaused) {
     isPaused = true;
-    if (mainWindow) mainWindow.webContents.send('toggle-pause', true);
+    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', true);
   }
   refreshTrayMenu();
 }
@@ -1130,7 +1125,7 @@ function restorePomodoroPetFocus() {
   pomodoroPetHidden = false;
   if (isPaused !== wasPaused) {
     isPaused = wasPaused;
-    if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
+    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
   }
   sendPetVisibility(!isPetCurrentlyHidden());
   pomodoroFocusSnapshot = null;
@@ -1194,14 +1189,14 @@ function startMeetingDetector() {
  * 第二次点击应用图标时，唤起已存在的实例。
  */
 function showExistingInstance() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
 
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore();
+  if (windowManager.mainWindow.isMinimized()) {
+    windowManager.mainWindow.restore();
   }
 
-  if (!mainWindow.isVisible()) {
-    mainWindow.showInactive();
+  if (!windowManager.mainWindow.isVisible()) {
+    windowManager.mainWindow.showInactive();
   }
 
   showPetManually();
@@ -1218,7 +1213,7 @@ function createWindow() {
 
   const { x, y, width, height } = getDesktopWindowBounds();
 
-  mainWindow = new BrowserWindow({
+  windowManager.mainWindow = new BrowserWindow({
     width,
     height,
     x,
@@ -1240,8 +1235,8 @@ function createWindow() {
   });
 
   // 清理缓存并加载页面
-  mainWindow.webContents.session.clearCache().finally(() => {
-    mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  windowManager.mainWindow.webContents.session.clearCache().finally(() => {
+    windowManager.mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
   });
 
   // 设置鼠标穿透逻辑
@@ -1250,12 +1245,12 @@ function createWindow() {
   lockPetWindowToBounds({ x, y, width, height });
 
   // macOS 特有：全工作区可见
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   // 启动置顶守护
   startKeepOnTopWatcher();
 
-  mainWindow.webContents.on('did-finish-load', () => {
+  windowManager.mainWindow.webContents.on('did-finish-load', () => {
     console.log('Renderer loaded successfully');
     sendScreenInfo();
     sendActiveWindowInfo(activeWindowSampler?.getLastPayload());
@@ -1266,16 +1261,16 @@ function createWindow() {
   });
 
   // 安全加固：禁止新窗口和导航 (ADR-014)
-  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  windowManager.mainWindow.webContents.on('will-navigate', (event) => event.preventDefault());
 
   // 关键事件触发置顶重刷
-  mainWindow.on('show', keepPetWindowOnTop);
-  mainWindow.on('restore', keepPetWindowOnTop);
-  mainWindow.on('blur', keepPetWindowOnTop);
-  installFinalSaveBeforeClose(mainWindow);
+  windowManager.mainWindow.on('show', keepPetWindowOnTop);
+  windowManager.mainWindow.on('restore', keepPetWindowOnTop);
+  windowManager.mainWindow.on('blur', keepPetWindowOnTop);
+  installFinalSaveBeforeClose(windowManager.mainWindow);
 
-  mainWindow.on('closed', () => {
+  windowManager.mainWindow.on('closed', () => {
     if (keepOnTopTimer) {
       clearInterval(keepOnTopTimer);
       keepOnTopTimer = null;
@@ -1287,17 +1282,17 @@ function createWindow() {
     stopDragPoll();
     displayFitScheduler.clear();
     stopActiveWindowAwareness();
-    if (statusWindow && !statusWindow.isDestroyed()) {
-      statusWindow.close();
+    if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+      windowManager.statusWindow.close();
     }
-    if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
-      pomodoroWindow.close();
+    if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
+      windowManager.pomodoroWindow.close();
     }
     closeCitySettingWindow();
-    if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
-      skinSelectorWindow.close();
+    if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+      windowManager.skinSelectorWindow.close();
     }
-    mainWindow = null;
+    windowManager.mainWindow = null;
   });
 
   screen.on('display-added', displayFitScheduler.schedule);
@@ -1393,8 +1388,8 @@ function getSkinGalleryItems() {
 
 function selectSkin(skinId) {
   currentSkinId = skinId;
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('switch-skin', skinId);
+  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+    windowManager.mainWindow.webContents.send('switch-skin', skinId);
   }
   sendPomodoroState();
   refreshTrayMenu();
@@ -1431,18 +1426,18 @@ function buildTrayMenu() {
       await initStore();
       if (store) store.set(LOCALE_KEY, lang);
       refreshTrayMenu();
-      if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
-      if (statusWindow && !statusWindow.isDestroyed()) {
-        statusWindow.webContents.send('locale-changed', lang);
+      if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('locale-changed', lang);
+      if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+        windowManager.statusWindow.webContents.send('locale-changed', lang);
       }
-      if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
-        pomodoroWindow.webContents.send('locale-changed', lang);
+      if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
+        windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
       }
-      if (citySettingWindow && !citySettingWindow.isDestroyed()) {
-        citySettingWindow.webContents.send('locale-changed', lang);
+      if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
+        windowManager.citySettingWindow.webContents.send('locale-changed', lang);
       }
-      if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
-        skinSelectorWindow.webContents.send('locale-changed', lang);
+      if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+        windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
         sendSkinSelectorData({ resetSelection: false });
       }
     },
@@ -1457,9 +1452,9 @@ function buildTrayMenu() {
 
     // --- 独立功能 / 窗口 ---
     {
-      label: (statusWindow && !statusWindow.isDestroyed() && statusWindow.isVisible()) ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
+      label: (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed() && windowManager.statusWindow.isVisible()) ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
       click: () => {
-        if (mainWindow) mainWindow.webContents.send('toggle-status-panel');
+        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-status-panel');
       },
     },
     {
@@ -1482,7 +1477,7 @@ function buildTrayMenu() {
       enabled: !pomodoroPetHidden,
       click: () => {
         isPaused = !isPaused;
-        if (mainWindow) mainWindow.webContents.send('toggle-pause', isPaused);
+        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
         refreshTrayMenu();
       },
     },
@@ -1500,7 +1495,7 @@ function buildTrayMenu() {
     {
       label: trayMenuLabel('trayResetPos'),
       click: () => {
-        if (mainWindow) mainWindow.webContents.send('reset-positions');
+        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('reset-positions');
       },
     },
     ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
@@ -1591,7 +1586,7 @@ function buildTrayMenu() {
       {
         label: trayMenuLabel('trayDevTools'),
         click: () => {
-          if (mainWindow) mainWindow.webContents.openDevTools({ mode: 'detach' });
+          if (windowManager.mainWindow) windowManager.mainWindow.webContents.openDevTools({ mode: 'detach' });
         },
       },
     ] : []),
@@ -1630,8 +1625,8 @@ function createTray() {
 }
 
 function sendUpdateProgressPayload(payload) {
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-  updateProgressWindow.webContents.send('update-progress', payload);
+  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
+  windowManager.updateProgressWindow.webContents.send('update-progress', payload);
 }
 
 function showUpdateProgressWindow(payload) {
@@ -1642,8 +1637,8 @@ function showUpdateProgressWindow(payload) {
     percent: payload.percent ?? 0,
   };
 
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) {
-    updateProgressWindow = new BrowserWindow({
+  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) {
+    windowManager.updateProgressWindow = new BrowserWindow({
       width: 380,
       height: 172,
       resizable: false,
@@ -1651,7 +1646,7 @@ function showUpdateProgressWindow(payload) {
       maximizable: false,
       fullscreenable: false,
       title: normalizedPayload.title,
-      parent: mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
+      parent: windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() ? windowManager.mainWindow : undefined,
       webPreferences: {
         preload: path.join(__dirname, 'updateProgressPreload.js'),
         contextIsolation: true,
@@ -1659,28 +1654,28 @@ function showUpdateProgressWindow(payload) {
         sandbox: true,
       },
     });
-    updateProgressWindow.setMenuBarVisibility(false);
-    updateProgressWindow.on('closed', () => {
-      updateProgressWindow = null;
+    windowManager.updateProgressWindow.setMenuBarVisibility(false);
+    windowManager.updateProgressWindow.on('closed', () => {
+      windowManager.updateProgressWindow = null;
     });
-    updateProgressWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-    updateProgressWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-    updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'));
+    windowManager.updateProgressWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    windowManager.updateProgressWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+    windowManager.updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'));
 
-    updateProgressWindow.webContents.once('did-finish-load', () => {
+    windowManager.updateProgressWindow.webContents.once('did-finish-load', () => {
       sendUpdateProgressPayload(normalizedPayload);
     });
     return;
   }
 
-  updateProgressWindow.setTitle(normalizedPayload.title);
-  updateProgressWindow.show();
-  updateProgressWindow.focus();
+  windowManager.updateProgressWindow.setTitle(normalizedPayload.title);
+  windowManager.updateProgressWindow.show();
+  windowManager.updateProgressWindow.focus();
   sendUpdateProgressPayload(normalizedPayload);
 }
 
 function setUpdateProgress(percent) {
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
+  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
   sendUpdateProgressPayload({
     mode: 'downloading',
     title: trayText('updateDownloadingTitle', 'Downloading Update'),
@@ -1690,9 +1685,9 @@ function setUpdateProgress(percent) {
 }
 
 function closeUpdateProgressWindow() {
-  if (!updateProgressWindow || updateProgressWindow.isDestroyed()) return;
-  updateProgressWindow.close();
-  updateProgressWindow = null;
+  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
+  windowManager.updateProgressWindow.close();
+  windowManager.updateProgressWindow = null;
 }
 
 /**
@@ -1998,18 +1993,18 @@ ipcMain.handle('set-locale', async (_event, lang) => {
   await initStore();
   if (store) store.set(LOCALE_KEY, lang);
   refreshTrayMenu();
-  if (mainWindow) mainWindow.webContents.send('locale-changed', lang);
-  if (statusWindow && !statusWindow.isDestroyed()) {
-    statusWindow.webContents.send('locale-changed', lang);
+  if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('locale-changed', lang);
+  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+    windowManager.statusWindow.webContents.send('locale-changed', lang);
   }
-  if (pomodoroWindow && !pomodoroWindow.isDestroyed()) {
-    pomodoroWindow.webContents.send('locale-changed', lang);
+  if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
+    windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
   }
-  if (citySettingWindow && !citySettingWindow.isDestroyed()) {
-    citySettingWindow.webContents.send('locale-changed', lang);
+  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
+    windowManager.citySettingWindow.webContents.send('locale-changed', lang);
   }
-  if (skinSelectorWindow && !skinSelectorWindow.isDestroyed()) {
-    skinSelectorWindow.webContents.send('locale-changed', lang);
+  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+    windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
     sendSkinSelectorData({ resetSelection: false });
   }
   return { success: true, locale: lang };
@@ -2134,8 +2129,8 @@ if (!hasSingleInstanceLock) {
       onReminderDue: (payload) => {
         // 桌宠隐藏时不提示
         if (isPetCurrentlyHidden()) return false;
-        if (!mainWindow || mainWindow.isDestroyed()) return false;
-        mainWindow.webContents.send('break-reminder-triggered', payload);
+        if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return false;
+        windowManager.mainWindow.webContents.send('break-reminder-triggered', payload);
         return true;
       },
     });
@@ -2155,8 +2150,8 @@ if (!hasSingleInstanceLock) {
       // renderer game-loop never jumps. Record wall-clock time here and
       // tell the renderer to save immediately so the timestamp is fresh.
       suspendTimestamp = Date.now();
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('system-suspended');
+      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+        windowManager.mainWindow.webContents.send('system-suspended');
       }
     });
     powerMonitor.on('unlock-screen', () => {
@@ -2167,15 +2162,15 @@ if (!hasSingleInstanceLock) {
       // Calculate real wall-clock sleep duration and notify renderer
       const offlineMs = suspendTimestamp > 0 ? Math.max(0, Date.now() - suspendTimestamp) : 0;
       suspendTimestamp = 0;
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('system-resumed', { offlineMs });
+      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+        windowManager.mainWindow.webContents.send('system-resumed', { offlineMs });
       }
     });
 
     initUpdateManager({
       app,
       dialog,
-      getMainWindow: () => mainWindow,
+      getMainWindow: () => windowManager.mainWindow,
       refreshTrayMenu,
       updateProgressUi: {
         showChecking: ({ title, message }) => showUpdateProgressWindow({
