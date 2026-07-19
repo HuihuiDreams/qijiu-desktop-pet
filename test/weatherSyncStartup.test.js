@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
 
 test('weather sync tray state updates before async geocoding completes', () => {
   const functionStart = mainSource.indexOf('async function updateWeatherSyncSettings(newSettings)');
@@ -26,7 +26,7 @@ test('weather sync tray state updates before async geocoding completes', () => {
 
 test('weather sync first fetch waits until the renderer has loaded', () => {
   const readyStart = mainSource.indexOf('app.whenReady().then(async () => {');
-  const createWindowIndex = mainSource.indexOf('setTimeout(createWindow, 500)', readyStart);
+  const createWindowIndex = mainSource.indexOf('createWindow();', readyStart);
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
   const storedSettingsIndex = mainSource.indexOf('weatherSyncSettings = getStoredWeatherSyncSettings();', readyStart);
   const startupSyncIndex = mainSource.indexOf('updateWeatherSyncSettings(weatherSyncSettings);', loadHandlerIndex);

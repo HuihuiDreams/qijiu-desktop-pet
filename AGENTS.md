@@ -35,7 +35,7 @@ in this project.
 2. Preload (`preload.js`): exposes safe APIs through `window.electronAPI`.
 3. Renderer (`src/`): owns the game loop, systems, and UI rendering. Do not use
    direct Node APIs in renderer code.
-4. IPC Security Boundary: All sensitive operations (skin selection changes, protected asset loading, file system access) must be strictly validated and authorized within `main.js` IPC handlers.
+4. IPC Security Boundary: All sensitive operations (skin selection changes, protected asset loading, file system access) must be strictly validated and authorized within main process IPC handlers.
    When restricting sender ID, always retain/expose E2E QA entry points (e.g., `app.openSkinSelectorForQA`) to avoid smoke test deadlocks.
 
 ## Runtime Constraints

@@ -50,7 +50,7 @@ function scanAvailableSkins(assetsDir) {
 const ASSETS_DIR = path.join(__dirname, '..', 'src', 'assets');
 
 test('main.js escapes literal ampersands in Electron menu labels', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
 
   assert.ok(mainSource.includes('function escapeElectronMenuLabel'), 'menu labels should have a dedicated Electron escape helper');
   assert.ok(mainSource.includes("replaceAll('&', '&&')"), 'literal ampersands should be doubled for Electron menus');
@@ -70,14 +70,14 @@ test('scanAvailableSkins: 能扫描到 default 皮肤文件夹', () => {
 });
 
 test('main.js tray menu includes only one update menu item', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   const updateMenuItemCount = (mainSource.match(/label:\s*updateMenuState\.checking/g) || []).length;
 
   assert.equal(updateMenuItemCount, 1);
 });
 
 test('main.js tray menu shows app version at the bottom', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   const quitIndex = mainSource.indexOf("trayMenuLabel('trayQuit')");
   const versionLabelIndex = mainSource.indexOf("trayMenuLabel('trayVersion', 'Version')", quitIndex);
   const versionValueIndex = mainSource.indexOf('app.getVersion()', mainSource.indexOf('function buildTrayMenu()'));
@@ -108,28 +108,28 @@ test('scanAvailableSkins: 不存在的目录返回兜底值 [default]', () => {
 // --- SKIN_NAMES 映射测试（从 main.js 中提取验证） ---
 
 test('main.js 中包含皮肤本地化 key 映射', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes('SKIN_NAME_KEYS'), '托盘皮肤名应通过本地化 key 映射');
   assert.ok(mainSource.includes("'default': 'skinDefault'"), 'default 皮肤应映射到 skinDefault');
   assert.ok(mainSource.includes('getSkinGalleryDisplayName(skinId)'), '皮肤画廊应通过当前语言生成显示名');
 });
 
 test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes("tray.setToolTip(trayT('trayTitle'))"), '托盘 tooltip 应使用多语言标题');
 });
 
 // --- 托盘菜单结构验证 ---
 
 test('main.js 中 buildTrayMenu 使用皮肤画廊入口替代单选子菜单', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes("trayMenuLabel('trayChooseSkin')"), '托盘菜单应包含选择皮肤入口');
   assert.ok(mainSource.includes('openSkinSelector()'), '选择皮肤入口应打开画廊窗口');
   assert.ok(!mainSource.includes('submenu: skinSubmenu'), '不应继续渲染旧的皮肤单选子菜单');
 });
 
 test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   const resetIndex = mainSource.indexOf("trayMenuLabel('trayResetPos')");
   const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
   const autoLaunchIndex = mainSource.indexOf("trayMenuLabel('trayAutoLaunchOn')", softwareSeparatorIndex);
@@ -144,7 +144,7 @@ test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => 
 });
 
 test('main.js 托盘开发者工具只在开发态显示', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   const devToolsGuardIndex = mainSource.indexOf("...(!app.isPackaged ? [");
   const devToolsIndex = mainSource.indexOf("trayMenuLabel('trayDevTools')", devToolsGuardIndex);
   const devToolsGuardEndIndex = mainSource.indexOf("] : [])", devToolsIndex);
@@ -155,19 +155,19 @@ test('main.js 托盘开发者工具只在开发态显示', () => {
 });
 
 test('main.js 中 switch-skin IPC 消息在菜单点击时发送', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes("send('switch-skin'"), '点击皮肤菜单应发送 switch-skin IPC');
 });
 
 // --- IPC handler 注册验证 ---
 
 test('main.js 注册了 get-available-skins IPC handler', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes("ipcMain.handle('get-available-skins'"), '应注册 get-available-skins handler');
 });
 
 test('main.js 注册了 set-current-skin IPC handler', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
+  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
   assert.ok(mainSource.includes("ipcMain.handle('set-current-skin'"), '应注册 set-current-skin handler');
   assert.ok(mainSource.includes("createIpcFailure('VALIDATION_ERROR'"), '无效皮肤应返回结构化 IPC 错误');
   assert.ok(mainSource.includes("createIpcFailure('INTERNAL_ERROR'"), '内部异常应返回结构化 IPC 错误');

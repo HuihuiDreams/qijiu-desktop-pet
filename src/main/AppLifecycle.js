@@ -1568,7 +1568,7 @@ class AppLifecycle {
 
     createWindow();
 
-    const { I18N } = require('../data/i18n');
+
     trayManager.init({
       getPomodoroSnapshot,
       getUpdateMenuState,
@@ -1603,7 +1603,7 @@ class AppLifecycle {
       setWindowAwarenessEnabled: (val) => setWindowAwarenessEnabled(val),
       AutoLaunchService,
       checkForUpdatesFromTray,
-      I18N: require('../data/i18n').I18N,
+
       windowManager
     });
     trayManager.createTray();

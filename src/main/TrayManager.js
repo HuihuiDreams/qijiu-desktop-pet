@@ -106,7 +106,7 @@ function buildTrayMenu() {
       click: () => {
         const newPaused = !deps.getIsPaused();
         deps.setIsPaused(newPaused);
-        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', newPaused);
+
         refreshTrayMenu();
       },
     },

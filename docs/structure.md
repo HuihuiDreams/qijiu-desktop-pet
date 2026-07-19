@@ -16,7 +16,6 @@ graph TB
         
         AppLifecycle --> WindowManager["src/main/windows/WindowManager.js"]
         AppLifecycle --> TrayManager["src/main/TrayManager.js"]
-        
         WindowManager --> PetWindow["Transparent Pet BrowserWindow"]
         WindowManager --> StatusWindow["Independent Status BrowserWindow"]
         WindowManager --> SkinSelectorWindow["Skin Selector BrowserWindow"]
@@ -77,7 +76,7 @@ graph TB
 qijiu-desktop-pet/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
-├─ src/main/AppLifecycle.js             # 主进程生命周期托管：接管 ready / powerMonitor 事件，组装与初始化各子模块，并集中处理动态 IPC 注册
+├─ src/main/AppLifecycle.js             # 主进程生命周期托管：接管 ready / powerMonitor 事件，组装与初始化各子模块，集中处理 IPC
 ├─ src/main/TrayManager.js              # 系统托盘管理：构建托盘菜单、处理中英文切换及各菜单项的点击交互
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程

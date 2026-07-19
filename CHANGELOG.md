@@ -23,6 +23,10 @@
 - **选肤窗口 macOS SIGSEGV 崩溃修复 (`Skin Selector macOS SIGSEGV Crash`)**：修复了在 macOS 上打开选肤窗口时因 `BrowserWindow` 配置与原生交互冲突导致的段错误 (`SIGSEGV`)。具体措施：移除窗口创建后立即调用 `setAlwaysOnTop`/`setVisibleOnAllWorkspaces`（已由构造器 `alwaysOnTop: true` 覆盖，且 `visibleOnFullScreen` 同步调用在 macOS 上已知会触发 SIGSEGV）；规范化窗口属性（移除 `hasShadow: false`、`skipTaskbar: true`、`resizable: false` 等易与 macOS 窗口管理器冲突的标记）；将皮肤数据发送从即时 + `did-finish-load` 双发改为仅在 `did-finish-load` 后发送，避免在渲染进程就绪前操作 `webContents`。
 - **深夜梦话触发条件修复 (`Night Dream Dialogue Trigger Fix`)**：修复了在深夜时段中，即使宠物在走动（非睡眠状态）或者被玩家主动左键点击时，也会不符合常理地弹出梦话的逻辑错误。现在梦话机制已被独立提取，并严格限制仅在宠物处于 `idle` 状态（即视觉上表现为睡眠状态 😴）时触发，否则正确回退为常规闲聊。
 - **macOS 修仙状态窗口关闭按钮点击穿透修复 (`Status Window macOS Hit Test`)**：修复在 macOS 环境下，修仙状态独立面板右上角关闭按钮（`.status-close`）因处在可拖拽区域 (`-webkit-app-region: drag`) 的 Flex 容器内，导致点击事件被原生系统拦截失效的问题。通过为 `app-region: no-drag` 元素显式添加 `position: relative` 和 `z-index: 10` 创建独立层叠上下文，并配合禁用文本选中，恢复其在 macOS 下的正常点击响应能力。
+- **依赖与传参冗余清理 (`Dependency & Argument Redundancy Cleanup`)**：清理了 `AppLifecycle.js` 中重复导入的 `require('../data/i18n')`，以及在初始化托盘管理器时多余的 `I18N` 参数传递，保证模块职责单一。
+- **暂停事件双发修正 (`Pause Toggle Duplicate Fix`)**：去除了 `TrayManager.js` 中越权直接使用 `windowManager.mainWindow.webContents.send` 派发 `toggle-pause` 的代码，统一由生命周期回调函数 `deps.setIsPaused` 处理，避免事件双发。
+- **AST 静态分析测试套件适配 (`AST Static Analysis Test Suite Fixes`)**：修复了在删除废弃路由文件 `IpcRouter.js` 并移除 `app.whenReady` 中的 `setTimeout` 硬编码后，部分依赖 `mainSource.indexOf` 源码扫描的单元测试 (`mainApplicationMenu.test.js`, `weatherSyncStartup.test.js` 等) 发生的失败，确保了持续集成链路 100% 通过。
+- **临时脚本目录清理 (`Scratch Script Cleanup`)**：彻底清理了重构期间由于使用多次 Codemod 工具而残留在 `scratch/` 目录中的 56 个无用一次性代码替换脚本，仅保留了具有参考价值的 `old_main.js`。
 
 ## [0.9.1] - 2026-07-16
 ### Added
