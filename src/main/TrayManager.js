@@ -241,16 +241,16 @@ function createTrayIconBuffer() {
     '                ',
     '                ',
     '                ',
-    '      ####      ',
-    '     #    #     ',
-    '    # #  # #    ',
-    '    #      #    ',
-    '   #   ##   #   ',
-    '   #        #   ',
-    '    #      #    ',
-    '    # #### #    ',
-    '     #    #     ',
-    '      ####      ',
+    '  XXXXX   XXXX  ',
+    '      X  X    X ',
+    '     X   X    X ',
+    '     X    XXXXX ',
+    '    X         X ',
+    '    X         X ',
+    '   X      XXXX  ',
+    '                ',
+    '                ',
+    '                ',
     '                ',
     '                ',
     '                ',
@@ -259,15 +259,12 @@ function createTrayIconBuffer() {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const idx = (y * size + x) * 4;
-      if (bitmap[y][x] === '#') {
+      if (bitmap[y]?.[x] === 'X') {
         pixels[idx] = 0;
-        pixels[idx + 1] = 0;
+        pixels[idx + 1] = 128;
         pixels[idx + 2] = 0;
         pixels[idx + 3] = 255;
       } else {
-        pixels[idx] = 0;
-        pixels[idx + 1] = 0;
-        pixels[idx + 2] = 0;
         pixels[idx + 3] = 0;
       }
     }
@@ -313,5 +310,6 @@ module.exports = {
   createTray,
   refreshTrayMenu,
   trayT,
+  trayText,
   getTray
 };

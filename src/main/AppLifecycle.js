@@ -465,13 +465,8 @@ function sendStatusWindowData() {
 
 function showStatusWindow(data) {
   lastStatusWindowData = data;
-  const win = createStatusWindow();
-  if (!win.isVisible()) {
-    win.show();
-    trayManager.refreshTrayMenu();
-  }
-  win.moveTop();
-  sendStatusWindowData();
+  statusWindowModule.openStatusWindow();
+  trayManager.refreshTrayMenu();
 }
 
 function updateStatusWindow(data) {
@@ -758,7 +753,7 @@ function requestRendererFinalSave(win) {
       settle(false);
     }, FINAL_SAVE_TIMEOUT_MS);
 
-    
+    ipcMain.on('save-before-quit-complete', handleComplete);
     win.webContents.send('save-before-quit', requestId);
   });
 }
@@ -1156,7 +1151,7 @@ function setUpdateProgress(percent) {
   if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
   sendUpdateProgressPayload({
     mode: 'downloading',
-    title: trayText('updateDownloadingTitle', 'Downloading Update'),
+    title: trayManager.trayText('updateDownloadingTitle', 'Downloading Update'),
     message: trayManager.trayT('updateDownloadingMsg'),
     percent,
   });
@@ -1571,7 +1566,7 @@ class AppLifecycle {
       t: trayManager.trayT,
     });
 
-    setTimeout(createWindow, 500);
+    createWindow();
 
     const { I18N } = require('../data/i18n');
     trayManager.init({
@@ -1587,7 +1582,7 @@ class AppLifecycle {
       openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
       getIsPaused: () => isPaused,
       getPomodoroPetHidden: () => pomodoroPetHidden,
-      setIsPaused: (val) => { isPaused = val; applyPauseState(); },
+      setIsPaused: (val) => { isPaused = val; if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('toggle-pause', isPaused); },
       isPetCurrentlyHidden,
       showPetManually,
       hidePetManually,
@@ -1599,7 +1594,7 @@ class AppLifecycle {
       setBreakReminderIntervalMinutes: (val) => breakReminderIntervalMinutes = val,
       getBreakReminderService: () => breakReminderService,
       BREAK_REMINDER_STORE_KEY,
-      BREAK_REMINDER_TRAY_INTERVALS: [20, 30, 45, 60],
+      BREAK_REMINDER_TRAY_INTERVALS,
       getWeatherSyncSettings: () => weatherSyncSettings,
       getStoredWeatherSyncSettings,
       updateWeatherSyncSettings,
@@ -1624,6 +1619,7 @@ class AppLifecycle {
     pomodoroWindowModule.init({
       getPomodoroSystem: () => pomodoroSystem,
       createIpcSuccess,
+      createIpcFailure,
       startPomodoroSession,
       stopPomodoroSession,
       sendPomodoroState,

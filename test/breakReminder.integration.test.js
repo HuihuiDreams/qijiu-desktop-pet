@@ -8,7 +8,7 @@ const path = require('path');
 // ═══════════════════════════════════════════════════════════════════
 
 const ROOT = path.join(__dirname, '..');
-const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'IpcRouter.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'TrayManager.js'), 'utf8');
 const preloadSource = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
 const appSource = fs.readFileSync(path.join(ROOT, 'src', 'app.js'), 'utf8');
 const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf8');

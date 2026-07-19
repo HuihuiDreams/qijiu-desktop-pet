@@ -14,8 +14,8 @@ function init(dependencies) {
 }
 
 function getInitialStatusWindowBounds() {
-  const width = 160;
-  const height = 180;
+  const width = 400;
+  const height = 460;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
@@ -59,6 +59,10 @@ function createStatusWindow() {
   windowManager.statusWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   windowManager.statusWindow.on('closed', () => {
     windowManager.statusWindow = null;
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('status-window-closed');
+    }
+    deps.refreshTrayMenu();
   });
 
   return windowManager.statusWindow;

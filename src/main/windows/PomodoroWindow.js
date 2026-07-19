@@ -9,51 +9,65 @@ let deps = {};
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.handle('pomodoro-open-window', () => {
-    openPomodoroWindow();
-    return true;
-  });
-
-  ipcMain.handle('pomodoro-get-state', () => {
-    const sys = deps.getPomodoroSystem();
-    return {
-      isAlwaysOnTop: pomodoroAlwaysOnTop,
-      state: sys.getState(),
-      timeRemaining: sys.getTimeRemaining(),
-      currentPhase: sys.getCurrentPhase(),
-    };
-  });
-
-  ipcMain.handle('pomodoro-start', (event, { workDuration, breakDuration }) => {
-    return deps.createIpcSuccess(deps.startPomodoroSession(workDuration, breakDuration));
-  });
-
-  ipcMain.handle('pomodoro-stop', () => {
-    return deps.createIpcSuccess(deps.stopPomodoroSession());
-  });
-
-  ipcMain.handle('pomodoro-close-window', () => {
-    return deps.createIpcSuccess(closePomodoroWindow());
-  });
-
-  ipcMain.handle('pomodoro-set-always-on-top', (event, enabled) => {
-    pomodoroAlwaysOnTop = Boolean(enabled);
-    applyPomodoroWindowPinState(pomodoroAlwaysOnTop);
-    return deps.createIpcSuccess();
-  });
-
-  ipcMain.handle('pomodoro-command', (event, command) => {
-    const sys = deps.getPomodoroSystem();
-    const success = sys.handleCommand(command);
-    if (!success) return { success: false, error: 'Invalid Pomodoro command in current state' };
-    if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
-      windowManager.pomodoroWindow.webContents.send('pomodoro-state-update', {
-        state: sys.getState(),
-        timeRemaining: sys.getTimeRemaining(),
-        currentPhase: sys.getCurrentPhase(),
-      });
+  ipcMain.handle('pomodoro-open-window', async () => {
+    try {
+      await deps.initStore();
+      openPomodoroWindow();
+      return deps.createIpcSuccess(deps.getPomodoroSnapshot());
+    } catch (error) {
+      console.error('Failed to open pomodoro window:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to open pomodoro window');
     }
-    return deps.createIpcSuccess();
+  });
+
+  ipcMain.handle('pomodoro-get-state', async () => {
+    try {
+      return deps.createIpcSuccess(deps.getPomodoroSnapshot());
+    } catch (error) {
+      console.error('Failed to read pomodoro state:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to read pomodoro state');
+    }
+  });
+
+  ipcMain.handle('pomodoro-start', async (_event, minutes) => {
+    try {
+      await deps.startPomodoroSession(minutes);
+      return deps.createIpcSuccess(deps.getPomodoroSnapshot());
+    } catch (error) {
+      console.error('Failed to start pomodoro:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to start pomodoro');
+    }
+  });
+
+  ipcMain.handle('pomodoro-stop', async () => {
+    try {
+      deps.stopPomodoroSession();
+      return deps.createIpcSuccess(deps.getPomodoroSnapshot());
+    } catch (error) {
+      console.error('Failed to stop pomodoro:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to stop pomodoro');
+    }
+  });
+
+  ipcMain.handle('pomodoro-close-window', async () => {
+    try {
+      return deps.createIpcSuccess(closePomodoroWindow());
+    } catch (error) {
+      console.error('Failed to close pomodoro window:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to close pomodoro window');
+    }
+  });
+
+  ipcMain.handle('pomodoro-set-always-on-top', async (_event, enabled) => {
+    try {
+      pomodoroAlwaysOnTop = Boolean(enabled);
+      applyPomodoroWindowPinState(pomodoroAlwaysOnTop);
+      deps.sendPomodoroState();
+      return deps.createIpcSuccess(deps.getPomodoroSnapshot());
+    } catch (error) {
+      console.error('Failed to update pomodoro pin state:', error);
+      return deps.createIpcFailure('INTERNAL_ERROR', 'Failed to update pomodoro pin state');
+    }
   });
 }
 

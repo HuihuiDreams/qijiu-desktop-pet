@@ -8,28 +8,6 @@ let deps = {};
 
 function init(dependencies) {
   deps = dependencies;
-
-  ipcMain.handle('skin-preview', (event, skinId) => {
-    if (!isValidSkinSelectorSender(event)) return { success: false };
-    skinSelectorSelectionInProgress = true;
-    deps.selectSkin(skinId);
-    return { success: true };
-  });
-
-  ipcMain.handle('skin-select', (event, skinId) => {
-    if (!isValidSkinSelectorSender(event)) return { success: false };
-    skinSelectorSelectionInProgress = false;
-    deps.selectSkin(skinId);
-    closeSkinSelectorWindow();
-    return { success: true };
-  });
-
-  ipcMain.handle('skin-cancel', (event) => {
-    if (!isValidSkinSelectorSender(event)) return { success: false };
-    cancelSkinSelection();
-    closeSkinSelectorWindow();
-    return { success: true };
-  });
 }
 
 function getInitialSkinSelectorWindowBounds() {
@@ -73,15 +51,9 @@ function createSkinSelectorWindow() {
   windowManager.skinSelectorWindow = new BrowserWindow({
     ...getInitialSkinSelectorWindowBounds(),
     show: false,
-    backgroundColor: '#1a1a2e',
-    transparent: false,
-    frame: true,
+    transparent: true,
+    frame: false,
     alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
-    hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, '..', '..', '..', 'skinSelectorPreload.js'),
       contextIsolation: true,
@@ -92,7 +64,7 @@ function createSkinSelectorWindow() {
 
   windowManager.skinSelectorWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'skin-selector.html'));
 
-  windowManager.skinSelectorWindow.webContents.on('did-finish-load', sendSkinSelectorData);
+  windowManager.skinSelectorWindow.webContents.on('did-finish-load', () => sendSkinSelectorData({ isInitialLoad: true }));
   windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   windowManager.skinSelectorWindow.on('closed', () => {
@@ -100,11 +72,16 @@ function createSkinSelectorWindow() {
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
   });
+  
+  windowManager.skinSelectorWindow.on('blur', () => {
+    closeSkinSelectorWindow();
+  });
 
   return windowManager.skinSelectorWindow;
 }
 
 function openSkinSelectorWindow() {
+  const wasAlreadyCreated = !!(windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed());
   const win = createSkinSelectorWindow();
   skinSelectorOriginalSkinId = deps.getCurrentSkinId();
   skinSelectorSelectionInProgress = false;
@@ -113,6 +90,9 @@ function openSkinSelectorWindow() {
   }
   win.moveTop();
   win.focus();
+  if (wasAlreadyCreated) {
+    sendSkinSelectorData({ isInitialLoad: false });
+  }
   return win;
 }
 
