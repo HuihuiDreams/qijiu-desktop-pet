@@ -54,6 +54,21 @@ test('main.js tray menu includes break reminder interval submenu', () => {
   assert.ok(mainSource.includes("BREAK_REMINDER_TRAY_INTERVALS"), 'should use intervals array');
 });
 
+test('break reminder tray intervals keep the full original option set', () => {
+  // The tray menu must offer the original [30, 45, 60, 90, 120] minute options and
+  // pass the shared constant, not a hardcoded literal that drops 90/120.
+  assert.match(
+    mainSource,
+    /const BREAK_REMINDER_TRAY_INTERVALS = \[30, 45, 60, 90, 120\]/,
+    'the constant must retain 30/45/60/90/120'
+  );
+  assert.match(
+    mainSource,
+    /BREAK_REMINDER_TRAY_INTERVALS,/,
+    'tray init must pass the constant, not a hardcoded literal'
+  );
+});
+
 test('main.js marks the primary display walk area for renderer screen info', () => {
   assert.ok(mainSource.includes('screen.getPrimaryDisplay()'), 'should read the primary display');
   assert.ok(mainSource.includes('primaryDisplayId'), 'should pass primary display id into walk area conversion');

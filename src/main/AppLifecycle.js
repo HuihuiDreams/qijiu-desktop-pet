@@ -690,38 +690,6 @@ function stopPomodoroSession() {
 
 
 
-function applyPomodoroWindowPinState(shouldRaise = false) {
-  if (!windowManager.pomodoroWindow || windowManager.pomodoroWindow.isDestroyed()) return;
-
-  windowManager.pomodoroWindow.setAlwaysOnTop(pomodoroWindowModule.isPomodoroAlwaysOnTop(), POMODORO_ALWAYS_ON_TOP_LEVEL);
-
-  if (pomodoroWindowModule.isPomodoroAlwaysOnTop()) {
-    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  } else {
-    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(false);
-  }
-
-  if (!shouldRaise) return;
-
-  if (windowManager.pomodoroWindow.isMinimized()) {
-    windowManager.pomodoroWindow.restore();
-  }
-  if (!windowManager.pomodoroWindow.isVisible()) {
-    windowManager.pomodoroWindow.show();
-  }
-  windowManager.pomodoroWindow.moveTop();
-  windowManager.pomodoroWindow.focus();
-}
-
-function setPomodoroAlwaysOnTop(enabled) {
-  pomodoroWindowModule.isPomodoroAlwaysOnTop() = Boolean(enabled);
-  // Only raise when pinning; when unpinning the user is already looking at the
-  // window and moveTop()/focus() would re-promote it into macOS fullscreen Spaces.
-  applyPomodoroWindowPinState(pomodoroWindowModule.isPomodoroAlwaysOnTop());
-  sendPomodoroState();
-  return getPomodoroSnapshot();
-}
-
 function requestRendererFinalSave(win) {
   if (!win || win.isDestroyed() || win.webContents.isDestroyed()) {
     return Promise.resolve(false);
@@ -1609,7 +1577,10 @@ class AppLifecycle {
     trayManager.createTray();
 
 
-    statusWindowModule.init({ sendStatusWindowData });
+    statusWindowModule.init({
+      sendStatusWindowData,
+      refreshTrayMenu: () => trayManager.refreshTrayMenu()
+    });
     citySettingWindowModule.init();
     skinSelectorWindowModule.init({
       selectSkin,
@@ -1620,6 +1591,7 @@ class AppLifecycle {
       getPomodoroSystem: () => pomodoroSystem,
       createIpcSuccess,
       createIpcFailure,
+      initStore: () => StoreManager.initStore(),
       startPomodoroSession,
       stopPomodoroSession,
       sendPomodoroState,

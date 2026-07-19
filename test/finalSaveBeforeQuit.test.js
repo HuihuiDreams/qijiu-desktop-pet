@@ -15,6 +15,12 @@ test('main process waits for renderer final save before closing the pet window',
   assert.ok(mainSource.includes('installFinalSaveBeforeClose(windowManager.mainWindow)'));
   assert.ok(mainSource.includes("event.preventDefault()"));
   assert.ok(mainSource.includes("win.webContents.send('save-before-quit', requestId)"));
+  // The completion listener must be registered, not only removed — otherwise the
+  // renderer's ack is never heard and every quit stalls for the full timeout.
+  assert.ok(
+    mainSource.includes("ipcMain.on('save-before-quit-complete', handleComplete)"),
+    'must register the save-before-quit-complete listener'
+  );
   assert.ok(mainSource.includes("ipcMain.removeListener('save-before-quit-complete'"));
   assert.ok(mainSource.includes('FINAL_SAVE_TIMEOUT_MS'));
 });

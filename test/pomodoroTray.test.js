@@ -43,6 +43,27 @@ test('main process registers pomodoro IPC handlers', () => {
   }
 });
 
+test('pomodoro handlers honor the snapshot IPC contract used by the renderer', () => {
+  const pomodoroSource = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'main', 'windows', 'PomodoroWindow.js'),
+    'utf8'
+  );
+
+  // pomodoro-start must accept the plain minutes number the renderer sends and
+  // await the async session start — not destructure {workDuration, breakDuration}
+  // and wrap an un-awaited Promise (which fails structured-clone over IPC).
+  assert.match(pomodoroSource, /ipcMain\.handle\('pomodoro-start',\s*async\s*\(_event,\s*minutes\)/);
+  assert.match(pomodoroSource, /await deps\.startPomodoroSession\(minutes\)/);
+  assert.equal(pomodoroSource.includes('workDuration'), false, 'must not destructure workDuration');
+
+  // pomodoro-get-state must return the snapshot envelope; it must not call methods
+  // that do not exist on PomodoroSystem (getState/getTimeRemaining/getCurrentPhase).
+  assert.match(pomodoroSource, /createIpcSuccess\(deps\.getPomodoroSnapshot\(\)\)/);
+  for (const missing of ['getState()', 'getTimeRemaining()', 'getCurrentPhase()']) {
+    assert.equal(pomodoroSource.includes(missing), false, `must not call sys.${missing}`);
+  }
+});
+
 test('toggling pomodoro pin state keeps the window reachable', () => {
   assert.match(mainSource, /function applyPomodoroWindowPinState\(shouldRaise = false\)/);
   assert.match(mainSource, /applyPomodoroWindowPinState\(pomodoroAlwaysOnTop\)/);
