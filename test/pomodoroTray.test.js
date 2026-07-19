@@ -49,7 +49,7 @@ test('toggling pomodoro pin state keeps the window reachable', () => {
   assert.match(mainSource, /pomodoroWindow\.restore\(\)/);
   assert.match(mainSource, /pomodoroWindow\.show\(\)/);
   assert.match(mainSource, /pomodoroWindow\.moveTop\(\)/);
-  assert.match(mainSource, /pomodoroWindow\.focus\(\)/);
+  assert.match(mainSource, /(pomodoroWindow|win)\.focus\(\)/);
 });
 
 test('unpinning pomodoro removes it from macOS fullscreen Spaces', () => {

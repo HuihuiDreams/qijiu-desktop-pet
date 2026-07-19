@@ -1075,8 +1075,6 @@ function getSkinGalleryItems() {
   return buildSkinGalleryItems({
     skinIds: scanAvailableSkins(),
     currentSkinId: activeSkinId,
-    skinIds: scanAvailableSkins(),
-    currentSkinId: skinSelectorOriginalSkinId != null ? skinSelectorOriginalSkinId : currentSkinId,
     getDisplayName: getSkinGalleryDisplayName,
     getSkinLabel,
     getArtistName: getSkinArtistName,

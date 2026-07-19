@@ -72,6 +72,8 @@ function createSkinSelectorWindow() {
 
   windowManager.skinSelectorWindow = new BrowserWindow({
     ...getInitialSkinSelectorWindowBounds(),
+    show: false,
+    backgroundColor: '#1a1a2e',
     transparent: false,
     frame: true,
     alwaysOnTop: true,
@@ -88,18 +90,11 @@ function createSkinSelectorWindow() {
     },
   });
 
-  windowManager.skinSelectorWindow.setAlwaysOnTop(true, 'floating');
-  windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  
-  // Note path changed since we are in src/main/windows
   windowManager.skinSelectorWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'skin-selector.html'));
 
   windowManager.skinSelectorWindow.webContents.on('did-finish-load', sendSkinSelectorData);
   windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-  windowManager.skinSelectorWindow.on('blur', () => {
-    // Optional: auto-close on blur
-  });
   windowManager.skinSelectorWindow.on('closed', () => {
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
@@ -109,16 +104,15 @@ function createSkinSelectorWindow() {
   return windowManager.skinSelectorWindow;
 }
 
-function openSkinSelectorWindow() { console.error("DEPS IS:", deps);
+function openSkinSelectorWindow() {
   const win = createSkinSelectorWindow();
   skinSelectorOriginalSkinId = deps.getCurrentSkinId();
+  skinSelectorSelectionInProgress = false;
   if (!win.isVisible()) {
     win.show();
   }
-  skinSelectorSelectionInProgress = false;
   win.moveTop();
   win.focus();
-  sendSkinSelectorData({ isInitialLoad: true });
   return win;
 }
 

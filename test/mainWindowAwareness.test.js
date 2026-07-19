@@ -7,8 +7,8 @@ const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8'
 const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf8');
 
 test('main process wires active window provider and sampler', () => {
-  assert.ok(mainSource.includes("require('./activeWindowProvider')"));
-  assert.ok(mainSource.includes("require('./activeWindowAwareness')"));
+  assert.ok(mainSource.includes("require('../../activeWindowProvider')"));
+  assert.ok(mainSource.includes("require('../../activeWindowAwareness')"));
   assert.ok(mainSource.includes('ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000'));
   assert.ok(mainSource.includes('createActiveWindowProvider(process.platform)'));
   assert.ok(mainSource.includes('createActiveWindowSampler({'));

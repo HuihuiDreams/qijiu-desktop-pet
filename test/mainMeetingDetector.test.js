@@ -6,7 +6,7 @@ const test = require('node:test');
 const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'IpcRouter.js'), 'utf8');
 
 test('main process wires meeting detector lifecycle', () => {
-  assert.ok(mainSource.includes("require('./meetingDetector')"));
+  assert.ok(mainSource.includes("require('../../meetingDetector')"));
   assert.ok(mainSource.includes('let meetingDetector = null'));
   assert.ok(mainSource.includes('function startMeetingDetector()'));
   assert.ok(mainSource.includes('function stopMeetingDetector()'));
@@ -16,7 +16,7 @@ test('main process wires meeting detector lifecycle', () => {
 test('meeting detector starts only after renderer visibility listener can be installed', () => {
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
   const detectorStartIndex = mainSource.indexOf('startMeetingDetector();');
-  const readyCreateWindowIndex = mainSource.indexOf('createWindow();');
+  const readyCreateWindowIndex = Math.max(mainSource.indexOf('setTimeout(createWindow, 500)'), mainSource.indexOf('createWindow();'));
 
   assert.notEqual(loadHandlerIndex, -1);
   assert.notEqual(detectorStartIndex, -1);

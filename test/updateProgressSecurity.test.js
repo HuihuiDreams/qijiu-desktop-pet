@@ -14,8 +14,8 @@ test('update progress window uses local files and IPC instead of string script e
 
   assert.equal(mainSource.includes('executeJavaScript'), false);
   assert.equal(mainSource.includes('data:text/html'), false);
-  assert.ok(mainSource.includes("preload: path.join(__dirname, 'updateProgressPreload.js')"));
-  assert.ok(mainSource.includes("updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'))"));
+  assert.ok(mainSource.includes("preload: path.join(__dirname, 'updateProgressPreload.js')") || mainSource.includes("preload: path.join(__dirname, '..', '..', 'updateProgressPreload.js')"));
+  assert.ok(mainSource.includes("updateProgressWindow.loadFile(path.join(__dirname, 'src', 'update-progress.html'))") || mainSource.includes("updateProgressWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'update-progress.html'))"));
   assert.ok(mainSource.includes("webContents.send('update-progress', payload)"));
 });
 

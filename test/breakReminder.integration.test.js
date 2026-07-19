@@ -16,11 +16,11 @@ const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf8');
 // --- main.js 集成 ---
 
 test('main.js imports breakReminderService', () => {
-  assert.ok(mainSource.includes("require('./breakReminderService')"), 'should import breakReminderService');
+  assert.ok(mainSource.includes("require('../../breakReminderService')"), 'should import breakReminderService');
 });
 
 test('main.js imports presentationGuard', () => {
-  assert.ok(mainSource.includes("require('./presentationGuard')"), 'should import presentationGuard');
+  assert.ok(mainSource.includes("require('../../presentationGuard')"), 'should import presentationGuard');
 });
 
 test('main.js registers break-reminder-dismissed IPC listener', () => {

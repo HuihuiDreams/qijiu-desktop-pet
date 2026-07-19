@@ -26,7 +26,7 @@ test('weather sync tray state updates before async geocoding completes', () => {
 
 test('weather sync first fetch waits until the renderer has loaded', () => {
   const readyStart = mainSource.indexOf('app.whenReady().then(async () => {');
-  const createWindowIndex = mainSource.indexOf('createWindow();', readyStart);
+  const createWindowIndex = mainSource.indexOf('setTimeout(createWindow, 500)', readyStart);
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
   const storedSettingsIndex = mainSource.indexOf('weatherSyncSettings = getStoredWeatherSyncSettings();', readyStart);
   const startupSyncIndex = mainSource.indexOf('updateWeatherSyncSettings(weatherSyncSettings);', loadHandlerIndex);
