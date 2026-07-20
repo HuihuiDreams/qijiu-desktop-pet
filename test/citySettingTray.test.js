@@ -62,7 +62,12 @@ test('main process registers city setting IPC handlers', () => {
 test('set-city-name IPC validates input and performs geocode', () => {
   const handlerStart = mainSource.indexOf("ipcMain.handle('set-city-name'");
   assert.notEqual(handlerStart, -1);
-  const handlerBody = mainSource.slice(handlerStart, mainSource.indexOf('\n});', handlerStart) + 4);
+  // Handler indentation depends on which module currently owns it (e.g. nested
+  // inside a service's init(deps) function), so tolerate leading whitespace
+  // before the closing `});` rather than requiring it at column 0.
+  const closingMatch = /\n\s*\}\);/.exec(mainSource.slice(handlerStart));
+  assert.notEqual(closingMatch, null, 'set-city-name handler should have a closing block');
+  const handlerBody = mainSource.slice(handlerStart, handlerStart + closingMatch.index + closingMatch[0].length);
 
   // Validates string input
   assert.match(handlerBody, /typeof cityName !== 'string'/);

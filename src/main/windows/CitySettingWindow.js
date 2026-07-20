@@ -11,6 +11,11 @@ function init() {
     closeCitySettingWindow();
     return { success: true };
   });
+
+  ipcMain.handle('close-city-setting-window', () => {
+    closeCitySettingWindow();
+    return { success: true };
+  });
 }
 
 function pulseCitySettingWindowTop() {

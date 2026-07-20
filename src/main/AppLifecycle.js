@@ -12,20 +12,8 @@ const {
   createIpcSuccess,
   normalizeMousePassthroughRequest,
 } = require('../../ipcContracts');
-const {
-  createBreakReminderService,
-  normalizeSettings: normalizeBreakReminderSettings,
-  DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
-} = require('../../breakReminderService');
-const { createPresentationGuard } = require('../../presentationGuard');
 const { registerProtectedAssetProtocol } = require('../../protectedAssetProtocol');
 const { I18N } = require('../../src/data/i18n');
-const {
-  DEFAULT_WEATHER_SYNC_SETTINGS,
-  normalizeSettings: normalizeWeatherSyncSettings,
-  fetchWeather,
-  processSettingsChange,
-} = require('../../weatherSyncService');
 const StoreManager = require('./services/StoreManager');
 const AutoLaunchService = require('./services/AutoLaunchService');
 const SkinService = require('./services/SkinService');
@@ -36,7 +24,10 @@ const WindowAwarenessService = require('./services/WindowAwarenessService');
 const PetVisibilityService = require('./services/PetVisibilityService');
 const MeetingDetectorController = require('./services/MeetingDetectorController');
 const PomodoroService = require('./services/PomodoroService');
+const WeatherSyncController = require('./services/WeatherSyncController');
+const BreakReminderController = require('./services/BreakReminderController');
 const { isPetCurrentlyHidden, showPetManually, hidePetManually } = PetVisibilityService;
+const { getStoredWeatherSyncSettings, updateWeatherSyncSettings } = WeatherSyncController;
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
@@ -51,8 +42,6 @@ const AUTO_LAUNCH_KEY = 'autoLaunch';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const LOGIN_ITEM_NAME = '七九爱宠';
-const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
-const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'pet-asset',
@@ -71,14 +60,12 @@ let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
-let breakReminderService = null;
-let breakReminderEnabled = true;
-let breakReminderIntervalMinutes = 60;
-let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
-let weatherSyncIntervalTimer = null;
-let weatherSyncSettingsUpdateId = 0;
 let finalSaveRequestId = 0;
-let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
+// 启动引导期的天气同步设置局部缓存：仅用于 whenReady 内的初次加载赋值与
+// createWindow() did-finish-load 首帧 bootstrap 调用两处字面量调用点；真正的
+// 状态所有权与后续读写均归 WeatherSyncController，此变量本身不再被其他位置读取。
+// Phase 8 将 createWindow() 连同这两处调用点一并下沉至 PetWindow.js 后可彻底消灭。
+let weatherSyncSettings;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 
 function configureChromiumMemoryBudget() {
@@ -147,60 +134,10 @@ function startKeepOnTopWatcher() {
 // 实现委托给 SkinService/SkinSelectorWindow，这里仅保留 QA 入口本身。
 app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
 
-function getStoredWeatherSyncSettings() {
-  const store = StoreManager.getStore();
-  if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
-  const raw = store.get(WEATHER_SYNC_STORE_KEY);
-  return normalizeWeatherSyncSettings(raw);
-}
-
-function saveWeatherSyncSettings(settings) {
-  const store = StoreManager.getStore();
-  if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
-  const normalized = normalizeWeatherSyncSettings(settings);
-  store.set(WEATHER_SYNC_STORE_KEY, normalized);
-  return normalized;
-}
-
-async function startWeatherSync() {
-  if (weatherSyncIntervalTimer) {
-    clearInterval(weatherSyncIntervalTimer);
-    weatherSyncIntervalTimer = null;
-  }
-  if (!weatherSyncSettings.enabled) {
-    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-      windowManager.mainWindow.webContents.send('weather-update', { active: false });
-    }
-    return;
-  }
-
-  const doFetch = async () => {
-    const payload = await fetchWeather(weatherSyncSettings);
-    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() && payload) {
-      windowManager.mainWindow.webContents.send('weather-update', payload);
-    }
-  };
-
-  await doFetch(); // immediately fetch
-  const intervalMs = weatherSyncSettings.refreshIntervalMinutes * 60 * 1000;
-  weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
-}
-
-async function updateWeatherSyncSettings(newSettings) {
-  const updateId = ++weatherSyncSettingsUpdateId;
-  weatherSyncSettings = normalizeWeatherSyncSettings(newSettings);
-  trayManager.refreshTrayMenu();
-
-  const processedSettings = await processSettingsChange(weatherSyncSettings);
-  if (updateId !== weatherSyncSettingsUpdateId) return;
-
-  weatherSyncSettings = processedSettings;
-  saveWeatherSyncSettings(weatherSyncSettings);
-  trayManager.refreshTrayMenu();
-  startWeatherSync();
-}
-
-// --- 城市设置窗口 ---
+// 天气感知与时空同步设置存取、周期同步定时器与 store.onDidChange 订阅
+// 已下沉至 WeatherSyncController；此处仅保留 getStoredWeatherSyncSettings/
+// updateWeatherSyncSettings 两个字面量绑定（见上方 require 区），供 whenReady
+// 引导流程与 createWindow() 的 did-finish-load 首帧调用使用。
 
 
 
@@ -416,58 +353,9 @@ ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   setPetWindowMousePassthrough(request.ignore, request.options);
 });
 
-// 城市设置 IPC
-ipcMain.handle('get-city-settings', () => {
-  return { city: weatherSyncSettings.city || '' };
-});
-
-ipcMain.handle('set-city-name', async (_event, cityName) => {
-  if (typeof cityName !== 'string' || !cityName.trim()) {
-    return { success: false };
-  }
-
-  const trimmed = cityName.trim().slice(0, 100);
-  const currentStored = getStoredWeatherSyncSettings();
-  
-  // Force enabled to true temporarily to bypass processSettingsChange's fast-return
-  // and ensure geocoding validation runs.
-  const newSettings = {
-    ...currentStored,
-    city: trimmed,
-    lat: null,
-    lon: null,
-    enabled: true,
-  };
-
-  try {
-    const processed = await processSettingsChange(newSettings);
-    if (processed.lat === null || processed.lon === null) {
-      return { success: false };
-    }
-
-    // Restore the user's actual enabled preference before saving
-    processed.enabled = currentStored.enabled;
-
-    weatherSyncSettings = processed;
-    saveWeatherSyncSettings(weatherSyncSettings);
-    trayManager.refreshTrayMenu();
-    startWeatherSync();
-    return { success: true, city: processed.city };
-  } catch (err) {
-    console.error('Failed to set city:', err);
-    return { success: false };
-  }
-});
-
-ipcMain.handle('close-city-setting-window', () => {
-  citySettingWindowModule.closeCitySettingWindow();
-  return { success: true };
-});
-
-// 久坐提醒 IPC
-ipcMain.on('break-reminder-dismissed', () => {
-  if (breakReminderService) breakReminderService.onDismissed();
-});
+// 城市设置 IPC（get-city-settings/set-city-name）已下沉至 WeatherSyncController；
+// close-city-setting-window 已下沉至 CitySettingWindow.init；
+// 久坐提醒 IPC（break-reminder-dismissed）已下沉至 BreakReminderController。
 
 // --- 应用生命周期 ---
 
@@ -492,7 +380,7 @@ class AppLifecycle {
     }
 
     // 设置权限拦截
-    const { session, powerMonitor } = require('electron');
+    const { session } = require('electron');
     session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
       callback(false);
     });
@@ -502,73 +390,23 @@ class AppLifecycle {
     LocaleService.loadInitialLocale();
     await AutoLaunchService.syncAutoLaunchPreference();
 
-    // --- 久坐提醒服务初始化 ---
-    const storedBreakSettings = StoreManager.getStore() ? StoreManager.getStore().get(BREAK_REMINDER_STORE_KEY) : null;
-    const breakSettings = normalizeBreakReminderSettings(storedBreakSettings);
-    breakReminderEnabled = breakSettings.enabled;
-    breakReminderIntervalMinutes = breakSettings.intervalMinutes;
+    BreakReminderController.init({
+      ipcMain,
+      StoreManager,
+      PetVisibilityService,
+      WindowAwarenessService,
+      windowManager,
+    });
+
+    WeatherSyncController.init({
+      windowManager,
+      trayManager,
+      StoreManager,
+    });
 
     // Load persisted weather settings for the tray; the first fetch waits until renderer load.
     weatherSyncSettings = getStoredWeatherSyncSettings();
     trayManager.refreshTrayMenu();
-
-    // Listen to config changes if users open the editor and save it
-    StoreManager.getStore().onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
-      // Ignore undefined/null newValue which can happen during atomic file writes
-      if (!newValue) return;
-      updateWeatherSyncSettings(newValue);
-    });
-
-    const presentationGuard = createPresentationGuard({
-      platform: process.platform,
-      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload() || null,
-      getDisplays: () => screen.getAllDisplays(),
-    });
-
-    breakReminderService = createBreakReminderService({
-      powerMonitor,
-      presentationGuard,
-      settings: breakSettings,
-      onReminderDue: (payload) => {
-        // 桌宠隐藏时不提示
-        if (isPetCurrentlyHidden()) return false;
-        if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return false;
-        windowManager.mainWindow.webContents.send('break-reminder-triggered', payload);
-        return true;
-      },
-    });
-
-    // 支持的平台才启动服务
-    if (process.platform === 'win32' || process.platform === 'darwin') {
-      breakReminderService.start();
-    }
-
-    // 监听系统事件
-    powerMonitor.on('lock-screen', () => {
-      if (breakReminderService) breakReminderService.onLockOrSuspend();
-    });
-    powerMonitor.on('suspend', () => {
-      if (breakReminderService) breakReminderService.onLockOrSuspend();
-      // macOS: performance.now() freezes during sleep, so deltaMs in the
-      // renderer game-loop never jumps. Record wall-clock time here and
-      // tell the renderer to save immediately so the timestamp is fresh.
-      suspendTimestamp = Date.now();
-      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-        windowManager.mainWindow.webContents.send('system-suspended');
-      }
-    });
-    powerMonitor.on('unlock-screen', () => {
-      if (breakReminderService) breakReminderService.onUnlockOrResume();
-    });
-    powerMonitor.on('resume', () => {
-      if (breakReminderService) breakReminderService.onUnlockOrResume();
-      // Calculate real wall-clock sleep duration and notify renderer
-      const offlineMs = suspendTimestamp > 0 ? Math.max(0, Date.now() - suspendTimestamp) : 0;
-      suspendTimestamp = 0;
-      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-        windowManager.mainWindow.webContents.send('system-resumed', { offlineMs });
-      }
-    });
 
     updateProgressWindowModule.init({
       trayT: trayManager.trayT,
@@ -652,14 +490,14 @@ class AppLifecycle {
       hidePetManually,
       getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
       migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
-      getBreakReminderEnabled: () => breakReminderEnabled,
-      setBreakReminderEnabled: (val) => breakReminderEnabled = val,
-      getBreakReminderIntervalMinutes: () => breakReminderIntervalMinutes,
-      setBreakReminderIntervalMinutes: (val) => breakReminderIntervalMinutes = val,
-      getBreakReminderService: () => breakReminderService,
+      getBreakReminderEnabled: BreakReminderController.getBreakReminderEnabled,
+      setBreakReminderEnabled: BreakReminderController.setBreakReminderEnabled,
+      getBreakReminderIntervalMinutes: BreakReminderController.getBreakReminderIntervalMinutes,
+      setBreakReminderIntervalMinutes: BreakReminderController.setBreakReminderIntervalMinutes,
+      getBreakReminderService: BreakReminderController.getBreakReminderService,
       BREAK_REMINDER_STORE_KEY,
-      BREAK_REMINDER_TRAY_INTERVALS,
-      getWeatherSyncSettings: () => weatherSyncSettings,
+      BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
+      getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
       getStoredWeatherSyncSettings,
       updateWeatherSyncSettings,
       openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
