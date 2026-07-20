@@ -7,8 +7,10 @@ const path = require('path');
 //  Phase 3 单元测试：久坐提醒 IPC 与集成验证
 // ═══════════════════════════════════════════════════════════════════
 
+const { readMainProcessSource } = require('./helpers/sourceCorpus');
+
 const ROOT = path.join(__dirname, '..');
-const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'TrayManager.js'), 'utf8');
+const mainSource = readMainProcessSource();
 const preloadSource = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
 const appSource = fs.readFileSync(path.join(ROOT, 'src', 'app.js'), 'utf8');
 const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf8');

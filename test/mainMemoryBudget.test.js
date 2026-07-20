@@ -1,12 +1,9 @@
 const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
 const test = require('node:test');
-
-const ROOT = path.join(__dirname, '..');
+const { readMainProcessSource } = require('./helpers/sourceCorpus');
 
 test('main process applies Chromium memory budget switches before creating windows', () => {
-  const mainSource = fs.readFileSync(path.join(ROOT, 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'main', 'TrayManager.js'), 'utf8');
+  const mainSource = readMainProcessSource();
   const configureIndex = mainSource.indexOf('configureChromiumMemoryBudget();');
   const createWindowIndex = mainSource.indexOf('function createWindow()');
 

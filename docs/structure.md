@@ -404,6 +404,7 @@ npm run qa:electron:smoke
 - `PomodoroSystem`、番茄钟窗口结构、preload API、托盘入口和宠物隐藏/恢复边界。
 - `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象；`protectedAssetLoader` 的正向/负向 manifest 缓存，其中负向缓存测试会隔离默认受保护资源清单的存在状态。
 - 打包相关的 macOS、安装器、签名和内存预算约束。
+- `test/helpers/sourceCorpus.js` 提供统一的主进程测试源码读取入口：`readMainProcessSource()` 递归拼接 `main.js` 与 `src/main/` 下全部 `.js` 文件（按路径确定性排序），`read(relativePath)` 读取仓库根下的单个文件。所有原先手写 `main.js + AppLifecycle.js + TrayManager.js` 做字符串/正则断言的主进程测试统一改用该 helper，使断言与被断言逻辑的具体文件位置解耦，后续 `AppLifecycle.js`/`src/app.js` 巨石文件拆分（见 ADR-042）搬迁代码时无需逐个更新这些测试的文件路径。
 
 ## 5. 架构决策索引
 

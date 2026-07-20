@@ -2,9 +2,10 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { readMainProcessSource, read } = require('./helpers/sourceCorpus');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
-const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf8');
+const mainSource = readMainProcessSource();
+const preloadSource = read('preload.js');
 
 test('main process wires active window provider and sampler', () => {
   assert.ok(mainSource.includes("require('../../activeWindowProvider')"));

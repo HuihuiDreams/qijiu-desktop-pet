@@ -1,12 +1,11 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const test = require('node:test');
+const { readMainProcessSource, read } = require('./helpers/sourceCorpus');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
-const i18nSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'i18n.js'), 'utf8');
-const debugSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'debug.js'), 'utf8');
-const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.js'), 'utf8');
+const mainSource = readMainProcessSource();
+const i18nSource = read('src/data/i18n.js');
+const debugSource = read('src/debug.js');
+const appSource = read('src/app.js');
 
 test('tray exposes Window Awareness toggle on Windows/macOS and unavailable state elsewhere', () => {
   assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOff')"));

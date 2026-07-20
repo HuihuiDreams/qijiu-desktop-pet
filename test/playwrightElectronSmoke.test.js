@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { readMainProcessSource } = require('./helpers/sourceCorpus');
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 const smokeScriptPath = path.join(__dirname, '..', 'tools', 'playwright-electron-smoke.js');
@@ -29,7 +30,7 @@ test('Playwright Electron smoke script uses an isolated profile and cleans it up
 });
 
 test('main process redirects app userData when QA isolation is requested', () => {
-  const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
+  const mainSource = readMainProcessSource();
 
   assert.match(mainSource, /process\.env\.DESKTOP_PET_USER_DATA_DIR/);
   assert.match(mainSource, /app\.setPath\('userData', resolvedDir\)/);

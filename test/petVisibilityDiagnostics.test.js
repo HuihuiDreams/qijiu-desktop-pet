@@ -1,11 +1,10 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 const test = require('node:test');
+const { readMainProcessSource, read } = require('./helpers/sourceCorpus');
 
-const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'TrayManager.js'), 'utf8');
-const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf8');
-const appSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.js'), 'utf8');
+const mainSource = readMainProcessSource();
+const preloadSource = read('preload.js');
+const appSource = read('src/app.js');
 
 test('main process exposes a debug-readable pet visibility state', () => {
   assert.match(mainSource, /function getPetVisibilityState\(\)/);
