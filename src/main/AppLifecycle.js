@@ -46,6 +46,8 @@ const {
 const StoreManager = require('./services/StoreManager');
 const AutoLaunchService = require('./services/AutoLaunchService');
 const SkinService = require('./services/SkinService');
+const LocaleService = require('./services/LocaleService');
+const StorageIpc = require('./services/StorageIpc');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
@@ -53,18 +55,16 @@ const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
 const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
 const trayManager = require('./TrayManager');
+const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY, POMODORO_LAST_MINUTES_KEY } = require('./constants');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
-const LOCALE_KEY = 'locale';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 const DISPLAY_METRICS_SETTLE_MS = 250;
 const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
 const LOGIN_ITEM_NAME = '七九爱宠';
-const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
-const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
 
 protocol.registerSchemesAsPrivileged([{
@@ -78,28 +78,11 @@ protocol.registerSchemesAsPrivileged([{
 
 
 
-/**
- * 根据 app.getLocale() 的返回值推断语言代码。
- * 规则：zh-Hans-* / zh-CN → 'zh'；zh-Hant-* / zh-TW / zh-HK → 'zh'；ja-* → 'ja'；其余 → 'en'
- * @returns {'zh'|'en'|'ja'}
- */
-function detectLocale() {
-  const raw = (app.getLocale() || '').toLowerCase();
-  if (raw.startsWith('zh')) return 'zh';
-  if (raw.startsWith('ja')) return 'ja';
-  return 'en';
-}
 
 
-
-
-
-
-let store = null;
 let petHidden = false;         // 桌宠隐藏状态
 let meetingHidden = false;     // 会议检测导致的自动隐藏状态
 let isPaused = false;          // 走动暂停状态
-let currentLocale = 'zh';      // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 let activeWindowSampler = null;
@@ -415,22 +398,26 @@ function stopDragPoll() {
 app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
 
 function getStoredPomodoroMinutes() {
+  const store = StoreManager.getStore();
   if (!store) return normalizePomodoroMinutes(null);
   return normalizePomodoroMinutes(store.get(POMODORO_LAST_MINUTES_KEY));
 }
 
 function savePomodoroMinutes(minutes) {
+  const store = StoreManager.getStore();
   if (!store) return;
   store.set(POMODORO_LAST_MINUTES_KEY, normalizePomodoroMinutes(minutes));
 }
 
 function getStoredWeatherSyncSettings() {
+  const store = StoreManager.getStore();
   if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
   const raw = store.get(WEATHER_SYNC_STORE_KEY);
   return normalizeWeatherSyncSettings(raw);
 }
 
 function saveWeatherSyncSettings(settings) {
+  const store = StoreManager.getStore();
   if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
   const normalized = normalizeWeatherSyncSettings(settings);
   store.set(WEATHER_SYNC_STORE_KEY, normalized);
@@ -890,53 +877,6 @@ ipcMain.on('drag-ended', () => {
   stopDragPoll();
 });
 
-// 允许存储的合法 Key 列表 (安全白名单)
-const ALLOWED_STORE_KEYS = [
-  'autoLaunch',
-  'petState',
-  'locale',
-  BREAK_REMINDER_STORE_KEY,
-  POMODORO_LAST_MINUTES_KEY,
-];
-
-ipcMain.handle('save-data', async (_event, key, value) => {
-  if (!ALLOWED_STORE_KEYS.includes(key)) {
-    console.warn(`[Security] 拦截到非法的数据保存请求: ${key}`);
-    return false;
-  }
-  try {
-    await StoreManager.initStore();
-    if (!store) return false;
-    store.set(key, value);
-    return true;
-  } catch (error) {
-    console.error('Save failed:', error);
-    return false;
-  }
-});
-
-ipcMain.handle('load-data', async (_event, key) => {
-  if (!ALLOWED_STORE_KEYS.includes(key)) {
-    console.warn(`[Security] 拦截到非法的数据读取请求: ${key}`);
-    return null;
-  }
-  try {
-    await StoreManager.initStore();
-    return store ? store.get(key) : null;
-  } catch (error) {
-    console.error('Load failed:', error);
-    return null;
-  }
-});
-
-ipcMain.handle('set-auto-launch', async (_event, enabled) => {
-  return AutoLaunchService.setAutoLaunchPreference(enabled);
-});
-
-ipcMain.handle('get-auto-launch', async () => {
-  return AutoLaunchService.getAutoLaunchPreference();
-});
-
 ipcMain.handle('get-active-window-info', async () => {
   if (!activeWindowSampler) startActiveWindowAwareness();
   return activeWindowSampler.sampleOnce();
@@ -944,33 +884,6 @@ ipcMain.handle('get-active-window-info', async () => {
 
 ipcMain.handle('get-pet-visibility-state', () => {
   return getPetVisibilityState();
-});
-
-// 多语言系统 IPC
-
-
-ipcMain.handle('get-locale', () => currentLocale);
-ipcMain.handle('set-locale', async (_event, lang) => {
-  if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
-  currentLocale = lang;
-  await StoreManager.initStore();
-  if (store) store.set(LOCALE_KEY, lang);
-  trayManager.refreshTrayMenu();
-  if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('locale-changed', lang);
-  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
-    windowManager.statusWindow.webContents.send('locale-changed', lang);
-  }
-  if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
-    windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
-  }
-  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
-    windowManager.citySettingWindow.webContents.send('locale-changed', lang);
-  }
-  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-    windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
-    skinSelectorWindowModule.sendSkinSelectorData({ resetSelection: false });
-  }
-  return { success: true, locale: lang };
 });
 
 // 城市设置 IPC
@@ -1055,14 +968,12 @@ class AppLifecycle {
     });
 
     await StoreManager.initStore();
-    store = StoreManager.getStore();
     // 加载持久化语言设置，若无则自动检测
-    const storedLocale = store ? store.get(LOCALE_KEY) : null;
-    currentLocale = ['zh', 'en', 'ja'].includes(storedLocale) ? storedLocale : detectLocale();
+    LocaleService.loadInitialLocale();
     await AutoLaunchService.syncAutoLaunchPreference();
 
     // --- 久坐提醒服务初始化 ---
-    const storedBreakSettings = store ? store.get(BREAK_REMINDER_STORE_KEY) : null;
+    const storedBreakSettings = StoreManager.getStore() ? StoreManager.getStore().get(BREAK_REMINDER_STORE_KEY) : null;
     const breakSettings = normalizeBreakReminderSettings(storedBreakSettings);
     breakReminderEnabled = breakSettings.enabled;
     breakReminderIntervalMinutes = breakSettings.intervalMinutes;
@@ -1072,7 +983,7 @@ class AppLifecycle {
     trayManager.refreshTrayMenu();
 
     // Listen to config changes if users open the editor and save it
-    store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
+    StoreManager.getStore().onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
       // Ignore undefined/null newValue which can happen during atomic file writes
       if (!newValue) return;
       updateWeatherSyncSettings(newValue);
@@ -1163,10 +1074,10 @@ class AppLifecycle {
     trayManager.init({
       getPomodoroSnapshot,
       getUpdateMenuState,
-      getCurrentLocale: () => currentLocale,
-      setCurrentLocale: (val) => currentLocale = val,
+      getCurrentLocale: LocaleService.getCurrentLocale,
+      setCurrentLocale: LocaleService.setCurrentLocale,
       I18N, initStore: () => StoreManager.initStore(),
-      getStore: () => store,
+      getStore: () => StoreManager.getStore(),
       LOCALE_KEY,
       sendSkinSelectorData: () => skinSelectorWindowModule.sendSkinSelectorData(),
       openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
@@ -1204,6 +1115,12 @@ class AppLifecycle {
       refreshTrayMenu: () => trayManager.refreshTrayMenu()
     });
     citySettingWindowModule.init();
+    LocaleService.init({
+      windowManager,
+      skinSelectorWindowModule,
+      trayManager
+    });
+    StorageIpc.init();
     SkinService.init({
       windowManager,
       skinSelectorWindowModule,
