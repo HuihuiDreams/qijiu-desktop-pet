@@ -71,7 +71,7 @@ const I18N = {
       skinSelectorConfirm: '确定',
       skinSelectorCancel: '取消',
       trayPauseWalk: '⏸️ 暂停走动',
-      trayResumeWalk: '🚶 恢复走动',
+      trayResumeWalk: '🚶🏻‍♂️ 恢复走动',
       trayHidePet: '👻 隐藏桌宠',
       trayShowPet: '👻 显示桌宠',
       trayResetPos: '🔄 重置位置',
@@ -444,7 +444,7 @@ const I18N = {
       skinSelectorConfirm: 'Confirm',
       skinSelectorCancel: 'Cancel',
       trayPauseWalk: '⏸️ Pause Walking',
-      trayResumeWalk: '🚶 Resume Walking',
+      trayResumeWalk: '🚶🏻‍♂️ Resume Walking',
       trayHidePet: '👻 Hide Pets',
       trayShowPet: '👻 Show Pets',
       trayResetPos: '🔄 Reset Position',
@@ -818,7 +818,7 @@ const I18N = {
       skinSelectorConfirm: '決定',
       skinSelectorCancel: '戻る',
       trayPauseWalk: '⏸️ 歩行停止',
-      trayResumeWalk: '🚶 歩行再開',
+      trayResumeWalk: '🚶🏻‍♂️ 歩行再開',
       trayHidePet: '👻 姿を隠す',      // “隐去身形”，比“隐藏宠物”更有仙术感
       trayShowPet: '👻 姿を現す',      // “显露身形”
       trayResetPos: '🔄 位置復元',      // 归位/复原

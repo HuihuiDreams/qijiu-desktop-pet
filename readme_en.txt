@@ -37,7 +37,7 @@ The tray menu lets you:
 - "📊 Show Status Panel"
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
 - "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click any card to instantly preview the skin on your desktop pets, click "Confirm" to apply, or click "Cancel" / press ESC / click outside the window to close and restore the original skin.
-- "⏸️ Pause Walking" or "🚶 Resume Walking"
+- "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets"
 - "🔄 Reset Position"
 - "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
