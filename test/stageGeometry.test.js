@@ -65,6 +65,17 @@ test('getWalkAreaForPoint finds the walk area containing a point, using Movement
   assert.equal(geometry.getWalkAreaForPoint(500, 500), undefined);
 });
 
+test('getWalkAreas prefers MovementSystem output and falls back to raw screenInfo.walkAreas', () => {
+  const msAreas = [{ x: 0, y: 0, width: 10, height: 10 }];
+  const movementSystem = makeMovementSystemStub(msAreas);
+  const geometryWithMovement = new StageGeometry({ getMovementSystem: () => movementSystem });
+  assert.equal(geometryWithMovement.getWalkAreas(), msAreas);
+
+  const geometryNoMovement = new StageGeometry({});
+  geometryNoMovement.applyScreenInfo({ width: 800, height: 600, walkAreas: [{ x: 1, y: 1, width: 2, height: 2 }] });
+  assert.deepEqual(geometryNoMovement.getWalkAreas(), [{ x: 1, y: 1, width: 2, height: 2 }]);
+});
+
 test('getWalkAreaForPoint falls back to raw screenInfo.walkAreas without a MovementSystem', () => {
   const geometry = new StageGeometry({});
   geometry.applyScreenInfo({

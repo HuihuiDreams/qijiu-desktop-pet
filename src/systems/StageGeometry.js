@@ -72,12 +72,19 @@ class StageGeometry {
   }
 
   /**
-   * 查找包含指定点的可行走区域。优先读取 MovementSystem 的归一化结果，
+   * 返回当前全部可行走区域。优先读取 MovementSystem 的归一化结果，
    * 无 MovementSystem 时回退到 screenInfo.walkAreas 原始数组。
    */
-  getWalkAreaForPoint(x, y) {
+  getWalkAreas() {
     const movementSystem = this.getMovementSystem();
-    const areas = movementSystem ? movementSystem.getWalkAreas() : this.screenInfo.walkAreas;
+    return movementSystem ? movementSystem.getWalkAreas() : this.screenInfo.walkAreas;
+  }
+
+  /**
+   * 查找包含指定点的可行走区域。
+   */
+  getWalkAreaForPoint(x, y) {
+    const areas = this.getWalkAreas();
     return areas.find((walkArea) => (
       x >= walkArea.x
       && x <= walkArea.x + walkArea.width

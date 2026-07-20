@@ -163,73 +163,43 @@
     return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin(), lastVisibleTime);
   }
 
+  // 清除当前互动覆盖层：皮肤切换与久坐提醒触发前都需要先清掉正在显示的覆盖层。
+  // 定义为具名函数声明（整体提升），供下方多处按引用共享，不必关心声明书写顺序。
+  function clearInteractionOverlay() {
+    if (interactionOverlayActive) {
+      interactionOverlayActive = false;
+      renderer.hideOverlay(yueqi, shenjiu);
+    }
+  }
+
   const skinSwitchController = new SkinSwitchController({
     skinManager,
     skinTargets,
     electronAPI: window.electronAPI,
     saveCurrentState: () => saveCurrentState(),
-    clearInteractionOverlay: () => {
-      if (interactionOverlayActive) {
-        interactionOverlayActive = false;
-        renderer.hideOverlay(yueqi, shenjiu);
-      }
-    },
+    clearInteractionOverlay,
   });
 
-  function showNightDream(pet) {
-    // 读取 dream 词库
-    const dreamPool = typeof DIALOGUES !== 'undefined' ? DIALOGUES.dream : null;
-    if (dreamPool) {
-      let text = '';
-      const affection = pet.stats.affection || 0;
-      const isHighAffection = affection >= 80;
+  // === 环境闲聊 / 深夜梦话 / 久坐提醒展示 ===
+  const ambientDialogueSystem = new AmbientDialogueSystem({
+    getPets: () => pets,
+    dialogBubble,
+    t: (key) => window.t(key),
+    getDialogues: () => DIALOGUES,
+  });
 
-      // 尝试联动梦话 (目前以沈九发起，岳七回应为例)
-      let isLinked = false;
-      if (pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
-        // 沈九有概率触发联动梦话
-        if (Math.random() < 0.3 && dreamPool.linked?.shenjiu) {
-          isLinked = true;
-          const pool = dreamPool.linked.shenjiu;
-          text = pool[Math.floor(Math.random() * pool.length)];
-          // 触发岳七的回应 (延迟几秒)
-          setTimeout(() => {
-            // 确保岳七依然处于合适状态
-            if (!yueqi.isBusy() && yueqi.timePhase === 'night' && yueqi.element.style.display !== 'none') {
-              const replyPool = dreamPool.linked.yueqi_reply;
-              if (replyPool) {
-                const replyText = replyPool[Math.floor(Math.random() * replyPool.length)];
-                dialogBubble.show(yueqi, replyText, 4000);
-              }
-            }
-          }, 2500); // 延迟2.5秒回复
-        }
-      }
-
-      if (!isLinked) {
-        const poolCategory = isHighAffection ? dreamPool.highAffection : dreamPool.lowAffection;
-        if (poolCategory && poolCategory[pet.id]) {
-          const pool = poolCategory[pet.id];
-          text = pool[Math.floor(Math.random() * pool.length)];
-        } else {
-          // Fallback
-          text = pet.id === 'yueqi'
-            ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
-            : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
-        }
-      }
-
-      if (text) {
-        dialogBubble.show(pet, text, 5000);
-      }
-    } else {
-      // Fallback
-      const text = pet.id === 'yueqi'
-        ? (window.t('nightYueqi') || '夜深了，早些休息吧。')
-        : (window.t('nightShenjiu') || '…还不睡？想猝死吗。');
-      dialogBubble.show(pet, text, 5000);
-    }
-  }
+  const breakReminderPresenter = new BreakReminderPresenter({
+    getPets: () => pets,
+    dialogBubble,
+    renderer,
+    spriteView,
+    stageGeometry,
+    getIsPaused: () => isPaused,
+    clearInteractionOverlay,
+    electronAPI: window.electronAPI,
+    CONFIG,
+    getDialogues: () => DIALOGUES,
+  });
 
   // === 创建 DOM 元素 ===
   renderer.createPetElement(yueqi);
@@ -258,13 +228,13 @@
     // 左键点击 = 随机对话 / 久坐提醒点击消失
     pet.element.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (breakReminderActive) {
-        dismissBreakReminder();
+      if (breakReminderPresenter.isActive()) {
+        breakReminderPresenter.dismiss();
         return;
       }
       if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)) {
         if (pet.timePhase === 'night' && pet.state === 'idle') {
-          showNightDream(pet);
+          ambientDialogueSystem.showNightDream(pet);
         } else {
           dialogBubble.showIdleChatter(pet);
         }
@@ -284,8 +254,6 @@
 
   let isPaused = false;
   let interactionOverlayActive = false; // 记录是否当前正在显示互动覆盖层
-  let breakReminderActive = false;      // 久坐提醒展示中
-  let breakReminderDismissTimer = null; // 20秒自动消失计时器
 
   window.electronAPI.onTogglePause((paused) => {
     isPaused = paused;
@@ -319,101 +287,8 @@
   });
 
   // === 久坐提醒处理 ===
-  function dismissBreakReminder() {
-    if (!breakReminderActive) return;
-    breakReminderActive = false;
-    if (breakReminderDismissTimer) {
-      clearTimeout(breakReminderDismissTimer);
-      breakReminderDismissTimer = null;
-    }
-    // 清除气泡
-    dialogBubble.removeForPets([yueqi, shenjiu]);
-    // 恢复状态
-    yueqi.setState('idle');
-    shenjiu.setState('idle');
-    yueqi.idleTimer = 2000;
-    shenjiu.idleTimer = 2000;
-    // 通知主进程
-    window.electronAPI.dismissBreakReminder();
-  }
-
-  function handleBreakReminderTriggered(_payload) {
-    // 桌宠隐藏或暂停时不展示
-    if (isPaused) {
-      window.electronAPI.dismissBreakReminder();
-      return;
-    }
-    // 如果已经在展示提醒，忽略
-    if (breakReminderActive) return;
-
-    breakReminderActive = true;
-
-    // 清除现有互动覆盖层
-    if (interactionOverlayActive) {
-      interactionOverlayActive = false;
-      renderer.hideOverlay(yueqi, shenjiu);
-    }
-    // 清除现有气泡
-    dialogBubble.removeForPets([yueqi, shenjiu]);
-
-    // 找到主显示器对应的 walkArea 中心
-    // walkAreas 是相对于窗口坐标的；主进程会标记 isPrimary。
-    const walkAreas = movementSystem ? movementSystem.getWalkAreas() : stageGeometry.screenInfo.walkAreas;
-    const area = walkAreas.find((wa) => wa.isPrimary)
-      || walkAreas[0]
-      || { x: 0, y: 0, width: stageGeometry.width, height: stageGeometry.height };
-
-    const petSize = yueqi.size || CONFIG.PET_SIZE;
-    const centerX = area.x + area.width / 2;
-    const centerY = area.y + area.height / 2;
-    const spacing = petSize * 1.5;
-
-    // 瞬移到主显示器中心附近
-    yueqi.x = Math.max(area.x, centerX - spacing - petSize / 2);
-    yueqi.y = Math.max(area.y, centerY - petSize / 2);
-    shenjiu.x = Math.min(area.x + area.width - petSize, centerX + spacing - petSize / 2);
-    shenjiu.y = Math.max(area.y, centerY - petSize / 2);
-
-    // 面对面
-    yueqi.direction = 'right';
-    shenjiu.direction = 'left';
-
-    // 暂停移动
-    yueqi.setState('interacting');
-    shenjiu.setState('interacting');
-
-    // 立即更新渲染位置
-    renderer.update(yueqi);
-    renderer.update(shenjiu);
-    spriteView.update(yueqi, 0);
-    spriteView.update(shenjiu, 0);
-
-    // 从文案池随机选取
-    const pool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES.breakReminder : null;
-    const yueqiTexts = pool?.yueqi;
-    const shenjiuTexts = pool?.shenjiu;
-    const yueqiText = Array.isArray(yueqiTexts) && yueqiTexts.length > 0
-      ? yueqiTexts[Math.floor(Math.random() * yueqiTexts.length)]
-      : '起来活动一下吧！';
-    const shenjiuText = Array.isArray(shenjiuTexts) && shenjiuTexts.length > 0
-      ? shenjiuTexts[Math.floor(Math.random() * shenjiuTexts.length)]
-      : '…别坐太久了。';
-
-    // 显示气泡
-    setTimeout(() => {
-      if (!breakReminderActive) return;
-      dialogBubble.show(yueqi, yueqiText, 18000);
-    }, 300);
-    setTimeout(() => {
-      if (!breakReminderActive) return;
-      dialogBubble.show(shenjiu, shenjiuText, 17500);
-    }, 800);
-
-    // 20秒后自动消失
-    breakReminderDismissTimer = setTimeout(dismissBreakReminder, 20000);
-  }
-
-  window.electronAPI.onBreakReminder(handleBreakReminderTriggered);
+  // 实际展示/消失逻辑已下沉到 BreakReminderPresenter（见上方实例化），此处只保留 IPC 订阅。
+  window.electronAPI.onBreakReminder((payload) => breakReminderPresenter.handleTriggered(payload));
 
   // === 语言热切换监听 ===
   window.electronAPI.onLocaleChange((newLocale) => {
@@ -493,10 +368,6 @@
   }
   await skinSwitchController.applySkinById(savedState?.skinId || 'default', { persist: false });
 
-  // === 闲聊计时器 ===
-  let chatterTimer = 15000 + Math.random() * 30000;
-  // 状态警告专属计时器（比普通闲聊更频繁，确保低状态能触发对话）
-  let statWarningTimer = 8000 + Math.random() * 5000;
   let migrationCooldown = 0; // macOS: 跨屏迁移冷却时间
 
   // === 游戏主循环 ===
@@ -508,7 +379,7 @@
     lastTime = currentTime;
 
     try {
-      if (!isPaused && !breakReminderActive) {
+      if (!isPaused && !breakReminderPresenter.isActive()) {
         // --- 修复: 电脑睡眠模式 / 后台挂机的时间跳跃处理 ---
         // 在桌面应用中，如果电脑进入休眠，requestAnimationFrame 会被完全挂起。
         // 当重新唤醒时，这里的 deltaMs（两帧时间差）会变得极其巨大（甚至长达几个小时）。
@@ -644,61 +515,8 @@
           }
         });
 
-        // 状态警告计时器：优先处理低状态的宠物
-        statWarningTimer -= deltaMs;
-        if (statWarningTimer <= 0) {
-          statWarningTimer = 10000 + Math.random() * 8000;
-          // 收集所有处于低状态的宠物
-          const warnCandidates = [yueqi, shenjiu].filter(
-            pet => !pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)
-                && (pet.isHungry() || pet.isLowQi() || pet.isLowMood())
-          );
-          if (warnCandidates.length > 0) {
-            // 随机挑一个低状态的宠物发言
-            const pet = warnCandidates[Math.floor(Math.random() * warnCandidates.length)];
-            dialogBubble.showStatWarning(pet);
-          }
-        }
-
-        // 随机闲聊（仅在状态正常时触发）
-        chatterTimer -= deltaMs;
-        if (chatterTimer <= 0) {
-          chatterTimer = 20000 + Math.random() * 40000;
-          const pet = Math.random() > 0.5 ? yueqi : shenjiu;
-          if (!pet.isBusy() && !dialogBubble.activeBubbles.has(pet.id)) {
-            
-            // 时段专属闲聊 (即使状态低落也有概率触发)
-            if (pet.timePhase === 'morning' && Math.random() < 0.3) {
-              const text = pet.id === 'yueqi'
-                ? (window.t('morningYueqi') || '早安。')
-                : (window.t('morningShenjiu') || '哼，起得倒早。');
-              dialogBubble.show(pet, text, 5000);
-            } else if (pet.timePhase === 'day' && Math.random() < 0.3) {
-              const text = pet.id === 'yueqi'
-                ? (window.t('dayYueqi') || '白日漫长，莫要太过劳累。')
-                : (window.t('dayShenjiu') || '…大白天的，别到处乱晃。');
-              dialogBubble.show(pet, text, 5000);
-            } else if (pet.timePhase === 'dusk' && Math.random() < 0.3) {
-              const text = pet.id === 'yueqi'
-                ? (window.t('duskYueqi') || '黄昏了，一日又要结束了。')
-                : (window.t('duskShenjiu') || '天色暗了。');
-              dialogBubble.show(pet, text, 5000);
-            } else if (pet.timePhase === 'evening' && Math.random() < 0.3) {
-              const text = pet.id === 'yueqi'
-                ? (window.t('eveningYueqi') || '夜幕已降，早点歇息吧。')
-                : (window.t('eveningShenjiu') || '…少烦我，滚去睡觉。');
-              dialogBubble.show(pet, text, 5000);
-            } else if (pet.timePhase === 'night' && pet.state === 'idle' && Math.random() < 0.5) {
-              // 深夜有 50% 概率保持安静，另外 50% 触发梦话
-              if (Math.random() < 0.5) {
-                showNightDream(pet);
-              }
-            } else if (!pet.isHungry() && !pet.isLowQi() && !pet.isLowMood()) {
-              // 只有在状态健康时，才会进行普通的随机闲聊
-              dialogBubble.showIdleChatter(pet);
-            }
-          }
-        }
+        // 环境闲聊 / 状态警告 / 深夜梦话节奏调度
+        ambientDialogueSystem.update(deltaMs);
 
         // 自动保存
         if (timeSystem.update(deltaMs)) {
@@ -801,7 +619,7 @@
   };
   window.__DEBUG_BREAK_REMINDER = {
     trigger: () => {
-      handleBreakReminderTriggered({ triggeredAt: Date.now(), intervalMinutes: 60 });
+      breakReminderPresenter.handleTriggered({ triggeredAt: Date.now(), intervalMinutes: 60 });
     },
   };
 
