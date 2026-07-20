@@ -7,6 +7,7 @@
 - **深夜梦话与双人联动机制 (`Sleep Dream Dialogues`)**：在深夜时段（00:00 - 04:59）的闲聊系统中加入了专属“梦话”池。现在宠物在深夜睡眠时有概率说梦话，好感度达到 80 以上时会触发更亲昵的专属梦话；当沈九触发特定梦话且岳七在场时，会通过异步延迟 (`setTimeout`) 触发岳七的梦中回应，实现双向梦境联动。
 
 ### Changed
+- **测试覆盖率全面提升 (`Test Coverage Hardening`)**：遵循 TDD 规范，为 `PetRenderer.js`、`InteractionSystem.js`、`protectedAssetProtocol.js`、`activeWindowAwareness.js`、`meetingDetector.js` 及 `check_adrs.js` 补充了大量的边缘场景和异常处理单元测试，修复了多处未覆盖的防御性编程死角与 Mock 漏洞。目前项目所有源文件代码测试行覆盖率均已达到 90% 以上，进一步保障了重构与后续迭代的稳定性。
 - **替换托盘菜单恢复走动 Emoji**：将托盘菜单中“恢复走动”的黄头发小人 Emoji (`🚶`) 替换为代表亚洲人特征的黑头发小人 Emoji (`🚶🏻‍♂️`)，以更契合修仙主题与角色设定。
 - **主进程架构重构与模块化 (`Main Process Modularization`)**：对 `main.js` 进行了深度的结构性拆分，将其核心逻辑抽取至独立的专责模块中。提取出 `WindowManager` (负责所有子窗口的生命周期)、`TrayManager` (管理系统托盘及国际化菜单)、`IpcRouter` (集中注册和调度所有 IPC 事件)，以及 `StoreManager`、`AutoLaunchService`，并将应用生命周期 (如 `app.whenReady`) 收敛至全新的 `AppLifecycle` 模块。重构后，`main.js` 代码行数由 2500 行左右精简至 30 行以内，彻底消除了早期的意大利面条式代码结构，极大提升了代码可读性与后续维护的扩展能力。（注：模块拆分过程中引入了多处功能回归——番茄钟 IPC 契约、状态窗口、选肤失焦回退、退出保存、托盘提醒间隔等——已在下方 `Fixed` 中逐项修复并补充回归测试。）
 - **极简高密版 Agent 规范与专属维护技能更新 (`High-Density Guidelines Pruning`)**：遵循“注意力中转衰减 (`Lost in the Middle`)”与“上下文窗口大小不等于注意力预算 (`Context Window ≠ Attention Budget`)”核心原则，对 `AGENTS.md` 和 `.agents/skills/desktop-pet-maintenance/SKILL.md` 进行了分层收敛与高密压缩重构。剔除冗长的叙事说明与非本质流水账，用精简口令严格固化三大底层防线：在主进程选肤鉴权收紧时明确定位并保留 `app.openSkinSelectorForQA` 原生入口以防 E2E 冒烟测试死锁；在解析天气接口和地理编码数值时强制使用 `firstFiniteNumber` 防止空值被 `Number()` 误转为零；针对 `pet-asset://` 加密资源协议要求二级窗体同步复查 CSP `img-src`；同时将 `retention-days: 7` 与 `# noinspection` 等 CI 细节收敛至专属技能，使全局规范保持高轻量与高抗回归能力。

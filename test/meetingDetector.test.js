@@ -442,3 +442,58 @@ test('getSafeChildProcessEnv returns restricted PATH whitelist (SBP-003)', () =>
     assert.equal(env.PATH, '/usr/bin:/bin:/usr/sbin');
   }
 });
+
+test('macOS snapshot treats process as having 0 UDP endpoints if lsof fails', async () => {
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+    if (key === 'pgrep -x zoom.us') {
+      cb(null, '4242\n', '');
+      return;
+    }
+    if (command === 'lsof') {
+      cb(new Error('lsof failed'));
+      return;
+    }
+    cb(new Error(`unexpected command: ${key}`));
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, false);
+  assert.deepEqual(
+    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
+    [0],
+  );
+});
+
+test('meeting detector start and stop control polling interval', async () => {
+  let intervalCb = null;
+  let cleared = false;
+  
+  const detector = createMeetingDetector({
+    getSnapshot: async () => ({ isActive: false }),
+    setIntervalImpl: (cb) => {
+      intervalCb = cb;
+      return 123;
+    },
+    clearIntervalImpl: (id) => {
+      if (id === 123) cleared = true;
+    }
+  });
+
+  detector.start();
+  detector.start(); // second start does nothing
+  assert.ok(intervalCb !== null);
+  
+  // manually trigger interval
+  intervalCb();
+  
+  detector.stop();
+  detector.stop(); // second stop does nothing
+  assert.equal(cleared, true);
+});

@@ -23,6 +23,11 @@ test('assetIdFromUrl rejects malformed encoded paths without throwing', () => {
   assert.equal(assetIdFromUrl('pet-asset://skin/default/%E0%A4%A.webp'), null);
 });
 
+test('assetIdFromUrl rejects completely invalid URL strings', () => {
+  assert.equal(assetIdFromUrl('not-a-url'), null);
+  assert.equal(assetIdFromUrl(null), null);
+});
+
 test('protocol handler serves source assets in development when manifest is missing', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-protected-protocol-'));
   const sourceDir = path.join(root, 'src', 'assets', 'custom');
@@ -107,6 +112,51 @@ test('registerProtectedAssetProtocol installs one protocol handler', () => {
   assert.equal(typeof calls[0].handler, 'function');
 });
 
+test('registerProtectedAssetProtocol throws if protocol is missing or invalid', () => {
+  assert.throws(() => registerProtectedAssetProtocol({}), /Electron protocol.handle is required/);
+  assert.throws(() => registerProtectedAssetProtocol({ protocol: {} }), /Electron protocol.handle is required/);
+});
+
+test('protocol handler rejects invalid URLs', async () => {
+  const calls = [];
+  const fakeProtocol = {
+    handle(scheme, handler) {
+      calls.push({ scheme, handler });
+    },
+  };
+  registerProtectedAssetProtocol({ protocol: fakeProtocol });
+  const response = await calls[0].handler({ url: 'not-a-url' });
+  assert.equal(response.status, 400);
+  assert.equal(Buffer.from(await response.arrayBuffer()).toString('utf8'), 'Invalid pet asset URL');
+});
+
+test('protocol handler falls through to 404 if source asset does not exist in dev mode', async () => {
+  const calls = [];
+  const fakeProtocol = {
+    handle(scheme, handler) {
+      calls.push({ scheme, handler });
+    },
+  };
+  const fakeApp = {
+    isPackaged: false,
+    getAppPath() {
+      return __dirname;
+    },
+  };
+  registerProtectedAssetProtocol({ protocol: fakeProtocol, app: fakeApp });
+  
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  let response;
+  try {
+    response = await calls[0].handler({ url: 'pet-asset://skin/default/does-not-exist.webp' });
+  } finally {
+    console.error = originalConsoleError;
+  }
+  
+  assert.equal(response.status, 404);
+});
+
 test('protocol handler asynchronously serves protected assets from encrypted files', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-protected-protocol-async-'));
   const inputDir = path.join(root, 'src', 'assets');
@@ -133,4 +183,28 @@ test('protocol handler asynchronously serves protected assets from encrypted fil
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Content-Type'), 'image/webp');
   assert.equal(Buffer.from(await response.arrayBuffer()).toString('utf8'), 'encrypted-async-webp');
+});
+
+const { loadDevelopmentSourceAsset, loadDevelopmentSourceAssetAsync } = require('../protectedAssetProtocol');
+
+test('loadDevelopmentSourceAsset throws for invalid paths', () => {
+  assert.throws(() => loadDevelopmentSourceAsset('invalid', {}), /Invalid source asset id/);
+  assert.throws(() => loadDevelopmentSourceAsset('skin/../../escaping', {}), /Invalid source asset id/);
+});
+
+test('loadDevelopmentSourceAsset returns synchronous asset data', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-dev-asset-'));
+  const sourceDir = path.join(root, 'src', 'assets', 'default');
+  fs.mkdirSync(sourceDir, { recursive: true });
+  fs.writeFileSync(path.join(sourceDir, 'test.webp'), Buffer.from('test-data'));
+
+  const asset = loadDevelopmentSourceAsset('skin/default/test.webp', { appRoot: root });
+  assert.equal(asset.contentType, 'image/webp');
+  assert.equal(asset.size, 9);
+  assert.equal(asset.data.toString(), 'test-data');
+});
+
+test('loadDevelopmentSourceAssetAsync throws for invalid paths', async () => {
+  await assert.rejects(() => loadDevelopmentSourceAssetAsync('invalid', {}), /Invalid source asset id/);
+  await assert.rejects(() => loadDevelopmentSourceAssetAsync('skin/../../escaping', {}), /Invalid source asset id/);
 });

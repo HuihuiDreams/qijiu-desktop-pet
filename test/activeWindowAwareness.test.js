@@ -114,3 +114,68 @@ test('active window sampler can refresh unchanged payloads before renderer TTL e
   assert.equal(emitted[1].sampledAt, 11000);
   assert.equal(emitted[1].platform.x, 100);
 });
+
+test('active window payload key handles inactive payload', () => {
+  const { activeWindowPayloadKey } = require('../activeWindowAwareness');
+  const key = activeWindowPayloadKey({ active: false, source: 'test-source', reason: 'test-reason' });
+  assert.equal(key, 'inactive:test-source:test-reason');
+});
+
+test('active window sampler catches provider errors and emits fallback', async () => {
+  const emitted = [];
+  const sampler = createActiveWindowSampler({
+    provider: {
+      async getActiveWindowInfo() {
+        throw new Error('Provider failed');
+      },
+    },
+    getWindowBounds: () => ({ x: 0, y: 0, width: 1920, height: 1080 }),
+    getDisplays: () => displays,
+    onChange: (payload) => emitted.push(payload),
+  });
+
+  await sampler.sampleOnce();
+  
+  assert.equal(emitted.length, 1);
+  assert.equal(emitted[0].active, false);
+  assert.equal(emitted[0].reason, 'provider-failed');
+});
+
+test('active window sampler can start, stop and return last payload', async () => {
+  let intervalCb = null;
+  let cleared = false;
+  
+  const sampler = createActiveWindowSampler({
+    provider: {
+      async getActiveWindowInfo() {
+        return activeInfo({ x: 0, y: 0, width: 800, height: 600 });
+      },
+    },
+    getWindowBounds: () => ({ x: 0, y: 0, width: 1920, height: 1080 }),
+    getDisplays: () => displays,
+    setIntervalImpl: (cb) => {
+      intervalCb = cb;
+      return 123;
+    },
+    clearIntervalImpl: (id) => {
+      if (id === 123) cleared = true;
+    }
+  });
+
+  // initial last payload is fallback
+  const initial = sampler.getLastPayload();
+  assert.equal(initial.active, false);
+  assert.equal(initial.reason, 'not-sampled');
+
+  sampler.start();
+  sampler.start(); // second start does nothing
+  assert.ok(intervalCb !== null);
+  
+  // manually trigger interval
+  intervalCb();
+  
+  // stop clears interval
+  sampler.stop();
+  sampler.stop(); // second stop does nothing
+  assert.equal(cleared, true);
+});

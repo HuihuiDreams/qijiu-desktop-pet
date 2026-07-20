@@ -61,3 +61,64 @@ test('InteractionSystem - Anti-Overlap when triggered', (t) => {
     assert.strictEqual(petB.direction, 'right');
   }
 });
+
+test('InteractionSystem - cooldown and duration logic', () => {
+  const system = new InteractionSystem();
+  const petA = new MockPet();
+  const petB = new MockPet();
+  
+  // Set interacting
+  system.isInteracting = true;
+  system.interactionTimer = 100;
+  system.cooldownTimer = 0;
+  
+  // Update to decrease timer
+  system.update(petA, petB, 200);
+  
+  assert.strictEqual(system.isInteracting, false);
+  assert.strictEqual(system.currentInteraction, null);
+  assert.strictEqual(petA.state, 'idle');
+  assert.strictEqual(petA.idleTimer, 2000);
+  assert.strictEqual(system.cooldownTimer, CONFIG.INTERACTION_COOLDOWN);
+  
+  // Decrease cooldown
+  system.update(petA, petB, 10000);
+  assert.strictEqual(system.cooldownTimer, CONFIG.INTERACTION_COOLDOWN - 10000);
+});
+
+test('InteractionSystem - pickInteraction fallback', () => {
+  const system = new InteractionSystem();
+  const orig = Math.random;
+  Math.random = () => 1; // max roll
+  const interaction = system.pickInteraction(100, new MockPet());
+  assert.strictEqual(interaction.key, 'greet');
+  Math.random = orig;
+});
+
+test('InteractionSystem - getPresentation shareFood overfeed', () => {
+  const system = new InteractionSystem();
+  const petA = new MockPet();
+  const petB = new MockPet();
+  petB.stats.hunger = 90;
+  
+  const interaction = {
+    key: 'shareFood',
+    hungerB: 20
+  };
+  
+  global.window = {
+    DIALOGUES: {
+      throwup: {
+        yueqi: ['test-y'],
+        shenjiu: ['test-s']
+      }
+    }
+  };
+  
+  const presentation = system.getPresentation(petA, petB, interaction);
+  assert.strictEqual(presentation.overlayKey, 'throwup');
+  assert.strictEqual(presentation.dialogue.yueqi, 'test-y');
+  assert.strictEqual(presentation.dialogue.shenjiu, 'test-s');
+  
+  delete global.window;
+});
