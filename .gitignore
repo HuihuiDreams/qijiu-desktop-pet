@@ -24,3 +24,4 @@ security-scans/
 !.agents/skills/desktop-pet-maintenance/
 !.agents/skills/desktop-pet-maintenance/**
 docs/source-assets/
+.claude/
