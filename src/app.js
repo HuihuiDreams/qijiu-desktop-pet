@@ -32,55 +32,25 @@
   });
 
   // 等待主进程的屏幕信息
-  let screenWidth = window.innerWidth;
-  let screenHeight = window.innerHeight;
-  let screenInfo = {
-    width: screenWidth,
-    height: screenHeight,
-    walkAreas: [],
-    taskbarPlatforms: [],
-    windowScaleFactor: null,
-    displays: [],
-    adjacentDisplays: null,
-  };
   let pets = [];
-  const keepPetReachable = (pet) => {
-    if (movementSystem) {
-      movementSystem.clampPetToWalkAreas(pet);
-    }
-  };
-  const getWalkAreaForPoint = (x, y) => {
-    const areas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
-    return areas.find((walkArea) => (
-      x >= walkArea.x
-      && x <= walkArea.x + walkArea.width
-      && y >= walkArea.y
-      && y <= walkArea.y + walkArea.height
-    ));
-  };
-  const getVisualScaleForPoint = (x, y) => {
-    const area = getWalkAreaForPoint(x, y);
-    const scaleRatio = Number(area?.scaleRatio);
-    return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
-  };
-  const getVisualScaleForPet = (pet) => (
-    getVisualScaleForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
-  );
-  const getWeatherEffectScale = () => {
-    const primaryArea = screenInfo.walkAreas.find(area => area.isPrimary) || screenInfo.walkAreas[0];
-    const scaleRatio = Number(primaryArea?.scaleRatio);
-    return Number.isFinite(scaleRatio) && scaleRatio > 0 ? scaleRatio : 1;
-  };
-  const getMenuBoundsForPet = (pet) => (
-    getWalkAreaForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2)
-    || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight }
-  );
+  const stageGeometry = new StageGeometry({
+    getMovementSystem: () => movementSystem,
+    getPets: () => pets,
+    initialWidth: window.innerWidth,
+    initialHeight: window.innerHeight,
+  });
+  const keepPetReachable = (pet) => stageGeometry.keepPetReachable(pet);
+  const getWalkAreaForPoint = (x, y) => stageGeometry.getWalkAreaForPoint(x, y);
+  const getVisualScaleForPoint = (x, y) => stageGeometry.getVisualScaleForPoint(x, y);
+  const getVisualScaleForPet = (pet) => stageGeometry.getVisualScaleForPet(pet);
+  const getWeatherEffectScale = () => stageGeometry.getWeatherEffectScale();
+  const getMenuBoundsForPet = (pet) => stageGeometry.getMenuBoundsForPet(pet);
 
   // === 初始化系统 ===
   const stage = document.getElementById('pet-stage');
   const renderer = new PetRenderer(stage, keepPetReachable, getVisualScaleForPet);
   const spriteView = new SpriteView();
-  const movementSystem = new MovementSystem(screenWidth, screenHeight);
+  const movementSystem = new MovementSystem(stageGeometry.width, stageGeometry.height);
   const windowAwarenessSystem = new WindowAwarenessSystem(window.electronAPI, {
     enabled: CONFIG.WINDOW_AWARENESS_ENABLED !== false,
     ttlMs: CONFIG.WINDOW_AWARENESS_PLATFORM_TTL_MS,
@@ -111,21 +81,7 @@
 
   // 监听主进程的屏幕信息更新事件
   window.electronAPI.onScreenInfo((info) => {
-    screenWidth = info.width;
-    screenHeight = info.height;
-    screenInfo = {
-      width: screenWidth,
-      height: screenHeight,
-      walkAreas: Array.isArray(info.walkAreas) ? info.walkAreas : [],
-      taskbarPlatforms: Array.isArray(info.taskbarPlatforms) ? info.taskbarPlatforms : [],
-      windowScaleFactor: info.windowScaleFactor,
-      displays: Array.isArray(info.displays) ? info.displays : [],
-      adjacentDisplays: info.adjacentDisplays || null,
-    };
-    if (movementSystem) {
-      movementSystem.setScreenSize(screenWidth, screenHeight, info.walkAreas);
-    }
-    pets.forEach(keepPetReachable);
+    stageGeometry.applyScreenInfo(info);
   });
   windowAwarenessSystem.start();
 
@@ -151,8 +107,8 @@
     if (!windowAwarenessSystem.isSurfaceAwarenessEnabled()) return [];
     const activePlatform = windowAwarenessSystem.getCurrentPlatform(now);
     return activePlatform
-      ? [activePlatform, ...screenInfo.taskbarPlatforms]
-      : screenInfo.taskbarPlatforms;
+      ? [activePlatform, ...stageGeometry.screenInfo.taskbarPlatforms]
+      : stageGeometry.screenInfo.taskbarPlatforms;
   };
 
   // === 创建宠物 ===
@@ -161,10 +117,10 @@
   pets = [yueqi, shenjiu];
 
   // 初始化时将它们分开一定距离
-  yueqi.x = screenWidth * 0.3;
-  yueqi.y = screenHeight * 0.5;
-  shenjiu.x = screenWidth * 0.7;
-  shenjiu.y = screenHeight * 0.5;
+  yueqi.x = stageGeometry.width * 0.3;
+  yueqi.y = stageGeometry.height * 0.5;
+  shenjiu.x = stageGeometry.width * 0.7;
+  shenjiu.y = stageGeometry.height * 0.5;
 
   // 设置初始的发呆计时器
   yueqi.idleTimer = movementSystem.randomIdleDuration();
@@ -201,49 +157,24 @@
     spriteView,
     renderer,
   };
-  let skinSwitchInProgress = false;
   let lastVisibleTime = Date.now(); // 用户上次可见时的墙钟时间（跨 Dark Wake 不重置）
-
-  async function refreshAvailableSkins() {
-    try {
-      const skinIds = await window.electronAPI.getAvailableSkins();
-      if (Array.isArray(skinIds) && skinIds.length > 0) {
-        skinManager.setAvailableSkins(skinIds);
-      }
-    } catch (err) {
-      console.warn('读取可用皮肤列表失败，回退到 default:', err);
-    }
-  }
 
   function saveCurrentState() {
     return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin(), lastVisibleTime);
   }
 
-  async function applySkinById(skinId, options = {}) {
-    if (skinSwitchInProgress) return;
-    skinSwitchInProgress = true;
-    const shouldPersist = options.persist !== false;
-
-    try {
-      const availableSkinIds = skinManager.getAvailableSkins().map(skin => skin.id);
-      const nextSkinId = availableSkinIds.includes(skinId) ? skinId : 'default';
-
+  const skinSwitchController = new SkinSwitchController({
+    skinManager,
+    skinTargets,
+    electronAPI: window.electronAPI,
+    saveCurrentState: () => saveCurrentState(),
+    clearInteractionOverlay: () => {
       if (interactionOverlayActive) {
         interactionOverlayActive = false;
         renderer.hideOverlay(yueqi, shenjiu);
       }
-
-      await skinManager.applySkin(nextSkinId, skinTargets);
-      window.electronAPI.setCurrentSkin(nextSkinId);
-      if (shouldPersist) {
-        await saveCurrentState();
-      }
-    } catch (err) {
-      console.error('切换皮肤失败:', err);
-    } finally {
-      skinSwitchInProgress = false;
-    }
-  }
+    },
+  });
 
   function showNightDream(pet) {
     // 读取 dream 词库
@@ -361,10 +292,10 @@
   });
 
   window.electronAPI.onResetPositions(() => {
-    yueqi.x = screenWidth * 0.3;
-    yueqi.y = screenHeight * 0.5;
-    shenjiu.x = screenWidth * 0.7;
-    shenjiu.y = screenHeight * 0.5;
+    yueqi.x = stageGeometry.width * 0.3;
+    yueqi.y = stageGeometry.height * 0.5;
+    shenjiu.x = stageGeometry.width * 0.7;
+    shenjiu.y = stageGeometry.height * 0.5;
     pets.forEach(keepPetReachable);
     yueqi.setState('idle');
     shenjiu.setState('idle');
@@ -384,7 +315,7 @@
   });
 
   window.electronAPI.onSwitchSkin((skinId) => {
-    applySkinById(skinId);
+    skinSwitchController.applySkinById(skinId);
   });
 
   // === 久坐提醒处理 ===
@@ -427,10 +358,10 @@
 
     // 找到主显示器对应的 walkArea 中心
     // walkAreas 是相对于窗口坐标的；主进程会标记 isPrimary。
-    const walkAreas = movementSystem ? movementSystem.getWalkAreas() : screenInfo.walkAreas;
+    const walkAreas = movementSystem ? movementSystem.getWalkAreas() : stageGeometry.screenInfo.walkAreas;
     const area = walkAreas.find((wa) => wa.isPrimary)
       || walkAreas[0]
-      || { x: 0, y: 0, width: screenWidth, height: screenHeight };
+      || { x: 0, y: 0, width: stageGeometry.width, height: stageGeometry.height };
 
     const petSize = yueqi.size || CONFIG.PET_SIZE;
     const centerX = area.x + area.width / 2;
@@ -547,7 +478,7 @@
   });
 
   // === 加载保存的状态 ===
-  await refreshAvailableSkins();
+  await skinSwitchController.refreshAvailableSkins();
   const savedState = await timeSystem.load();
   if (savedState) {
     lastVisibleTime = savedState.lastVisibleTime ?? Date.now();
@@ -560,7 +491,7 @@
     }
     pets.forEach(keepPetReachable);
   }
-  await applySkinById(savedState?.skinId || 'default', { persist: false });
+  await skinSwitchController.applySkinById(savedState?.skinId || 'default', { persist: false });
 
   // === 闲聊计时器 ===
   let chatterTimer = 15000 + Math.random() * 30000;
@@ -621,13 +552,13 @@
 
         // macOS: 检测宠物是否走到屏幕边缘，触发跨屏迁移
         if (migrationCooldown > 0) migrationCooldown -= deltaMs;
-        if (window.electronAPI.requestWindowMigration && screenInfo.adjacentDisplays && migrationCooldown <= 0) {
+        if (window.electronAPI.requestWindowMigration && stageGeometry.screenInfo.adjacentDisplays && migrationCooldown <= 0) {
           for (const pet of pets) {
             const migrationDirection = MovementSystem.getEdgeMigrationDirection(
               pet,
-              screenWidth,
-              screenHeight,
-              screenInfo.adjacentDisplays,
+              stageGeometry.width,
+              stageGeometry.height,
+              stageGeometry.screenInfo.adjacentDisplays,
             );
             if (migrationDirection) {
               window.electronAPI.requestWindowMigration(migrationDirection);
@@ -803,7 +734,7 @@
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
   window.__DEBUG_SCREEN = () => ({
-    ...screenInfo,
+    ...stageGeometry.screenInfo,
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight,
     devicePixelRatio: window.devicePixelRatio,

@@ -164,6 +164,8 @@ qijiu-desktop-pet/
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
+│  │  ├─ SkinSwitchController.js        # 皮肤切换编排：并发防抖、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
+│  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、视觉缩放查询、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
 │  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
 │  │  ├─ WeatherAwarenessSystem.js      # 接收并应用主进程下发的天气和时段抽象 payload
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
