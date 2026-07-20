@@ -19,7 +19,6 @@ const {
   DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
 } = require('../../breakReminderService');
 const { createPresentationGuard } = require('../../presentationGuard');
-const { createMeetingDetector } = require('../../meetingDetector');
 const { PomodoroSystem } = require('../../src/systems/PomodoroSystem');
 const { registerProtectedAssetProtocol } = require('../../protectedAssetProtocol');
 const { I18N } = require('../../src/data/i18n');
@@ -36,6 +35,9 @@ const LocaleService = require('./services/LocaleService');
 const StorageIpc = require('./services/StorageIpc');
 const DisplayService = require('./DisplayService');
 const WindowAwarenessService = require('./services/WindowAwarenessService');
+const PetVisibilityService = require('./services/PetVisibilityService');
+const MeetingDetectorController = require('./services/MeetingDetectorController');
+const { isPetCurrentlyHidden, showPetManually, hidePetManually } = PetVisibilityService;
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
@@ -66,15 +68,11 @@ protocol.registerSchemesAsPrivileged([{
 
 
 
-let petHidden = false;         // 桌宠隐藏状态
-let meetingHidden = false;     // 会议检测导致的自动隐藏状态
-let isPaused = false;          // 走动暂停状态
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let breakReminderService = null;
-let meetingDetector = null;
 let breakReminderEnabled = true;
 let breakReminderIntervalMinutes = 60;
 let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
@@ -84,8 +82,6 @@ let finalSaveRequestId = 0;
 let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
 let pomodoroSystem = new PomodoroSystem();
 let pomodoroTickTimer = null;
-let pomodoroFocusSnapshot = null;
-let pomodoroPetHidden = false;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 
 function configureChromiumMemoryBudget() {
@@ -282,7 +278,7 @@ function startPomodoroTicker() {
     sendPomodoroState();
     if (snapshot.status === 'completed') {
       stopPomodoroTicker();
-      restorePomodoroPetFocus();
+      PetVisibilityService.restorePomodoroPetFocus();
       trayManager.refreshTrayMenu();
     }
   }, 1000);
@@ -299,7 +295,7 @@ async function startPomodoroSession(minutes) {
   const normalizedMinutes = normalizePomodoroMinutes(minutes, getStoredPomodoroMinutes());
   savePomodoroMinutes(normalizedMinutes);
   const snapshot = pomodoroSystem.start(normalizedMinutes);
-  enterPomodoroPetFocus();
+  PetVisibilityService.enterPomodoroPetFocus();
   startPomodoroTicker();
   trayManager.refreshTrayMenu();
   sendPomodoroState();
@@ -309,7 +305,7 @@ async function startPomodoroSession(minutes) {
 function stopPomodoroSession() {
   stopPomodoroTicker();
   const snapshot = pomodoroSystem.stop();
-  restorePomodoroPetFocus();
+  PetVisibilityService.restorePomodoroPetFocus();
   trayManager.refreshTrayMenu();
   sendPomodoroState();
   return snapshot;
@@ -371,106 +367,8 @@ function installFinalSaveBeforeClose(win) {
   });
 }
 
-function isPetCurrentlyHidden() {
-  return petHidden || meetingHidden || pomodoroPetHidden;
-}
-
-function getPetVisibilityState() {
-  const sources = {
-    manual: petHidden,
-    meeting: meetingHidden,
-    pomodoro: pomodoroPetHidden,
-  };
-
-  if (petHidden) return { visible: false, reason: 'manual', sources };
-  if (meetingHidden) return { visible: false, reason: 'meeting', sources };
-  if (pomodoroPetHidden) return { visible: false, reason: 'pomodoro', sources };
-  return { visible: true, reason: 'visible', sources };
-}
-
-function sendPetVisibility(visible) {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
-  windowManager.mainWindow.webContents.send('toggle-pet-visibility', visible, getPetVisibilityState());
-}
-
-function enterPomodoroPetFocus() {
-  if (!pomodoroFocusSnapshot) {
-    pomodoroFocusSnapshot = { wasPaused: isPaused };
-  }
-  pomodoroPetHidden = true;
-  sendPetVisibility(false);
-  if (!isPaused) {
-    isPaused = true;
-    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', true);
-  }
-  trayManager.refreshTrayMenu();
-}
-
-function restorePomodoroPetFocus() {
-  if (!pomodoroFocusSnapshot && !pomodoroPetHidden) return;
-  const wasPaused = pomodoroFocusSnapshot ? pomodoroFocusSnapshot.wasPaused : isPaused;
-  pomodoroPetHidden = false;
-  if (isPaused !== wasPaused) {
-    isPaused = wasPaused;
-    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
-  }
-  sendPetVisibility(!isPetCurrentlyHidden());
-  pomodoroFocusSnapshot = null;
-  trayManager.refreshTrayMenu();
-}
-
-function showPetManually() {
-  petHidden = false;
-  meetingHidden = false;
-  sendPetVisibility(!isPetCurrentlyHidden());
-  trayManager.refreshTrayMenu();
-}
-
-function hidePetManually() {
-  petHidden = true;
-  meetingHidden = false;
-  sendPetVisibility(false);
-  trayManager.refreshTrayMenu();
-}
-
-function hidePetForMeeting() {
-  if (meetingHidden) return;
-  meetingHidden = true;
-  if (!petHidden && !pomodoroPetHidden) {
-    sendPetVisibility(false);
-  }
-  trayManager.refreshTrayMenu();
-}
-
-function showPetAfterMeeting() {
-  if (!meetingHidden) return;
-  meetingHidden = false;
-  if (!petHidden && !pomodoroPetHidden) {
-    sendPetVisibility(true);
-  }
-  trayManager.refreshTrayMenu();
-}
-
-function stopMeetingDetector() {
-  if (!meetingDetector) return;
-  meetingDetector.stop();
-  meetingDetector = null;
-}
-
-function startMeetingDetector() {
-  stopMeetingDetector();
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return;
-
-  meetingDetector = createMeetingDetector({
-    platform: process.platform,
-    onMeetingStart: hidePetForMeeting,
-    onMeetingEnd: showPetAfterMeeting,
-    onError: (error) => {
-      console.warn('Meeting detector scan failed:', error.message);
-    },
-  });
-  meetingDetector.start();
-}
+// 桌宠可见性状态机（手动/会议/番茄钟三来源合并与优先级仲裁）已下沉至
+// PetVisibilityService；会议检测器生命周期已下沉至 MeetingDetectorController。
 
 /**
  * 第二次点击应用图标时，唤起已存在的实例。
@@ -541,10 +439,10 @@ function createWindow() {
     console.log('Renderer loaded successfully');
     DisplayService.sendScreenInfo();
     WindowAwarenessService.sendActiveWindowInfo(WindowAwarenessService.getLastPayload());
-    sendPetVisibility(!isPetCurrentlyHidden());
+    PetVisibilityService.sendPetVisibility(!isPetCurrentlyHidden());
     updateWeatherSyncSettings(weatherSyncSettings);
     keepPetWindowOnTop();
-    startMeetingDetector();
+    MeetingDetectorController.startMeetingDetector();
   });
 
   // 安全加固：禁止新窗口和导航 (ADR-014)
@@ -614,10 +512,6 @@ ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   setPetWindowMousePassthrough(request.ignore, request.options);
 });
 
-ipcMain.handle('get-pet-visibility-state', () => {
-  return getPetVisibilityState();
-});
-
 // 城市设置 IPC
 ipcMain.handle('get-city-settings', () => {
   return { city: weatherSyncSettings.city || '' };
@@ -680,7 +574,7 @@ class AppLifecycle {
 
   app.on('second-instance', showExistingInstance);
   app.on('before-quit', () => {
-    stopMeetingDetector();
+    MeetingDetectorController.stopMeetingDetector();
     stopPomodoroTicker();
   });
 
@@ -812,6 +706,17 @@ class AppLifecycle {
       getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
     });
 
+    PetVisibilityService.init({
+      ipcMain,
+      windowManager,
+      trayManager,
+    });
+
+    MeetingDetectorController.init({
+      hidePetForMeeting: PetVisibilityService.hidePetForMeeting,
+      showPetAfterMeeting: PetVisibilityService.showPetAfterMeeting,
+    });
+
     createWindow();
 
 
@@ -826,9 +731,9 @@ class AppLifecycle {
       sendSkinSelectorData: () => skinSelectorWindowModule.sendSkinSelectorData(),
       openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
       openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
-      getIsPaused: () => isPaused,
-      getPomodoroPetHidden: () => pomodoroPetHidden,
-      setIsPaused: (val) => { isPaused = val; if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('toggle-pause', isPaused); },
+      getIsPaused: PetVisibilityService.getIsPaused,
+      getPomodoroPetHidden: PetVisibilityService.getPomodoroPetHidden,
+      setIsPaused: PetVisibilityService.setPaused,
       isPetCurrentlyHidden,
       showPetManually,
       hidePetManually,

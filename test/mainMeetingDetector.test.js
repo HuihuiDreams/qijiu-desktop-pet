@@ -5,7 +5,7 @@ const { readMainProcessSource } = require('./helpers/sourceCorpus');
 const mainSource = readMainProcessSource();
 
 test('main process wires meeting detector lifecycle', () => {
-  assert.ok(mainSource.includes("require('../../meetingDetector')"));
+  assert.ok(mainSource.includes("require('../../../meetingDetector')"));
   assert.ok(mainSource.includes('let meetingDetector = null'));
   assert.ok(mainSource.includes('function startMeetingDetector()'));
   assert.ok(mainSource.includes('function stopMeetingDetector()'));
