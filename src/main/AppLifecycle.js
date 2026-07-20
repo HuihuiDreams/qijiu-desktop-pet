@@ -3,19 +3,6 @@ const { BrowserWindow, ipcMain, Tray, Menu, screen, nativeImage, dialog, protoco
 const path = require('path');
 const fs = require('fs');
 const {
-  getTaskbarPlatformsRelativeToBounds,
-  getVirtualDisplayBounds,
-  getWalkAreasRelativeToBounds,
-  findAdjacentDisplay,
-} = require('../../displayBounds');
-const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('../../activeWindowProvider');
-const { createActiveWindowSampler } = require('../../activeWindowAwareness');
-const {
-  areWindowBoundsEqual,
-  createDisplayFitScheduler,
-  getResizeBridgeConstraints,
-} = require('../../displayFit');
-const {
   initUpdateManager,
   checkForUpdatesFromTray,
   getUpdateMenuState,
@@ -25,7 +12,6 @@ const {
   createIpcSuccess,
   normalizeMousePassthroughRequest,
   normalizePomodoroMinutes,
-  normalizeWindowMigrationDirection,
 } = require('../../ipcContracts');
 const {
   createBreakReminderService,
@@ -48,6 +34,8 @@ const AutoLaunchService = require('./services/AutoLaunchService');
 const SkinService = require('./services/SkinService');
 const LocaleService = require('./services/LocaleService');
 const StorageIpc = require('./services/StorageIpc');
+const DisplayService = require('./DisplayService');
+const WindowAwarenessService = require('./services/WindowAwarenessService');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
@@ -61,8 +49,6 @@ const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY, POMODORO_LAST_MINUTES_KEY } = requ
 const AUTO_LAUNCH_KEY = 'autoLaunch';
 const DEFAULT_AUTO_LAUNCH = true;
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
-const DISPLAY_METRICS_SETTLE_MS = 250;
-const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
 const LOGIN_ITEM_NAME = '七九爱宠';
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
@@ -85,8 +71,6 @@ let meetingHidden = false;     // 会议检测导致的自动隐藏状态
 let isPaused = false;          // 走动暂停状态
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
-let activeWindowSampler = null;
-let windowAwarenessEnabled = true;
 let allowMainWindowClose = false;
 let finalSaveInProgress = false;
 let breakReminderService = null;
@@ -97,18 +81,12 @@ let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
 let weatherSyncIntervalTimer = null;
 let weatherSyncSettingsUpdateId = 0;
 let finalSaveRequestId = 0;
-let currentPetDisplay = null;
-let dragPollTimer = null;
 let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
 let pomodoroSystem = new PomodoroSystem();
 let pomodoroTickTimer = null;
 let pomodoroFocusSnapshot = null;
 let pomodoroPetHidden = false;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
-const displayFitScheduler = createDisplayFitScheduler({
-  fitNow: fitWindowToAllDisplays,
-  delayMs: DISPLAY_METRICS_SETTLE_MS,
-});
 
 function configureChromiumMemoryBudget() {
   app.commandLine.appendSwitch('js-flags', '--max-old-space-size=128');
@@ -168,229 +146,8 @@ function startKeepOnTopWatcher() {
   keepOnTopTimer = setInterval(keepPetWindowOnTop, 3000); // 每3秒检查一次
 }
 
-/**
- * 获取覆盖所有显示器的虚拟桌面边界。
- */
-function getDesktopWindowBounds() {
-  if (process.platform === 'darwin') {
-    const display = currentPetDisplay || screen.getPrimaryDisplay();
-    return display.bounds;
-  }
-
-  const virtualBounds = getVirtualDisplayBounds(screen.getAllDisplays());
-  if (virtualBounds.width > 0 && virtualBounds.height > 0) {
-    return virtualBounds;
-  }
-
-  return screen.getPrimaryDisplay().bounds;
-}
-
-function sendScreenInfo() {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
-  const bounds = windowManager.mainWindow.getBounds();
-  const displays = screen.getAllDisplays();
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const windowDisplay = screen.getDisplayNearestPoint({ x: bounds.x, y: bounds.y });
-  const windowScaleFactor = Number.isFinite(windowDisplay?.scaleFactor) ? windowDisplay.scaleFactor : 1;
-  let walkAreas = getWalkAreasRelativeToBounds(displays, bounds, windowScaleFactor, {
-    primaryDisplayId: primaryDisplay?.id,
-  });
-
-  if (process.platform === 'darwin') {
-    walkAreas = walkAreas.filter((area) => (
-      area.x + area.width > 0
-      && area.y + area.height > 0
-      && area.x < bounds.width
-      && area.y < bounds.height
-    ));
-  }
-
-  let adjacentDisplays = null;
-  if (process.platform === 'darwin' && currentPetDisplay) {
-    adjacentDisplays = {
-      left: Boolean(findAdjacentDisplay(currentPetDisplay, 'left', displays)),
-      right: Boolean(findAdjacentDisplay(currentPetDisplay, 'right', displays)),
-      top: Boolean(findAdjacentDisplay(currentPetDisplay, 'top', displays)),
-      bottom: Boolean(findAdjacentDisplay(currentPetDisplay, 'bottom', displays)),
-    };
-  }
-
-  const taskbarPlatforms = (process.platform === 'win32' || process.platform === 'darwin')
-    ? getTaskbarPlatformsRelativeToBounds(displays, bounds, windowScaleFactor)
-    : [];
-
-  windowManager.mainWindow.webContents.send('screen-info', {
-    width: bounds.width,
-    height: bounds.height,
-    walkAreas,
-    taskbarPlatforms,
-    windowScaleFactor,
-    adjacentDisplays,
-    displays: displays.map((display) => ({
-      id: display.id,
-      bounds: display.bounds,
-      workArea: display.workArea,
-      scaleFactor: display.scaleFactor,
-      rotation: display.rotation,
-      internal: display.internal,
-    })),
-  });
-}
-
-let lastDisplaysState = '';
-
-function getActiveWindowDisplays() {
-  const displays = screen.getAllDisplays();
-  const currentState = displays.map(d => `${d.id}:${d.bounds.x},${d.bounds.y},${d.bounds.width},${d.bounds.height}`).join('|');
-  if (lastDisplaysState && currentState !== lastDisplaysState) {
-    displayFitScheduler.schedule();
-  }
-  lastDisplaysState = currentState;
-  return displays;
-}
-
-function getActiveWindowMainBounds() {
-  return windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() ? windowManager.mainWindow.getBounds() : getDesktopWindowBounds();
-}
-
-function sendActiveWindowInfo(activeWindowInfo) {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed() || !activeWindowInfo) return;
-  windowManager.mainWindow.webContents.send('active-window-info', activeWindowInfo);
-}
-
-function unavailableActiveWindowPayload(reason) {
-  return {
-    ...unavailableActiveWindowInfo(reason),
-    platform: null,
-  };
-}
-
-function stopActiveWindowAwareness() {
-  if (!activeWindowSampler) return;
-  activeWindowSampler.stop();
-  activeWindowSampler = null;
-}
-
-function startActiveWindowAwareness() {
-  stopActiveWindowAwareness();
-  const provider = windowAwarenessEnabled
-    ? createActiveWindowProvider(process.platform)
-    : { getActiveWindowInfo: async () => unavailableActiveWindowInfo('disabled') };
-
-  activeWindowSampler = createActiveWindowSampler({
-    provider,
-    getWindowBounds: getActiveWindowMainBounds,
-    getDisplays: getActiveWindowDisplays,
-    onChange: sendActiveWindowInfo,
-    intervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
-    refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
-  });
-  activeWindowSampler.start();
-}
-
-function setWindowAwarenessEnabled(enabled) {
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return;
-  windowAwarenessEnabled = Boolean(enabled);
-  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-    startActiveWindowAwareness();
-    if (!windowAwarenessEnabled) {
-      sendActiveWindowInfo(unavailableActiveWindowPayload('disabled'));
-    }
-  }
-  trayManager.refreshTrayMenu();
-}
-
-function lockPetWindowToBounds(bounds) {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
-
-  const currentBounds = windowManager.mainWindow.getBounds();
-  if (!areWindowBoundsEqual(currentBounds, bounds)) {
-    const bridgeConstraints = getResizeBridgeConstraints(currentBounds, bounds);
-    if (bridgeConstraints) {
-      windowManager.mainWindow.setMinimumSize(bridgeConstraints.minWidth, bridgeConstraints.minHeight);
-      windowManager.mainWindow.setMaximumSize(bridgeConstraints.maxWidth, bridgeConstraints.maxHeight);
-    }
-    windowManager.mainWindow.setBounds(bounds);
-  }
-
-  windowManager.mainWindow.setMinimumSize(bounds.width, bounds.height);
-  windowManager.mainWindow.setMaximumSize(bounds.width, bounds.height);
-}
-
-function fitWindowToAllDisplays() {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
-
-  if (process.platform === 'darwin') {
-    const allDisplays = screen.getAllDisplays();
-    if (currentPetDisplay) {
-      const stillExists = allDisplays.some((d) => d.id === currentPetDisplay.id);
-      if (!stillExists) {
-        currentPetDisplay = screen.getPrimaryDisplay();
-      } else {
-        currentPetDisplay = allDisplays.find((d) => d.id === currentPetDisplay.id)
-          || screen.getPrimaryDisplay();
-      }
-    } else {
-      currentPetDisplay = screen.getPrimaryDisplay();
-    }
-  }
-
-  const bounds = getDesktopWindowBounds();
-  lockPetWindowToBounds(bounds);
-  sendScreenInfo();
-  trayManager.refreshTrayMenu();
-}
-
-function migrateWindowToDisplay(targetDisplay) {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return null;
-  if (!targetDisplay || !targetDisplay.bounds) return null;
-  if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
-
-  const oldBounds = windowManager.mainWindow.getBounds();
-  const newBounds = targetDisplay.bounds;
-
-  const offset = {
-    x: oldBounds.x - newBounds.x,
-    y: oldBounds.y - newBounds.y,
-  };
-
-  currentPetDisplay = targetDisplay;
-  lockPetWindowToBounds(newBounds);
-
-  windowManager.mainWindow.webContents.send('window-migrated', {
-    offset,
-    displayId: targetDisplay.id,
-    displayBounds: newBounds,
-  });
-
-  sendScreenInfo();
-  return offset;
-}
-
-function startDragPoll() {
-  stopDragPoll();
-  dragPollTimer = setInterval(() => {
-    if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed() || !currentPetDisplay) {
-      stopDragPoll();
-      return;
-    }
-    const cursor = screen.getCursorScreenPoint();
-    const cursorDisplay = screen.getDisplayNearestPoint(cursor);
-    if (cursorDisplay.id !== currentPetDisplay.id) {
-      migrateWindowToDisplay(cursorDisplay);
-    }
-  }, 100);
-}
-
-function stopDragPoll() {
-  if (dragPollTimer) {
-    clearInterval(dragPollTimer);
-    dragPollTimer = null;
-  }
-}
-
-
-
+// 多屏几何（虚拟桌面边界、屏幕信息广播、窗口锁定/适配/迁移、拖拽跨屏轮询）
+// 及活动窗口感知的 bounds/displays 查询已下沉至 DisplayService / WindowAwarenessService。
 
 
 // Playwright smoke 钩子：E2E 冒烟测试通过此入口直接唤起选肤窗口，绕过渲染进程 UI 交互。
@@ -738,10 +495,10 @@ function showExistingInstance() {
  */
 function createWindow() {
   if (process.platform === 'darwin') {
-    currentPetDisplay = screen.getPrimaryDisplay();
+    DisplayService.setCurrentPetDisplay(screen.getPrimaryDisplay());
   }
 
-  const { x, y, width, height } = getDesktopWindowBounds();
+  const { x, y, width, height } = DisplayService.getDesktopWindowBounds();
 
   windowManager.mainWindow = new BrowserWindow({
     width,
@@ -772,7 +529,7 @@ function createWindow() {
   // 设置鼠标穿透逻辑
   setPetWindowMousePassthrough(true, { forward: true });
 
-  lockPetWindowToBounds({ x, y, width, height });
+  DisplayService.lockPetWindowToBounds({ x, y, width, height });
 
   // macOS 特有：全工作区可见
   windowManager.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -782,8 +539,8 @@ function createWindow() {
 
   windowManager.mainWindow.webContents.on('did-finish-load', () => {
     console.log('Renderer loaded successfully');
-    sendScreenInfo();
-    sendActiveWindowInfo(activeWindowSampler?.getLastPayload());
+    DisplayService.sendScreenInfo();
+    WindowAwarenessService.sendActiveWindowInfo(WindowAwarenessService.getLastPayload());
     sendPetVisibility(!isPetCurrentlyHidden());
     updateWeatherSyncSettings(weatherSyncSettings);
     keepPetWindowOnTop();
@@ -809,9 +566,9 @@ function createWindow() {
       clearTimeout(mousePassthroughResetTimer);
       mousePassthroughResetTimer = null;
     }
-    stopDragPoll();
-    displayFitScheduler.clear();
-    stopActiveWindowAwareness();
+    DisplayService.stopDragPoll();
+    DisplayService.displayFitScheduler.clear();
+    WindowAwarenessService.stopActiveWindowAwareness();
     if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
       windowManager.statusWindow.close();
     }
@@ -825,10 +582,10 @@ function createWindow() {
     windowManager.mainWindow = null;
   });
 
-  screen.on('display-added', displayFitScheduler.schedule);
-  screen.on('display-removed', displayFitScheduler.schedule);
-  screen.on('display-metrics-changed', displayFitScheduler.schedule);
-  startActiveWindowAwareness();
+  screen.on('display-added', DisplayService.displayFitScheduler.schedule);
+  screen.on('display-removed', DisplayService.displayFitScheduler.schedule);
+  screen.on('display-metrics-changed', DisplayService.displayFitScheduler.schedule);
+  WindowAwarenessService.startActiveWindowAwareness();
 }
 
 /**
@@ -855,31 +612,6 @@ ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
   const request = normalizeMousePassthroughRequest(ignore, options);
   if (!request) return;
   setPetWindowMousePassthrough(request.ignore, request.options);
-});
-
-ipcMain.on('request-window-migration', (_event, direction) => {
-  const normalizedDirection = normalizeWindowMigrationDirection(direction);
-  if (!normalizedDirection) return;
-  if (process.platform !== 'darwin' || !currentPetDisplay) return;
-  const allDisplays = screen.getAllDisplays();
-  const adjacent = findAdjacentDisplay(currentPetDisplay, normalizedDirection, allDisplays);
-  if (adjacent) {
-    migrateWindowToDisplay(adjacent);
-  }
-});
-
-ipcMain.on('drag-started', () => {
-  if (process.platform !== 'darwin') return;
-  startDragPoll();
-});
-
-ipcMain.on('drag-ended', () => {
-  stopDragPoll();
-});
-
-ipcMain.handle('get-active-window-info', async () => {
-  if (!activeWindowSampler) startActiveWindowAwareness();
-  return activeWindowSampler.sampleOnce();
 });
 
 ipcMain.handle('get-pet-visibility-state', () => {
@@ -991,7 +723,7 @@ class AppLifecycle {
 
     const presentationGuard = createPresentationGuard({
       platform: process.platform,
-      getActiveWindowInfo: () => activeWindowSampler?.getLastPayload() || null,
+      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload() || null,
       getDisplays: () => screen.getAllDisplays(),
     });
 
@@ -1068,6 +800,18 @@ class AppLifecycle {
       t: trayManager.trayT,
     });
 
+    DisplayService.init({
+      windowManager,
+      trayManager,
+    });
+
+    WindowAwarenessService.init({
+      windowManager,
+      trayManager,
+      getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
+      getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
+    });
+
     createWindow();
 
 
@@ -1088,8 +832,8 @@ class AppLifecycle {
       isPetCurrentlyHidden,
       showPetManually,
       hidePetManually,
-      getCurrentPetDisplay: () => currentPetDisplay,
-      migrateWindowToDisplay,
+      getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
+      migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
       getBreakReminderEnabled: () => breakReminderEnabled,
       setBreakReminderEnabled: (val) => breakReminderEnabled = val,
       getBreakReminderIntervalMinutes: () => breakReminderIntervalMinutes,
@@ -1101,8 +845,8 @@ class AppLifecycle {
       getStoredWeatherSyncSettings,
       updateWeatherSyncSettings,
       openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
-      getWindowAwarenessEnabled: () => windowAwarenessEnabled,
-      setWindowAwarenessEnabled: (val) => setWindowAwarenessEnabled(val),
+      getWindowAwarenessEnabled: WindowAwarenessService.isEnabled,
+      setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
       AutoLaunchService,
       checkForUpdatesFromTray,
 
