@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Changed
+- **刮风效果判定规则修改**：修改了刮风和起大风的判定条件。移除了对阵风 (Wind Gusts) 的依赖，现在的判定只受平均风速 (Wind Speed) 影响。平均风速 >= 19.8 km/h 才会触发刮风，>= 28.8 km/h 触发大风。
 
 ## [0.9.2] - 2026-07-20
 ### Added

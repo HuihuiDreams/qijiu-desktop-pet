@@ -25,7 +25,7 @@ in this project.
    your edits, and do not touch unrelated code.
 5. Goal-Driven Execution & Chain Verification: When executing multi-step tasks or `/goal` requests:
    - Solve exactly ONE issue or task at a time.
-   - After each atomic fix, verify and update corresponding unit tests (`tests/`), run `npm test` or focused `node --test` checks, and update related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs).
+   - After each atomic fix, verify and update corresponding unit tests (`test/`), run `npm test` or focused `node --test` checks, and update related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs).
    - Never batch multiple tasks without completing the test and documentation verification loop for each step.
 
 ## Architecture Boundaries

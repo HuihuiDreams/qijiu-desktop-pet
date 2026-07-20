@@ -132,12 +132,11 @@ class WeatherAwarenessSystem {
 
   static windToIntensity(windSpeed, windGusts) {
     const speed = Number(windSpeed);
-    const gusts = Number(windGusts);
     const validSpeed = Number.isFinite(speed) && speed >= 0 ? speed : 0;
-    const validGusts = Number.isFinite(gusts) && gusts >= 0 ? gusts : 0;
 
-    if (validSpeed >= 28.8 || validGusts >= 45) return 'heavy';
-    if (validSpeed >= 19.8 || validGusts >= 28.8) return 'normal';
+    // 只基于平均风速进行判定，忽略阵风 (windGusts)
+    if (validSpeed >= 28.8) return 'heavy';
+    if (validSpeed >= 19.8) return 'normal';
     return 'none';
   }
 

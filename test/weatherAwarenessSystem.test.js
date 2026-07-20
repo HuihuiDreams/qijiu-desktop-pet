@@ -199,32 +199,32 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.windIntensity, 'none');
   });
 
-  await t.test('uses gusts to derive wind intensity', () => {
+  await t.test('ignores gusts and uses only wind speed for wind intensity', () => {
     system.setWeatherPayload({
       active: true,
       stale: false,
       weatherCode: 0,
       windSpeed: 0,
-      windGusts: 28.8,
+      windGusts: 45, // even with high gusts, should be 'none' if speed is 0
       isDay: true,
     });
 
     let state = system.getCurrentState();
-    assert.strictEqual(state.weatherKind, 'windy');
-    assert.strictEqual(state.windIntensity, 'normal');
+    assert.strictEqual(state.weatherKind, 'clear');
+    assert.strictEqual(state.windIntensity, 'none');
 
     system.setWeatherPayload({
       active: true,
       stale: false,
       weatherCode: 0,
-      windSpeed: 0,
-      windGusts: 45,
+      windSpeed: 20, // normal wind
+      windGusts: 0,
       isDay: true,
     });
 
     state = system.getCurrentState();
     assert.strictEqual(state.weatherKind, 'windy');
-    assert.strictEqual(state.windIntensity, 'heavy');
+    assert.strictEqual(state.windIntensity, 'normal');
   });
 
   await t.test('keeps precipitation primary weather while exposing wind intensity', () => {
