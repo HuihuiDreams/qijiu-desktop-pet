@@ -11,7 +11,6 @@ const {
   createIpcFailure,
   createIpcSuccess,
   normalizeMousePassthroughRequest,
-  normalizePomodoroMinutes,
 } = require('../../ipcContracts');
 const {
   createBreakReminderService,
@@ -19,7 +18,6 @@ const {
   DEFAULT_SETTINGS: DEFAULT_BREAK_REMINDER_SETTINGS,
 } = require('../../breakReminderService');
 const { createPresentationGuard } = require('../../presentationGuard');
-const { PomodoroSystem } = require('../../src/systems/PomodoroSystem');
 const { registerProtectedAssetProtocol } = require('../../protectedAssetProtocol');
 const { I18N } = require('../../src/data/i18n');
 const {
@@ -37,6 +35,7 @@ const DisplayService = require('./DisplayService');
 const WindowAwarenessService = require('./services/WindowAwarenessService');
 const PetVisibilityService = require('./services/PetVisibilityService');
 const MeetingDetectorController = require('./services/MeetingDetectorController');
+const PomodoroService = require('./services/PomodoroService');
 const { isPetCurrentlyHidden, showPetManually, hidePetManually } = PetVisibilityService;
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
@@ -45,7 +44,7 @@ const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
 const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
 const trayManager = require('./TrayManager');
-const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY, POMODORO_LAST_MINUTES_KEY } = require('./constants');
+const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
 // 常量定义
 const AUTO_LAUNCH_KEY = 'autoLaunch';
@@ -80,8 +79,6 @@ let weatherSyncIntervalTimer = null;
 let weatherSyncSettingsUpdateId = 0;
 let finalSaveRequestId = 0;
 let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-decay calculation
-let pomodoroSystem = new PomodoroSystem();
-let pomodoroTickTimer = null;
 const FINAL_SAVE_TIMEOUT_MS = 2500;
 
 function configureChromiumMemoryBudget() {
@@ -150,18 +147,6 @@ function startKeepOnTopWatcher() {
 // 实现委托给 SkinService/SkinSelectorWindow，这里仅保留 QA 入口本身。
 app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
 
-function getStoredPomodoroMinutes() {
-  const store = StoreManager.getStore();
-  if (!store) return normalizePomodoroMinutes(null);
-  return normalizePomodoroMinutes(store.get(POMODORO_LAST_MINUTES_KEY));
-}
-
-function savePomodoroMinutes(minutes) {
-  const store = StoreManager.getStore();
-  if (!store) return;
-  store.set(POMODORO_LAST_MINUTES_KEY, normalizePomodoroMinutes(minutes));
-}
-
 function getStoredWeatherSyncSettings() {
   const store = StoreManager.getStore();
   if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
@@ -227,89 +212,8 @@ async function updateWeatherSyncSettings(newSettings) {
 
 
 
-// resolvePomodoroAsset 现由 SkinService 提供；此处保留同名局部绑定以复用原有调用形态。
-let cachedPomodoroAssets = null;
-let cachedPomodoroAssetsSkinId = null;
-
-function getPomodoroAssets() {
-  const resolvePomodoroAsset = SkinService.resolvePomodoroAsset;
-  const currentSkinId = SkinService.getCurrentSkinId();
-  if (cachedPomodoroAssets && cachedPomodoroAssetsSkinId === currentSkinId) {
-    return cachedPomodoroAssets;
-  }
-  const assets = {
-    yueqi: resolvePomodoroAsset(currentSkinId, 'left_cultivate.webp'),
-    shenjiu: resolvePomodoroAsset(currentSkinId, 'right_cultivate.webp'),
-    cultivate: resolvePomodoroAsset(currentSkinId, 'cultivate.webp'),
-    kiss: resolvePomodoroAsset(currentSkinId, 'kiss.webp'),
-  };
-  cachedPomodoroAssets = assets;
-  cachedPomodoroAssetsSkinId = currentSkinId;
-  return assets;
-}
-
-function getPomodoroSnapshot(now) {
-  const snapshot = pomodoroSystem.getSnapshot(now);
-  return {
-    ...snapshot,
-    lastPomodoroMinutes: snapshot.durationMinutes || getStoredPomodoroMinutes(),
-    isAlwaysOnTop: pomodoroWindowModule.isPomodoroAlwaysOnTop(),
-    skinId: SkinService.getCurrentSkinId(),
-    assets: getPomodoroAssets(),
-  };
-}
-
-function sendPomodoroState() {
-  if (!windowManager.pomodoroWindow || windowManager.pomodoroWindow.isDestroyed()) return;
-  windowManager.pomodoroWindow.webContents.send('pomodoro-state', getPomodoroSnapshot());
-}
-
-function stopPomodoroTicker() {
-  if (pomodoroTickTimer) {
-    clearInterval(pomodoroTickTimer);
-    pomodoroTickTimer = null;
-  }
-}
-
-function startPomodoroTicker() {
-  stopPomodoroTicker();
-  pomodoroTickTimer = setInterval(() => {
-    const snapshot = getPomodoroSnapshot();
-    sendPomodoroState();
-    if (snapshot.status === 'completed') {
-      stopPomodoroTicker();
-      PetVisibilityService.restorePomodoroPetFocus();
-      trayManager.refreshTrayMenu();
-    }
-  }, 1000);
-}
-
-
-
-
-
-
-
-async function startPomodoroSession(minutes) {
-  await StoreManager.initStore();
-  const normalizedMinutes = normalizePomodoroMinutes(minutes, getStoredPomodoroMinutes());
-  savePomodoroMinutes(normalizedMinutes);
-  const snapshot = pomodoroSystem.start(normalizedMinutes);
-  PetVisibilityService.enterPomodoroPetFocus();
-  startPomodoroTicker();
-  trayManager.refreshTrayMenu();
-  sendPomodoroState();
-  return snapshot;
-}
-
-function stopPomodoroSession() {
-  stopPomodoroTicker();
-  const snapshot = pomodoroSystem.stop();
-  PetVisibilityService.restorePomodoroPetFocus();
-  trayManager.refreshTrayMenu();
-  sendPomodoroState();
-  return snapshot;
-}
+// 番茄钟会话状态机（分钟数存取、皮肤素材缓存、tick 定时器、启停会话、
+// 状态快照/推送）已下沉至 PomodoroService。
 
 
 
@@ -575,7 +479,7 @@ class AppLifecycle {
   app.on('second-instance', showExistingInstance);
   app.on('before-quit', () => {
     MeetingDetectorController.stopMeetingDetector();
-    stopPomodoroTicker();
+    PomodoroService.stopPomodoroTicker();
   });
 
   app.whenReady().then(async () => { 
@@ -717,11 +621,20 @@ class AppLifecycle {
       showPetAfterMeeting: PetVisibilityService.showPetAfterMeeting,
     });
 
+    PomodoroService.init({
+      SkinService,
+      PetVisibilityService,
+      pomodoroWindowModule,
+      windowManager,
+      trayManager,
+      StoreManager,
+    });
+
     createWindow();
 
 
     trayManager.init({
-      getPomodoroSnapshot,
+      getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot,
       getUpdateMenuState,
       getCurrentLocale: LocaleService.getCurrentLocale,
       setCurrentLocale: LocaleService.setCurrentLocale,
@@ -774,7 +687,7 @@ class AppLifecycle {
       windowManager,
       skinSelectorWindowModule,
       trayManager,
-      sendPomodoroState
+      sendPomodoroState: PomodoroService.sendPomodoroState
     });
     skinSelectorWindowModule.init({
       selectSkin: SkinService.selectSkin,
@@ -782,14 +695,14 @@ class AppLifecycle {
       getSkinGalleryItems: SkinService.getSkinGalleryItems
     });
     pomodoroWindowModule.init({
-      getPomodoroSystem: () => pomodoroSystem,
+      getPomodoroSystem: PomodoroService.getPomodoroSystem,
       createIpcSuccess,
       createIpcFailure,
       initStore: () => StoreManager.initStore(),
-      startPomodoroSession,
-      stopPomodoroSession,
-      sendPomodoroState,
-      getPomodoroSnapshot
+      startPomodoroSession: PomodoroService.startPomodoroSession,
+      stopPomodoroSession: PomodoroService.stopPomodoroSession,
+      sendPomodoroState: PomodoroService.sendPomodoroState,
+      getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot
     });
 
   }).catch(err => { console.error('WHEN READY ERROR:', err); });
