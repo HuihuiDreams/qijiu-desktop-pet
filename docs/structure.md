@@ -12,35 +12,57 @@ DeskPet 是一个 Electron 桌面宠物应用。主进程负责窗口、系统�
 graph TB
     subgraph Main["Electron Main Process"]
         MainJs["main.js (Entry)"]
-        MainJs --> AppLifecycle["src/main/AppLifecycle.js"]
-        
+        MainJs --> AppLifecycle["src/main/AppLifecycle.js<br/>(薄编排层：仅引导 + init(deps) 接线)"]
+
+        AppLifecycle -->|"init(deps)"| Services
         AppLifecycle --> WindowManager["src/main/windows/WindowManager.js"]
         AppLifecycle --> TrayManager["src/main/TrayManager.js"]
-        WindowManager --> PetWindow["Transparent Pet BrowserWindow"]
-        WindowManager --> StatusWindow["Independent Status BrowserWindow"]
-        WindowManager --> SkinSelectorWindow["Skin Selector BrowserWindow"]
-        WindowManager --> PomodoroWindow["Pomodoro BrowserWindow"]
-        WindowManager --> CitySettingWindow["City Setting BrowserWindow"]
-        
-        AppLifecycle --> Store["electron-store"]
-        AppLifecycle --> Bounds["displayBounds.js"]
-        AppLifecycle --> Fit["displayFit.js"]
-        AppLifecycle --> ActiveWindow["activeWindowAwareness.js"]
-        AppLifecycle --> MeetingDetector["meetingDetector.js"]
-        AppLifecycle --> WeatherSync["weatherSyncService.js"]
+
+        subgraph Services["主进程服务/控制器 (init(deps) 模块)"]
+            SkinService["SkinService"]
+            LocaleService["LocaleService"]
+            StorageIpc["StorageIpc"]
+            DisplayService["DisplayService"]
+            WindowAwarenessService["WindowAwarenessService"]
+            PetVisibilityService["PetVisibilityService"]
+            MeetingDetectorController["MeetingDetectorController"]
+            PomodoroService["PomodoroService"]
+            WeatherSyncController["WeatherSyncController"]
+            BreakReminderController["BreakReminderController"]
+            FinalSaveService["FinalSaveService"]
+        end
+
+        WindowManager --> PetWindow["windows/PetWindow.js → Transparent Pet BrowserWindow"]
+        WindowManager --> StatusWindow["windows/StatusWindow.js → Status BrowserWindow"]
+        WindowManager --> SkinSelectorWindow["windows/SkinSelectorWindow.js → Skin Selector BrowserWindow"]
+        WindowManager --> PomodoroWindow["windows/PomodoroWindow.js → Pomodoro BrowserWindow"]
+        WindowManager --> CitySettingWindow["windows/CitySettingWindow.js → City Setting BrowserWindow"]
+        WindowManager --> UpdateProgressWindow["windows/UpdateProgressWindow.js → Update Progress BrowserWindow"]
+
+        StorageIpc --> Store["electron-store (StoreManager)"]
+        DisplayService --> Bounds["displayBounds.js"]
+        DisplayService --> Fit["displayFit.js"]
+        WindowAwarenessService --> ActiveWindow["activeWindowAwareness.js"]
+        MeetingDetectorController --> MeetingDetector["meetingDetector.js"]
+        WeatherSyncController --> WeatherSync["weatherSyncService.js"]
+        BreakReminderController --> BreakSvc["breakReminderService.js / presentationGuard.js"]
     end
 
     subgraph Renderer["Pet Renderer Process"]
-        Index["src/index.html + index.css"] --> App["src/app.js"]
+        Index["src/index.html + index.css"] --> App["src/app.js (组合根)"]
         App --> Movement["MovementSystem"]
         App --> Nurture["NurtureSystem"]
         App --> Interaction["InteractionSystem"]
         App --> Time["TimeSystem"]
         App --> Awareness["WindowAwarenessSystem"]
         App --> WeatherAwareness["WeatherAwarenessSystem"]
-        App --> Skin["SkinManager"]
+        App --> Skin["SkinManager / SkinSwitchController"]
         App --> Pet["Pet / PetRenderer / SpriteView"]
-        App --> UI["ContextMenu / StatusBar / DialogBubble"]
+        App --> UI["ContextMenu / StatusBar / DialogBubble / WeatherParticleLayer"]
+        App --> Stage["StageGeometry (screenInfo/几何)"]
+        App --> Ambient["AmbientDialogueSystem"]
+        App --> BreakPresenter["BreakReminderPresenter"]
+        App --> Offline["OfflineReturnSystem"]
         App --> I18N["i18nHelpers.js (Runtime i18n)"]
         Debug["src/debug.js"] --> App
     end
@@ -208,25 +230,23 @@ qijiu-desktop-pet/
 
 ### 3.1 主进程职责
 
-`main.js` 是应用的系统层入口，主要负责：
+`main.js` 仅是极简系统层入口：完成 `app.requestSingleInstanceLock()` 单实例锁与 QA userData 目录配置后调用 `AppLifecycle.init(app)`。`src/main/AppLifecycle.js` 收敛为薄编排层，在 `app.whenReady()` 内按依赖顺序对各 `init(deps)` 模块接线；下述具体职责由对应的服务/窗口/控制器模块承担（详见第 2 节目录树与 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
-- 创建透明、无边框、可置顶的主宠物窗口。
-- 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据。
-- 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复。
-- 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果。
-- 维护系统托盘菜单，包括显示/隐藏、恢复走动、重置位置、皮肤切换、语言切换、开机启动、检查更新和退出。
-- 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据。
-- 使用 `app.requestSingleInstanceLock()` 保证单实例运行，并在二次启动时唤回已有窗口。
-- 使用 `displayBounds.js` 计算多显示器虚拟桌面范围和每块屏幕的可行走区域。
-- 使用 `displayFit.js` 合并显示器指标突发事件，并在重新适配透明主窗口时桥接 min/max 尺寸约束。
-- 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件。
-- 监听 `powerMonitor` 睡眠/唤醒事件，向渲染进程同步真实时间差（用于修复 macOS 睡眠期间时间冻结的问题）。
-- 启动 `meetingDetector.js` 低频检测已知会议应用，在检测到 Teams/Zoom 等会议活动时自动隐藏桌宠，会议结束后恢复；手动隐藏状态和会议自动隐藏状态相互独立。
-- 在退出前请求渲染进程做最后一次状态保存，降低异常退出造成的数据丢失。
+- 创建透明、无边框、可置顶的主宠物窗口（`windows/PetWindow.js`，含点击穿透与置顶守卫）。
+- 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
+- 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
+- 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果（`windows/CitySettingWindow.js` + `services/WeatherSyncController.js`）。
+- 维护系统托盘菜单，包括显示/隐藏、恢复走动、重置位置、皮肤切换、语言切换、开机启动、检查更新和退出（`TrayManager.js`，其 `init(deps)` 的回调实现分散在各服务模块）。
+- 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据（`services/StoreManager.js` + `services/StorageIpc.js`，key 常量集中于 `src/main/constants.js`）。
+- 计算多显示器虚拟桌面范围与每块屏幕的可行走区域，并合并显示器指标突发事件、桥接 min/max 尺寸约束（`DisplayService.js`，底层复用 `displayBounds.js`/`displayFit.js`）。
+- 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件（`windows/PetWindow.js`）。
+- 监听 `powerMonitor` 睡眠/唤醒事件，向渲染进程同步真实时间差（`services/BreakReminderController.js`，用于修复 macOS 睡眠期间时间冻结的问题）。
+- 低频检测已知会议应用，在检测到 Teams/Zoom 等会议活动时自动隐藏桌宠、会议结束后恢复（`services/MeetingDetectorController.js` + `services/PetVisibilityService.js`，底层复用 `meetingDetector.js`）；桌宠可见性由 `PetVisibilityService` 按 `manual > meeting > pomodoro` 优先级统一仲裁，各隐藏来源相互独立。
+- 在退出前请求渲染进程做最后一次状态保存，降低异常退出造成的数据丢失（`services/FinalSaveService.js`）。
 
 ### 3.2 渲染进程职责
 
-`src/app.js` 编排宠物运行逻辑：
+`src/app.js` 收敛为组合根，编排宠物运行逻辑（几何、皮肤切换、久坐提醒展示、闲聊/梦话、离线回归等逻辑已分别拆入 `systems/StageGeometry.js`、`systems/SkinSwitchController.js`、`ui/BreakReminderPresenter.js`、`systems/AmbientDialogueSystem.js`、`systems/OfflineReturnSystem.js`，见 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
 - 初始化两个宠物实体、渲染器、移动系统、养成系统、交互系统、时间系统和皮肤系统。
 - 通过 `requestAnimationFrame` 驱动 game loop。
@@ -247,7 +267,7 @@ qijiu-desktop-pet/
 
 多屏支持由主进程和渲染进程协作完成：
 
-- `main.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
+- `DisplayService.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
 - `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`。
 - `displayFit.js` 将 `display-added`、`display-removed` 和 `display-metrics-changed` 的短时间连发合并为一次窗口适配，避免 macOS 数位板驱动等场景下出现多次可见 resize。
 - `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
@@ -262,7 +282,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
 - `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
-- `main.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程（支持 Windows 和 macOS 底部 Dock），不经过活动窗口采样轮询。
+- `DisplayService.js` 通过 `screen-info` 将 `taskbarPlatforms` 发送给渲染进程（支持 Windows 和 macOS 底部 Dock），不经过活动窗口采样轮询。
 - `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏平台，只在 idle 宠物选择新目标时使用可达平台；窗口平台优先，任务栏平台低频出现。宠物走上活动窗口顶部或任务栏平台后，有较高概率（默认 70%）在下一次 idle 选点时继续沿着当前边缘行走。不可用、禁用、过期、最小化、最大化、全屏，以及平台附近宠物放不下的情况，都会回退到普通显示器 walk area。
 
 ### 3.6 养成系统
@@ -306,7 +326,7 @@ src/assets/{skinId}/
    └─ walk_left01.webp ... walk_right04.webp
 ```
 
-`main.js` 扫描 `src/assets/` 下的皮肤目录，托盘菜单发出皮肤切换事件；`SkinManager` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`。
+`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并维护当前皮肤状态，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`。
 
 ### 3.9 多语言系统
 
@@ -351,7 +371,7 @@ src/assets/{skinId}/
 - macOS 使用 `pgrep -x` 和 `lsof -nP -i UDP -p <pid> -Fn` 做同类检测。
 - 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。
 - 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。
-- `main.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
+- `services/PetVisibilityService.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
 - 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
 - `tools/measure-meeting-udp.js` 可用于后续校准 Zoom、Slack、Discord 或不同 Teams 版本的阈值。
 
@@ -360,7 +380,7 @@ src/assets/{skinId}/
 轻量番茄钟是本地陪伴型倒计时功能，不是监督型专注检测。设计计划记录在 [cangqiong-pomodoro-plan.md](./plan/cangqiong-pomodoro-plan.md)。
 
 - `src/systems/PomodoroSystem.js` 是纯倒计时状态机，使用 `startedAt`、`durationMs` 和 `endAt` 推导 `remainingMs` 与 `progress`，避免依赖 interval 累计。
-- `main.js` 拥有番茄钟窗口生命周期：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。
+- `windows/PomodoroWindow.js` 拥有番茄钟窗口生命周期、`services/PomodoroService.js` 拥有会话状态机：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。
 - 窗口使用 `src/pomodoro.html`、`src/pomodoro.css` 和 `src/pomodoroWindow.js`，视觉上复用状态窗口和右键菜单的玉色玻璃系统。
 - 分钟输入默认使用 `electron-store` 中的 `lastPomodoroMinutes`，首次使用或非法输入时回退到 25 分钟，并将单次时长限制在安全范围内。
 - 专注开始时，主进程记录 `pomodoroFocusSnapshot.wasPaused`，设置独立的 `pomodoroPetHidden` 覆盖态，隐藏桌面宠物并暂停移动；完成、手动停止或关闭窗口后恢复到专注前的隐藏/暂停状态。
@@ -388,7 +408,7 @@ src/assets/{skinId}/
 - 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
-- IPC 通道集中在 `main.js`，便于审计。
+- IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
 
 ## 4. 测试与验证
@@ -460,6 +480,9 @@ npm run qa:electron:smoke
 - [ADR-037](./decisions/ADR-037-lightweight-pomodoro-companion.md)：轻量番茄钟陪伴模式。
 - [ADR-038](./decisions/ADR-038-weather-sync.md)：天气感知与时空同步系统架构与隐私边界。
 - [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)：城市设置 UI 独立窗口与配置隔离。
+- [ADR-040](./decisions/ADR-040-encrypted-skin-assets.md)：加密皮肤资产与 `pet-asset://` 协议。
+- [ADR-041](./decisions/ADR-041-skin-selector-performance-and-scaling.md)：选肤器性能与多皮肤扩展。
+- [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)：主进程与渲染进程巨石文件模块化拆分（`init(deps)` DI 模块 / 全局 class + 双导出守卫 / 统一测试 corpus）。
 
 ## 6. 维护提示
 
