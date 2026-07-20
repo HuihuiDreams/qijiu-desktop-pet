@@ -3,34 +3,6 @@
  * 初始化所有系统，并通过 requestAnimationFrame 运行游戏主循环。
  */
 
-/**
- * applyI18n() — 遍历所有 [data-i18n] 元素，更新 textContent。
- * 对于 data-i18n-pet 属性，由 ContextMenu.show() 单独处理。
- */
-function getI18nDictionaries() {
-  return typeof I18N !== 'undefined' ? I18N : null;
-}
-
-function translateUi(key, locale = window.__currentLocale) {
-  const dictionaries = getI18nDictionaries();
-  return dictionaries?.[locale]?.ui?.[key] ?? dictionaries?.zh?.ui?.[key] ?? key;
-}
-
-function getI18nUi(locale = window.__currentLocale) {
-  const dictionaries = getI18nDictionaries();
-  return dictionaries?.[locale]?.ui ?? dictionaries?.zh?.ui ?? {};
-}
-
-function applyI18n() {
-  if (!window.t) return;
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = window.t(el.dataset.i18n);
-  });
-  // 更新 <html lang> 属性
-  const locale = window.__currentLocale || 'zh';
-  document.documentElement.lang = locale;
-}
-
 (async function main() {
   // === 初始化 i18n （必须在其他系统之前）===
   const locale = await window.electronAPI.getLocale();
@@ -41,15 +13,15 @@ function applyI18n() {
   document.body.classList.add(`platform-${platform}`);
 
   // 建立 window.t() 翻译函数
-  window.t = (key) => translateUi(key);
+  window.t = (key) => I18nHelpers.translateUi(key);
 
   // 建立 window.I18N_UI （气泡等需要函数类型字符串的入口）
   const updateI18nRefs = () => {
-    window.I18N_UI = getI18nUi();
+    window.I18N_UI = I18nHelpers.getI18nUi();
     if (typeof initDialogues === 'function') {
       initDialogues(window.__currentLocale);
     }
-    applyI18n();
+    I18nHelpers.applyI18n();
   };
   
   updateI18nRefs();
@@ -515,10 +487,10 @@ function applyI18n() {
   // === 语言热切换监听 ===
   window.electronAPI.onLocaleChange((newLocale) => {
     window.__currentLocale = newLocale;
-    window.t = (key) => translateUi(key, newLocale);
-    window.I18N_UI = getI18nUi(newLocale);
+    window.t = (key) => I18nHelpers.translateUi(key, newLocale);
+    window.I18N_UI = I18nHelpers.getI18nUi(newLocale);
     if (typeof initDialogues === 'function') initDialogues(newLocale);
-    applyI18n();
+    I18nHelpers.applyI18n();
   });
 
   // === 离线回归结算（统一入口）===

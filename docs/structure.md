@@ -41,7 +41,7 @@ graph TB
         App --> Skin["SkinManager"]
         App --> Pet["Pet / PetRenderer / SpriteView"]
         App --> UI["ContextMenu / StatusBar / DialogBubble"]
-        App --> I18N["Runtime i18n"]
+        App --> I18N["i18nHelpers.js (Runtime i18n)"]
         Debug["src/debug.js"] --> App
     end
 
@@ -132,7 +132,8 @@ qijiu-desktop-pet/
 │  ├─ context-menu.css                  # 右键菜单样式
 │  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
-│  ├─ app.js                            # 渲染进程编排：初始化、game loop、保存、皮肤切换、状态同步
+│  ├─ app.js                            # 渲染进程组合根：初始化、game loop、保存、皮肤切换、状态同步；渲染进程巨石文件拆分（ADR-042 Phase R1 起）逐步收敛为薄编排层
+│  ├─ i18nHelpers.js                    # 渲染进程 i18n 纯函数辅助：getI18nDictionaries/translateUi/getI18nUi/applyI18n，locale → zh → key 回退链，无可变状态
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
 │  ├─ status.html                       # 独立状态窗口 HTML
 │  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类

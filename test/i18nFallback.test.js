@@ -24,9 +24,35 @@ test('dialogues init falls back without throwing when I18N is absent', () => {
   assert.ok(Array.isArray(context.window.DIALOGUES.weather_thunderstorm.shenjiu));
 });
 
-test('renderer i18n fallback avoids direct optional chaining on an undeclared I18N global', () => {
-  const appSource = readSource('src/app.js');
+test('I18nHelpers.translateUi falls back locale -> zh -> key without throwing when I18N is undeclared', () => {
+  delete require.cache[require.resolve('../src/i18nHelpers')];
+  delete global.I18N;
+  const { I18nHelpers } = require('../src/i18nHelpers');
 
-  assert.ok(appSource.includes('getI18nDictionaries()'), 'app.js should use a safe I18N accessor');
-  assert.equal(appSource.includes('I18N?.zh'), false, 'undeclared I18N optional chaining would throw');
+  // I18N 全局未声明时：getI18nDictionaries 安全返回 null，translateUi 回退到 key 本身
+  assert.equal(I18nHelpers.getI18nDictionaries(), null);
+  assert.doesNotThrow(() => I18nHelpers.translateUi('greet', 'en'));
+  assert.equal(I18nHelpers.translateUi('greet', 'en'), 'greet');
+  assert.deepEqual(I18nHelpers.getI18nUi('en'), {});
+});
+
+test('I18nHelpers.translateUi resolves locale dictionary before falling back to zh, then key', () => {
+  delete require.cache[require.resolve('../src/i18nHelpers')];
+  global.I18N = {
+    zh: { ui: { greet: '你好', zhOnly: '仅中文文案' } },
+    en: { ui: { greet: 'Hello' } },
+  };
+  const { I18nHelpers } = require('../src/i18nHelpers');
+
+  // 1. locale 字典命中
+  assert.equal(I18nHelpers.translateUi('greet', 'en'), 'Hello');
+  // 2. locale 字典缺失该 key，回退到 zh 字典
+  assert.equal(I18nHelpers.translateUi('zhOnly', 'en'), '仅中文文案');
+  // 3. zh 字典也没有该 key，回退到 key 本身
+  assert.equal(I18nHelpers.translateUi('missingEverywhere', 'en'), 'missingEverywhere');
+  // getI18nUi 遵循同样的 locale -> zh 回退顺序
+  assert.deepEqual(I18nHelpers.getI18nUi('en'), { greet: 'Hello' });
+  assert.deepEqual(I18nHelpers.getI18nUi('ja'), { greet: '你好', zhOnly: '仅中文文案' });
+
+  delete global.I18N;
 });
