@@ -10,7 +10,13 @@ function readSource(relativePath) {
 }
 
 test('main process waits for renderer final save before closing the pet window', () => {
-  const mainSource = readSource('main.js') + '\n' + readSource('src/main/AppLifecycle.js');
+  // The final-save protocol lives in FinalSaveService.js (AppLifecycle
+  // Decomposition Phase 8); the call site that wires it to the pet window
+  // lives in PetWindow.js.
+  const mainSource = readSource('main.js')
+    + '\n' + readSource('src/main/AppLifecycle.js')
+    + '\n' + readSource('src/main/services/FinalSaveService.js')
+    + '\n' + readSource('src/main/windows/PetWindow.js');
 
   assert.ok(mainSource.includes('installFinalSaveBeforeClose(windowManager.mainWindow)'));
   assert.ok(mainSource.includes("event.preventDefault()"));

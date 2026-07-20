@@ -3,9 +3,10 @@
  * 久坐提醒控制器：breakReminderService 生命周期、presentationGuard 接线、
  * powerMonitor（lock-screen/suspend/unlock-screen/resume）事件、
  * break-reminder-dismissed IPC，以及托盘菜单读取的开关/间隔状态。
- * init(deps) 模式，deps: { ipcMain, StoreManager, PetVisibilityService,
+ * init(deps) 模式，deps: { StoreManager, PetVisibilityService,
  * WindowAwarenessService, windowManager }。
  */
+const { ipcMain } = require('electron');
 const {
   createBreakReminderService,
   normalizeSettings: normalizeBreakReminderSettings,
@@ -23,7 +24,7 @@ let suspendTimestamp = 0; // Date.now() recorded at system suspend for sleep-dec
 
 function init(dependencies) {
   deps = dependencies;
-  const { ipcMain, StoreManager, PetVisibilityService, WindowAwarenessService, windowManager } = deps;
+  const { StoreManager, PetVisibilityService, WindowAwarenessService, windowManager } = deps;
   const { isPetCurrentlyHidden } = PetVisibilityService;
   const { powerMonitor, screen } = require('electron');
 

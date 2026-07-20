@@ -24,20 +24,26 @@ test('weather sync tray state updates before async geocoding completes', () => {
 });
 
 test('weather sync first fetch waits until the renderer has loaded', () => {
+  // Since AppLifecycle Decomposition Phase 7/8, WeatherSyncController owns the
+  // settings cache and loads it synchronously at the end of its own init()
+  // (so early tray/city-settings reads reflect the persisted preference);
+  // the pet window's did-finish-load handler (now in PetWindow.js) then kicks
+  // off the real sync (geocode/fetch/interval) via updateWeatherSyncSettings().
   const readyStart = mainSource.indexOf('app.whenReady().then(async () => {');
+  const weatherInitIndex = mainSource.indexOf('WeatherSyncController.init(', readyStart);
   const createWindowIndex = mainSource.indexOf('createWindow();', readyStart);
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
-  const storedSettingsIndex = mainSource.indexOf('weatherSyncSettings = getStoredWeatherSyncSettings();', readyStart);
-  const startupSyncIndex = mainSource.indexOf('updateWeatherSyncSettings(weatherSyncSettings);', loadHandlerIndex);
-  const legacyEarlySyncIndex = mainSource.indexOf('updateWeatherSyncSettings(getStoredWeatherSyncSettings());', readyStart);
+  const startupSyncIndex = mainSource.indexOf(
+    'WeatherSyncController.updateWeatherSyncSettings(WeatherSyncController.getWeatherSyncSettings());',
+    loadHandlerIndex
+  );
 
   assert.notStrictEqual(readyStart, -1);
+  assert.notStrictEqual(weatherInitIndex, -1);
   assert.notStrictEqual(createWindowIndex, -1);
   assert.notStrictEqual(loadHandlerIndex, -1);
-  assert.notStrictEqual(storedSettingsIndex, -1);
   assert.notStrictEqual(startupSyncIndex, -1);
-  assert.strictEqual(legacyEarlySyncIndex, -1);
-  assert.ok(storedSettingsIndex < createWindowIndex);
-  assert.ok(startupSyncIndex > loadHandlerIndex);
-  assert.ok(startupSyncIndex < mainSource.indexOf('});', loadHandlerIndex));
+  assert.ok(weatherInitIndex < createWindowIndex, 'settings must be loaded before the pet window/tray are created');
+  assert.ok(startupSyncIndex > loadHandlerIndex, 'the full sync must only start after did-finish-load fires');
+  assert.ok(startupSyncIndex < mainSource.indexOf('});', loadHandlerIndex), 'the sync call must live inside the did-finish-load handler');
 });

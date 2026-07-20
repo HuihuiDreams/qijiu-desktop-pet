@@ -13,15 +13,18 @@ test('main process wires meeting detector lifecycle', () => {
 });
 
 test('meeting detector starts only after renderer visibility listener can be installed', () => {
+  // createWindow() (and its did-finish-load handler) lives in PetWindow.js
+  // since AppLifecycle Decomposition Phase 8, so this asserts the ordering
+  // within the handler body itself rather than against the call site.
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
-  const detectorStartIndex = mainSource.indexOf('startMeetingDetector();');
-  const readyCreateWindowIndex = Math.max(mainSource.indexOf('setTimeout(createWindow, 500)'), mainSource.indexOf('createWindow();'));
+  const detectorStartIndex = mainSource.indexOf('startMeetingDetector();', loadHandlerIndex);
+  const handlerEndIndex = mainSource.indexOf('});', loadHandlerIndex);
 
   assert.notEqual(loadHandlerIndex, -1);
   assert.notEqual(detectorStartIndex, -1);
-  assert.notEqual(readyCreateWindowIndex, -1);
-  assert.ok(detectorStartIndex > loadHandlerIndex);
-  assert.ok(detectorStartIndex < readyCreateWindowIndex);
+  assert.notEqual(handlerEndIndex, -1);
+  assert.ok(detectorStartIndex > loadHandlerIndex, 'meeting detector must start inside the did-finish-load handler');
+  assert.ok(detectorStartIndex < handlerEndIndex, 'meeting detector start call must remain within the did-finish-load handler body');
   assert.ok(mainSource.includes('sendPetVisibility(!isPetCurrentlyHidden());'));
 });
 

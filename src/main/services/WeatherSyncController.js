@@ -74,6 +74,11 @@ function init(dependencies) {
       updateWeatherSyncSettings(newValue);
     });
   }
+
+  // Load persisted settings immediately so early tray/city-settings reads
+  // reflect the stored preference; the actual sync (geocode/fetch/interval)
+  // only starts once the renderer's did-finish-load calls updateWeatherSyncSettings().
+  weatherSyncSettings = getStoredWeatherSyncSettings();
 }
 
 function getStoredWeatherSyncSettings() {
