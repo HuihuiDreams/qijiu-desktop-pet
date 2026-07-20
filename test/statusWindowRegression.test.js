@@ -9,16 +9,20 @@ function readSource(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 }
 
-test('showStatusWindow uses the status window module, not a bare createStatusWindow', () => {
-  const appLifecycle = readSource('src/main/AppLifecycle.js');
+test('showStatusWindow uses openStatusWindow, not a bare createStatusWindow', () => {
+  const statusWindow = readSource('src/main/windows/StatusWindow.js');
 
-  // createStatusWindow lives in windows/StatusWindow.js; calling it bare from
-  // AppLifecycle throws ReferenceError and the status panel never opens.
-  assert.match(appLifecycle, /statusWindowModule\.(openStatusWindow|createStatusWindow)\(\)/);
+  // createStatusWindow only opens/creates the window without showing, moving
+  // it to front, or focusing it; showStatusWindow must go through
+  // openStatusWindow() so the status panel actually becomes visible.
+  const showFnMatch = statusWindow.match(/function showStatusWindow\(data\) \{([\s\S]*?)\n\}/);
+  assert.ok(showFnMatch, 'showStatusWindow function not found');
+  const body = showFnMatch[1];
+  assert.match(body, /\bopenStatusWindow\(\)/);
   assert.equal(
-    /[^.]\bcreateStatusWindow\(\)/.test(appLifecycle),
+    /\bcreateStatusWindow\(\)/.test(body),
     false,
-    'AppLifecycle must not call a bare createStatusWindow()'
+    'showStatusWindow must not call a bare createStatusWindow()'
   );
 });
 

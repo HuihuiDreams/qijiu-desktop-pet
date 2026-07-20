@@ -26,7 +26,6 @@ const {
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
   normalizePomodoroMinutes,
-  normalizeStatusWindowSize,
   normalizeWindowMigrationDirection,
 } = require('../../ipcContracts');
 const {
@@ -49,11 +48,13 @@ const {
 } = require('../../weatherSyncService');
 const StoreManager = require('./services/StoreManager');
 const AutoLaunchService = require('./services/AutoLaunchService');
+const SkinService = require('./services/SkinService');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
 const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
+const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
 const trayManager = require('./TrayManager');
 
 // 常量定义
@@ -139,7 +140,6 @@ function getSkinArtistName(skinId) {
   return key ? trayManager.trayT(key) : '';
 }
 
-let lastStatusWindowData = null;
 let store = null;
 let petHidden = false;         // 桌宠隐藏状态
 let meetingHidden = false;     // 会议检测导致的自动隐藏状态
@@ -453,43 +453,6 @@ function stopDragPoll() {
 }
 
 
-
-
-
-function sendStatusWindowData() {
-  if (!windowManager.statusWindow || windowManager.statusWindow.isDestroyed() || !lastStatusWindowData) return;
-  windowManager.statusWindow.webContents.send('status-window-data', lastStatusWindowData);
-}
-
-
-
-function showStatusWindow(data) {
-  lastStatusWindowData = data;
-  statusWindowModule.openStatusWindow();
-  trayManager.refreshTrayMenu();
-}
-
-function updateStatusWindow(data) {
-  lastStatusWindowData = data;
-  sendStatusWindowData();
-}
-
-function hideStatusWindow() {
-  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
-    windowManager.statusWindow.hide();
-    trayManager.refreshTrayMenu();
-  }
-  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-    windowManager.mainWindow.webContents.send('status-window-closed');
-  }
-}
-
-function resizeStatusWindow(size) {
-  if (!windowManager.statusWindow || windowManager.statusWindow.isDestroyed()) return;
-
-  const { width, height } = normalizeStatusWindowSize(size);
-  windowManager.statusWindow.setContentSize(width, height);
-}
 
 
 
@@ -1065,72 +1028,6 @@ function selectSkin(skinId) {
  */
 
 
-function sendUpdateProgressPayload(payload) {
-  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
-  windowManager.updateProgressWindow.webContents.send('update-progress', payload);
-}
-
-function showUpdateProgressWindow(payload) {
-  const normalizedPayload = {
-    mode: payload.mode,
-    title: payload.title,
-    message: payload.message,
-    percent: payload.percent ?? 0,
-  };
-
-  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) {
-    windowManager.updateProgressWindow = new BrowserWindow({
-      width: 380,
-      height: 172,
-      resizable: false,
-      minimizable: false,
-      maximizable: false,
-      fullscreenable: false,
-      title: normalizedPayload.title,
-      parent: windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() ? windowManager.mainWindow : undefined,
-      webPreferences: {
-        preload: path.join(__dirname, '..', '..', 'updateProgressPreload.js'),
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-      },
-    });
-    windowManager.updateProgressWindow.setMenuBarVisibility(false);
-    windowManager.updateProgressWindow.on('closed', () => {
-      windowManager.updateProgressWindow = null;
-    });
-    windowManager.updateProgressWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-    windowManager.updateProgressWindow.webContents.on('will-navigate', (event) => event.preventDefault());
-    windowManager.updateProgressWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'update-progress.html'));
-
-    windowManager.updateProgressWindow.webContents.once('did-finish-load', () => {
-      sendUpdateProgressPayload(normalizedPayload);
-    });
-    return;
-  }
-
-  windowManager.updateProgressWindow.setTitle(normalizedPayload.title);
-  windowManager.updateProgressWindow.show();
-  windowManager.updateProgressWindow.focus();
-  sendUpdateProgressPayload(normalizedPayload);
-}
-
-function setUpdateProgress(percent) {
-  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
-  sendUpdateProgressPayload({
-    mode: 'downloading',
-    title: trayManager.trayText('updateDownloadingTitle', 'Downloading Update'),
-    message: trayManager.trayT('updateDownloadingMsg'),
-    percent,
-  });
-}
-
-function closeUpdateProgressWindow() {
-  if (!windowManager.updateProgressWindow || windowManager.updateProgressWindow.isDestroyed()) return;
-  windowManager.updateProgressWindow.close();
-  windowManager.updateProgressWindow = null;
-}
-
 /**
  * 绘制简单的托盘图标像素图
  */
@@ -1162,22 +1059,6 @@ ipcMain.on('drag-started', () => {
 
 ipcMain.on('drag-ended', () => {
   stopDragPoll();
-});
-
-ipcMain.on('show-status-window', (_event, data) => {
-  showStatusWindow(data);
-});
-
-ipcMain.on('hide-status-window', () => {
-  hideStatusWindow();
-});
-
-ipcMain.on('update-status-window', (_event, data) => {
-  updateStatusWindow(data);
-});
-
-ipcMain.on('resize-status-window', (_event, size) => {
-  resizeStatusWindow(size);
 });
 
 // 允许存储的合法 Key 列表 (安全白名单)
@@ -1511,25 +1392,30 @@ class AppLifecycle {
       }
     });
 
+    updateProgressWindowModule.init({
+      trayT: trayManager.trayT,
+      trayText: trayManager.trayText,
+    });
+
     initUpdateManager({
       app,
       dialog,
       getMainWindow: () => windowManager.mainWindow,
       refreshTrayMenu: () => trayManager.refreshTrayMenu(),
       updateProgressUi: {
-        showChecking: ({ title, message }) => showUpdateProgressWindow({
+        showChecking: ({ title, message }) => updateProgressWindowModule.showUpdateProgressWindow({
           mode: 'checking',
           title,
           message,
         }),
-        showDownloading: ({ title, message, percent }) => showUpdateProgressWindow({
+        showDownloading: ({ title, message, percent }) => updateProgressWindowModule.showUpdateProgressWindow({
           mode: 'downloading',
           title,
           message,
           percent,
         }),
-        setProgress: setUpdateProgress,
-        close: closeUpdateProgressWindow,
+        setProgress: updateProgressWindowModule.setUpdateProgress,
+        close: updateProgressWindowModule.closeUpdateProgressWindow,
       },
       t: trayManager.trayT,
     });
@@ -1578,7 +1464,6 @@ class AppLifecycle {
 
 
     statusWindowModule.init({
-      sendStatusWindowData,
       refreshTrayMenu: () => trayManager.refreshTrayMenu()
     });
     citySettingWindowModule.init();
