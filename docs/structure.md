@@ -163,6 +163,7 @@ qijiu-desktop-pet/
 │  │  ├─ InteractionSystem.js           # 双人距离检测、CP 互动、冷却、互动效果
 │  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
+│  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible() 便于测试）
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：并发防抖、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）

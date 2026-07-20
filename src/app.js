@@ -157,11 +157,17 @@
     spriteView,
     renderer,
   };
-  let lastVisibleTime = Date.now(); // 用户上次可见时的墙钟时间（跨 Dark Wake 不重置）
 
-  function saveCurrentState() {
-    return timeSystem.save(yueqi, shenjiu, skinManager.getCurrentSkin(), lastVisibleTime);
-  }
+  const offlineReturnSystem = new OfflineReturnSystem({
+    getPets: () => pets,
+    nurtureSystemA,
+    nurtureSystemB,
+    timeSystem,
+    skinManager,
+    dialogBubble,
+    getI18nUi: () => window.I18N_UI,
+    CONFIG,
+  });
 
   // 清除当前互动覆盖层：皮肤切换与久坐提醒触发前都需要先清掉正在显示的覆盖层。
   // 定义为具名函数声明（整体提升），供下方多处按引用共享，不必关心声明书写顺序。
@@ -176,7 +182,7 @@
     skinManager,
     skinTargets,
     electronAPI: window.electronAPI,
-    saveCurrentState: () => saveCurrentState(),
+    saveCurrentState: () => offlineReturnSystem.saveCurrentState(),
     clearInteractionOverlay,
   });
 
@@ -299,71 +305,16 @@
     I18nHelpers.applyI18n();
   });
 
-  // === 离线回归结算（统一入口）===
-  // 系统唤醒、保存恢复、游戏循环时间跳跃均复用此函数。
-  // 负责：属性衰减 → 时辰计算 → 回归气泡 → 即时存档。
-  function handleOfflineReturn(offlineMs) {
-    nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
-    nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
-
-    // 用“距离用户上次可见”的真实时长计算时辰，而不是本次碎片化的 offlineMs。
-    // 这避免了 macOS Dark Wake 将完整睡眠切割成碎片导致对白少报。
-    const realAwayMs = Date.now() - lastVisibleTime;
-    const shichensAway = Math.floor(realAwayMs / 7200000); // 7200000ms = 2小时 = 1时辰
-    const isUserPresent = document.visibilityState === 'visible';
-
-    if (shichensAway >= 1 && isUserPresent) {
-      const returnMsgYueqi = window.I18N_UI?.returnYueqi
-        ? (typeof window.I18N_UI.returnYueqi === 'function'
-          ? window.I18N_UI.returnYueqi(shichensAway)
-          : window.I18N_UI.returnYueqi)
-        : `你走了${shichensAway}个时辰…`;
-      const returnMsgShenjiu = window.I18N_UI?.returnShenjiu ?? '…哼，终于回来了。';
-      setTimeout(() => {
-        dialogBubble.show(yueqi, returnMsgYueqi, 4000);
-      }, 1500);
-      setTimeout(() => {
-        dialogBubble.show(shenjiu, returnMsgShenjiu, 4000);
-      }, 3000);
-    }
-
-    if (isUserPresent) {
-      lastVisibleTime = Date.now();
-    }
-
-    saveCurrentState();
-  }
-
-    // === 系统睡眠/唤醒处理 (macOS 专用路径) ===
-  // macOS 下 performance.now() 在睡眠期间冻结，导致 rAF 的 deltaMs 不会跳跃，
-  // 所以游戏循环内的 deltaMs > 60000 检测永远不会触发。
-  // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
-  window.electronAPI.onSystemSuspend?.(() => {
-    if (document.visibilityState === 'visible') {
-      lastVisibleTime = Date.now();
-    }
-    saveCurrentState(); // 睡前即时存档，锁定新鲜 timestamp
-  });
-
-  window.electronAPI.onSystemResume?.((data) => {
-    const offlineMs = data?.offlineMs ?? 0;
-    if (offlineMs > CONFIG.DECAY_INTERVAL) {
-      handleOfflineReturn(offlineMs);
-    }
-  });
+  // === 离线回归结算 / 系统睡眠唤醒 / 存档持久化 ===
+  // 实际逻辑已下沉到 OfflineReturnSystem（见上方实例化），此处只保留一行 IPC 订阅委托。
+  window.electronAPI.onSystemSuspend?.(() => offlineReturnSystem.handleSystemSuspend());
+  window.electronAPI.onSystemResume?.((data) => offlineReturnSystem.handleSystemResume(data));
 
   // === 加载保存的状态 ===
   await skinSwitchController.refreshAvailableSkins();
   const savedState = await timeSystem.load();
+  offlineReturnSystem.applyLoadedState(savedState);
   if (savedState) {
-    lastVisibleTime = savedState.lastVisibleTime ?? Date.now();
-    timeSystem.deserializePet(yueqi, savedState.petAData);
-    timeSystem.deserializePet(shenjiu, savedState.petBData);
-
-    // 应用离线衰减计算
-    if (savedState.offlineMs > CONFIG.DECAY_INTERVAL) {
-      handleOfflineReturn(savedState.offlineMs);
-    }
     pets.forEach(keepPetReachable);
   }
   await skinSwitchController.applySkinById(savedState?.skinId || 'default', { persist: false });
@@ -386,7 +337,7 @@
         // 如果两帧之间间隔过大（例如超过 60 秒），说明刚刚经历了系统休眠或被系统挂起。
         if (deltaMs > 60000) {
           // 时间跳跃（系统休眠等），一次性结算离线衰减 + 回归气泡 + 存档
-          handleOfflineReturn(deltaMs);
+          offlineReturnSystem.handleOfflineReturn(deltaMs);
           
           // 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
           // 防止后续系统的物理移动、动画计时器因为接收到巨大的 deltaMs 发生瞬间暴走（如小人飞出屏幕等 bug）。
@@ -520,7 +471,7 @@
 
         // 自动保存
         if (timeSystem.update(deltaMs)) {
-          saveCurrentState();
+          offlineReturnSystem.saveCurrentState();
         }
       }
 
@@ -547,7 +498,7 @@
   requestAnimationFrame(gameLoop);
 
   // 关闭时保存
-  window.electronAPI.onSaveBeforeQuit(saveCurrentState);
+  window.electronAPI.onSaveBeforeQuit(() => offlineReturnSystem.saveCurrentState());
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };

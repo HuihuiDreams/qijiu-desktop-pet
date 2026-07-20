@@ -40,8 +40,14 @@ test('preload exposes final-save request handler to the renderer', () => {
 });
 
 test('renderer registers saveCurrentState for the final-save request', () => {
+  // saveCurrentState() 的实际实现（app.js 拆分 Phase R4）已下沉到
+  // src/systems/OfflineReturnSystem.js，app.js 只保留一行委托订阅。
   const appSource = readSource('src/app.js');
 
-  assert.ok(appSource.includes('window.electronAPI.onSaveBeforeQuit(saveCurrentState)'));
+  assert.ok(appSource.includes('window.electronAPI.onSaveBeforeQuit(() => offlineReturnSystem.saveCurrentState())'));
   assert.equal(appSource.includes("window.addEventListener('beforeunload'"), false);
+
+  const offlineReturnSystemSource = readSource('src/systems/OfflineReturnSystem.js');
+  assert.match(offlineReturnSystemSource, /saveCurrentState\(\)\s*{/);
+  assert.ok(offlineReturnSystemSource.includes('this.timeSystem.save('));
 });
