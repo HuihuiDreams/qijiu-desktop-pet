@@ -3,6 +3,8 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+
+## [0.9.3] - 2026-07-21
 ### Added
 - **巨石拆分回归行为测试补强 (`Monolith Refactor Regression Coverage`)**：为主进程巨石拆分后的关键路径新增黑盒行为测试，覆盖 `AppLifecycle` 的启动接线与退出清理、`FinalSaveService` 的最终保存 ACK/超时/重复关闭协议、`WeatherSyncController` 的异步设置竞争与禁用分支，以及 `MeetingDetectorController` 的会议隐藏回调与检测器重启清理；测试以注入替身驱动真实模块入口，不再依赖源码字符串位置。
 
