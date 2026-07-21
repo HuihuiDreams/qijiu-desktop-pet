@@ -25,7 +25,9 @@ in this project.
    your edits, and do not touch unrelated code.
 5. Goal-Driven Execution & Chain Verification: When executing multi-step tasks or `/goal` requests:
    - Solve exactly ONE issue or task at a time.
-   - After each atomic fix, verify and update corresponding unit tests (`test/`), run `npm test` or focused `node --test` checks, and update related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs).
+   - After each atomic fix, proactively verify and update corresponding unit tests (`test/`). Run `npm test` or focused checks.
+   - **Proactive Documentation**: YOU MUST automatically update related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs) in the same step. Do not wait for the user to ask for documentation updates.
+   - **Regression Prevention**: For security changes or complex refactors, always explicitly provide the user with manual verification steps to ensure no behavior degradation.
    - Never batch multiple tasks without completing the test and documentation verification loop for each step.
 
 ## Architecture Boundaries
@@ -64,7 +66,9 @@ in this project.
 
 Before commit or push:
 
-1. Update `CHANGELOG.md`: Group changes under exact English headings `Added`, `Changed`, `Fixed`, or `Removed`. All entries under `Unreleased` MUST be written in clear Chinese (except code terms/proper nouns) and strictly separated from published version headers. Link ADRs when relevant.
+1. Update `CHANGELOG.md`: Group changes under exact English headings `Added`, `Changed`, `Fixed`, `Removed`, or `Security`. 
+   - **CRITICAL**: Ensure headings are NOT duplicated under the same version (e.g., do not create two `Fixed` sections; merge them).
+   - All entries under `Unreleased` MUST be written in clear Chinese (except code terms/proper nouns) and strictly separated from published version headers. Link ADRs when relevant.
 2. Update docs when behavior changes: Keep `docs/structure.md` and relevant ADRs synchronized with architecture or runtime behavior changes.
 3. Use atomic commits with this message shape:
 
