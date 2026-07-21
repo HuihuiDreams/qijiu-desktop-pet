@@ -3,8 +3,7 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
-### Security
-- **依赖漏洞修复 (`Dependency Vulnerability Fixes`)**：更新了 `brace-expansion` (修复指数级时间膨胀导致的 DoS 漏洞) 和 `js-yaml` (修复二次时间复杂度导致的 CPU 耗尽漏洞) 等依赖项版本，解决了 GitHub Actions 的 Release Preflight 中 `npm audit` 拦截的两个高危安全预警。
+
 
 ## [0.9.3] - 2026-07-21
 ### Added
@@ -21,6 +20,7 @@
 ### Security
 - **主窗口鼠标穿透 IPC 越权修复 (`Mouse Passthrough IPC Sender Authorization Fix`)**：修复了 `set-ignore-mouse-events` IPC 处理器缺乏发件方校验的问题（安全发现 `RAW-IPC-MOUSE-PASSTHROUGH`）。新增 `IpcSenderAuthorization.js` 专门负责纯辅助鉴权，强制要求调用该敏感 IPC 的发件方必须是 `mainWindow.webContents`。未授权渲染进程的篡改请求将被直接拒绝（静默 fail-closed），且不会扰乱既有的临时鼠标穿透租约恢复定时器；同时不影响主进程的冒烟测试 QA 入口。
 - **构建脚本可信路径修复 (`Build Script Trusted Path Fix`)**：修复了 Windows 下的 `afterPack` 打包后置脚本中使用裸命令 `powershell.exe` 调用系统工具可能导致的环境变量注入风险（安全发现 `NAKED-EXEC-POWERSHELL`）。现在脚本会依次读取 `SystemRoot` 或 `windir` 环境变量，构造绝对路径后（例如 `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`）再执行，并配有可在非 Windows 环境下稳定模拟测试的确定性路径解析单元测试，没有可信路径回退时将主动报错，阻断不可信的构建流程。
+- **依赖漏洞修复 (`Dependency Vulnerability Fixes`)**：更新了 `brace-expansion` (修复指数级时间膨胀导致的 DoS 漏洞) 和 `js-yaml` (修复二次时间复杂度导致的 CPU 耗尽漏洞) 等依赖项版本，解决了 GitHub Actions 的 Release Preflight 中 `npm audit` 拦截的两个高危安全预警。
 
 ## [0.9.2] - 2026-07-20
 ### Added
