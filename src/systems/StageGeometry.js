@@ -119,6 +119,22 @@ class StageGeometry {
   }
 
   /**
+   * 返回托盘“重置位置”使用的坐标：优先落在主显示器的可行走区域内。
+   */
+  getResetPosition(horizontalRatio) {
+    const walkAreas = this.getWalkAreas();
+    const area = walkAreas.find((walkArea) => walkArea.isPrimary)
+      || walkAreas[0]
+      || { x: 0, y: 0, width: this.width, height: this.height };
+    const ratio = Number.isFinite(horizontalRatio) ? Math.min(Math.max(horizontalRatio, 0), 1) : 0.5;
+
+    return {
+      x: area.x + area.width * ratio,
+      y: area.y + area.height * 0.5,
+    };
+  }
+
+  /**
    * 右键菜单定位边界：宠物所在可行走区域，找不到时回退到整个窗口。
    */
   getMenuBoundsForPet(pet) {

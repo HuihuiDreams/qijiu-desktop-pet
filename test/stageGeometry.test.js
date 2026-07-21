@@ -127,6 +127,21 @@ test('getWeatherEffectScale prefers the primary walk area, then the first area, 
   assert.equal(geometryEmpty.getWeatherEffectScale(), 1);
 });
 
+test('getResetPosition keeps both reset positions inside a primary display offset by a left secondary display', () => {
+  const geometry = new StageGeometry({ initialWidth: 3520, initialHeight: 1200 });
+  geometry.applyScreenInfo({
+    width: 3520,
+    height: 1200,
+    walkAreas: [
+      { x: 0, y: 0, width: 1600, height: 900, scaleRatio: 1 },
+      { x: 1600, y: 120, width: 1920, height: 1040, scaleRatio: 1, isPrimary: true },
+    ],
+  });
+
+  assert.deepEqual(geometry.getResetPosition(0.3), { x: 2176, y: 640 });
+  assert.deepEqual(geometry.getResetPosition(0.7), { x: 2944, y: 640 });
+});
+
 test('getMenuBoundsForPet falls back to the full window when the pet is outside every walk area', () => {
   global.window = { innerWidth: 1280, innerHeight: 720 };
   try {

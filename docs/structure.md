@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-07-20
+最后更新：2026-07-21
 
 ## 1. 架构总览
 
@@ -206,7 +206,7 @@ qijiu-desktop-pet/
 │     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
 │     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
 ├─ test/
-│  ├─ *.test.js                         # Node.js test runner 单元/集成测试
+│  ├─ *.test.js                         # Node.js test runner：单元、黑盒行为与集成测试
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
@@ -268,7 +268,7 @@ qijiu-desktop-pet/
 多屏支持由主进程和渲染进程协作完成：
 
 - `DisplayService.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
-- `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`。
+- `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`；`StageGeometry` 使用其中的主屏标记计算托盘重置位置，确保 Windows 多屏环境回到主屏中部。
 - `displayFit.js` 将 `display-added`、`display-removed` 和 `display-metrics-changed` 的短时间连发合并为一次窗口适配，避免 macOS 数位板驱动等场景下出现多次可见 resize。
 - `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
@@ -419,6 +419,21 @@ src/assets/{skinId}/
 npm test
 ```
 
+### 4.1 单元测试
+
+单元测试直接验证纯函数、状态机或可脱离 Electron 运行的模块；依赖以简单 fake/stub 隔离，重点断言确定性的输入、输出和状态转换。例如多屏几何、移动/养成数值、番茄钟、离线回归结算、皮肤切换和天气数据归一化。
+
+### 4.2 黑盒行为测试
+
+黑盒行为测试通过依赖注入或模块替身驱动**真实模块入口**，只断言外部可观察结果（IPC 消息、回调、副作用状态、资源清理和生命周期），不依赖函数位于哪个文件或源码字符串是否存在。这类测试用于守护巨石文件拆分后的接线契约：
+
+- `test/appLifecycle.behavior.test.js`：服务启动接线、宠物窗口创建时机，以及二次启动/退出生命周期。
+- `test/finalSaveService.behavior.test.js`：最终保存 ACK 的 sender/requestId 校验、超时清理、重复关闭抑制和已销毁窗口降级。
+- `test/weatherSyncController.behavior.test.js`：持久化设置读取、异步设置竞争、天气消息下发和禁用分支。
+- `test/meetingDetectorController.behavior.test.js`：会议开始/结束回调转发、检测器替换和不支持平台门控。
+
+### 4.3 其他自动化覆盖
+
 现有测试重点覆盖：
 
 - `displayBounds.js` 多屏边界和可行走区域计算。
@@ -429,8 +444,15 @@ npm test
 - `skinGallery.js` 的封面回退和画廊元数据契约，以及选肤窗 IPC 发件窗口授权、托盘入口和专用 preload。
 - `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
+- `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
+- `presentationGuard.js` 跨平台全屏检测和隐私边界。
+- `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。
+- `PomodoroSystem`、番茄钟窗口结构、preload API、托盘入口和宠物隐藏/恢复边界。
+- `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象；`protectedAssetLoader` 的正向/负向 manifest 缓存，其中负向缓存测试会隔离默认受保护资源清单的存在状态。
+- 打包相关的 macOS、安装器、签名和内存预算约束。
+- `test/helpers/sourceCorpus.js` 提供统一的主进程测试源码读取入口：`readMainProcessSource()` 递归拼接 `main.js` 与 `src/main/` 下全部 `.js` 文件（按路径确定性排序），`read(relativePath)` 读取仓库根下的单个文件。所有原先手写 `main.js + AppLifecycle.js + TrayManager.js` 做字符串/正则断言的主进程测试统一改用该 helper，使断言与被断言逻辑的具体文件位置解耦，后续 `AppLifecycle.js`/`src/app.js` 巨石文件拆分（见 ADR-042）搬迁代码时无需逐个更新这些测试的文件路径。
 
-### 4.1 Playwright Electron QA
+### 4.4 Playwright Electron QA
 
 修改 Electron 窗口、渲染入口或桌面交互行为前后，优先运行隔离的冒烟检查：
 
@@ -439,13 +461,6 @@ npm run qa:electron:smoke
 ```
 
 该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。它会确认主渲染进程和选肤页都已就绪，校验选肤页专用 preload、内置皮肤卡数量与当前皮肤标记，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
-- `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
-- `presentationGuard.js` 跨平台全屏检测和隐私边界。
-- `meetingDetector.js` 会议进程 UDP 端点解析、防抖开始/结束和重复事件抑制。
-- `PomodoroSystem`、番茄钟窗口结构、preload API、托盘入口和宠物隐藏/恢复边界。
-- `ipcContracts.js` IPC 参数归一化、皮肤 ID 白名单和统一结果对象；`protectedAssetLoader` 的正向/负向 manifest 缓存，其中负向缓存测试会隔离默认受保护资源清单的存在状态。
-- 打包相关的 macOS、安装器、签名和内存预算约束。
-- `test/helpers/sourceCorpus.js` 提供统一的主进程测试源码读取入口：`readMainProcessSource()` 递归拼接 `main.js` 与 `src/main/` 下全部 `.js` 文件（按路径确定性排序），`read(relativePath)` 读取仓库根下的单个文件。所有原先手写 `main.js + AppLifecycle.js + TrayManager.js` 做字符串/正则断言的主进程测试统一改用该 helper，使断言与被断言逻辑的具体文件位置解耦，后续 `AppLifecycle.js`/`src/app.js` 巨石文件拆分（见 ADR-042）搬迁代码时无需逐个更新这些测试的文件路径。
 
 ## 5. 架构决策索引
 

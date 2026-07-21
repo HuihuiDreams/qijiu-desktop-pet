@@ -3,6 +3,12 @@
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
 ## [Unreleased]
+### Added
+- **巨石拆分回归行为测试补强 (`Monolith Refactor Regression Coverage`)**：为主进程巨石拆分后的关键路径新增黑盒行为测试，覆盖 `AppLifecycle` 的启动接线与退出清理、`FinalSaveService` 的最终保存 ACK/超时/重复关闭协议、`WeatherSyncController` 的异步设置竞争与禁用分支，以及 `MeetingDetectorController` 的会议隐藏回调与检测器重启清理；测试以注入替身驱动真实模块入口，不再依赖源码字符串位置。
+
+### Fixed
+- **Windows 多屏托盘重置位置修复**：重置坐标现在以主显示器对应的可行走区域为基准，不再按覆盖整个虚拟桌面的透明窗口比例计算；副屏位于主屏左侧、上侧或采用混合 DPI 时，两只角色都会回到主屏中部附近。
+
 ### Changed
 - **刮风效果判定规则修改**：修改了刮风和起大风的判定条件。移除了对阵风 (Wind Gusts) 的依赖，现在的判定只受平均风速 (Wind Speed) 影响。平均风速 >= 19.8 km/h 才会触发刮风，>= 28.8 km/h 触发大风。
 - **构建忽略规则更新**：将 `.claude/` 文件夹添加到了 `.gitignore` 中。

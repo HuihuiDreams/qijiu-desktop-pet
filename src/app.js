@@ -266,10 +266,12 @@
   });
 
   window.electronAPI.onResetPositions(() => {
-    yueqi.x = stageGeometry.width * 0.3;
-    yueqi.y = stageGeometry.height * 0.5;
-    shenjiu.x = stageGeometry.width * 0.7;
-    shenjiu.y = stageGeometry.height * 0.5;
+    const yueqiPosition = stageGeometry.getResetPosition(0.3);
+    const shenjiuPosition = stageGeometry.getResetPosition(0.7);
+    yueqi.x = yueqiPosition.x;
+    yueqi.y = yueqiPosition.y;
+    shenjiu.x = shenjiuPosition.x;
+    shenjiu.y = shenjiuPosition.y;
     pets.forEach(keepPetReachable);
     yueqi.setState('idle');
     shenjiu.setState('idle');
