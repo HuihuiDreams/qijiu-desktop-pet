@@ -17,7 +17,8 @@ exports.default = async function afterPack(context) {
   const exePath = path.join(context.appOutDir, `${context.packager.appInfo.productFilename}.exe`);
   const iconPath = path.join(context.packager.projectDir, 'src', 'assets', 'icon.ico');
   const scriptPath = path.join(context.packager.projectDir, 'scripts', 'set-win-icon.ps1');
-  const result = spawnSync('powershell.exe', [
+  const powershellPath = resolveWindowsPowerShellPath(process.env);
+  const result = spawnSync(powershellPath, [
     '-NoProfile',
     '-ExecutionPolicy',
     'Bypass',
@@ -72,5 +73,14 @@ function rewriteMacExecutableName(context) {
   }
 }
 
+function resolveWindowsPowerShellPath(env) {
+  const systemRoot = env.SystemRoot || env.windir;
+  if (!systemRoot || !path.win32.isAbsolute(systemRoot)) {
+    throw new Error('Cannot resolve trusted Windows PowerShell path: missing or invalid SystemRoot/windir environment variable.');
+  }
+  return path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+}
+
 exports.MAC_EXECUTABLE_NAME = MAC_EXECUTABLE_NAME;
 exports.rewriteMacExecutableName = rewriteMacExecutableName;
+exports.resolveWindowsPowerShellPath = resolveWindowsPowerShellPath;

@@ -13,6 +13,7 @@ const { normalizeMousePassthroughRequest } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
 const citySettingWindowModule = require('./CitySettingWindow');
 const FinalSaveService = require('../services/FinalSaveService');
+const { isSenderMainWindow } = require('../services/IpcSenderAuthorization');
 
 let deps = {};
 let keepOnTopTimer = null;     // 置顶守卫计时器
@@ -21,7 +22,10 @@ let mousePassthroughResetTimer = null;
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.on('set-ignore-mouse-events', (_event, ignore, options) => {
+  ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) {
+      return;
+    }
     const request = normalizeMousePassthroughRequest(ignore, options);
     if (!request) return;
     setPetWindowMousePassthrough(request.ignore, request.options);
