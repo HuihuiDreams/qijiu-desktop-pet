@@ -1,4 +1,4 @@
-﻿# ADR-035: 会议自动隐藏检测
+# ADR-035: 会议自动隐藏检测
 
 ## Status
 Accepted
@@ -16,12 +16,12 @@ Windows Teams 实测显示，同一环境中未开会时 `ms-teams.exe` 同名�
 
 ### Detection Policy
 
-- Windows 使用 `tasklist /fo csv /nh` 获取当前进程，再使用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量。
+- Windows 使用 `tasklist /fo csv /nh` 获取当前进程（失败则回退至 `powershell.exe`），再使用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量。如果进程查询或 `netstat` 完全失败/超时，将明确报告未知状态 (`isUnknown: true`) 而不是空结果。
 - macOS 使用 `pgrep -x` 获取 PID，再使用 `lsof -nP -i UDP -p <pid> -Fn` 统计 UDP 端点数量。
 - PID 只用于单次采样中关联进程和 UDP 端点；进程重启后 PID 会变化，不能写死到配置或判断逻辑。
 - 默认每 5 秒采样一次。
 - 当前 MVP 阈值为任一已知会议进程 UDP 端点数 `>= 5`，连续 2 次采样命中后判定会议中。
-- 低于阈值持续 15 秒后判定会议结束。
+- 低于阈值持续 15 秒后判定会议结束。遇到 `isUnknown: true` 状态时，跳过评估，维持原有的“会议中”或“未开会”状态，防止因系统高负载等偶发原因导致会议误判结束。
 - 阈值保留为常量，后续根据 Zoom、Slack、Discord 或不同 Teams 版本实测调整。
 
 ### Runtime State

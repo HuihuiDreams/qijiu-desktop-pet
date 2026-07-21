@@ -175,6 +175,7 @@ test('Windows snapshot returns inactive when process lookup commands are denied'
   assert.deepEqual(snapshot, {
     platform: 'win32',
     isActive: false,
+    isUnknown: true,
     detectedApps: [],
     apps: [],
   });

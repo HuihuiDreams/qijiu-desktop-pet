@@ -191,14 +191,16 @@ async function collectWindowsProcesses(options) {
       ['/fo', 'csv', '/nh'],
       commandTimeoutMs,
     );
-    return parseTasklistCsv(stdout);
+    return { processes: parseTasklistCsv(stdout), isUnknown: false };
   } catch (tasklistError) {
     const processNames = [...new Set(meetingApps
       .flatMap((appInfo) => getProcessNamesForPlatform(appInfo, 'win32'))
       .map((name) => name.replace(/\.exe$/i, ''))
       .filter(Boolean))];
 
-    if (processNames.length === 0) throw tasklistError;
+    if (processNames.length === 0) {
+      return { processes: [], isUnknown: true };
+    }
 
     const script = [
       "$ErrorActionPreference = 'SilentlyContinue'",
@@ -214,9 +216,9 @@ async function collectWindowsProcesses(options) {
         ['-NoProfile', '-NonInteractive', '-Command', script],
         commandTimeoutMs,
       );
-      return parsePowerShellProcessCsv(stdout);
+      return { processes: parsePowerShellProcessCsv(stdout), isUnknown: false };
     } catch {
-      return [];
+      return { processes: [], isUnknown: true };
     }
   }
 }
@@ -228,7 +230,18 @@ async function collectWindowsSnapshot(options) {
     udpThreshold = DEFAULT_UDP_THRESHOLD,
   } = options;
   const execFileImpl = options.execFile || execFile;
-  const processes = await collectWindowsProcesses(options);
+  const processResult = await collectWindowsProcesses(options);
+  const processes = processResult.processes;
+
+  if (processResult.isUnknown) {
+    return {
+      platform: 'win32',
+      isActive: false,
+      isUnknown: true,
+      detectedApps: [],
+      apps: [],
+    };
+  }
 
   const appsWithProcesses = meetingApps.map((appInfo) => {
     const processNames = getProcessNamesForPlatform(appInfo, 'win32');
