@@ -14,6 +14,11 @@ test('package exposes an isolated Playwright Electron smoke command', () => {
   );
 });
 
+test('Node and Playwright tests use separate commands', () => {
+  assert.equal(packageJson.scripts.test, 'node --test test/*.test.js');
+  assert.equal(packageJson.scripts['test:font'], 'playwright test test/checkFont.spec.js');
+});
+
 test('Playwright Electron smoke script uses an isolated profile and cleans it up', () => {
   assert.equal(fs.existsSync(smokeScriptPath), true, 'smoke script should exist');
   const smokeSource = fs.readFileSync(smokeScriptPath, 'utf8');

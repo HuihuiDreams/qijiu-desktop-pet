@@ -420,6 +420,12 @@ src/assets/{skinId}/
 npm test
 ```
 
+Playwright/Electron 字体检查使用独立运行器，避免被 Node.js test runner 误加载：
+
+```bash
+npm run test:font
+```
+
 ### 4.1 单元测试
 
 单元测试直接验证纯函数、状态机或可脱离 Electron 运行的模块；依赖以简单 fake/stub 隔离，重点断言确定性的输入、输出和状态转换。例如多屏几何、移动/养成数值、番茄钟、离线回归结算、皮肤切换和天气数据归一化。

@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Fixed
+- **测试依赖与运行器修复 (`Test Dependency & Runner Fix`)**：补充 `@playwright/test` 开发依赖，并修复无效的 `glob` 安装；`npm test` 现仅执行 Node.js `*.test.js` 文件，字体端到端检查改由独立的 `npm run test:font` 使用 Playwright 执行，避免不同测试运行器互相误加载。
 - **macOS 选肤窗口焦点交接修复 (`macOS Skin Selector Focus Handoff Fix`)**：选肤窗口的所有正常关闭路径统一经 `closeSkinSelectorWindow()` 处理；关闭期间会忽略由自身 `.close()` 触发的 `blur`，待 `closed` 后再复位状态。针对 macOS 在窗口切换时短暂返回无焦点窗口的事件顺序，失焦关闭会等待应用级 `browser-window-focus` 完成交接，并以 `app.isActive()` 兜底判断应用是否仍在前台：切换至番茄钟、修仙状态、城市设置等 DeskPet 窗口或关闭这些窗口时保持选肤窗及其预览状态；仅焦点确实离开应用时才取消预览并关闭。
 - **日语字体不生效问题修复 (`Japanese Font Loading Fix`)**：修复了在日语环境下切换字体时，因为主窗口 `index.html` 对 `index.css?v=3` 进行了本地缓存，导致新加入的字体覆盖样式未能被正确读取的问题。同时强化了 CSS 多语言选择器，通过为主窗口和各悬浮子窗口统一注入 `data-locale="ja"` 属性，配合 `html[data-locale="ja"]` 选择器，彻底规避了 Chromium 引擎在动态修改 `lang` 属性时可能偶发的 `:lang()` 伪类样式不重绘 Bug。
 

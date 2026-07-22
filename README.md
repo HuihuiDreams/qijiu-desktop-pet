@@ -207,7 +207,8 @@
 | `npm run build` | 使用 electron-builder 进行跨平台构建（Windows 下生成 `.exe`，macOS 下生成 `.dmg` 和 `.zip`） |
 | `npm run verify:installer` | 构建后自动验证安装包完整性 |
 | `npm run verify:signatures` | 验证安装包与可执行文件的代码签名 |
-| `node --test` | 运行单元测试（包含更新管理器逻辑测试） |
+| `npm test` | 运行 Node.js 单元与行为测试（包含更新管理器逻辑测试） |
+| `npm run test:font` | 使用 Playwright 启动 Electron，检查日语字体实际渲染 |
 
 ## 🏗️ 架构 (Architecture)
 
