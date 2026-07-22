@@ -6,10 +6,15 @@ const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWind
 
 function loadFreshSkinSelectorWindow() {
   const windowManager = { skinSelectorWindow: null };
+  let focusedWindow = null;
   const originalLoad = Module._load;
   delete require.cache[WINDOW_MODULE_PATH];
 
   class FakeBrowserWindow {
+    static getFocusedWindow() {
+      return focusedWindow;
+    }
+
     constructor() {
       this.listeners = {};
       this.closeCalls = 0;
@@ -75,7 +80,11 @@ function loadFreshSkinSelectorWindow() {
       getSkinGalleryItems: () => [],
       selectSkin: () => {},
     });
-    return { skinSelectorWindow, windowManager };
+    return {
+      skinSelectorWindow,
+      windowManager,
+      setFocusedWindow: (win) => { focusedWindow = win; },
+    };
   } finally {
     Module._load = originalLoad;
   }
@@ -87,5 +96,29 @@ test('closing the skin selector ignores the blur emitted by its own close operat
 
   assert.doesNotThrow(() => skinSelectorWindow.closeSkinSelectorWindow());
   assert.equal(win.closeCalls, 1);
+  assert.equal(windowManager.skinSelectorWindow, null);
+});
+
+test('moving focus to another DeskPet window keeps the skin selector open', () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  const pomodoroWindow = { isDestroyed: () => false };
+  windowManager.pomodoroWindow = pomodoroWindow;
+  setFocusedWindow(pomodoroWindow);
+
+  selectorWindow.listeners.blur();
+
+  assert.equal(selectorWindow.closeCalls, 0);
+  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
+});
+
+test('moving focus outside DeskPet closes the skin selector', () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+
+  selectorWindow.listeners.blur();
+
+  assert.equal(selectorWindow.closeCalls, 1);
   assert.equal(windowManager.skinSelectorWindow, null);
 });

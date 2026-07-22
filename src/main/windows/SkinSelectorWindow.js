@@ -76,6 +76,7 @@ function createSkinSelectorWindow() {
   });
   
   windowManager.skinSelectorWindow.on('blur', () => {
+    if (isDeskPetWindow(BrowserWindow.getFocusedWindow())) return;
     closeSkinSelectorWindow();
   });
 
@@ -103,6 +104,17 @@ function cancelSkinSelection() {
     deps.selectSkin(skinSelectorOriginalSkinId);
   }
   skinSelectorOriginalSkinId = null;
+}
+
+function isDeskPetWindow(win) {
+  return Boolean(win) && [
+    windowManager.mainWindow,
+    windowManager.statusWindow,
+    windowManager.skinSelectorWindow,
+    windowManager.pomodoroWindow,
+    windowManager.citySettingWindow,
+    windowManager.updateProgressWindow,
+  ].includes(win);
 }
 
 function closeSkinSelectorWindow() {
