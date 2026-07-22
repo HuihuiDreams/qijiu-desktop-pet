@@ -406,7 +406,7 @@ src/assets/{skinId}/
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
 - 涉及窗口全局状态的敏感 IPC（如 `set-ignore-mouse-events` 鼠标穿透）强制校验发件方必须是 `mainWindow.webContents`，拒绝未授权渲染进程越权篡改，确保 fail-closed 防御态势（经 `IpcSenderAuthorization.js` 鉴权）。
-- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。所有正常关闭均由 `SkinSelectorWindow.closeSkinSelectorWindow()` 串行化，忽略关闭自身触发的 `blur`，并仅在 `closed` 后复位关闭状态；`blur` 仅在焦点离开 DeskPet 时关闭选肤窗，切换至番茄钟、状态或其他应用内窗口时保持预览。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。所有正常关闭均由 `SkinSelectorWindow.closeSkinSelectorWindow()` 串行化，忽略关闭自身触发的 `blur`，并仅在 `closed` 后复位关闭状态；`blur` 会保留一个短暂的焦点交接窗口，结合应用级 `browser-window-focus` 与 macOS `app.isActive()` 判断，切换或关闭番茄钟、状态等 DeskPet 窗口时保持预览，仅在焦点确实离开应用后关闭。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。

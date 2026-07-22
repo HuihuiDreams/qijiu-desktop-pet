@@ -1,11 +1,15 @@
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
 let skinSelectorCloseInProgress = false;
+let skinSelectorBlurCloseTimer = null;
+let skinSelectorFocusListener = null;
 let deps = {};
+
+const SKIN_SELECTOR_FOCUS_HANDOFF_MS = 100;
 
 function init(dependencies) {
   deps = dependencies;
@@ -69,6 +73,7 @@ function createSkinSelectorWindow() {
   windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
   windowManager.skinSelectorWindow.on('closed', () => {
+    cancelPendingBlurClose();
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
@@ -76,14 +81,14 @@ function createSkinSelectorWindow() {
   });
   
   windowManager.skinSelectorWindow.on('blur', () => {
-    if (isDeskPetWindow(BrowserWindow.getFocusedWindow())) return;
-    closeSkinSelectorWindow();
+    scheduleBlurClose();
   });
 
   return windowManager.skinSelectorWindow;
 }
 
 function openSkinSelectorWindow() {
+  cancelPendingBlurClose();
   const wasAlreadyCreated = !!(windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed());
   const win = createSkinSelectorWindow();
   skinSelectorOriginalSkinId = deps.getCurrentSkinId();
@@ -117,9 +122,45 @@ function isDeskPetWindow(win) {
   ].includes(win);
 }
 
+function isDeskPetAppActive() {
+  return typeof app.isActive === 'function' && app.isActive();
+}
+
+function cancelPendingBlurClose() {
+  if (skinSelectorBlurCloseTimer) {
+    clearTimeout(skinSelectorBlurCloseTimer);
+    skinSelectorBlurCloseTimer = null;
+  }
+  if (skinSelectorFocusListener) {
+    app.removeListener('browser-window-focus', skinSelectorFocusListener);
+    skinSelectorFocusListener = null;
+  }
+}
+
+function scheduleBlurClose() {
+  if (skinSelectorCloseInProgress || isDeskPetWindow(BrowserWindow.getFocusedWindow())) return;
+
+  cancelPendingBlurClose();
+  skinSelectorFocusListener = (_event, win) => {
+    if (isDeskPetWindow(win)) cancelPendingBlurClose();
+  };
+  app.on('browser-window-focus', skinSelectorFocusListener);
+  skinSelectorBlurCloseTimer = setTimeout(() => {
+    skinSelectorBlurCloseTimer = null;
+    if (skinSelectorFocusListener) {
+      app.removeListener('browser-window-focus', skinSelectorFocusListener);
+      skinSelectorFocusListener = null;
+    }
+    if (!isDeskPetWindow(BrowserWindow.getFocusedWindow()) && !isDeskPetAppActive()) {
+      closeSkinSelectorWindow();
+    }
+  }, SKIN_SELECTOR_FOCUS_HANDOFF_MS);
+}
+
 function closeSkinSelectorWindow() {
   if (skinSelectorCloseInProgress) return;
 
+  cancelPendingBlurClose();
   skinSelectorCloseInProgress = true;
   cancelSkinSelection();
   skinSelectorSelectionInProgress = false;

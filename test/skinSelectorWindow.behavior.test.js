@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
 const Module = require('node:module');
 const test = require('node:test');
 
@@ -6,7 +7,10 @@ const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWind
 
 function loadFreshSkinSelectorWindow() {
   const windowManager = { skinSelectorWindow: null };
+  const app = new EventEmitter();
+  let appActive = false;
   let focusedWindow = null;
+  app.isActive = () => appActive;
   const originalLoad = Module._load;
   delete require.cache[WINDOW_MODULE_PATH];
 
@@ -58,6 +62,7 @@ function loadFreshSkinSelectorWindow() {
   Module._load = function loadSkinSelectorDependencies(request, parent, isMain) {
     if (parent?.filename === WINDOW_MODULE_PATH && request === 'electron') {
       return {
+        app,
         BrowserWindow: FakeBrowserWindow,
         ipcMain: {},
         screen: {
@@ -83,7 +88,12 @@ function loadFreshSkinSelectorWindow() {
     return {
       skinSelectorWindow,
       windowManager,
+      setAppActive: (active) => { appActive = active; },
       setFocusedWindow: (win) => { focusedWindow = win; },
+      handOffFocusTo: (win) => {
+        focusedWindow = win;
+        app.emit('browser-window-focus', {}, win);
+      },
     };
   } finally {
     Module._load = originalLoad;
@@ -99,26 +109,41 @@ test('closing the skin selector ignores the blur emitted by its own close operat
   assert.equal(windowManager.skinSelectorWindow, null);
 });
 
-test('moving focus to another DeskPet window keeps the skin selector open', () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+test('a delayed focus handoff to another DeskPet window keeps the skin selector open', () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow, handOffFocusTo } = loadFreshSkinSelectorWindow();
   const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
   const pomodoroWindow = { isDestroyed: () => false };
   windowManager.pomodoroWindow = pomodoroWindow;
-  setFocusedWindow(pomodoroWindow);
+  setFocusedWindow(null);
 
   selectorWindow.listeners.blur();
+  handOffFocusTo(pomodoroWindow);
 
   assert.equal(selectorWindow.closeCalls, 0);
   assert.equal(windowManager.skinSelectorWindow, selectorWindow);
 });
 
-test('moving focus outside DeskPet closes the skin selector', () => {
+test('moving focus outside DeskPet closes the skin selector after the handoff window', async () => {
   const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
   const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
   setFocusedWindow(null);
 
   selectorWindow.listeners.blur();
+  await new Promise((resolve) => setTimeout(resolve, 120));
 
   assert.equal(selectorWindow.closeCalls, 1);
   assert.equal(windowManager.skinSelectorWindow, null);
+});
+
+test('an active DeskPet app keeps the selector open when macOS reports no focused window', async () => {
+  const { skinSelectorWindow, windowManager, setAppActive, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+  setAppActive(true);
+
+  selectorWindow.listeners.blur();
+  await new Promise((resolve) => setTimeout(resolve, 120));
+
+  assert.equal(selectorWindow.closeCalls, 0);
+  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
 });
