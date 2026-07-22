@@ -42,5 +42,9 @@ test('Check computed font family in Japanese', async () => {
   const langAttr = await window.evaluate(() => document.documentElement.lang);
   console.log('HTML lang attribute:', langAttr);
 
+  expect(langAttr).toBe('ja');
+  expect(rootFontDisplay).toContain('Yuji Syuku');
+  expect(computedFont).toContain('Shippori Mincho');
+
   await electronApp.close();
 });

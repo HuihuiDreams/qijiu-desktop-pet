@@ -24,6 +24,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Yuji Syuku';
+  src: url('./assets/fonts/YujiSyuku-Subset.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --font-display: 'Ma Shan Zheng', 'ZCOOL KuaiLe', 'KaiTi', cursive;
   --font-body: 'Noto Serif SC', 'Noto Sans SC', 'Microsoft YaHei', serif;
@@ -111,9 +119,9 @@
 }
 
 /* === Japanese Font Override === */
-/* Ma Shan Zheng lacks kana, causing ugly mixed fonts in Japanese. Revert to custom local mincho. */
+/* Ma Shan Zheng lacks kana. Use brush-style Yuji Syuku for Japanese display text. */
 html[lang="ja"], html[data-locale="ja"] {
-  --font-display: 'Shippori Mincho', 'Sawarabi Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  --font-display: 'Yuji Syuku', 'Shippori Mincho', 'Sawarabi Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
   --font-body: 'Shippori Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
 }
 

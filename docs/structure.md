@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-07-21
+最后更新：2026-07-22
 
 ## 1. 架构总览
 
@@ -337,6 +337,7 @@ src/assets/{skinId}/
 - 独立状态窗口保存 `lastRenderData`，语言变化时可用当前状态重新渲染。
 - 独立番茄钟窗口使用 `data-i18n` 和 `data-i18n-title` 刷新标题、按钮、完成台词和置顶按钮说明。
 - `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange` 等 IPC API。
+- 日语排版在 `src/index.css` 中区分展示与正文：本地切片的 `Yuji Syuku` 用于 `--font-display`，保留 `Shippori Mincho` 用于 `--font-body`，使仙侠题字有行书笔势而不牺牲小字号可读性。`src/assets/fonts/YujiSyuku-OFL.txt` 随字体资源保存 SIL Open Font License 1.1 及版权声明。
 
 ### 3.10 更新系统
 

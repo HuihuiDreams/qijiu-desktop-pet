@@ -10,6 +10,7 @@
 - **日语字体不生效问题修复 (`Japanese Font Loading Fix`)**：修复了在日语环境下切换字体时，因为主窗口 `index.html` 对 `index.css?v=3` 进行了本地缓存，导致新加入的字体覆盖样式未能被正确读取的问题。同时强化了 CSS 多语言选择器，通过为主窗口和各悬浮子窗口统一注入 `data-locale="ja"` 属性，配合 `html[data-locale="ja"]` 选择器，彻底规避了 Chromium 引擎在动态修改 `lang` 属性时可能偶发的 `:lang()` 伪类样式不重绘 Bug。
 
 ### Changed
+- **日语展示字体改为 Yuji Syuku (`Japanese Calligraphic Display Font`)**：日语界面的标题和交互展示文字改用带有传统书写笔势的 **Yuji Syuku**，正文继续使用 Shippori Mincho 以保持小字号清晰；字体按当前日语文案切片为本地 WOFF2，并随资源附带 SIL Open Font License 1.1 与版权声明，确保可安全随 Electron 安装包再分发。
 - **马善政字体按需切片与全局内嵌 (`Ma Shan Zheng Font Subsetting & Embedding`)**：为保证各悬浮窗（如状态、番茄钟、城市设置、选肤等）标题的“水墨青玉书法”视觉体验在不同系统环境下的一致性，首次引入本地 `.woff2` 字体内嵌。通过编写定制脚本提取项目中真实使用的 1213 个独立中英文字符（闭集），将 5.6MB 的原版 `MaShanZheng-Regular.ttf` 极度压缩为仅 439KB 的切片版 WebFont，兼顾了开箱即用的视觉保真度与轻量化性能目标。
 - **日文专属 Shippori Mincho 字体引入 (`Japanese Shippori Mincho Font Override`)**：由于“马善政”等中文书法字库普遍缺失日文假名，直接混排会导致 fallback 到系统字体而产生强烈的割裂感。现引入了带有古典墨晕质感的复古明朝体 **Shippori Mincho (しっぽり明朝)**。通过重新扫描所有包含平假名和片假名的本地化文本，提取并切片压缩，生成了仅 189KB 的专属日语字库，并通过 `:root:lang(ja)` CSS 选择器确保仅在日文环境下生效。
 - **水墨青玉玻璃 UI 视觉精修 (`Xianxia Jade Glass Visual Refinement`)**：在不改变任何核心业务逻辑和 IPC 契约的前提下，对全局面板设计令牌与各子窗口 CSS 进行品质升华。`--panel-bg` 升级为双弥散渐变（青玉灵光 + 仙金隐光），`--panel-shadow` 增加多层内阴影（顶部亮白云光 + 底部青玉沉淀 + 内壁温润玉光），优化了标题阴影样式使其更加素雅；右键菜单悬浮态从 `padding-left` 改为 GPU 合成的 `translate3d` 硬件加速滑动并增加灵玉发光指示条，按压态优化为柔和弹性收缩；状态条进度槽加深凹槽质感、灵气光泽提亮；选肤卡片增加悬浮抬升与选中态青玉高光边框；城市输入框聚焦态增加青玉环形发光；番茄钟主按钮增加悬浮上浮与玉石发光，步进按钮增加按压收缩感。所有新增动效 100% 使用 `transform`/`opacity` GPU 合成属性，零新增 DOM 节点，零性能开销。
