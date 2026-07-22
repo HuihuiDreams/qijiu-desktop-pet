@@ -7,7 +7,7 @@
   border-radius: 5px;
   background: rgba(30, 42, 54, 0.07);
   border: 1px solid rgba(30, 42, 54, 0.04);
-  box-shadow: inset 0 1px 2px rgba(30, 42, 54, 0.12);
+  box-shadow: inset 0 1px 3px rgba(30, 42, 54, 0.14), inset 0 0 0 0.5px rgba(30, 42, 54, 0.06);
 }
 
 .stat-bar-fill {
@@ -24,7 +24,7 @@
   position: absolute;
   inset: 1px 0 auto;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
 }
 
 .stat-bar-fill--affection { background: linear-gradient(90deg, #c83f66, #e66d8e); }

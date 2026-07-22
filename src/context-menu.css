@@ -71,7 +71,6 @@
   transition: 
     background 0.2s ease, 
     color 0.2s ease,
-    padding-left 0.2s ease,
     transform 0.1s ease;
   position: relative;
   letter-spacing: 0;
@@ -93,16 +92,17 @@
 .menu-item:hover {
   background: linear-gradient(90deg, var(--menu-hover-bg) 0%, rgba(110, 198, 160, 0.08) 100%);
   color: var(--color-jade-deep);
-  padding-left: 20px;
+  transform: translate3d(4px, 0, 0);
 }
 
 .menu-item:hover::before {
   height: 60%;
+  box-shadow: 0 0 8px rgba(110, 198, 160, 0.5);
 }
 
 .menu-item:active {
   background: rgba(110, 198, 160, 0.2);
-  transform: scale(0.98);
+  transform: translate3d(2px, 0, 0) scale(0.97);
 }
 
 .menu-item.disabled {

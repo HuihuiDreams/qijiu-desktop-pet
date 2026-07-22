@@ -44,6 +44,7 @@ const I18nHelpers = {
     });
     const locale = window.__currentLocale || 'zh';
     document.documentElement.lang = locale;
+    document.documentElement.setAttribute('data-locale', locale);
   },
 };
 

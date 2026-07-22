@@ -8,9 +8,27 @@
    Fallback chain: Ma Shan Zheng → ZCOOL KuaiLe → KaiTi → cursive
    ================================================================ */
 
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  src: url('./assets/fonts/MaShanZheng-Subset.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Shippori Mincho';
+  src: url('./assets/fonts/ShipporiMincho-Subset.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --font-display: 'Ma Shan Zheng', 'ZCOOL KuaiLe', 'KaiTi', cursive;
   --font-body: 'Noto Serif SC', 'Noto Sans SC', 'Microsoft YaHei', serif;
+
+
 
   /* === Xianxia Ink-Wash Color Palette === */
   /* Jade / Shenjiu — 灵玉 / 沈九专属 */
@@ -66,12 +84,23 @@
   --radius-lg: 14px;
 
   /* === Shared Panel Styles === */
-  --panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(232, 244, 239, 0.92)), radial-gradient(circle at 18% 0%, rgba(110, 198, 160, 0.18), transparent 38%), var(--color-mist);
-  --panel-border: 1px solid rgba(61, 139, 107, 0.3);
-  --panel-shadow: 0 12px 30px rgba(30, 42, 54, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 -12px 24px rgba(61, 139, 107, 0.06);
-  --panel-deco-bg: radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.18) 13px 14px, transparent 15px), radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.16) 13px 14px, transparent 15px), radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.14) 13px 14px, transparent 15px), radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.12) 13px 14px, transparent 15px);
-  --panel-deco-border: 1px solid rgba(61, 139, 107, 0.16);
-  --panel-deco-lines: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent) 0 0 / 100% 1px no-repeat, linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.16), transparent) 0 100% / 100% 1px no-repeat;
+  --panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(232, 244, 239, 0.93)),
+    radial-gradient(circle at 12% 15%, rgba(110, 198, 160, 0.20), transparent 45%),
+    radial-gradient(circle at 88% 85%, rgba(201, 162, 77, 0.10), transparent 50%),
+    var(--color-mist);
+  --panel-border: 1px solid rgba(61, 139, 107, 0.32);
+  --panel-shadow:
+    0 14px 36px rgba(30, 42, 54, 0.15),
+    0 2px 6px rgba(30, 42, 54, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(61, 139, 107, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 18px rgba(110, 198, 160, 0.06);
+  --panel-deco-bg: radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.22) 13px 14px, transparent 15px), radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.20) 13px 14px, transparent 15px), radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.18) 13px 14px, transparent 15px), radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.16) 13px 14px, transparent 15px);
+  --panel-deco-border: 1px solid rgba(61, 139, 107, 0.18);
+  --panel-deco-lines: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent) 0 0 / 100% 1px no-repeat, linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.18), transparent) 0 100% / 100% 1px no-repeat;
+  /* Simple light text shadow (gold removed per request) */
+  --title-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9);
 
   /* Purple / Yueqi — 紫玉 / 岳七专属 */
   --color-yueqi: #9b59b6;
@@ -79,6 +108,13 @@
   --color-yueqi-glow: rgba(155, 89, 182, 0.3);
   --color-yueqi-light: #d8b0ec;
   --color-yueqi-dark: #6c3483;
+}
+
+/* === Japanese Font Override === */
+/* Ma Shan Zheng lacks kana, causing ugly mixed fonts in Japanese. Revert to custom local mincho. */
+html[lang="ja"], html[data-locale="ja"] {
+  --font-display: 'Shippori Mincho', 'Sawarabi Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
+  --font-body: 'Shippori Mincho', 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', serif;
 }
 
 * {
@@ -321,6 +357,7 @@ html, body {
   font-family: var(--font-display);
   font-size: 19px;
   color: var(--color-jade-deep);
+  text-shadow: var(--title-text-shadow);
   margin-bottom: 18px;
   padding-bottom: 12px;
   border-bottom: 1px solid transparent;

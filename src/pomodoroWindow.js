@@ -209,6 +209,7 @@ window.electronAPI.onPomodoroState((state) => {
 window.electronAPI.onLocaleChange?.((locale) => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
 });
 
@@ -316,6 +317,7 @@ function initTooltipEvents() {
 window.electronAPI.getLocale().then(locale => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
   initTooltipEvents();
   return refreshState();

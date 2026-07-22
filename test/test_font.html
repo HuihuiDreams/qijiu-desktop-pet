@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <style>
+    :root {
+      --test-font: "Original";
+    }
+    html[lang="ja"] {
+      --test-font: "Overridden";
+    }
+    body {
+      font-family: var(--test-font);
+    }
+  </style>
+</head>
+<body>
+  <div id="result"></div>
+  <script>
+    const el = document.getElementById('result');
+    const compFont = getComputedStyle(document.body).fontFamily;
+    el.textContent = 'Computed: ' + compFont;
+    console.log(compFont);
+  </script>
+</body>
+</html>

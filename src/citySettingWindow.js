@@ -122,6 +122,7 @@ closeBtn.addEventListener('click', () => {
 window.electronAPI.onLocaleChange?.((locale) => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
   loadCurrentCity();
 });
@@ -130,6 +131,7 @@ window.electronAPI.onLocaleChange?.((locale) => {
 window.electronAPI.getLocale().then(locale => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
   loadCurrentCity();
   inputEl.focus();

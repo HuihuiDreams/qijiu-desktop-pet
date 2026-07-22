@@ -61,6 +61,7 @@ input {
 
 .pomodoro-titlebar>span {
   padding-left: 12px;
+  text-shadow: var(--title-text-shadow);
 }
 
 html[lang="en"] .pomodoro-titlebar>span {
@@ -106,10 +107,13 @@ html[lang="en"] .pomodoro-titlebar>span {
 }
 
 .pomodoro-icon-button:active,
-.pomodoro-step-button:active,
 .pomodoro-primary-button:active,
 .pomodoro-ghost-button:active {
   transform: scale(0.94);
+}
+
+.pomodoro-step-button:active {
+  transform: scale(0.92);
 }
 
 .pomodoro-icon {
@@ -255,8 +259,10 @@ html[lang="en"] .pomodoro-titlebar>span {
 }
 
 .pomodoro-primary-button:hover {
+  transform: translate3d(0, -1px, 0);
   box-shadow:
     0 10px 22px rgba(61, 139, 107, 0.28),
+    0 0 14px rgba(110, 198, 160, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 

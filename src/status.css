@@ -30,6 +30,7 @@ body {
   border-bottom: 1px solid transparent;
   border-image: linear-gradient(90deg, transparent, var(--color-jade), rgba(201, 162, 77, 0.48), transparent) 1;
   color: var(--color-jade-deep);
+  text-shadow: var(--title-text-shadow);
   cursor: grab;
   font-family: var(--font-display);
   font-size: 19px;

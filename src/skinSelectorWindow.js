@@ -164,6 +164,7 @@ window.skinSelectorAPI.onData((items, options) => renderGallery(items, options))
 window.skinSelectorAPI.onLocaleChange((locale) => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
   renderGallery(lastItems, { resetSelection: false });
 });
@@ -171,6 +172,7 @@ window.skinSelectorAPI.onLocaleChange((locale) => {
 window.skinSelectorAPI.getLocale().then((locale) => {
   currentLocale = locale;
   document.documentElement.lang = locale;
+  document.documentElement.setAttribute("data-locale", locale);
   updateI18nElements();
   return window.skinSelectorAPI.getSkinGalleryItems();
 }).then(renderGallery).catch((error) => {
