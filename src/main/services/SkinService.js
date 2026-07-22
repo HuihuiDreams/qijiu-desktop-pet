@@ -268,7 +268,7 @@ function hideSkinSelector() {
   const { windowManager, skinSelectorWindowModule } = deps;
   skinSelectorWindowModule.setSkinSelectorSelectionInProgress();
   if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-    windowManager.skinSelectorWindow.hide();
+    windowManager.skinSelectorWindow.close();
   }
 }
 

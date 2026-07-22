@@ -107,7 +107,6 @@ function closeSkinSelectorWindow() {
   cancelSkinSelection();
   skinSelectorSelectionInProgress = false;
   if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-    windowManager.skinSelectorWindow.hide();
     windowManager.skinSelectorWindow.close();
   }
 }

@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Fixed
+- **macOS 悬浮窗口焦点连锁关闭修复 (`macOS Floating Window Focus Cascade Fix`)**：修复了在 macOS 环境下，由于在 `SkinSelectorWindow.js` 与 `SkinService.js` 关闭窗口时先调用 `.hide()` 再调用 `.close()`，导致系统焦点转移陷入死角，进而使底层的其他悬浮窗口（如修仙状态、城市设置）在失去 `SkinSelectorWindow` 焦点时随之意外隐藏或失焦的焦点竞争 (Race Condition) Bug。现在通过直接调用 `.close()`，确保了 macOS 的正确窗口焦点回退与交接。
 - **日语字体不生效问题修复 (`Japanese Font Loading Fix`)**：修复了在日语环境下切换字体时，因为主窗口 `index.html` 对 `index.css?v=3` 进行了本地缓存，导致新加入的字体覆盖样式未能被正确读取的问题。同时强化了 CSS 多语言选择器，通过为主窗口和各悬浮子窗口统一注入 `data-locale="ja"` 属性，配合 `html[data-locale="ja"]` 选择器，彻底规避了 Chromium 引擎在动态修改 `lang` 属性时可能偶发的 `:lang()` 伪类样式不重绘 Bug。
 
 ### Changed
