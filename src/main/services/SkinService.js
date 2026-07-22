@@ -265,11 +265,7 @@ function cancelSkinPreview() {
 }
 
 function hideSkinSelector() {
-  const { windowManager, skinSelectorWindowModule } = deps;
-  skinSelectorWindowModule.setSkinSelectorSelectionInProgress();
-  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-    windowManager.skinSelectorWindow.close();
-  }
+  deps.skinSelectorWindowModule.closeSkinSelectorWindow();
 }
 
 /**

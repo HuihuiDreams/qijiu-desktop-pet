@@ -4,6 +4,7 @@ const windowManager = require('./WindowManager');
 
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
+let skinSelectorCloseInProgress = false;
 let deps = {};
 
 function init(dependencies) {
@@ -71,6 +72,7 @@ function createSkinSelectorWindow() {
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
+    skinSelectorCloseInProgress = false;
   });
   
   windowManager.skinSelectorWindow.on('blur', () => {
@@ -104,10 +106,15 @@ function cancelSkinSelection() {
 }
 
 function closeSkinSelectorWindow() {
+  if (skinSelectorCloseInProgress) return;
+
+  skinSelectorCloseInProgress = true;
   cancelSkinSelection();
   skinSelectorSelectionInProgress = false;
   if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
     windowManager.skinSelectorWindow.close();
+  } else {
+    skinSelectorCloseInProgress = false;
   }
 }
 
