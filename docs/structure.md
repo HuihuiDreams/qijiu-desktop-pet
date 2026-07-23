@@ -214,8 +214,12 @@ qijiu-desktop-pet/
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
 │  ├─ performance/
 │  │  ├─ electronRunner.js              # Playwright Electron 启动、隔离 profile、环境/进程采样和场景汇总
+│  │  ├─ measureStartup.js               # dev 启动探针运行器：隔离重复启动并汇总 clearCache/load 代理指标
 │  │  ├─ metrics.js                     # 帧、Long Task 与分进程 CPU/内存的确定性统计函数
-│  │  └─ scenarios.js                   # 空闲/行走/天气场景驱动及 renderer rAF/Long Task 采样
+│  │  ├─ recomputeBaseline.js            # 从原始 runs 独立复算重复样本与天气 CPU 增量
+│  │  ├─ scenarios.js                    # 空闲/行走/天气场景驱动及 renderer rAF/Long Task 采样
+│  │  ├─ startupProbeMain.js             # 在真实 main.js 前安装无侵入启动计时探针
+│  │  └─ validateBaseline.js             # 正式基线协议、组合完整性和进程指标校验
 │  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/

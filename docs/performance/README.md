@@ -50,3 +50,23 @@ CPU 百分比来自相邻 `app.getAppMetrics()` 调用之间的区间，首次�
 正式报告必须记录设备、驱动、电源模式、显示器、dev/packaged 和 GPU 状态。相同场景
 至少重复 3 次，保存原始 JSON，并使用 `docs/plan/performance-optimization-plan.md` 中
 的统一协议和分流门槛。不要使用真实用户 profile，也不要根据单次最佳结果实施优化。
+
+## 基线校验与报告
+
+正式场景/空闲性能 JSON 可使用以下命令校验协议并从原始 `runs` 独立复算；结构
+不同的启动探针 JSON 不适用 `validateBaseline.js`：
+
+```powershell
+node tools/performance/validateBaseline.js <json> [json...]
+node tools/performance/recomputeBaseline.js <json> [json...]
+```
+
+启动缓存探针只用于 dev 路径，不修改生产代码：
+
+```powershell
+node tools/performance/measureStartup.js --repetitions 5 --power-mode <label> --output <json>
+```
+
+当前 Windows 基线与分流报告见
+[`2026-07-23-windows-baseline.md`](2026-07-23-windows-baseline.md)。报告中的待完成
+验证必须实际运行后才能签署 Task 2。

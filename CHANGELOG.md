@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- **Windows 性能基线与量化分流 (`Windows Performance Baseline & Triage`)**：新增 dev/packaged、默认 GPU/`--disable-gpu` 的六场景正式原始样本、三次五分钟空闲样本和无侵入启动缓存探针，并提供协议校验与独立复算工具；基线报告以私有内存为主、工作集为辅，对天气 CPU、启动缓存、透明窗口内存和空闲续航逐项给出量化分流，尚未运行的代表强风复现明确保留为 Task 2 签署前置条件。
 - **Electron 可复现性能采样工具 (`Electron Reproducible Performance Sampler`)**：新增隔离 userData 的 `npm run qa:electron:performance` 命令，可确定性采集空闲、行走、重雨、强风、高温和雷暴场景的帧间隔、Long Task、DOM/粒子数及 Electron 分进程 CPU、私有内存和工作集；支持真实 GPU/`--disable-gpu`、dev/packaged、显式刷新率、电源模式标签、可复用测试 profile 和 JSON 输出，并按场景保留原始样本及汇总结果，为后续只针对已证实瓶颈的优化提供统一基线。
 
 ### Fixed

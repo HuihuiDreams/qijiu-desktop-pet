@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "environment": {
+    "app": {
+      "name": "Electron",
+      "version": "42.2.0",
+      "electron": "42.2.0"
+    },
+    "os": {
+      "platform": "win32",
+      "arch": "x64",
+      "release": "10.0.26200"
+    },
+    "buildType": "dev",
+    "powerMode": "dynabook-standard-battery100-status2"
+  },
+  "config": {
+    "repetitions": 5,
+    "executablePath": "C:\\Users\\fengf\\qijiu-desktop-pet\\node_modules\\electron\\dist\\electron.exe",
+    "powerMode": "dynabook-standard-battery100-status2"
+  },
+  "runs": [
+    {
+      "repetition": 1,
+      "processToWindowMs": 387.84959999999995,
+      "windowToDidFinishLoadMs": 499.2463,
+      "clearCacheMs": 117.23260000000005,
+      "launchToLoadMs": 1120.746
+    },
+    {
+      "repetition": 2,
+      "processToWindowMs": 408.35900000000004,
+      "windowToDidFinishLoadMs": 644.1623999999999,
+      "clearCacheMs": 160.45760000000007,
+      "launchToLoadMs": 1276.1455
+    },
+    {
+      "repetition": 3,
+      "processToWindowMs": 468.246,
+      "windowToDidFinishLoadMs": 558.5423,
+      "clearCacheMs": 131.24329999999998,
+      "launchToLoadMs": 1289.4028
+    },
+    {
+      "repetition": 4,
+      "processToWindowMs": 434.81510000000003,
+      "windowToDidFinishLoadMs": 487.9572999999999,
+      "clearCacheMs": 122.44389999999999,
+      "launchToLoadMs": 1165.4366
+    },
+    {
+      "repetition": 5,
+      "processToWindowMs": 437.25780000000003,
+      "windowToDidFinishLoadMs": 516.2147999999999,
+      "clearCacheMs": 138.30060000000003,
+      "launchToLoadMs": 1220.5427
+    }
+  ],
+  "summaries": {
+    "processToWindowMs": {
+      "p50": 434.81510000000003,
+      "p95": 468.246,
+      "max": 468.246
+    },
+    "windowToDidFinishLoadMs": {
+      "p50": 516.2147999999999,
+      "p95": 644.1623999999999,
+      "max": 644.1623999999999
+    },
+    "clearCacheMs": {
+      "p50": 131.24329999999998,
+      "p95": 160.45760000000007,
+      "max": 160.45760000000007
+    },
+    "launchToLoadMs": {
+      "p50": 1220.5427,
+      "p95": 1289.4028,
+      "max": 1289.4028
+    }
+  }
+}
