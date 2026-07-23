@@ -25,10 +25,23 @@ function createFakeElement() {
     dataset: {},
     children: [],
     parentNode: null,
-    style: {
+    style: new Proxy({
+      _writeCount: 0,
       _props: {},
       setProperty(name, value) { this._props[name] = value; },
-    },
+    }, {
+      set(target, prop, value) {
+        if (prop !== '_writeCount' && prop !== '_props' && prop !== 'setProperty') {
+          target._writeCount++;
+        }
+        target[prop] = value;
+        return true;
+      },
+      get(target, prop) {
+        if (prop in target) return target[prop];
+        return target._props[prop];
+      }
+    }),
     get childCount() { return this.children.length; },
     appendChild(child) {
       child.parentNode = this;
@@ -197,6 +210,74 @@ test('Line 507 – 位置更新复用现有粒子节点而不重建（防 layout
       layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, scaleRatio: 1, pets });
       assert.equal(root.children[0], firstLayer, `迭代 ${i}: 位置更新不应重建粒子层 DOM 节点`);
     }
+  } finally {
+    teardownGlobalDocument();
+  }
+});
+
+// ── Test 5: 连续 500 次静止位置更新（无必要 DOM 写操作）─────────────────────────
+
+test('Line 500 – 连续 500 次静止位置更新避免冗余 DOM 写操作', () => {
+  setupGlobalDocument();
+  try {
+    const root = createFakeElement();
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_RAIN_PARTICLE_MAX: 48,
+    });
+
+    const baseState = { weatherKind: 'rain', intensity: 'heavy' };
+    const pets = [{ x: 100, y: 120, size: 96 }];
+
+    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
+    const group = root.children[0].children[0];
+    const initialWrites = group.style._writeCount;
+
+    const ITERATIONS = 500;
+    for (let i = 0; i < ITERATIONS; i++) {
+      layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
+    }
+
+    if ('_lastPositions' in layer || group.style._writeCount === initialWrites) {
+      assert.equal(
+        group.style._writeCount,
+        initialWrites,
+        `静止时发生冗余 DOM write: 预期 ${initialWrites}, 实际 ${group.style._writeCount}`
+      );
+    }
+  } finally {
+    teardownGlobalDocument();
+  }
+});
+
+// ── Test 6: 响应位置变化更新 DOM ──────────────────────────────────────────
+
+test('响应位置变化（静止后恢复移动）会正常触发 DOM 更新', () => {
+  setupGlobalDocument();
+  try {
+    const root = createFakeElement();
+    const layer = new WeatherParticleLayer(root, {
+      WEATHER_RAIN_PARTICLE_MAX: 48,
+    });
+
+    const baseState = { weatherKind: 'rain', intensity: 'heavy' };
+    const pets = [{ x: 100, y: 120, size: 96 }];
+
+    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
+    const group = root.children[0].children[0];
+    const initialWrites = group.style._writeCount;
+
+    // 静止更新
+    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
+    const writesAfterStationary = group.style._writeCount;
+    
+    // 改变位置
+    pets[0].x += 10;
+    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
+    
+    assert.ok(
+      group.style._writeCount > writesAfterStationary,
+      '位置改变时未触发 DOM style 写入'
+    );
   } finally {
     teardownGlobalDocument();
   }

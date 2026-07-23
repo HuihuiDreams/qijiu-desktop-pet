@@ -46,22 +46,32 @@ class WeatherParticleLayer {
       return;
     }
 
-    const particleCounts = this.getParticleCounts(weatherKind, intensity, windIntensity, pets.length);
-    const unchanged = this.layer
+    const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
+    const unchangedInputs = this.layer
       && this.weatherKind === weatherKind
       && this.intensity === intensity
       && this.windIntensity === windIntensity
       && this.visible === visible
       && this.scaleRatio === scaleRatio
-      && Boolean(this.isInteracting) === Boolean(options.isInteracting || options.interactionOverlayActive)
-      && this.hasParticleCounts(particleCounts);
+      && Boolean(this.isInteracting) === isInteracting
+      && this._lastPetCount === pets.length;
+
+    let particleCounts;
+    if (unchangedInputs) {
+      particleCounts = this.particleCounts;
+    } else {
+      particleCounts = this.getParticleCounts(weatherKind, intensity, windIntensity, pets.length);
+      this._lastPetCount = pets.length;
+    }
+
+    const unchanged = unchangedInputs;
 
     this.weatherKind = weatherKind;
     this.intensity = intensity;
     this.windIntensity = windIntensity;
     this.visible = visible;
     this.scaleRatio = scaleRatio;
-    this.isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
+    this.isInteracting = isInteracting;
     this.particleCounts = particleCounts;
 
     if (!unchanged) {
@@ -112,6 +122,7 @@ class WeatherParticleLayer {
     }
 
     this.root.appendChild(this.layer);
+    this._groups = Array.from(this.layer.children);
   }
 
   clear() {
@@ -119,6 +130,8 @@ class WeatherParticleLayer {
       this.layer.remove();
       this.layer = null;
     }
+    this._groups = null;
+    this._lastPositions = [];
     this.particleCounts = [];
   }
 
@@ -149,7 +162,26 @@ class WeatherParticleLayer {
 
   normalizePets(pets) {
     if (!Array.isArray(pets)) return [];
-    return pets
+    if (this._lastPetsInput === pets && this._cachedPets && this._cachedPets.length === pets.length) {
+      let allValid = true;
+      for (let i = 0; i < pets.length; i++) {
+        const p = pets[i];
+        const c = this._cachedPets[i];
+        if (!p || !c) { allValid = false; break; }
+        const x = Number(p.x);
+        const y = Number(p.y);
+        const size = Number(p.size);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(size) || size <= 0) {
+          allValid = false;
+          break;
+        }
+        c.x = x;
+        c.y = y;
+        c.size = size;
+      }
+      if (allValid) return this._cachedPets;
+    }
+    const result = pets
       .map((pet) => {
         const x = Number(pet?.x);
         const y = Number(pet?.y);
@@ -160,6 +192,9 @@ class WeatherParticleLayer {
         return { x, y, size };
       })
       .filter(Boolean);
+    this._lastPetsInput = pets;
+    this._cachedPets = result;
+    return result;
   }
 
   getParticleCounts(weatherKind, intensity, windIntensity, petCount) {
@@ -187,9 +222,27 @@ class WeatherParticleLayer {
       && currentCounts.every((count, index) => count === nextCounts[index]);
   }
 
+  _applyGroupStyle(group, index, width, height, left, top, opacity, visibility) {
+    if (!this._lastPositions) this._lastPositions = [];
+    const cacheKey = `${width}_${height}_${left}_${top}_${opacity}_${visibility}`;
+    if (this._lastPositions[index] === cacheKey) return;
+    this._lastPositions[index] = cacheKey;
+
+    if (opacity === '0') {
+      group.style.opacity = '0';
+      group.style.visibility = 'hidden';
+    } else {
+      group.style.width = `${width}px`;
+      group.style.height = `${height}px`;
+      group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      group.style.opacity = '1';
+      group.style.visibility = 'visible';
+    }
+  }
+
   positionGroups(pets, scaleRatio, options = {}) {
-    if (!this.layer) return;
-    const groups = Array.from(this.layer.children);
+    if (!this.layer || !this._groups) return;
+    const groups = this._groups;
     if (!groups.length) return;
 
     const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
@@ -231,15 +284,10 @@ class WeatherParticleLayer {
       const top = cy - mergedHeight * 0.28;
 
       if (groups[0]) {
-        groups[0].style.width = `${mergedWidth}px`;
-        groups[0].style.height = `${mergedHeight}px`;
-        groups[0].style.transform = `translate3d(${left}px, ${top}px, 0)`;
-        groups[0].style.opacity = '1';
-        groups[0].style.visibility = 'visible';
+        this._applyGroupStyle(groups[0], 0, mergedWidth, mergedHeight, left, top, '1', 'visible');
       }
       if (groups[1]) {
-        groups[1].style.opacity = '0';
-        groups[1].style.visibility = 'hidden';
+        this._applyGroupStyle(groups[1], 1, 0, 0, 0, 0, '0', 'hidden');
       }
       for (let i = 2; i < groups.length; i++) {
         const group = groups[i];
@@ -249,11 +297,7 @@ class WeatherParticleLayer {
         const height = Math.max(120, pet.size * 1.45) * scaleRatio;
         const pLeft = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
         const pTop = pet.y - height * 0.28;
-        group.style.width = `${width}px`;
-        group.style.height = `${height}px`;
-        group.style.transform = `translate3d(${pLeft}px, ${pTop}px, 0)`;
-        group.style.opacity = '1';
-        group.style.visibility = 'visible';
+        this._applyGroupStyle(group, i, width, height, pLeft, pTop, '1', 'visible');
       }
       return;
     }
@@ -265,11 +309,7 @@ class WeatherParticleLayer {
       const height = Math.max(120, pet.size * 1.45) * scaleRatio;
       const left = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
       const top = pet.y - height * 0.28;
-      group.style.width = `${width}px`;
-      group.style.height = `${height}px`;
-      group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      group.style.opacity = '1';
-      group.style.visibility = 'visible';
+      this._applyGroupStyle(group, index, width, height, left, top, '1', 'visible');
     });
   }
 

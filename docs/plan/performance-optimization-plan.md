@@ -266,11 +266,11 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
 
 **验收标准：**
 
-- [ ] 性能报告明确指出瓶颈属于脚本、样式/布局或合成中的哪一类，并让代码改动
+- [x] 性能报告明确指出瓶颈属于脚本、样式/布局或合成中的哪一类，并让代码改动
   只针对被证实的原因。
 - [ ] 优化后目标天气场景的超标指标至少改善 20%，或恢复到对应刷新率预算以内；
   其他场景不能出现超过测量波动区间的退化。
-- [ ] 保留粒子数量上限、天气密度、`scaleRatio`、雷暴禁风、互动合并、低动态
+- [x] 保留粒子数量上限、天气密度、`scaleRatio`、雷暴禁风、互动合并、低动态
   效果和 `prefers-reduced-motion` 行为。
 
 **验证：**
@@ -280,6 +280,22 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
 - 全量 `npm test`
 - 使用任务 2 的同场景、同设备、同构建进行前后复测。
 - 人工检查重雨、强风、高温、雷暴、双人互动和减弱动态效果。
+
+**执行结果（2026-07-23）：** 瓶颈定位为 GPU 合成（占强风 CPU 增量 46.6%，
+`mask-image`、`clip-path` 动画和 `drop-shadow`）和 JS 脚本执行（占增量 37.4%，
+每帧 `Array.from`/`.map`/`.filter` 分配和无条件 DOM style 写入）。已完成的
+代码改动：`src/effects.css` 移除风粒子 `mask-image`、`drop-shadow`，将
+`clip-path` 逐帧插值替换为 `opacity` + `transform` 淡入淡出；
+`src/ui/WeatherParticleLayer.js` 缓存 `normalizePets`（含 `Number.isFinite`
+校验回退）、延迟 `getParticleCounts` 分配、缓存 `_groups`、新增
+`_applyGroupStyle` 位置 delta 检查、`clear()` 清理缓存防止重建后首帧不可见。
+新增 4 个回归测试和 2 个稳定性测试。聚焦测试 21/21、全量测试 676/676 通过。
+macOS dev 模式人工视觉验证（6 场景）通过。CHANGELOG.md 已更新。
+
+**待完成：** 在 Windows 目标设备上使用 packaged+GPU 构建执行同协议性能复测，
+确认强风 CPU 改善 ≥20%（使用同批空闲对照）。复测命令和对比模板见
+`docs/performance/task3-retest-checklist.md`。复测通过后勾选第二个验收标准，
+任务 3 正式关闭；如果 CPU 改善不足，回滚生产改动并保留测量结论。
 
 **依赖：** 任务 2 的天气分流结论
 **预计范围：** 中等，3–5 个文件。
