@@ -2,10 +2,10 @@
 
 ## 状态
 
-本报告已完成正式主矩阵、启动探针和长时间空闲采样，结论由原始 `runs` 独立复算，
-不直接信任采样文件中的 `summaries`。Task 2 尚未最终签署：计划要求的 packaged+
-GPU 强风代表场景复现因当前 Electron 启动审批额度耗尽而未运行，需在审批恢复后
-补测并确认结果落入已记录波动区间。
+本报告已完成正式主矩阵、启动探针、长时间空闲采样和 packaged+GPU 强风复现，
+结论由原始 `runs` 独立复算，不直接信任采样文件中的 `summaries`。首次独立强风
+复现暴露出 CPU 绝对值的跨批次波动；修正协议后使用同批空闲对照，并通过三次
+序列控制复现确认天气 CPU 门槛稳定成立。Task 2 已完成并签署。
 
 本任务没有修改生产渲染、游戏循环、窗口或缓存逻辑。
 
@@ -44,15 +44,19 @@ GPU，预热 5 秒后采样 5 分钟，重复 3 次。
 - [`2026-07-23-windows-packaged-disable-gpu.json`](raw/2026-07-23-windows-packaged-disable-gpu.json)
 - [`2026-07-23-windows-packaged-gpu-idle-5m.json`](raw/2026-07-23-windows-packaged-gpu-idle-5m.json)
 - [`2026-07-23-windows-dev-startup-probe.json`](raw/2026-07-23-windows-dev-startup-probe.json)
+- [`2026-07-23-windows-packaged-gpu-wind-rerun.json`](raw/2026-07-23-windows-packaged-gpu-wind-rerun.json)
+- [`2026-07-23-windows-packaged-gpu-wind-sequence-rerun.json`](raw/2026-07-23-windows-packaged-gpu-wind-sequence-rerun.json)
 
 启动探针使用独立 schema，不适用场景报告的 `validateBaseline.js` /
-`recomputeBaseline.js`。
+`recomputeBaseline.js`。首次强风独立复现只执行 1 次，是用于触发协议修正的诊断
+样本，也不满足正式验证器至少重复 3 次的要求；正式分流依据是四份主矩阵、三次
+长时间空闲样本和通过校验的三次序列控制复现。
 
-四份主矩阵均通过：
+四份主矩阵、长时间空闲样本和三次序列控制复现均通过：
 
 ```powershell
-node tools/performance/validateBaseline.js <四份主矩阵 JSON>
-node tools/performance/recomputeBaseline.js <四份主矩阵 JSON>
+node tools/performance/validateBaseline.js <正式场景与空闲 JSON>
+node tools/performance/recomputeBaseline.js <正式场景与空闲 JSON>
 ```
 
 每份主矩阵均包含 18 个唯一的 `scenario × repetition` run、非空 renderer/进程
@@ -138,25 +142,38 @@ packaged+默认 GPU 三次 5 分钟空闲进程组 CPU P50：
 三次均低于 2%。第 1 次出现 1 个 Long Task 和 2 个超过 50ms 的帧，其余两次
 没有复现；该异常不改变空闲 CPU 结论。
 
+## 代表强风复现与协议修正
+
+首次 packaged+GPU 强风独立复现使用全新实例直接进入强风，CPU P50 为 3.782%，
+没有落入首批三次 4.750%–5.104% 的窄区间；帧 P95 仍为 33.5ms、无 Long Task，
+私有内存 422.8MiB、粒子数 20，电源方案、电量和显示器状态均未变化。
+
+为排除场景顺序差异，第二批按原顺序执行空闲×3、行走×3、重雨×3、强风×3。
+强风三次 CPU P50 为 2.871%、3.214%、2.374%，仍低于首批，证明 CPU 绝对值存在
+跨批次波动，首批三次范围不能作为跨时段复现门槛。
+
+修正后的协议使用同一批次、相同 repetition 的空闲作对照：
+
+| 重复 | 空闲 CPU | 强风 CPU | 绝对增幅 | 相对增幅 | CPU 门槛 |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 1 | 0.287% | 2.871% | +2.584pp | +901.8% | 通过 |
+| 2 | 0.275% | 3.214% | +2.939pp | +1069.4% | 通过 |
+| 3 | 0.309% | 2.374% | +2.065pp | +668.1% | 通过 |
+
+两批共六次序列控制强风的跨批次范围为 2.374%–5.104%，首次独立复现的 3.782%
+落在该范围内。两批的每次强风相对同批空闲都同时超过 +20% 和 +1pp；两批强风
+帧 P95 均为 33.5ms，序列控制复现仍无警戒帧和 Long Task。协议修正不改变进入
+Task 3 的结论，但后续前后对比必须使用同批空闲对照，不能只比较跨时段 CPU 绝对值。
+
 ## 分流结论
 
 | 方向 | 结论 | 量化依据 |
 | --- | --- | --- |
-| 天气 / Task 3 | **进入，待代表强风复现后最终签署** | packaged+默认 GPU 四个天气场景均在三次重复中同时超过 CPU 相对 +20% 和绝对 +1pp 门槛；帧 P95 与 Long Task 不超标，优先调查 CPU |
+| 天气 / Task 3 | **进入** | 首批四个天气场景和第二批三次强风均相对同批空闲同时超过 CPU +20% / +1pp 门槛；帧 P95 与 Long Task 不超标，优先调查 CPU |
 | 启动缓存 / Task 4 | **进入** | `clearCache()` 五次中位 131.24ms；约占窗口创建到 `did-finish-load` 中位时间的 25.4% |
 | 透明窗口内存 / Task 5 | **停止** | 所有样本窗口尺寸相同，无法证明窗口尺寸与私有内存稳定相关；场景间私有内存差异不能替代尺寸 A/B |
 | 空闲续航 / Task 6 | **停止** | packaged+默认 GPU 三次 5 分钟 CPU P50 为 0.513%、0.841%、0.405%，均低于 2% |
 
-即使 Task 3 和 Task 4 都达到门槛，也必须按计划一次只执行一个原子任务；Task 2
-最终签署前不启动任何生产优化。
-
-## 待完成验证
-
-审批恢复后执行：
-
-```powershell
-npm run qa:electron:performance -- --scenarios wind --warmup-ms 5000 --sample-ms 30000 --repetitions 1 --executable "dist/task2-baseline/win-unpacked/七九爱宠.exe" --power-mode dynabook-standard-battery100-status2 --output docs/performance/raw/2026-07-23-windows-packaged-gpu-wind-rerun.json
-```
-
-复算后的进程组 CPU P50 应落入正式 packaged+GPU 强风三次范围
-4.750%–5.104%；若超出，先调查环境变化或修正协议，不签署 Task 2。
+即使 Task 3 和 Task 4 都达到门槛，也必须按计划一次只执行一个原子任务。按任务
+编号，Task 2 完成后先进入 Task 3；Task 3 完成测试、复测、文档和审查闭环后，
+再开始 Task 4。

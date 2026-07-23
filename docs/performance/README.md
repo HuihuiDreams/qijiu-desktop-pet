@@ -61,6 +61,9 @@ node tools/performance/validateBaseline.js <json> [json...]
 node tools/performance/recomputeBaseline.js <json> [json...]
 ```
 
+`validateBaseline.js` 要求每个正式场景至少重复 3 次。单次诊断样本可以用于发现
+协议问题，但不能单独作为正式分流依据，也不应声称通过该验证器。
+
 启动缓存探针只用于 dev 路径，不修改生产代码：
 
 ```powershell
@@ -68,5 +71,5 @@ node tools/performance/measureStartup.js --repetitions 5 --power-mode <label> --
 ```
 
 当前 Windows 基线与分流报告见
-[`2026-07-23-windows-baseline.md`](2026-07-23-windows-baseline.md)。报告中的待完成
-验证必须实际运行后才能签署 Task 2。
+[`2026-07-23-windows-baseline.md`](2026-07-23-windows-baseline.md)。跨时段 CPU
+绝对值波动较大，天气前后对比必须使用同批空闲场景作对照。
