@@ -168,6 +168,8 @@ class AppLifecycle {
         PetVisibilityService,
         MeetingDetectorController,
         WeatherSyncController,
+        StoreManager,
+        app,
       });
       petWindowModule.createWindow();
 

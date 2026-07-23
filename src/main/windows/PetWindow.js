@@ -126,10 +126,24 @@ function createWindow() {
     },
   });
 
-  // 清理缓存并加载页面
-  windowManager.mainWindow.webContents.session.clearCache().finally(() => {
+  // 检查是否需要清理缓存 (Task 4)
+  const currentVersion = deps.app ? deps.app.getVersion() : null;
+  const store = deps.StoreManager ? deps.StoreManager.getStore() : null;
+  const lastCacheVersion = store ? store.get('lastCacheVersion') : null;
+  const isDev = deps.app ? (!deps.app.isPackaged && !process.env.DESKTOP_PET_SIMULATE_PACKAGED) : false;
+  const forceClear = deps.app ? deps.app.commandLine.hasSwitch('clear-cache') : false;
+
+  if (isDev || forceClear || lastCacheVersion !== currentVersion) {
+    windowManager.mainWindow.webContents.session.clearCache().finally(() => {
+      if (store && currentVersion) store.set('lastCacheVersion', currentVersion);
+      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+        windowManager.mainWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'index.html'));
+      }
+    });
+  } else {
+    // 热启动，跳过清理缓存
     windowManager.mainWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'index.html'));
-  });
+  }
 
   // 设置鼠标穿透逻辑
   setPetWindowMousePassthrough(true, { forward: true });

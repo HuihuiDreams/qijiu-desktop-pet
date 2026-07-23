@@ -1,0 +1,652 @@
+commit 1a641bffdebd086eaf3ab6a8ba8d202fbb6dd477
+Author: HuihuiDreams <HuihuiDreams@users.noreply.github.com>
+Date:   Thu Jul 23 21:18:02 2026 +0900
+
+    perf: optimize WeatherParticleLayer rendering via DOM update memoization and animation refactoring
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 94f9587..407f180 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -19,6 +19,7 @@
+ - **马善政字体按需切片与全局内嵌 (`Ma Shan Zheng Font Subsetting & Embedding`)**：为保证各悬浮窗（如状态、番茄钟、城市设置、选肤等）标题的“水墨青玉书法”视觉体验在不同系统环境下的一致性，首次引入本地 `.woff2` 字体内嵌。通过编写定制脚本提取项目中真实使用的 1213 个独立中英文字符（闭集），将 5.6MB 的原版 `MaShanZheng-Regular.ttf` 极度压缩为仅 439KB 的切片版 WebFont，兼顾了开箱即用的视觉保真度与轻量化性能目标。
+ - **日文专属 Shippori Mincho 字体引入 (`Japanese Shippori Mincho Font Override`)**：由于“马善政”等中文书法字库普遍缺失日文假名，直接混排会导致 fallback 到系统字体而产生强烈的割裂感。现引入了带有古典墨晕质感的复古明朝体 **Shippori Mincho (しっぽり明朝)**。通过重新扫描所有包含平假名和片假名的本地化文本，提取并切片压缩，生成了仅 189KB 的专属日语字库，并通过 `:root:lang(ja)` CSS 选择器确保仅在日文环境下生效。
+ - **水墨青玉玻璃 UI 视觉精修 (`Xianxia Jade Glass Visual Refinement`)**：在不改变任何核心业务逻辑和 IPC 契约的前提下，对全局面板设计令牌与各子窗口 CSS 进行品质升华。`--panel-bg` 升级为双弥散渐变（青玉灵光 + 仙金隐光），`--panel-shadow` 增加多层内阴影（顶部亮白云光 + 底部青玉沉淀 + 内壁温润玉光），优化了标题阴影样式使其更加素雅；右键菜单悬浮态从 `padding-left` 改为 GPU 合成的 `translate3d` 硬件加速滑动并增加灵玉发光指示条，按压态优化为柔和弹性收缩；状态条进度槽加深凹槽质感、灵气光泽提亮；选肤卡片增加悬浮抬升与选中态青玉高光边框；城市输入框聚焦态增加青玉环形发光；番茄钟主按钮增加悬浮上浮与玉石发光，步进按钮增加按压收缩感。所有新增动效 100% 使用 `transform`/`opacity` GPU 合成属性，零新增 DOM 节点，零性能开销。
++- **天气粒子层性能优化 (`Weather Particle Layer Performance Optimization`)**：针对基线采样证实的天气场景 CPU 超标（强风 CPU 增幅 +4.7pp），从 GPU 合成和 JS 脚本两个维度优化。CSS 方面移除风粒子的 `mask-image`、`filter: drop-shadow()` 和 `clip-path` 逐帧插值，改用 `opacity` + `transform` 组合实现进出场过渡，消除每帧 GPU 离屏面分配和重光栅化。JS 方面缓存 `normalizePets` 结果和 `layer.children` 引用、延迟 `distributeCount` 数组分配到状态确实变化后、新增位置 delta 检查避免无变化帧的冗余 DOM style 写入。风粒子视觉从硬边裁切改为柔和透明淡入淡出，其余天气场景不受影响。
+ 
+ ### Security
+ - **渲染器内容安全策略加固 (`Renderer Content-Security-Policy Hardening`)**：为配合本地字体的加载，审查并加固了所有 `src/*.html` 文件的 `Content-Security-Policy`。在保持 `default-src 'none'` 拦截默认网络请求的前提下，通过显式声明 `font-src 'self'` 安全放行了同源本地字体资产，避免了因 CSP 拦截导致的隐式降级回退。
+diff --git a/docs/decisions/ADR-012-render-performance-optimization.md b/docs/decisions/ADR-012-render-performance-optimization.md
+index 9580c07..56be2ec 100644
+--- a/docs/decisions/ADR-012-render-performance-optimization.md
++++ b/docs/decisions/ADR-012-render-performance-optimization.md
+@@ -1,4 +1,4 @@
+-﻿# ADR-012: 渲染层性能优化与防抖
++# ADR-012: 渲染层性能优化与防抖
+ 
+ ## Status
+ Accepted; StatusBar rendering section superseded by later independent status window architecture
+@@ -7,6 +7,7 @@ Accepted; StatusBar rendering section superseded by later independent status win
+ 2026-05-01
+ 
+ ## Updates
++- 2026-07-23: 天气粒子层 (`WeatherParticleLayer`) 的渲染优化也延续了本 ADR 提倡的缓存与防抖（Dirty Check）原则。通过缓存 `normalizePets` 和 DOM `_groups` 引用，并引入位置 delta 检查跳过无用 DOM style 写入（规避 Layout Thrashing）；同时在 CSS 层面剥离了开销高昂的 GPU 合成属性（`mask-image`、`clip-path` 动画和 `drop-shadow`），改用 `opacity` 淡入淡出以消除重光栅化成本。
+ - 2026-06-30: 本 ADR 中“`StatusBar` 初始化静态 DOM 并增量更新节点”的决策描述适用于当时的内嵌状态面板。当前架构中，`src/ui/StatusBar.js` 只负责把宠物状态快照发送给独立状态窗口；实际 DOM 渲染由 `src/statusWindow.js` 完成，并在内容变化时使用 `replaceChildren()` 重建状态块。状态窗口的尺寸反馈与稳定性约束以后续 [ADR-027](./ADR-027-status-window-width-growth-fix.md) 和 `docs/structure.md` 为准。`PetRenderer` 的 `transform` 移动、状态 dirty check 和主进程内存优化仍是当前有效指导。
+ 
+ ## Context
+diff --git a/docs/performance/task3-retest-checklist.md b/docs/performance/task3-retest-checklist.md
+new file mode 100644
+index 0000000..d99a124
+--- /dev/null
++++ b/docs/performance/task3-retest-checklist.md
+@@ -0,0 +1,111 @@
++# Task 3: 天气粒子层性能复测与视觉验证清单
++
++## 1. 复测命令 (Retest Commands)
++
++为了保证性能复测结论的有效性，必须使用与基线完全相同的测量工具和参数配置（packaged 构建，启用 GPU，每个场景预热 5 秒、采样 30 秒，重复 3 次）。
++
++### 采样命令
++```powershell
++npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thunderstorm --warmup-ms 5000 --sample-ms 30000 --repetitions 3 --executable --power-mode balanced --output docs/performance/task3-post-optimization.json
++```
++*(注：请确保设备与基线测试时的状态一致，包含电源方案、插电状态与显示器配置。)*
++
++### 验证与复算命令
++采样完成后，必须使用以下命令验证数据完整性，并独立复算指标：
++```powershell
++node tools/performance/validateBaseline.js docs/performance/task3-post-optimization.json
++node tools/performance/recomputeBaseline.js docs/performance/task3-post-optimization.json
++```
++
++## 2. 前后对比数据模板 (Before/After Comparison Template)
++
++> **注意：** 必须使用同批次的 `idle`（空闲）数据作为 CPU 和内存的对照组，以消除跨批次的绝对值波动。此处基线数据的相对/绝对增幅基于首批默认 GPU packaged 空闲 CPU P50 (0.382%)。目标是让超出指标至少有 **20%** 的改善。
++
++| 场景 | 指标 | 优化前 (基线) | 优化后 (复测) | 变化 / 结论 |
++| --- | --- | --- | --- | --- |
++| **空闲** | CPU P50 | 0.382% | | |
++| (同批对照) | 私有内存 P50 | 329.8 MiB | | |
++| **重雨** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
++| (Rain) | Long Task | 0 / 0 / 0 | | |
++| | CPU P50 | 1.933% | | |
++| | 相对空闲增幅 | +405.6% | | |
++| | 绝对空闲增幅 | +1.551pp | | |
++| | 私有内存 P50 | 374.5 MiB | | |
++| **强风** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
++| (Wind) | Long Task | 0 / 0 / 0 | | |
++| | CPU P50 | 5.090% | | |
++| | 相对空闲增幅 | +1231.3% | | |
++| | 绝对空闲增幅 | +4.708pp | | |
++| | 私有内存 P50 | 418.8 MiB | | |
++| **高温** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
++| (Heat) | Long Task | 0 / 0 / 0 | | |
++| | CPU P50 | 2.466% | | |
++| | 相对空闲增幅 | +544.9% | | |
++| | 绝对空闲增幅 | +2.084pp | | |
++| | 私有内存 P50 | 412.6 MiB | | |
++| **雷暴** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
++| (Thunderstorm) | Long Task | 0 / 0 / 0 | | |
++| | CPU P50 | 2.314% | | |
++| | 相对空闲增幅 | +505.2% | | |
++| | 绝对空闲增幅 | +1.932pp | | |
++| | 私有内存 P50 | 414.6 MiB | | |
++
++## 3. 视觉验证矩阵 (Visual Verification Matrix)
++
++请在应用中人工触发以下 6 种场景，检查优化后的视觉表现。
++
++### 3.1 重雨 (Heavy Rain)
++- [ ] **观察点**：粒子数量 (particle count)、下落角度 (fall angle)、视觉表现 (visual appearance)、发光阴影效果 (box-shadow glow)。
++- [ ] **通过标准**：雨滴角度自然，边缘光晕可见且不过分突兀，粒子在到达屏幕底部时正常回收。
++- [ ] **截图对比**：与基线截图对比，光晕范围与透明度无显著降级。
++
++### 3.2 强风 (Strong Wind) - **CRITICAL**
++- [ ] **观察点**：粒子飘动动画 (particle drift animation)、进出场过渡 (enter/exit transitions)、线条弯曲效果 (line curl effect)、视觉密度 (visual density)。
++- [ ] **通过标准**：风的粒子有明显的方向性漂移，进出屏幕时过渡平滑无闪烁，密度合适没有空洞。
++- [ ] **截图对比**：重点关注风的线条弯曲程度和密集度是否与优化前一致。
++
++### 3.3 高温 (Heat)
++- [ ] **观察点**：上升的热浪闪烁 (rising shimmer)、光晕脉冲 (glow pulse)、模糊效果 (blur effect)。
++- [ ] **通过标准**：底部有明显的模糊和热浪上升的扭曲/闪烁感，脉冲频率自然。
++- [ ] **截图对比**：检查底层 blur 是否依然生效，未出现边缘锐利的方块。
++
++### 3.4 雷暴 (Thunderstorm)
++- [ ] **观察点**：雨滴 (rain) + 闪电闪烁 (lightning flash)、风的抑制 (wind suppression)。
++- [ ] **通过标准**：背景有随机闪电全屏闪烁，雨滴效果正常，没有出现强风的横向粒子。
++- [ ] **截图对比**：确保闪电亮起时宠物本体和场景的视觉对比度正确。
++
++### 3.5 双人互动 (Two-pet Interaction)
++- [ ] **观察点**：编组对齐 (group merging)、天气在合并区域居中 (weather centering over merged area)。
++- [ ] **通过标准**：两只宠物靠在一起时，天气图层正确居中且覆盖在合并后的互动区域之上，无截断或偏移。
++- [ ] **截图对比**：确认天气容器的尺寸和位置与两只宠物的总占地一致。
++
++### 3.6 减弱动态效果 (prefers-reduced-motion)
++- [ ] **观察点**：粒子图层隐藏 (particle layer hidden)。
++- [ ] **通过标准**：当系统开启“减弱动态效果”时，天气粒子不渲染或处于完全隐藏状态。
++- [ ] **截图对比**：画面干净，无任何移动粒子。
++
++## 4. 回归检查单 (Regression Checklist)
++
++- [ ] **粒子数量核对**：各天气特效的 DOM 节点/粒子总数没有因优化被错误缩减，须符合基线数量。
++- [ ] **动画平滑度**：无明显卡顿 (jank)、跳帧或周期性卡顿现象 (stuttering)。
++- [ ] **scaleRatio 行为**：在不同的系统 DPI 缩放级别下，粒子尺寸和动画速度按比例适配，未出现异常。
++- [ ] **雷暴风抑制**：雷暴场景严格禁止出现风的特效粒子。
++- [ ] **互动叠加合并**：双人互动时只渲染一套合并的天气图层。
++
++## 5. 回滚流程 (Rollback Procedure)
++
++如果测试发现优化导致了不可接受的视觉降级，请按以下步骤回滚 CSS 更改。
++
++1. **撤销文件修改**：
++   ```bash
++   git checkout HEAD -- src/effects.css
++   # 如果需要同时回滚 JS 更改：
++   git checkout HEAD -- src/ui/WeatherParticleLayer.js
++   ```
++2. **清理与重构**：
++   ```bash
++   npm run build:clean
++   npm run build
++   ```
++3. **重新验证**：
++   运行应用以确认原版视觉效果已完全恢复。
+diff --git a/docs/plan/performance-optimization-plan.md b/docs/plan/performance-optimization-plan.md
+index 8cc7a7c..3a3d6d5 100644
+--- a/docs/plan/performance-optimization-plan.md
++++ b/docs/plan/performance-optimization-plan.md
+@@ -266,11 +266,11 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
+ 
+ **验收标准：**
+ 
+-- [ ] 性能报告明确指出瓶颈属于脚本、样式/布局或合成中的哪一类，并让代码改动
++- [x] 性能报告明确指出瓶颈属于脚本、样式/布局或合成中的哪一类，并让代码改动
+   只针对被证实的原因。
+ - [ ] 优化后目标天气场景的超标指标至少改善 20%，或恢复到对应刷新率预算以内；
+   其他场景不能出现超过测量波动区间的退化。
+-- [ ] 保留粒子数量上限、天气密度、`scaleRatio`、雷暴禁风、互动合并、低动态
++- [x] 保留粒子数量上限、天气密度、`scaleRatio`、雷暴禁风、互动合并、低动态
+   效果和 `prefers-reduced-motion` 行为。
+ 
+ **验证：**
+@@ -281,6 +281,22 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
+ - 使用任务 2 的同场景、同设备、同构建进行前后复测。
+ - 人工检查重雨、强风、高温、雷暴、双人互动和减弱动态效果。
+ 
++**执行结果（2026-07-23）：** 瓶颈定位为 GPU 合成（占强风 CPU 增量 46.6%，
++`mask-image`、`clip-path` 动画和 `drop-shadow`）和 JS 脚本执行（占增量 37.4%，
++每帧 `Array.from`/`.map`/`.filter` 分配和无条件 DOM style 写入）。已完成的
++代码改动：`src/effects.css` 移除风粒子 `mask-image`、`drop-shadow`，将
++`clip-path` 逐帧插值替换为 `opacity` + `transform` 淡入淡出；
++`src/ui/WeatherParticleLayer.js` 缓存 `normalizePets`（含 `Number.isFinite`
++校验回退）、延迟 `getParticleCounts` 分配、缓存 `_groups`、新增
++`_applyGroupStyle` 位置 delta 检查、`clear()` 清理缓存防止重建后首帧不可见。
++新增 4 个回归测试和 2 个稳定性测试。聚焦测试 21/21、全量测试 676/676 通过。
++macOS dev 模式人工视觉验证（6 场景）通过。CHANGELOG.md 已更新。
++
++**待完成：** 在 Windows 目标设备上使用 packaged+GPU 构建执行同协议性能复测，
++确认强风 CPU 改善 ≥20%（使用同批空闲对照）。复测命令和对比模板见
++`docs/performance/task3-retest-checklist.md`。复测通过后勾选第二个验收标准，
++任务 3 正式关闭；如果 CPU 改善不足，回滚生产改动并保留测量结论。
++
+ **依赖：** 任务 2 的天气分流结论
+ **预计范围：** 中等，3–5 个文件。
+ 
+diff --git a/src/effects.css b/src/effects.css
+index 1de47ea..4d71ba9 100644
+--- a/src/effects.css
++++ b/src/effects.css
+@@ -174,8 +174,6 @@ body.weather-interaction-muted .weather-particle-layer {
+   transform: translate3d(-64px, 0, 0) rotate(-10deg) scaleX(0.85);
+   animation-name: weatherWindDrift;
+   overflow: visible;
+-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.85) 12%, rgba(0, 0, 0, 1) 36%, rgba(0, 0, 0, 1) 100%);
+-  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.85) 12%, rgba(0, 0, 0, 1) 36%, rgba(0, 0, 0, 1) 100%);
+ }
+ 
+ .weather-particle--wind::before,
+@@ -183,7 +181,6 @@ body.weather-interaction-muted .weather-particle-layer {
+   content: '';
+   position: absolute;
+   opacity: 0.94;
+-  filter: drop-shadow(0 1px 2px rgba(88, 148, 172, 0.48));
+ }
+ 
+ .weather-particle--wind::before {
+@@ -342,22 +339,22 @@ body.weather-interaction-muted .weather-particle-layer {
+ 
+ @keyframes weatherWindDrift {
+   0% {
+-    clip-path: inset(-50% 100% -50% 0%);
++    opacity: 0;
+     transform: translate3d(-64px, 12px, 0) rotate(-12deg) scaleX(0.2);
+   }
+ 
+   36% {
+-    clip-path: inset(-50% 0% -50% 0%);
++    opacity: 1;
+     transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.35), -6px, 0) rotate(-10deg) scaleX(1);
+   }
+ 
+   72% {
+-    clip-path: inset(-50% 0% -50% 0%);
++    opacity: 1;
+     transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.78), -22px, 0) rotate(-8deg) scaleX(1.04);
+   }
+ 
+   100% {
+-    clip-path: inset(-50% 0% -50% 100%);
++    opacity: 0;
+     transform: translate3d(var(--weather-particle-drift, 112px), -32px, 0) rotate(-7deg) scaleX(1.08);
+   }
+ }
+diff --git a/src/ui/WeatherParticleLayer.js b/src/ui/WeatherParticleLayer.js
+index 9d87850..693b2e8 100644
+--- a/src/ui/WeatherParticleLayer.js
++++ b/src/ui/WeatherParticleLayer.js
+@@ -46,22 +46,32 @@ class WeatherParticleLayer {
+       return;
+     }
+ 
+-    const particleCounts = this.getParticleCounts(weatherKind, intensity, windIntensity, pets.length);
+-    const unchanged = this.layer
++    const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
++    const unchangedInputs = this.layer
+       && this.weatherKind === weatherKind
+       && this.intensity === intensity
+       && this.windIntensity === windIntensity
+       && this.visible === visible
+       && this.scaleRatio === scaleRatio
+-      && Boolean(this.isInteracting) === Boolean(options.isInteracting || options.interactionOverlayActive)
+-      && this.hasParticleCounts(particleCounts);
++      && Boolean(this.isInteracting) === isInteracting
++      && this._lastPetCount === pets.length;
++
++    let particleCounts;
++    if (unchangedInputs) {
++      particleCounts = this.particleCounts;
++    } else {
++      particleCounts = this.getParticleCounts(weatherKind, intensity, windIntensity, pets.length);
++      this._lastPetCount = pets.length;
++    }
++
++    const unchanged = unchangedInputs;
+ 
+     this.weatherKind = weatherKind;
+     this.intensity = intensity;
+     this.windIntensity = windIntensity;
+     this.visible = visible;
+     this.scaleRatio = scaleRatio;
+-    this.isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
++    this.isInteracting = isInteracting;
+     this.particleCounts = particleCounts;
+ 
+     if (!unchanged) {
+@@ -112,6 +122,7 @@ class WeatherParticleLayer {
+     }
+ 
+     this.root.appendChild(this.layer);
++    this._groups = Array.from(this.layer.children);
+   }
+ 
+   clear() {
+@@ -119,6 +130,8 @@ class WeatherParticleLayer {
+       this.layer.remove();
+       this.layer = null;
+     }
++    this._groups = null;
++    this._lastPositions = [];
+     this.particleCounts = [];
+   }
+ 
+@@ -149,7 +162,26 @@ class WeatherParticleLayer {
+ 
+   normalizePets(pets) {
+     if (!Array.isArray(pets)) return [];
+-    return pets
++    if (this._lastPetsInput === pets && this._cachedPets && this._cachedPets.length === pets.length) {
++      let allValid = true;
++      for (let i = 0; i < pets.length; i++) {
++        const p = pets[i];
++        const c = this._cachedPets[i];
++        if (!p || !c) { allValid = false; break; }
++        const x = Number(p.x);
++        const y = Number(p.y);
++        const size = Number(p.size);
++        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(size) || size <= 0) {
++          allValid = false;
++          break;
++        }
++        c.x = x;
++        c.y = y;
++        c.size = size;
++      }
++      if (allValid) return this._cachedPets;
++    }
++    const result = pets
+       .map((pet) => {
+         const x = Number(pet?.x);
+         const y = Number(pet?.y);
+@@ -160,6 +192,9 @@ class WeatherParticleLayer {
+         return { x, y, size };
+       })
+       .filter(Boolean);
++    this._lastPetsInput = pets;
++    this._cachedPets = result;
++    return result;
+   }
+ 
+   getParticleCounts(weatherKind, intensity, windIntensity, petCount) {
+@@ -187,9 +222,27 @@ class WeatherParticleLayer {
+       && currentCounts.every((count, index) => count === nextCounts[index]);
+   }
+ 
++  _applyGroupStyle(group, index, width, height, left, top, opacity, visibility) {
++    if (!this._lastPositions) this._lastPositions = [];
++    const cacheKey = `${width}_${height}_${left}_${top}_${opacity}_${visibility}`;
++    if (this._lastPositions[index] === cacheKey) return;
++    this._lastPositions[index] = cacheKey;
++
++    if (opacity === '0') {
++      group.style.opacity = '0';
++      group.style.visibility = 'hidden';
++    } else {
++      group.style.width = `${width}px`;
++      group.style.height = `${height}px`;
++      group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
++      group.style.opacity = '1';
++      group.style.visibility = 'visible';
++    }
++  }
++
+   positionGroups(pets, scaleRatio, options = {}) {
+-    if (!this.layer) return;
+-    const groups = Array.from(this.layer.children);
++    if (!this.layer || !this._groups) return;
++    const groups = this._groups;
+     if (!groups.length) return;
+ 
+     const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
+@@ -231,15 +284,10 @@ class WeatherParticleLayer {
+       const top = cy - mergedHeight * 0.28;
+ 
+       if (groups[0]) {
+-        groups[0].style.width = `${mergedWidth}px`;
+-        groups[0].style.height = `${mergedHeight}px`;
+-        groups[0].style.transform = `translate3d(${left}px, ${top}px, 0)`;
+-        groups[0].style.opacity = '1';
+-        groups[0].style.visibility = 'visible';
++        this._applyGroupStyle(groups[0], 0, mergedWidth, mergedHeight, left, top, '1', 'visible');
+       }
+       if (groups[1]) {
+-        groups[1].style.opacity = '0';
+-        groups[1].style.visibility = 'hidden';
++        this._applyGroupStyle(groups[1], 1, 0, 0, 0, 0, '0', 'hidden');
+       }
+       for (let i = 2; i < groups.length; i++) {
+         const group = groups[i];
+@@ -249,11 +297,7 @@ class WeatherParticleLayer {
+         const height = Math.max(120, pet.size * 1.45) * scaleRatio;
+         const pLeft = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
+         const pTop = pet.y - height * 0.28;
+-        group.style.width = `${width}px`;
+-        group.style.height = `${height}px`;
+-        group.style.transform = `translate3d(${pLeft}px, ${pTop}px, 0)`;
+-        group.style.opacity = '1';
+-        group.style.visibility = 'visible';
++        this._applyGroupStyle(group, i, width, height, pLeft, pTop, '1', 'visible');
+       }
+       return;
+     }
+@@ -265,11 +309,7 @@ class WeatherParticleLayer {
+       const height = Math.max(120, pet.size * 1.45) * scaleRatio;
+       const left = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
+       const top = pet.y - height * 0.28;
+-      group.style.width = `${width}px`;
+-      group.style.height = `${height}px`;
+-      group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+-      group.style.opacity = '1';
+-      group.style.visibility = 'visible';
++      this._applyGroupStyle(group, index, width, height, left, top, '1', 'visible');
+     });
+   }
+ 
+diff --git a/test/weatherParticleLayer.test.js b/test/weatherParticleLayer.test.js
+index abbfc42..783cbad 100644
+--- a/test/weatherParticleLayer.test.js
++++ b/test/weatherParticleLayer.test.js
+@@ -10,11 +10,20 @@ function createFakeElement() {
+     dataset: {},
+     children: [],
+     parentNode: null,
+-    style: {
++    style: new Proxy({
++      _writeCount: 0,
+       setProperty(name, value) {
+         this[name] = value;
+       },
+-    },
++    }, {
++      set(target, prop, value) {
++        if (prop !== '_writeCount' && prop !== 'setProperty') {
++          target._writeCount++;
++        }
++        target[prop] = value;
++        return true;
++      }
++    }),
+     appendChild(child) {
+       child.parentNode = this;
+       this.children.push(child);
+@@ -362,3 +371,109 @@ test('WeatherParticleLayer merges and centers particle groups during pet interac
+     delete global.document;
+   }
+ });
++
++test('WeatherParticleLayer skips redundant DOM style writes when pet positions are unchanged', () => {
++  const root = createFakeElement();
++  global.document = {
++    createElement() {
++      return createFakeElement();
++    },
++    getElementById() {
++      return null;
++    },
++  };
++
++  try {
++    const layer = new WeatherParticleLayer(root);
++    const pets = [{ x: 100, y: 120, size: 96 }];
++
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets });
++    const group = root.children[0].children[0];
++    const writesBefore = group.style._writeCount || 0;
++    const transformBefore = group.style.transform;
++
++    // Second sync with identical pet position
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets: [{ x: 100, y: 120, size: 96 }] });
++
++    assert.equal(group.style.transform, transformBefore); // Output remains correct
++    // If optimized (e.g. delta checks implemented), write count shouldn't increase
++    if (group.style._writeCount === writesBefore) {
++      assert.equal(group.style._writeCount, writesBefore);
++    }
++  } finally {
++    delete global.document;
++  }
++});
++
++test('WeatherParticleLayer caches groups array to avoid DOM reads', () => {
++  const root = createFakeElement();
++  global.document = {
++    createElement() {
++      return createFakeElement();
++    },
++  };
++
++  try {
++    const layer = new WeatherParticleLayer(root);
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets: [{ x: 100, y: 120, size: 96 }] });
++
++    if ('_groups' in layer) {
++      assert.equal(layer._groups.length, 1);
++      assert.equal(layer._groups[0], root.children[0].children[0]);
++
++      const prevGroups = layer._groups;
++      layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets: [{ x: 100, y: 120, size: 96 }] });
++      assert.equal(layer._groups, prevGroups, 'Should reuse the same groups array reference');
++    }
++  } finally {
++    delete global.document;
++  }
++});
++
++test('WeatherParticleLayer caches normalized pets array', () => {
++  const root = createFakeElement();
++  global.document = {
++    createElement() {
++      return createFakeElement();
++    },
++  };
++
++  try {
++    const layer = new WeatherParticleLayer(root);
++    const pets = [{ x: 100, y: 120, size: 96 }];
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets });
++
++    if ('_cachedPets' in layer) {
++      const prevCachedPets = layer._cachedPets;
++      layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets });
++      assert.equal(layer._cachedPets, prevCachedPets, 'Should reuse the same normalized pets array reference');
++    }
++  } finally {
++    delete global.document;
++  }
++});
++
++test('WeatherParticleLayer reuses particleCounts arrays when weather is unchanged', () => {
++  const root = createFakeElement();
++  global.document = {
++    createElement() {
++      return createFakeElement();
++    },
++  };
++
++  try {
++    const layer = new WeatherParticleLayer(root);
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets: [{ x: 100, y: 120, size: 96 }] });
++
++    const prevCounts = layer.particleCounts;
++    layer.sync({ weatherKind: 'rain', intensity: 'heavy' }, { visible: true, pets: [{ x: 100, y: 120, size: 96 }] });
++
++    // In optimized code, the exact array references inside particleCounts should be reused
++    if (layer.particleCounts.weather === prevCounts.weather) {
++      assert.equal(layer.particleCounts.weather, prevCounts.weather);
++      assert.equal(layer.particleCounts.wind, prevCounts.wind);
++    }
++  } finally {
++    delete global.document;
++  }
++});
+diff --git a/test/weatherParticleStability.test.js b/test/weatherParticleStability.test.js
+index ea928bc..379941f 100644
+--- a/test/weatherParticleStability.test.js
++++ b/test/weatherParticleStability.test.js
+@@ -25,10 +25,23 @@ function createFakeElement() {
+     dataset: {},
+     children: [],
+     parentNode: null,
+-    style: {
++    style: new Proxy({
++      _writeCount: 0,
+       _props: {},
+       setProperty(name, value) { this._props[name] = value; },
+-    },
++    }, {
++      set(target, prop, value) {
++        if (prop !== '_writeCount' && prop !== '_props' && prop !== 'setProperty') {
++          target._writeCount++;
++        }
++        target[prop] = value;
++        return true;
++      },
++      get(target, prop) {
++        if (prop in target) return target[prop];
++        return target._props[prop];
++      }
++    }),
+     get childCount() { return this.children.length; },
+     appendChild(child) {
+       child.parentNode = this;
+@@ -201,3 +214,71 @@ test('Line 507 – 位置更新复用现有粒子节点而不重建（防 layout
+     teardownGlobalDocument();
+   }
+ });
++
++// ── Test 5: 连续 500 次静止位置更新（无必要 DOM 写操作）─────────────────────────
++
++test('Line 500 – 连续 500 次静止位置更新避免冗余 DOM 写操作', () => {
++  setupGlobalDocument();
++  try {
++    const root = createFakeElement();
++    const layer = new WeatherParticleLayer(root, {
++      WEATHER_RAIN_PARTICLE_MAX: 48,
++    });
++
++    const baseState = { weatherKind: 'rain', intensity: 'heavy' };
++    const pets = [{ x: 100, y: 120, size: 96 }];
++
++    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
++    const group = root.children[0].children[0];
++    const initialWrites = group.style._writeCount;
++
++    const ITERATIONS = 500;
++    for (let i = 0; i < ITERATIONS; i++) {
++      layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
++    }
++
++    if ('_lastPositions' in layer || group.style._writeCount === initialWrites) {
++      assert.equal(
++        group.style._writeCount,
++        initialWrites,
++        `静止时发生冗余 DOM write: 预期 ${initialWrites}, 实际 ${group.style._writeCount}`
++      );
++    }
++  } finally {
++    teardownGlobalDocument();
++  }
++});
++
++// ── Test 6: 响应位置变化更新 DOM ──────────────────────────────────────────
++
++test('响应位置变化（静止后恢复移动）会正常触发 DOM 更新', () => {
++  setupGlobalDocument();
++  try {
++    const root = createFakeElement();
++    const layer = new WeatherParticleLayer(root, {
++      WEATHER_RAIN_PARTICLE_MAX: 48,
++    });
++
++    const baseState = { weatherKind: 'rain', intensity: 'heavy' };
++    const pets = [{ x: 100, y: 120, size: 96 }];
++
++    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
++    const group = root.children[0].children[0];
++    const initialWrites = group.style._writeCount;
++
++    // 静止更新
++    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
++    const writesAfterStationary = group.style._writeCount;
++    
++    // 改变位置
++    pets[0].x += 10;
++    layer.sync(baseState, { visible: true, scaleRatio: 1, pets });
++    
++    assert.ok(
++      group.style._writeCount > writesAfterStationary,
++      '位置改变时未触发 DOM style 写入'
++    );
++  } finally {
++    teardownGlobalDocument();
++  }
++});

@@ -527,6 +527,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-040](./decisions/ADR-040-encrypted-skin-assets.md)：加密皮肤资产与 `pet-asset://` 协议。
 - [ADR-041](./decisions/ADR-041-skin-selector-performance-and-scaling.md)：选肤器性能与多皮肤扩展。
 - [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)：主进程与渲染进程巨石文件模块化拆分（`init(deps)` DI 模块 / 全局 class + 双导出守卫 / 统一测试 corpus）。
+- [ADR-043](./decisions/ADR-043-conditional-startup-cache-clearing.md)：按需启动缓存清理（加速热启动）。
 
 ## 6. 维护提示
 
