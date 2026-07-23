@@ -210,7 +210,12 @@ qijiu-desktop-pet/
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
+│  ├─ measure-electron-performance.js   # Electron 性能采样 CLI：参数校验、JSON 输出及 dev/packaged 入口
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
+│  ├─ performance/
+│  │  ├─ electronRunner.js              # Playwright Electron 启动、隔离 profile、环境/进程采样和场景汇总
+│  │  ├─ metrics.js                     # 帧、Long Task 与分进程 CPU/内存的确定性统计函数
+│  │  └─ scenarios.js                   # 空闲/行走/天气场景驱动及 renderer rAF/Long Task 采样
 │  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
@@ -468,7 +473,19 @@ npm run test:font
 npm run qa:electron:smoke
 ```
 
-该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。它会确认主渲染进程和选肤页都已就绪，校验选肤页专用 preload、内置皮肤卡数量与当前皮肤标记，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
+该命令通过 Playwright 启动 Electron，并同时使用临时 `--user-data-dir` 和 `DESKTOP_PET_USER_DATA_DIR`，确保 Chromium profile 与 `electron-store` 使用的应用 userData 都被隔离。启动器会移除宿主环境中的 `ELECTRON_RUN_AS_NODE`，保证 Electron 以桌面应用模式运行。它会确认主渲染进程和选肤页都已就绪，校验选肤页专用 preload、内置皮肤卡数量与当前皮肤标记，并在退出后清理临时 profile。自动化 QA 应使用该命令而不直接复用真实用户 profile，避免 profile lock、`DevToolsActivePort` 权限问题或真实 `config.json` 被测试实例覆盖。针对透明窗口右键菜单等视觉检查，先运行冒烟命令确认基础启动正常，再通过 Playwright 捕获目标窗口，检查对比度、裁切、间距和控制台错误。
+
+建立或复测性能基线时使用独立命令：
+
+```bash
+npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thunderstorm --power-mode balanced --output docs/performance/sample.json
+```
+
+性能命令复用已有 renderer 调试入口确定性切换宠物和天气状态，不新增特权 IPC。默认
+使用新建临时 profile 并在退出后清理；传入 `--profile <path>` 时会跨启动复用该专用
+测试 profile，且工具不会自动删除显式目录。使用 `--executable <path>` 可采集 packaged
+应用，`--disable-gpu` 数据必须与真实 GPU 数据分开报告。完整参数、输出结构和测量纪律
+见 `docs/performance/README.md`。
 
 ## 5. 架构决策索引
 

@@ -19,6 +19,12 @@ function getElectronExecutable() {
 async function main() {
   let electronApp;
   try {
+    const launchEnv = {
+      ...process.env,
+      DESKTOP_PET_USER_DATA_DIR: userDataDir,
+      ELECTRON_ENABLE_LOGGING: '1',
+    };
+    delete launchEnv.ELECTRON_RUN_AS_NODE;
     electronApp = await electron.launch({
       executablePath: getElectronExecutable(),
       args: [
@@ -29,11 +35,7 @@ async function main() {
         '.',
       ],
       cwd: projectRoot,
-      env: {
-        ...process.env,
-        DESKTOP_PET_USER_DATA_DIR: userDataDir,
-        ELECTRON_ENABLE_LOGGING: '1',
-      },
+      env: launchEnv,
       timeout: 30000,
     });
 

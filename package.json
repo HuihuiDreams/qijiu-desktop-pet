@@ -8,6 +8,7 @@
     "test": "node --test test/*.test.js",
     "test:font": "playwright test test/checkFont.spec.js",
     "qa:electron:smoke": "node tools/playwright-electron-smoke.js",
+    "qa:electron:performance": "node tools/measure-electron-performance.js",
     "protect:assets": "node scripts/protect-assets.js",
     "prebuild": "node scripts/protect-assets.js",
     "build": "electron-builder",
