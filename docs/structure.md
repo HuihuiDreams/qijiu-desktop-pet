@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-07-22
+最后更新：2026-07-24
 
 ## 1. 架构总览
 
@@ -29,6 +29,7 @@ graph TB
             PomodoroService["PomodoroService"]
             WeatherSyncController["WeatherSyncController"]
             BreakReminderController["BreakReminderController"]
+            StartupCachePolicy["StartupCachePolicy"]
             FinalSaveService["FinalSaveService"]
         end
 
@@ -114,6 +115,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、presentationGuard 接线、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
+├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
 ├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data、set/get-auto-launch
 ├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY）
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
@@ -224,6 +226,7 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
+   ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # Git 提交和推送工作流
    ├─ release-workflow.md               # 发布流程
    ├─ release-code-signing.md           # 代码签名说明

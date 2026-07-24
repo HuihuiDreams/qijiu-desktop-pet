@@ -25,3 +25,7 @@ security-scans/
 !.agents/skills/desktop-pet-maintenance/**
 docs/source-assets/
 .claude/
+docs/performance/raw/
+docs/performance/*.json
+!docs/performance/README.md
+

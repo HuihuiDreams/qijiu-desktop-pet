@@ -17,6 +17,7 @@
 - **日语字体不生效问题修复 (`Japanese Font Loading Fix`)**：修复了在日语环境下切换字体时，因为主窗口 `index.html` 对 `index.css?v=3` 进行了本地缓存，导致新加入的字体覆盖样式未能被正确读取的问题。同时强化了 CSS 多语言选择器，通过为主窗口和各悬浮子窗口统一注入 `data-locale="ja"` 属性，配合 `html[data-locale="ja"]` 选择器，彻底规避了 Chromium 引擎在动态修改 `lang` 属性时可能偶发的 `:lang()` 伪类样式不重绘 Bug。
 
 ### Changed
+- **性能测试采样 JSON 存储规则与 Git 索引优化 (`Performance Benchmark JSON Ignored in Git`)**：在 [.gitignore](file:///Users/huihui/Documents/qijiu-desktop-pet/.gitignore) 中添加了对 `docs/performance/raw/` 及 `docs/performance/*.json` 的忽略规则，并清除了现有原始采样 JSON 文件的 Git 索引追踪（本地物理文件保留），避免每次性能测试生成的大体积逐帧采样 JSON 对 Git 仓库与提交 Diff 造成污染。
 - **启动缓存策略优化 (`Startup Cache Strategy Optimization`)**：优化了宠物窗体无条件清理缓存的旧有逻辑。现在启动时，仅在应用版本号 (`app.getVersion()`) 发生变更、进入开发模式 (`!app.isPackaged`)，或带有指定的 `--clear-cache` 命令行参数启动时，才会执行完整的 `session.clearCache()` 操作。这一优化显著提升了常规热启动场景下的性能，热启动中位数耗时降低约 39ms (提升 20%)，满足了性能优化目标。详见 [ADR-043](./docs/decisions/ADR-043-conditional-startup-cache-clearing.md)。
 - **日语展示字体改为 Yuji Syuku (`Japanese Calligraphic Display Font`)**：日语界面的标题和交互展示文字改用带有传统书写笔势的 **Yuji Syuku**，正文继续使用 Shippori Mincho 以保持小字号清晰；字体按当前日语文案切片为本地 WOFF2，并随资源附带 SIL Open Font License 1.1 与版权声明，确保可安全随 Electron 安装包再分发。
 - **马善政字体按需切片与全局内嵌 (`Ma Shan Zheng Font Subsetting & Embedding`)**：为保证各悬浮窗（如状态、番茄钟、城市设置、选肤等）标题的“水墨青玉书法”视觉体验在不同系统环境下的一致性，首次引入本地 `.woff2` 字体内嵌。通过编写定制脚本提取项目中真实使用的 1213 个独立中英文字符（闭集），将 5.6MB 的原版 `MaShanZheng-Regular.ttf` 极度压缩为仅 439KB 的切片版 WebFont，兼顾了开箱即用的视觉保真度与轻量化性能目标。
