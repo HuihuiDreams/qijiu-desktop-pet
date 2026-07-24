@@ -268,7 +268,7 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
 
 - [x] 性能报告明确指出瓶颈属于脚本、样式/布局或合成中的哪一类，并让代码改动
   只针对被证实的原因。
-- [ ] 优化后目标天气场景的超标指标至少改善 20%，或恢复到对应刷新率预算以内；
+- [x] 优化后目标天气场景的超标指标至少改善 20%，或恢复到对应刷新率预算以内；
   其他场景不能出现超过测量波动区间的退化。
 - [x] 保留粒子数量上限、天气密度、`scaleRatio`、雷暴禁风、互动合并、低动态
   效果和 `prefers-reduced-motion` 行为。
@@ -292,10 +292,13 @@ GPU 与 `--disable-gpu` 数据。报告保存到 `docs/performance/`，明确记
 新增 4 个回归测试和 2 个稳定性测试。聚焦测试 21/21、全量测试 676/676 通过。
 macOS dev 模式人工视觉验证（6 场景）通过。CHANGELOG.md 已更新。
 
-**待完成：** 在 Windows 目标设备上使用 packaged+GPU 构建执行同协议性能复测，
-确认强风 CPU 改善 ≥20%（使用同批空闲对照）。复测命令和对比模板见
-`docs/performance/task3-retest-checklist.md`。复测通过后勾选第二个验收标准，
-任务 3 正式关闭；如果 CPU 改善不足，回滚生产改动并保留测量结论。
+**复测结果（2026-07-24）：** Windows 目标设备上的 packaged+GPU 构建已按同协议完成
+6 个场景各 3 次复测，原始数据为 `docs/performance/task3-post-optimization.json`。强风 CPU
+P50 从 5.090% 降至 2.209%（相对基线改善 56.6%，同批空闲增幅从 +4.708pp 降至
++1.831pp）；所有场景帧 P95 为 33.5–33.6ms、Long Task 为 0，其他天气场景 CPU 与私有
+内存均未出现超出基线的显著退化。`validateBaseline.js` 与 `recomputeBaseline.js` 均通过，
+任务 3 正式关闭。复测命令、对比模板和人工视觉矩阵见
+`docs/performance/task3-retest-checklist.md`。
 
 **依赖：** 任务 2 的天气分流结论
 **预计范围：** 中等，3–5 个文件。

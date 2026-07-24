@@ -3,7 +3,8 @@
 本目录存放 DeskPet 的性能采样说明与后续基线报告。采样工具用于建立证据，不自动
 判定或修改生产性能策略；正式分流结论应写入独立 Markdown 报告并引用原始 JSON。
 启动器会隔离 userData，并移除宿主环境中的 `ELECTRON_RUN_AS_NODE`，确保 Electron
-以桌面应用模式运行。
+以桌面应用模式运行。为与冒烟检查保持一致，Playwright 测量子进程还会使用
+`--disable-dev-shm-usage` 与 `--no-sandbox`，这些参数不会进入正式发布应用。
 
 ## 快速验证
 

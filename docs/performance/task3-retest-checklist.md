@@ -6,9 +6,9 @@
 
 ### 采样命令
 ```powershell
-npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thunderstorm --warmup-ms 5000 --sample-ms 30000 --repetitions 3 --executable --power-mode balanced --output docs/performance/task3-post-optimization.json
+npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thunderstorm --warmup-ms 5000 --sample-ms 30000 --repetitions 3 --executable .\dist\win-unpacked\七九爱宠.exe --profile .\scratch\task3-performance-profile --power-mode balanced --output docs/performance/task3-post-optimization.json
 ```
-*(注：请确保设备与基线测试时的状态一致，包含电源方案、插电状态与显示器配置。)*
+*(注：请确保设备与基线测试时的状态一致，包含电源方案、插电状态与显示器配置。`--executable` 必须提供 packaged 可执行文件路径；指定 `--profile` 可避免 Windows 在清理临时 profile 时出现 `EPERM`。)*
 
 ### 验证与复算命令
 采样完成后，必须使用以下命令验证数据完整性，并独立复算指标：
@@ -17,38 +17,44 @@ node tools/performance/validateBaseline.js docs/performance/task3-post-optimizat
 node tools/performance/recomputeBaseline.js docs/performance/task3-post-optimization.json
 ```
 
+### 2026-07-24 执行记录：通过
+
+- 当前 packaged + GPU 构建在隔离 profile 下完成 6 个场景各 3 次的正式采样；原始结果见 [`task3-post-optimization.json`](task3-post-optimization.json)。
+- `validateBaseline.js` 与 `recomputeBaseline.js` 均通过。为兼容 Windows 受限子进程环境，性能启动器使用与既有冒烟检查一致的 QA 启动参数；这些参数不影响正式发布应用。
+- 强风 CPU P50 相比基线降低 56.6%，满足至少改善 20% 的验收标准；所有场景 Long Task 为 0，帧 P95 保持在 33.5–33.6ms。
+
 ## 2. 前后对比数据模板 (Before/After Comparison Template)
 
 > **注意：** 必须使用同批次的 `idle`（空闲）数据作为 CPU 和内存的对照组，以消除跨批次的绝对值波动。此处基线数据的相对/绝对增幅基于首批默认 GPU packaged 空闲 CPU P50 (0.382%)。目标是让超出指标至少有 **20%** 的改善。
 
 | 场景 | 指标 | 优化前 (基线) | 优化后 (复测) | 变化 / 结论 |
 | --- | --- | --- | --- | --- |
-| **空闲** | CPU P50 | 0.382% | | |
-| (同批对照) | 私有内存 P50 | 329.8 MiB | | |
-| **重雨** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
-| (Rain) | Long Task | 0 / 0 / 0 | | |
-| | CPU P50 | 1.933% | | |
-| | 相对空闲增幅 | +405.6% | | |
-| | 绝对空闲增幅 | +1.551pp | | |
-| | 私有内存 P50 | 374.5 MiB | | |
-| **强风** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
-| (Wind) | Long Task | 0 / 0 / 0 | | |
-| | CPU P50 | 5.090% | | |
-| | 相对空闲增幅 | +1231.3% | | |
-| | 绝对空闲增幅 | +4.708pp | | |
-| | 私有内存 P50 | 418.8 MiB | | |
-| **高温** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
-| (Heat) | Long Task | 0 / 0 / 0 | | |
-| | CPU P50 | 2.466% | | |
-| | 相对空闲增幅 | +544.9% | | |
-| | 绝对空闲增幅 | +2.084pp | | |
-| | 私有内存 P50 | 412.6 MiB | | |
-| **雷暴** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | | |
-| (Thunderstorm) | Long Task | 0 / 0 / 0 | | |
-| | CPU P50 | 2.314% | | |
-| | 相对空闲增幅 | +505.2% | | |
-| | 绝对空闲增幅 | +1.932pp | | |
-| | 私有内存 P50 | 414.6 MiB | | |
+| **空闲** | CPU P50 | 0.382% | 0.379% | -0.003pp |
+| (同批对照) | 私有内存 P50 | 329.8 MiB | 318.5 MiB | -11.3 MiB |
+| **重雨** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | 33.6 / 33.5 / 33.6 | 刷新率预算内 |
+| (Rain) | Long Task | 0 / 0 / 0 | 0 / 0 / 0 | 无回归 |
+| | CPU P50 | 1.933% | 1.868% | -3.4% |
+| | 相对空闲增幅 | +405.6% | +393.1% | 降低 12.5pp |
+| | 绝对空闲增幅 | +1.551pp | +1.489pp | 降低 0.062pp |
+| | 私有内存 P50 | 374.5 MiB | 382.1 MiB | +7.6 MiB |
+| **强风** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | 33.5 / 33.5 / 33.6 | 刷新率预算内 |
+| (Wind) | Long Task | 0 / 0 / 0 | 0 / 0 / 0 | 无回归 |
+| | CPU P50 | 5.090% | 2.209% | **降低 56.6%，通过** |
+| | 相对空闲增幅 | +1231.3% | +483.2% | 降低 748.1pp |
+| | 绝对空闲增幅 | +4.708pp | +1.831pp | 降低 2.877pp |
+| | 私有内存 P50 | 418.8 MiB | 379.0 MiB | -39.8 MiB |
+| **高温** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | 33.6 / 33.6 / 33.6 | 刷新率预算内 |
+| (Heat) | Long Task | 0 / 0 / 0 | 0 / 0 / 0 | 无回归 |
+| | CPU P50 | 2.466% | 2.319% | -6.0% |
+| | 相对空闲增幅 | +544.9% | +512.1% | 降低 32.8pp |
+| | 绝对空闲增幅 | +2.084pp | +1.940pp | 降低 0.144pp |
+| | 私有内存 P50 | 412.6 MiB | 381.9 MiB | -30.7 MiB |
+| **雷暴** | 帧 P95 (ms) | 33.5 / 33.5 / 33.5 | 33.5 / 33.5 / 33.5 | 刷新率预算内 |
+| (Thunderstorm) | Long Task | 0 / 0 / 0 | 0 / 0 / 0 | 无回归 |
+| | CPU P50 | 2.314% | 2.148% | -7.2% |
+| | 相对空闲增幅 | +505.2% | +467.0% | 降低 38.2pp |
+| | 绝对空闲增幅 | +1.932pp | +1.769pp | 降低 0.163pp |
+| | 私有内存 P50 | 414.6 MiB | 384.7 MiB | -29.9 MiB |
 
 ## 3. 视觉验证矩阵 (Visual Verification Matrix)
 

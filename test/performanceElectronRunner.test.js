@@ -47,7 +47,13 @@ test('buildLaunchOptions isolates user data and launches a dev build from the pr
     buildType: 'dev',
     inheritedEnv: { ELECTRON_RUN_AS_NODE: '1', PATH: 'C:/bin' },
   });
-  assert.deepEqual(options.args, ['--user-data-dir=C:/profile', '--disable-gpu', '.']);
+  assert.deepEqual(options.args, [
+    '--user-data-dir=C:/profile',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--no-sandbox',
+    '.',
+  ]);
   assert.equal(options.cwd, 'C:/project');
   assert.equal(options.executablePath, 'C:/project/node_modules/electron/dist/electron.exe');
   assert.equal(options.env.ELECTRON_RUN_AS_NODE, undefined);
@@ -59,7 +65,7 @@ test('buildLaunchOptions does not add the project path for a packaged executable
     buildLaunchOptions({
       projectRoot: 'C:/project', executablePath: 'C:/app/Desktop Pet.exe', userDataDir: 'C:/profile', buildType: 'packaged',
     }).args,
-    ['--user-data-dir=C:/profile'],
+    ['--user-data-dir=C:/profile', '--disable-dev-shm-usage', '--no-sandbox'],
   );
 });
 

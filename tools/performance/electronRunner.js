@@ -35,6 +35,7 @@ function buildLaunchOptions({
 }) {
   const args = [`--user-data-dir=${userDataDir}`];
   if (disableGpu) args.push('--disable-gpu');
+  args.push('--disable-dev-shm-usage', '--no-sandbox');
   if (buildType === 'dev') args.push('.');
   const launchEnv = { ...inheritedEnv, DESKTOP_PET_USER_DATA_DIR: userDataDir };
   delete launchEnv.ELECTRON_RUN_AS_NODE;
