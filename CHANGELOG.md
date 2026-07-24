@@ -9,6 +9,8 @@
 - **Electron 可复现性能采样工具 (`Electron Reproducible Performance Sampler`)**：新增隔离 userData 的 `npm run qa:electron:performance` 命令，可确定性采集空闲、行走、重雨、强风、高温和雷暴场景的帧间隔、Long Task、DOM/粒子数及 Electron 分进程 CPU、私有内存和工作集；支持真实 GPU/`--disable-gpu`、dev/packaged、显式刷新率、电源模式标签、可复用测试 profile 和 JSON 输出，并按场景保留原始样本及汇总结果，为后续只针对已证实瓶颈的优化提供统一基线。
 
 ### Fixed
+- 将启动缓存清理条件提取为可测试的策略模块，覆盖开发态、手动清理、首次启动、版本升级与热启动分支，避免 Electron 集成测试残留进程导致测试套件卡住。
+- 移除误提交的 `recent_commit.patch` 临时补丁文件，避免无关文件进入发布包。
 - **Electron QA 启动环境兼容 (`Electron QA Launch Environment Compatibility`)**：Electron 冒烟测试与性能采样启动器会从子进程环境中移除 `ELECTRON_RUN_AS_NODE`，并使用一致的 `--disable-dev-shm-usage`、`--no-sandbox` QA 子进程参数，避免在 Codex 等将 Electron 模块作为 Node 运行的宿主环境中继承该变量或因 Windows 受限子进程环境导致桌面应用启动即退出；这些参数不会进入正式发布应用。
 - **测试依赖与运行器修复 (`Test Dependency & Runner Fix`)**：补充 `@playwright/test` 开发依赖，并修复无效的 `glob` 安装；`npm test` 现仅执行 Node.js `*.test.js` 文件，字体端到端检查改由独立的 `npm run test:font` 使用 Playwright 执行，避免不同测试运行器互相误加载。
 - **macOS 选肤窗口焦点交接修复 (`macOS Skin Selector Focus Handoff Fix`)**：选肤窗口的所有正常关闭路径统一经 `closeSkinSelectorWindow()` 处理；关闭期间会忽略由自身 `.close()` 触发的 `blur`，待 `closed` 后再复位状态。针对 macOS 在窗口切换时短暂返回无焦点窗口的事件顺序，失焦关闭会等待应用级 `browser-window-focus` 完成交接，并以 `app.isActive()` 兜底判断应用是否仍在前台：切换至番茄钟、修仙状态、城市设置等 DeskPet 窗口或关闭这些窗口时保持选肤窗及其预览状态；仅焦点确实离开应用时才取消预览并关闭。

@@ -14,6 +14,7 @@ const windowManager = require('./WindowManager');
 const citySettingWindowModule = require('./CitySettingWindow');
 const FinalSaveService = require('../services/FinalSaveService');
 const { isSenderMainWindow } = require('../services/IpcSenderAuthorization');
+const { shouldClearStartupCache } = require('../services/StartupCachePolicy');
 
 let deps = {};
 let keepOnTopTimer = null;     // 置顶守卫计时器
@@ -133,7 +134,12 @@ function createWindow() {
   const isDev = deps.app ? (!deps.app.isPackaged && !process.env.DESKTOP_PET_SIMULATE_PACKAGED) : false;
   const forceClear = deps.app ? deps.app.commandLine.hasSwitch('clear-cache') : false;
 
-  if (isDev || forceClear || lastCacheVersion !== currentVersion) {
+  if (shouldClearStartupCache({
+    isDevelopment: isDev,
+    forceClear,
+    lastCacheVersion,
+    currentVersion,
+  })) {
     windowManager.mainWindow.webContents.session.clearCache().finally(() => {
       if (store && currentVersion) store.set('lastCacheVersion', currentVersion);
       if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
