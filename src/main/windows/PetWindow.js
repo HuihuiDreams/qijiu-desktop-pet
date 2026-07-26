@@ -131,7 +131,7 @@ function createWindow() {
   const currentVersion = deps.app ? deps.app.getVersion() : null;
   const store = deps.StoreManager ? deps.StoreManager.getStore() : null;
   const lastCacheVersion = store ? store.get('lastCacheVersion') : null;
-  const isDev = deps.app ? (!deps.app.isPackaged && !process.env.DESKTOP_PET_SIMULATE_PACKAGED) : false;
+  const isDev = deps.app ? (!deps.app.isPackaged && process.env.DESKTOP_PET_SIMULATE_PACKAGED !== '1') : false;
   const forceClear = deps.app ? deps.app.commandLine.hasSwitch('clear-cache') : false;
 
   if (shouldClearStartupCache({
@@ -140,8 +140,11 @@ function createWindow() {
     lastCacheVersion,
     currentVersion,
   })) {
-    windowManager.mainWindow.webContents.session.clearCache().finally(() => {
+    windowManager.mainWindow.webContents.session.clearCache().then(() => {
       if (store && currentVersion) store.set('lastCacheVersion', currentVersion);
+    }).catch((error) => {
+      console.error('Failed to clear startup cache:', error);
+    }).finally(() => {
       if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
         windowManager.mainWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'index.html'));
       }

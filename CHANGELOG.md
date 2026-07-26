@@ -4,11 +4,16 @@
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-07-26
+
 ### Added
 - **Windows 性能基线与量化分流 (`Windows Performance Baseline & Triage`)**：新增 dev/packaged、默认 GPU/`--disable-gpu` 的六场景正式原始样本、三次五分钟空闲样本、强风序列控制复现和无侵入启动缓存探针，并提供协议校验与独立复算工具；基线报告以私有内存为主、工作集为辅，使用同批空闲对照修正跨时段 CPU 波动，对天气 CPU、启动缓存、透明窗口内存和空闲续航逐项给出量化分流。
 - **Electron 可复现性能采样工具 (`Electron Reproducible Performance Sampler`)**：新增隔离 userData 的 `npm run qa:electron:performance` 命令，可确定性采集空闲、行走、重雨、强风、高温和雷暴场景的帧间隔、Long Task、DOM/粒子数及 Electron 分进程 CPU、私有内存和工作集；支持真实 GPU/`--disable-gpu`、dev/packaged、显式刷新率、电源模式标签、可复用测试 profile 和 JSON 输出，并按场景保留原始样本及汇总结果，为后续只针对已证实瓶颈的优化提供统一基线。
 
 ### Fixed
+- **启动缓存清理异常捕获与环境变量检查修复 (`PetWindow Startup Cache & Env Check Fix`)**：修复了在主窗口 `clearCache` 失败时因直接使用 `.finally()` 而意外记录新缓存版本号的问题，现在仅在成功清理时（`.then()`）持久化版本号并安全捕获异常；修复了环境变量 `DESKTOP_PET_SIMULATE_PACKAGED` 的宽松 truthy 检查，防止将 `'0'` 等字符串误判为开启状态。
+- **天气粒子计数的类型结构修正 (`Weather Particle Counts Type Consistency`)**：修复了 `WeatherParticleLayer` 清理方法 `clear()` 中错误地将 `this.particleCounts` 重置为 `[]` 的类型不一致问题，现已恢复为 `{ weather: [], wind: [] }` 结构。
+- **基线报告 GPU 缺失校验兼容保障 (`Baseline Report GPU Validation Test`)**：针对 `validateBaseline.js` 中因无头环境或 CI 环境缺失 GPU 属性而保留的 `gpu: null` 宽容校验策略，补充了专门的回归测试以保障其兼容行为。
 - 将启动缓存清理条件提取为可测试的策略模块，覆盖开发态、手动清理、首次启动、版本升级与热启动分支，避免 Electron 集成测试残留进程导致测试套件卡住。
 - 移除误提交的 `recent_commit.patch` 临时补丁文件，避免无关文件进入发布包。
 - **Electron QA 启动环境兼容 (`Electron QA Launch Environment Compatibility`)**：Electron 冒烟测试与性能采样启动器会从子进程环境中移除 `ELECTRON_RUN_AS_NODE`，并使用一致的 `--disable-dev-shm-usage`、`--no-sandbox` QA 子进程参数，避免在 Codex 等将 Electron 模块作为 Node 运行的宿主环境中继承该变量或因 Windows 受限子进程环境导致桌面应用启动即退出；这些参数不会进入正式发布应用。
@@ -17,6 +22,7 @@
 - **日语字体不生效问题修复 (`Japanese Font Loading Fix`)**：修复了在日语环境下切换字体时，因为主窗口 `index.html` 对 `index.css?v=3` 进行了本地缓存，导致新加入的字体覆盖样式未能被正确读取的问题。同时强化了 CSS 多语言选择器，通过为主窗口和各悬浮子窗口统一注入 `data-locale="ja"` 属性，配合 `html[data-locale="ja"]` 选择器，彻底规避了 Chromium 引擎在动态修改 `lang` 属性时可能偶发的 `:lang()` 伪类样式不重绘 Bug。
 
 ### Changed
+- **探针等待公共逻辑提取 (`Startup Probe Utils Extraction`)**：重构并提取了 `measureStartup.js` 和 `measureStartupCache.js` 中重复定义的 `waitForCompleteProbe` 逻辑至独立的 `tools/performance/probeUtils.js` 模块，通过参数化保留了各自对空缓存探针的独特处理策略。
 - **性能测试采样 JSON 存储规则与 Git 索引优化 (`Performance Benchmark JSON Ignored in Git`)**：在 [.gitignore](file:///Users/huihui/Documents/qijiu-desktop-pet/.gitignore) 中添加了对 `docs/performance/raw/` 及 `docs/performance/*.json` 的忽略规则，并清除了现有原始采样 JSON 文件的 Git 索引追踪（本地物理文件保留），避免每次性能测试生成的大体积逐帧采样 JSON 对 Git 仓库与提交 Diff 造成污染。
 - **启动缓存策略优化 (`Startup Cache Strategy Optimization`)**：优化了宠物窗体无条件清理缓存的旧有逻辑。现在启动时，仅在应用版本号 (`app.getVersion()`) 发生变更、进入开发模式 (`!app.isPackaged`)，或带有指定的 `--clear-cache` 命令行参数启动时，才会执行完整的 `session.clearCache()` 操作。这一优化显著提升了常规热启动场景下的性能，热启动中位数耗时降低约 39ms (提升 20%)，满足了性能优化目标。详见 [ADR-043](./docs/decisions/ADR-043-conditional-startup-cache-clearing.md)。
 - **日语展示字体改为 Yuji Syuku (`Japanese Calligraphic Display Font`)**：日语界面的标题和交互展示文字改用带有传统书写笔势的 **Yuji Syuku**，正文继续使用 Shippori Mincho 以保持小字号清晰；字体按当前日语文案切片为本地 WOFF2，并随资源附带 SIL Open Font License 1.1 与版权声明，确保可安全随 Electron 安装包再分发。

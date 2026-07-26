@@ -132,7 +132,7 @@ class WeatherParticleLayer {
     }
     this._groups = null;
     this._lastPositions = [];
-    this.particleCounts = [];
+    this.particleCounts = { weather: [], wind: [] };
   }
 
   normalizeWeatherKind(kind) {

@@ -6,6 +6,7 @@ const {
   createUserDataProfile,
   getElectronExecutable,
 } = require('./electronRunner');
+const { waitForCompleteProbe } = require('./probeUtils');
 
 function positiveInteger(value, label) {
   const number = Number(value);
@@ -99,17 +100,7 @@ function wait(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function waitForCompleteProbe(electronApp, { timeoutMs = 30000, waitFn = wait } = {}) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() <= deadline) {
-    const probe = await electronApp.evaluate(({ app }) => app.__DESKPET_STARTUP_PROBE || null);
-    if (probe && Number.isFinite(probe.didFinishLoadAtMs) && Number.isFinite(probe.clearCacheMs)) {
-      return probe;
-    }
-    await waitFn(25);
-  }
-  throw new Error('Timed out waiting for the startup probe to complete');
-}
+
 
 async function collectEnvironment(electronApp, powerMode) {
   const appInfo = await electronApp.evaluate(({ app }) => ({

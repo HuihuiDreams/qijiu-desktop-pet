@@ -3,19 +3,7 @@ const path = require('node:path');
 const { _electron: electron } = require('playwright');
 const { createUserDataProfile, getElectronExecutable } = require('./electronRunner');
 const { buildStartupLaunchOptions, assertCompleteProbe } = require('./measureStartup');
-
-async function waitForCompleteProbe(electronApp, { timeoutMs = 30000, waitFn = (ms) => new Promise(r => setTimeout(r, ms)) } = {}) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() <= deadline) {
-    const probe = await electronApp.evaluate(({ app }) => app.__DESKPET_STARTUP_PROBE || null);
-    if (probe && Number.isFinite(probe.didFinishLoadAtMs)) {
-      if (probe.clearCacheMs === null) probe.clearCacheMs = 0; // skipped cache clear
-      return probe;
-    }
-    await waitFn(25);
-  }
-  throw new Error('Timed out waiting for the startup probe to complete');
-}
+const { waitForCompleteProbe } = require('./probeUtils');
 
 function nearestRank(values, percentile) {
   const sorted = values.filter(Number.isFinite).sort((left, right) => left - right);
@@ -36,7 +24,7 @@ async function runHotStartSequence(options, modeName, extraArgs = []) {
       projectRoot, executablePath, userDataDir: profile.path,
       inheritedEnv: { ...process.env, DESKTOP_PET_SIMULATE_PACKAGED: '1' }
     }));
-    let probe = await waitForCompleteProbe(electronApp);
+    let probe = await waitForCompleteProbe(electronApp, { allowMissingClearCacheMs: true });
     await electronApp.close();
 
     // Actual measurement runs
@@ -49,7 +37,7 @@ async function runHotStartSequence(options, modeName, extraArgs = []) {
 
       electronApp = await electron.launch(launchOptions);
       try {
-        probe = await waitForCompleteProbe(electronApp);
+        probe = await waitForCompleteProbe(electronApp, { allowMissingClearCacheMs: true });
         runs.push({
           repetition,
           mode: modeName,

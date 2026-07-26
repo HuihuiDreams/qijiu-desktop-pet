@@ -133,3 +133,9 @@ test('rejects a report whose environment GPU mode differs from its configuration
 
   assert.match(validateBaselineReport(report).join('\n'), /gpuDisabled must match/);
 });
+
+test('accepts environment.gpu as null for environments that cannot provide it', () => {
+  const report = createReport();
+  report.environment.gpu = null;
+  assert.deepEqual(validateBaselineReport(report), []);
+});
