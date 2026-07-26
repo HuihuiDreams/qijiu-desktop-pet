@@ -34,6 +34,7 @@
 
 ### Security
 - **渲染器内容安全策略加固 (`Renderer Content-Security-Policy Hardening`)**：为配合本地字体的加载，审查并加固了所有 `src/*.html` 文件的 `Content-Security-Policy`。在保持 `default-src 'none'` 拦截默认网络请求的前提下，通过显式声明 `font-src 'self'` 安全放行了同源本地字体资产，避免了因 CSP 拦截导致的隐式降级回退。
+- **依赖漏洞修复 (`Dependency Vulnerability Fixes`)**：更新了 `electron-updater` 与 `brace-expansion`（由 `npm audit fix` 自动解决），修复了 `builder-util-runtime` 的跨源重定向凭据泄漏漏洞及 `brace-expansion` 的指数级时间膨胀 DoS 漏洞，消除了 GitHub Actions `Security audit` 步骤拦截的两个高危安全预警。
 
 ## [0.9.3] - 2026-07-21
 ### Added
