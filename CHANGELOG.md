@@ -4,9 +4,6 @@
 
 ## [Unreleased]
 
-### Fixed
-- **测试脚本 Windows 与 POSIX 跨平台适配 (`Cross-Platform Test Runner Script`)**：新增 `scripts/run-tests.js` 统一筛选 `test/*.test.js` 文件并驱动 `node --test` 执行，解决 POSIX (bash) 与 Windows (PowerShell/cmd) 之间对 Glob 通配符展开机制的不同导致的 CI `Could not find *.test.js` 问题。
-
 ## [0.9.4] - 2026-07-26
 
 ### Added
@@ -14,6 +11,7 @@
 - **Electron 可复现性能采样工具 (`Electron Reproducible Performance Sampler`)**：新增隔离 userData 的 `npm run qa:electron:performance` 命令，可确定性采集空闲、行走、重雨、强风、高温和雷暴场景的帧间隔、Long Task、DOM/粒子数及 Electron 分进程 CPU、私有内存和工作集；支持真实 GPU/`--disable-gpu`、dev/packaged、显式刷新率、电源模式标签、可复用测试 profile 和 JSON 输出，并按场景保留原始样本及汇总结果，为后续只针对已证实瓶颈的优化提供统一基线。
 
 ### Fixed
+- **测试脚本 Windows 与 POSIX 跨平台适配 (`Cross-Platform Test Runner Script`)**：新增 `scripts/run-tests.js` 统一筛选 `test/*.test.js` 文件并驱动 `node --test` 执行，解决 POSIX (bash) 与 Windows (PowerShell/cmd) 之间对 Glob 通配符展开机制的不同导致的 CI `Could not find *.test.js` 问题。
 - **启动缓存清理异常捕获与环境变量检查修复 (`PetWindow Startup Cache & Env Check Fix`)**：修复了在主窗口 `clearCache` 失败时因直接使用 `.finally()` 而意外记录新缓存版本号的问题，现在仅在成功清理时（`.then()`）持久化版本号并安全捕获异常；修复了环境变量 `DESKTOP_PET_SIMULATE_PACKAGED` 的宽松 truthy 检查，防止将 `'0'` 等字符串误判为开启状态。
 - **天气粒子计数的类型结构修正 (`Weather Particle Counts Type Consistency`)**：修复了 `WeatherParticleLayer` 清理方法 `clear()` 中错误地将 `this.particleCounts` 重置为 `[]` 的类型不一致问题，现已恢复为 `{ weather: [], wind: [] }` 结构。
 - **基线报告 GPU 缺失校验兼容保障 (`Baseline Report GPU Validation Test`)**：针对 `validateBaseline.js` 中因无头环境或 CI 环境缺失 GPU 属性而保留的 `gpu: null` 宽容校验策略，补充了专门的回归测试以保障其兼容行为。
