@@ -5,7 +5,7 @@
 ## [Unreleased]
 
 ### Fixed
-- **测试脚本 Windows 跨平台兼容 (`Windows Test Script Compatibility`)**：在 `package.json` 中的 `test` 脚本里为 Glob 通配符 `test/*.test.js` 添加转义双引号，解决 Windows 环境 (PowerShell/cmd) 无法原生展开通配符导致 CI 单元测试步骤抛出 `Could not find *.test.js` 的错误。
+- **测试脚本 Windows 与 POSIX 跨平台适配 (`Cross-Platform Test Runner Script`)**：新增 `scripts/run-tests.js` 统一筛选 `test/*.test.js` 文件并驱动 `node --test` 执行，解决 POSIX (bash) 与 Windows (PowerShell/cmd) 之间对 Glob 通配符展开机制的不同导致的 CI `Could not find *.test.js` 问题。
 
 ## [0.9.4] - 2026-07-26
 
