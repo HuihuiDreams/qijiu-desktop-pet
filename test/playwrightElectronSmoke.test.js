@@ -22,7 +22,7 @@ test('package exposes the Electron performance sampling command', () => {
 });
 
 test('Node and Playwright tests use separate commands', () => {
-  assert.equal(packageJson.scripts.test, 'node --test test/*.test.js');
+  assert.equal(packageJson.scripts.test, 'node scripts/run-tests.js');
   assert.equal(packageJson.scripts['test:font'], 'playwright test test/checkFont.spec.js');
 });
 
