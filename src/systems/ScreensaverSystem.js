@@ -3,6 +3,19 @@
  * CP 屏保渲染进程状态机与控制系统。
  * 状态机流程：inactive | entering | performing | caught | runningBack | cancelled
  */
+
+let ScreensaverParticleLayerClass = null;
+if (typeof ScreensaverParticleLayer !== 'undefined') {
+  ScreensaverParticleLayerClass = ScreensaverParticleLayer;
+} else if (typeof require !== 'undefined') {
+  try {
+    const mod = require('../ui/ScreensaverParticleLayer');
+    ScreensaverParticleLayerClass = mod.ScreensaverParticleLayer || mod;
+  } catch (e) {
+    // Ignore error
+  }
+}
+
 class ScreensaverSystem {
   constructor(deps = {}) {
     this.electronAPI = deps.electronAPI || null;
@@ -88,20 +101,11 @@ class ScreensaverSystem {
 
   getParticleLayer() {
     if (!this.particleLayer) {
-      let LayerClass = typeof ScreensaverParticleLayer !== 'undefined' ? ScreensaverParticleLayer : null;
-      if (!LayerClass && typeof require !== 'undefined') {
-        try {
-          const mod = require('../ui/ScreensaverParticleLayer');
-          LayerClass = mod.ScreensaverParticleLayer;
-        } catch (e) {
-          LayerClass = null;
-        }
-      }
-      if (LayerClass) {
+      if (ScreensaverParticleLayerClass) {
         const stage = (this.renderer && this.renderer.stage)
           ? this.renderer.stage
           : (typeof document !== 'undefined' ? document.body : null);
-        this.particleLayer = new LayerClass(stage);
+        this.particleLayer = new ScreensaverParticleLayerClass(stage);
       }
     }
     return this.particleLayer;
