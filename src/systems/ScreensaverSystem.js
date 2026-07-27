@@ -39,7 +39,7 @@ class ScreensaverSystem {
 
     this.activeComboSequence = null;
     this.comboIndex = 0;
-    this.comboStepState = null; // 'preparing' | 'idle_pause' | 'overlay_action'
+    this.comboStepState = null; // 'preparing' | 'idle_pause' | 'overlay_action' | 'waiting_for_input'
     this.comboStepTimer = 0;
 
     this.runningBackStartCoords = null;
@@ -176,13 +176,24 @@ class ScreensaverSystem {
     }
 
     const scaleRatio = Math.min(1.0, Math.max(0.65, rawScale));
+    const targetAreaScale = Number(targetArea.scaleRatio);
+    const displayScale = Number.isFinite(targetAreaScale) && targetAreaScale > 0
+      ? targetAreaScale
+      : 1;
+
+    const sceneCenter = {
+      x: targetArea.x + targetArea.width / 2,
+      y: targetArea.y + targetArea.height / 2,
+    };
 
     return {
       targetArea,
-      midpoint: { x: midX, y: midY },
+      midpoint: sceneCenter,
       centerA,
       centerB,
       scaleRatio,
+      displayScale,
+      visualScale: scaleRatio * displayScale,
       baseWidth: BASE_WIDTH,
       baseHeight: BASE_HEIGHT,
     };
@@ -230,11 +241,58 @@ class ScreensaverSystem {
       return;
     }
     this.sceneBounds = scene;
+    this.centerPetsInScene(scene);
 
     const pLayer = this.getParticleLayer();
     if (pLayer && typeof pLayer.mount === 'function') {
       pLayer.mount(this.sceneBounds);
     }
+  }
+
+  /**
+   * 将两只宠物安置在场景中心并相对而立；场景坐标始终限制在选定 walkArea 内。
+   */
+  centerPetsInScene(scene) {
+    const pets = this.getPets();
+    if (!scene || !Array.isArray(pets) || pets.length < 2) return;
+
+    const [petA, petB] = pets;
+    if (!petA || !petB) return;
+    const sizeA = petA.size || petA.width || 100;
+    const sizeB = petB.size || petB.width || 100;
+    const area = scene.targetArea;
+    const visualWidthA = sizeA * scene.displayScale;
+    const visualWidthB = sizeB * scene.displayScale;
+    const visualHeightA = sizeA * scene.displayScale;
+    const visualHeightB = sizeB * scene.displayScale;
+    const coreWidth = scene.baseWidth * scene.visualScale;
+    const availableGap = Math.max(0, coreWidth - visualWidthA - visualWidthB);
+    const gap = Math.min(Math.max(visualWidthA, visualWidthB) * 0.2, availableGap);
+    const groupWidth = visualWidthA + gap + visualWidthB;
+    const centerX = scene.midpoint.x;
+    const centerY = scene.midpoint.y;
+    const groupLeft = centerX - groupWidth / 2;
+
+    const targets = [
+      { x: groupLeft, y: centerY - visualHeightA / 2 },
+      { x: groupLeft + visualWidthA + gap, y: centerY - visualHeightB / 2 },
+    ];
+
+    pets.slice(0, 2).forEach((pet, index) => {
+      const visualWidth = index === 0 ? visualWidthA : visualWidthB;
+      const visualHeight = index === 0 ? visualHeightA : visualHeightB;
+      const target = targets[index];
+      pet.x = Math.max(area.x, Math.min(area.x + area.width - visualWidth, target.x));
+      pet.y = Math.max(area.y, Math.min(area.y + area.height - visualHeight, target.y));
+      pet.targetX = pet.x;
+      pet.targetY = pet.y;
+      pet.direction = index === 0 ? 'right' : 'left';
+      if (typeof pet.setState === 'function') {
+        pet.setState('idle');
+      } else {
+        pet.state = 'idle';
+      }
+    });
   }
 
   /**
@@ -346,7 +404,7 @@ class ScreensaverSystem {
       : 'default';
     const overlayPrefix = `pet-asset://skin/${skinId}/`;
 
-    const visualScale = scene.scaleRatio;
+    const visualScale = scene.visualScale || scene.scaleRatio;
     const overlayWidth = scene.baseWidth * visualScale;
     const cx = scene.midpoint.x;
     const cy = scene.midpoint.y;
@@ -537,6 +595,24 @@ class ScreensaverSystem {
   }
 
   /**
+   * 静默取消时不播放回位动画，但仍恢复入场前坐标，避免宠物滞留在屏保场景中。
+   */
+  restorePetsToStartPositions() {
+    const pets = this.getPets();
+    if (!Array.isArray(pets) || !Array.isArray(this.startPositions)) return;
+
+    pets.forEach((pet, index) => {
+      const start = this.startPositions[index];
+      if (!pet || !start) return;
+      const target = this.clampTargetToWalkArea(start);
+      pet.x = target.x;
+      pet.y = target.y;
+      pet.targetX = target.x;
+      pet.targetY = target.y;
+    });
+  }
+
+  /**
    * 安全复位：清除内部状态、DOM 节点、调用 interactionSystem.cancel()，重置宠物为 idle（保留 queuedAction）。
    */
   reset() {
@@ -547,6 +623,7 @@ class ScreensaverSystem {
       nodes.forEach((node) => node.remove());
     }
 
+    this.restorePetsToStartPositions();
     const pets = this.getPets();
     if (Array.isArray(pets)) {
       pets.forEach((pet) => {
@@ -619,7 +696,7 @@ class ScreensaverSystem {
         break;
 
       case 'performing':
-        if (this.comboStepState === 'preparing') {
+        if (this.comboStepState === 'preparing' || this.comboStepState === 'waiting_for_input') {
           break;
         }
         if (this.comboStepTimer > 0) {
@@ -627,7 +704,7 @@ class ScreensaverSystem {
         }
         if (this.comboStepTimer <= 0) {
           if (!Array.isArray(this.activeComboSequence) || this.activeComboSequence.length === 0) {
-            this.initRunningBack();
+            this.comboStepState = 'waiting_for_input';
             break;
           }
 
@@ -638,7 +715,7 @@ class ScreensaverSystem {
               this.comboStepState = 'overlay_action';
               this.comboStepTimer = 1500;
             } else {
-              this.initRunningBack();
+              this.comboStepState = 'waiting_for_input';
             }
           } else if (this.comboStepState === 'overlay_action') {
             this.clearScreensaverOverlays();

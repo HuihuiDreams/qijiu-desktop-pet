@@ -213,6 +213,33 @@ test('ScreensaverSystem - update loop state machine transitions', () => {
   assert.equal(system.isActive(), false);
 });
 
+test('ScreensaverSystem - waits for user input after the combo before running back', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 21, startedAt: Date.now() });
+  system.state = 'performing';
+  system.activeComboSequence = ['hug'];
+  system.comboIndex = 1;
+  system.comboStepState = 'idle_pause';
+  system.comboStepTimer = 0;
+
+  system.update(16);
+
+  assert.equal(system.state, 'performing');
+  assert.equal(system.comboStepState, 'waiting_for_input');
+  assert.equal(electronAPI.sentMessages.some((message) => message.channel === 'finished'), false);
+
+  electronAPI.emitStop({ sessionId: 21, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  system.update(300);
+  assert.equal(system.state, 'runningBack');
+  system.update(500);
+  assert.equal(system.state, 'inactive');
+});
+
 test('ScreensaverSystem - dispose detaches subscriptions and resets', () => {
   const electronAPI = createFakeElectronApi();
   const system = new ScreensaverSystem({ electronAPI });

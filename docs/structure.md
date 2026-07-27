@@ -193,7 +193,7 @@ qijiu-desktop-pet/
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible() 便于测试）
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
-│  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack | cancelled)，支持显示器几何中点选择、场景安全缩放 (0.65–1.0)、连招动作序列 (hug -> shareFood -> kiss) 与皮肤 Overlay keys 校验跳过、CSS 文本 ! 被抓包提示、runningBack 目标点 walkArea 夹紧与安全复位
+│  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack)，按宠物视觉尺寸将双人完整包围盒紧凑安置在 walkArea 中央场景核心，连招结束后等待输入再显示 CSS 文本 ! 并回位；支持场景/DPI 组合缩放、皮肤 Overlay keys 校验跳过、runningBack 目标点 walkArea 夹紧与安全复位
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：并发防抖、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
 │  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、视觉缩放查询、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
@@ -206,7 +206,7 @@ qijiu-desktop-pet/
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
 │  │  ├─ WeatherParticleLayer.js        # 渲染层天气粒子效果生成与管理
-│  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层 (节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画)
+│  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧

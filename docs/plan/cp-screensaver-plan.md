@@ -14,7 +14,7 @@
 
 - Windows 首发：活动窗口缓存每 2 秒刷新，`ScreensaverEligibilityGuard` 只读取该缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。Guard 不直接触发额外采样。
 - macOS 不纳入首发：当前项目没有可信的前台全屏/演示数据源，功能必须在该平台保持禁用，待独立的权限、数据源与验收方案获批后另立 ADR。
-- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放；无有效区域或缩放低于 0.65 时取消本次会话。
+- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标；确定显示器后，氛围层与双人 idle 站位均落在该 `walkArea` 的几何中心，双宠完整视觉包围盒必须位于中央场景核心内。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放，并与目标 `walkArea.scaleRatio` 合成为最终视觉缩放；无有效区域或缩放低于 0.65 时取消本次会话。
 
 ### 非目标
 
@@ -72,13 +72,13 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 - `app.js` 必须将现有帧更新拆为具名 gate：`ScreensaverSystem` active 时只运行养成、存档、状态栏和离线结算；移动、InteractionSystem、环境闲聊、日常 overlay 与天气视觉一律不运行。InteractionSystem 需新增可测试的 `cancel()`，以清除内部 timer/currentInteraction；不借用全局 `isPaused`。
 - 演出位置只使用带 `displayId` 的 `StageGeometry.walkAreas`，并在 `DisplayService` 的“几何已 settle、版本已递增”事件后 cancel；不监听原始 `screen` 事件。迁屏/拔屏后等待下一段闲置重新评估。
-- 连招由两种动作组成：overlay 动作 `hug → shareFood → kiss`，其间插入宠物 `idle` 状态而不是请求不存在的 `idle.webp`。`SkinService` 必须向 renderer 提供当前皮肤经验证的 overlay key 列表；缺失动作在进入连招前跳过，绝不依赖 `<img>` error 回退。
+- 连招由两种动作组成：overlay 动作 `hug → shareFood → kiss`，其间插入宠物 `idle` 状态而不是请求不存在的 `idle.webp`。连招播完（或无可用动作）后，宠物保持在中心场景等待输入，不能自动进入 `runBack`；`SkinService` 必须向 renderer 提供当前皮肤经验证的 overlay key 列表；缺失动作在进入连招前跳过，绝不依赖 `<img>` error 回退。
 - 屏保 overlay 使用 session 专属 DOM 属性与可取消 timer，不能复用全局 `interaction-overlay` id 或让延迟 remove 删除新会话节点。`caught` 使用 CSS 文本 `!`（非 emoji），只在 `reason: 'input'` 时显示。`runBack` 只使用入场时保存的两个目标点，目标失效时夹紧到当前有效 walkArea。
-- 退出完成或 cancel 后，统一执行安全复位：清除屏保与日常 overlay、气泡和 session timer，调用 `InteractionSystem.cancel()`，将两宠设为 `idle` 并保留尚未执行的 `queuedAction`；不回滚用户在中断期间的状态。之后再放行普通移动/互动。
+- 退出完成或 cancel 后，统一执行安全复位：清除屏保与日常 overlay、气泡和 session timer，调用 `InteractionSystem.cancel()`，将两宠设为 `idle` 并保留尚未执行的 `queuedAction`。普通输入走 `caught → runBack` 动画；锁屏、全屏等静默取消则立即恢复入场前坐标。之后再放行普通移动/互动。
 
 ### 2.5 独立视觉层与可访问性
 
-`ScreensaverParticleLayer` 为独立 DOM 根，不使用全局 id，不接触天气层。它固定挂在 stage，`pointer-events: none`，只接收 `{ sceneBounds, scaleRatio, reducedMotion }`。
+`ScreensaverParticleLayer` 为独立 DOM 根，不使用全局 id，不接触天气层。它固定挂在 stage，`pointer-events: none`，只接收 `{ sceneBounds, visualScale, reducedMotion }`；`visualScale` 同时包含场景安全缩放与目标显示器 DPI 比例。
 
 - 最多 12 个粒子；暖光 1 个节点；不使用 `filter`、`backdrop-filter`、`box-shadow` 动画或逐帧 JavaScript 样式写入。
 - 仅动画 `opacity` 与 `transform`；退出必须移除全部节点和 animation listener。

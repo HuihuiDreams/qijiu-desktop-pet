@@ -18,7 +18,7 @@ CP 局部屏保需要基于系统闲置时间在透明、非聚焦、鼠标穿�
 
 创建独立的 `ScreensaverController`，由主进程持有唯一会话状态和递增 `sessionId`。它单独轮询 `powerMonitor.getSystemIdleTime()`：正常待机为 5 秒，屏保激活后为 1 秒；普通输入恢复会在下一次可用轮询中退出，但不将 OS 调度延迟承诺为硬实时。每段连续闲置仅允许一个会话。
 
-Controller 使用专用设置、IPC 通道和 eligibility guard，不读取或写入 `BreakReminderService` 的业务状态。Windows 活动窗口缓存每 2 秒刷新，使 Guard 的 2 秒 `sampledAt`/`timestamp` 有效期在待机轮询中可用，同时避免每秒启动 PowerShell；非法、过期、未知或显示器查询失败的数据一律拒绝。渲染器以匹配的 `screensaver-finished` 确认正常结束，Controller 随即释放屏保租约并回到待机轮询。Controller 的 `start()`/`stop()`/`dispose()` 严格脱钩与解绑全部 `powerMonitor`、`ipcMain` 与 store 监听器；`stop()` 会先停止轮询状态再取消活跃会话，避免取消路径重建计时器。在 1 秒活跃轮询 tick 中，Controller 持续重查主窗口存活、宠物可见性/暂停与 eligibility guard 状态，中途失效立即取消会话。新增 `InterruptionCoordinator` 原子仲裁久坐提醒与屏保。渲染器只接受带 `sessionId` 的命令，并以独立演出状态机控制画面；renderer 重载一律取消而不回放。锁屏、睡眠、全屏/演示、隐藏、暂停、禁用与已 settle 的屏幕变化都取消会话；仅普通输入恢复播放“被抓包”退出演出。
+Controller 使用专用设置、IPC 通道和 eligibility guard，不读取或写入 `BreakReminderService` 的业务状态。Windows 活动窗口缓存每 2 秒刷新，使 Guard 的 2 秒 `sampledAt`/`timestamp` 有效期在待机轮询中可用，同时避免每秒启动 PowerShell；非法、过期、未知或显示器查询失败的数据一律拒绝。普通输入后 Controller 立即释放屏保租约并回到待机轮询，渲染器随后完成“被抓包 → 回位”并发送匹配的 `screensaver-finished` 确认；若渲染器在 active 阶段自行安全结束，该确认也会释放租约。Controller 的 `start()`/`stop()`/`dispose()` 严格脱钩与解绑全部 `powerMonitor`、`ipcMain` 与 store 监听器；`stop()` 会先停止轮询状态再取消活跃会话，避免取消路径重建计时器。在 1 秒活跃轮询 tick 中，Controller 持续重查主窗口存活、宠物可见性/暂停与 eligibility guard 状态，中途失效立即取消会话。新增 `InterruptionCoordinator` 原子仲裁久坐提醒与屏保。渲染器只接受带 `sessionId` 的命令，并以独立演出状态机控制画面；选择场景显示器后，氛围层与两只宠物均定位在对应 `walkArea` 的几何中心，按宠物视觉尺寸紧凑排列且完整包围盒不得超出场景核心；Overlay、氛围层和站位共同应用该显示器的 DPI 比例。连招播完后在中心等待用户输入。renderer 重载一律取消而不回放。锁屏、睡眠、全屏/演示、隐藏、暂停、禁用与已 settle 的屏幕变化都取消会话并立即恢复入场坐标；仅普通输入恢复播放“被抓包”退出演出。
 
 屏保视觉层独立于天气粒子层。所有动画保持鼠标穿透、非聚焦，并遵循 reduced-motion 降级。首发仅支持 Windows；macOS 在没有可信的前台全屏/演示数据源前保持禁用。
 

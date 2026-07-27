@@ -40,7 +40,7 @@ class ScreensaverParticleLayer {
       }
     }
 
-    const scaleRatio = sceneBounds.scaleRatio || 1.0;
+    const scaleRatio = sceneBounds.visualScale || sceneBounds.scaleRatio || 1.0;
     const cx = sceneBounds.midpoint ? sceneBounds.midpoint.x : 200;
     const cy = sceneBounds.midpoint ? sceneBounds.midpoint.y : 150;
     const baseWidth = sceneBounds.baseWidth || 320;
