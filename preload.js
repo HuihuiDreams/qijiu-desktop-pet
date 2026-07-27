@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 皮肤系统
   getAvailableSkins: () => ipcRenderer.invoke('get-available-skins'),
+  getAvailableOverlayKeys: (skinId) => ipcRenderer.invoke('get-available-overlay-keys', skinId),
   setCurrentSkin: (skinId) => ipcRenderer.invoke('set-current-skin', skinId),
   onSwitchSkin: (callback) => {
     return subscribeIpc('switch-skin', (_event, skinId) => callback(skinId));

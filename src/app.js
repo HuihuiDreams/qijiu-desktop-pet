@@ -216,6 +216,7 @@
     interactionSystem,
     dialogBubble,
     clearInteractionOverlay,
+    skinManager,
   });
   screensaverSystem.init();
 

@@ -18,6 +18,10 @@ function init(dependencies) {
     return scanAvailableSkins();
   });
 
+  ipcMain.handle('get-available-overlay-keys', (_event, skinId) => {
+    return getAvailableOverlayKeys(skinId || currentSkinId);
+  });
+
   ipcMain.handle('get-skin-gallery-items', (event) => {
     if (!isSkinSelectorRequest(event)) {
       return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
@@ -285,6 +289,12 @@ function resolvePomodoroAsset(skinId, filename) {
   return createAssetUrl(`skin/default/${filename}`);
 }
 
+function getAvailableOverlayKeys(skinId) {
+  const CANDIDATE_KEYS = ['hug', 'shareFood', 'kiss', 'throwup', 'cultivate'];
+  const safeSkinId = isAllowedSkinId(skinId, scanAvailableSkins()) ? skinId : 'default';
+  return CANDIDATE_KEYS.filter((key) => hasSkinAsset(safeSkinId, `${key}.webp`));
+}
+
 module.exports = {
   init,
   scanAvailableSkins,
@@ -294,6 +304,7 @@ module.exports = {
   cancelSkinPreview,
   hideSkinSelector,
   resolvePomodoroAsset,
+  getAvailableOverlayKeys,
   getCurrentSkinId: () => currentSkinId,
   setCurrentSkinId: (val) => { currentSkinId = val; },
 };
