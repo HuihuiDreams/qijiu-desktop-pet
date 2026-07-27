@@ -2,7 +2,8 @@
 
 ## Status
 
-Proposed
+Accepted
+
 
 ## Date
 
@@ -18,7 +19,7 @@ CP 局部屏保需要基于系统闲置时间在透明、非聚焦、鼠标穿�
 
 创建独立的 `ScreensaverController`，由主进程持有唯一会话状态和递增 `sessionId`。它单独轮询 `powerMonitor.getSystemIdleTime()`：正常待机为 5 秒，屏保激活后为 1 秒；普通输入恢复会在下一次可用轮询中退出，但不将 OS 调度延迟承诺为硬实时。每段连续闲置仅允许一个会话。
 
-Controller 使用专用设置、IPC 通道和 eligibility guard，不读取或写入 `BreakReminderService` 的业务状态。新增 `InterruptionCoordinator` 原子仲裁久坐提醒与屏保。渲染器只接受带 `sessionId` 的命令，并以独立演出状态机控制画面；renderer 重载一律取消而不回放。锁屏、睡眠、全屏/演示、隐藏、暂停、禁用与已 settle 的屏幕变化都取消会话；仅普通输入恢复播放“被抓包”退出演出。
+Controller 使用专用设置、IPC 通道和 eligibility guard，不读取或写入 `BreakReminderService` 的业务状态。Guard 兼容 `sampledAt` 与 `timestamp` 并严格校验 `Number.isFinite`（非法或过期返回 `stale_cache`）。Controller 的 `start()`/`stop()`/`dispose()` 严格脱钩与解绑全部 `powerMonitor`、`ipcMain` 与 store 监听器，消除重复叠加泄漏。在 1 秒活跃轮询 tick 中，Controller 持续重查主窗口存活、宠物可见性/暂停与 eligibility guard 状态，中途失效立即取消会话。新增 `InterruptionCoordinator` 原子仲裁久坐提醒与屏保。渲染器只接受带 `sessionId` 的命令，并以独立演出状态机控制画面；renderer 重载一律取消而不回放。锁屏、睡眠、全屏/演示、隐藏、暂停、禁用与已 settle 的屏幕变化都取消会话；仅普通输入恢复播放“被抓包”退出演出。
 
 屏保视觉层独立于天气粒子层。所有动画保持鼠标穿透、非聚焦，并遵循 reduced-motion 降级。首发仅支持 Windows；macOS 在没有可信的前台全屏/演示数据源前保持禁用。
 

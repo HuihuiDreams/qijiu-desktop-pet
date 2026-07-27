@@ -12,7 +12,7 @@
 
 ### 首发范围
 
-- Windows 首发：`ScreensaverEligibilityGuard` 每秒读取已有活动窗口缓存；缓存超过 2 秒、显示器查询失败、或任何字段未知时一律拒绝。它不直接触发额外的活动窗口采样。
+- Windows 首发：`ScreensaverEligibilityGuard` 每秒读取已有活动窗口缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。它不直接触发额外的活动窗口采样。
 - macOS 不纳入首发：当前项目没有可信的前台全屏/演示数据源，功能必须在该平台保持禁用，待独立的权限、数据源与验收方案获批后另立 ADR。
 - 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放；无有效区域或缩放低于 0.65 时取消本次会话。
 
@@ -113,10 +113,11 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 ## 6. 实施顺序
 
-1. 先补 `InterruptionCoordinator`、带 displayId 的 settle 几何契约和 Controller 失败测试；实现独立会话状态机、IPC 鉴权、dispose 与生命周期取消。
-2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
-3. 实现无视觉的 `ScreensaverSystem`：安全复位、取消、runBack；先通过多显示器和状态恢复测试。
-4. 接入验证过的 overlay 连招及资源回退；补齐皮肤切换和互动副作用回归。
-5. 最后添加独立 CSS 视觉层与 reduced-motion；执行性能基线比较和人工跨平台 QA。
+- [x] 1. 先补 `InterruptionCoordinator` 与 Controller 单元测试；实现 `InterruptionCoordinator` 租约仲裁、`ScreensaverEligibilityGuard` 窗口打扰守卫（兼容 sampledAt/timestamp 与 NaN 校验）、`ScreensaverController` 独立会话状态机（含重复 start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验）、IPC 鉴权与生命周期取消。（Step 1 重构已完成）
+- [ ] 2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
+- [ ] 3. 实现无视觉的 `ScreensaverSystem`：安全复位、取消、runBack；先通过多显示器和状态恢复测试。
+- [ ] 4. 接入验证过的 overlay 连招及资源回退；补齐皮肤切换和互动副作用回归。
+- [ ] 5. 最后添加独立 CSS 视觉层与 reduced-motion；执行性能基线比较和人工跨平台 QA。
+
 
 每个步骤只能在相应测试、文档和变更日志更新后进入下一步；若 macOS 不能提供可信的全屏/演示结论，保持该平台功能禁用而不是以误打扰方式降级。
