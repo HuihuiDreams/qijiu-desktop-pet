@@ -193,6 +193,7 @@ qijiu-desktop-pet/
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible() 便于测试）
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
+│  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack | cancelled)，配合 app.js 具名 gate 和 InteractionSystem.cancel()
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：并发防抖、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
 │  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、视觉缩放查询、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）

@@ -402,7 +402,7 @@ test('ScreensaverController - IPC sender authentication and renderer-reload hand
   assert.equal(controller.getState().state, 'inactive');
   const lastEvent = mainWindow.sentEvents[mainWindow.sentEvents.length - 1];
   assert.equal(lastEvent.channel, 'screensaver-cancel');
-  assert.equal(lastEvent.payload.reason, 'renderer-reload');
+  assert.equal(lastEvent.payload.reason, 'renderer_reload');
 });
 
 test('ScreensaverController - dispose cleans up all timers and listeners', () => {

@@ -114,7 +114,7 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 ## 6. 实施顺序
 
 - [x] 1. 先补 `InterruptionCoordinator` 与 Controller 单元测试；实现 `InterruptionCoordinator` 租约仲裁、`ScreensaverEligibilityGuard` 窗口打扰守卫（兼容 sampledAt/timestamp 与 NaN 校验）、`ScreensaverController` 独立会话状态机（含重复 start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验）、IPC 鉴权与生命周期取消。（Step 1 重构已完成）
-- [ ] 2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
+- [x] 2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
 - [ ] 3. 实现无视觉的 `ScreensaverSystem`：安全复位、取消、runBack；先通过多显示器和状态恢复测试。
 - [ ] 4. 接入验证过的 overlay 连招及资源回退；补齐皮肤切换和互动副作用回归。
 - [ ] 5. 最后添加独立 CSS 视觉层与 reduced-motion；执行性能基线比较和人工跨平台 QA。

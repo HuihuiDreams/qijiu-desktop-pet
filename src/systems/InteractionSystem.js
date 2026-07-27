@@ -21,6 +21,17 @@ class InteractionSystem {
   }
 
   /**
+   * 清除内部互动状态与计时器，实现无侧效应的安全重置。
+   * 不依赖或修改外部全局 isPaused 状态。
+   */
+  cancel() {
+    this.isInteracting = false;
+    this.interactionTimer = 0;
+    this.currentInteraction = null;
+    this.cooldownTimer = 0;
+  }
+
+  /**
    * 计算两只宠物之间的距离 (中心点到中心点)。
    */
   getDistance(petA, petB) {

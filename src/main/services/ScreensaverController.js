@@ -338,15 +338,16 @@ function createScreensaverController(deps = {}) {
       handleReadyHandler = (event) => {
         const mainWindow = getMainWindow();
         if (!isSenderMainWindow(event, mainWindow)) return;
-        if (state !== 'inactive') {
-          cancelSession('renderer-reload');
+        if (state === 'active' || state === 'exiting') {
+          cancelSession('renderer_reload');
         }
       };
 
       handleFinishedHandler = (event, payload) => {
         const mainWindow = getMainWindow();
         if (!isSenderMainWindow(event, mainWindow)) return;
-        if (payload && payload.sessionId === sessionId) {
+        const incomingSessionId = (typeof payload === 'object' && payload !== null) ? payload.sessionId : payload;
+        if (Number.isInteger(incomingSessionId) && incomingSessionId > 0 && incomingSessionId === sessionId) {
           // Session observability receipt confirmed
         }
       };

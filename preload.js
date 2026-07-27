@@ -125,4 +125,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCitySettings: () => ipcRenderer.invoke('get-city-settings'),
   setCityName: (name) => ipcRenderer.invoke('set-city-name', name),
   closeCitySettingWindow: () => ipcRenderer.invoke('close-city-setting-window'),
+
+  // 屏保系统
+  onScreensaverStart: (callback) => {
+    return subscribeIpc('screensaver-start', (_event, payload) => callback(payload));
+  },
+  onScreensaverStop: (callback) => {
+    return subscribeIpc('screensaver-stop', (_event, payload) => callback(payload));
+  },
+  onScreensaverCancel: (callback) => {
+    return subscribeIpc('screensaver-cancel', (_event, payload) => callback(payload));
+  },
+  notifyScreensaverReady: () => ipcRenderer.send('screensaver-ready'),
+  notifyScreensaverFinished: (sessionId) => ipcRenderer.send('screensaver-finished', sessionId),
 });
+

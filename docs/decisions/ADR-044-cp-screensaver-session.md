@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (Step 1 & Step 2 implemented)
 
 
 ## Date
