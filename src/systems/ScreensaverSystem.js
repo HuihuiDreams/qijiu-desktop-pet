@@ -1,7 +1,7 @@
 /**
  * src/systems/ScreensaverSystem.js
  * CP 屏保渲染进程状态机与控制系统。
- * 状态机流程：inactive | entering | performing | caught | runningBack | cancelled
+ * 状态机流程：inactive | entering | performing | caught | runningBack
  */
 
 let ScreensaverParticleLayerClass = null;
@@ -39,7 +39,7 @@ class ScreensaverSystem {
 
     this.activeComboSequence = null;
     this.comboIndex = 0;
-    this.comboStepState = null; // 'idle_pause' | 'overlay_action'
+    this.comboStepState = null; // 'preparing' | 'idle_pause' | 'overlay_action'
     this.comboStepTimer = 0;
 
     this.runningBackStartCoords = null;
@@ -270,7 +270,6 @@ class ScreensaverSystem {
 
     if (this.state === 'inactive') return;
 
-    this.state = 'cancelled';
     this.reset();
   }
 
@@ -280,42 +279,40 @@ class ScreensaverSystem {
    */
   cancel(_reason = 'manual') {
     if (this.state === 'inactive') return;
-    this.state = 'cancelled';
     this.reset();
   }
 
   /**
    * 预处理连招序列：校验可用 overlay keys，跳过缺失素材。
    */
-  prepareComboSequence() {
+  async prepareComboSequence() {
     const CANDIDATE_COMBO = ['hug', 'shareFood', 'kiss'];
     const skinId = (this.skinManager && typeof this.skinManager.getCurrentSkin === 'function')
       ? this.skinManager.getCurrentSkin()
       : 'default';
+    const sessionId = this.sessionId;
 
     let keys = null;
-    if (this.skinManager && typeof this.skinManager.getAvailableOverlayKeys === 'function') {
-      try {
-        keys = this.skinManager.getAvailableOverlayKeys(skinId, this.electronAPI);
-      } catch (e) {
-        keys = null;
+    this.activeComboSequence = null;
+    this.comboIndex = 0;
+    this.comboStepState = 'preparing';
+    this.comboStepTimer = 0;
+
+    try {
+      if (this.skinManager && typeof this.skinManager.getAvailableOverlayKeys === 'function') {
+        keys = await this.skinManager.getAvailableOverlayKeys(skinId, this.electronAPI);
+      } else if (this.electronAPI && typeof this.electronAPI.getAvailableOverlayKeys === 'function') {
+        keys = await this.electronAPI.getAvailableOverlayKeys(skinId);
       }
-    } else if (this.electronAPI && typeof this.electronAPI.getAvailableOverlayKeys === 'function') {
-      try {
-        keys = this.electronAPI.getAvailableOverlayKeys(skinId);
-      } catch (e) {
-        keys = null;
-      }
+    } catch (e) {
+      keys = null;
     }
 
-    if (keys && typeof keys.then === 'function') {
-      this.activeComboSequence = CANDIDATE_COMBO;
-      keys.then((resolvedKeys) => {
-        if (Array.isArray(resolvedKeys) && this.state === 'performing') {
-          this.activeComboSequence = CANDIDATE_COMBO.filter((k) => resolvedKeys.includes(k));
-        }
-      }).catch(() => {});
-    } else if (Array.isArray(keys)) {
+    if (this.state !== 'performing' || this.sessionId !== sessionId) {
+      return;
+    }
+
+    if (Array.isArray(keys)) {
       this.activeComboSequence = CANDIDATE_COMBO.filter((k) => keys.includes(k));
     } else {
       this.activeComboSequence = CANDIDATE_COMBO;
@@ -339,7 +336,10 @@ class ScreensaverSystem {
     const stage = (this.renderer && this.renderer.stage)
       ? this.renderer.stage
       : (typeof document !== 'undefined' ? document.body : null);
-    if (!stage) return;
+    const doc = (stage && stage.ownerDocument && typeof stage.ownerDocument.createElement === 'function')
+      ? stage.ownerDocument
+      : (typeof document !== 'undefined' && typeof document.createElement === 'function' ? document : null);
+    if (!stage || !doc) return;
 
     const skinId = (this.skinManager && typeof this.skinManager.getCurrentSkin === 'function')
       ? this.skinManager.getCurrentSkin()
@@ -353,7 +353,7 @@ class ScreensaverSystem {
     const overlayLeft = cx - overlayWidth / 2;
     const overlayTop = cy - (scene.baseHeight / 2) * visualScale;
 
-    const img = document.createElement('img');
+    const img = doc.createElement('img');
     img.className = 'screensaver-overlay-image';
     img.setAttribute('data-screensaver-session-id', String(this.sessionId));
     img.src = `${overlayPrefix}${key}.webp`;
@@ -414,7 +414,10 @@ class ScreensaverSystem {
     const stage = (this.renderer && this.renderer.stage)
       ? this.renderer.stage
       : (typeof document !== 'undefined' ? document.body : null);
-    if (!stage) return;
+    const doc = (stage && stage.ownerDocument && typeof stage.ownerDocument.createElement === 'function')
+      ? stage.ownerDocument
+      : (typeof document !== 'undefined' && typeof document.createElement === 'function' ? document : null);
+    if (!stage || !doc) return;
 
     let sumX = 0;
     let minY = Infinity;
@@ -425,7 +428,7 @@ class ScreensaverSystem {
     const cx = sumX / pets.length;
     const topY = minY - 20;
 
-    const div = document.createElement('div');
+    const div = doc.createElement('div');
     div.className = 'screensaver-caught-text';
     div.setAttribute('data-screensaver-session-id', String(this.sessionId));
     div.textContent = '!';
@@ -616,6 +619,9 @@ class ScreensaverSystem {
         break;
 
       case 'performing':
+        if (this.comboStepState === 'preparing') {
+          break;
+        }
         if (this.comboStepTimer > 0) {
           this.comboStepTimer -= deltaMs;
         }
@@ -662,10 +668,6 @@ class ScreensaverSystem {
         if (this.stateTimer <= 0) {
           this.reset();
         }
-        break;
-
-      case 'cancelled':
-        this.reset();
         break;
 
       default:

@@ -109,7 +109,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、当前皮肤状态、选肤器请求鉴权、番茄钟素材解析、全部 8 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：采样器生命周期、开关状态、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
@@ -117,7 +117,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、presentationGuard 接线、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/ScreensaverEligibilityGuard.js # 屏保前置打扰守卫：Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；macOS 始终返回 unsupported_platform
-├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting(sessionId) -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验
+├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
 ├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data、set/get-auto-launch
 ├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY）

@@ -126,6 +126,15 @@ test('normalizeScreensaverSettings - clamps idleThresholdMinutes to 1..60', () =
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 'invalid' }).idleThresholdMinutes, DEFAULT_SETTINGS.idleThresholdMinutes);
 });
 
+test('ScreensaverController - keeps power event handlers private', () => {
+  const controller = createScreensaverController();
+
+  assert.equal(controller.lock, undefined);
+  assert.equal(controller.unlock, undefined);
+  assert.equal(controller.suspend, undefined);
+  assert.equal(controller.resume, undefined);
+});
+
 test('ScreensaverController - state machine and session lifecycle', () => {
   const clock = createFakeClock();
   const powerMonitor = createFakePowerMonitor(0);
@@ -483,6 +492,38 @@ test('ScreensaverController - start() -> stop() -> start() does not duplicate ev
   assert.equal(powerMonitor.listenerCount, 0);
 });
 
+test('ScreensaverController - stop clears the timer created while cancelling an active session', () => {
+  const clock = createFakeClock();
+  const powerMonitor = createFakePowerMonitor(300);
+  const mainWindow = createFakeMainWindow();
+  const coordinator = createInterruptionCoordinator();
+  const guard = createScreensaverEligibilityGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({ active: true, window: { isFullScreen: false }, timestamp: clock.now() }),
+    now: clock.now,
+  });
+
+  const controller = createScreensaverController({
+    powerMonitor,
+    interruptionCoordinator: coordinator,
+    eligibilityGuard: guard,
+    getMainWindow: () => mainWindow,
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    settings: { enabled: true, idleThresholdMinutes: 5 },
+  });
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+
+  controller.stop();
+
+  assert.equal(clock.pendingIntervals, 0);
+  assert.equal(coordinator.getCurrentHolder(), null);
+});
+
 test('ScreensaverController - _poll() does nothing when controller is stopped', () => {
   const clock = createFakeClock();
   const powerMonitor = createFakePowerMonitor(350);
@@ -548,4 +589,40 @@ test('ScreensaverController - active session is cancelled if eligibilityGuard tu
   const lastEvent = mainWindow.sentEvents[mainWindow.sentEvents.length - 1];
   assert.equal(lastEvent.channel, 'screensaver-cancel');
   assert.equal(lastEvent.payload.reason, 'fullscreen');
+});
+
+test('ScreensaverController - renderer completion releases the active screensaver lease', () => {
+  const clock = createFakeClock();
+  const powerMonitor = createFakePowerMonitor(300);
+  const mainWindow = createFakeMainWindow();
+  const ipcMain = createFakeIpcMain();
+  const coordinator = createInterruptionCoordinator();
+  const guard = createScreensaverEligibilityGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({ active: true, window: { isFullScreen: false }, timestamp: clock.now() }),
+    now: clock.now,
+  });
+
+  const controller = createScreensaverController({
+    powerMonitor,
+    interruptionCoordinator: coordinator,
+    eligibilityGuard: guard,
+    getMainWindow: () => mainWindow,
+    ipcMain,
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    settings: { enabled: true, idleThresholdMinutes: 5 },
+  });
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(coordinator.getCurrentHolder(), 'screensaver');
+
+  ipcMain.emit('screensaver-finished', { sender: mainWindow.webContents }, 1);
+
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(coordinator.getCurrentHolder(), null);
+  controller.dispose();
 });

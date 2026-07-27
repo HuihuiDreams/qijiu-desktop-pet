@@ -148,6 +148,31 @@ test('ScreensaverEligibilityGuard - win32 presentation mode (workArea coverage) 
   assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
 });
 
+test('ScreensaverEligibilityGuard - win32 rejects when display lookup fails', () => {
+  const nowTime = 10000;
+  const baseDeps = {
+    platform: 'win32',
+    now: () => nowTime,
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: { isFullScreen: false, bounds: { x: 200, y: 200, width: 1000, height: 700 } },
+      timestamp: nowTime - 500,
+    }),
+  };
+  const guard = createScreensaverEligibilityGuard({
+    ...baseDeps,
+    getDisplays: () => { throw new Error('display service unavailable'); },
+  });
+
+  assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'display-query-failed' });
+
+  const invalidResultGuard = createScreensaverEligibilityGuard({
+    ...baseDeps,
+    getDisplays: () => null,
+  });
+  assert.deepEqual(invalidResultGuard.canInterrupt(), { canInterrupt: false, reason: 'display-query-failed' });
+});
+
 test('ScreensaverEligibilityGuard - win32 fresh non-fullscreen window allows interrupt', () => {
   const nowTime = 10000;
   const display = { workArea: { x: 0, y: 0, width: 1920, height: 1080 } };

@@ -127,6 +127,8 @@ function createFakeDom() {
     },
   };
 
+  body.ownerDocument = documentMock;
+
   return { documentMock, elements, body };
 }
 
@@ -261,7 +263,7 @@ test('ScreensaverSystem - scene scale calculation and cancellation when space < 
   assert.equal(systemWithStart.sessionId, 0);
 });
 
-test('ScreensaverSystem - DOM overlay creation with session attribute and no interaction-overlay collision', () => {
+test('ScreensaverSystem - DOM overlay creation with session attribute and no interaction-overlay collision', async () => {
   const { documentMock } = createFakeDom();
   global.document = documentMock;
 
@@ -282,6 +284,8 @@ test('ScreensaverSystem - DOM overlay creation with session attribute and no int
   // Transition entering -> performing
   system.update(16);
   assert.equal(system.state, 'performing');
+  await Promise.resolve();
+  await Promise.resolve();
 
   // Next tick in performing triggers first overlay action ('hug')
   system.update(500);
@@ -354,6 +358,70 @@ test('ScreensaverSystem - combo sequence filtering missing skin assets', async (
   await system.prepareComboSequence();
 
   assert.deepEqual(system.activeComboSequence, ['hug', 'kiss'], 'Missing shareFood asset must be filtered out cleanly');
+});
+
+test('ScreensaverSystem - waits for async overlay validation before starting the combo', async () => {
+  let resolveKeys;
+  const availableKeys = new Promise((resolve) => {
+    resolveKeys = resolve;
+  });
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({
+    electronAPI,
+    skinManager: {
+      getCurrentSkin: () => 'partial_skin',
+      getAvailableOverlayKeys: () => availableKeys,
+    },
+  });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 78, startedAt: Date.now() });
+  system.update(16);
+  assert.equal(system.comboStepState, 'preparing');
+
+  system.update(1000);
+  assert.equal(system.state, 'performing');
+  assert.equal(system.comboStepState, 'preparing');
+
+  resolveKeys(['kiss']);
+  await availableKeys;
+  await Promise.resolve();
+
+  assert.deepEqual(system.activeComboSequence, ['kiss']);
+  assert.equal(system.comboStepState, 'idle_pause');
+
+  system.update(500);
+  assert.equal(system.comboStepState, 'overlay_action');
+  assert.equal(system.comboIndex, 0);
+});
+
+test('ScreensaverSystem - uses the renderer stage document for overlays', () => {
+  const { documentMock, body } = createFakeDom();
+  const electronAPI = createFakeElectronApi();
+  const petA = createFakePet('yueqi', 100, 100);
+  const petB = createFakePet('shenjiu', 300, 100);
+  const previousDocument = global.document;
+  delete global.document;
+
+  try {
+    const system = new ScreensaverSystem({
+      electronAPI,
+      getPets: () => [petA, petB],
+      renderer: { stage: body },
+    });
+    system.init();
+    electronAPI.emitStart({ sessionId: 79, startedAt: Date.now() });
+
+    system.showScreensaverOverlay('hug');
+    const overlay = body.children.find((child) => child.tagName === 'IMG');
+    assert.ok(overlay);
+  } finally {
+    if (previousDocument === undefined) {
+      delete global.document;
+    } else {
+      global.document = previousDocument;
+    }
+  }
 });
 
 test('ScreensaverSystem - runningBack clamps target points to active walkArea', () => {

@@ -9,7 +9,7 @@ const { ipcMain } = require('electron');
 const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('../../../activeWindowProvider');
 const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
 
-const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000;
+const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000;
 
 let deps = {};
 let activeWindowSampler = null;

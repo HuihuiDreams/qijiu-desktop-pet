@@ -63,17 +63,18 @@ function createScreensaverEligibilityGuard(deps = {}) {
       if (getDisplays && typeof getDisplays === 'function' && win.bounds) {
         try {
           const displays = getDisplays();
-          if (Array.isArray(displays)) {
-            const isPresentation = displays.some((display) => {
-              const workArea = display.workArea || display.bounds;
-              return coversWorkArea(win.bounds, workArea);
-            });
-            if (isPresentation) {
-              return { canInterrupt: false, reason: 'presentation' };
-            }
+          if (!Array.isArray(displays)) {
+            return { canInterrupt: false, reason: 'display-query-failed' };
+          }
+          const isPresentation = displays.some((display) => {
+            const workArea = display.workArea || display.bounds;
+            return coversWorkArea(win.bounds, workArea);
+          });
+          if (isPresentation) {
+            return { canInterrupt: false, reason: 'presentation' };
           }
         } catch {
-          // Ignore display lookup failures and fall through safely
+          return { canInterrupt: false, reason: 'display-query-failed' };
         }
       }
 

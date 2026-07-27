@@ -12,7 +12,7 @@
 
 ### 首发范围
 
-- Windows 首发：`ScreensaverEligibilityGuard` 每秒读取已有活动窗口缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。它不直接触发额外的活动窗口采样。
+- Windows 首发：活动窗口缓存每 2 秒刷新，`ScreensaverEligibilityGuard` 只读取该缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。Guard 不直接触发额外采样。
 - macOS 不纳入首发：当前项目没有可信的前台全屏/演示数据源，功能必须在该平台保持禁用，待独立的权限、数据源与验收方案获批后另立 ADR。
 - 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放；无有效区域或缩放低于 0.65 时取消本次会话。
 
@@ -68,7 +68,7 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 ### 2.4 渲染器演出状态
 
-新增 `ScreensaverSystem`，只维护 `inactive | entering | performing | caught | runningBack | cancelled`。它不能写入 `PetVisibilityService` 的暂停状态，也不能重置其隐藏来源；退出不尝试恢复不完整的 Pet/Interaction 内部快照。
+新增 `ScreensaverSystem`，只维护 `inactive | entering | performing | caught | runningBack`。它不能写入 `PetVisibilityService` 的暂停状态，也不能重置其隐藏来源；退出不尝试恢复不完整的 Pet/Interaction 内部快照。
 
 - `app.js` 必须将现有帧更新拆为具名 gate：`ScreensaverSystem` active 时只运行养成、存档、状态栏和离线结算；移动、InteractionSystem、环境闲聊、日常 overlay 与天气视觉一律不运行。InteractionSystem 需新增可测试的 `cancel()`，以清除内部 timer/currentInteraction；不借用全局 `isPaused`。
 - 演出位置只使用带 `displayId` 的 `StageGeometry.walkAreas`，并在 `DisplayService` 的“几何已 settle、版本已递增”事件后 cancel；不监听原始 `screen` 事件。迁屏/拔屏后等待下一段闲置重新评估。
@@ -99,7 +99,7 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 1. 在启用设置、连续闲置达到阈值、且 EligibilityGuard 允许后，最多一个采样周期内创建一次会话；同一闲置段不得重复触发。
 2. 在真实机器性能采样中记录输入恢复到退出开始的延迟；常规空闲系统下目标为下一次 1 秒轮询，第一次输入不被屏保窗口吞掉。锁屏/睡眠/全屏/隐藏/禁用/重载只会静默清理。
-3. 所有 start/stop/cancel/finalize 对重复与乱序消息幂等；旧 `sessionId` 绝不改变当前场景。
+3. 所有 start/stop/cancel/finalize 对重复与乱序消息幂等；匹配的 `screensaver-finished` 必须释放屏保租约并恢复待机轮询，旧 `sessionId` 绝不改变当前场景。
 4. Windows 多显示器、混合 DPI、显示器变更、窗口迁移和小 workArea 下，场景始终位于 renderer 选定显示器的有效区域；空间不足时不启动，且不产生 NaN、越界或残留节点。macOS 首发时不启动。
 5. 结束后日常移动、互动、天气视觉、久坐提醒、番茄钟、会议隐藏、手动暂停、换肤与 QA 入口均保持原语义。
 6. 常规动效场景：屏保层 DOM 节点不超过 15、粒子不超过 12、无持续 JS style write；性能采样中不新增超过 50 ms 的长任务。减少动态效果模式不创建粒子。

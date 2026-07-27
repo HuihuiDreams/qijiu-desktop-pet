@@ -228,6 +228,16 @@ function createScreensaverController(deps = {}) {
     resetPollTimer(STANDBY_POLL_INTERVAL_MS);
   }
 
+  function finishSession() {
+    if (state !== 'active' && state !== 'exiting') return;
+
+    if (interruptionCoordinator && typeof interruptionCoordinator.release === 'function') {
+      interruptionCoordinator.release('screensaver');
+    }
+    state = 'inactive';
+    resetPollTimer(STANDBY_POLL_INTERVAL_MS);
+  }
+
   function resetPollTimer(intervalMs) {
     if (pollTimer) _clearInterval(pollTimer);
     if (isStarted) {
@@ -348,7 +358,7 @@ function createScreensaverController(deps = {}) {
         if (!isSenderMainWindow(event, mainWindow)) return;
         const incomingSessionId = (typeof payload === 'object' && payload !== null) ? payload.sessionId : payload;
         if (Number.isInteger(incomingSessionId) && incomingSessionId > 0 && incomingSessionId === sessionId) {
-          // Session observability receipt confirmed
+          finishSession();
         }
       };
 
@@ -364,11 +374,11 @@ function createScreensaverController(deps = {}) {
       _clearInterval(pollTimer);
       pollTimer = null;
     }
+    isStarted = false;
     if (state === 'active' || state === 'exiting' || state === 'blocked') {
       cancelSession('stopped');
     }
     detachListeners();
-    isStarted = false;
   }
 
   function dispose() {
@@ -384,10 +394,6 @@ function createScreensaverController(deps = {}) {
   return {
     start,
     stop,
-    suspend,
-    resume,
-    lock,
-    unlock,
     dispose,
     getSettings,
     updateSettings,

@@ -2,10 +2,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 
-const { recomputeReport } = require('../tools/performance/recomputeBaseline');
+const { recomputeReport, formatReport } = require('../tools/performance/recomputeBaseline');
 
 function createReport() {
   return {
@@ -63,18 +62,17 @@ test('recomputeReport derives repetition and scenario summaries only from raw ru
   assert.equal(rain.idleCpuComparison.relativePercent, 700 / 3);
 });
 
-test('CLI writes a JSON aggregate for each input file', () => {
+test('CLI formats a JSON aggregate for each input file', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-recompute-'));
   const reportPath = path.join(directory, 'baseline.json');
   fs.writeFileSync(reportPath, JSON.stringify(createReport()));
-  const command = spawnSync(process.execPath, ['tools/performance/recomputeBaseline.js', reportPath], {
-    cwd: path.resolve(__dirname, '..'), encoding: 'utf8',
-  });
-  fs.rmSync(directory, { recursive: true, force: true });
 
-  assert.equal(command.status, 0, command.stderr);
-  const output = JSON.parse(command.stdout);
-  assert.equal(output.sources.length, 1);
-  assert.equal(output.sources[0].source, 'baseline.json');
-  assert.equal(output.sources[0].scenarios.rain.idleCpuComparison.relativePercent, 700 / 3);
+  try {
+    const output = JSON.parse(formatReport([reportPath]));
+    assert.equal(output.sources.length, 1);
+    assert.equal(output.sources[0].source, 'baseline.json');
+    assert.equal(output.sources[0].scenarios.rain.idleCpuComparison.relativePercent, 700 / 3);
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
 });
