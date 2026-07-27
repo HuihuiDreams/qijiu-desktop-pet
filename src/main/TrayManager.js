@@ -168,6 +168,31 @@ function buildTrayMenu() {
       })),
     },
     {
+      label: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { enabled: false }).enabled
+        ? trayMenuLabel('trayScreensaverOn')
+        : trayMenuLabel('trayScreensaverOff'),
+      click: async () => {
+        if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+        const current = deps.getScreensaverSettings();
+        deps.updateScreensaverSettings({ ...current, enabled: !current.enabled });
+        refreshTrayMenu();
+      },
+    },
+    {
+      label: trayMenuLabel('trayScreensaverThreshold'),
+      submenu: [1, 5, 10, 30, 60].map((minutes) => ({
+        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
+        type: 'radio',
+        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
+        click: async () => {
+          if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+          const current = deps.getScreensaverSettings();
+          deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
+          refreshTrayMenu();
+        },
+      })),
+    },
+    {
       label: deps.getWeatherSyncSettings().enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
       click: () => {
         const currentStored = deps.getStoredWeatherSyncSettings();

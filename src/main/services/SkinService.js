@@ -242,6 +242,9 @@ function getSkinGalleryItems() {
 function selectSkin(skinId) {
   const { windowManager, sendPomodoroState, trayManager } = deps;
   currentSkinId = skinId;
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('skin-changed');
+  }
   if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
     windowManager.mainWindow.webContents.send('switch-skin', skinId);
   }

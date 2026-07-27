@@ -28,9 +28,13 @@ const pomodoroWindowModule = require('./windows/PomodoroWindow');
 const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
 const petWindowModule = require('./windows/PetWindow');
 const trayManager = require('./TrayManager');
+const { createInterruptionCoordinator } = require('./services/InterruptionCoordinator');
+const { createScreensaverEligibilityGuard } = require('./services/ScreensaverEligibilityGuard');
+const { createScreensaverController } = require('./services/ScreensaverController');
 const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
+let screensaverController = null;
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'pet-asset',
@@ -67,6 +71,9 @@ class AppLifecycle {
     app.on('before-quit', () => {
       MeetingDetectorController.stopMeetingDetector();
       PomodoroService.stopPomodoroTicker();
+      if (screensaverController) {
+        screensaverController.dispose();
+      }
     });
 
     app.whenReady().then(async () => {
@@ -79,7 +86,7 @@ class AppLifecycle {
       }
 
       // 设置权限拦截
-      const { session } = require('electron');
+      const { session, powerMonitor, screen } = require('electron');
       session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
         callback(false);
       });
@@ -89,11 +96,31 @@ class AppLifecycle {
       LocaleService.loadInitialLocale();
       await AutoLaunchService.syncAutoLaunchPreference();
 
+      const interruptionCoordinator = createInterruptionCoordinator();
+      const eligibilityGuard = createScreensaverEligibilityGuard({
+        platform: process.platform,
+        getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
+        getDisplays: () => screen.getAllDisplays(),
+      });
+
+      screensaverController = createScreensaverController({
+        powerMonitor,
+        interruptionCoordinator,
+        eligibilityGuard,
+        StoreManager,
+        getMainWindow: () => windowManager.mainWindow,
+        isPetCurrentlyHidden: PetVisibilityService.isPetCurrentlyHidden,
+        getIsPaused: PetVisibilityService.getIsPaused,
+        ipcMain,
+      });
+      screensaverController.start();
+
       BreakReminderController.init({
         StoreManager,
         PetVisibilityService,
         WindowAwarenessService,
         windowManager,
+        interruptionCoordinator,
       });
 
       WeatherSyncController.init({
@@ -133,6 +160,7 @@ class AppLifecycle {
       DisplayService.init({
         windowManager,
         trayManager,
+        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
       });
 
       WindowAwarenessService.init({
@@ -146,6 +174,7 @@ class AppLifecycle {
         ipcMain,
         windowManager,
         trayManager,
+        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
       });
 
       MeetingDetectorController.init({
@@ -199,6 +228,8 @@ class AppLifecycle {
         getBreakReminderService: BreakReminderController.getBreakReminderService,
         BREAK_REMINDER_STORE_KEY,
         BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
+        getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 5 }),
+        updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
         getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
         getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
         updateWeatherSyncSettings: WeatherSyncController.updateWeatherSyncSettings,
@@ -226,7 +257,8 @@ class AppLifecycle {
         windowManager,
         skinSelectorWindowModule,
         trayManager,
-        sendPomodoroState: PomodoroService.sendPomodoroState
+        sendPomodoroState: PomodoroService.sendPomodoroState,
+        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
       });
       skinSelectorWindowModule.init({
         selectSkin: SkinService.selectSkin,
