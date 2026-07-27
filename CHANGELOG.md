@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Added
+- **局部高甜屏保架构设计契约 (`CP Screensaver Architecture Plan`)**：确立了 CP 局部屏保实施计划与多端防御性设计决策。采用基于递增 `sessionId` 的独立主进程会话，并引入 `InterruptionCoordinator` 原子租约仲裁，严格隔离既有久坐提醒服务。明确了纯 CSS 特效的零新增美术资产约束与严格的硬件加速性能基线，为后续按部就班的代码落地提供了清晰、安全的指引。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md) 及规范说明。
+
 ## [0.9.4] - 2026-07-26
 
 ### Added

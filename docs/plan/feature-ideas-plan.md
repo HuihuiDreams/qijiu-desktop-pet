@@ -36,6 +36,7 @@
 |---|---|---|
 | 苍穹山派番茄钟 | 已实现 | 已落地完成并归档规范至 `docs/archive/cangqiong-pomodoro-plan.md` |
 | 宗门事务 To-Do List | 已拆分 | `docs/plan/zongmen-task-todo-plan.md` |
+| 局部高甜屏保 (CP Screensaver) | 已拆分 | `docs/plan/cp-screensaver-plan.md` |
 | 系统状态映射 | 待确认 | 需要确认系统指标依赖、采样频率、跨平台支持 |
 | 天气 / 时空同步 | 已实现 | 已完成昼夜时段切换、天气感知及城市设置可视化界面 |
 | 皮肤 / 配件系统 | 已实现 | 已完成皮肤管理器与主界面交互，规范归档至 `docs/archive/skin-system-plan.md` |
