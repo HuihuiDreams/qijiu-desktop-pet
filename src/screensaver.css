@@ -34,3 +34,105 @@
     transform: translate(-50%, -100%) scale(1);
   }
 }
+
+/* Screensaver Particle Layer CSS */
+
+.screensaver-particle-root {
+  position: absolute;
+  pointer-events: none;
+  z-index: 90;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.screensaver-warm-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 182, 193, 0.35) 0%, rgba(255, 105, 180, 0.15) 55%, transparent 80%);
+  pointer-events: none;
+  animation: screensaver-glow-pulse 3s ease-in-out infinite alternate;
+}
+
+.screensaver-particle-heart {
+  position: absolute;
+  bottom: 10px;
+  width: 14px;
+  height: 14px;
+  background-color: #ff6b81;
+  transform: rotate(-45deg);
+  pointer-events: none;
+  opacity: 0;
+  animation: screensaver-heart-float var(--heart-duration, 2.5s) ease-in-out var(--heart-delay, 0s) infinite;
+}
+
+.screensaver-particle-heart::before,
+.screensaver-particle-heart::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background-color: #ff6b81;
+  border-radius: 50%;
+}
+
+.screensaver-particle-heart::before {
+  top: -7px;
+  left: 0;
+}
+
+.screensaver-particle-heart::after {
+  left: 7px;
+  top: 0;
+}
+
+/* 仅包含 opacity 与 transform 动画 */
+@keyframes screensaver-glow-pulse {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes screensaver-heart-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(calc(var(--heart-scale, 1) * 0.6)) rotate(-45deg);
+  }
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-90px) translateX(var(--heart-drift-x, 15px)) scale(var(--heart-scale, 1)) rotate(-45deg);
+  }
+}
+
+/* Reduced Motion Mode Override */
+@media (prefers-reduced-motion: reduce) {
+  .screensaver-particle-heart {
+    display: none !important;
+    animation: none !important;
+  }
+  .screensaver-warm-glow {
+    animation: screensaver-glow-fade-static 2s ease-in-out infinite alternate !important;
+  }
+}
+
+@keyframes screensaver-glow-fade-static {
+  0% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 0.55;
+  }
+}
+

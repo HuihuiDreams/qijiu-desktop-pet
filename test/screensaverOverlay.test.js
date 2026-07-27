@@ -50,7 +50,16 @@ function createFakeDom() {
     createElement(tag) {
       const attrs = {};
       const classListSet = new Set();
-      const styleObj = {};
+      const styleObj = {
+        _props: {},
+        setProperty(k, v) {
+          this[k] = String(v);
+          this._props[k] = String(v);
+        },
+        getPropertyValue(k) {
+          return this._props[k] || this[k] || '';
+        },
+      };
       const el = {
         tagName: tag.toUpperCase(),
         attributes: attrs,
@@ -86,6 +95,11 @@ function createFakeDom() {
         },
         getAttribute(k) {
           return attrs[k] || null;
+        },
+        appendChild(child) {
+          child.parentElement = el;
+          elements.push(child);
+          return child;
         },
         querySelector(selector) {
           if (selector === '.pet-body') {

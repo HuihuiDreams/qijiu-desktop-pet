@@ -16,6 +16,7 @@ class ScreensaverSystem {
       ? deps.clearInteractionOverlay
       : null;
     this.skinManager = deps.skinManager || null;
+    this.particleLayer = deps.particleLayer || null;
 
     this.state = 'inactive';
     this.sessionId = 0;
@@ -53,6 +54,7 @@ class ScreensaverSystem {
       this.clearInteractionOverlay = deps.clearInteractionOverlay;
     }
     if (deps.skinManager) this.skinManager = deps.skinManager;
+    if (deps.particleLayer) this.particleLayer = deps.particleLayer;
 
     this.detachSubscriptions();
 
@@ -82,6 +84,27 @@ class ScreensaverSystem {
     this.unsubscribeStart = null;
     this.unsubscribeStop = null;
     this.unsubscribeCancel = null;
+  }
+
+  getParticleLayer() {
+    if (!this.particleLayer) {
+      let LayerClass = typeof ScreensaverParticleLayer !== 'undefined' ? ScreensaverParticleLayer : null;
+      if (!LayerClass && typeof require !== 'undefined') {
+        try {
+          const mod = require('../ui/ScreensaverParticleLayer');
+          LayerClass = mod.ScreensaverParticleLayer;
+        } catch (e) {
+          LayerClass = null;
+        }
+      }
+      if (LayerClass) {
+        const stage = (this.renderer && this.renderer.stage)
+          ? this.renderer.stage
+          : (typeof document !== 'undefined' ? document.body : null);
+        this.particleLayer = new LayerClass(stage);
+      }
+    }
+    return this.particleLayer;
   }
 
   /**
@@ -203,6 +226,11 @@ class ScreensaverSystem {
       return;
     }
     this.sceneBounds = scene;
+
+    const pLayer = this.getParticleLayer();
+    if (pLayer && typeof pLayer.mount === 'function') {
+      pLayer.mount(this.sceneBounds);
+    }
   }
 
   /**
@@ -218,6 +246,9 @@ class ScreensaverSystem {
     if (payload.reason === 'input' && (this.state === 'entering' || this.state === 'performing')) {
       this.state = 'caught';
       this.stateTimer = 300;
+      if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
+        this.particleLayer.clear();
+      }
       this.clearScreensaverOverlays();
       this.showCaughtIndicator();
     } else {
@@ -439,6 +470,9 @@ class ScreensaverSystem {
    */
   initRunningBack() {
     this.clearScreensaverOverlays();
+    if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
+      this.particleLayer.clear();
+    }
 
     this.state = 'runningBack';
     this.stateTimer = 500;
@@ -521,6 +555,10 @@ class ScreensaverSystem {
     }
     if (this.interactionSystem && typeof this.interactionSystem.cancel === 'function') {
       this.interactionSystem.cancel();
+    }
+
+    if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
+      this.particleLayer.clear();
     }
 
     if (this.dialogBubble && typeof this.dialogBubble.removeForPets === 'function') {
@@ -634,6 +672,9 @@ class ScreensaverSystem {
 
   dispose() {
     this.detachSubscriptions();
+    if (this.particleLayer && typeof this.particleLayer.destroy === 'function') {
+      this.particleLayer.destroy();
+    }
     this.reset();
   }
 }

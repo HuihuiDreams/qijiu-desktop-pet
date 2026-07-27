@@ -205,7 +205,8 @@ qijiu-desktop-pet/
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
-│  │  └─ WeatherParticleLayer.js        # 渲染层天气粒子效果生成与管理
+│  │  ├─ WeatherParticleLayer.js        # 渲染层天气粒子效果生成与管理
+│  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层 (节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画)
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
