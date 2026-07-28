@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-29
+
 ### Added
 - **CP 局部屏保 Step 4 爱心氛围粒子层与视觉集成 (`CP Screensaver Heart Particle Layer & Visual Integration`)**：实现 `ScreensaverParticleLayer` 屏保爱心氛围粒子与暖光背景层，独立创建 DOM 容器 `.screensaver-particle-root`，设置 `pointer-events: none` 且严禁分配或碰撞 `weather-particle-layer` 等全局 ID；严格遵循节点上限 <= 20 约束（1 根节点 + 1 暖光背景 + 最多 12 爱心粒子 = 14 个节点）；动画 100% 移交 CSS keyframe（`opacity` 与 `transform`），严禁使用 `filter` / `backdrop-filter` / `box-shadow` keyframe 动画或 JS 逐帧 style 轮询；完美兼容 `prefers-reduced-motion: reduce`（减弱动态效果时 0 爱心粒子节点，仅保留暖光渐变）；实现 `clear()` / `destroy()` 完全销毁 DOM 与引用；将其无缝挂载至 `ScreensaverSystem` 的生命周期（`onStart` 挂载，`reset` / `cancel` / `onStop` / `dispose` 销毁），并在 `src/index.html` 中引入脚本。新增 `test/screensaverParticleLayer.test.js` 单元测试，全套测试 756 pass 0 fail。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - **CP 局部屏保 Step 3 CP 叠加层与动画流程 (`CP Screensaver Overlay Layer & Animation Flow`)**：扩展 `ScreensaverSystem` 实现屏保演出动画流程与 CP 互动叠加层；场景显示器基于两宠物视觉中点在 `StageGeometry.walkAreas` 中选择（落在间隙时回退至岳七所在显示器），扣除边距后在 `0.65–1.0` 间计算场景缩放（空间不足 < 0.65 时自动取消会话）；在 `SkinService` 与 `SkinManager` 中提供 `getAvailableOverlayKeys` 校验皮肤可用叠加层资源，自动跳过缺失素材；屏保 Overlay 元素统一携带 `data-screensaver-session-id` 属性与 `.screensaver-overlay-image` 类，严禁使用或碰撞全局 `interaction-overlay` ID；在被抓包状态（`onStop({ reason: 'input' })`）下展示 CSS 文本 `!` 提示（`.screensaver-caught-text`，非 emoji）；在 `runningBack` 状态下将目标点（`startPositions`）夹紧至当前有效 `walkArea` 后插值位移；在 `reset()` 中安全清除定时器、DOM 节点并调用 `interactionSystem.cancel()`，重置宠物为 `idle` 状态同时严格保留未执行的 `queuedAction`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
