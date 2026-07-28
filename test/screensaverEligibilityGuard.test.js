@@ -131,9 +131,9 @@ test('ScreensaverEligibilityGuard - win32 fullscreen window rejection', () => {
   assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'fullscreen' });
 });
 
-test('ScreensaverEligibilityGuard - win32 presentation mode (workArea coverage) rejection', () => {
+test('ScreensaverEligibilityGuard - win32 presentation mode (non-maximized borderless coverage) rejection', () => {
   const nowTime = 10000;
-  const display = { workArea: { x: 0, y: 0, width: 1920, height: 1080 } };
+  const display = { bounds: { x: 0, y: 0, width: 1920, height: 1080 }, workArea: { x: 0, y: 0, width: 1920, height: 1040 } };
 
   const guard = createScreensaverEligibilityGuard({
     platform: 'win32',
@@ -141,11 +141,28 @@ test('ScreensaverEligibilityGuard - win32 presentation mode (workArea coverage) 
     getDisplays: () => [display],
     getActiveWindowInfo: () => ({
       active: true,
-      window: { isFullScreen: false, bounds: { x: 0, y: 0, width: 1920, height: 1080 } },
+      window: { isFullScreen: false, isMaximized: false, bounds: { x: 0, y: 0, width: 1920, height: 1080 } },
       timestamp: nowTime - 500,
     }),
   });
   assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
+});
+
+test('ScreensaverEligibilityGuard - win32 maximized office window covering workArea is allowed', () => {
+  const nowTime = 10000;
+  const display = { bounds: { x: 0, y: 0, width: 1920, height: 1080 }, workArea: { x: 0, y: 0, width: 1920, height: 1040 } };
+
+  const guard = createScreensaverEligibilityGuard({
+    platform: 'win32',
+    now: () => nowTime,
+    getDisplays: () => [display],
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: { isFullScreen: false, isMaximized: true, bounds: { x: 0, y: 0, width: 1920, height: 1040 } },
+      timestamp: nowTime - 500,
+    }),
+  });
+  assert.deepEqual(guard.canInterrupt(), { canInterrupt: true, reason: null });
 });
 
 test('ScreensaverEligibilityGuard - win32 rejects when display lookup fails', () => {

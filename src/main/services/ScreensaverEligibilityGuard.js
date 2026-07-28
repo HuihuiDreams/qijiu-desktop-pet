@@ -60,15 +60,18 @@ function createScreensaverEligibilityGuard(deps = {}) {
         return { canInterrupt: false, reason: 'fullscreen' };
       }
 
-      if (getDisplays && typeof getDisplays === 'function' && win.bounds) {
+      // Maximized normal windows (VS Code / Office) are allowed; only a
+      // non-maximized window that covers a full display (bounds, not workArea)
+      // is treated as a borderless presentation and rejected.
+      if (!win.isMaximized && getDisplays && typeof getDisplays === 'function' && win.bounds) {
         try {
           const displays = getDisplays();
           if (!Array.isArray(displays)) {
             return { canInterrupt: false, reason: 'display-query-failed' };
           }
           const isPresentation = displays.some((display) => {
-            const workArea = display.workArea || display.bounds;
-            return coversWorkArea(win.bounds, workArea);
+            const fullBounds = display.bounds || display.workArea;
+            return coversWorkArea(win.bounds, fullBounds);
           });
           if (isPresentation) {
             return { canInterrupt: false, reason: 'presentation' };
