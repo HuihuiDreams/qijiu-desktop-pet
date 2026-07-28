@@ -111,10 +111,15 @@ public static class NativeWindow {
   [DllImport("user32.dll")] public static extern IntPtr GetShellWindow();
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
+  [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
 }
 public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+[StructLayout(LayoutKind.Sequential)]
+public struct MONITORINFO { public uint cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
 "@
 $GW_HWNDNEXT = 2
+$MONITOR_DEFAULTTONEAREST = 2
 $ignoredClasses = @("Progman", "WorkerW", "Shell_TrayWnd")
 $shellWindow = [NativeWindow]::GetShellWindow()
 $sawIgnoredWindow = $false
@@ -150,6 +155,24 @@ while ($handle -ne [IntPtr]::Zero) {
     try { $processName = (Get-Process -Id $pidValue -ErrorAction Stop).ProcessName } catch {}
     $titleBuilder = New-Object System.Text.StringBuilder 512
     [void][NativeWindow]::GetWindowText($handle, $titleBuilder, $titleBuilder.Capacity)
+
+    $isFullScreen = $false
+    $monitor = [NativeWindow]::MonitorFromWindow($handle, $MONITOR_DEFAULTTONEAREST)
+    if ($monitor -ne [IntPtr]::Zero) {
+      $mi = New-Object MONITORINFO
+      $mi.cbSize = [uint32][System.Runtime.InteropServices.Marshal]::SizeOf($mi)
+      if ([NativeWindow]::GetMonitorInfo($monitor, [ref]$mi)) {
+        $mLeft = $mi.rcMonitor.Left
+        $mTop = $mi.rcMonitor.Top
+        $mRight = $mi.rcMonitor.Right
+        $mBottom = $mi.rcMonitor.Bottom
+        $tolerance = 8
+        $coversMonitor = ($rect.Left -le $mLeft + $tolerance) -and ($rect.Top -le $mTop + $tolerance) -and ($rect.Right -ge $mRight - $tolerance) -and ($rect.Bottom -ge $mBottom - $tolerance)
+        $isMaximized = [NativeWindow]::IsZoomed($handle)
+        $isFullScreen = (-not $isMaximized) -and $coversMonitor
+      }
+    }
+
     @{
       active = $true
       source = "active-window"
@@ -159,7 +182,7 @@ while ($handle -ne [IntPtr]::Zero) {
       bounds = @{ x = $rect.Left; y = $rect.Top; width = $width; height = $height }
       isMinimized = [NativeWindow]::IsIconic($handle)
       isMaximized = [NativeWindow]::IsZoomed($handle)
-      isFullScreen = $false
+      isFullScreen = $isFullScreen
     } | ConvertTo-Json -Compress
     exit 0
   }

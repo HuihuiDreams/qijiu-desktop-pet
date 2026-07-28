@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- 修复 Windows 活动窗口采样将“覆盖工作区的最大化办公窗口”误判为演示的问题；PowerShell 现通过 `MonitorFromWindow` / `GetMonitorInfo` 取前台窗口所属显示器完整 `rcMonitor`，仅在窗口非最大化且覆盖完整 monitor bounds 时标记 `isFullScreen: true`，使最大化 VS Code / Office 等不再被标记全屏，而 PPT 放映、浏览器 F11 等真正全屏窗口维持拒绝。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复活动窗口缓存原先每 10 秒刷新、却被 CP 屏保以 2 秒时效校验而持续拒绝触发的问题；现改为每 2 秒刷新，保持全屏/演示保护的严格时效要求且避免高频 PowerShell 轮询。
 - 修复渲染器演出完成后主进程仍保持屏保租约的问题；完成确认现会结束会话并恢复久坐提醒的仲裁能力。
 - 修复显示器信息查询异常或返回无效结果时屏保仍可能打断演示的问题；无法验证演示状态时现会保守拒绝触发。
