@@ -591,6 +591,67 @@ test('ScreensaverController - active session is cancelled if eligibilityGuard tu
   assert.equal(lastEvent.payload.reason, 'fullscreen');
 });
 
+test('ScreensaverController - transient eligibility loss mid-session (stale_cache) does not cancel an active session', () => {
+  const clock = createFakeClock();
+  const powerMonitor = createFakePowerMonitor(350);
+  const mainWindow = createFakeMainWindow();
+  const coordinator = createInterruptionCoordinator();
+  let pollCount = 0;
+  let forceReason = null;
+
+  // Stub guard: passes the trigger poll, then yields transient rejections
+  // on subsequent polls. A definitive fullscreen rejection is forced last to
+  // prove real losses still cancel a validated session.
+  const guard = {
+    canInterrupt: () => {
+      pollCount += 1;
+      if (forceReason) return { canInterrupt: false, reason: forceReason };
+      if (pollCount === 1) return { canInterrupt: true, reason: null };
+      return { canInterrupt: false, reason: 'stale_cache' };
+    },
+  };
+
+  const controller = createScreensaverController({
+    powerMonitor,
+    interruptionCoordinator: coordinator,
+    eligibilityGuard: guard,
+    getMainWindow: () => mainWindow,
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    settings: { enabled: true, idleThresholdMinutes: 5 },
+  });
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(coordinator.getCurrentHolder(), 'screensaver');
+
+  // Active poll ticks observe transient stale_cache / provider-error: must NOT cancel.
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(coordinator.getCurrentHolder(), 'screensaver');
+  forceReason = 'provider-error';
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(coordinator.getCurrentHolder(), 'screensaver');
+  forceReason = 'unknown-state';
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(coordinator.getCurrentHolder(), 'screensaver');
+
+  // A definitive ineligibility (foreground fullscreen launched mid-session)
+  // still cancels a validated session.
+  forceReason = 'fullscreen';
+  controller._poll();
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(coordinator.getCurrentHolder(), null);
+  const lastEvent = mainWindow.sentEvents[mainWindow.sentEvents.length - 1];
+  assert.equal(lastEvent.channel, 'screensaver-cancel');
+  assert.equal(lastEvent.payload.reason, 'fullscreen');
+  controller.dispose();
+});
+
 test('ScreensaverController - renderer completion releases the active screensaver lease', () => {
   const clock = createFakeClock();
   const powerMonitor = createFakePowerMonitor(300);

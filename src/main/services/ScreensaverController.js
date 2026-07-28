@@ -18,6 +18,18 @@ const STANDBY_POLL_INTERVAL_MS = 5000;
 const ACTIVE_POLL_INTERVAL_MS = 1000;
 const ACTIVE_IDLE_THRESHOLD_SECONDS = 60;
 
+/**
+ * During an active screensaver session, only these guard reasons prove that
+ * we should not be interrupting (a foreground fullscreen / borderless
+ * presentation). Transient reasons such as `stale_cache`, `provider-error`,
+ * `unknown-state`, `display-query-failed` and `unsupported_platform` reflect a
+ * momentary sampling gap rather than a real eligibility change — aborting on
+ * them would let routine cache jitter tear down a session that was already
+ * validated at trigger time. Such transient results are ignored until the
+ * next poll tick brings fresh data.
+ */
+const DEFINITIVE_ELIGIBILITY_LOSS_REASONS = new Set(['fullscreen', 'presentation']);
+
 function normalizeScreensaverSettings(raw) {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_SETTINGS };
 
@@ -127,7 +139,19 @@ function createScreensaverController(deps = {}) {
       if (eligibilityGuard && typeof eligibilityGuard.canInterrupt === 'function') {
         const guardResult = eligibilityGuard.canInterrupt();
         if (!guardResult || !guardResult.canInterrupt) {
-          cancelSession(guardResult?.reason || 'eligibility-lost');
+          const reason = guardResult?.reason || 'eligibility-lost';
+          // During an active session we already validated eligibility at trigger
+          // time. Only abort on a definitive ineligibility change (foreground
+          // fullscreen / borderless presentation). Transient reasons such as
+          // `stale_cache`, `provider-error`, `unknown-state`,
+          // `display-query-failed` and `unsupported_platform` reflect a
+          // momentary sampling gap (e.g. PowerShell latency pushing the
+          // 2s sampler cache just past the guard's freshness threshold) and
+          // would otherwise tear down a valid session the very next poll tick.
+          // Defer the decision until the next poll brings fresh data.
+          if (DEFINITIVE_ELIGIBILITY_LOSS_REASONS.has(reason)) {
+            cancelSession(reason);
+          }
           return;
         }
       }

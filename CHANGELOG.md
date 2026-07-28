@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- 修复活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood → idle` 后就被瞬间取消、宠物跳回原位的问题。根因：`ScreensaverController` 进入 `active` 状态后以 1 秒轮询重查 `ScreensaverEligibilityGuard`，但 Windows 活动窗口采样器 `sampledAt` 取自 PowerShell 调用起始时间，叠加 2 秒采样间隔与 2 秒信任窗口时缓存极易越过 2s 边界而返回 `stale_cache`/`provider-error`/`unknown-state` 等瞬态拒绝，从而误发 `screensaver-cancel`。现仅对真正决定不允许打扰的 `fullscreen` / `presentation` 才取消会话；瞬态原因视为采样间隙，留待下一轮轮询再判断。新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
 - 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复同一 `sessionId` 的重复 stop 或迟到 IPC 可能让 CP 屏保重复显示“被发现”感叹号或回位动画的问题；`caught` / `runningBack` 状态现在忽略重复的 `input` stop，确保感叹号与回位各至多发生一次。
