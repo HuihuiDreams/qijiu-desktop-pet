@@ -225,7 +225,7 @@ test('Screensaver Settings - Store Persistence & Dynamic Synchronization', async
 test('Screensaver Settings - Tray Menu & i18n Localization', async (t) => {
   await t.test('i18n dictionaries contain non-empty CP Screensaver tray keys for zh, en, ja', () => {
     const locales = ['zh', 'en', 'ja'];
-    const requiredKeys = ['trayScreensaverOn', 'trayScreensaverOff', 'trayScreensaverThreshold', 'trayScreensaverPowerHint'];
+    const requiredKeys = ['trayScreensaverOn', 'trayScreensaverOff', 'trayScreensaverThreshold'];
 
     locales.forEach((locale) => {
       assert.ok(I18N[locale], `Locale ${locale} exists`);

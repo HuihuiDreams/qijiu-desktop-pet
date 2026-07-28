@@ -181,24 +181,17 @@ function buildTrayMenu() {
     },
     {
       label: trayMenuLabel('trayScreensaverThreshold'),
-      submenu: [
-        ...SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
-          label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
-          type: 'radio',
-          checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
-          click: async () => {
-            if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
-            const current = deps.getScreensaverSettings();
-            deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
-            refreshTrayMenu();
-          },
-        })),
-        { type: 'separator' },
-        {
-          label: trayMenuLabel('trayScreensaverPowerHint'),
-          enabled: false,
+      submenu: SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
+        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
+        type: 'radio',
+        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
+        click: async () => {
+          if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+          const current = deps.getScreensaverSettings();
+          deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
+          refreshTrayMenu();
         },
-      ],
+      })),
     },
     {
       label: deps.getWeatherSyncSettings().enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),

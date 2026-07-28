@@ -28,19 +28,16 @@ test('Window Awareness tray labels are localized', () => {
   assert.ok(i18nSource.includes('trayWindowAwarenessUnavailable'));
 });
 
-test('CP Screensaver tray threshold submenu uses shared allowlist source with a non-clickable power hint', () => {
+test('CP Screensaver tray threshold submenu uses shared allowlist source and no in-menu power hint', () => {
   // Submenu must not hard-code the old [1,5,10,30,60] array; it must reuse the
   // shared allowlist from screensaverAllowedMinutes.js.
   assert.ok(traySource.includes('SCREENSAVER_ALLOWED_IDLE_MINUTES'));
   assert.ok(traySource.includes("require('./services/screensaverAllowedMinutes')"));
   assert.ok(!traySource.includes('[1, 5, 10, 30, 60]'));
 
-  // Submenu includes an enabled:false power hint using the localized key.
-  assert.ok(traySource.includes("trayMenuLabel('trayScreensaverPowerHint')"));
-  assert.ok(traySource.includes('enabled: false'));
-
-  // All three locales provide a non-empty power hint message.
-  assert.match(i18nSource, /trayScreensaverPowerHint:\s*'[^']+'/);
+  // No in-tray-menu power hint: the explanation lives in the README, not the submenu.
+  assert.ok(!traySource.includes('trayScreensaverPowerHint'));
+  assert.ok(!i18nSource.includes('trayScreensaverPowerHint'));
 });
 
 test('debug tools expose current Window Awareness state', () => {
