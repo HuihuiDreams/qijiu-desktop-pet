@@ -383,8 +383,10 @@ test('CHALLENGE 4 - Interruption during entering or performing -> caught state d
   const enteringShenjiu = bubbleCalls.find((c) => c.pet === 'shenjiu');
   assert.ok(enteringYueqi, 'Yueqi must receive a caught bubble');
   assert.ok(global.DIALOGUES.screensaverCaught.yueqi.includes(enteringYueqi.text));
+  assert.equal(enteringYueqi.duration, 4000, 'Caught bubble must display for 4000ms (matching other features, visible after pets return home)');
   assert.ok(enteringShenjiu, 'Shenjiu must receive a caught bubble');
   assert.ok(global.DIALOGUES.screensaverCaught.shenjiu.includes(enteringShenjiu.text));
+  assert.equal(enteringShenjiu.duration, 4000, 'Caught bubble must display for 4000ms (matching other features, visible after pets return home)');
   assert.equal(documentMock.querySelector('.screensaver-caught-text'), null, 'No CSS ! text node must exist');
 
   bubbleCalls.length = 0;

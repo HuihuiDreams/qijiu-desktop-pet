@@ -419,8 +419,8 @@ test('ScreensaverSystem - caught state displays "被抓包" dialog bubbles above
   assert.ok(global.DIALOGUES.screensaverCaught.yueqi.includes(bubbleCalls[0].text));
   assert.equal(bubbleCalls[1].pet, 'shenjiu');
   assert.ok(global.DIALOGUES.screensaverCaught.shenjiu.includes(bubbleCalls[1].text));
-  assert.equal(bubbleCalls[0].duration, 800);
-  assert.equal(bubbleCalls[1].duration, 800);
+  assert.equal(bubbleCalls[0].duration, 4000, 'Caught bubble must display for 4000ms (visible after pets return home)');
+  assert.equal(bubbleCalls[1].duration, 4000, 'Caught bubble must display for 4000ms (visible after pets return home)');
 
   // No CSS ! text node must be rendered.
   assert.equal(documentMock.querySelector('.screensaver-caught-text'), null);

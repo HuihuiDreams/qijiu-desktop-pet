@@ -5,7 +5,8 @@
  */
 
 let ScreensaverParticleLayerClass = null;
-const CAUGHT_INDICATOR_DURATION_MS = 800;
+const CAUGHT_INDICATOR_DURATION_MS = 800;  // 被抓包状态冻结时长（状态机计时器）
+const CAUGHT_BUBBLE_DURATION_MS = 4000;    // 被抓包气泡显示时长（与其他功能保持一致）
 if (typeof ScreensaverParticleLayer !== 'undefined') {
   ScreensaverParticleLayerClass = ScreensaverParticleLayer;
 } else if (typeof require !== 'undefined') {
@@ -503,7 +504,7 @@ class ScreensaverSystem {
       const pool = caught[pet.id];
       if (!Array.isArray(pool) || pool.length === 0) return;
       const text = pool[Math.floor(Math.random() * pool.length)];
-      this.dialogBubble.show(pet, text, CAUGHT_INDICATOR_DURATION_MS);
+      this.dialogBubble.show(pet, text, CAUGHT_BUBBLE_DURATION_MS);
     });
   }
 
