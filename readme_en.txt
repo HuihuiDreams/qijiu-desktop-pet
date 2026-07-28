@@ -60,7 +60,7 @@ When you switch language from the tray menu, the main window, right-click menus,
 💕 CP Sweet Screensaver
 ========================================
 
-After the system is idle longer than the configured threshold, Yueqi and Shenjiu will play a CP combo (shareFood -> hug -> kiss) at the center of the screen and loop until next input or a silent cancel (lock, fullscreen, etc.); when they detect you are back, a "!" appears above their heads and they run back to their original spots. In the tray menu under "💕 Screensaver Idle Time" you can pick 1 / 3 / 5 / 10 / 15 / 30 minutes; the default is 3 minutes.
+After the system is idle longer than the configured threshold, Yueqi and Shenjiu will play a CP combo (shareFood -> hug -> kiss) at the center of the screen and loop until next input or a silent cancel (lock, fullscreen, etc.); when they detect you are back, each shows a dialogue bubble above their head (Yueqi: "So shy... 😳" etc.; Shenjiu: "Busted! ❗️" etc.) and then runs back to their original spots. In the tray menu under "💕 Screensaver Idle Time" you can pick 1 / 3 / 5 / 10 / 15 / 30 minutes; the default is 3 minutes.
 
 Note: This app does NOT block or modify Windows screen-off / sleep timing. To see the animation make sure the Windows "turn off screen" and "sleep" timer is later than the selected CP wait time. Windows 11 defaults to about 5 minutes when plugged in, so if you want a wait of 5 minutes or longer, please lengthen the screen-off/sleep time in the system power settings.
 
