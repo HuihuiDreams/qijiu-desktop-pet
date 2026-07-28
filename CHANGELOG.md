@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- 修复运行 `npm run qa:electron:performance` 时抛出 `Error: Cannot find module 'playwright'` 的问题。因 `node_modules` 中缺失 `playwright` 依赖，通过运行 `npm install` 完整安装缺失的 `devDependencies`，并经 `npm run qa:electron:performance` 和 `npm test`（804 pass 0 fail）验证性能采样与单元测试均正常运行。
 - 修复 CP 屏保被「抓包」时头顶只有屏幕中心一个红色 `!` 文本节点、与角色无任何关联的问题。现改为通过 `DialogBubble.show` 在两只宠物头顶各自弹出对话框气泡：沈九说 `被发现了❗️ / …啧。 / …你怎么总挑这时候回来。`，岳七说 `好羞…😳 / 咳咳… / 嘿嘿😳`；文案接入 `i18n.js` 的 `screensaverCaught` 字典（zh / en / ja 三语全覆盖），显示时长 800ms 与原 `caught` 状态计时对齐。同步移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop`，并更新 `ScreensaverSystem` 与 `challengerStep3_1.test.js` / `screensaverOverlay.test.js` 中相关断言。回退链路仍受 `caught` / `runningBack` 的幂等保证约束。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood → idle` 后就被瞬间取消、宠物跳回原位的问题。根因：`ScreensaverController` 进入 `active` 状态后以 1 秒轮询重查 `ScreensaverEligibilityGuard`，但 Windows 活动窗口采样器 `sampledAt` 取自 PowerShell 调用起始时间，叠加 2 秒采样间隔与 2 秒信任窗口时缓存极易越过 2s 边界而返回 `stale_cache`/`provider-error`/`unknown-state` 等瞬态拒绝，从而误发 `screensaver-cancel`。现仅对真正决定不允许打扰的 `fullscreen` / `presentation` 才取消会话；瞬态原因视为采样间隙，留待下一轮轮询再判断。新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
@@ -35,6 +36,7 @@
 
 ### Changed
 
+- 更新托盘菜单中屏保选项的多语言文案：英文更新为 `Disable/Enable Sweat Screensaver` 及 `Sweat Screensaver Idle Time`；日语取消片假名改用「甘々待機画面」，且避免「待機画面の待機時間」词语重复，触发等待时间简炼为 `💕 放置時間`（`💕 甘々待機画面を無効化` / `💕 甘々待機画面を有効化` / `💕 放置時間`）；同步更新 `readme_en.txt` 与 `readme_ja.txt` 中的托盘菜单对照说明。
 - 同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 中「CP 高甜屏保」说明：用户回来时改为双宠头顶对话气泡（岳七「好羞…😳」等 / 沈九「被发现了❗️」等），不再描述头顶「!」。
 - 将 CP 屏保触发等待默认阈值从 5 分钟调整为 3 分钟；同步更新 `ScreensaverController` 默认设置、`TrayManager` 与 `AppLifecycle` 的 fallback 值、相关单元测试，以及三语 README 的默认说明。
 - 收紧 CP 屏保触发等待档位为 `1 / 3 / 5 / 10 / 15 / 30` 分钟（默认仍为 5），新增 `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `TrayManager` 的唯一来源；旧持久化值 `60` 在首次读取时自动迁移为 `30` 并回写 store，其他非白名单值回退默认 5 分钟。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
