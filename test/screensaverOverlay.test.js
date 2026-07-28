@@ -377,18 +377,32 @@ test('ScreensaverSystem - DOM overlay creation with session attribute and no int
   delete global.document;
 });
 
-test('ScreensaverSystem - caught state displays CSS text node ! and NOT emoji', () => {
+test('ScreensaverSystem - caught state displays "被抓包" dialog bubbles above each pet', () => {
   const { documentMock } = createFakeDom();
   global.document = documentMock;
+  global.DIALOGUES = {
+    screensaverCaught: {
+      yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
+      shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+    },
+  };
 
   const electronAPI = createFakeElectronApi();
   const petA = createFakePet('yueqi', 100, 100);
   const petB = createFakePet('shenjiu', 300, 100);
 
+  const bubbleCalls = [];
+  const fakeDialogBubble = {
+    show: (pet, text, duration) => bubbleCalls.push({ pet: pet.id, text, duration }),
+    removeForPets: () => {},
+    remove: () => {},
+  };
+
   const system = new ScreensaverSystem({
     electronAPI,
     getPets: () => [petA, petB],
     renderer: { stage: documentMock.body },
+    dialogBubble: fakeDialogBubble,
   });
   system.init();
 
@@ -399,43 +413,20 @@ test('ScreensaverSystem - caught state displays CSS text node ! and NOT emoji', 
   electronAPI.emitStop({ sessionId: 88, reason: 'input' });
   assert.equal(system.state, 'caught');
 
-  const caughtNode = documentMock.querySelector('.screensaver-caught-text');
-  assert.ok(caughtNode);
-  assert.equal(caughtNode.getAttribute('data-screensaver-session-id'), '88');
-  assert.equal(caughtNode.textContent, '!', 'Must render CSS text ! character');
-  assert.notEqual(caughtNode.textContent, '❗', 'Must NOT render emoji');
+  // Each pet must receive a dialog bubble with localized "被抓包" text.
+  assert.equal(bubbleCalls.length, 2);
+  assert.equal(bubbleCalls[0].pet, 'yueqi');
+  assert.ok(global.DIALOGUES.screensaverCaught.yueqi.includes(bubbleCalls[0].text));
+  assert.equal(bubbleCalls[1].pet, 'shenjiu');
+  assert.ok(global.DIALOGUES.screensaverCaught.shenjiu.includes(bubbleCalls[1].text));
+  assert.equal(bubbleCalls[0].duration, 800);
+  assert.equal(bubbleCalls[1].duration, 800);
+
+  // No CSS ! text node must be rendered.
+  assert.equal(documentMock.querySelector('.screensaver-caught-text'), null);
 
   delete global.document;
-});
-
-test('ScreensaverSystem - caught indicator stays centered above the scaled pet pair', () => {
-  const { documentMock } = createFakeDom();
-  global.document = documentMock;
-
-  const walkArea = { displayId: 1, x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5 };
-  const stageGeometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
-  stageGeometry.applyScreenInfo({ width: 1200, height: 900, walkAreas: [walkArea] });
-  const petA = createFakePet('yueqi', 100, 100);
-  const petB = createFakePet('shenjiu', 700, 100);
-  const electronAPI = createFakeElectronApi();
-  const system = new ScreensaverSystem({
-    electronAPI,
-    getPets: () => [petA, petB],
-    stageGeometry,
-    renderer: { stage: documentMock.body },
-  });
-  system.init();
-
-  electronAPI.emitStart({ sessionId: 89, startedAt: Date.now() });
-  electronAPI.emitStop({ sessionId: 89, reason: 'input' });
-
-  const caughtNode = documentMock.querySelector('.screensaver-caught-text');
-  assert.ok(caughtNode);
-  assert.equal(caughtNode.style.left, '600px');
-  assert.equal(caughtNode.style.top, '345px');
-  assert.equal(caughtNode.style.fontSize, '42px');
-
-  delete global.document;
+  delete global.DIALOGUES;
 });
 
 test('ScreensaverSystem - combo sequence filtering missing skin assets', async () => {

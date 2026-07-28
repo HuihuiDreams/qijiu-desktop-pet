@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- 修复 CP 屏保被「抓包」时头顶只有屏幕中心一个红色 `!` 文本节点、与角色无任何关联的问题。现改为通过 `DialogBubble.show` 在两只宠物头顶各自弹出对话框气泡：沈九说 `被发现了❗️ / …啧。 / …你怎么总挑这时候回来。`，岳七说 `好羞…😳 / 咳咳… / 嘿嘿😳`；文案接入 `i18n.js` 的 `screensaverCaught` 字典（zh / en / ja 三语全覆盖），显示时长 800ms 与原 `caught` 状态计时对齐。同步移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop`，并更新 `ScreensaverSystem` 与 `challengerStep3_1.test.js` / `screensaverOverlay.test.js` 中相关断言。回退链路仍受 `caught` / `runningBack` 的幂等保证约束。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood → idle` 后就被瞬间取消、宠物跳回原位的问题。根因：`ScreensaverController` 进入 `active` 状态后以 1 秒轮询重查 `ScreensaverEligibilityGuard`，但 Windows 活动窗口采样器 `sampledAt` 取自 PowerShell 调用起始时间，叠加 2 秒采样间隔与 2 秒信任窗口时缓存极易越过 2s 边界而返回 `stale_cache`/`provider-error`/`unknown-state` 等瞬态拒绝，从而误发 `screensaver-cancel`。现仅对真正决定不允许打扰的 `fullscreen` / `presentation` 才取消会话；瞬态原因视为采样间隙，留待下一轮轮询再判断。新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
 - 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。

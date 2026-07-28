@@ -326,7 +326,7 @@ class ScreensaverSystem {
           this.particleLayer.clear();
         }
         this.clearScreensaverOverlays();
-        this.showCaughtIndicator();
+        this.showCaughtBubbles();
       } else {
         this.cancel(payload.reason || 'stop');
       }
@@ -481,49 +481,28 @@ class ScreensaverSystem {
   }
 
   /**
-   * 显示 caught 状态下的 CSS 文本 '!' 节点。
+   * 在两只宠物头顶分别弹出"被抓包"对话气泡。
+   * 文案来自 `DIALOGUES.screensaverCaught.{yueqi,shenjiu}`，由各语言 i18n 字典提供。
    */
-  showCaughtIndicator() {
+  showCaughtBubbles() {
+    if (!this.dialogBubble || typeof this.dialogBubble.show !== 'function') return;
+
     const pets = this.getPets();
     if (!Array.isArray(pets) || pets.length === 0) return;
 
-    const stage = (this.renderer && this.renderer.stage)
-      ? this.renderer.stage
-      : (typeof document !== 'undefined' ? document.body : null);
-    const doc = (stage && stage.ownerDocument && typeof stage.ownerDocument.createElement === 'function')
-      ? stage.ownerDocument
-      : (typeof document !== 'undefined' && typeof document.createElement === 'function' ? document : null);
-    if (!stage || !doc) return;
+    const dialogues = (typeof DIALOGUES !== 'undefined' && DIALOGUES)
+      || (typeof window !== 'undefined' && window.DIALOGUES)
+      || null;
+    const caught = dialogues && dialogues.screensaverCaught ? dialogues.screensaverCaught : null;
+    if (!caught) return;
 
-    const rawVisualScale = Number(this.sceneBounds?.displayScale);
-    const visualScale = Number.isFinite(rawVisualScale) && rawVisualScale > 0
-      ? rawVisualScale
-      : 1;
-    let sumX = 0;
-    let minY = Infinity;
-    pets.forEach((p) => {
-      const visualPetSize = (p.size || p.width || 100) * visualScale;
-      sumX += p.x + visualPetSize / 2;
-      if (p.y < minY) minY = p.y;
+    pets.forEach((pet) => {
+      if (!pet) return;
+      const pool = caught[pet.id];
+      if (!Array.isArray(pool) || pool.length === 0) return;
+      const text = pool[Math.floor(Math.random() * pool.length)];
+      this.dialogBubble.show(pet, text, CAUGHT_INDICATOR_DURATION_MS);
     });
-    const cx = sumX / pets.length;
-    const topY = minY - 20 * visualScale;
-
-    const div = doc.createElement('div');
-    div.className = 'screensaver-caught-text';
-    div.setAttribute('data-screensaver-session-id', String(this.sessionId));
-    div.textContent = '!';
-    div.style.position = 'absolute';
-    div.style.left = `${cx}px`;
-    div.style.top = `${topY}px`;
-    div.style.transform = 'translate(-50%, -100%)';
-    div.style.fontWeight = '800';
-    div.style.fontSize = `${28 * visualScale}px`;
-    div.style.color = '#ff4d4f';
-    div.style.pointerEvents = 'none';
-    div.style.zIndex = '120';
-
-    stage.appendChild(div);
   }
 
   /**

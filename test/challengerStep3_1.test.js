@@ -341,18 +341,32 @@ test('CHALLENGE 3 - Missing overlay keys in SkinService/SkinManager skipped clea
 // ==========================================================
 // Edge Case 4: Interruption during entering or performing -> caught state
 // ==========================================================
-test('CHALLENGE 4 - Interruption during entering or performing -> caught state (asserting CSS text node "!", NOT emoji "❗")', () => {
+test('CHALLENGE 4 - Interruption during entering or performing -> caught state displays "被抓包" dialog bubbles', () => {
   const { documentMock } = createFakeDom();
   global.document = documentMock;
+  global.DIALOGUES = {
+    screensaverCaught: {
+      yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
+      shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+    },
+  };
 
   const electronAPI = createFakeElectronApi();
   const petA = createFakePet('yueqi', 100, 100);
   const petB = createFakePet('shenjiu', 300, 100);
 
+  const bubbleCalls = [];
+  const fakeDialogBubble = {
+    show: (pet, text, duration) => bubbleCalls.push({ pet: pet.id, text, duration }),
+    removeForPets: () => {},
+    remove: () => {},
+  };
+
   const system = new ScreensaverSystem({
     electronAPI,
     getPets: () => [petA, petB],
     renderer: { stage: documentMock.body },
+    dialogBubble: fakeDialogBubble,
   });
   system.init();
 
@@ -363,13 +377,17 @@ test('CHALLENGE 4 - Interruption during entering or performing -> caught state (
   electronAPI.emitStop({ sessionId: 401, reason: 'input' });
   assert.equal(system.state, 'caught');
 
-  const caughtNodeEntering = documentMock.querySelector('.screensaver-caught-text');
-  assert.ok(caughtNodeEntering, 'CSS text node .screensaver-caught-text must exist');
-  assert.equal(caughtNodeEntering.getAttribute('data-screensaver-session-id'), '401');
-  assert.equal(caughtNodeEntering.textContent, '!', 'textContent must be ASCII "!"');
-  assert.notEqual(caughtNodeEntering.textContent, '❗', 'textContent must NOT be emoji "❗"');
-  assert.equal(caughtNodeEntering.textContent.charCodeAt(0), 33, 'Character code must be 33');
+  // Each pet must receive a dialog bubble on caught state.
+  assert.equal(bubbleCalls.length, 2);
+  const enteringYueqi = bubbleCalls.find((c) => c.pet === 'yueqi');
+  const enteringShenjiu = bubbleCalls.find((c) => c.pet === 'shenjiu');
+  assert.ok(enteringYueqi, 'Yueqi must receive a caught bubble');
+  assert.ok(global.DIALOGUES.screensaverCaught.yueqi.includes(enteringYueqi.text));
+  assert.ok(enteringShenjiu, 'Shenjiu must receive a caught bubble');
+  assert.ok(global.DIALOGUES.screensaverCaught.shenjiu.includes(enteringShenjiu.text));
+  assert.equal(documentMock.querySelector('.screensaver-caught-text'), null, 'No CSS ! text node must exist');
 
+  bubbleCalls.length = 0;
   system.reset();
 
   // Test 4b: Interruption during performing
@@ -380,11 +398,10 @@ test('CHALLENGE 4 - Interruption during entering or performing -> caught state (
   electronAPI.emitStop({ sessionId: 402, reason: 'input' });
   assert.equal(system.state, 'caught');
 
-  const caughtNodePerforming = documentMock.querySelector('.screensaver-caught-text');
-  assert.ok(caughtNodePerforming, 'CSS text node .screensaver-caught-text must exist during performing stop');
-  assert.equal(caughtNodePerforming.textContent, '!', 'textContent must be ASCII "!"');
+  assert.equal(bubbleCalls.length, 2, 'Both pets must receive caught bubbles during performing interruption');
 
   delete global.document;
+  delete global.DIALOGUES;
 });
 
 // ==========================================================

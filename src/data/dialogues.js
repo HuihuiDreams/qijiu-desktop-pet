@@ -120,6 +120,10 @@ const _DIALOGUES_ZH_FALLBACK = {
       '久坐伤身，不想修练也得走两步。',
     ],
   },
+  screensaverCaught: {
+    yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
+    shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+  },
 };
 
 // 默认先使用中文兜底，等 app.js 调用 initDialogues(locale) 后会被覆盖

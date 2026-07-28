@@ -352,6 +352,10 @@ const I18N = {
           '久坐伤身，不想修练也得走两步。',
         ],
       },
+      screensaverCaught: {
+        yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
+        shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+      },
       dream: {
         lowAffection: {
           yueqi: [
@@ -729,6 +733,10 @@ const I18N = {
           'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
         ],
       },
+      screensaverCaught: {
+        yueqi: ['So shy... 😳', 'Ahem...', 'Hehe 😳'],
+        shenjiu: ['Busted! ❗️', '...Tch.', '...Why do you always come back at a moment like this.'],
+      },
       dream: {
         lowAffection: {
           yueqi: [
@@ -1104,6 +1112,10 @@ const I18N = {
           '…ふん、ついでの忠告だ。勘違いするな。',                       // …哼，我只是顺便提醒你一下。（稍微润色加了一句“别误会”，把傲娇度拉满！）
           '長座は体を痛める。修行する気がないなら、少しは歩け。',        // 久坐伤身，不想修练也得走两步。（長座：ちょうざ，久坐的古雅说法）
         ],
+      },
+      screensaverCaught: {
+        yueqi: ['恥ずかしい…😳', 'こほん…', 'へへっ😳'],
+        shenjiu: ['見つかった…❗️', '…ちっ。', '…なんでいつもこういう時に戻ってくるんだ。'],
       },
       dream: {
         lowAffection: {
