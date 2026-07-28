@@ -5,14 +5,15 @@
 
 const { SCREENSAVER_STORE_KEY } = require('../constants');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
+const { SCREENSAVER_ALLOWED_IDLE_MINUTES, LEGACY_MIGRATED_IDLE_MINUTES } = require('./screensaverAllowedMinutes');
 
 const DEFAULT_SETTINGS = {
   enabled: false,
   idleThresholdMinutes: 5,
 };
 
-const MIN_IDLE_MINUTES = 1;
-const MAX_IDLE_MINUTES = 60;
+const MIN_IDLE_MINUTES = Math.min(...SCREENSAVER_ALLOWED_IDLE_MINUTES);
+const MAX_IDLE_MINUTES = Math.max(...SCREENSAVER_ALLOWED_IDLE_MINUTES);
 const STANDBY_POLL_INTERVAL_MS = 5000;
 const ACTIVE_POLL_INTERVAL_MS = 1000;
 const ACTIVE_IDLE_THRESHOLD_SECONDS = 60;
@@ -23,13 +24,22 @@ function normalizeScreensaverSettings(raw) {
   const enabled = typeof raw.enabled === 'boolean' ? raw.enabled : DEFAULT_SETTINGS.enabled;
 
   let idleThresholdMinutes = Number(raw.idleThresholdMinutes);
-  if (!Number.isFinite(idleThresholdMinutes)
-    || idleThresholdMinutes < MIN_IDLE_MINUTES
-    || idleThresholdMinutes > MAX_IDLE_MINUTES) {
+  if (!Number.isFinite(idleThresholdMinutes)) {
+    idleThresholdMinutes = DEFAULT_SETTINGS.idleThresholdMinutes;
+  } else {
+    idleThresholdMinutes = Math.floor(idleThresholdMinutes);
+  }
+
+  // Migrate the legacy persisted 60-minute value to 30 minutes on first read.
+  if (idleThresholdMinutes === LEGACY_MIGRATED_IDLE_MINUTES.from) {
+    idleThresholdMinutes = LEGACY_MIGRATED_IDLE_MINUTES.to;
+  }
+
+  if (!SCREENSAVER_ALLOWED_IDLE_MINUTES.includes(idleThresholdMinutes)) {
     idleThresholdMinutes = DEFAULT_SETTINGS.idleThresholdMinutes;
   }
 
-  return { enabled, idleThresholdMinutes: Math.floor(idleThresholdMinutes) };
+  return { enabled, idleThresholdMinutes };
 }
 
 function createScreensaverController(deps = {}) {
@@ -322,6 +332,10 @@ function createScreensaverController(deps = {}) {
           const stored = store.get(SCREENSAVER_STORE_KEY);
           if (stored !== undefined) {
             settings = normalizeScreensaverSettings(stored);
+            // Persist any migration (e.g. legacy 60 -> 30) so future loads are stable.
+            if (JSON.stringify(stored) !== JSON.stringify(settings) && typeof store.set === 'function') {
+              store.set(SCREENSAVER_STORE_KEY, settings);
+            }
           }
         }
         if (typeof store.onDidChange === 'function') {

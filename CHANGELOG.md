@@ -29,6 +29,10 @@
 - 清理屏保渲染状态机中不可达的 `cancelled` 状态，并将主进程锁屏、休眠等内部电源事件处理器收回私有闭包，避免暴露无用接口。
 - 修复性能基线复算 CLI 测试在受限环境中嵌套启动 Node 进程遭拒的问题；现通过与命令行共用的 JSON 格式化入口验证输出内容。
 
+### Changed
+
+- 收紧 CP 屏保触发等待档位为 `1 / 3 / 5 / 10 / 15 / 30` 分钟（默认仍为 5），新增 `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `TrayManager` 的唯一来源；旧持久化值 `60` 在首次读取时自动迁移为 `30` 并回写 store，其他非白名单值回退默认 5 分钟。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+
 ## [0.9.4] - 2026-07-26
 
 ### Added

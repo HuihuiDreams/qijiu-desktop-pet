@@ -73,10 +73,17 @@ test('Screensaver Settings - Normalization Unit Tests', async (t) => {
     assert.deepEqual(normalizeScreensaverSettings(123), DEFAULT_SETTINGS);
   });
 
-  await t.test('validates and clamps idleThresholdMinutes within 1..60', () => {
+  await t.test('accepts only allowlisted thresholds and falls back to 5 otherwise', () => {
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 1 }).idleThresholdMinutes, 1);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 60 }).idleThresholdMinutes, 60);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 3 }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 5 }).idleThresholdMinutes, 5);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 10 }).idleThresholdMinutes, 10);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 15 }).idleThresholdMinutes, 15);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 30 }).idleThresholdMinutes, 30);
+    // Non-whitelisted values fall back to default 5.
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 60 }).idleThresholdMinutes, 30);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 10.5 }).idleThresholdMinutes, 10);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 7 }).idleThresholdMinutes, 5);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 0 }).idleThresholdMinutes, 5);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 100 }).idleThresholdMinutes, 5);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: -5 }).idleThresholdMinutes, 5);
@@ -164,6 +171,52 @@ test('Screensaver Settings - Store Persistence & Dynamic Synchronization', async
     controller.updateSettings({ enabled: false, idleThresholdMinutes: 5 });
     assert.equal(controller.getState().state, 'inactive');
     assert.equal(mockWin.sentEvents.some((e) => e.channel === 'screensaver-cancel' && e.args[0].reason === 'settings-disabled'), true);
+
+    controller.dispose();
+  });
+
+  await t.test('migrates persisted legacy 60-minute threshold to 30 on start and writes back to store', () => {
+    const store = createMockStore({
+      [SCREENSAVER_STORE_KEY]: { enabled: true, idleThresholdMinutes: 60 },
+    });
+    const storeManager = { getStore: () => store };
+
+    const controller = createScreensaverController({
+      StoreManager: storeManager,
+    });
+
+    controller.start();
+
+    assert.deepEqual(controller.getSettings(), { enabled: true, idleThresholdMinutes: 30 });
+    assert.deepEqual(store._data[SCREENSAVER_STORE_KEY], { enabled: true, idleThresholdMinutes: 30 });
+
+    // Restart: persisted 30 stays 30 (no double-migration churn).
+    const controller2 = createScreensaverController({ StoreManager: storeManager });
+    controller2.start();
+    assert.deepEqual(controller2.getSettings(), { enabled: true, idleThresholdMinutes: 30 });
+
+    controller.dispose();
+    controller2.dispose();
+  });
+
+  await t.test('runs the feature with an allowlisted 3-minute threshold', () => {
+    const powerMonitor = createMockPowerMonitor(200);
+    const mockWin = createMockWindow();
+    const guard = { canInterrupt: () => ({ canInterrupt: true, reason: null }) };
+    const coordinator = { tryAcquire: () => true, release: () => true };
+
+    const controller = createScreensaverController({
+      powerMonitor,
+      interruptionCoordinator: coordinator,
+      eligibilityGuard: guard,
+      getMainWindow: () => mockWin.window,
+    });
+
+    controller.updateSettings({ enabled: true, idleThresholdMinutes: 3 });
+    controller.start();
+
+    controller._poll();
+    assert.equal(controller.getState().state, 'active');
 
     controller.dispose();
   });

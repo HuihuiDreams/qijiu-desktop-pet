@@ -117,11 +117,11 @@ test('normalizeScreensaverSettings - valid and default inputs', () => {
   assert.deepEqual(normalizeScreensaverSettings(custom), { enabled: true, idleThresholdMinutes: 10 });
 });
 
-test('normalizeScreensaverSettings - clamps idleThresholdMinutes to 1..60', () => {
+test('normalizeScreensaverSettings - clamps idleThresholdMinutes to the allowlist and migrates legacy 60', () => {
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: -5 }).idleThresholdMinutes, DEFAULT_SETTINGS.idleThresholdMinutes);
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 0 }).idleThresholdMinutes, DEFAULT_SETTINGS.idleThresholdMinutes);
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 1 }).idleThresholdMinutes, 1);
-  assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 60 }).idleThresholdMinutes, 60);
+  assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 60 }).idleThresholdMinutes, 30);
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 100 }).idleThresholdMinutes, DEFAULT_SETTINGS.idleThresholdMinutes);
   assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 'invalid' }).idleThresholdMinutes, DEFAULT_SETTINGS.idleThresholdMinutes);
 });
