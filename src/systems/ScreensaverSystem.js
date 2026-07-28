@@ -5,6 +5,7 @@
  */
 
 let ScreensaverParticleLayerClass = null;
+const CAUGHT_INDICATOR_DURATION_MS = 800;
 if (typeof ScreensaverParticleLayer !== 'undefined') {
   ScreensaverParticleLayerClass = ScreensaverParticleLayer;
 } else if (typeof require !== 'undefined') {
@@ -34,6 +35,7 @@ class ScreensaverSystem {
     this.state = 'inactive';
     this.sessionId = 0;
     this.stateTimer = 0;
+    this.caughtIndicatorAwaitingPaint = false;
     this.startPositions = null;
     this.sceneBounds = null;
 
@@ -313,7 +315,8 @@ class ScreensaverSystem {
 
     if (payload.reason === 'input' && (this.state === 'entering' || this.state === 'performing')) {
       this.state = 'caught';
-      this.stateTimer = 300;
+      this.stateTimer = CAUGHT_INDICATOR_DURATION_MS;
+      this.caughtIndicatorAwaitingPaint = true;
       if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
         this.particleLayer.clear();
       }
@@ -483,14 +486,19 @@ class ScreensaverSystem {
       : (typeof document !== 'undefined' && typeof document.createElement === 'function' ? document : null);
     if (!stage || !doc) return;
 
+    const rawVisualScale = Number(this.sceneBounds?.displayScale);
+    const visualScale = Number.isFinite(rawVisualScale) && rawVisualScale > 0
+      ? rawVisualScale
+      : 1;
     let sumX = 0;
     let minY = Infinity;
     pets.forEach((p) => {
-      sumX += p.x + (p.size || p.width || 100) / 2;
+      const visualPetSize = (p.size || p.width || 100) * visualScale;
+      sumX += p.x + visualPetSize / 2;
       if (p.y < minY) minY = p.y;
     });
     const cx = sumX / pets.length;
-    const topY = minY - 20;
+    const topY = minY - 20 * visualScale;
 
     const div = doc.createElement('div');
     div.className = 'screensaver-caught-text';
@@ -501,7 +509,7 @@ class ScreensaverSystem {
     div.style.top = `${topY}px`;
     div.style.transform = 'translate(-50%, -100%)';
     div.style.fontWeight = '800';
-    div.style.fontSize = '28px';
+    div.style.fontSize = `${28 * visualScale}px`;
     div.style.color = '#ff4d4f';
     div.style.pointerEvents = 'none';
     div.style.zIndex = '120';
@@ -674,6 +682,7 @@ class ScreensaverSystem {
     this.sessionId = 0;
     this.state = 'inactive';
     this.stateTimer = 0;
+    this.caughtIndicatorAwaitingPaint = false;
     this.startPositions = null;
     this.sceneBounds = null;
 
@@ -739,6 +748,10 @@ class ScreensaverSystem {
         break;
 
       case 'caught':
+        if (this.caughtIndicatorAwaitingPaint) {
+          this.caughtIndicatorAwaitingPaint = false;
+          break;
+        }
         this.stateTimer -= deltaMs;
         if (this.stateTimer <= 0) {
           this.initRunningBack();

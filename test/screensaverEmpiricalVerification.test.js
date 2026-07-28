@@ -215,15 +215,19 @@ test('EMPIRICAL - State Machine: Time Delta Edge Cases in update loop', () => {
 
   electronAPI.emitStart({ sessionId: 50, startedAt: Date.now() });
   electronAPI.emitStop({ sessionId: 50, reason: 'input' });
-  assert.equal(system.state, 'caught'); // stateTimer = 300
+  assert.equal(system.state, 'caught'); // stateTimer = 800
 
-  // Massive time delta (10,000ms after tab sleep)
+  // The first delayed frame reserves a paint opportunity for the caught indicator.
   system.update(10000);
-  // First update converts caught to runningBack (stateTimer = 500)
+  assert.equal(system.state, 'caught');
+  assert.equal(system.stateTimer, 800);
+
+  // A later frame consumes the caught interval and begins the return animation.
+  system.update(800);
   assert.equal(system.state, 'runningBack');
   assert.equal(system.stateTimer, 500);
 
-  // Second update with massive time delta clears runningBack to inactive
+  // A delayed frame during runningBack still completes the silent cleanup.
   system.update(10000);
   assert.equal(system.state, 'inactive');
   assert.equal(system.isActive(), false);

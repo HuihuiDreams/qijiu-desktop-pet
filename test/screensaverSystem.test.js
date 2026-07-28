@@ -103,7 +103,7 @@ test('ScreensaverSystem - onStart ignores invalid sessionId', () => {
   assert.equal(system.isActive(), false);
 });
 
-test('ScreensaverSystem - onStop with reason input transitions entering/performing to caught', () => {
+test('ScreensaverSystem - onStop with reason input reserves a visible caught interval', () => {
   const electronAPI = createFakeElectronApi();
   const system = new ScreensaverSystem({ electronAPI });
   system.init();
@@ -114,7 +114,7 @@ test('ScreensaverSystem - onStop with reason input transitions entering/performi
   // Input detected -> caught state with timer
   electronAPI.emitStop({ sessionId: 10, reason: 'input' });
   assert.equal(system.state, 'caught');
-  assert.equal(system.stateTimer, 300);
+  assert.equal(system.stateTimer, 800);
 });
 
 test('ScreensaverSystem - onStop and onCancel ignore mismatched sessionId', () => {
@@ -195,15 +195,20 @@ test('ScreensaverSystem - update loop state machine transitions', () => {
   // user input stops session
   electronAPI.emitStop({ sessionId: 20, reason: 'input' });
   assert.equal(system.state, 'caught');
-  assert.equal(system.stateTimer, 300);
+  assert.equal(system.stateTimer, 800);
 
-  // tick 200ms in caught
-  system.update(200);
+  // The first frame must leave the indicator intact even if it follows a delayed render.
+  system.update(10000);
   assert.equal(system.state, 'caught');
-  assert.equal(system.stateTimer, 100);
+  assert.equal(system.stateTimer, 800);
 
-  // tick 100ms -> caught transitions to runningBack
-  system.update(100);
+  // The indicator then remains visible for its complete interval.
+  system.update(600);
+  assert.equal(system.state, 'caught');
+  assert.equal(system.stateTimer, 200);
+
+  // The remaining interval transitions to runningBack.
+  system.update(200);
   assert.equal(system.state, 'runningBack');
   assert.equal(system.stateTimer, 500);
 
@@ -234,7 +239,8 @@ test('ScreensaverSystem - waits for user input after the combo before running ba
   electronAPI.emitStop({ sessionId: 21, reason: 'input' });
   assert.equal(system.state, 'caught');
 
-  system.update(300);
+  system.update(16); // first caught frame reserves a paint opportunity
+  system.update(800);
   assert.equal(system.state, 'runningBack');
   system.update(500);
   assert.equal(system.state, 'inactive');

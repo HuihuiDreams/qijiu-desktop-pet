@@ -408,6 +408,36 @@ test('ScreensaverSystem - caught state displays CSS text node ! and NOT emoji', 
   delete global.document;
 });
 
+test('ScreensaverSystem - caught indicator stays centered above the scaled pet pair', () => {
+  const { documentMock } = createFakeDom();
+  global.document = documentMock;
+
+  const walkArea = { displayId: 1, x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5 };
+  const stageGeometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
+  stageGeometry.applyScreenInfo({ width: 1200, height: 900, walkAreas: [walkArea] });
+  const petA = createFakePet('yueqi', 100, 100);
+  const petB = createFakePet('shenjiu', 700, 100);
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({
+    electronAPI,
+    getPets: () => [petA, petB],
+    stageGeometry,
+    renderer: { stage: documentMock.body },
+  });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 89, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 89, reason: 'input' });
+
+  const caughtNode = documentMock.querySelector('.screensaver-caught-text');
+  assert.ok(caughtNode);
+  assert.equal(caughtNode.style.left, '600px');
+  assert.equal(caughtNode.style.top, '345px');
+  assert.equal(caughtNode.style.fontSize, '42px');
+
+  delete global.document;
+});
+
 test('ScreensaverSystem - combo sequence filtering missing skin assets', async () => {
   const petA = createFakePet('yueqi', 100, 100);
   const petB = createFakePet('shenjiu', 300, 100);
