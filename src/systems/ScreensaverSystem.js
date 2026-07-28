@@ -618,10 +618,10 @@ class ScreensaverSystem {
   }
 
   /**
-   * 安全复位：清除内部状态、DOM 节点、调用 interactionSystem.cancel()，重置宠物为 idle（保留 queuedAction）。
-   * @param {boolean} [preserveBubbles=false] 为 true 时跳过 removeForPets，让被抓包气泡自然超时消失。
+   * @param {boolean|Object} [options=false] 为 true 或 { skipBubbleRemoval: true } 时跳过 removeForPets，让被抓包气泡自然超时消失。
    */
-  reset(preserveBubbles = false) {
+  reset(options = false) {
+    const preserveBubbles = typeof options === 'object' ? !!options?.skipBubbleRemoval : !!options;
     const currentSessionId = this.sessionId;
 
     if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
