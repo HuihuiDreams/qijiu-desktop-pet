@@ -3,7 +3,7 @@ const test = require('node:test');
 
 const {
   createScreensaverEligibilityGuard,
-  coversWorkArea,
+  coversBounds,
   DEFAULT_MAX_CACHE_AGE_MS,
 } = require('../src/main/services/ScreensaverEligibilityGuard');
 
@@ -207,19 +207,19 @@ test('ScreensaverEligibilityGuard - win32 fresh non-fullscreen window allows int
   assert.deepEqual(guard.canInterrupt(), { canInterrupt: true, reason: null });
 });
 
-test('coversWorkArea helper - correctly calculates area coverage', () => {
+test('coversBounds helper - correctly calculates area coverage', () => {
   const workArea = { x: 0, y: 0, width: 1920, height: 1080 };
 
   // Exact match
-  assert.equal(coversWorkArea({ x: 0, y: 0, width: 1920, height: 1080 }, workArea), true);
+  assert.equal(coversBounds({ x: 0, y: 0, width: 1920, height: 1080 }, workArea), true);
 
   // Within tolerance (8px)
-  assert.equal(coversWorkArea({ x: 2, y: 2, width: 1916, height: 1076 }, workArea), true);
+  assert.equal(coversBounds({ x: 2, y: 2, width: 1916, height: 1076 }, workArea), true);
 
   // Smaller window
-  assert.equal(coversWorkArea({ x: 100, y: 100, width: 800, height: 600 }, workArea), false);
+  assert.equal(coversBounds({ x: 100, y: 100, width: 800, height: 600 }, workArea), false);
 
   // Null / invalid inputs
-  assert.equal(coversWorkArea(null, workArea), false);
-  assert.equal(coversWorkArea({ x: 'invalid', y: 0, width: 100, height: 100 }, workArea), false);
+  assert.equal(coversBounds(null, workArea), false);
+  assert.equal(coversBounds({ x: 'invalid', y: 0, width: 100, height: 100 }, workArea), false);
 });

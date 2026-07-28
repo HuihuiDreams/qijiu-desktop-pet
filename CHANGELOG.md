@@ -13,6 +13,7 @@
 
 ### Fixed
 
+- 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
 - 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复同一 `sessionId` 的重复 stop 或迟到 IPC 可能让 CP 屏保重复显示“被发现”感叹号或回位动画的问题；`caught` / `runningBack` 状态现在忽略重复的 `input` stop，确保感叹号与回位各至多发生一次。
 - 修复 `ScreensaverEligibilityGuard` 将“覆盖工作区的最大化办公窗口”误判为 `presentation` 并拒绝 CP 屏保触发的问题；守卫现基于 `isFullScreen` 与完整 `display.bounds` 拒绝真正全屏，仅非最大化窗口覆盖完整显示器边界时才视作无边框演示，最大化 VS Code / Office 等普通窗口返回 `canInterrupt: true`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。

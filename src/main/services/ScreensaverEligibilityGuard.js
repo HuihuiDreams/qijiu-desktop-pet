@@ -71,7 +71,7 @@ function createScreensaverEligibilityGuard(deps = {}) {
           }
           const isPresentation = displays.some((display) => {
             const fullBounds = display.bounds || display.workArea;
-            return coversWorkArea(win.bounds, fullBounds);
+            return coversBounds(win.bounds, fullBounds);
           });
           if (isPresentation) {
             return { canInterrupt: false, reason: 'presentation' };
@@ -86,18 +86,18 @@ function createScreensaverEligibilityGuard(deps = {}) {
   };
 }
 
-function coversWorkArea(windowBounds, workArea) {
-  if (!windowBounds || !workArea) return false;
+function coversBounds(windowBounds, targetBounds) {
+  if (!windowBounds || !targetBounds) return false;
 
   const wx = Number(windowBounds.x);
   const wy = Number(windowBounds.y);
   const ww = Number(windowBounds.width);
   const wh = Number(windowBounds.height);
 
-  const ax = Number(workArea.x);
-  const ay = Number(workArea.y);
-  const aw = Number(workArea.width);
-  const ah = Number(workArea.height);
+  const ax = Number(targetBounds.x);
+  const ay = Number(targetBounds.y);
+  const aw = Number(targetBounds.width);
+  const ah = Number(targetBounds.height);
 
   if ([wx, wy, ww, wh, ax, ay, aw, ah].some((v) => !Number.isFinite(v))) return false;
   if (aw <= 0 || ah <= 0 || ww <= 0 || wh <= 0) return false;
@@ -113,6 +113,6 @@ function coversWorkArea(windowBounds, workArea) {
 
 module.exports = {
   createScreensaverEligibilityGuard,
-  coversWorkArea,
+  coversBounds,
   DEFAULT_MAX_CACHE_AGE_MS,
 };
