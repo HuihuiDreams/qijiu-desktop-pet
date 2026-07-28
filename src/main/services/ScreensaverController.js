@@ -9,7 +9,7 @@ const { SCREENSAVER_ALLOWED_IDLE_MINUTES, LEGACY_MIGRATED_IDLE_MINUTES } = requi
 
 const DEFAULT_SETTINGS = {
   enabled: false,
-  idleThresholdMinutes: 5,
+  idleThresholdMinutes: 3,
 };
 
 const MIN_IDLE_MINUTES = Math.min(...SCREENSAVER_ALLOWED_IDLE_MINUTES);

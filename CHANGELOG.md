@@ -32,6 +32,7 @@
 
 ### Changed
 
+- 将 CP 屏保触发等待默认阈值从 5 分钟调整为 3 分钟；同步更新 `ScreensaverController` 默认设置、`TrayManager` 与 `AppLifecycle` 的 fallback 值、相关单元测试，以及三语 README 的默认说明。
 - 收紧 CP 屏保触发等待档位为 `1 / 3 / 5 / 10 / 15 / 30` 分钟（默认仍为 5），新增 `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `TrayManager` 的唯一来源；旧持久化值 `60` 在首次读取时自动迁移为 `30` 并回写 store，其他非白名单值回退默认 5 分钟。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 托盘屏保触发等待子菜单改由共享白名单渲染六个 radio 项；「Windows 关屏/睡眠时间须晚于所选等待时间、应用不读取或修改电源策略」的说明写入三语 README 的「CP 高甜屏保」一节，不再占用托盘菜单空间。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 

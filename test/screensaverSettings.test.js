@@ -73,22 +73,22 @@ test('Screensaver Settings - Normalization Unit Tests', async (t) => {
     assert.deepEqual(normalizeScreensaverSettings(123), DEFAULT_SETTINGS);
   });
 
-  await t.test('accepts only allowlisted thresholds and falls back to 5 otherwise', () => {
+  await t.test('accepts only allowlisted thresholds and falls back to 3 otherwise', () => {
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 1 }).idleThresholdMinutes, 1);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 3 }).idleThresholdMinutes, 3);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 5 }).idleThresholdMinutes, 5);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 10 }).idleThresholdMinutes, 10);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 15 }).idleThresholdMinutes, 15);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 30 }).idleThresholdMinutes, 30);
-    // Non-whitelisted values fall back to default 5.
+    // Non-whitelisted values fall back to default 3.
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 60 }).idleThresholdMinutes, 30);
     assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 10.5 }).idleThresholdMinutes, 10);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 7 }).idleThresholdMinutes, 5);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 0 }).idleThresholdMinutes, 5);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 100 }).idleThresholdMinutes, 5);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: -5 }).idleThresholdMinutes, 5);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: NaN }).idleThresholdMinutes, 5);
-    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: Infinity }).idleThresholdMinutes, 5);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 7 }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 0 }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: 100 }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: -5 }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: NaN }).idleThresholdMinutes, 3);
+    assert.equal(normalizeScreensaverSettings({ idleThresholdMinutes: Infinity }).idleThresholdMinutes, 3);
   });
 
   await t.test('normalizes enabled flag properly', () => {

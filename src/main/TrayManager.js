@@ -184,7 +184,7 @@ function buildTrayMenu() {
       submenu: SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
         label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
         type: 'radio',
-        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
+        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 3 }).idleThresholdMinutes === minutes,
         click: async () => {
           if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
           const current = deps.getScreensaverSettings();

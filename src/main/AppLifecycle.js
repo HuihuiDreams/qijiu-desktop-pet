@@ -228,7 +228,7 @@ class AppLifecycle {
         getBreakReminderService: BreakReminderController.getBreakReminderService,
         BREAK_REMINDER_STORE_KEY,
         BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
-        getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 5 }),
+        getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 3 }),
         updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
         getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
         getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
