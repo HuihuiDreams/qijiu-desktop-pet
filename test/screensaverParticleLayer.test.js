@@ -238,6 +238,26 @@ test('ScreensaverParticleLayer - node budget <= 20 enforcement', () => {
   delete global.document;
 });
 
+test('ScreensaverParticleLayer - expands the pink atmosphere around the shared pair layout', () => {
+  const { documentMock } = createFakeDom();
+  const layer = new ScreensaverParticleLayer(documentMock.body);
+
+  layer.mount({
+    scaleRatio: 1,
+    visualScale: 1,
+    midpoint: { x: 500, y: 350 },
+    baseWidth: 320,
+    baseHeight: 200,
+    particleBaseWidth: 500,
+    particleBaseHeight: 300,
+  });
+
+  assert.equal(layer.root.style.width, '700px');
+  assert.equal(layer.root.style.height, '420px');
+  assert.equal(layer.root.style.left, '150px');
+  assert.equal(layer.root.style.top, '140px');
+});
+
 test('ScreensaverParticleLayer - reducedMotion disables floating hearts', () => {
   const { documentMock } = createFakeDom();
   global.document = documentMock;

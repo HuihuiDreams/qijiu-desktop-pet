@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const { BreakReminderPresenter } = require('../src/ui/BreakReminderPresenter');
+const { StageGeometry } = require('../src/systems/StageGeometry');
 
 function makePet(id, overrides = {}) {
   return {
@@ -15,6 +16,12 @@ function makePet(id, overrides = {}) {
     setState(state) { this.state = state; },
     ...overrides,
   };
+}
+
+function makeStageGeometry(walkAreas = [], width = 1000, height = 800) {
+  const geometry = new StageGeometry({ initialWidth: width, initialHeight: height });
+  geometry.applyScreenInfo({ width, height, walkAreas });
+  return geometry;
 }
 
 function makeDeps(overrides = {}) {
@@ -33,11 +40,7 @@ function makeDeps(overrides = {}) {
     },
     renderer: { update: (pet) => rendererCalls.update.push(pet.id) },
     spriteView: { update: (pet, ms) => spriteViewCalls.update.push([pet.id, ms]) },
-    stageGeometry: {
-      width: 1000,
-      height: 800,
-      getWalkAreas: () => [],
-    },
+    stageGeometry: makeStageGeometry(),
     getIsPaused: () => false,
     clearInteractionOverlay: () => { deps._overlayCleared = true; },
     electronAPI: { dismissBreakReminder: () => dismissBreakReminderCalls.push(Date.now()) },
@@ -108,14 +111,10 @@ test('handleTriggered ignores a second trigger while already active', () => {
 test('handleTriggered positions pets face-to-face on the primary walk area and clears overlay/bubbles', () => {
   withStubbedTimers(() => {
     const { deps, yueqi, shenjiu, dialogBubbleCalls, rendererCalls, spriteViewCalls } = makeDeps({
-      stageGeometry: {
-        width: 1000,
-        height: 800,
-        getWalkAreas: () => [
+      stageGeometry: makeStageGeometry([
           { x: 0, y: 0, width: 500, height: 800 },
           { x: 500, y: 0, width: 500, height: 800, isPrimary: true },
-        ],
-      },
+      ]),
     });
     const presenter = new BreakReminderPresenter(deps);
 
@@ -129,9 +128,10 @@ test('handleTriggered positions pets face-to-face on the primary walk area and c
     assert.equal(shenjiu.direction, 'left');
     assert.equal(yueqi.state, 'interacting');
     assert.equal(shenjiu.state, 'interacting');
-    // 落在标记为 isPrimary 的区域内 (x in [500, 1000])
-    assert.ok(yueqi.x >= 500 - 1 && yueqi.x <= 1000);
-    assert.ok(shenjiu.x >= 500 - 1 && shenjiu.x <= 1000);
+    assert.deepEqual(
+      [{ x: yueqi.x, y: yueqi.y }, { x: shenjiu.x, y: shenjiu.y }],
+      [{ x: 558, y: 352 }, { x: 846, y: 352 }],
+    );
     assert.deepEqual(rendererCalls.update, ['yueqi', 'shenjiu']);
     assert.deepEqual(spriteViewCalls.update, [['yueqi', 0], ['shenjiu', 0]]);
   });

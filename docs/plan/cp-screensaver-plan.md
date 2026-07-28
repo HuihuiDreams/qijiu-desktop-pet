@@ -14,7 +14,7 @@
 
 - Windows 首发：活动窗口缓存每 2 秒刷新，`ScreensaverEligibilityGuard` 只读取该缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。Guard 不直接触发额外采样。
 - macOS 不纳入首发：当前项目没有可信的前台全屏/演示数据源，功能必须在该平台保持禁用，待独立的权限、数据源与验收方案获批后另立 ADR。
-- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标；确定显示器后，氛围层与双人 idle 站位均落在该 `walkArea` 的几何中心，双宠完整视觉包围盒必须位于中央场景核心内。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放，并与目标 `walkArea.scaleRatio` 合成为最终视觉缩放；无有效区域或缩放低于 0.65 时取消本次会话。
+- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标；确定显示器后，调用久坐提醒共用的 `StageGeometry.getCenteredPairLayout()` 计算该 `walkArea` 的中心与双宠 idle 站位，其中 CP 屏保传入目标显示器的 `scaleRatio`，按宠物实际视觉尺寸保持双宠中心对称；粉色氛围层按共享布局跨度扩展。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放，并与目标 `walkArea.scaleRatio` 合成为最终视觉缩放；无有效区域或缩放低于 0.65 时取消本次会话。
 
 ### 非目标
 

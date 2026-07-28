@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const { ScreensaverSystem } = require('../src/systems/ScreensaverSystem');
 const { SkinManager } = require('../src/systems/SkinManager');
+const { StageGeometry } = require('../src/systems/StageGeometry');
 const SkinService = require('../src/main/services/SkinService');
 
 function createFakeDom() {
@@ -233,12 +234,8 @@ test('ScreensaverSystem - centers the idle pair and scene on the selected walkAr
   const petA = createFakePet('yueqi', 120, 80);
   const petB = createFakePet('shenjiu', 760, 460);
   const walkArea = { displayId: 1, x: 100, y: 50, width: 800, height: 600, scaleRatio: 1.0 };
-  const stageGeometry = {
-    screenInfo: { walkAreas: [walkArea] },
-    getWalkAreaForPoint() {
-      return walkArea;
-    },
-  };
+  const stageGeometry = new StageGeometry({ initialWidth: 1000, initialHeight: 700 });
+  stageGeometry.applyScreenInfo({ width: 1000, height: 700, walkAreas: [walkArea] });
   const electronAPI = createFakeElectronApi();
   const system = new ScreensaverSystem({
     electronAPI,
@@ -249,22 +246,19 @@ test('ScreensaverSystem - centers the idle pair and scene on the selected walkAr
 
   electronAPI.emitStart({ sessionId: 56, startedAt: Date.now() });
 
+  const sharedLayout = stageGeometry.getCenteredPairLayout(petA, petB, walkArea);
   assert.deepEqual(system.sceneBounds.midpoint, { x: 500, y: 350 });
-  const sceneCore = {
-    left: system.sceneBounds.midpoint.x - system.sceneBounds.baseWidth * system.sceneBounds.scaleRatio / 2,
-    right: system.sceneBounds.midpoint.x + system.sceneBounds.baseWidth * system.sceneBounds.scaleRatio / 2,
-    top: system.sceneBounds.midpoint.y - system.sceneBounds.baseHeight * system.sceneBounds.scaleRatio / 2,
-    bottom: system.sceneBounds.midpoint.y + system.sceneBounds.baseHeight * system.sceneBounds.scaleRatio / 2,
-  };
-  [petA, petB].forEach((pet) => {
-    assert.ok(pet.x >= sceneCore.left, 'idle pet left edge must stay inside the pink scene core');
-    assert.ok(pet.x + pet.size <= sceneCore.right, 'idle pet right edge must stay inside the pink scene core');
-    assert.ok(pet.y >= sceneCore.top, 'idle pet top edge must stay inside the pink scene core');
-    assert.ok(pet.y + pet.size <= sceneCore.bottom, 'idle pet bottom edge must stay inside the pink scene core');
-  });
-  assert.equal(petA.direction, 'right');
-  assert.equal(petB.direction, 'left');
-  assert.ok(petA.x + petA.size < petB.x, 'idle pets must remain separated while facing each other');
+  assert.deepEqual(
+    [
+      { x: petA.x, y: petA.y, direction: petA.direction },
+      { x: petB.x, y: petB.y, direction: petB.direction },
+    ],
+    sharedLayout.positions,
+  );
+  assert.ok(
+    system.sceneBounds.particleBaseWidth >= (sharedLayout.bounds.right - sharedLayout.bounds.left) * 1.25,
+    'pink atmosphere must expand around the shared break-reminder pair layout',
+  );
 
   electronAPI.emitCancel({ sessionId: 56, reason: 'fullscreen' });
   assert.deepEqual(
@@ -273,33 +267,39 @@ test('ScreensaverSystem - centers the idle pair and scene on the selected walkAr
   );
 });
 
-test('ScreensaverSystem - keeps idle pet visual bounds inside the scene core on mixed DPI', () => {
+test('ScreensaverSystem - keeps the scaled pet pair visually centered on mixed DPI', () => {
   const petA = createFakePet('yueqi', 100, 100);
   const petB = createFakePet('shenjiu', 900, 500);
   const walkArea = { displayId: 2, x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5 };
+  const stageGeometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
+  stageGeometry.applyScreenInfo({ width: 1200, height: 900, walkAreas: [walkArea] });
   const electronAPI = createFakeElectronApi();
   const system = new ScreensaverSystem({
     electronAPI,
     getPets: () => [petA, petB],
-    stageGeometry: {
-      screenInfo: { walkAreas: [walkArea] },
-      getWalkAreaForPoint() {
-        return walkArea;
-      },
-    },
+    stageGeometry,
   });
   system.init();
 
   electronAPI.emitStart({ sessionId: 57, startedAt: Date.now() });
 
   assert.equal(system.sceneBounds.visualScale, 1.5);
-  const halfCoreWidth = system.sceneBounds.baseWidth * system.sceneBounds.visualScale / 2;
-  const left = system.sceneBounds.midpoint.x - halfCoreWidth;
-  const right = system.sceneBounds.midpoint.x + halfCoreWidth;
-  [petA, petB].forEach((pet) => {
-    assert.ok(pet.x >= left);
-    assert.ok(pet.x + pet.size * walkArea.scaleRatio <= right);
-  });
+  const scaledPetSize = petA.size * walkArea.scaleRatio;
+  const visualCenterA = petA.x + scaledPetSize / 2;
+  const visualCenterB = petB.x + scaledPetSize / 2;
+  assert.equal((visualCenterA + visualCenterB) / 2, system.sceneBounds.midpoint.x);
+  assert.equal(petA.y + scaledPetSize / 2, system.sceneBounds.midpoint.y);
+  assert.equal(petB.y + scaledPetSize / 2, system.sceneBounds.midpoint.y);
+  assert.deepEqual(
+    [
+      { x: petA.x, y: petA.y, direction: petA.direction },
+      { x: petB.x, y: petB.y, direction: petB.direction },
+    ],
+    [
+      { x: 300, y: 375, direction: 'right' },
+      { x: 750, y: 375, direction: 'left' },
+    ],
+  );
 });
 
 test('ScreensaverSystem - scene scale calculation and cancellation when space < 0.65', () => {

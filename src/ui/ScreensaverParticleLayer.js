@@ -43,8 +43,8 @@ class ScreensaverParticleLayer {
     const scaleRatio = sceneBounds.visualScale || sceneBounds.scaleRatio || 1.0;
     const cx = sceneBounds.midpoint ? sceneBounds.midpoint.x : 200;
     const cy = sceneBounds.midpoint ? sceneBounds.midpoint.y : 150;
-    const baseWidth = sceneBounds.baseWidth || 320;
-    const baseHeight = sceneBounds.baseHeight || 200;
+    const baseWidth = sceneBounds.particleBaseWidth || sceneBounds.baseWidth || 320;
+    const baseHeight = sceneBounds.particleBaseHeight || sceneBounds.baseHeight || 200;
 
     const layerWidth = baseWidth * scaleRatio * 1.4;
     const layerHeight = baseHeight * scaleRatio * 1.4;

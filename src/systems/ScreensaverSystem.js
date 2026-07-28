@@ -180,11 +180,25 @@ class ScreensaverSystem {
     const displayScale = Number.isFinite(targetAreaScale) && targetAreaScale > 0
       ? targetAreaScale
       : 1;
-
-    const sceneCenter = {
+    const pairLayout = this.stageGeometry
+      && typeof this.stageGeometry.getCenteredPairLayout === 'function'
+      ? this.stageGeometry.getCenteredPairLayout(
+        petA,
+        petB,
+        targetArea,
+        { visualScale: displayScale },
+      )
+      : null;
+    const sceneCenter = pairLayout?.center || {
       x: targetArea.x + targetArea.width / 2,
       y: targetArea.y + targetArea.height / 2,
     };
+    const pairWidth = pairLayout
+      ? (pairLayout.bounds.right - pairLayout.bounds.left) / displayScale
+      : BASE_WIDTH;
+    const pairHeight = pairLayout
+      ? (pairLayout.bounds.bottom - pairLayout.bounds.top) / displayScale
+      : BASE_HEIGHT;
 
     return {
       targetArea,
@@ -196,6 +210,9 @@ class ScreensaverSystem {
       visualScale: scaleRatio * displayScale,
       baseWidth: BASE_WIDTH,
       baseHeight: BASE_HEIGHT,
+      particleBaseWidth: Math.max(BASE_WIDTH, pairWidth * 1.25),
+      particleBaseHeight: Math.max(BASE_HEIGHT, pairHeight * 3),
+      pairLayout,
     };
   }
 
@@ -258,35 +275,24 @@ class ScreensaverSystem {
 
     const [petA, petB] = pets;
     if (!petA || !petB) return;
-    const sizeA = petA.size || petA.width || 100;
-    const sizeB = petB.size || petB.width || 100;
-    const area = scene.targetArea;
-    const visualWidthA = sizeA * scene.displayScale;
-    const visualWidthB = sizeB * scene.displayScale;
-    const visualHeightA = sizeA * scene.displayScale;
-    const visualHeightB = sizeB * scene.displayScale;
-    const coreWidth = scene.baseWidth * scene.visualScale;
-    const availableGap = Math.max(0, coreWidth - visualWidthA - visualWidthB);
-    const gap = Math.min(Math.max(visualWidthA, visualWidthB) * 0.2, availableGap);
-    const groupWidth = visualWidthA + gap + visualWidthB;
-    const centerX = scene.midpoint.x;
-    const centerY = scene.midpoint.y;
-    const groupLeft = centerX - groupWidth / 2;
-
-    const targets = [
-      { x: groupLeft, y: centerY - visualHeightA / 2 },
-      { x: groupLeft + visualWidthA + gap, y: centerY - visualHeightB / 2 },
-    ];
+    const layout = scene.pairLayout
+      || (this.stageGeometry && typeof this.stageGeometry.getCenteredPairLayout === 'function'
+        ? this.stageGeometry.getCenteredPairLayout(
+          petA,
+          petB,
+          scene.targetArea,
+          { visualScale: scene.displayScale },
+        )
+        : null);
+    if (!layout) return;
 
     pets.slice(0, 2).forEach((pet, index) => {
-      const visualWidth = index === 0 ? visualWidthA : visualWidthB;
-      const visualHeight = index === 0 ? visualHeightA : visualHeightB;
-      const target = targets[index];
-      pet.x = Math.max(area.x, Math.min(area.x + area.width - visualWidth, target.x));
-      pet.y = Math.max(area.y, Math.min(area.y + area.height - visualHeight, target.y));
+      const target = layout.positions[index];
+      pet.x = target.x;
+      pet.y = target.y;
       pet.targetX = pet.x;
       pet.targetY = pet.y;
-      pet.direction = index === 0 ? 'right' : 'left';
+      pet.direction = target.direction;
       if (typeof pet.setState === 'function') {
         pet.setState('idle');
       } else {
