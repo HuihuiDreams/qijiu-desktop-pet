@@ -1,15 +1,23 @@
 # CP 屏保后续修改策略（意见汇总）
 
-> 状态：部分实施；S-02 的“被发现”提示已修复，循环连招及 S-01、S-03 仍待实施。
+> 状态：已实施（S-01 / S-02 / S-03 全部落地）。
 >
 > 基线设计：[CP 屏保实施计划](./cp-screensaver-plan.md)；现有决策：[ADR-044](../decisions/ADR-044-cp-screensaver-session.md)。
 > 实施计划：[CP 屏保后续修改实施计划](./cp-screensaver-adjustment-implementation-plan.md)。
+
+## 已实施的落实情况
+
+- **S-01**：`activeWindowProvider` 的 PowerShell 采样现通过 `MonitorFromWindow` / `GetMonitorInfo` 取前台窗口所属显示器完整 `rcMonitor`，仅在窗口非最大化且覆盖完整 monitor bounds 时标记 `isFullScreen: true`；`ScreensaverEligibilityGuard` 基于该 `isFullScreen` 与完整 `display.bounds` 拒绝真正全屏，最大化普通办公窗口返回 `canInterrupt: true`，仅非最大化无边框窗口覆盖完整 `display.bounds` 时才视作演示并拒绝。`stale_cache` / `unknown-state` / `provider-error` / `display-query-failed` 与界面感知禁用语义保持不变。
+- **S-02**：渲染器 `ScreensaverSystem` 的 `waiting_for_input` 终态改为显式循环边界；可用 Overlay 不少于两个时按固定顺序 `shareFood → hug → kiss` 过滤后持续循环至用户输入或静默取消，零或一个可用 Overlay 时停在中心 `idle_waiting`。普通输入在 `entering` / 任意 `performing` 阶段进入一次性 `caught → runningBack`，`caught` / `runningBack` 状态忽略重复 `input` stop，确保感叹号与回位各至多发生一次；静默 `screensaver-cancel` 仍立即重置。
+- **S-03**：触发等待档位由共享 `screensaverAllowedMinutes.js` 统一为 `1 / 3 / 5 / 10 / 15 / 30` 分钟（默认 5），旧持久化值 `60` 在首次读取时迁移为 `30` 并回写 store；托盘子菜单渲染六个 radio 项并追加一条中英日三语 `trayScreensaverPowerHint` 不可点击提示，说明 Windows 关屏/睡眠时间须晚于所选等待时间，应用不读取或修改电源策略。
 
 ## 使用方式
 
 本文件用于汇总 CP 屏保实际试用后发现的问题、期望与取舍。每项意见先记录问题、目标行为和验收标准；所有意见收集完成后，再据此产出有依赖顺序的修改计划。本文件本身不改变已发布行为，也不作为实现授权。
 
 ## 待纳入修改计划的策略
+
+> 以下三项均已实施，详见上文《已实施的落实情况》。
 
 ### S-01：区分最大化办公窗口与真正的全屏/演示状态
 

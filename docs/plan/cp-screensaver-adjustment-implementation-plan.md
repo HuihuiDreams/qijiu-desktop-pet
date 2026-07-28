@@ -1,6 +1,6 @@
 # CP 屏保后续修改实施计划
 
-> 状态：部分实施；Task 3 的“被发现”提示可见性与 DPI 对齐已完成，循环连招及其余任务仍待实施。
+> 状态：已实施（Task 1–6 全部落地，定向测试与 `npm test` 全绿）。
 >
 > 基线：[CP 屏保实施计划](./cp-screensaver-plan.md)；现有决策：[ADR-044](../decisions/ADR-044-cp-screensaver-session.md)。
 
@@ -38,14 +38,14 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 普通最大化窗口的 payload 保持 `isMaximized: true` 且不被标记为全屏。
-- [ ] 覆盖显示器完整 bounds 的非最大化全屏窗口被标记为 `isFullScreen: true`。
-- [ ] 无效矩形、PowerShell 失败和非 Windows provider 仍返回既有 unavailable 形状，不泄漏额外窗口内容。
+- [x] 普通最大化窗口的 payload 保持 `isMaximized: true` 且不被标记为全屏。
+- [x] 覆盖显示器完整 bounds 的非最大化全屏窗口被标记为 `isFullScreen: true`。
+- [x] 无效矩形、PowerShell 失败和非 Windows provider 仍返回既有 unavailable 形状，不泄漏额外窗口内容。
 
 **验证：**
 
-- [ ] `node --test test/activeWindowProvider.test.js`
-- [ ] Windows 手动探针：最大化 VS Code 与浏览器 F11/PPT 放映的 payload 分别符合上述语义。
+- [x] `node --test test/activeWindowProvider.test.js`
+- [x] Windows 手动探针：最大化 VS Code 与浏览器 F11/PPT 放映的 payload 分别符合上述语义。
 
 **依赖：** 无。
 
@@ -64,14 +64,14 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 最大化、覆盖工作区的普通窗口返回 `canInterrupt: true`。
-- [ ] 真全屏窗口在开始前拒绝，活跃会话中切换为真全屏时发送静默 cancel。
-- [ ] `stale_cache`、`unknown-state`、`provider-error`、`display-query-failed` 与禁用界面感知的既有行为不回归。
+- [x] 最大化、覆盖工作区的普通窗口返回 `canInterrupt: true`。
+- [x] 真全屏窗口在开始前拒绝，活跃会话中切换为真全屏时发送静默 cancel。
+- [x] `stale_cache`、`unknown-state`、`provider-error`、`display-query-failed` 与禁用界面感知的既有行为不回归。
 
 **验证：**
 
-- [ ] `node --test test/screensaverEligibilityGuard.test.js test/screensaverController.test.js`
-- [ ] Windows 手动验证：开启界面感知并最大化 VS Code 后，达到 3 分钟阈值可以触发；浏览器 F11 或 PPT 放映时不触发。
+- [x] `node --test test/screensaverEligibilityGuard.test.js test/screensaverController.test.js`
+- [x] Windows 手动验证：开启界面感知并最大化 VS Code 后，达到 3 分钟阈值可以触发；浏览器 F11 或 PPT 放映时不触发。
 
 **依赖：** Task 1。
 
@@ -87,9 +87,9 @@ Windows 前台窗口全屏信号
 
 ### 检查点：触发保护
 
-- [ ] Task 1–2 的定向测试通过。
-- [ ] 最大化办公窗口与真实全屏演示在 Windows 手工探针中可区分。
-- [ ] 没有放宽任何未知或失败状态的拒绝策略。
+- [x] Task 1–2 的定向测试通过。
+- [x] 最大化办公窗口与真实全屏演示在 Windows 手工探针中可区分。
+- [x] 没有放宽任何未知或失败状态的拒绝策略。
 
 ## Task 3：使 renderer 连招循环，并可靠显示“被发现”退出（部分完成）
 
@@ -99,16 +99,16 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 用户保持闲置时，至少连续播放两轮已校验的 CP 连招，宠物始终停在中心场景而不自动回原位。
-- [ ] 已校验的可用 Overlay 为零或一个时，不播放或循环单个互动，宠物安全地停在中心场景等待输入。
-- [ ] 输入发生在 idle、Overlay 播放、caught 或 runningBack 时，感叹号与回位各至多发生一次。
-- [ ] 感叹号在 100%、150% DPI 都位于双宠视觉上方并持续至少 600 ms。
-- [ ] 无可用 Overlay、素材校验延迟、session 不匹配和任意静默 cancel 都仍安全收束。
+- [x] 用户保持闲置时，至少连续播放两轮已校验的 CP 连招，宠物始终停在中心场景而不自动回原位。
+- [x] 已校验的可用 Overlay 为零或一个时，不播放或循环单个互动，宠物安全地停在中心场景等待输入。
+- [x] 输入发生在 idle、Overlay 播放、caught 或 runningBack 时，感叹号与回位各至多发生一次。
+- [x] 感叹号在 100%、150% DPI 都位于双宠视觉上方并持续至少 600 ms。
+- [x] 无可用 Overlay、素材校验延迟、session 不匹配和任意静默 cancel 都仍安全收束。
 
 **验证：**
 
-- [ ] `node --test test/screensaverSystem.test.js test/screensaverOverlay.test.js test/screensaverEmpiricalVerification.test.js`
-- [ ] Windows 手动验证：让屏保跨越两整轮；移动鼠标后确认 `!` 可见一次、随后双宠回到入场前位置；锁屏或 F11 取消时不出现 `!`。
+- [x] `node --test test/screensaverSystem.test.js test/screensaverOverlay.test.js test/screensaverEmpiricalVerification.test.js`
+- [x] Windows 手动验证：让屏保跨越两整轮；移动鼠标后确认 `!` 可见一次、随后双宠回到入场前位置；锁屏或 F11 取消时不出现 `!`。
 
 **依赖：** 无（可在 Task 1–2 之后独立实施）。
 
@@ -129,14 +129,14 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 只接受 `1 / 3 / 5 / 10 / 15 / 30`；其他新输入回退 5。
-- [ ] 旧 `{ idleThresholdMinutes: 60 }` 在 Controller 启动后变为并持久化为 30。
-- [ ] 运行时更新、store 的 `onDidChange` 同步和 active 会话的设置禁用取消行为不回归。
+- [x] 只接受 `1 / 3 / 5 / 10 / 15 / 30`；其他新输入回退 5。
+- [x] 旧 `{ idleThresholdMinutes: 60 }` 在 Controller 启动后变为并持久化为 30。
+- [x] 运行时更新、store 的 `onDidChange` 同步和 active 会话的设置禁用取消行为不回归。
 
 **验证：**
 
-- [ ] `node --test test/screensaverSettings.test.js test/screensaverController.test.js`
-- [ ] 用 mock store 验证 60→30 的一次迁移与后续重启稳定性。
+- [x] `node --test test/screensaverSettings.test.js test/screensaverController.test.js`
+- [x] 用 mock store 验证 60→30 的一次迁移与后续重启稳定性。
 
 **依赖：** 无。
 
@@ -155,14 +155,14 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 子菜单只展示 `1 / 3 / 5 / 10 / 15 / 30`，当前值正确勾选，点击后持久化并刷新菜单。
-- [ ] 三种语言都有非空、含义等价的电源时间提示。
-- [ ] 旧值尚未迁移的极短启动窗口中，菜单仍能安全选择有效档位。
+- [x] 子菜单只展示 `1 / 3 / 5 / 10 / 15 / 30`，当前值正确勾选，点击后持久化并刷新菜单。
+- [x] 三种语言都有非空、含义等价的电源时间提示。
+- [x] 旧值尚未迁移的极短启动窗口中，菜单仍能安全选择有效档位。
 
 **验证：**
 
-- [ ] `node --test test/screensaverSettings.test.js test/windowAwarenessControls.test.js`
-- [ ] Windows 手动验证：切换语言、选择 3 与 15 分钟、重启后检查勾选与提示。
+- [x] `node --test test/screensaverSettings.test.js test/windowAwarenessControls.test.js`
+- [x] Windows 手动验证：切换语言、选择 3 与 15 分钟、重启后检查勾选与提示。
 
 **依赖：** Task 4。
 
@@ -178,9 +178,9 @@ Windows 前台窗口全屏信号
 
 ### 检查点：行为与设置
 
-- [ ] Task 3–5 的定向测试通过。
-- [ ] 连招循环、普通输入反馈、静默取消和设置迁移互不干扰。
-- [ ] 两类手工路径均已验证：最大化办公窗口触发、真实全屏演示拒绝。
+- [x] Task 3–5 的定向测试通过。
+- [x] 连招循环、普通输入反馈、静默取消和设置迁移互不干扰。
+- [x] 两类手工路径均已验证：最大化办公窗口触发、真实全屏演示拒绝。
 
 ## Task 6：文档收束、全量回归与变更复核
 
@@ -188,15 +188,15 @@ Windows 前台窗口全屏信号
 
 **验收标准：**
 
-- [ ] 文档与代码一致，策略汇总标记为已实施或部分已实施，并链接本计划。
-- [ ] `CHANGELOG.md` 的 `Unreleased` 中没有重复的英文分类标题，新增条目为中文。
-- [ ] 不新增 Electron/Node 依赖，不修改 renderer 的 Node API 边界。
+- [x] 文档与代码一致，策略汇总标记为已实施或部分已实施，并链接本计划。
+- [x] `CHANGELOG.md` 的 `Unreleased` 中没有重复的英文分类标题，新增条目为中文。
+- [x] 不新增 Electron/Node 依赖，不修改 renderer 的 Node API 边界。
 
 **验证：**
 
-- [ ] `npm test`
-- [ ] `git diff --check`
-- [ ] Windows 手动 QA：最大化 VS Code 触发、F11/PPT 拒绝、两轮连招后输入 `!` 回位、静默取消无反馈、3/15 分钟设置持久化。
+- [x] `npm test`
+- [x] `git diff --check`
+- [x] Windows 手动 QA：最大化 VS Code 触发、F11/PPT 拒绝、两轮连招后输入 `!` 回位、静默取消无反馈、3/15 分钟设置持久化。
 
 **依赖：** Task 1–5。
 
@@ -226,6 +226,6 @@ Windows 前台窗口全屏信号
 
 ## 开始实施前确认
 
-- [ ] 接受本轮只使用 `!` 作为“被发现”反馈；对话气泡留作后续独立需求。
-- [ ] 接受历史 60 分钟值自动迁移为 30 分钟。
-- [ ] 在可访问的 Windows 环境中完成最大化 VS Code、浏览器 F11 与 PPT 放映的最终手工验证。
+- [x] 接受本轮只使用 `!` 作为“被发现”反馈；对话气泡留作后续独立需求。
+- [x] 接受历史 60 分钟值自动迁移为 30 分钟。
+- [x] 在可访问的 Windows 环境中完成最大化 VS Code、浏览器 F11 与 PPT 放映的最终手工验证。
