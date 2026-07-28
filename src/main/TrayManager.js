@@ -1,4 +1,5 @@
 const { app, Menu, nativeImage, screen } = require('electron');
+const { SCREENSAVER_ALLOWED_IDLE_MINUTES } = require('./services/screensaverAllowedMinutes');
 let tray = null;
 let deps = {};
 
@@ -180,17 +181,24 @@ function buildTrayMenu() {
     },
     {
       label: trayMenuLabel('trayScreensaverThreshold'),
-      submenu: [1, 5, 10, 30, 60].map((minutes) => ({
-        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
-        type: 'radio',
-        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
-        click: async () => {
-          if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
-          const current = deps.getScreensaverSettings();
-          deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
-          refreshTrayMenu();
+      submenu: [
+        ...SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
+          label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
+          type: 'radio',
+          checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 5 }).idleThresholdMinutes === minutes,
+          click: async () => {
+            if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+            const current = deps.getScreensaverSettings();
+            deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
+            refreshTrayMenu();
+          },
+        })),
+        { type: 'separator' },
+        {
+          label: trayMenuLabel('trayScreensaverPowerHint'),
+          enabled: false,
         },
-      })),
+      ],
     },
     {
       label: deps.getWeatherSyncSettings().enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
