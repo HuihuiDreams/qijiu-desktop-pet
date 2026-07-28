@@ -189,8 +189,13 @@ test('EMPIRICAL - State Machine: Rapid Stop-Stop and Stop-Cancel sequences', () 
   electronAPI.emitStop({ sessionId: 1, reason: 'input' });
   assert.equal(system.state, 'caught');
 
-  // Second stop reason input while in caught -> falls into cancel(reason) -> inactive
+  // Second stop reason input while in caught -> idempotent: stays caught (no duplicate indicator)
   electronAPI.emitStop({ sessionId: 1, reason: 'input' });
+  assert.equal(system.state, 'caught');
+  assert.equal(system.sessionId, 1);
+
+  // Silent cancel reason fullscreen while caught -> resets to inactive
+  electronAPI.emitCancel({ sessionId: 1, reason: 'fullscreen' });
   assert.equal(system.state, 'inactive');
   assert.equal(system.sessionId, 0);
 

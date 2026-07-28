@@ -13,6 +13,8 @@
 
 ### Fixed
 
+- 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 修复同一 `sessionId` 的重复 stop 或迟到 IPC 可能让 CP 屏保重复显示“被发现”感叹号或回位动画的问题；`caught` / `runningBack` 状态现在忽略重复的 `input` stop，确保感叹号与回位各至多发生一次。
 - 修复 `ScreensaverEligibilityGuard` 将“覆盖工作区的最大化办公窗口”误判为 `presentation` 并拒绝 CP 屏保触发的问题；守卫现基于 `isFullScreen` 与完整 `display.bounds` 拒绝真正全屏，仅非最大化窗口覆盖完整显示器边界时才视作无边框演示，最大化 VS Code / Office 等普通窗口返回 `canInterrupt: true`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复 Windows 活动窗口采样将“覆盖工作区的最大化办公窗口”误判为演示的问题；PowerShell 现通过 `MonitorFromWindow` / `GetMonitorInfo` 取前台窗口所属显示器完整 `rcMonitor`，仅在窗口非最大化且覆盖完整 monitor bounds 时标记 `isFullScreen: true`，使最大化 VS Code / Office 等不再被标记全屏，而 PPT 放映、浏览器 F11 等真正全屏窗口维持拒绝。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复活动窗口缓存原先每 10 秒刷新、却被 CP 屏保以 2 秒时效校验而持续拒绝触发的问题；现改为每 2 秒刷新，保持全屏/演示保护的严格时效要求且避免高频 PowerShell 轮询。

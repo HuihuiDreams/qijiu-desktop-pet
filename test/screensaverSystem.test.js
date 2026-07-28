@@ -233,7 +233,7 @@ test('ScreensaverSystem - waits for user input after the combo before running ba
   system.update(16);
 
   assert.equal(system.state, 'performing');
-  assert.equal(system.comboStepState, 'waiting_for_input');
+  assert.equal(system.comboStepState, 'idle_waiting');
   assert.equal(electronAPI.sentMessages.some((message) => message.channel === 'finished'), false);
 
   electronAPI.emitStop({ sessionId: 21, reason: 'input' });
@@ -244,6 +244,108 @@ test('ScreensaverSystem - waits for user input after the combo before running ba
   assert.equal(system.state, 'runningBack');
   system.update(500);
   assert.equal(system.state, 'inactive');
+});
+
+test('ScreensaverSystem - loops combo cycle indefinitely while idle when >=2 overlays are available', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 60, startedAt: Date.now() });
+  system.update(16); // entering -> performing
+  // Inject a validated sequence of three interactions and start at idle_pause.
+  system.activeComboSequence = ['shareFood', 'hug', 'kiss'];
+  system.comboIndex = 0;
+  system.comboStepState = 'idle_pause';
+  system.comboStepTimer = 0;
+
+  // Round 1: idle_pause -> shareFood overlay
+  system.update(16);
+  assert.equal(system.comboStepState, 'overlay_action');
+  assert.equal(system.comboIndex, 0);
+
+  // overlay 1500ms -> idle_pause after overlay_action
+  system.update(1500);
+  assert.equal(system.comboStepState, 'idle_pause');
+  assert.equal(system.comboIndex, 1);
+
+  system.update(1000); // hug overlay
+  assert.equal(system.comboStepState, 'overlay_action');
+  system.update(1500); // -> idle_pause (comboIndex=2)
+  assert.equal(system.comboStepState, 'idle_pause');
+  assert.equal(system.comboIndex, 2);
+
+  system.update(1000); // kiss overlay
+  assert.equal(system.comboStepState, 'overlay_action');
+  system.update(1500); // -> idle_pause (comboIndex=3)
+  assert.equal(system.comboIndex, 3);
+  assert.equal(system.comboStepState, 'idle_pause');
+
+  // End of cycle idle interval: wrap comboIndex back to 0 and stay looping.
+  system.update(1000);
+  assert.equal(system.comboIndex, 0);
+  assert.equal(system.comboStepState, 'idle_pause');
+  assert.equal(system.state, 'performing');
+
+  // Round 2 begins on next idle interval and starts shareFood again.
+  system.update(1000);
+  assert.equal(system.comboStepState, 'overlay_action');
+  assert.equal(system.comboIndex, 0);
+
+  // No finished notification while still looping.
+  assert.equal(electronAPI.sentMessages.some((m) => m.channel === 'finished'), false);
+});
+
+test('ScreensaverSystem - does not loop single-overlap sequence (parks at center idle)', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 61, startedAt: Date.now() });
+  system.update(16); // entering -> performing
+
+  system.activeComboSequence = ['hug'];
+  system.comboIndex = 0;
+  system.comboStepState = 'idle_pause';
+  system.comboStepTimer = 0;
+
+  system.update(16); // -> overlay_action (hug)
+  assert.equal(system.comboStepState, 'overlay_action');
+  system.update(1500); // -> idle_pause (comboIndex=1)
+  assert.equal(system.comboIndex, 1);
+  assert.equal(system.comboStepState, 'idle_pause');
+
+  system.update(1000); // end-of-cycle with length<2 -> park at idle_waiting
+  assert.equal(system.comboStepState, 'idle_waiting');
+  assert.equal(system.state, 'performing');
+
+  // Further ticks stay parked at idle_waiting; no repeat overlay.
+  system.update(5000);
+  assert.equal(system.comboStepState, 'idle_waiting');
+  assert.equal(system.comboIndex, 1);
+
+  assert.equal(electronAPI.sentMessages.some((m) => m.channel === 'finished'), false);
+});
+
+test('ScreensaverSystem - input stop during idle_waiting still produces a single caught', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 62, startedAt: Date.now() });
+  system.update(16);
+  system.activeComboSequence = ['hug'];
+  system.comboIndex = 1;
+  system.comboStepState = 'idle_pause';
+  system.comboStepTimer = 0;
+  system.update(16); // -> idle_waiting (parked)
+
+  electronAPI.emitStop({ sessionId: 62, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  // A late duplicate stop must not re-trigger the indicator or reset.
+  electronAPI.emitStop({ sessionId: 62, reason: 'input' });
+  assert.equal(system.state, 'caught');
 });
 
 test('ScreensaverSystem - dispose detaches subscriptions and resets', () => {

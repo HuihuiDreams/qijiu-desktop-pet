@@ -41,7 +41,7 @@ class ScreensaverSystem {
 
     this.activeComboSequence = null;
     this.comboIndex = 0;
-    this.comboStepState = null; // 'preparing' | 'idle_pause' | 'overlay_action' | 'waiting_for_input'
+    this.comboStepState = null; // 'preparing' | 'idle_pause' | 'overlay_action' | 'idle_waiting'
     this.comboStepTimer = 0;
 
     this.runningBackStartCoords = null;
@@ -313,16 +313,25 @@ class ScreensaverSystem {
 
     if (this.state === 'inactive') return;
 
-    if (payload.reason === 'input' && (this.state === 'entering' || this.state === 'performing')) {
-      this.state = 'caught';
-      this.stateTimer = CAUGHT_INDICATOR_DURATION_MS;
-      this.caughtIndicatorAwaitingPaint = true;
-      if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
-        this.particleLayer.clear();
+    if (payload.reason === 'input') {
+      // Idempotent: once caught / runningBack, repeated input must not duplicate
+      // the indicator or the run-back animation.
+      if (this.state === 'caught' || this.state === 'runningBack') return;
+
+      if (this.state === 'entering' || this.state === 'performing') {
+        this.state = 'caught';
+        this.stateTimer = CAUGHT_INDICATOR_DURATION_MS;
+        this.caughtIndicatorAwaitingPaint = true;
+        if (this.particleLayer && typeof this.particleLayer.clear === 'function') {
+          this.particleLayer.clear();
+        }
+        this.clearScreensaverOverlays();
+        this.showCaughtIndicator();
+      } else {
+        this.cancel(payload.reason || 'stop');
       }
-      this.clearScreensaverOverlays();
-      this.showCaughtIndicator();
     } else {
+      if (this.state === 'caught' || this.state === 'runningBack') return;
       this.cancel(payload.reason || 'stop');
     }
   }
@@ -353,7 +362,7 @@ class ScreensaverSystem {
    * 预处理连招序列：校验可用 overlay keys，跳过缺失素材。
    */
   async prepareComboSequence() {
-    const CANDIDATE_COMBO = ['hug', 'shareFood', 'kiss'];
+    const CANDIDATE_COMBO = ['shareFood', 'hug', 'kiss'];
     const skinId = (this.skinManager && typeof this.skinManager.getCurrentSkin === 'function')
       ? this.skinManager.getCurrentSkin()
       : 'default';
@@ -711,7 +720,7 @@ class ScreensaverSystem {
         break;
 
       case 'performing':
-        if (this.comboStepState === 'preparing' || this.comboStepState === 'waiting_for_input') {
+        if (this.comboStepState === 'preparing' || this.comboStepState === 'idle_waiting') {
           break;
         }
         if (this.comboStepTimer > 0) {
@@ -719,7 +728,7 @@ class ScreensaverSystem {
         }
         if (this.comboStepTimer <= 0) {
           if (!Array.isArray(this.activeComboSequence) || this.activeComboSequence.length === 0) {
-            this.comboStepState = 'waiting_for_input';
+            this.comboStepState = 'idle_waiting';
             break;
           }
 
@@ -730,7 +739,15 @@ class ScreensaverSystem {
               this.comboStepState = 'overlay_action';
               this.comboStepTimer = 1500;
             } else {
-              this.comboStepState = 'waiting_for_input';
+              // Combo cycle finished: loop only when at least two interactions
+              // are available; otherwise stay parked at center idle.
+              if (this.activeComboSequence.length >= 2) {
+                this.comboIndex = 0;
+                this.comboStepState = 'idle_pause';
+                this.comboStepTimer = 1000;
+              } else {
+                this.comboStepState = 'idle_waiting';
+              }
             }
           } else if (this.comboStepState === 'overlay_action') {
             this.clearScreensaverOverlays();
