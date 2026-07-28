@@ -157,8 +157,10 @@ function getSkinArtistName(skinId) {
 let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
 
 /**
- * 扫描 src/assets/ 下的子目录，返回可用皮肤 ID 列表。
- * 使用 fs.statSync 过滤，仅返回文件夹名，排除非目录文件。
+ * 返回可用皮肤 ID 列表。
+ * 优先从加密 manifest 读取；manifest 缺失时 fallback 到 src/assets/ 目录扫描，
+ * 但只保留已在 SKIN_NAME_KEYS 白名单中注册的皮肤 ID，
+ * 防止 fonts 等非皮肤子目录被误识别为皮肤。
  */
 let cachedAvailableSkins = null;
 let cachedAvailableSkinsTimestamp = 0;
@@ -180,11 +182,13 @@ function scanAvailableSkins(forceRefresh = false) {
       return cachedAvailableSkins;
     }
 
+    const knownSkinIds = new Set(Object.keys(SKIN_NAME_KEYS));
     const assetsDir = path.join(__dirname, '..', '..', '..', 'src', 'assets');
     const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
     cachedAvailableSkins = entries.filter(dirent => {
       if (!dirent.isDirectory()) return false;
       const entry = path.basename(dirent.name); // Sanitize to prevent traversal
+      if (!knownSkinIds.has(entry)) return false; // 只允许白名单内的皮肤 ID
       try {
         const fullPath = path.join(assetsDir, entry);
         if (!fullPath.startsWith(assetsDir)) return false;
@@ -192,7 +196,6 @@ function scanAvailableSkins(forceRefresh = false) {
       } catch {
         return false;
       }
-
     }).map(dirent => dirent.name).sort(sortSkinIds);
     cachedAvailableSkinsTimestamp = Date.now();
     return cachedAvailableSkins;

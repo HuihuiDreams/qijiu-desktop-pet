@@ -521,3 +521,73 @@ test('CHALLENGE 6 - reset() removes DOM nodes [data-screensaver-session-id], cle
 
   delete global.document;
 });
+
+// ==========================================================
+// Edge Case 7: reset(preserveBubbles=true) does NOT remove bubbles (runningBack path)
+// reset() without flag still removes bubbles (cancel path)
+// ==========================================================
+test('CHALLENGE 7 - reset(true) preserves caught bubbles so they survive until natural timeout; reset() without flag removes them', () => {
+  const { documentMock } = createFakeDom();
+  global.document = documentMock;
+  global.DIALOGUES = {
+    screensaverCaught: {
+      yueqi: ['好羞…😳'],
+      shenjiu: ['被发现了❗️'],
+    },
+  };
+
+  const electronAPI = createFakeElectronApi();
+  const petA = createFakePet('yueqi', 100, 100);
+  const petB = createFakePet('shenjiu', 300, 100);
+
+  const removeForPetsCalls = [];
+  const fakeDialogBubble = {
+    show: () => {},
+    removeForPets: (pets) => removeForPetsCalls.push(pets.map((p) => p.id)),
+    remove: () => {},
+  };
+
+  const system = new ScreensaverSystem({
+    electronAPI,
+    getPets: () => [petA, petB],
+    renderer: { stage: documentMock.body },
+    dialogBubble: fakeDialogBubble,
+  });
+  system.init();
+
+  // Sub-case 7a: runningBack completes → reset(true) → bubbles must NOT be removed
+  electronAPI.emitStart({ sessionId: 701, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 701, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  // Clear counter here: onStart legitimately calls removeForPets to dismiss any
+  // prior bubbles before starting the screensaver. We only care about whether
+  // reset(true) calls it during the runningBack → inactive transition.
+  removeForPetsCalls.length = 0;
+
+  // Drive caught → runningBack → reset(true)
+  system.update(16);   // skip caughtIndicatorAwaitingPaint frame
+  system.update(800);  // exhaust stateTimer → initRunningBack
+  assert.equal(system.state, 'runningBack');
+  system.update(500);  // exhaust runningBack stateTimer → reset(true)
+  assert.equal(system.state, 'inactive');
+
+  assert.equal(
+    removeForPetsCalls.length,
+    0,
+    'reset(true) from runningBack must NOT call removeForPets — bubble must live until natural timeout',
+  );
+
+  // Sub-case 7b: silent cancel → reset() without flag → bubbles MUST be removed
+  removeForPetsCalls.length = 0;
+  electronAPI.emitStart({ sessionId: 702, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 702, reason: 'input' });
+  system.reset(); // explicit cancel / manual reset — no preserveBubbles flag
+  assert.ok(
+    removeForPetsCalls.length > 0,
+    'reset() without flag must call removeForPets to clean up bubbles on silent cancel',
+  );
+
+  delete global.document;
+  delete global.DIALOGUES;
+});
