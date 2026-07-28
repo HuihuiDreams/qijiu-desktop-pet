@@ -172,3 +172,4 @@ renderer 重载一律取消而不回放。
 - 「立即退出」调整为下一次可观测 idle 轮询的目标；首次输入继续透传，真实延迟以主机性能样本验收。
 - macOS 首发保持禁用，优先保证不打扰。
 - 实现时必须同步更新 `docs/structure.md`、`CHANGELOG.md`、测试和本 ADR 的状态。
+- 屏保 Overlay 图片以 `transform: translate(-50%, -50%)` 将其中心对齐场景视觉中点，配合 `width: baseWidth * visualScale, height: auto`，确保素材 intrinsic 宽高比不必与 `320×200` 一致也能正确居中。

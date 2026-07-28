@@ -31,6 +31,7 @@
 - 修复 CP 屏保因锁屏、全屏等原因静默取消后宠物可能滞留在中心场景的问题；现在会立即恢复入场前坐标。
 - 清理屏保渲染状态机中不可达的 `cancelled` 状态，并将主进程锁屏、休眠等内部电源事件处理器收回私有闭包，避免暴露无用接口。
 - 修复性能基线复算 CLI 测试在受限环境中嵌套启动 Node 进程遭拒的问题；现通过与命令行共用的 JSON 格式化入口验证输出内容。
+- 修复 CP 屏保 Overlay 在素材 intrinsic 宽高比与场景基准 `320×200` 不一致时垂直居中对齐错误的问题。`ScreensaverSystem.showScreensaverOverlay()` 现在使用 `left/top` 直接置于场景中点并配合 `transform: translate(-50%, -50%)` 让图片中心对齐中点，`height: auto` 保持素材原始比例，避免像 `hug.webp`/`kiss.webp` 这类非 16:10 资源被错误地锚定在场景上方。新增回归测试覆盖 transform 居中行为。
 
 ### Changed
 

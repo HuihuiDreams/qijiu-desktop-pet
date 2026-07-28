@@ -592,3 +592,43 @@ test('ScreensaverSystem - reset safety calls interactionSystem.cancel and preser
 
   delete global.document;
 });
+
+test('ScreensaverSystem - centers overlay with transform so intrinsic aspect ratio cannot misalign', () => {
+  const { documentMock, body } = createFakeDom();
+  global.document = documentMock;
+
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({
+    electronAPI,
+    renderer: { stage: body },
+  });
+  system.sessionId = 42;
+  system.sceneBounds = {
+    baseWidth: 320,
+    baseHeight: 200,
+    visualScale: 2,
+    midpoint: { x: 500, y: 400 },
+  };
+
+  system.showScreensaverOverlay('kiss');
+
+  const overlay = body.querySelector('.screensaver-overlay-image');
+  assert.ok(overlay);
+  assert.equal(overlay.style.width, '640px');
+  assert.equal(overlay.style.height, 'auto');
+  assert.equal(overlay.style.left, '500px');
+  assert.equal(overlay.style.top, '400px');
+  assert.equal(overlay.style.transform, 'translate(-50%, -50%)');
+  assert.notEqual(
+    overlay.style.left,
+    '180px',
+    'Overlay left must not be derived from the fixed baseWidth/2 offset',
+  );
+  assert.notEqual(
+    overlay.style.top,
+    '200px',
+    'Overlay top must not be derived from the fixed baseHeight aspect ratio',
+  );
+
+  delete global.document;
+});

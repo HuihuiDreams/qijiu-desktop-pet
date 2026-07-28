@@ -426,8 +426,9 @@ class ScreensaverSystem {
     const overlayWidth = scene.baseWidth * visualScale;
     const cx = scene.midpoint.x;
     const cy = scene.midpoint.y;
-    const overlayLeft = cx - overlayWidth / 2;
-    const overlayTop = cy - (scene.baseHeight / 2) * visualScale;
+    // 使用 transform 将图片中心对齐场景中点，避免依赖图片 intrinsic 宽高比。
+    const overlayLeft = cx;
+    const overlayTop = cy;
 
     const img = doc.createElement('img');
     img.className = 'screensaver-overlay-image';
@@ -439,6 +440,7 @@ class ScreensaverSystem {
     img.style.height = 'auto';
     img.style.left = `${overlayLeft}px`;
     img.style.top = `${overlayTop}px`;
+    img.style.transform = 'translate(-50%, -50%)';
     img.style.pointerEvents = 'none';
     img.style.zIndex = '100';
     img.style.opacity = '1';
