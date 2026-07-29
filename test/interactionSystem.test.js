@@ -137,4 +137,3 @@ test('InteractionSystem - cancel clears interaction state cleanly', () => {
   assert.strictEqual(system.currentInteraction, null);
   assert.strictEqual(system.cooldownTimer, 0);
 });
-

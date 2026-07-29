@@ -140,4 +140,3 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notifyScreensaverReady: () => ipcRenderer.send('screensaver-ready'),
   notifyScreensaverFinished: (sessionId) => ipcRenderer.send('screensaver-finished', sessionId),
 });
-

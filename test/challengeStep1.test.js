@@ -407,4 +407,3 @@ test('CHALLENGE 3.5: Mid-session Fullscreen / Eligibility Guard Rejection', () =
   console.log(`[CHALLENGE 3.5] State after full-screen app opened mid-session: ${controller.getState().state}`);
   assert.equal(controller.getState().state, 'inactive');
 });
-

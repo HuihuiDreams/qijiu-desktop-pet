@@ -75,5 +75,3 @@ test('preload exposes screensaver notification APIs through electronAPI', () => 
   assert.match(preloadSource, /notifyScreensaverReady:\s*\(\)\s*=>\s*ipcRenderer\.send\('screensaver-ready'\)/);
   assert.match(preloadSource, /notifyScreensaverFinished:\s*\(sessionId\)\s*=>\s*ipcRenderer\.send\('screensaver-finished', sessionId\)/);
 });
-
-
