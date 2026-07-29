@@ -43,6 +43,8 @@ The tray menu lets you:
 - "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
 - "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder"
 - "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes
+- "💕 Enable Sweat Screensaver" or "💕 Disable Sweat Screensaver"
+- "💕 Screensaver Wait Time": choose 1, 3, 5, 10, 15, or 30 min (default: 3 min)
 - "🌤️ Enable Weather Sync" or "🌤️ Disable Weather Sync"
 - "🌤️ Set City"
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
@@ -60,7 +62,7 @@ When you switch language from the tray menu, the main window, right-click menus,
 💕 CP Sweet Screensaver
 ========================================
 
-After the system is idle longer than the configured threshold, Yueqi and Shenjiu will play a CP combo (shareFood -> hug -> kiss) at the center of the screen and loop until next input or a silent cancel (lock, fullscreen, etc.); when they detect you are back, each shows a dialogue bubble above their head (Yueqi: "So shy... 😳" etc.; Shenjiu: "Busted! ❗️" etc.) and then runs back to their original spots. In the tray menu under "💕 Sweat Screensaver Idle Time" you can pick 1 / 3 / 5 / 10 / 15 / 30 minutes; the default is 3 minutes.
+After the system is idle longer than the configured threshold, Yueqi and Shenjiu will play a CP combo (shareFood -> hug -> kiss) at the center of the screen and loop until next input or a silent cancel (lock, fullscreen, etc.); when they detect you are back, each shows a dialogue bubble above their head (Yueqi: "So shy... 😳" etc.; Shenjiu: "Busted! ❗️" etc.) and then runs back to their original spots. Use "💕 Enable Sweat Screensaver" / "💕 Disable Sweat Screensaver" in the tray menu to toggle it, then choose 1 / 3 / 5 / 10 / 15 / 30 min under "💕 Screensaver Wait Time" (default: 3 min).
 
 Note: This app does NOT block or modify Windows screen-off / sleep timing. To see the animation make sure the Windows "turn off screen" and "sleep" timer is later than the selected CP wait time. Windows 11 defaults to about 5 minutes when plugged in, so if you want a wait of 5 minutes or longer, please lengthen the screen-off/sleep time in the system power settings.
 

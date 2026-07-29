@@ -47,6 +47,18 @@ release workflows, version metadata, or installer assets:
    syntax with `# noinspection` comments to prevent CI quota and IDE check errors.
 5. Document any platform-specific limitation or rollback step before declaring the change complete.
 
+## Changelog ordering
+
+- Add every new entry to the end of its category under `Unreleased`; never
+  prepend it above earlier entries in that category.
+- Within each version and category (`Added`, `Changed`, `Fixed`, `Removed`,
+  `Security`), keep entries in implementation/commit order from oldest to
+  newest. When backfilling or correcting a released version, reorder the
+  complete affected category to that same order instead of mixing prepend and
+  append styles.
+- Use one category per change and merge related follow-up wording into its
+  existing entry when appropriate; do not duplicate category headings.
+
 ## Verify each change
 
 1. Add or update the focused test in `tests/` for behavior changes.

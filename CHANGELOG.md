@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Changed
+- 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `desktop-pet-maintenance` 维护技能中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。
+
 ## [0.10.0] - 2026-07-29
 
 ### Added
@@ -15,37 +18,37 @@
 
 ### Fixed
 
-- 修复皮肤选择器在皮肤数量超过一行时名称与艺术家名被截断、无法滚动查看的 UI 问题。根因：窗口固定高度 400px 不足以容纳两行皮肤卡片（每行约 180px），gallery 区域剩余空间不到一行高度，第二行卡片被 footer 完全遮挡；`.skin-gallery` 虽已设置 `overflow-y: auto` 但因窗口过矮实际无法触发。修复方式：将窗口高度从 400px 调整为 520px（可完整展示两行）；同时将 gallery `padding-bottom` 从 4px 增至 8px，防止最后一行底部被 footer 阴影视觉截断；皮肤套数超过两行时 `overflow-y: auto` 自动生效，无需额外改动，806 tests pass 0 fail。
-- 修复皮肤选择器显示 5 套皮肤（应为 4 套）的问题。根因：`scanAvailableSkins()` 在无加密 manifest 时 fallback 扫描 `src/assets/` 所有子目录，`fonts/` 字体目录也是子目录，被误当作第五套皮肤；该"皮肤"无真实图片资源，点击后只显示 emoji 占位。修复方式：在 fallback 扫描时增加白名单过滤（`SKIN_NAME_KEYS` 中已注册的 ID），排除未知子目录；测试同步更新，新增回归用例断言 `fonts` 不出现在皮肤列表中，806 tests pass 0 fail。
-- 修复运行 `npm run qa:electron:performance` 时抛出 `Error: Cannot find module 'playwright'` 的问题。因 `node_modules` 中缺失 `playwright` 依赖，通过运行 `npm install` 完整安装缺失的 `devDependencies`，并经 `npm run qa:electron:performance` 和 `npm test`（804 pass 0 fail）验证性能采样与单元测试均正常运行。
-- 修复 CP 屏保「被抓包」对话气泡在宠物回到原位后立即消失的问题（根因：`reset()` 在 `runningBack` 结束时无条件调用 `dialogBubble.removeForPets()`，强制清除仅 1.3 秒的气泡）。修复分两步：① 解耦状态机冻结计时器与气泡显示时长——新增 `CAUGHT_BUBBLE_DURATION_MS = 4000ms`（原 `CAUGHT_INDICATOR_DURATION_MS = 800ms` 仅控制宠物冻结静止时长，不变），使气泡时长与其他功能一致；② 为 `reset()` 新增可选参数 `preserveBubbles = false`，`runningBack` 自然结束时以 `reset(true)` 跳过 `removeForPets`，气泡交由自身计时器自然超时消失；锁屏、全屏等静默取消路径仍调用 `reset()` 不传参，正常清除气泡。新增回归测试 `CHALLENGE 7`，805 tests pass 0 fail。
-- 修复 CP 屏保被「抓包」时头顶只有屏幕中心一个红色 `!` 文本节点、与角色无任何关联的问题。现改为通过 `DialogBubble.show` 在两只宠物头顶各自弹出对话框气泡：沈九说 `被发现了❗️ / …啧。 / …你怎么总挑这时候回来。`，岳七说 `好羞…😳 / 咳咳… / 嘿嘿😳`；文案接入 `i18n.js` 的 `screensaverCaught` 字典（zh / en / ja 三语全覆盖）。同步移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop`，并更新 `ScreensaverSystem` 与 `challengerStep3_1.test.js` / `screensaverOverlay.test.js` 中相关断言。回退链路仍受 `caught` / `runningBack` 的幂等保证约束。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
-- 修复活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood → idle` 后就被瞬间取消、宠物跳回原位的问题。根因：`ScreensaverController` 进入 `active` 状态后以 1 秒轮询重查 `ScreensaverEligibilityGuard`，但 Windows 活动窗口采样器 `sampledAt` 取自 PowerShell 调用起始时间，叠加 2 秒采样间隔与 2 秒信任窗口时缓存极易越过 2s 边界而返回 `stale_cache`/`provider-error`/`unknown-state` 等瞬态拒绝，从而误发 `screensaver-cancel`。现仅对真正决定不允许打扰的 `fullscreen` / `presentation` 才取消会话；瞬态原因视为采样间隙，留待下一轮轮询再判断。新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
-- 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
-- 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
-- 修复同一 `sessionId` 的重复 stop 或迟到 IPC 可能让 CP 屏保重复显示“被发现”感叹号或回位动画的问题；`caught` / `runningBack` 状态现在忽略重复的 `input` stop，确保感叹号与回位各至多发生一次。
-- 修复 `ScreensaverEligibilityGuard` 将“覆盖工作区的最大化办公窗口”误判为 `presentation` 并拒绝 CP 屏保触发的问题；守卫现基于 `isFullScreen` 与完整 `display.bounds` 拒绝真正全屏，仅非最大化窗口覆盖完整显示器边界时才视作无边框演示，最大化 VS Code / Office 等普通窗口返回 `canInterrupt: true`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
-- 修复 Windows 活动窗口采样将“覆盖工作区的最大化办公窗口”误判为演示的问题；PowerShell 现通过 `MonitorFromWindow` / `GetMonitorInfo` 取前台窗口所属显示器完整 `rcMonitor`，仅在窗口非最大化且覆盖完整 monitor bounds 时标记 `isFullScreen: true`，使最大化 VS Code / Office 等不再被标记全屏，而 PPT 放映、浏览器 F11 等真正全屏窗口维持拒绝。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 修复活动窗口缓存原先每 10 秒刷新、却被 CP 屏保以 2 秒时效校验而持续拒绝触发的问题；现改为每 2 秒刷新，保持全屏/演示保护的严格时效要求且避免高频 PowerShell 轮询。
 - 修复渲染器演出完成后主进程仍保持屏保租约的问题；完成确认现会结束会话并恢复久坐提醒的仲裁能力。
 - 修复显示器信息查询异常或返回无效结果时屏保仍可能打断演示的问题；无法验证演示状态时现会保守拒绝触发。
 - 修复活跃屏保调用 `stop()` 时取消路径可能遗留轮询计时器的问题，避免后续重复轮询。
 - 修复屏保连招在异步素材校验完成前就开始播放，导致缺失素材闪现或漏播有效动作的问题；现在会等待校验结果后再启动连招，并使用渲染舞台所属的文档创建覆盖层。
-- 修复 CP 屏保自行维护 idle 双人站位、与久坐提醒中心布局重复且容易漂移的问题；现统一复用 `StageGeometry.getCenteredPairLayout()` 的主屏/指定 `walkArea` 中心与双宠站位公式，CP 屏保按目标显示器 DPI 后的宠物视觉尺寸计算坐标，粉色氛围层按共享布局跨度扩展，并让 Overlay 与粒子层同步应用目标显示器的 DPI 缩放。
-- 修复 CP 屏保连招播完后自动回原位的问题；现在会停留在中心场景，只有检测到用户输入时才显示 `!` 并执行回位动画。
-- 修复 CP 屏保在普通输入后创建的 `!` 仅展示约 100ms、首个延迟帧还可能直接跳过回位的问题；现在会先保留一次绘制机会，再展示 800ms，并按目标显示器 DPI 对齐提示位置与字号。
-- 修复 CP 屏保因锁屏、全屏等原因静默取消后宠物可能滞留在中心场景的问题；现在会立即恢复入场前坐标。
 - 清理屏保渲染状态机中不可达的 `cancelled` 状态，并将主进程锁屏、休眠等内部电源事件处理器收回私有闭包，避免暴露无用接口。
 - 修复性能基线复算 CLI 测试在受限环境中嵌套启动 Node 进程遭拒的问题；现通过与命令行共用的 JSON 格式化入口验证输出内容。
+- 修复 CP 屏保连招播完后自动回原位的问题；现在会停留在中心场景，只有检测到用户输入时才显示 `!` 并执行回位动画。
+- 修复 CP 屏保因锁屏、全屏等原因静默取消后宠物可能滞留在中心场景的问题；现在会立即恢复入场前坐标。
+- 修复 CP 屏保自行维护 idle 双人站位、与久坐提醒中心布局重复且容易漂移的问题；现统一复用 `StageGeometry.getCenteredPairLayout()` 的主屏/指定 `walkArea` 中心与双宠站位公式，CP 屏保按目标显示器 DPI 后的宠物视觉尺寸计算坐标，粉色氛围层按共享布局跨度扩展，并让 Overlay 与粒子层同步应用目标显示器的 DPI 缩放。
+- 修复 CP 屏保在普通输入后创建的 `!` 仅展示约 100ms、首个延迟帧还可能直接跳过回位的问题；现在会先保留一次绘制机会，再展示 800ms，并按目标显示器 DPI 对齐提示位置与字号。
 - 修复 CP 屏保 Overlay 在素材 intrinsic 宽高比与场景基准 `320×200` 不一致时垂直居中对齐错误的问题。`ScreensaverSystem.showScreensaverOverlay()` 现在使用 `left/top` 直接置于场景中点并配合 `transform: translate(-50%, -50%)` 让图片中心对齐中点，`height: auto` 保持素材原始比例，避免像 `hug.webp`/`kiss.webp` 这类非 16:10 资源被错误地锚定在场景上方。新增回归测试覆盖 transform 居中行为。
+- 修复 CP 屏保被「抓包」时头顶只有屏幕中心一个红色 `!` 文本节点、与角色无任何关联的问题。现改为通过 `DialogBubble.show` 在两只宠物头顶各自弹出对话框气泡：沈九说 `被发现了❗️ / …啧。 / …你怎么总挑这时候回来。`，岳七说 `好羞…😳 / 咳咳… / 嘿嘿😳`；文案接入 `i18n.js` 的 `screensaverCaught` 字典（zh / en / ja 三语全覆盖）。同步移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop`，并更新 `ScreensaverSystem` 与 `challengerStep3_1.test.js` / `screensaverOverlay.test.js` 中相关断言。回退链路仍受 `caught` / `runningBack` 的幂等保证约束。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 修复运行 `npm run qa:electron:performance` 时抛出 `Error: Cannot find module 'playwright'` 的问题。因 `node_modules` 中缺失 `playwright` 依赖，通过运行 `npm install` 完整安装缺失的 `devDependencies`，并经 `npm run qa:electron:performance` 和 `npm test`（804 pass 0 fail）验证性能采样与单元测试均正常运行。
+- 修复皮肤选择器在皮肤数量超过一行时名称与艺术家名被截断、无法滚动查看的 UI 问题。根因：窗口固定高度 400px 不足以容纳两行皮肤卡片（每行约 180px），gallery 区域剩余空间不到一行高度，第二行卡片被 footer 完全遮挡；`.skin-gallery` 虽已设置 `overflow-y: auto` 但因窗口过矮实际无法触发。修复方式：将窗口高度从 400px 调整为 520px（可完整展示两行）；同时将 gallery `padding-bottom` 从 4px 增至 8px，防止最后一行底部被 footer 阴影视觉截断；皮肤套数超过两行时 `overflow-y: auto` 自动生效，无需额外改动，806 tests pass 0 fail。
+- 修复皮肤选择器显示 5 套皮肤（应为 4 套）的问题。根因：`scanAvailableSkins()` 在无加密 manifest 时 fallback 扫描 `src/assets/` 所有子目录，`fonts/` 字体目录也是子目录，被误当作第五套皮肤；该"皮肤"无真实图片资源，点击后只显示 emoji 占位。修复方式：在 fallback 扫描时增加白名单过滤（`SKIN_NAME_KEYS` 中已注册的 ID），排除未知子目录；测试同步更新，新增回归用例断言 `fonts` 不出现在皮肤列表中，806 tests pass 0 fail。
+- 修复 CP 屏保「被抓包」对话气泡在宠物回到原位后立即消失的问题（根因：`reset()` 在 `runningBack` 结束时无条件调用 `dialogBubble.removeForPets()`，强制清除仅 1.3 秒的气泡）。修复分两步：① 解耦状态机冻结计时器与气泡显示时长——新增 `CAUGHT_BUBBLE_DURATION_MS = 4000ms`（原 `CAUGHT_INDICATOR_DURATION_MS = 800ms` 仅控制宠物冻结静止时长，不变），使气泡时长与其他功能一致；② 为 `reset()` 新增可选参数 `preserveBubbles = false`，`runningBack` 自然结束时以 `reset(true)` 跳过 `removeForPets`，气泡交由自身计时器自然超时消失；锁屏、全屏等静默取消路径仍调用 `reset()` 不传参，正常清除气泡。新增回归测试 `CHALLENGE 7`，805 tests pass 0 fail。
+- 修复活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood → idle` 后就被瞬间取消、宠物跳回原位的问题。根因：`ScreensaverController` 进入 `active` 状态后以 1 秒轮询重查 `ScreensaverEligibilityGuard`，但 Windows 活动窗口采样器 `sampledAt` 取自 PowerShell 调用起始时间，叠加 2 秒采样间隔与 2 秒信任窗口时缓存极易越过 2s 边界而返回 `stale_cache`/`provider-error`/`unknown-state` 等瞬态拒绝，从而误发 `screensaver-cancel`。现仅对真正决定不允许打扰的 `fullscreen` / `presentation` 才取消会话；瞬态原因视为采样间隙，留待下一轮轮询再判断。新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 修复 `screensaverAllowedMinutes.js` 缺失文件末尾换行符的问题；新增 `coversBounds` 重命名自 `coversWorkArea`，更准确反映其比较完整显示器边界而非仅工作区的实际用途。
+- 修复 CP 屏保连招播完后停留在中心不再循环的问题；当已校验的可用 Overlay 不少于两个时，每轮按固定顺序 `shareFood → hug → kiss` 过滤后循环播放，直至用户恢复输入或会话静默取消，仅当零或一个可用 Overlay 时停在中心 `idle_waiting` 等待输入。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 修复同一 `sessionId` 的重复 stop 或迟到 IPC 可能让 CP 屏保重复显示“被发现”感叹号或回位动画的问题；`caught` / `runningBack` 状态现在忽略重复的 `input` stop，确保感叹号与回位各至多发生一次。
+- 修复 Windows 活动窗口采样将“覆盖工作区的最大化办公窗口”误判为演示的问题；PowerShell 现通过 `MonitorFromWindow` / `GetMonitorInfo` 取前台窗口所属显示器完整 `rcMonitor`，仅在窗口非最大化且覆盖完整 monitor bounds 时标记 `isFullScreen: true`，使最大化 VS Code / Office 等不再被标记全屏，而 PPT 放映、浏览器 F11 等真正全屏窗口维持拒绝。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 修复 `ScreensaverEligibilityGuard` 将“覆盖工作区的最大化办公窗口”误判为 `presentation` 并拒绝 CP 屏保触发的问题；守卫现基于 `isFullScreen` 与完整 `display.bounds` 拒绝真正全屏，仅非最大化窗口覆盖完整显示器边界时才视作无边框演示，最大化 VS Code / Office 等普通窗口返回 `canInterrupt: true`。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 
 ### Changed
 
-- 更新托盘菜单中屏保选项的多语言文案：英文更新为 `Disable/Enable Sweat Screensaver` 及 `Sweat Screensaver Idle Time`；日语取消片假名改用「甘々待機画面」，且避免「待機画面の待機時間」词语重复，触发等待时间简炼为 `💕 放置時間`（`💕 甘々待機画面を無効化` / `💕 甘々待機画面を有効化` / `💕 放置時間`）；同步更新 `readme_en.txt` 与 `readme_ja.txt` 中的托盘菜单对照说明。
-- 同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 中「CP 高甜屏保」说明：用户回来时改为双宠头顶对话气泡（岳七「好羞…😳」等 / 沈九「被发现了❗️」等），不再描述头顶「!」。
-- 将 CP 屏保触发等待默认阈值从 5 分钟调整为 3 分钟；同步更新 `ScreensaverController` 默认设置、`TrayManager` 与 `AppLifecycle` 的 fallback 值、相关单元测试，以及三语 README 的默认说明。
 - 收紧 CP 屏保触发等待档位为 `1 / 3 / 5 / 10 / 15 / 30` 分钟（默认仍为 5），新增 `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `TrayManager` 的唯一来源；旧持久化值 `60` 在首次读取时自动迁移为 `30` 并回写 store，其他非白名单值回退默认 5 分钟。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
 - 托盘屏保触发等待子菜单改由共享白名单渲染六个 radio 项；「Windows 关屏/睡眠时间须晚于所选等待时间、应用不读取或修改电源策略」的说明写入三语 README 的「CP 高甜屏保」一节，不再占用托盘菜单空间。详见 [ADR-044](./docs/decisions/ADR-044-cp-screensaver-session.md)。
+- 将 CP 屏保触发等待默认阈值从 5 分钟调整为 3 分钟；同步更新 `ScreensaverController` 默认设置、`TrayManager` 与 `AppLifecycle` 的 fallback 值、相关单元测试，以及三语 README 的默认说明。
+- 同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 中「CP 高甜屏保」说明：用户回来时改为双宠头顶对话气泡（岳七「好羞…😳」等 / 沈九「被发现了❗️」等），不再描述头顶「!」。
+- 更新托盘菜单中屏保选项的多语言文案：英文更新为 `Disable/Enable Sweat Screensaver` 及 `Screensaver Wait Time`；日语取消片假名改用「甘々待機画面」，且避免「待機画面の待機時間」词语重复，触发等待时间简炼为 `💕 待機時間`（`💕 甘々待機画面を無効化` / `💕 甘々待機画面を有効化` / `💕 待機時間`）；同步更新 `readme_en.txt` 与 `readme_ja.txt` 中的托盘菜单对照说明。
 
 ## [0.9.4] - 2026-07-26
 
