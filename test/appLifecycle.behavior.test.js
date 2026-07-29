@@ -163,3 +163,20 @@ test('AppLifecycle initializes services before creating the pet window and tears
     restore();
   }
 });
+
+test('AppLifecycle exposes 7 static initialization methods', () => {
+  const harness = createHarness();
+  const { AppLifecycle, restore } = loadFreshLifecycle(harness);
+  try {
+    assert.equal(typeof AppLifecycle.initPlatformSecurity, 'function');
+    assert.equal(typeof AppLifecycle.initCoreServices, 'function');
+    assert.equal(typeof AppLifecycle.initScreensaverSystem, 'function');
+    assert.equal(typeof AppLifecycle.initFeatureServices, 'function');
+    assert.equal(typeof AppLifecycle.initPetWindow, 'function');
+    assert.equal(typeof AppLifecycle.initTray, 'function');
+    assert.equal(typeof AppLifecycle.initSubWindowsAndIpc, 'function');
+  } finally {
+    restore();
+  }
+});
+

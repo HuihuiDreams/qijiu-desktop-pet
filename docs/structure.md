@@ -99,7 +99,7 @@ graph TB
 qijiu-desktop-pet/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
-├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 250 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
+├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
 ├─ src/main/TrayManager.js              # 系统托盘管理：构建托盘菜单、处理中英文切换及各菜单项的点击交互
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)

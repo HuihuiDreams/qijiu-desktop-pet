@@ -8,9 +8,9 @@ test('main process disables the default Electron application menu before app UI 
   const disableFunctionIndex = mainSource.indexOf('function disableApplicationMenu()');
   const setApplicationMenuIndex = mainSource.indexOf('Menu.setApplicationMenu(null);', disableFunctionIndex);
   const readyIndex = mainSource.indexOf('app.whenReady().then');
-  const disableCallIndex = mainSource.indexOf('disableApplicationMenu();', readyIndex);
-  const createWindowIndex = mainSource.indexOf('createWindow()', disableCallIndex);
-  const createTrayIndex = Math.max(mainSource.indexOf('trayManager.createTray();', disableCallIndex), mainSource.indexOf('createTray();', disableCallIndex));
+  const disableCallIndex = mainSource.indexOf('AppLifecycle.initPlatformSecurity();', readyIndex);
+  const createWindowIndex = mainSource.indexOf('AppLifecycle.initPetWindow();', readyIndex);
+  const createTrayIndex = mainSource.indexOf('AppLifecycle.initTray();', readyIndex);
 
   assert.ok(disableFunctionIndex > -1);
   assert.ok(setApplicationMenuIndex > disableFunctionIndex);

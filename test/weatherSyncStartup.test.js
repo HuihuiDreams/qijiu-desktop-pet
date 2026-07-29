@@ -30,8 +30,9 @@ test('weather sync first fetch waits until the renderer has loaded', () => {
   // the pet window's did-finish-load handler (now in PetWindow.js) then kicks
   // off the real sync (geocode/fetch/interval) via updateWeatherSyncSettings().
   const readyStart = mainSource.indexOf('app.whenReady().then(async () => {');
-  const weatherInitIndex = mainSource.indexOf('WeatherSyncController.init(', readyStart);
-  const createWindowIndex = mainSource.indexOf('createWindow();', readyStart);
+  const readyEnd = mainSource.indexOf('}).catch(err => { console.error(', readyStart);
+  const featureServicesIndex = mainSource.indexOf('AppLifecycle.initFeatureServices();', readyStart);
+  const petWindowIndex = mainSource.indexOf('AppLifecycle.initPetWindow();', readyStart);
   const loadHandlerIndex = mainSource.indexOf("mainWindow.webContents.on('did-finish-load'");
   const startupSyncIndex = mainSource.indexOf(
     'WeatherSyncController.updateWeatherSyncSettings(WeatherSyncController.getWeatherSyncSettings());',
@@ -39,11 +40,14 @@ test('weather sync first fetch waits until the renderer has loaded', () => {
   );
 
   assert.notStrictEqual(readyStart, -1);
-  assert.notStrictEqual(weatherInitIndex, -1);
-  assert.notStrictEqual(createWindowIndex, -1);
+  assert.notStrictEqual(readyEnd, -1);
+  assert.notStrictEqual(featureServicesIndex, -1);
+  assert.notStrictEqual(petWindowIndex, -1);
   assert.notStrictEqual(loadHandlerIndex, -1);
   assert.notStrictEqual(startupSyncIndex, -1);
-  assert.ok(weatherInitIndex < createWindowIndex, 'settings must be loaded before the pet window/tray are created');
+  assert.ok(featureServicesIndex < readyEnd, 'feature services init must be called inside whenReady');
+  assert.ok(petWindowIndex < readyEnd, 'pet window init must be called inside whenReady');
+  assert.ok(featureServicesIndex < petWindowIndex, 'settings must be loaded before the pet window/tray are created');
   assert.ok(startupSyncIndex > loadHandlerIndex, 'the full sync must only start after did-finish-load fires');
   assert.ok(startupSyncIndex < mainSource.indexOf('});', loadHandlerIndex), 'the sync call must live inside the did-finish-load handler');
 });

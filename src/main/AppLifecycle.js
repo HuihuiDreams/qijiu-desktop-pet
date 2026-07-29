@@ -1,5 +1,4 @@
-const { app } = require('electron');
-const { ipcMain, Menu, dialog, protocol } = require('electron');
+const { app, ipcMain, Menu, dialog, protocol, session, powerMonitor, screen } = require('electron');
 const {
   initUpdateManager,
   checkForUpdatesFromTray,
@@ -35,6 +34,7 @@ const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 let screensaverController = null;
+let interruptionCoordinator = null;
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'pet-asset',
@@ -64,6 +64,219 @@ app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
 // --- 应用生命周期 ---
 
 class AppLifecycle {
+  static initPlatformSecurity() {
+    disableApplicationMenu();
+    registerProtectedAssetProtocol({ protocol, app });
+
+    // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
+    if (process.platform === 'darwin') {
+      app.dock.hide();
+    }
+
+    // 设置权限拦截
+    session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+      callback(false);
+    });
+  }
+
+  static async initCoreServices() {
+    await StoreManager.initStore();
+    // 加载持久化语言设置，若无则自动检测
+    LocaleService.loadInitialLocale();
+    await AutoLaunchService.syncAutoLaunchPreference();
+  }
+
+  static initScreensaverSystem() {
+    interruptionCoordinator = createInterruptionCoordinator();
+    const eligibilityGuard = createScreensaverEligibilityGuard({
+      platform: process.platform,
+      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
+      getDisplays: () => screen.getAllDisplays(),
+    });
+
+    screensaverController = createScreensaverController({
+      powerMonitor,
+      interruptionCoordinator,
+      eligibilityGuard,
+      StoreManager,
+      getMainWindow: () => windowManager.mainWindow,
+      isPetCurrentlyHidden: PetVisibilityService.isPetCurrentlyHidden,
+      getIsPaused: PetVisibilityService.getIsPaused,
+      ipcMain,
+    });
+    screensaverController.start();
+  }
+
+  static initFeatureServices() {
+    BreakReminderController.init({
+      StoreManager,
+      PetVisibilityService,
+      WindowAwarenessService,
+      windowManager,
+      interruptionCoordinator,
+    });
+
+    WeatherSyncController.init({
+      windowManager,
+      trayManager,
+      StoreManager,
+    });
+
+    updateProgressWindowModule.init({
+      trayT: trayManager.trayT,
+      trayText: trayManager.trayText,
+    });
+
+    initUpdateManager({
+      app,
+      dialog,
+      getMainWindow: () => windowManager.mainWindow,
+      refreshTrayMenu: () => trayManager.refreshTrayMenu(),
+      updateProgressUi: {
+        showChecking: ({ title, message }) => updateProgressWindowModule.showUpdateProgressWindow({
+          mode: 'checking',
+          title,
+          message,
+        }),
+        showDownloading: ({ title, message, percent }) => updateProgressWindowModule.showUpdateProgressWindow({
+          mode: 'downloading',
+          title,
+          message,
+          percent,
+        }),
+        setProgress: updateProgressWindowModule.setUpdateProgress,
+        close: updateProgressWindowModule.closeUpdateProgressWindow,
+      },
+      t: trayManager.trayT,
+    });
+
+    DisplayService.init({
+      windowManager,
+      trayManager,
+      cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
+    });
+
+    WindowAwarenessService.init({
+      windowManager,
+      trayManager,
+      StoreManager,
+      getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
+      getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
+    });
+
+    PetVisibilityService.init({
+      ipcMain,
+      windowManager,
+      trayManager,
+      cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
+    });
+
+    MeetingDetectorController.init({
+      hidePetForMeeting: PetVisibilityService.hidePetForMeeting,
+      showPetAfterMeeting: PetVisibilityService.showPetAfterMeeting,
+    });
+
+    PomodoroService.init({
+      SkinService,
+      PetVisibilityService,
+      pomodoroWindowModule,
+      windowManager,
+      trayManager,
+      StoreManager,
+    });
+  }
+
+  static initPetWindow() {
+    petWindowModule.init({
+      DisplayService,
+      WindowAwarenessService,
+      PetVisibilityService,
+      MeetingDetectorController,
+      WeatherSyncController,
+      StoreManager,
+      app,
+    });
+    petWindowModule.createWindow();
+  }
+
+  static initTray() {
+    trayManager.init({
+      getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot,
+      getUpdateMenuState,
+      getCurrentLocale: LocaleService.getCurrentLocale,
+      setCurrentLocale: LocaleService.setCurrentLocale,
+      I18N, initStore: () => StoreManager.initStore(),
+      getStore: () => StoreManager.getStore(),
+      LOCALE_KEY,
+      sendSkinSelectorData: () => skinSelectorWindowModule.sendSkinSelectorData(),
+      openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
+      openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
+      getIsPaused: PetVisibilityService.getIsPaused,
+      getPomodoroPetHidden: PetVisibilityService.getPomodoroPetHidden,
+      setIsPaused: PetVisibilityService.setPaused,
+      isPetCurrentlyHidden: PetVisibilityService.isPetCurrentlyHidden,
+      showPetManually: PetVisibilityService.showPetManually,
+      hidePetManually: PetVisibilityService.hidePetManually,
+      getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
+      migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
+      getBreakReminderEnabled: BreakReminderController.getBreakReminderEnabled,
+      setBreakReminderEnabled: BreakReminderController.setBreakReminderEnabled,
+      getBreakReminderIntervalMinutes: BreakReminderController.getBreakReminderIntervalMinutes,
+      setBreakReminderIntervalMinutes: BreakReminderController.setBreakReminderIntervalMinutes,
+      getBreakReminderService: BreakReminderController.getBreakReminderService,
+      BREAK_REMINDER_STORE_KEY,
+      BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
+      getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 3 }),
+      updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
+      getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
+      getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
+      updateWeatherSyncSettings: WeatherSyncController.updateWeatherSyncSettings,
+      openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
+      getWindowAwarenessEnabled: WindowAwarenessService.isEnabled,
+      setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
+      AutoLaunchService,
+      checkForUpdatesFromTray,
+
+      windowManager
+    });
+    trayManager.createTray();
+  }
+
+  static initSubWindowsAndIpc() {
+    statusWindowModule.init({
+      refreshTrayMenu: () => trayManager.refreshTrayMenu()
+    });
+    citySettingWindowModule.init();
+    LocaleService.init({
+      windowManager,
+      skinSelectorWindowModule,
+      trayManager
+    });
+    StorageIpc.init();
+    SkinService.init({
+      windowManager,
+      skinSelectorWindowModule,
+      trayManager,
+      sendPomodoroState: PomodoroService.sendPomodoroState,
+      cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
+    });
+    skinSelectorWindowModule.init({
+      selectSkin: SkinService.selectSkin,
+      getCurrentSkinId: SkinService.getCurrentSkinId,
+      getSkinGalleryItems: SkinService.getSkinGalleryItems
+    });
+    pomodoroWindowModule.init({
+      getPomodoroSystem: PomodoroService.getPomodoroSystem,
+      createIpcSuccess,
+      createIpcFailure,
+      initStore: () => StoreManager.initStore(),
+      startPomodoroSession: PomodoroService.startPomodoroSession,
+      stopPomodoroSession: PomodoroService.stopPomodoroSession,
+      sendPomodoroState: PomodoroService.sendPomodoroState,
+      getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot
+    });
+  }
+
   static init() {
     app.setAppUserModelId(APP_USER_MODEL_ID);
 
@@ -77,206 +290,13 @@ class AppLifecycle {
     });
 
     app.whenReady().then(async () => {
-      disableApplicationMenu();
-      registerProtectedAssetProtocol({ protocol, app });
-
-      // macOS: 隐藏 Dock 图标，桌宠不应在 Dock 栏占位
-      if (process.platform === 'darwin') {
-        app.dock.hide();
-      }
-
-      // 设置权限拦截
-      const { session, powerMonitor, screen } = require('electron');
-      session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
-        callback(false);
-      });
-
-      await StoreManager.initStore();
-      // 加载持久化语言设置，若无则自动检测
-      LocaleService.loadInitialLocale();
-      await AutoLaunchService.syncAutoLaunchPreference();
-
-      const interruptionCoordinator = createInterruptionCoordinator();
-      const eligibilityGuard = createScreensaverEligibilityGuard({
-        platform: process.platform,
-        getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
-        getDisplays: () => screen.getAllDisplays(),
-      });
-
-      screensaverController = createScreensaverController({
-        powerMonitor,
-        interruptionCoordinator,
-        eligibilityGuard,
-        StoreManager,
-        getMainWindow: () => windowManager.mainWindow,
-        isPetCurrentlyHidden: PetVisibilityService.isPetCurrentlyHidden,
-        getIsPaused: PetVisibilityService.getIsPaused,
-        ipcMain,
-      });
-      screensaverController.start();
-
-      BreakReminderController.init({
-        StoreManager,
-        PetVisibilityService,
-        WindowAwarenessService,
-        windowManager,
-        interruptionCoordinator,
-      });
-
-      WeatherSyncController.init({
-        windowManager,
-        trayManager,
-        StoreManager,
-      });
-
-      updateProgressWindowModule.init({
-        trayT: trayManager.trayT,
-        trayText: trayManager.trayText,
-      });
-
-      initUpdateManager({
-        app,
-        dialog,
-        getMainWindow: () => windowManager.mainWindow,
-        refreshTrayMenu: () => trayManager.refreshTrayMenu(),
-        updateProgressUi: {
-          showChecking: ({ title, message }) => updateProgressWindowModule.showUpdateProgressWindow({
-            mode: 'checking',
-            title,
-            message,
-          }),
-          showDownloading: ({ title, message, percent }) => updateProgressWindowModule.showUpdateProgressWindow({
-            mode: 'downloading',
-            title,
-            message,
-            percent,
-          }),
-          setProgress: updateProgressWindowModule.setUpdateProgress,
-          close: updateProgressWindowModule.closeUpdateProgressWindow,
-        },
-        t: trayManager.trayT,
-      });
-
-      DisplayService.init({
-        windowManager,
-        trayManager,
-        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
-      });
-
-      WindowAwarenessService.init({
-        windowManager,
-        trayManager,
-        StoreManager,
-        getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
-        getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
-      });
-
-      PetVisibilityService.init({
-        ipcMain,
-        windowManager,
-        trayManager,
-        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
-      });
-
-      MeetingDetectorController.init({
-        hidePetForMeeting: PetVisibilityService.hidePetForMeeting,
-        showPetAfterMeeting: PetVisibilityService.showPetAfterMeeting,
-      });
-
-      PomodoroService.init({
-        SkinService,
-        PetVisibilityService,
-        pomodoroWindowModule,
-        windowManager,
-        trayManager,
-        StoreManager,
-      });
-
-      petWindowModule.init({
-        DisplayService,
-        WindowAwarenessService,
-        PetVisibilityService,
-        MeetingDetectorController,
-        WeatherSyncController,
-        StoreManager,
-        app,
-      });
-      petWindowModule.createWindow();
-
-      trayManager.init({
-        getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot,
-        getUpdateMenuState,
-        getCurrentLocale: LocaleService.getCurrentLocale,
-        setCurrentLocale: LocaleService.setCurrentLocale,
-        I18N, initStore: () => StoreManager.initStore(),
-        getStore: () => StoreManager.getStore(),
-        LOCALE_KEY,
-        sendSkinSelectorData: () => skinSelectorWindowModule.sendSkinSelectorData(),
-        openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
-        openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
-        getIsPaused: PetVisibilityService.getIsPaused,
-        getPomodoroPetHidden: PetVisibilityService.getPomodoroPetHidden,
-        setIsPaused: PetVisibilityService.setPaused,
-        isPetCurrentlyHidden: PetVisibilityService.isPetCurrentlyHidden,
-        showPetManually: PetVisibilityService.showPetManually,
-        hidePetManually: PetVisibilityService.hidePetManually,
-        getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
-        migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
-        getBreakReminderEnabled: BreakReminderController.getBreakReminderEnabled,
-        setBreakReminderEnabled: BreakReminderController.setBreakReminderEnabled,
-        getBreakReminderIntervalMinutes: BreakReminderController.getBreakReminderIntervalMinutes,
-        setBreakReminderIntervalMinutes: BreakReminderController.setBreakReminderIntervalMinutes,
-        getBreakReminderService: BreakReminderController.getBreakReminderService,
-        BREAK_REMINDER_STORE_KEY,
-        BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
-        getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 3 }),
-        updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
-        getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
-        getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
-        updateWeatherSyncSettings: WeatherSyncController.updateWeatherSyncSettings,
-        openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
-        getWindowAwarenessEnabled: WindowAwarenessService.isEnabled,
-        setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
-        AutoLaunchService,
-        checkForUpdatesFromTray,
-
-        windowManager
-      });
-      trayManager.createTray();
-
-      statusWindowModule.init({
-        refreshTrayMenu: () => trayManager.refreshTrayMenu()
-      });
-      citySettingWindowModule.init();
-      LocaleService.init({
-        windowManager,
-        skinSelectorWindowModule,
-        trayManager
-      });
-      StorageIpc.init();
-      SkinService.init({
-        windowManager,
-        skinSelectorWindowModule,
-        trayManager,
-        sendPomodoroState: PomodoroService.sendPomodoroState,
-        cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
-      });
-      skinSelectorWindowModule.init({
-        selectSkin: SkinService.selectSkin,
-        getCurrentSkinId: SkinService.getCurrentSkinId,
-        getSkinGalleryItems: SkinService.getSkinGalleryItems
-      });
-      pomodoroWindowModule.init({
-        getPomodoroSystem: PomodoroService.getPomodoroSystem,
-        createIpcSuccess,
-        createIpcFailure,
-        initStore: () => StoreManager.initStore(),
-        startPomodoroSession: PomodoroService.startPomodoroSession,
-        stopPomodoroSession: PomodoroService.stopPomodoroSession,
-        sendPomodoroState: PomodoroService.sendPomodoroState,
-        getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot
-      });
-
+      AppLifecycle.initPlatformSecurity();
+      await AppLifecycle.initCoreServices();
+      AppLifecycle.initScreensaverSystem();
+      AppLifecycle.initFeatureServices();
+      AppLifecycle.initPetWindow();
+      AppLifecycle.initTray();
+      AppLifecycle.initSubWindowsAndIpc();
     }).catch(err => { console.error('WHEN READY ERROR:', err); });
 
     app.on('window-all-closed', () => {
