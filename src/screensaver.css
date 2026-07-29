@@ -99,16 +99,7 @@
     animation: none !important;
   }
   .screensaver-warm-glow {
-    animation: screensaver-glow-fade-static 2s ease-in-out infinite alternate !important;
+    animation: none !important;
+    opacity: 0.4;
   }
 }
-
-@keyframes screensaver-glow-fade-static {
-  0% {
-    opacity: 0.25;
-  }
-  100% {
-    opacity: 0.55;
-  }
-}
-

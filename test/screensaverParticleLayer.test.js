@@ -1,8 +1,11 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { ScreensaverParticleLayer } = require('../src/ui/ScreensaverParticleLayer');
 const { ScreensaverSystem } = require('../src/systems/ScreensaverSystem');
+const screensaverCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'screensaver.css'), 'utf8');
 
 function createFakeDom() {
   const elements = [];
@@ -279,6 +282,14 @@ test('ScreensaverParticleLayer - reducedMotion disables floating hearts', () => 
 
   layer.destroy();
   delete global.document;
+});
+
+test('ScreensaverParticleLayer - reduced-motion CSS keeps the warm glow static', () => {
+  const reducedMotionRule = screensaverCss.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+  const warmGlowRule = reducedMotionRule.match(/\.screensaver-warm-glow\s*\{([^}]*)\}/)?.[1] || '';
+
+  assert.match(warmGlowRule, /animation:\s*none\s*!important/);
+  assert.doesNotMatch(warmGlowRule, /infinite/);
 });
 
 test('ScreensaverParticleLayer - complete destruction clear() / destroy()', () => {

@@ -110,7 +110,7 @@ renderer 重载一律取消而不回放。
 - 调用久坐提醒共用的 `StageGeometry.getCenteredPairLayout()` 计算对应 `walkArea` 的中心与双宠站位。
 - CP 屏保传入该显示器的 DPI 比例，使布局按宠物缩放后的视觉尺寸保持中心对称。
 - 粉色氛围层按共享布局跨度扩展；Overlay 与氛围层共同应用该显示器的 DPI 比例。
-- 屏保视觉层独立于天气粒子层；所有动画保持鼠标穿透、非聚焦，并遵循 `prefers-reduced-motion` 降级。
+- 屏保视觉层独立于天气粒子层；所有动画保持鼠标穿透、非聚焦，并遵循 `prefers-reduced-motion` 降级：隐藏爱心粒子、停用暖光动画，仅保留静态暖光。
 
 ### 6. 被抓包与回位
 

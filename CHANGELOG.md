@@ -7,6 +7,9 @@
 ### Changed
 - 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `desktop-pet-maintenance` 维护技能中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。
 
+### Fixed
+- 修复系统启用“减少动态效果”时 CP 屏保暖光仍持续渐变的问题；现隐藏爱心粒子并保留静态暖光，避免用户仍看到循环动效。
+
 ## [0.10.0] - 2026-07-29
 
 ### Added
