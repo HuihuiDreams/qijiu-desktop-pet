@@ -10,6 +10,7 @@ const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('../
 const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
 
 const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000;
+const WINDOW_AWARENESS_STORE_KEY = 'windowAwarenessEnabled';
 
 let deps = {};
 let activeWindowSampler = null;
@@ -17,6 +18,13 @@ let windowAwarenessEnabled = true;
 
 function init(dependencies) {
   deps = dependencies;
+  const { StoreManager } = deps;
+  if (StoreManager) {
+    const store = StoreManager.getStore();
+    if (store && store.has(WINDOW_AWARENESS_STORE_KEY)) {
+      windowAwarenessEnabled = Boolean(store.get(WINDOW_AWARENESS_STORE_KEY));
+    }
+  }
 
   ipcMain.handle('get-active-window-info', async () => {
     if (!activeWindowSampler) startActiveWindowAwareness();
@@ -61,9 +69,13 @@ function startActiveWindowAwareness() {
 }
 
 function setWindowAwarenessEnabled(enabled) {
-  const { windowManager, trayManager } = deps;
+  const { windowManager, trayManager, StoreManager } = deps;
   if (process.platform !== 'win32' && process.platform !== 'darwin') return;
   windowAwarenessEnabled = Boolean(enabled);
+  if (StoreManager) {
+    const store = StoreManager.getStore();
+    if (store) store.set(WINDOW_AWARENESS_STORE_KEY, windowAwarenessEnabled);
+  }
   if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
     startActiveWindowAwareness();
     if (!windowAwarenessEnabled) {

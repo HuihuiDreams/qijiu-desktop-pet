@@ -166,6 +166,7 @@ class AppLifecycle {
       WindowAwarenessService.init({
         windowManager,
         trayManager,
+        StoreManager,
         getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
         getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
       });
