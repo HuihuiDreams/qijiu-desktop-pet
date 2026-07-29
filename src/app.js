@@ -207,6 +207,19 @@
     getDialogues: () => DIALOGUES,
   });
 
+  const screensaverSystem = new ScreensaverSystem({
+    electronAPI: window.electronAPI,
+    stageGeometry,
+    renderer,
+    spriteView,
+    getPets: () => pets,
+    interactionSystem,
+    dialogBubble,
+    clearInteractionOverlay,
+    skinManager,
+  });
+  screensaverSystem.init();
+
   // === 创建 DOM 元素 ===
   renderer.createPetElement(yueqi);
   renderer.createPetElement(shenjiu);
@@ -332,148 +345,136 @@
     lastTime = currentTime;
 
     try {
+      const isScreensaverActive = screensaverSystem.isActive();
+
       if (!isPaused && !breakReminderPresenter.isActive()) {
-        // --- 修复: 电脑睡眠模式 / 后台挂机的时间跳跃处理 ---
-        // 在桌面应用中，如果电脑进入休眠，requestAnimationFrame 会被完全挂起。
-        // 当重新唤醒时，这里的 deltaMs（两帧时间差）会变得极其巨大（甚至长达几个小时）。
-        // 如果两帧之间间隔过大（例如超过 60 秒），说明刚刚经历了系统休眠或被系统挂起。
         if (deltaMs > 60000) {
-          // 时间跳跃（系统休眠等），一次性结算离线衰减 + 回归气泡 + 存档
           offlineReturnSystem.handleOfflineReturn(deltaMs);
-          
-          // 将本帧的 deltaMs 强行限制在 16ms（约1帧）的正常范围，
-          // 防止后续系统的物理移动、动画计时器因为接收到巨大的 deltaMs 发生瞬间暴走（如小人飞出屏幕等 bug）。
           deltaMs = 16;
         } else if (deltaMs <= 0 || Number.isNaN(deltaMs)) {
-          // 防止休眠唤醒后高精度计时器出现负数、0 或 NaN 导致的物理计算异常（如除以0变成NaN从而隐身）
           deltaMs = 16;
         }
 
-        // 更新本地时段
-        weatherAwarenessSystem.updateLocalTimePhase(Date.now());
-        const weatherState = weatherAwarenessSystem.getCurrentState();
-        yueqi.timePhase = weatherState.timePhase;
-        shenjiu.timePhase = weatherState.timePhase;
-        yueqi.weatherKind = weatherState.weatherKind;
-        shenjiu.weatherKind = weatherState.weatherKind;
-        
-        // 应用全局环境天气效果
-        if (document.body.dataset.weather !== weatherState.weatherKind) {
-            document.body.dataset.weather = weatherState.weatherKind;
-        }
-        if (document.body.dataset.timePhase !== weatherState.timePhase) {
-            document.body.dataset.timePhase = weatherState.timePhase;
-        }
-
-        // 更新移动
-        movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
-        movementSystem.update(yueqi, deltaMs);
-        movementSystem.update(shenjiu, deltaMs);
-
-        // 更新养成状态 (属性衰减)
+        // Shared updates: Nurture stat decay
         nurtureSystemA.update(yueqi, deltaMs);
         nurtureSystemB.update(shenjiu, deltaMs);
 
-        // macOS: 检测宠物是否走到屏幕边缘，触发跨屏迁移
-        if (migrationCooldown > 0) migrationCooldown -= deltaMs;
-        if (window.electronAPI.requestWindowMigration && stageGeometry.screenInfo.adjacentDisplays && migrationCooldown <= 0) {
-          for (const pet of pets) {
-            const migrationDirection = MovementSystem.getEdgeMigrationDirection(
-              pet,
-              stageGeometry.width,
-              stageGeometry.height,
-              stageGeometry.screenInfo.adjacentDisplays,
-            );
-            if (migrationDirection) {
-              window.electronAPI.requestWindowMigration(migrationDirection);
-              migrationCooldown = 2000;
-              break;
-            }
-          }
-        }
-
-        const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
-        if (interaction) {
-          // 防交叠移位后，确保宠物仍在可行走区域内
-          movementSystem.clampPetToWalkAreas(yueqi);
-          movementSystem.clampPetToWalkAreas(shenjiu);
-          movementSystem.separatePetsWithinWalkAreas(
-            yueqi,
-            shenjiu,
-            InteractionSystem.getMinimumInteractionXDistance(yueqi, shenjiu),
-          );
-          // 确保他们仍然面对面 (因为 clamp 可能改变相对 x 坐标)
-          if (yueqi.x < shenjiu.x) {
-            yueqi.direction = 'right';
-            shenjiu.direction = 'left';
-          } else {
-            yueqi.direction = 'left';
-            shenjiu.direction = 'right';
-          }
-
-          const overlayKey = interaction.overlayKey || interaction.key;
-          const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'].includes(overlayKey);
-          dialogBubble.removeForPets([yueqi, shenjiu]);
-
-          if (isOverlay) {
-            // 显示图片覆盖层，并将气泡锁定到图片中角色头顶
-            interactionOverlayActive = true;
-            const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
-            renderer.spawnQiAuraAt(
-              overlayPos.x + overlayPos.width / 2,
-              overlayPos.y + 82,
-              (overlayPos.baseWidth || overlayPos.width) * 1.2,
-              overlayKey,
-              getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
-            );
-
-            // 从对话库中取台词：沈九在左，岳七在右
-            const pool = DIALOGUES[interaction.key];
-            const shenjuText = interaction.dialogue?.shenjiu || (pool?.shenjiu?.length
-              ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
-              : null);
-            const yueqiText = interaction.dialogue?.yueqi || (pool?.yueqi?.length
-              ? pool.yueqi[Math.floor(Math.random() * pool.yueqi.length)]
-              : null);
-            renderer.showOverlayBubbles(shenjuText, yueqiText, overlayPos, CONFIG.INTERACTION_DURATION - 500);
-          } else {
-            // 非图片叠加层的互动：正常气泡 + 漂浮特效
-            dialogBubble.showInteraction(yueqi, shenjiu, interaction.key);
-            renderer.spawnQiAura(yueqi, interaction.key);
-            renderer.spawnQiAura(shenjiu, interaction.key);
-          }
-        }
-
-        // 互动结束时隐藏覆盖层
-        if (interactionOverlayActive && !interactionSystem.isInteracting) {
-          interactionOverlayActive = false;
-          renderer.hideOverlay(yueqi, shenjiu);
-        }
-
-        weatherParticleLayer.sync(weatherState, {
-          visible: !isPaused,
-          scaleRatio: getWeatherEffectScale(),
-          pets,
-          interactionOverlayActive,
-          isInteracting: interactionSystem.isInteracting,
-        });
-
-        // 检查是否有排队的动作 (在宠物恢复 idle 状态时执行)
-        [ { pet: yueqi, ns: nurtureSystemA }, { pet: shenjiu, ns: nurtureSystemB } ].forEach(({ pet, ns }) => {
-          if (pet.state === 'idle' && pet.queuedAction) {
-            const action = pet.queuedAction;
-            pet.queuedAction = null;
-            contextMenu.nurtureSystem = ns;
-            contextMenu.handleAction(action, pet);
-          }
-        });
-
-        // 环境闲聊 / 状态警告 / 深夜梦话节奏调度
-        ambientDialogueSystem.update(deltaMs);
-
-        // 自动保存
+        // Shared updates: Time & Auto-save
         if (timeSystem.update(deltaMs)) {
           offlineReturnSystem.saveCurrentState();
+        }
+
+        if (isScreensaverActive) {
+          // === SCREENSAVER MODE GATE ===
+          weatherParticleLayer.clear();
+          screensaverSystem.update(deltaMs);
+        } else {
+          // === NORMAL MODE GATE ===
+          weatherAwarenessSystem.updateLocalTimePhase(Date.now());
+          const weatherState = weatherAwarenessSystem.getCurrentState();
+          yueqi.timePhase = weatherState.timePhase;
+          shenjiu.timePhase = weatherState.timePhase;
+          yueqi.weatherKind = weatherState.weatherKind;
+          shenjiu.weatherKind = weatherState.weatherKind;
+
+          if (document.body.dataset.weather !== weatherState.weatherKind) {
+            document.body.dataset.weather = weatherState.weatherKind;
+          }
+          if (document.body.dataset.timePhase !== weatherState.timePhase) {
+            document.body.dataset.timePhase = weatherState.timePhase;
+          }
+
+          movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
+          movementSystem.update(yueqi, deltaMs);
+          movementSystem.update(shenjiu, deltaMs);
+
+          if (migrationCooldown > 0) migrationCooldown -= deltaMs;
+          if (window.electronAPI.requestWindowMigration && stageGeometry.screenInfo.adjacentDisplays && migrationCooldown <= 0) {
+            for (const pet of pets) {
+              const migrationDirection = MovementSystem.getEdgeMigrationDirection(
+                pet,
+                stageGeometry.width,
+                stageGeometry.height,
+                stageGeometry.screenInfo.adjacentDisplays,
+              );
+              if (migrationDirection) {
+                window.electronAPI.requestWindowMigration(migrationDirection);
+                migrationCooldown = 2000;
+                break;
+              }
+            }
+          }
+
+          const interaction = interactionSystem.update(yueqi, shenjiu, deltaMs);
+          if (interaction) {
+            movementSystem.clampPetToWalkAreas(yueqi);
+            movementSystem.clampPetToWalkAreas(shenjiu);
+            movementSystem.separatePetsWithinWalkAreas(
+              yueqi,
+              shenjiu,
+              InteractionSystem.getMinimumInteractionXDistance(yueqi, shenjiu),
+            );
+            if (yueqi.x < shenjiu.x) {
+              yueqi.direction = 'right';
+              shenjiu.direction = 'left';
+            } else {
+              yueqi.direction = 'left';
+              shenjiu.direction = 'right';
+            }
+
+            const overlayKey = interaction.overlayKey || interaction.key;
+            const isOverlay = ['kiss', 'hug', 'cultivate', 'shareFood', 'throwup'].includes(overlayKey);
+            dialogBubble.removeForPets([yueqi, shenjiu]);
+
+            if (isOverlay) {
+              interactionOverlayActive = true;
+              const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
+              renderer.spawnQiAuraAt(
+                overlayPos.x + overlayPos.width / 2,
+                overlayPos.y + 82,
+                (overlayPos.baseWidth || overlayPos.width) * 1.2,
+                overlayKey,
+                getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
+              );
+
+              const pool = DIALOGUES[interaction.key];
+              const shenjuText = interaction.dialogue?.shenjiu || (pool?.shenjiu?.length
+                ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
+                : null);
+              const yueqiText = interaction.dialogue?.yueqi || (pool?.yueqi?.length
+                ? pool.yueqi[Math.floor(Math.random() * pool.yueqi.length)]
+                : null);
+              renderer.showOverlayBubbles(shenjuText, yueqiText, overlayPos, CONFIG.INTERACTION_DURATION - 500);
+            } else {
+              dialogBubble.showInteraction(yueqi, shenjiu, interaction.key);
+              renderer.spawnQiAura(yueqi, interaction.key);
+              renderer.spawnQiAura(shenjiu, interaction.key);
+            }
+          }
+
+          if (interactionOverlayActive && !interactionSystem.isInteracting) {
+            interactionOverlayActive = false;
+            renderer.hideOverlay(yueqi, shenjiu);
+          }
+
+          weatherParticleLayer.sync(weatherState, {
+            visible: !isPaused,
+            scaleRatio: getWeatherEffectScale(),
+            pets,
+            interactionOverlayActive,
+            isInteracting: interactionSystem.isInteracting,
+          });
+
+          [ { pet: yueqi, ns: nurtureSystemA }, { pet: shenjiu, ns: nurtureSystemB } ].forEach(({ pet, ns }) => {
+            if (pet.state === 'idle' && pet.queuedAction) {
+              const action = pet.queuedAction;
+              pet.queuedAction = null;
+              contextMenu.nurtureSystem = ns;
+              contextMenu.handleAction(action, pet);
+            }
+          });
+
+          ambientDialogueSystem.update(deltaMs);
         }
       }
 
@@ -504,6 +505,7 @@
 
   // 暴露给 window 以供 debug.js 使用
   window.__DEBUG_PETS = { yueqi, shenjiu };
+  window.__DEBUG_SCREENSAVER = screensaverSystem;
   window.__DEBUG_SCREEN = () => ({
     ...stageGeometry.screenInfo,
     innerWidth: window.innerWidth,

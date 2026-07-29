@@ -162,6 +162,10 @@ function fitWindowToAllDisplays() {
   const { windowManager, trayManager } = deps;
   if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
 
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('display-changed');
+  }
+
   if (process.platform === 'darwin') {
     const allDisplays = screen.getAllDisplays();
     if (currentPetDisplay) {
@@ -188,6 +192,10 @@ function migrateWindowToDisplay(targetDisplay) {
   if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return null;
   if (!targetDisplay || !targetDisplay.bounds) return null;
   if (currentPetDisplay && currentPetDisplay.id === targetDisplay.id) return null;
+
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('display-changed');
+  }
 
   const oldBounds = windowManager.mainWindow.getBounds();
   const newBounds = targetDisplay.bounds;

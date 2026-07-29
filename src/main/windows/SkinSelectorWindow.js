@@ -17,7 +17,7 @@ function init(dependencies) {
 
 function getInitialSkinSelectorWindowBounds() {
   const width = 800;
-  const height = 400;
+  const height = 520;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;

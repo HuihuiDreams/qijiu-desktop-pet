@@ -127,6 +127,52 @@ test('getWeatherEffectScale prefers the primary walk area, then the first area, 
   assert.equal(geometryEmpty.getWeatherEffectScale(), 1);
 });
 
+test('getCenteredPairLayout reuses the break-reminder primary-area center and spacing formula', () => {
+  const geometry = new StageGeometry({ initialWidth: 1000, initialHeight: 800 });
+  geometry.applyScreenInfo({
+    width: 1000,
+    height: 800,
+    walkAreas: [
+      { x: 0, y: 0, width: 500, height: 800 },
+      { x: 500, y: 0, width: 500, height: 800, isPrimary: true },
+    ],
+  });
+  const yueqi = { x: 0, y: 0, size: 96 };
+  const shenjiu = { x: 0, y: 0, size: 96 };
+
+  const layout = geometry.getCenteredPairLayout(yueqi, shenjiu);
+
+  assert.equal(layout.area.isPrimary, true);
+  assert.deepEqual(layout.center, { x: 750, y: 400 });
+  assert.deepEqual(layout.positions, [
+    { x: 558, y: 352, direction: 'right' },
+    { x: 846, y: 352, direction: 'left' },
+  ]);
+});
+
+test('getCenteredPairLayout centers scaled pet bounds when a visualScale is supplied', () => {
+  const geometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
+  const area = { x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5 };
+  geometry.applyScreenInfo({ width: 1200, height: 900, walkAreas: [area] });
+  const yueqi = { x: 0, y: 0, size: 100 };
+  const shenjiu = { x: 0, y: 0, size: 100 };
+
+  const layout = geometry.getCenteredPairLayout(
+    yueqi,
+    shenjiu,
+    area,
+    { visualScale: area.scaleRatio },
+  );
+
+  assert.equal(layout.petSize, 150);
+  assert.equal(layout.visualScale, 1.5);
+  assert.deepEqual(layout.positions, [
+    { x: 300, y: 375, direction: 'right' },
+    { x: 750, y: 375, direction: 'left' },
+  ]);
+  assert.equal((layout.bounds.left + layout.bounds.right) / 2, layout.center.x);
+});
+
 test('getResetPosition keeps both reset positions inside a primary display offset by a left secondary display', () => {
   const geometry = new StageGeometry({ initialWidth: 3520, initialHeight: 1200 });
   geometry.applyScreenInfo({

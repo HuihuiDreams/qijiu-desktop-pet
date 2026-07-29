@@ -119,6 +119,60 @@ class StageGeometry {
   }
 
   /**
+   * 返回久坐提醒与局部屏保共用的“双宠在目标区域中心面对面”布局。
+   * 未指定区域时沿用久坐提醒语义：主显示器 → 第一显示器 → 全舞台。
+   */
+  getCenteredPairLayout(petA, petB, preferredArea = null, options = {}) {
+    if (!petA || !petB) return null;
+
+    const walkAreas = this.getWalkAreas();
+    const area = preferredArea
+      || walkAreas.find((walkArea) => walkArea.isPrimary)
+      || walkAreas[0]
+      || { x: 0, y: 0, width: this.width, height: this.height };
+    const rawPetSize = Number(petA.size);
+    const rawFallbackPetSize = Number(options.fallbackPetSize);
+    const fallbackPetSize = Number.isFinite(rawFallbackPetSize) && rawFallbackPetSize > 0
+      ? rawFallbackPetSize
+      : 96;
+    const rawVisualScale = Number(options.visualScale);
+    const visualScale = Number.isFinite(rawVisualScale) && rawVisualScale > 0
+      ? rawVisualScale
+      : 1;
+    const petSize = (Number.isFinite(rawPetSize) && rawPetSize > 0 ? rawPetSize : fallbackPetSize)
+      * visualScale;
+    const centerX = area.x + area.width / 2;
+    const centerY = area.y + area.height / 2;
+    const spacing = petSize * 1.5;
+    const positions = [
+      {
+        x: Math.max(area.x, centerX - spacing - petSize / 2),
+        y: Math.max(area.y, centerY - petSize / 2),
+        direction: 'right',
+      },
+      {
+        x: Math.min(area.x + area.width - petSize, centerX + spacing - petSize / 2),
+        y: Math.max(area.y, centerY - petSize / 2),
+        direction: 'left',
+      },
+    ];
+
+    return {
+      area,
+      center: { x: centerX, y: centerY },
+      petSize,
+      visualScale,
+      positions,
+      bounds: {
+        left: positions[0].x,
+        right: positions[1].x + petSize,
+        top: Math.min(positions[0].y, positions[1].y),
+        bottom: Math.max(positions[0].y, positions[1].y) + petSize,
+      },
+    };
+  }
+
+  /**
    * 返回托盘“重置位置”使用的坐标：优先落在主显示器的可行走区域内。
    */
   getResetPosition(horizontalRatio) {

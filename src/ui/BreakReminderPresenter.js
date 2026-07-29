@@ -85,27 +85,24 @@ class BreakReminderPresenter {
     // 清除现有气泡
     this.dialogBubble.removeForPets([yueqi, shenjiu]);
 
-    // 找到主显示器对应的 walkArea 中心
-    // walkAreas 是相对于窗口坐标的；主进程会标记 isPrimary。
-    const walkAreas = this.stageGeometry.getWalkAreas();
-    const area = walkAreas.find((wa) => wa.isPrimary)
-      || walkAreas[0]
-      || { x: 0, y: 0, width: this.stageGeometry.width, height: this.stageGeometry.height };
+    const layout = this.stageGeometry.getCenteredPairLayout(
+      yueqi,
+      shenjiu,
+      null,
+      { fallbackPetSize: this.CONFIG.PET_SIZE },
+    );
+    if (!layout) {
+      this.breakReminderActive = false;
+      this.electronAPI.dismissBreakReminder();
+      return;
+    }
 
-    const petSize = yueqi.size || this.CONFIG.PET_SIZE;
-    const centerX = area.x + area.width / 2;
-    const centerY = area.y + area.height / 2;
-    const spacing = petSize * 1.5;
-
-    // 瞬移到主显示器中心附近
-    yueqi.x = Math.max(area.x, centerX - spacing - petSize / 2);
-    yueqi.y = Math.max(area.y, centerY - petSize / 2);
-    shenjiu.x = Math.min(area.x + area.width - petSize, centerX + spacing - petSize / 2);
-    shenjiu.y = Math.max(area.y, centerY - petSize / 2);
-
-    // 面对面
-    yueqi.direction = 'right';
-    shenjiu.direction = 'left';
+    [yueqi, shenjiu].forEach((pet, index) => {
+      const position = layout.positions[index];
+      pet.x = position.x;
+      pet.y = position.y;
+      pet.direction = position.direction;
+    });
 
     // 暂停移动
     yueqi.setState('interacting');

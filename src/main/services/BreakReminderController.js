@@ -29,6 +29,9 @@ function init(dependencies) {
   const { powerMonitor, screen } = require('electron');
 
   ipcMain.on('break-reminder-dismissed', () => {
+    if (deps.interruptionCoordinator && typeof deps.interruptionCoordinator.release === 'function') {
+      deps.interruptionCoordinator.release('break-reminder');
+    }
     if (breakReminderService) breakReminderService.onDismissed();
   });
 
@@ -52,6 +55,11 @@ function init(dependencies) {
       // 桌宠隐藏时不提示
       if (isPetCurrentlyHidden()) return false;
       if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return false;
+      if (deps.interruptionCoordinator && typeof deps.interruptionCoordinator.tryAcquire === 'function') {
+        if (!deps.interruptionCoordinator.tryAcquire('break-reminder')) {
+          return false;
+        }
+      }
       windowManager.mainWindow.webContents.send('break-reminder-triggered', payload);
       return true;
     },
@@ -64,9 +72,15 @@ function init(dependencies) {
 
   // 监听系统事件
   powerMonitor.on('lock-screen', () => {
+    if (deps.interruptionCoordinator && typeof deps.interruptionCoordinator.release === 'function') {
+      deps.interruptionCoordinator.release('break-reminder');
+    }
     if (breakReminderService) breakReminderService.onLockOrSuspend();
   });
   powerMonitor.on('suspend', () => {
+    if (deps.interruptionCoordinator && typeof deps.interruptionCoordinator.release === 'function') {
+      deps.interruptionCoordinator.release('break-reminder');
+    }
     if (breakReminderService) breakReminderService.onLockOrSuspend();
     // macOS: performance.now() freezes during sleep, so deltaMs in the
     // renderer game-loop never jumps. Record wall-clock time here and

@@ -1,4 +1,5 @@
 const { app, Menu, nativeImage, screen } = require('electron');
+const { SCREENSAVER_ALLOWED_IDLE_MINUTES } = require('./services/screensaverAllowedMinutes');
 let tray = null;
 let deps = {};
 
@@ -163,6 +164,31 @@ function buildTrayMenu() {
           if (deps.getBreakReminderService()) deps.getBreakReminderService().updateSettings(newSettings);
           await deps.initStore();
           if (deps.getStore()) deps.getStore().set(deps.BREAK_REMINDER_STORE_KEY, newSettings);
+          refreshTrayMenu();
+        },
+      })),
+    },
+    {
+      label: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { enabled: false }).enabled
+        ? trayMenuLabel('trayScreensaverOn')
+        : trayMenuLabel('trayScreensaverOff'),
+      click: async () => {
+        if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+        const current = deps.getScreensaverSettings();
+        deps.updateScreensaverSettings({ ...current, enabled: !current.enabled });
+        refreshTrayMenu();
+      },
+    },
+    {
+      label: trayMenuLabel('trayScreensaverThreshold'),
+      submenu: SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
+        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
+        type: 'radio',
+        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 3 }).idleThresholdMinutes === minutes,
+        click: async () => {
+          if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
+          const current = deps.getScreensaverSettings();
+          deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
           refreshTrayMenu();
         },
       })),

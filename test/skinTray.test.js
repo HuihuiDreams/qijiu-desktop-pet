@@ -22,11 +22,13 @@ const SKIN_NAME_KEYS = {
  * @returns {string[]}
  */
 function scanAvailableSkins(assetsDir) {
+  const knownSkinIds = new Set(Object.keys(SKIN_NAME_KEYS));
   try {
     const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
     return entries.filter(dirent => {
       if (!dirent.isDirectory()) return false;
       const entry = path.basename(dirent.name);
+      if (!knownSkinIds.has(entry)) return false; // 只允许白名单内的皮肤 ID
       try {
         const fullPath = path.join(assetsDir, entry);
         if (!fullPath.startsWith(assetsDir)) return false;
@@ -104,6 +106,13 @@ test('scanAvailableSkins: 返回值只包含文件夹', () => {
 test('scanAvailableSkins: 不存在的目录返回兜底值 [default]', () => {
   const skins = scanAvailableSkins('/nonexistent/path/to/assets');
   assert.deepEqual(skins, ['default']);
+});
+
+test('scanAvailableSkins: 不将非皮肤子目录（如 fonts）识别为皮肤', () => {
+  // 回归测试：fonts 目录存在于 src/assets/ 但不在 SKIN_NAME_KEYS 白名单中，不应被当作皮肤列出
+  const skins = scanAvailableSkins(ASSETS_DIR);
+  assert.ok(!skins.includes('fonts'), 'fonts 目录不应被识别为皮肤');
+  assert.strictEqual(skins.length, Object.keys(SKIN_NAME_KEYS).length, '皮肤数量应与白名单中注册的皮肤数量一致');
 });
 
 // --- SKIN_NAMES 映射测试（从 main.js 中提取验证） ---

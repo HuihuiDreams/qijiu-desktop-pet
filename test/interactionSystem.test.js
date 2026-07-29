@@ -122,3 +122,18 @@ test('InteractionSystem - getPresentation shareFood overfeed', () => {
   
   delete global.window;
 });
+
+test('InteractionSystem - cancel clears interaction state cleanly', () => {
+  const system = new InteractionSystem();
+  system.isInteracting = true;
+  system.interactionTimer = 2000;
+  system.currentInteraction = { key: 'greet' };
+  system.cooldownTimer = 5000;
+
+  system.cancel();
+
+  assert.strictEqual(system.isInteracting, false);
+  assert.strictEqual(system.interactionTimer, 0);
+  assert.strictEqual(system.currentInteraction, null);
+  assert.strictEqual(system.cooldownTimer, 0);
+});

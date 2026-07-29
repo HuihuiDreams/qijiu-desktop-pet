@@ -52,6 +52,9 @@ function enterPomodoroPetFocus() {
     pomodoroFocusSnapshot = { wasPaused: isPaused };
   }
   pomodoroPetHidden = true;
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('pet-hidden');
+  }
   sendPetVisibility(false);
   if (!isPaused) {
     isPaused = true;
@@ -86,6 +89,9 @@ function hidePetManually() {
   const { trayManager } = deps;
   petHidden = true;
   meetingHidden = false;
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('pet-hidden');
+  }
   sendPetVisibility(false);
   trayManager.refreshTrayMenu();
 }
@@ -94,6 +100,9 @@ function hidePetForMeeting() {
   const { trayManager } = deps;
   if (meetingHidden) return;
   meetingHidden = true;
+  if (typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('pet-hidden');
+  }
   if (!petHidden && !pomodoroPetHidden) {
     sendPetVisibility(false);
   }
@@ -113,6 +122,9 @@ function showPetAfterMeeting() {
 function setPaused(val) {
   const { windowManager } = deps;
   isPaused = val;
+  if (val && typeof deps.cancelScreensaverSession === 'function') {
+    deps.cancelScreensaverSession('pet-paused');
+  }
   if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
     windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
   }

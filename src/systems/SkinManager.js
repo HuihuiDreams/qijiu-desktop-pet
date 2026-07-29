@@ -60,6 +60,25 @@ class SkinManager {
   }
 
   /**
+   * 获取指定皮肤可用叠加层 key 列表。
+   * @param {string} [skinId]
+   * @param {object} [electronAPI]
+   * @returns {Promise<string[]>}
+   */
+  async getAvailableOverlayKeys(skinId = this.currentSkinId, electronAPI = null) {
+    if (electronAPI && typeof electronAPI.getAvailableOverlayKeys === 'function') {
+      try {
+        const keys = await electronAPI.getAvailableOverlayKeys(skinId);
+        if (Array.isArray(keys)) return keys;
+      } catch (e) {
+        console.warn('Failed to query overlay keys via IPC:', e);
+      }
+    }
+    const CANDIDATE_KEYS = ['hug', 'shareFood', 'kiss', 'throwup', 'cultivate'];
+    return CANDIDATE_KEYS;
+  }
+
+  /**
    * 获取皮肤的中文显示名（优先查 SKIN_NAMES，兜底用文件夹名）。
    * @param {string} skinId
    * @returns {string}

@@ -111,13 +111,17 @@ function main(argv = process.argv.slice(2)) {
   };
 }
 
+function formatReport(argv = process.argv.slice(2)) {
+  return JSON.stringify(main(argv), null, 2);
+}
+
 if (require.main === module) {
   try {
-    console.log(JSON.stringify(main(), null, 2));
+    console.log(formatReport());
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
   }
 }
 
-module.exports = { aggregateValues, summarizeRun, aggregateScenario, recomputeReport, main };
+module.exports = { aggregateValues, summarizeRun, aggregateScenario, recomputeReport, main, formatReport };

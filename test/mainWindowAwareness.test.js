@@ -10,7 +10,7 @@ const preloadSource = read('preload.js');
 test('main process wires active window provider and sampler', () => {
   assert.ok(mainSource.includes("require('../../../activeWindowProvider')"));
   assert.ok(mainSource.includes("require('../../../activeWindowAwareness')"));
-  assert.ok(mainSource.includes('ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 10000'));
+  assert.match(mainSource, /ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000;/);
   assert.ok(mainSource.includes('createActiveWindowProvider(process.platform)'));
   assert.ok(mainSource.includes('createActiveWindowSampler({'));
   assert.ok(mainSource.includes('refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS'));

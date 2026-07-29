@@ -12,9 +12,9 @@
 
 ### 首发范围
 
-- Windows 首发：`ScreensaverEligibilityGuard` 每秒读取已有活动窗口缓存；缓存超过 2 秒、显示器查询失败、或任何字段未知时一律拒绝。它不直接触发额外的活动窗口采样。
+- Windows 首发：活动窗口缓存每 2 秒刷新，`ScreensaverEligibilityGuard` 只读取该缓存（兼容 `sampledAt` 与 `timestamp`，严格校验 `Number.isFinite`）；缓存超过 2 秒、时间戳非法（非有限数）、显示器查询失败或任何字段未知时一律拒绝并返回 `stale_cache` 等理由。Guard 不直接触发额外采样。
 - macOS 不纳入首发：当前项目没有可信的前台全屏/演示数据源，功能必须在该平台保持禁用，待独立的权限、数据源与验收方案获批后另立 ADR。
-- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放；无有效区域或缩放低于 0.65 时取消本次会话。
+- 场景显示器完全由 renderer 决定：新增 `displayId` 到每个 `screen-info.walkAreas`，以两个宠物进入时视觉中心的中点所在 display 为场景 display（中点落在间隙时取岳七所在 display）。主进程不下发坐标；确定显示器后，调用久坐提醒共用的 `StageGeometry.getCenteredPairLayout()` 计算该 `walkArea` 的中心与双宠 idle 站位，其中 CP 屏保传入目标显示器的 `scaleRatio`，按宠物实际视觉尺寸保持双宠中心对称；粉色氛围层按共享布局跨度扩展。场景宽高先扣除安全边距和双人 overlay 最小宽度，再在 `0.65–1` 间缩放，并与目标 `walkArea.scaleRatio` 合成为最终视觉缩放；无有效区域或缩放低于 0.65 时取消本次会话。
 
 ### 非目标
 
@@ -68,17 +68,17 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 ### 2.4 渲染器演出状态
 
-新增 `ScreensaverSystem`，只维护 `inactive | entering | performing | caught | runningBack | cancelled`。它不能写入 `PetVisibilityService` 的暂停状态，也不能重置其隐藏来源；退出不尝试恢复不完整的 Pet/Interaction 内部快照。
+新增 `ScreensaverSystem`，只维护 `inactive | entering | performing | caught | runningBack`。它不能写入 `PetVisibilityService` 的暂停状态，也不能重置其隐藏来源；退出不尝试恢复不完整的 Pet/Interaction 内部快照。
 
 - `app.js` 必须将现有帧更新拆为具名 gate：`ScreensaverSystem` active 时只运行养成、存档、状态栏和离线结算；移动、InteractionSystem、环境闲聊、日常 overlay 与天气视觉一律不运行。InteractionSystem 需新增可测试的 `cancel()`，以清除内部 timer/currentInteraction；不借用全局 `isPaused`。
 - 演出位置只使用带 `displayId` 的 `StageGeometry.walkAreas`，并在 `DisplayService` 的“几何已 settle、版本已递增”事件后 cancel；不监听原始 `screen` 事件。迁屏/拔屏后等待下一段闲置重新评估。
-- 连招由两种动作组成：overlay 动作 `hug → shareFood → kiss`，其间插入宠物 `idle` 状态而不是请求不存在的 `idle.webp`。`SkinService` 必须向 renderer 提供当前皮肤经验证的 overlay key 列表；缺失动作在进入连招前跳过，绝不依赖 `<img>` error 回退。
+- 连招由两种动作组成：overlay 动作 `hug → shareFood → kiss`，其间插入宠物 `idle` 状态而不是请求不存在的 `idle.webp`。连招播完（或无可用动作）后，宠物保持在中心场景等待输入，不能自动进入 `runBack`；`SkinService` 必须向 renderer 提供当前皮肤经验证的 overlay key 列表；缺失动作在进入连招前跳过，绝不依赖 `<img>` error 回退。
 - 屏保 overlay 使用 session 专属 DOM 属性与可取消 timer，不能复用全局 `interaction-overlay` id 或让延迟 remove 删除新会话节点。`caught` 使用 CSS 文本 `!`（非 emoji），只在 `reason: 'input'` 时显示。`runBack` 只使用入场时保存的两个目标点，目标失效时夹紧到当前有效 walkArea。
-- 退出完成或 cancel 后，统一执行安全复位：清除屏保与日常 overlay、气泡和 session timer，调用 `InteractionSystem.cancel()`，将两宠设为 `idle` 并保留尚未执行的 `queuedAction`；不回滚用户在中断期间的状态。之后再放行普通移动/互动。
+- 退出完成或 cancel 后，统一执行安全复位：清除屏保与日常 overlay、气泡和 session timer，调用 `InteractionSystem.cancel()`，将两宠设为 `idle` 并保留尚未执行的 `queuedAction`。普通输入走 `caught → runBack` 动画；锁屏、全屏等静默取消则立即恢复入场前坐标。之后再放行普通移动/互动。
 
 ### 2.5 独立视觉层与可访问性
 
-`ScreensaverParticleLayer` 为独立 DOM 根，不使用全局 id，不接触天气层。它固定挂在 stage，`pointer-events: none`，只接收 `{ sceneBounds, scaleRatio, reducedMotion }`。
+`ScreensaverParticleLayer` 为独立 DOM 根，不使用全局 id，不接触天气层。它固定挂在 stage，`pointer-events: none`，只接收 `{ sceneBounds, visualScale, reducedMotion }`；`visualScale` 同时包含场景安全缩放与目标显示器 DPI 比例。
 
 - 最多 12 个粒子；暖光 1 个节点；不使用 `filter`、`backdrop-filter`、`box-shadow` 动画或逐帧 JavaScript 样式写入。
 - 仅动画 `opacity` 与 `transform`；退出必须移除全部节点和 animation listener。
@@ -99,7 +99,7 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 1. 在启用设置、连续闲置达到阈值、且 EligibilityGuard 允许后，最多一个采样周期内创建一次会话；同一闲置段不得重复触发。
 2. 在真实机器性能采样中记录输入恢复到退出开始的延迟；常规空闲系统下目标为下一次 1 秒轮询，第一次输入不被屏保窗口吞掉。锁屏/睡眠/全屏/隐藏/禁用/重载只会静默清理。
-3. 所有 start/stop/cancel/finalize 对重复与乱序消息幂等；旧 `sessionId` 绝不改变当前场景。
+3. 所有 start/stop/cancel/finalize 对重复与乱序消息幂等；匹配的 `screensaver-finished` 必须释放屏保租约并恢复待机轮询，旧 `sessionId` 绝不改变当前场景。
 4. Windows 多显示器、混合 DPI、显示器变更、窗口迁移和小 workArea 下，场景始终位于 renderer 选定显示器的有效区域；空间不足时不启动，且不产生 NaN、越界或残留节点。macOS 首发时不启动。
 5. 结束后日常移动、互动、天气视觉、久坐提醒、番茄钟、会议隐藏、手动暂停、换肤与 QA 入口均保持原语义。
 6. 常规动效场景：屏保层 DOM 节点不超过 15、粒子不超过 12、无持续 JS style write；性能采样中不新增超过 50 ms 的长任务。减少动态效果模式不创建粒子。
@@ -113,10 +113,11 @@ inactive → eligible → active(sessionId) → exiting(sessionId) → inactive
 
 ## 6. 实施顺序
 
-1. 先补 `InterruptionCoordinator`、带 displayId 的 settle 几何契约和 Controller 失败测试；实现独立会话状态机、IPC 鉴权、dispose 与生命周期取消。
-2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
-3. 实现无视觉的 `ScreensaverSystem`：安全复位、取消、runBack；先通过多显示器和状态恢复测试。
-4. 接入验证过的 overlay 连招及资源回退；补齐皮肤切换和互动副作用回归。
-5. 最后添加独立 CSS 视觉层与 reduced-motion；执行性能基线比较和人工跨平台 QA。
+- [x] 1. 先补 `InterruptionCoordinator` 与 Controller 单元测试；实现 `InterruptionCoordinator` 租约仲裁、`ScreensaverEligibilityGuard` 窗口打扰守卫（兼容 sampledAt/timestamp 与 NaN 校验）、`ScreensaverController` 独立会话状态机（含重复 start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验）、IPC 鉴权与生命周期取消。（Step 1 重构已完成）
+- [x] 2. 再接入 preload/app，完成“renderer reload 一律 cancel”、逐帧 gate 和 BreakReminder 租约接线；测试 reload、乱序和既有可见性/久坐提醒仲裁。
+- [x] 3. 实现 `ScreensaverSystem` CP 叠加层与动画流程：显示器几何中点选择、场景安全缩放 (0.65–1.0)、连招动作序列 (hug -> shareFood -> kiss) 与皮肤 Overlay keys 校验跳过、CSS 文本 `!` 被抓包提示、`runningBack` 目标点 walkArea 夹紧与安全复位。（Step 3 已完成）
+- [x] 4. 实现 `ScreensaverParticleLayer` 独立爱心氛围粒子与暖光氛围层、`ScreensaverSystem` 粒子生命周期挂载/销毁、`index.html` 脚本加载与单测。（Step 4 已在前面合并完成）
+- [x] 5. 最后添加独立 CSS 视觉层与 reduced-motion；执行性能基线比较和人工跨平台 QA。（Step 5 已完成）
+
 
 每个步骤只能在相应测试、文档和变更日志更新后进入下一步；若 macOS 不能提供可信的全屏/演示结论，保持该平台功能禁用而不是以误打扰方式降级。

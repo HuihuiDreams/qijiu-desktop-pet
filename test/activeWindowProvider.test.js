@@ -112,6 +112,70 @@ test('Windows provider can skip the app window and continue down z-order', async
   assert.match(script, /\$handle = \[NativeWindow\]::GetWindow\(\$handle, \$GW_HWNDNEXT\)/);
 });
 
+test('Windows provider script samples true full-screen signal via monitor bounds', async () => {
+  let script = '';
+  const provider = createWindowsActiveWindowProvider({
+    currentPid: 1234,
+    execFile: (_file, args, _options, callback) => {
+      script = args[args.length - 1];
+      callback(null, JSON.stringify({
+        active: true,
+        id: '5',
+        title: 'PowerPoint Slide Show',
+        ownerName: 'POWERPNT',
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+        isMaximized: false,
+        isFullScreen: true,
+      }));
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+
+  assert.match(script, /MonitorFromWindow/);
+  assert.match(script, /GetMonitorInfo/);
+  assert.match(script, /\$isFullScreen = \(-not \$isMaximized\) -and \$coversMonitor/);
+  assert.equal(info.window.isFullScreen, true);
+  assert.equal(info.window.isMaximized, false);
+});
+
+test('Windows provider reports maximized office window as not full-screen', async () => {
+  const provider = createWindowsActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, JSON.stringify({
+        active: true,
+        id: '7',
+        title: 'Visual Studio Code',
+        ownerName: 'Code',
+        bounds: { x: 0, y: 0, width: 1920, height: 1040 },
+        isMinimized: false,
+        isMaximized: true,
+        isFullScreen: false,
+      }));
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+
+  assert.equal(info.window.isMaximized, true);
+  assert.equal(info.window.isFullScreen, false);
+});
+
+test('Windows provider parse failure still returns unavailable', async () => {
+  const provider = createWindowsActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, 'not-json');
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+
+  assert.equal(info.active, false);
+  assert.equal(info.source, 'unavailable');
+  assert.equal(info.reason, 'parse-failed');
+  assert.equal(info.window, null);
+});
+
 test('getSystemPowerShellPath resolves absolute path on win32 (TH-03)', () => {
   const p = getSystemPowerShellPath();
   if (process.platform === 'win32') {

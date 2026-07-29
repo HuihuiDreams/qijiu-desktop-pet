@@ -97,6 +97,9 @@ const I18N = {
       trayBreakReminderOn: '⏰ 关闭久坐提醒',
       trayBreakReminderOff: '⏰ 开启久坐提醒',
       trayBreakReminderInterval: '⏰ 提醒间隔',
+      trayScreensaverOn: '💕 关闭高甜屏保',
+      trayScreensaverOff: '💕 开启高甜屏保',
+      trayScreensaverThreshold: '💕 屏保触发等待',
       trayWeatherSyncOn: '🌤️ 关闭天气同步',
       trayWeatherSyncOff: '🌤️ 开启天气同步',
       trayWeatherSyncConfig: '🌤️ 修改城市',
@@ -349,6 +352,10 @@ const I18N = {
           '久坐伤身，不想修练也得走两步。',
         ],
       },
+      screensaverCaught: {
+        yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
+        shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+      },
       dream: {
         lowAffection: {
           yueqi: [
@@ -470,6 +477,9 @@ const I18N = {
       trayBreakReminderOn: '⏰ Disable Break Reminder',
       trayBreakReminderOff: '⏰ Enable Break Reminder',
       trayBreakReminderInterval: '⏰ Reminder Interval',
+      trayScreensaverOn: '💕 Disable Sweat Screensaver',
+      trayScreensaverOff: '💕 Enable Sweat Screensaver',
+      trayScreensaverThreshold: '💕 Screensaver Wait Time',
       trayWeatherSyncOn: '🌤️ Disable Weather Sync',
       trayWeatherSyncOff: '🌤️ Enable Weather Sync',
       trayWeatherSyncConfig: '🌤️ Set City',
@@ -723,6 +733,10 @@ const I18N = {
           'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
         ],
       },
+      screensaverCaught: {
+        yueqi: ['So shy... 😳', 'Ahem...', 'Hehe 😳'],
+        shenjiu: ['Busted! ❗️', '...Tch.', '...Why do you always come back at a moment like this.'],
+      },
       dream: {
         lowAffection: {
           yueqi: [
@@ -844,6 +858,9 @@ const I18N = {
       trayBreakReminderOn: '⏰ 休憩通知を無効化',
       trayBreakReminderOff: '⏰ 休憩通知を有効化',
       trayBreakReminderInterval: '⏰ 通知間隔',
+      trayScreensaverOn: '💕 甘々待機画面を無効化',
+      trayScreensaverOff: '💕 甘々待機画面を有効化',
+      trayScreensaverThreshold: '💕 待機時間',
       trayWeatherSyncOn: '🌤️ 天気同期を無効化',
       trayWeatherSyncOff: '🌤️ 天気同期を有効化',
       trayWeatherSyncConfig: '🌤️ 都市設定',
@@ -1095,6 +1112,10 @@ const I18N = {
           '…ふん、ついでの忠告だ。勘違いするな。',                       // …哼，我只是顺便提醒你一下。（稍微润色加了一句“别误会”，把傲娇度拉满！）
           '長座は体を痛める。修行する気がないなら、少しは歩け。',        // 久坐伤身，不想修练也得走两步。（長座：ちょうざ，久坐的古雅说法）
         ],
+      },
+      screensaverCaught: {
+        yueqi: ['恥ずかしい…😳', 'こほん…', 'へへっ😳'],
+        shenjiu: ['見つかった…❗️', '…ちっ。', '…なんでいつもこういう時に戻ってくるんだ。'],
       },
       dream: {
         lowAffection: {

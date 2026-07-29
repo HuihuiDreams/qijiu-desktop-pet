@@ -13,10 +13,11 @@ const ROOT = path.join(__dirname, '..');
 const mainSource = readMainProcessSource();
 const preloadSource = fs.readFileSync(path.join(ROOT, 'preload.js'), 'utf8');
 // 久坐提醒的展示/消失实际逻辑（app.js 拆分 Phase R3）已下沉到
-// src/ui/BreakReminderPresenter.js，app.js 只保留实例化与一行 IPC 订阅委托，
-// 因此这里把两者拼接成一份 corpus 做字符串断言。
+// src/ui/BreakReminderPresenter.js，居中几何由 src/systems/StageGeometry.js 统一持有，
+// app.js 只保留实例化与一行 IPC 订阅委托，因此这里拼接三者做字符串断言。
 const appSource = fs.readFileSync(path.join(ROOT, 'src', 'app.js'), 'utf8')
-  + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'ui', 'BreakReminderPresenter.js'), 'utf8');
+  + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'ui', 'BreakReminderPresenter.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(ROOT, 'src', 'systems', 'StageGeometry.js'), 'utf8');
 const debugSource = fs.readFileSync(path.join(ROOT, 'src', 'debug.js'), 'utf8');
 
 // --- main.js 集成 ---
@@ -132,8 +133,15 @@ test('app.js auto-dismisses after 20 seconds', () => {
 });
 
 test('app.js chooses the primary walk area for break reminder placement', () => {
-  assert.ok(appSource.includes('wa.isPrimary'), 'should prefer the primary display walk area');
-  assert.ok(!appSource.includes('wa.width * wa.height > area.width * area.height'), 'should not choose the largest area');
+  assert.ok(
+    appSource.includes('this.stageGeometry.getCenteredPairLayout('),
+    'presenter should delegate pair placement to StageGeometry',
+  );
+  assert.ok(
+    appSource.includes('walkAreas.find((walkArea) => walkArea.isPrimary)'),
+    'shared geometry should prefer the primary display walk area',
+  );
+  assert.ok(!appSource.includes('walkArea.width * walkArea.height > area.width * area.height'), 'should not choose the largest area');
 });
 
 test('app.js click-to-dismiss during break reminder', () => {
