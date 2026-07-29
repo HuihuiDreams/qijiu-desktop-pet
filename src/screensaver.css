@@ -9,6 +9,7 @@
   z-index: 100;
   user-select: none;
   -webkit-user-drag: none;
+  will-change: transform, opacity;
 }
 
 /* Screensaver Particle Layer CSS */
@@ -20,15 +21,17 @@
   overflow: hidden;
   user-select: none;
   -webkit-user-drag: none;
+  contain: strict;
 }
 
 .screensaver-warm-glow {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 182, 193, 0.35) 0%, rgba(255, 105, 180, 0.15) 55%, transparent 80%);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 160, 178, 0.4) 0%, rgba(255, 105, 180, 0.15) 40%, rgba(218, 112, 214, 0.05) 75%, transparent 85%);
   pointer-events: none;
   animation: screensaver-glow-pulse 3s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 .screensaver-particle-heart {
@@ -41,6 +44,7 @@
   pointer-events: none;
   opacity: 0;
   animation: screensaver-heart-float var(--heart-duration, 2.5s) ease-in-out var(--heart-delay, 0s) infinite;
+  will-change: transform, opacity;
 }
 
 .screensaver-particle-heart::before,
@@ -78,17 +82,20 @@
 @keyframes screensaver-heart-float {
   0% {
     opacity: 0;
-    transform: translateY(0) translateX(0) scale(calc(var(--heart-scale, 1) * 0.6)) rotate(-45deg);
+    transform: translate(0, 0) scale(calc(var(--heart-scale, 1) * 0.6)) rotate(-45deg);
   }
   20% {
     opacity: 0.85;
+  }
+  50% {
+    transform: translate(calc(var(--heart-drift-x, 15px) * -0.4), -45px) scale(var(--heart-scale, 1)) rotate(-55deg);
   }
   80% {
     opacity: 0.7;
   }
   100% {
     opacity: 0;
-    transform: translateY(-90px) translateX(var(--heart-drift-x, 15px)) scale(var(--heart-scale, 1)) rotate(-45deg);
+    transform: translate(var(--heart-drift-x, 15px), -90px) scale(calc(var(--heart-scale, 1) * 0.9)) rotate(-30deg);
   }
 }
 
