@@ -14,4 +14,3 @@ module.exports = {
   POMODORO_LAST_MINUTES_KEY,
   SCREENSAVER_STORE_KEY,
 };
-
