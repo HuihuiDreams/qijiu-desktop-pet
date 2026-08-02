@@ -7,11 +7,6 @@ const CITY_SETTING_TOP_PULSE_MS = 180;
 let citySettingTopPulseTimer = null;
 
 function init() {
-  ipcMain.handle('city-setting-close', () => {
-    closeCitySettingWindow();
-    return { success: true };
-  });
-
   ipcMain.handle('close-city-setting-window', () => {
     closeCitySettingWindow();
     return { success: true };

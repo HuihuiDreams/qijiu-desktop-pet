@@ -207,6 +207,12 @@ function createWindow() {
     if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
       windowManager.skinSelectorWindow.close();
     }
+
+    // Clear screen global listeners to prevent memory leaks across window rebuilds
+    screen.removeListener('display-added', DisplayService.displayFitScheduler.schedule);
+    screen.removeListener('display-removed', DisplayService.displayFitScheduler.schedule);
+    screen.removeListener('display-metrics-changed', DisplayService.displayFitScheduler.schedule);
+
     windowManager.mainWindow = null;
   });
 

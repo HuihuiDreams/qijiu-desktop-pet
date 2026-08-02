@@ -9,10 +9,14 @@
 - 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `desktop-pet-maintenance` 维护技能中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。
 - 优化 CP 屏保视觉层质感，将光晕升级为多色阶渐变，并为爱心粒子引入 S 型摇曳上浮动画；同步在 CSS 中增加 `contain: strict;` 及 `will-change: transform, opacity;` 提升 GPU 渲染性能。
 - 将 `src/main/AppLifecycle.js` 中约 200 行的 `app.whenReady()` 挂载回调拆分为 7 个职责清晰的静态方法（`initPlatformSecurity`、`initCoreServices`、`initScreensaverSystem`、`initFeatureServices`、`initPetWindow`、`initTray`、`initSubWindowsAndIpc`），严格保持现有模块初始化顺序与行为不变，并将 `session`、`powerMonitor`、`screen` 模块导入提升至文件顶部。详见 [ADR-042](./docs/decisions/ADR-042-main-and-renderer-module-decomposition.md)。
+- 将 `scratch/**` 加入 `package.json` 的打包排除列表，减小正式包体积。
 
 ### Fixed
 - 修复系统启用“减少动态效果”时 CP 屏保暖光仍持续渐变的问题；现隐藏爱心粒子并保留静态暖光，避免用户仍看到循环动效。
 - 修复“禁用界面感知”的设定未保存到设置文件的问题；现在重启应用后能正确保持界面的感知开关状态。
+- 修复 `PetWindow.js` 中未清理 `screen` 模块全局事件监听器的问题，避免了在窗口重新创建时发生内存泄漏。
+- 收紧了 `src/status.html` 的安全策略（CSP），移除了 `style-src` 中的 `unsafe-inline`，以符合安全规范。
+- 清理了 `src/main/windows/CitySettingWindow.js` 中冗余的 `city-setting-close` IPC 处理逻辑，统一收敛为前端使用的 `close-city-setting-window`。
 
 ## [0.10.0] - 2026-07-29
 

@@ -46,7 +46,8 @@
       "!src/assets/*/*.webp",
       "!src/assets/*/*/*.webp",
       "!push.*",
-      "!dist/**"
+      "!dist/**",
+      "!scratch/**"
     ],
     "win": {
       "target": "nsis",
