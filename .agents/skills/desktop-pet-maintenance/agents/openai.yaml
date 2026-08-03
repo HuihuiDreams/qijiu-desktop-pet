@@ -1,4 +1,0 @@
-interface:
-  display_name: "Desktop Pet Maintenance"
-  short_description: "Safely maintain and verify this Electron desktop pet."
-  default_prompt: "Use $desktop-pet-maintenance to safely implement and verify a DeskPet change."

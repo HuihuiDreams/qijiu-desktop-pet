@@ -10,6 +10,8 @@
 - 优化 CP 屏保视觉层质感，将光晕升级为多色阶渐变，并为爱心粒子引入 S 型摇曳上浮动画；同步在 CSS 中增加 `contain: strict;` 及 `will-change: transform, opacity;` 提升 GPU 渲染性能。
 - 将 `src/main/AppLifecycle.js` 中约 200 行的 `app.whenReady()` 挂载回调拆分为 7 个职责清晰的静态方法（`initPlatformSecurity`、`initCoreServices`、`initScreensaverSystem`、`initFeatureServices`、`initPetWindow`、`initTray`、`initSubWindowsAndIpc`），严格保持现有模块初始化顺序与行为不变，并将 `session`、`powerMonitor`、`screen` 模块导入提升至文件顶部。详见 [ADR-042](./docs/decisions/ADR-042-main-and-renderer-module-decomposition.md)。
 - 将 `scratch/**` 加入 `package.json` 的打包排除列表，减小正式包体积。
+- 清理了代码库中过期的测试脚本（`check_lang2.py` 等）、重复的测试用例、冗余的多智能体通信记录（`.agents`, `.codex`）以及无用的历史归档（`scratch/old_main.js`），大幅精简了项目结构。
+- 优化了 `package.json` 依赖配置，移除了已被删除的路径排除规则，并将仅供测试使用的 `glob` 包移动至 `devDependencies`。
 
 ### Fixed
 - 修复系统启用“减少动态效果”时 CP 屏保暖光仍持续渐变的问题；现隐藏爱心粒子并保留静态暖光，避免用户仍看到循环动效。

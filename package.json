@@ -21,13 +21,13 @@
     "@playwright/test": "^1.61.1",
     "electron": "^42.2.0",
     "electron-builder": "^26.8.1",
+    "glob": "^13.0.6",
     "playwright": "^1.61.1"
   },
   "dependencies": {
     "electron-log": "^5.4.3",
     "electron-store": "^10.0.0",
-    "electron-updater": "^6.8.3",
-    "glob": "^13.0.6"
+    "electron-updater": "^6.8.3"
   },
   "build": {
     "appId": "com.deskpet.yueqi-shenjiu",
@@ -38,16 +38,13 @@
       "!docs/**",
       "!test/**",
       "!.github/**",
-      "!.codex/**",
-      "!.agents/**",
       "!security-scans/**",
       "!tools/**",
       "!scripts/**",
       "!src/assets/*/*.webp",
       "!src/assets/*/*/*.webp",
       "!push.*",
-      "!dist/**",
-      "!scratch/**"
+      "!dist/**"
     ],
     "win": {
       "target": "nsis",
