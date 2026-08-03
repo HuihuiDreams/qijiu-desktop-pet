@@ -212,15 +212,6 @@ class WeatherParticleLayer {
     return Array.from({ length: petCount }, (_, index) => base + (index < remainder ? 1 : 0));
   }
 
-  hasParticleCounts(nextCounts) {
-    return this.hasCountList(this.particleCounts.weather, nextCounts.weather)
-      && this.hasCountList(this.particleCounts.wind, nextCounts.wind);
-  }
-
-  hasCountList(currentCounts = [], nextCounts = []) {
-    return currentCounts.length === nextCounts.length
-      && currentCounts.every((count, index) => count === nextCounts[index]);
-  }
 
   _applyGroupStyle(group, index, width, height, left, top, opacity, visibility) {
     if (!this._lastPositions) this._lastPositions = [];

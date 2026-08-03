@@ -42,7 +42,6 @@ test('CP Screensaver tray threshold submenu uses shared allowlist source and no 
 
 test('debug tools expose current Window Awareness state', () => {
   assert.ok(appSource.includes('windowAwareness: windowAwarenessSystem.getDebugInfo()'));
-  assert.ok(debugSource.includes('window.debugWindowAwareness'));
   assert.ok(debugSource.includes('window.probeWindowAwareness'));
   assert.ok(debugSource.includes('window.explainWindowAwareness'));
   assert.ok(debugSource.includes('__LAST_WINDOW_AWARENESS_EXPLANATION'));

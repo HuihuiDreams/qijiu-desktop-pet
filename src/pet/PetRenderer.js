@@ -272,40 +272,6 @@ class PetRenderer {
     }
   }
 
-  /**
-   * 生成一组飘浮效果动画（爱心、闪烁星星等 emoji）。
-   * 使用多个带随机偏移的粒子营造更丰富的视觉效果。
-   */
-  spawnEffect(pet, emoji) {
-    const count = 3; // 粒子数量
-    const { x: baseX, scale: visualScale } = this.getPetVisualCenter(pet);
-    const baseY = pet.y - 20 * visualScale;
-
-    for (let i = 0; i < count; i++) {
-      const effect = document.createElement('div');
-      effect.className = 'interaction-effect';
-      effect.textContent = emoji;
-
-      // 随机水平偏移，形成扇形扩散
-      const offsetX = (Math.random() - 0.5) * 40 * visualScale;
-      effect.style.left = `${baseX + offsetX}px`;
-      effect.style.top = `${baseY}px`;
-
-      // 交错延迟，让粒子依次出现
-      effect.style.animationDelay = `${i * 0.15}s`;
-
-      // 随机缩放，增加层次感
-      const scale = 0.7 + Math.random() * 0.6;
-      effect.style.fontSize = `${24 * scale * visualScale}px`;
-
-      this.stage.appendChild(effect);
-
-      // 动画结束后将其移除
-      effect.addEventListener('animationend', () => {
-        effect.remove();
-      });
-    }
-  }
 
   /**
    * 在 petA 和 petB 的中心位置显示双人互动的叠加层图片。

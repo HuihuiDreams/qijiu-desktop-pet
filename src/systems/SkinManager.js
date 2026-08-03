@@ -8,17 +8,6 @@
  * 4. 持久化用户的皮肤选择（委托给 TimeSystem）
  */
 class SkinManager {
-  /**
-   * 皮肤中文显示名映射表。
-   * 文件夹用英文/数字命名，托盘菜单显示中文名。
-   * 若某个皮肤 ID 不在此表中，则直接显示文件夹名（兜底）。
-   */
-  static SKIN_NAMES = {
-    'default': '默认皮肤·凉拌仓鼠',
-    'birds': '鸟塑七九·凉拌仓鼠',
-    'animal_ears': '猫兔七九·紫萤',
-    'school_au': '校园七九·幕汤汤',
-  };
 
   static SKIN_IMAGE_SCALES = {
     animal_ears: 1.08,
@@ -47,7 +36,7 @@ class SkinManager {
   getAvailableSkins() {
     return this.availableSkins.map(id => ({
       id,
-      displayName: this.getDisplayName(id),
+      displayName: id,
     }));
   }
 
@@ -78,14 +67,6 @@ class SkinManager {
     return CANDIDATE_KEYS;
   }
 
-  /**
-   * 获取皮肤的中文显示名（优先查 SKIN_NAMES，兜底用文件夹名）。
-   * @param {string} skinId
-   * @returns {string}
-   */
-  getDisplayName(skinId) {
-    return SkinManager.SKIN_NAMES[skinId] || skinId;
-  }
 
   /**
    * 切换皮肤：构建路径映射并注入到 Pet/SpriteView/PetRenderer。

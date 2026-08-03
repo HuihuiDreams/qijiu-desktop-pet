@@ -400,42 +400,6 @@ test('createPetElement renders emoji pets and updates state classes', () => {
   }
 });
 
-test('spawnEffect creates three particles and removes them on animation end', () => {
-  const appended = [];
-  const renderer = new PetRenderer({
-    appendChild(element) {
-      appended.push(element);
-    },
-  }, null, () => 0.5);
-  const originalDocument = global.document;
-  const originalRandom = Math.random;
-  Math.random = () => 0.5;
-  global.document = {
-    createElement() {
-      const element = createFakeDomElement();
-      element.remove = () => {
-        element.removed = true;
-      };
-      return element;
-    },
-  };
-
-  try {
-    renderer.spawnEffect({ x: 100, y: 100, size: 96 }, '*');
-
-    assert.equal(appended.length, 3);
-    assert.equal(appended[0].textContent, '*');
-    assert.equal(appended[0].style.top, '90px');
-    assert.equal(appended[0].style.fontSize, '12px');
-
-    appended[0].listeners.animationend();
-    assert.equal(appended[0].removed, true);
-  } finally {
-    global.document = originalDocument;
-    Math.random = originalRandom;
-  }
-});
-
 test('hideOverlay fades overlay and restores pet body visibility', () => {
   const renderer = new PetRenderer(null);
   const overlay = createFakeDomElement();

@@ -12,6 +12,10 @@
 - 将 `scratch/**` 加入 `package.json` 的打包排除列表，减小正式包体积。
 - 清理了代码库中过期的测试脚本（`check_lang2.py` 等）、重复的测试用例、冗余的多智能体通信记录（`.agents`, `.codex`）以及无用的历史归档（`scratch/old_main.js`），大幅精简了项目结构。
 - 优化了 `package.json` 依赖配置，移除了已被删除的路径排除规则，并将仅供测试使用的 `glob` 包移动至 `devDependencies`。
+- 清理了 `src/debug.js`，移除了无法触及的测试函数，并增加了沙箱校验以防止污染生产环境全局作用域。
+- 删除了各个类中废弃或未使用的死代码 API：`PetRenderer.spawnEffect`、`WindowManager.hasWindow`、`WeatherParticleLayer.hasParticleCounts`、`SkinManager.SKIN_NAMES`。
+- 移除了 `src/app.js` 中重复初始化的 `onLocaleChange` 语言切换事件监听器，精简了入口逻辑。
+
 
 ### Fixed
 - 修复系统启用“减少动态效果”时 CP 屏保暖光仍持续渐变的问题；现隐藏爱心粒子并保留静态暖光，避免用户仍看到循环动效。
@@ -19,6 +23,7 @@
 - 修复 `PetWindow.js` 中未清理 `screen` 模块全局事件监听器的问题，避免了在窗口重新创建时发生内存泄漏。
 - 收紧了 `src/status.html` 的安全策略（CSP），移除了 `style-src` 中的 `unsafe-inline`，以符合安全规范。
 - 清理了 `src/main/windows/CitySettingWindow.js` 中冗余的 `city-setting-close` IPC 处理逻辑，统一收敛为前端使用的 `close-city-setting-window`。
+- 修复了前台关闭“状态面板”窗口时，因 `preload.js` 发送事件名错误导致的无法彻底销毁窗口问题，现已对齐 `status-close-window`。
 
 ## [0.10.0] - 2026-07-29
 

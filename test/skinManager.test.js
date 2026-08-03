@@ -73,11 +73,6 @@ test('SkinManager initializes with default skin', () => {
   assert.deepEqual(sm.availableSkins, ['default']);
 });
 
-test('SkinManager resolves display names', () => {
-  const sm = new SkinManager();
-  assert.equal(sm.getDisplayName('default'), SkinManager.SKIN_NAMES.default);
-  assert.equal(sm.getDisplayName('qban'), 'qban');
-});
 
 test('SkinManager updates available skins', () => {
   const sm = new SkinManager();

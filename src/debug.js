@@ -5,6 +5,8 @@
  * 用法：在 DevTools Console 输入 testKiss() 并回车。
  */
 
+if (!window.location.href.includes('app.asar')) {
+
 window.testInteraction = function (type = 'kiss') {
   const forceShareFood = arguments[1] === true;
   if (!window.__DEBUG_PETS || !window.__DEBUG_RENDERER) {
@@ -123,13 +125,6 @@ window.testShareFoodThrowup = () => {
   window.testInteraction('shareFood');
 };
 
-window.testHungry = (hungerValue = 15) => {
-  if (!window.__DEBUG_PETS) return;
-  Object.values(window.__DEBUG_PETS).forEach((pet) => {
-    pet.stats.hunger = hungerValue;
-  });
-  console.log(`[debug] 宠物饱食度已设置为 ${hungerValue} (< 25 触发饥饿状态与桔红发光框)`);
-};
 
 window.testRecoverStats = () => {
   if (!window.__DEBUG_PETS) return;
@@ -146,11 +141,6 @@ window.testHungryHeat = () => {
   return typeof window.testWeatherHeat === 'function' ? window.testWeatherHeat() : null;
 };
 
-window.debugWindowAwareness = function () {
-  const screenInfo = typeof window.__DEBUG_SCREEN === 'function' ? window.__DEBUG_SCREEN() : null;
-  console.log('[debug] Window Awareness:', screenInfo?.windowAwareness || null);
-  return screenInfo?.windowAwareness || null;
-};
 
 window.probeWindowAwareness = async function () {
   const renderer = typeof window.__DEBUG_SCREEN === 'function'
@@ -463,9 +453,6 @@ window.testWeatherRainWind = function (intensity = 'heavy', windIntensity = 'nor
   return setDebugWeather('rain', { intensity, windIntensity, timePhase: 'day', isDay: true });
 };
 
-window.testWeatherNight = function (weatherKind = 'unknown') {
-  return setDebugWeather(weatherKind, { intensity: weatherKind === 'unknown' ? 'none' : 'normal', timePhase: 'night', isDay: false });
-};
 
 window.clearWeatherEffect = function () {
   if (!window.__DEBUG_WEATHER || typeof window.__DEBUG_WEATHER.clear !== 'function') {
@@ -477,20 +464,8 @@ window.clearWeatherEffect = function () {
   return state;
 };
 
-window.testWeatherEffects = function () {
-  return {
-    clear: 'testWeatherClear()',
-    cloudy: 'testWeatherCloudy()',
-    rain: "testWeatherRain('heavy')",
-    snow: "testWeatherSnow('medium')",
-    windy: "testWeatherWindy('normal')",
-    thunderstorm: "testWeatherThunderstorm('heavy')",
-    heat: 'testWeatherHeat()',
-    rainWind: "testWeatherRainWind('heavy', 'normal')",
-    night: 'testWeatherNight()',
-    clearEffect: 'clearWeatherEffect()',
-  };
-};
 
 console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherEffects(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+
+} // End of app.asar check
 

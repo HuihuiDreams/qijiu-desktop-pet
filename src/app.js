@@ -311,14 +311,6 @@
   // 实际展示/消失逻辑已下沉到 BreakReminderPresenter（见上方实例化），此处只保留 IPC 订阅。
   window.electronAPI.onBreakReminder((payload) => breakReminderPresenter.handleTriggered(payload));
 
-  // === 语言热切换监听 ===
-  window.electronAPI.onLocaleChange((newLocale) => {
-    window.__currentLocale = newLocale;
-    window.t = (key) => I18nHelpers.translateUi(key, newLocale);
-    window.I18N_UI = I18nHelpers.getI18nUi(newLocale);
-    if (typeof initDialogues === 'function') initDialogues(newLocale);
-    I18nHelpers.applyI18n();
-  });
 
   // === 离线回归结算 / 系统睡眠唤醒 / 存档持久化 ===
   // 实际逻辑已下沉到 OfflineReturnSystem（见上方实例化），此处只保留一行 IPC 订阅委托。

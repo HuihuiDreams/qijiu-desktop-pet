@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showStatusWindow: (data) => ipcRenderer.send('show-status-window', data),
   hideStatusWindow: () => ipcRenderer.send('hide-status-window'),
   updateStatusWindow: (data) => ipcRenderer.send('update-status-window', data),
-  closeStatusWindow: () => ipcRenderer.send('hide-status-window'),
+  closeStatusWindow: () => ipcRenderer.invoke('status-close-window'),
   resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
   openPomodoroWindow: () => ipcRenderer.invoke('pomodoro-open-window'),
   getPomodoroState: () => ipcRenderer.invoke('pomodoro-get-state'),

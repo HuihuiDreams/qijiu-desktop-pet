@@ -19,9 +19,7 @@ test('debug tools expose weather effect console helpers', () => {
   assert.match(debugSource, /window\.testWeatherWindy = function \(windIntensity = 'normal'\)/);
   assert.match(debugSource, /window\.testWeatherThunderstorm = function \(intensity = 'heavy'\)/);
   assert.match(debugSource, /window\.testWeatherRainWind = function/);
-  assert.match(debugSource, /window\.testWeatherNight = function/);
   assert.match(debugSource, /window\.clearWeatherEffect = function/);
-  assert.match(debugSource, /window\.testWeatherEffects = function/);
   assert.match(debugSource, /__DEBUG_WEATHER\.set/);
   assert.match(debugSource, /__DEBUG_WEATHER\.force/);
 });

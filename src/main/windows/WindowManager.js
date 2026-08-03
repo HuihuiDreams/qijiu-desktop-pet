@@ -36,9 +36,6 @@ class WindowManager {
 
   // --- Utility Methods ---
 
-  hasWindow(name) {
-    return !!this.windows[name] && !this.windows[name].isDestroyed();
-  }
 
   getAllWindows() {
     return Object.values(this.windows).filter(w => w && !w.isDestroyed());

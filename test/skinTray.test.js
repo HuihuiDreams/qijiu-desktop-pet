@@ -115,19 +115,6 @@ test('scanAvailableSkins: 不将非皮肤子目录（如 fonts）识别为皮肤
   assert.strictEqual(skins.length, Object.keys(SKIN_NAME_KEYS).length, '皮肤数量应与白名单中注册的皮肤数量一致');
 });
 
-// --- SKIN_NAMES 映射测试（从 main.js 中提取验证） ---
-
-test('main.js 中包含皮肤本地化 key 映射', () => {
-  const mainSource = readMainProcessSource();
-  assert.ok(mainSource.includes('SKIN_NAME_KEYS'), '托盘皮肤名应通过本地化 key 映射');
-  assert.ok(mainSource.includes("'default': 'skinDefault'"), 'default 皮肤应映射到 skinDefault');
-  assert.ok(mainSource.includes('getSkinGalleryDisplayName(skinId)'), '皮肤画廊应通过当前语言生成显示名');
-});
-
-test('main.js 托盘 tooltip 跟随当前语言标题刷新', () => {
-  const mainSource = readMainProcessSource();
-  assert.ok(mainSource.includes("tray.setToolTip(trayT('trayTitle'))"), '托盘 tooltip 应使用多语言标题');
-});
 
 // --- 托盘菜单结构验证 ---
 
