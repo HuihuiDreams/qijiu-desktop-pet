@@ -24,6 +24,7 @@
 - 收紧了 `src/status.html` 的安全策略（CSP），移除了 `style-src` 中的 `unsafe-inline`，以符合安全规范。
 - 清理了 `src/main/windows/CitySettingWindow.js` 中冗余的 `city-setting-close` IPC 处理逻辑，统一收敛为前端使用的 `close-city-setting-window`。
 - 修复了前台关闭“状态面板”窗口时，因 `preload.js` 发送事件名错误导致的无法彻底销毁窗口问题，现已对齐 `status-close-window`。
+- 修正 `docs/structure.md` 中关于 `.agents/` 目录的提交规则表述：`.agents/skills/` 内的项目维护技能随仓库提交，其余开发辅助产物仍禁止入库。
 
 ## [0.10.0] - 2026-07-29
 

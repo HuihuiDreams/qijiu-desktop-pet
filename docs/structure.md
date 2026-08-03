@@ -549,7 +549,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
-- `.codex/tmp-*` 与 `.agents/`、`security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
+- `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
 
 ## 受保护皮肤资产
 
