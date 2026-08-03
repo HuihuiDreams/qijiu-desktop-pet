@@ -5,7 +5,7 @@
  * 用法：在 DevTools Console 输入 testKiss() 并回车。
  */
 
-if (!window.location.href.includes('app.asar')) {
+if (!window.location.pathname.includes('/app.asar/')) {
 
 window.testInteraction = function (type = 'kiss') {
   const forceShareFood = arguments[1] === true;
@@ -465,7 +465,7 @@ window.clearWeatherEffect = function () {
 };
 
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherEffects(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
 
 } // End of app.asar check
 

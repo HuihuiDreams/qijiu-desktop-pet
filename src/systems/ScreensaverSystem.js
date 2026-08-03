@@ -1,22 +1,10 @@
 /**
  * src/systems/ScreensaverSystem.js
- * CP 屏保渲染进程状态机与控制系统。
  * 状态机流程：inactive | entering | performing | caught | runningBack
  */
 
-let ScreensaverParticleLayerClass = null;
 const CAUGHT_INDICATOR_DURATION_MS = 800;  // 被抓包状态冻结时长（状态机计时器）
 const CAUGHT_BUBBLE_DURATION_MS = 4000;    // 被抓包气泡显示时长（与其他功能保持一致）
-if (typeof ScreensaverParticleLayer !== 'undefined') {
-  ScreensaverParticleLayerClass = ScreensaverParticleLayer;
-} else if (typeof require !== 'undefined') {
-  try {
-    const mod = require('../ui/ScreensaverParticleLayer');
-    ScreensaverParticleLayerClass = mod.ScreensaverParticleLayer || mod;
-  } catch (e) {
-    // Ignore error
-  }
-}
 
 class ScreensaverSystem {
   constructor(deps = {}) {
@@ -56,22 +44,9 @@ class ScreensaverSystem {
   }
 
   /**
-   * 初始化 / 更新依赖与 IPC 订阅。
+   * 初始化 IPC 订阅。
    */
-  init(deps = {}) {
-    if (deps.electronAPI) this.electronAPI = deps.electronAPI;
-    if (deps.stageGeometry) this.stageGeometry = deps.stageGeometry;
-    if (deps.renderer) this.renderer = deps.renderer;
-    if (deps.spriteView) this.spriteView = deps.spriteView;
-    if (typeof deps.getPets === 'function') this.getPets = deps.getPets;
-    if (deps.interactionSystem) this.interactionSystem = deps.interactionSystem;
-    if (deps.dialogBubble) this.dialogBubble = deps.dialogBubble;
-    if (typeof deps.clearInteractionOverlay === 'function') {
-      this.clearInteractionOverlay = deps.clearInteractionOverlay;
-    }
-    if (deps.skinManager) this.skinManager = deps.skinManager;
-    if (deps.particleLayer) this.particleLayer = deps.particleLayer;
-
+  init() {
     this.detachSubscriptions();
 
     if (this.electronAPI) {
@@ -100,18 +75,6 @@ class ScreensaverSystem {
     this.unsubscribeStart = null;
     this.unsubscribeStop = null;
     this.unsubscribeCancel = null;
-  }
-
-  getParticleLayer() {
-    if (!this.particleLayer) {
-      if (ScreensaverParticleLayerClass) {
-        const stage = (this.renderer && this.renderer.stage)
-          ? this.renderer.stage
-          : (typeof document !== 'undefined' ? document.body : null);
-        this.particleLayer = new ScreensaverParticleLayerClass(stage);
-      }
-    }
-    return this.particleLayer;
   }
 
   /**
@@ -263,7 +226,7 @@ class ScreensaverSystem {
     this.sceneBounds = scene;
     this.centerPetsInScene(scene);
 
-    const pLayer = this.getParticleLayer();
+    const pLayer = this.particleLayer;
     if (pLayer && typeof pLayer.mount === 'function') {
       pLayer.mount(this.sceneBounds);
     }

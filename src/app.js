@@ -207,6 +207,7 @@
     getDialogues: () => DIALOGUES,
   });
 
+  const screensaverParticleLayer = new ScreensaverParticleLayer(document.body);
   const screensaverSystem = new ScreensaverSystem({
     electronAPI: window.electronAPI,
     stageGeometry,
@@ -217,6 +218,7 @@
     dialogBubble,
     clearInteractionOverlay,
     skinManager,
+    particleLayer: screensaverParticleLayer,
   });
   screensaverSystem.init();
 

@@ -97,7 +97,6 @@ graph TB
 
 ```text
 qijiu-desktop-pet/
-|-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
@@ -147,7 +146,6 @@ qijiu-desktop-pet/
 ├─ scripts/                             # 项目自动化脚本：npm 命令、打包发布钩子和维护检查
 │  ├─ afterPack.js                      # Electron Builder 打包后处理
 │  ├─ check_adrs.js                     # ADR 格式检查脚本
-│  ├─ check_lang.py / check_lang2.py    # 文案语言检查辅助脚本
 │  ├─ convert_images.js                 # 图片转换维护脚本
 │  ├─ fix_adrs.js / fix_adrs.py         # ADR 标题格式修复脚本
 │  ├─ generate_replacements.js          # ADR 标题替换片段生成脚本
@@ -550,7 +548,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
-- `.codex/tmp-*` 与 `.agents/`、`security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
+- `.codex/tmp-*` 与 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
 
 ## 受保护皮肤资产
 

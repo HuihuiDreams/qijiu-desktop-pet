@@ -29,3 +29,4 @@ docs/performance/raw/
 docs/performance/*.json
 !docs/performance/README.md
 
+__pycache__/

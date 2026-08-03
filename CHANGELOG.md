@@ -6,7 +6,7 @@
 
 ### Changed
 - 完善多语文档，明确指出在隐藏桌宠状态下，专属屏保及久坐提醒将停止触发，反映底层的全局静默逻辑。
-- 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `desktop-pet-maintenance` 维护技能中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。
+- 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `AGENTS.md` 维护规范中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。
 - 优化 CP 屏保视觉层质感，将光晕升级为多色阶渐变，并为爱心粒子引入 S 型摇曳上浮动画；同步在 CSS 中增加 `contain: strict;` 及 `will-change: transform, opacity;` 提升 GPU 渲染性能。
 - 将 `src/main/AppLifecycle.js` 中约 200 行的 `app.whenReady()` 挂载回调拆分为 7 个职责清晰的静态方法（`initPlatformSecurity`、`initCoreServices`、`initScreensaverSystem`、`initFeatureServices`、`initPetWindow`、`initTray`、`initSubWindowsAndIpc`），严格保持现有模块初始化顺序与行为不变，并将 `session`、`powerMonitor`、`screen` 模块导入提升至文件顶部。详见 [ADR-042](./docs/decisions/ADR-042-main-and-renderer-module-decomposition.md)。
 - 将 `scratch/**` 加入 `package.json` 的打包排除列表，减小正式包体积。
