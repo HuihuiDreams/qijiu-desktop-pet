@@ -294,7 +294,7 @@ test('SpriteView uses direction-specific second walking frames for visible greet
   );
 });
 
-test('SpriteView.reattach clears render cache', async () => {
+test('SpriteView.attach clears render cache', async () => {
   const sv = new SpriteView();
   const pet = createFakePet('yueqi');
 
@@ -303,7 +303,7 @@ test('SpriteView.reattach clears render cache', async () => {
   pet._sv_frameTimer = 123;
   pet._sv_lastSpriteKey = 'walkingLeft';
 
-  await sv.reattach(pet);
+  await sv.attach(pet);
 
   assert.equal(pet._sv_lastResource, null);
   assert.equal(pet._sv_frameIndex, 0);
@@ -311,7 +311,7 @@ test('SpriteView.reattach clears render cache', async () => {
   assert.equal(pet._sv_lastSpriteKey, null);
 });
 
-test('SpriteView.reattach preloads each unique WebP resource once', async () => {
+test('SpriteView.attach preloads each unique WebP resource once', async () => {
   const originalImage = global.Image;
   const createdImages = [];
 
@@ -346,7 +346,7 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
       fps: 4,
     };
 
-    await sv.reattach(pet);
+    await sv.attach(pet);
 
     assert.equal(createdImages.length, 4);
     assert.deepEqual(
@@ -363,7 +363,7 @@ test('SpriteView.reattach preloads each unique WebP resource once', async () => 
   }
 });
 
-test('SpriteView.reattach cleans up previous preloaded images event handlers', async () => {
+test('SpriteView.attach cleans up previous preloaded images event handlers', async () => {
   const originalImage = global.Image;
   try {
     const cleanedHandlers = [];
@@ -388,12 +388,12 @@ test('SpriteView.reattach cleans up previous preloaded images event handlers', a
 
     const sv = new SpriteView({ imageMap: { yueqi: {} } });
     const pet = createFakePet('yueqi');
-    await sv.reattach(pet);
+    await sv.attach(pet);
     const firstPreloads = pet._sv_preloadedImages;
     assert.ok(firstPreloads.length > 0);
 
     // Reattach again to verify cleanup of firstPreloads
-    await sv.reattach(pet);
+    await sv.attach(pet);
     assert.ok(cleanedHandlers.length > 0);
   } finally {
     global.Image = originalImage;

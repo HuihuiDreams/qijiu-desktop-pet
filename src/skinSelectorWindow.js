@@ -4,29 +4,11 @@ const confirmBtn = document.getElementById('skin-selector-confirm');
 const cancelBtn = document.getElementById('skin-selector-cancel');
 const statusEl = document.getElementById('skin-selector-status');
 
-let currentLocale = 'zh';
 let lastItems = [];
 let previewedSkinId = null;
 let previewInFlight = false;
 
-function t(key) {
-  if (typeof I18N === 'undefined') return key;
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-}
 
-function updateI18nElements() {
-  document.querySelectorAll('[data-i18n]').forEach((element) => {
-    element.textContent = t(element.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach((element) => {
-    const translated = t(element.dataset.i18nTitle);
-    element.title = translated;
-    element.setAttribute('aria-label', translated);
-  });
-  document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
-    element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
-  });
-}
 
 function setStatus(message = '') {
   statusEl.textContent = message;
@@ -181,3 +163,5 @@ window.skinSelectorAPI.getLocale().then((locale) => {
 });
 
 requestAnimationFrame(() => closeBtn.focus());
+
+WindowI18n.init((locale) => { renderGallery(lastItems, { resetSelection: false }) });

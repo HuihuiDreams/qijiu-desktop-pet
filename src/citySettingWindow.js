@@ -8,26 +8,8 @@ const closeBtn = document.getElementById('city-close');
 const currentValueEl = document.getElementById('city-current-value');
 const statusEl = document.getElementById('city-status');
 
-let currentLocale = 'zh';
 
-function t(key) {
-  if (typeof I18N === 'undefined') return key;
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-}
 
-function updateI18nElements() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    const translated = t(el.dataset.i18nTitle);
-    el.title = translated;
-    el.setAttribute('aria-label', translated);
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    el.placeholder = t(el.dataset.i18nPlaceholder);
-  });
-}
 
 function setStatus(text, className) {
   statusEl.textContent = text;
@@ -136,3 +118,5 @@ window.electronAPI.getLocale().then(locale => {
   loadCurrentCity();
   inputEl.focus();
 });
+
+WindowI18n.init(loadCurrentCity);

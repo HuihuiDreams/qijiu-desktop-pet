@@ -161,55 +161,7 @@ function listAvailableSkinIds(options = {}) {
   return Array.from(ids);
 }
 
-function loadProtectedAsset(assetId, options = {}) {
-  const normalized = normalizeAssetId(assetId);
-  if (!normalized) {
-    throw new Error('Invalid protected asset id');
-  }
-
-  const result = readManifest(options);
-  const entry = result?.manifest.assets[normalized];
-  if (!result || !entry) {
-    throw new Error('Protected asset not found');
-  }
-
-  const fileName = path.basename(entry.file);
-  if (fileName !== entry.file) {
-    throw new Error('Invalid protected asset file name');
-  }
-
-  const cacheKey = createCacheKey(result.protectedAssetsDir, normalized);
-  const cached = getCachedAsset(cacheKey);
-  if (cached) return cached;
-
-  const encrypted = fs.readFileSync(path.join(result.protectedAssetsDir, fileName));
-  const decipher = crypto.createDecipheriv(
-    'aes-256-gcm',
-    KEY,
-    Buffer.from(entry.iv, 'base64'),
-  );
-  decipher.setAAD(Buffer.from(normalized));
-  decipher.setAuthTag(Buffer.from(entry.authTag, 'base64'));
-  const data = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-
-  if (Number.isFinite(entry.size) && data.length !== entry.size) {
-    throw new Error('Protected asset size mismatch');
-  }
-  if (entry.sha256) {
-    const hash = crypto.createHash('sha256').update(data).digest('hex');
-    if (hash !== entry.sha256) throw new Error('Protected asset hash mismatch');
-  }
-
-  const asset = {
-    data,
-    contentType: entry.contentType || 'application/octet-stream',
-    size: data.length,
-  };
-  setCachedAsset(cacheKey, asset, options.maxCacheBytes);
-  return cloneAsset(asset);  // clone once on cache miss to protect cached buffer
-}
-
-async function loadProtectedAssetAsync(assetId, options = {}) {
+async function loadProtectedAsset(assetId, options = {}) {
   const normalized = normalizeAssetId(assetId);
   if (!normalized) {
     throw new Error('Invalid protected asset id');
@@ -278,7 +230,6 @@ module.exports = {
   hasProtectedAsset,
   listAvailableSkinIds,
   loadProtectedAsset,
-  loadProtectedAssetAsync,
   normalizeAssetId,
   readManifest,
 };

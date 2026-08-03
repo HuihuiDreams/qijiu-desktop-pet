@@ -2,10 +2,15 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
-  createScreensaverEligibilityGuard,
+  createPresentationGuard,
   coversBounds,
-  DEFAULT_MAX_CACHE_AGE_MS,
-} = require('../src/main/services/ScreensaverEligibilityGuard');
+} = require('../src/main/services/PresentationGuard');
+
+function createScreensaverEligibilityGuard(deps) {
+  return createPresentationGuard(deps, { mode: 'screensaver' });
+}
+
+const DEFAULT_MAX_CACHE_AGE_MS = 2000;
 
 test('ScreensaverEligibilityGuard - macOS returns unsupported_platform', () => {
   const guard = createScreensaverEligibilityGuard({ platform: 'darwin' });

@@ -28,7 +28,7 @@ const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
 const petWindowModule = require('./windows/PetWindow');
 const trayManager = require('./TrayManager');
 const { createInterruptionCoordinator } = require('./services/InterruptionCoordinator');
-const { createScreensaverEligibilityGuard } = require('./services/ScreensaverEligibilityGuard');
+const { createPresentationGuard } = require('./services/PresentationGuard');
 const { createScreensaverController } = require('./services/ScreensaverController');
 const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
@@ -88,12 +88,15 @@ class AppLifecycle {
 
   static initScreensaverSystem() {
     interruptionCoordinator = createInterruptionCoordinator();
-    const eligibilityGuard = createScreensaverEligibilityGuard({
-      platform: process.platform,
-      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
-      getDisplays: () => screen.getAllDisplays(),
-    });
-
+    const eligibilityGuard = createPresentationGuard(
+      {
+        platform: process.platform,
+        getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
+        getDisplays: () => screen.getAllDisplays(),
+        now: Date.now,
+      },
+      { mode: 'screensaver' }
+    );
     screensaverController = createScreensaverController({
       powerMonitor,
       interruptionCoordinator,

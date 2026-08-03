@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { loadProtectedAsset, loadProtectedAssetAsync, normalizeAssetId } = require('./protectedAssetLoader');
+const { loadProtectedAsset, normalizeAssetId } = require('./protectedAssetLoader');
 
 const PROTOCOL_SCHEME = 'pet-asset';
 
@@ -93,7 +93,7 @@ function registerProtectedAssetProtocol({ protocol, app, protectedAssetsDir } = 
 
     const appPath = typeof app?.getAppPath === 'function' ? app.getAppPath() : null;
     try {
-      const asset = await loadProtectedAssetAsync(assetId, {
+      const asset = await loadProtectedAsset(assetId, {
         protectedAssetsDir,
         appRoot: __dirname,
         appPath,

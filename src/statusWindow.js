@@ -1,12 +1,7 @@
 const contentEl = document.getElementById('status-content');
 const closeBtn = document.getElementById('status-close');
 
-let currentLocale = 'zh';
 
-function t(key) {
-  if (typeof I18N === 'undefined') return key;
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-}
 
 window.electronAPI.getLocale().then(locale => {
   currentLocale = locale;
@@ -27,11 +22,6 @@ window.electronAPI.onLocaleChange?.((locale) => {
   }
 });
 
-function updateI18nElements() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
-  });
-}
 
 function renderPetStats(pet) {
   const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
@@ -139,3 +129,5 @@ closeBtn.addEventListener('click', () => {
 });
 
 window.electronAPI.onStatusWindowData(renderStatus);
+
+WindowI18n.init(() => { if (lastRenderData) { renderStatus(lastRenderData); } });

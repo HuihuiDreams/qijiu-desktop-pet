@@ -223,8 +223,7 @@
   // === 创建 DOM 元素 ===
   renderer.createPetElement(yueqi);
   renderer.createPetElement(shenjiu);
-  spriteView.attach(yueqi);
-  spriteView.attach(shenjiu);
+  await Promise.all([spriteView.attach(yueqi), spriteView.attach(shenjiu)]);
 
   // === 将 UI 辅助方法附加到宠物实例上 ===
   yueqi._showBubble = (text) => dialogBubble.show(yueqi, text);

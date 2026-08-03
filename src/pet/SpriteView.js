@@ -50,7 +50,7 @@ class SpriteView {
     pet._sv_frameIndex = 0;
     pet._sv_frameTimer = 0;
     pet._sv_lastSpriteKey = null;
-    this._preloadPetSprites(pet);
+    return this._preloadPetSpritesAsync(pet);
   }
 
   _collectPetResources(pet) {
@@ -66,32 +66,13 @@ class SpriteView {
     return Array.from(resources);
   }
 
-  _createImagePreloads(resources) {
-    return resources.map((resource) => {
-      const image = new Image();
-      image.src = resource;
-      return image;
-    });
-  }
 
-  _preloadPetSprites(pet) {
-    if (typeof Image === 'undefined') return;
-
-    if (Array.isArray(pet._sv_preloadedImages)) {
-      pet._sv_preloadedImages.forEach((img) => {
-        img.onload = null;
-        img.onerror = null;
-      });
-    }
-
-    pet._sv_preloadedImages = this._createImagePreloads(this._collectPetResources(pet));
-  }
 
   update(pet, deltaMs) {
     if (!pet.element) return;
 
     const spriteConfig = this._getSpriteConfig(pet);
-    const spriteKey = this._resolveSpriteKey(pet);
+    const spriteKey = this._resolveStateKey(pet);
 
     if (pet._sv_lastSpriteKey !== spriteKey) {
       pet._sv_frameIndex = 0;
@@ -124,12 +105,12 @@ class SpriteView {
     const sprites = pet.sprites;
     if (!sprites) return null;
 
-    return sprites[this._resolveSpriteKey(pet)] || null;
+    return sprites[this._resolveStateKey(pet)] || null;
   }
 
   /**
    * 统一的状态 → 视觉 key 映射。
-   * _resolveSpriteKey 和 _resolveResource 共用此方法，避免逻辑重复。
+   * _resolveStateKey 和 _resolveResource 共用此方法，避免逻辑重复。
    */
   _resolveStateKey(pet) {
     if (pet.isHungry() && pet.state === 'idle') return 'hungry';
@@ -141,10 +122,6 @@ class SpriteView {
       return pet.direction === 'left' ? 'interactingLeft' : 'interactingRight';
     }
     return pet.state || 'idle';
-  }
-
-  _resolveSpriteKey(pet) {
-    return this._resolveStateKey(pet);
   }
 
   _resolveResource(pet) {
@@ -207,15 +184,6 @@ class SpriteView {
 
   updateImageMap(newMap) {
     this.imageMap = newMap;
-  }
-
-  reattach(pet) {
-    pet._sv_lastResource = null;
-    pet._sv_frameIndex = 0;
-    pet._sv_frameTimer = 0;
-    pet._sv_lastSpriteKey = null;
-
-    return this._preloadPetSpritesAsync(pet);
   }
 
   _preloadPetSpritesAsync(pet) {

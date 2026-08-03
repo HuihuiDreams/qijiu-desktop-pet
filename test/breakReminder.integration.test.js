@@ -29,7 +29,7 @@ test('main.js imports breakReminderService', () => {
 });
 
 test('main.js imports presentationGuard', () => {
-  assert.ok(mainSource.includes("require('../../../presentationGuard')"), 'should import presentationGuard');
+  assert.ok(mainSource.includes("require('./PresentationGuard')"), 'should import presentationGuard');
 });
 
 test('main.js registers break-reminder-dismissed IPC listener', () => {
@@ -195,7 +195,7 @@ test('breakReminderService module exports expected functions', () => {
 });
 
 test('presentationGuard module exports expected functions', () => {
-  const mod = require('../presentationGuard');
+  const mod = require("../src/main/services/PresentationGuard");
   assert.equal(typeof mod.createPresentationGuard, 'function');
-  assert.equal(typeof mod.coversWorkArea, 'function');
+  assert.equal(typeof mod.coversBounds, 'function');
 });

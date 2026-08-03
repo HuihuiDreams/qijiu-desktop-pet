@@ -9,7 +9,8 @@ const {
   MAX_IDLE_MINUTES,
 } = require('../src/main/services/ScreensaverController');
 const { createInterruptionCoordinator } = require('../src/main/services/InterruptionCoordinator');
-const { createScreensaverEligibilityGuard } = require('../src/main/services/ScreensaverEligibilityGuard');
+const { createPresentationGuard } = require("../src/main/services/PresentationGuard");
+function createScreensaverEligibilityGuard(deps) { return createPresentationGuard(deps, { mode: "screensaver" }); }
 
 function createFakeClock() {
   let time = 10000;

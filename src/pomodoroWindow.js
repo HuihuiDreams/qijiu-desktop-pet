@@ -31,13 +31,8 @@ const timerEl = document.getElementById('pomodoro-timer');
 const progressEl = document.querySelector('.pomodoro-progress');
 const progressFillEl = document.getElementById('pomodoro-progress-fill');
 
-let currentLocale = 'zh';
 let currentState = { ...DEFAULT_POMODORO_STATE };
 
-function t(key) {
-  if (typeof I18N === 'undefined') return key;
-  return (I18N[currentLocale]?.ui?.[key]) ?? (I18N.zh?.ui?.[key]) ?? key;
-}
 
 function unwrapResult(result) {
   if (result?.success === true) return result.data;
@@ -48,21 +43,6 @@ function isIpcFailure(result) {
   return result?.success === false;
 }
 
-function updateI18nElements() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
-    const translated = t(el.dataset.i18nTitle);
-    el.title = translated;
-    el.setAttribute('aria-label', translated);
-    // Keep custom tooltip attribute in sync when title is updated externally
-    if (el.hasAttribute('data-tooltip-text')) {
-      el.setAttribute('data-tooltip-text', translated);
-    }
-  });
-  renderPinState(Boolean(currentState.isAlwaysOnTop));
-}
 
 function formatTime(ms) {
   const totalSeconds = Math.max(0, Math.ceil(Number(ms) / 1000));
@@ -322,3 +302,5 @@ window.electronAPI.getLocale().then(locale => {
   initTooltipEvents();
   return refreshState();
 });
+
+WindowI18n.init(() => { renderConfig(lastConfig) });

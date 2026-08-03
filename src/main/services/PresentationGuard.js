@@ -1,25 +1,32 @@
 /**
- * src/main/services/ScreensaverEligibilityGuard.js
- * 屏保前置打扰守卫：判断当前系统前台窗口状态是否适合打扰。
- * Windows 下校验活动窗口缓存（<=2s、非全屏、非演示）；macOS 始终返回 false。
+ * src/main/services/PresentationGuard.js
+ * 统一的打扰守卫：判断当前系统前台窗口状态是否适合打扰。
+ * 结合了原 presentationGuard 和 ScreensaverEligibilityGuard 的逻辑。
  */
 
 const DEFAULT_MAX_CACHE_AGE_MS = 2000;
 
-function createScreensaverEligibilityGuard(deps = {}) {
+function createPresentationGuard(deps = {}, options = {}) {
   const {
     platform = process.platform,
     getActiveWindowInfo = null,
     getDisplays = null,
     now = Date.now,
-    maxCacheAgeMs = DEFAULT_MAX_CACHE_AGE_MS,
   } = deps;
 
-  // Non-Windows platforms (macOS / Linux) are unsupported
+  const {
+    mode = 'break-reminder', // 'break-reminder' | 'screensaver'
+    maxCacheAgeMs = mode === 'screensaver' ? DEFAULT_MAX_CACHE_AGE_MS : null,
+  } = options;
+
+  // macOS / Linux behavior
   if (platform !== 'win32') {
     return {
       canInterrupt() {
-        return { canInterrupt: false, reason: 'unsupported_platform' };
+        if (mode === 'screensaver') {
+          return { canInterrupt: false, reason: 'unsupported_platform' };
+        }
+        return { canInterrupt: true, reason: null };
       },
     };
   }
@@ -45,14 +52,16 @@ function createScreensaverEligibilityGuard(deps = {}) {
         return { canInterrupt: false, reason: 'unknown-state' };
       }
 
-      const ts = info.sampledAt ?? info.timestamp;
-      if (!Number.isFinite(ts)) {
-        return { canInterrupt: false, reason: 'stale_cache' };
-      }
-
-      const age = now() - ts;
-      if (age > maxCacheAgeMs || age < 0) {
-        return { canInterrupt: false, reason: 'stale_cache' };
+      // Cache age validation (Screensaver strictness)
+      if (maxCacheAgeMs !== null) {
+        const ts = info.sampledAt ?? info.timestamp;
+        if (!Number.isFinite(ts)) {
+          return { canInterrupt: false, reason: 'stale_cache' };
+        }
+        const age = now() - ts;
+        if (age > maxCacheAgeMs || age < 0) {
+          return { canInterrupt: false, reason: 'stale_cache' };
+        }
       }
 
       const win = info.window;
@@ -60,24 +69,25 @@ function createScreensaverEligibilityGuard(deps = {}) {
         return { canInterrupt: false, reason: 'fullscreen' };
       }
 
-      // Maximized normal windows (VS Code / Office) are allowed; only a
-      // non-maximized window that covers a full display (bounds, not workArea)
-      // is treated as a borderless presentation and rejected.
+      // Check presentation mode
       if (!win.isMaximized && getDisplays && typeof getDisplays === 'function' && win.bounds) {
         try {
           const displays = getDisplays();
           if (!Array.isArray(displays)) {
-            return { canInterrupt: false, reason: 'display-query-failed' };
+            return { canInterrupt: mode === 'screensaver' ? false : true, reason: mode === 'screensaver' ? 'display-query-failed' : null };
           }
           const isPresentation = displays.some((display) => {
-            const fullBounds = display.bounds || display.workArea;
-            return coversBounds(win.bounds, fullBounds);
+            // Both modes now use standard bounds checking logic from ScreensaverEligibilityGuard
+            const targetBounds = mode === 'screensaver' 
+              ? (display.bounds || display.workArea)
+              : (display.workArea || display.bounds);
+            return coversBounds(win.bounds, targetBounds);
           });
           if (isPresentation) {
             return { canInterrupt: false, reason: 'presentation' };
           }
         } catch {
-          return { canInterrupt: false, reason: 'display-query-failed' };
+          return { canInterrupt: mode === 'screensaver' ? false : true, reason: mode === 'screensaver' ? 'display-query-failed' : null };
         }
       }
 
@@ -112,7 +122,7 @@ function coversBounds(windowBounds, targetBounds) {
 }
 
 module.exports = {
-  createScreensaverEligibilityGuard,
+  createPresentationGuard,
   coversBounds,
   DEFAULT_MAX_CACHE_AGE_MS,
 };

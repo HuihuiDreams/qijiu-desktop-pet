@@ -11,7 +11,7 @@ const {
   createBreakReminderService,
   normalizeSettings: normalizeBreakReminderSettings,
 } = require('../../../breakReminderService');
-const { createPresentationGuard } = require('../../../presentationGuard');
+const { createPresentationGuard } = require('./PresentationGuard');
 const { BREAK_REMINDER_STORE_KEY } = require('../constants');
 
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
@@ -41,11 +41,14 @@ function init(dependencies) {
   breakReminderEnabled = breakSettings.enabled;
   breakReminderIntervalMinutes = breakSettings.intervalMinutes;
 
-  const presentationGuard = createPresentationGuard({
-    platform: process.platform,
-    getActiveWindowInfo: () => WindowAwarenessService.getLastPayload() || null,
-    getDisplays: () => screen.getAllDisplays(),
-  });
+  const presentationGuard = createPresentationGuard(
+    {
+      platform: process.platform,
+      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload() || null,
+      getDisplays: () => screen.getAllDisplays(),
+    },
+    { mode: 'break-reminder' }
+  );
 
   breakReminderService = createBreakReminderService({
     powerMonitor,

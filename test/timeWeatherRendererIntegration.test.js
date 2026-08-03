@@ -46,22 +46,22 @@ test('Time Weather Renderer Integration', async (t) => {
     // Day time + Idle -> Normal Idle
     pet.timePhase = 'day';
     pet.state = 'idle';
-    assert.strictEqual(sv._resolveSpriteKey(pet), 'idle');
+    assert.strictEqual(sv._resolveStateKey(pet), 'idle');
     assert.strictEqual(sv._resolveResource(pet).type, 'emoji'); // default fallback if no image
 
     // Night time + Idle -> Sleeping
     pet.timePhase = 'night';
-    assert.strictEqual(sv._resolveSpriteKey(pet), 'sleeping');
+    assert.strictEqual(sv._resolveStateKey(pet), 'sleeping');
     assert.strictEqual(sv._resolveResource(pet).src, 'pet-asset://skin/default/left_sleep.webp');
 
     // Evening + Idle -> Normal Idle
     pet.timePhase = 'evening';
-    assert.strictEqual(sv._resolveSpriteKey(pet), 'idle');
+    assert.strictEqual(sv._resolveStateKey(pet), 'idle');
 
     // Night time + Walking -> Walking (Sleeping should not override active states)
     pet.timePhase = 'night';
     pet.state = 'walking';
-    assert.strictEqual(sv._resolveSpriteKey(pet), 'walkingLeft');
+    assert.strictEqual(sv._resolveStateKey(pet), 'walkingLeft');
   });
 
   await t.test('MovementSystem: lowers movement frequency during night', () => {

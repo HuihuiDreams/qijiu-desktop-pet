@@ -12,7 +12,6 @@ const {
   hasProtectedAsset,
   listAvailableSkinIds,
   loadProtectedAsset,
-  loadProtectedAssetAsync,
   normalizeAssetId,
   readManifest,
 } = require('../protectedAssetLoader');
@@ -29,7 +28,7 @@ function createProtectedAssetsFixture() {
   return outputDir;
 }
 
-test('normalizeAssetId accepts only skin WebP asset ids', () => {
+test('normalizeAssetId accepts only skin WebP asset ids', async () => {
   assert.equal(normalizeAssetId('/skin/default/left.webp'), 'skin/default/left.webp');
   assert.equal(normalizeAssetId('skin/default/yueqi/walk_left01.webp'), 'skin/default/yueqi/walk_left01.webp');
   assert.equal(normalizeAssetId('skin/default/../left.webp'), null);
@@ -37,7 +36,7 @@ test('normalizeAssetId accepts only skin WebP asset ids', () => {
   assert.equal(normalizeAssetId('file:///skin/default/left.webp'), null);
 });
 
-test('loadProtectedAsset decrypts a manifest entry and lists skins', () => {
+test('loadProtectedAsset decrypts a manifest entry and lists skins', async () => {
   const protectedAssetsDir = createProtectedAssetsFixture();
 
   assert.equal(hasProtectedAsset('skin/default/left.webp', { protectedAssetsDir }), true);
@@ -45,12 +44,12 @@ test('loadProtectedAsset decrypts a manifest entry and lists skins', () => {
   assert.deepEqual(listAvailableSkinIds({ protectedAssetsDir }).sort(), ['birds', 'default']);
   assert.equal(createAssetUrl('skin/default/left.webp'), 'pet-asset://skin/default/left.webp');
 
-  const asset = loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
+  const asset = await loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
   assert.equal(asset.contentType, 'image/webp');
   assert.equal(asset.data.toString('utf8'), 'default-left');
 });
 
-test('loadProtectedAsset rejects tampered encrypted payloads', () => {
+test('loadProtectedAsset rejects tampered encrypted payloads', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
   const manifest = JSON.parse(fs.readFileSync(path.join(protectedAssetsDir, 'manifest.json'), 'utf8'));
@@ -60,17 +59,17 @@ test('loadProtectedAsset rejects tampered encrypted payloads', () => {
   encrypted[0] ^= 0xff;
   fs.writeFileSync(encryptedPath, encrypted);
 
-  assert.throws(
-    () => loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
+  await assert.rejects(
+      loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
     /Unsupported state|authenticate|bad decrypt|unable to authenticate/i,
   );
 });
 
-test('loadProtectedAsset caches decrypted assets until the cache is cleared', () => {
+test('loadProtectedAsset caches decrypted assets until the cache is cleared', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
 
-  const first = loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
+  const first = await loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
   assert.equal(first.data.toString('utf8'), 'default-left');
   assert.equal(getProtectedAssetCacheStats().entries, 1);
 
@@ -83,22 +82,22 @@ test('loadProtectedAsset caches decrypted assets until the cache is cleared', ()
   encrypted[0] ^= 0xff;
   fs.writeFileSync(encryptedPath, encrypted);
 
-  const cached = loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
+  const cached = await loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir });
   assert.equal(cached.data.toString('utf8'), 'default-left');
 
   clearProtectedAssetCache();
   assert.equal(getProtectedAssetCacheStats().entries, 0);
-  assert.throws(
-    () => loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
+  await assert.rejects(
+      loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
     /Unsupported state|authenticate|bad decrypt|unable to authenticate/i,
   );
 });
 
-test('loadProtectedAsset does not cache assets larger than the configured cache limit', () => {
+test('loadProtectedAsset does not cache assets larger than the configured cache limit', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
 
-  const asset = loadProtectedAsset('skin/default/left.webp', {
+  const asset = await loadProtectedAsset('skin/default/left.webp', {
     protectedAssetsDir,
     maxCacheBytes: 1,
   });
@@ -107,7 +106,7 @@ test('loadProtectedAsset does not cache assets larger than the configured cache 
   assert.equal(getProtectedAssetCacheStats().entries, 0);
 });
 
-test('readManifest uses memory cache without scanning disk when manifest Cache is active', () => {
+test('readManifest uses memory cache without scanning disk when manifest Cache is active', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
 
@@ -132,7 +131,7 @@ test('readManifest uses memory cache without scanning disk when manifest Cache i
   }
 });
 
-test('readManifest caches negative lookups until clearProtectedAssetCache is called', () => {
+test('readManifest caches negative lookups until clearProtectedAssetCache is called', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
   const fixtureRoot = path.dirname(protectedAssetsDir);
@@ -165,14 +164,14 @@ test('readManifest caches negative lookups until clearProtectedAssetCache is cal
   }
 });
 
-test('loadProtectedAssetAsync asynchronously decrypts assets and deduplicates concurrent in-flight requests', async () => {
+test('loadProtectedAsset asynchronously decrypts assets and deduplicates concurrent in-flight requests', async () => {
   clearProtectedAssetCache();
   const protectedAssetsDir = createProtectedAssetsFixture();
 
   // Launch two concurrent requests for the exact same asset before cache is populated
   const [asset1, asset2] = await Promise.all([
-    loadProtectedAssetAsync('skin/default/left.webp', { protectedAssetsDir }),
-    loadProtectedAssetAsync('skin/default/left.webp', { protectedAssetsDir }),
+    loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
+    loadProtectedAsset('skin/default/left.webp', { protectedAssetsDir }),
   ]);
 
   assert.equal(asset1.data.toString('utf8'), 'default-left');

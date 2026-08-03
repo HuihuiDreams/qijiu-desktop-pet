@@ -436,7 +436,7 @@ test('updateSettings changes behavior dynamically', () => {
 
 test('defers reminder when PresentationGuard says cannot interrupt', () => {
   const guard = {
-    canInterrupt: () => ({ canInterrupt: false, deferReason: 'fullscreen' }),
+    canInterrupt: () => ({ canInterrupt: false, reason: 'fullscreen' }),
   };
 
   const { service, clock, reminders, runToFirstReminder } = createTestService({
@@ -462,7 +462,7 @@ test('defers reminder when PresentationGuard says cannot interrupt', () => {
 
 test('does not double-send while deferred (no duplicate renderer events)', () => {
   const guard = {
-    canInterrupt: () => ({ canInterrupt: false, deferReason: 'fullscreen' }),
+    canInterrupt: () => ({ canInterrupt: false, reason: 'fullscreen' }),
   };
 
   const { service, clock, reminders, runToFirstReminder, simulateActiveSamples } = createTestService({
