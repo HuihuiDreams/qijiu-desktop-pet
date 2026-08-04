@@ -150,7 +150,9 @@ renderer 重载一律取消而不回放。
 
 ### 10. 平台策略
 
-首发仅支持 Windows；macOS 在没有可信的前台全屏/演示数据源前保持禁用，优先保证不打扰。
+支持 Windows 和 macOS：
+- Windows 依赖 PowerShell 和 Win32 API 检测活动窗口。
+- macOS 使用 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep`。此方法与媒体播放状态强绑定：暂停的全屏视频会解除断言（允许触发），而某些非全屏的视频会议（如 Zoom/Meet）可能保持断言（阻止触发）。这是 macOS 端非侵入式检测的一种权衡。
 
 ## Alternatives Considered
 
@@ -176,6 +178,6 @@ renderer 重载一律取消而不回放。
 
 - 增加一个低频主进程轮询器和一套可测试的会话协议，但避免与久坐提醒和可见性状态互相污染。
 - 「立即退出」调整为下一次可观测 idle 轮询的目标；首次输入继续透传，真实延迟以主机性能样本验收。
-- macOS 首发保持禁用，优先保证不打扰。
+- macOS 利用 `pmset` 实现了非侵入式的全屏和演示检测，补齐了 macOS 端的触发守卫。
 - 实现时必须同步更新 `docs/structure.md`、`CHANGELOG.md`、测试和本 ADR 的状态。
 - 屏保 Overlay 图片以 `transform: translate(-50%, -50%)` 将其中心对齐场景视觉中点，配合 `width: baseWidth * visualScale, height: auto`，确保素材 intrinsic 宽高比不必与 `320×200` 一致也能正确居中。

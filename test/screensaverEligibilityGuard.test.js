@@ -12,10 +12,10 @@ function createScreensaverEligibilityGuard(deps) {
 
 const DEFAULT_MAX_CACHE_AGE_MS = 2000;
 
-test('ScreensaverEligibilityGuard - macOS returns unsupported_platform', () => {
+test('ScreensaverEligibilityGuard - macOS delegates to active window info provider', () => {
   const guard = createScreensaverEligibilityGuard({ platform: 'darwin' });
   const result = guard.canInterrupt();
-  assert.deepEqual(result, { canInterrupt: false, reason: 'unsupported_platform' });
+  assert.deepEqual(result, { canInterrupt: false, reason: 'provider-error' });
 });
 
 test('ScreensaverEligibilityGuard - non-windows platforms return unsupported_platform', () => {

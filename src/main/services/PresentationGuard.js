@@ -19,8 +19,8 @@ function createPresentationGuard(deps = {}, options = {}) {
     maxCacheAgeMs = mode === 'screensaver' ? DEFAULT_MAX_CACHE_AGE_MS : null,
   } = options;
 
-  // macOS / Linux behavior
-  if (platform !== 'win32') {
+  // Linux / Unsupported behavior
+  if (platform !== 'win32' && platform !== 'darwin') {
     return {
       canInterrupt() {
         if (mode === 'screensaver') {
@@ -34,6 +34,7 @@ function createPresentationGuard(deps = {}, options = {}) {
   return {
     canInterrupt() {
       if (!getActiveWindowInfo || typeof getActiveWindowInfo !== 'function') {
+        if (mode === 'break-reminder' && platform === 'darwin') return { canInterrupt: true, reason: null };
         return { canInterrupt: false, reason: 'provider-error' };
       }
 
@@ -41,6 +42,7 @@ function createPresentationGuard(deps = {}, options = {}) {
       try {
         info = getActiveWindowInfo();
       } catch {
+        if (mode === 'break-reminder' && platform === 'darwin') return { canInterrupt: true, reason: null };
         return { canInterrupt: false, reason: 'provider-error' };
       }
 
@@ -49,6 +51,7 @@ function createPresentationGuard(deps = {}, options = {}) {
       }
 
       if (!info || !info.active || !info.window) {
+        if (mode === 'break-reminder' && platform === 'darwin') return { canInterrupt: true, reason: null };
         return { canInterrupt: false, reason: 'unknown-state' };
       }
 

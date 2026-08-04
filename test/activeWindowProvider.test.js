@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const {
   createActiveWindowProvider,
+  createMacActiveWindowProvider,
   createUnavailableActiveWindowProvider,
   createWindowsActiveWindowProvider,
   getSystemPowerShellPath,
@@ -56,7 +57,7 @@ test('unavailable provider returns stable fallback shape', async () => {
   assert.equal(Number.isFinite(info.sampledAt), true);
 });
 
-test('provider selection uses Windows implementation only for win32', async () => {
+test('provider selection creates specific implementations based on platform', async () => {
   const winProvider = createActiveWindowProvider('win32', {
     execFile: (_file, _args, _options, callback) => {
       callback(null, JSON.stringify({
@@ -68,11 +69,15 @@ test('provider selection uses Windows implementation only for win32', async () =
       }));
     },
   });
-  const macProvider = createActiveWindowProvider('darwin');
+  const macProvider = createActiveWindowProvider('darwin', {
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, 'PreventUserIdleDisplaySleep    0');
+    }
+  });
   const linuxProvider = createActiveWindowProvider('linux');
 
   assert.equal((await winProvider.getActiveWindowInfo()).active, true);
-  assert.equal((await macProvider.getActiveWindowInfo()).reason, 'unsupported-platform');
+  assert.equal((await macProvider.getActiveWindowInfo()).active, true);
   assert.equal((await linuxProvider.getActiveWindowInfo()).reason, 'unsupported-platform');
 });
 
@@ -183,4 +188,42 @@ test('getSystemPowerShellPath resolves absolute path on win32 (TH-03)', () => {
   } else {
     assert.equal(p, 'powershell.exe');
   }
+});
+
+test('mac provider uses pmset and parses prevented sleep', async () => {
+  const provider = createMacActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, 'PreventUserIdleDisplaySleep    1');
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+  assert.equal(info.active, true);
+  assert.equal(info.source, 'pmset-assertions');
+  assert.equal(info.window.isFullScreen, true);
+});
+
+test('mac provider uses pmset and parses no prevented sleep', async () => {
+  const provider = createMacActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, 'PreventUserIdleDisplaySleep    0');
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+  assert.equal(info.active, true);
+  assert.equal(info.source, 'pmset-assertions');
+  assert.equal(info.window.isFullScreen, false);
+});
+
+test('mac provider returns unavailable fallback on pmset failure', async () => {
+  const provider = createMacActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(new Error('pmset missing'), '', 'not found');
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+  assert.equal(info.active, false);
+  assert.equal(info.reason, 'provider-failed');
 });

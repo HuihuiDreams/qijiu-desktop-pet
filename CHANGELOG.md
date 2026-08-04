@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Added
+- **macOS CP 屏保支持 (`macOS CP Screensaver Support`)**：实现了 `createMacActiveWindowProvider`，利用 macOS 原生 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 休眠断言，向 macOS 用户开放了 CP 高甜屏保。注：此非侵入式检测方案与媒体播放状态强绑定，暂停的全屏视频会解除断言（允许屏保触发），而部分非全屏视频会议（如 Zoom/Meet）可能会保持断言（阻止触发）。
+
 ### Changed
 - 完善多语文档，明确指出在隐藏桌宠状态下，专属屏保及久坐提醒将停止触发，反映底层的全局静默逻辑。
 - 整理 `0.10.0` 的 `Fixed` 与 `Changed` 条目顺序；同步更新 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`，补齐并对齐 CP 高甜屏保的托盘开关与等待时间菜单文案；在 `desktop-pet-maintenance` 维护技能中明确 Changelog 规则：`Unreleased` 条目统一追加至分类末尾，已发布版本按实现/提交时间从早到晚排序，补录时重排整个受影响分类。

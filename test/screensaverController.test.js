@@ -310,12 +310,12 @@ test('ScreensaverController - eligibility guard rejection releases lease and blo
   assert.equal(mainWindow.sentEvents.length, 0);
 });
 
-test('ScreensaverController - macOS platform rejection', () => {
+test('ScreensaverController - provider error rejection blocks screensaver', () => {
   const clock = createFakeClock();
   const powerMonitor = createFakePowerMonitor(350);
   const mainWindow = createFakeMainWindow();
   const coordinator = createInterruptionCoordinator();
-  const guard = createScreensaverEligibilityGuard({ platform: 'darwin' });
+  const guard = createScreensaverEligibilityGuard({ platform: 'win32' });
 
   const controller = createScreensaverController({
     powerMonitor,

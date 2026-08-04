@@ -4,24 +4,52 @@ const test = require('node:test');
 const { createPresentationGuard, coversBounds } = require("../src/main/services/PresentationGuard");
 
 // ═══════════════════════════════════════════════════════════════════
-//  macOS: always canInterrupt
+//  macOS: relies on active window provider (like Windows)
 // ═══════════════════════════════════════════════════════════════════
 
-test('macOS: always returns canInterrupt = true', () => {
-  const guard = createPresentationGuard({ platform: 'darwin' });
+test('macOS: canInterrupt when window is not fullscreen (pmset isPrevented = false)', () => {
+  const guard = createPresentationGuard({
+    platform: 'darwin',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 0, y: 0, width: 0, height: 0 },
+        isFullScreen: false,
+        isMaximized: false,
+      },
+    }),
+  });
   const result = guard.canInterrupt();
   assert.equal(result.canInterrupt, true);
   assert.equal(result.reason, null);
 });
 
-test('macOS: canInterrupt even without any provider', () => {
+test('macOS: defers when isFullScreen is true (pmset isPrevented = true)', () => {
+  const guard = createPresentationGuard({
+    platform: 'darwin',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 0, y: 0, width: 0, height: 0 },
+        isFullScreen: true,
+        isMaximized: false,
+      },
+    }),
+  });
+  const result = guard.canInterrupt();
+  assert.equal(result.canInterrupt, false);
+  assert.equal(result.reason, 'fullscreen');
+});
+
+test('macOS: defers when provider unavailable', () => {
   const guard = createPresentationGuard({
     platform: 'darwin',
     getActiveWindowInfo: null,
-    getDisplays: null,
   });
+
   const result = guard.canInterrupt();
   assert.equal(result.canInterrupt, true);
+  assert.equal(result.reason, null);
 });
 
 // ═══════════════════════════════════════════════════════════════════

@@ -221,14 +221,61 @@ if ($sawIgnoredWindow) { $reason = "ignored-window" }
   };
 }
 
+function createMacActiveWindowProvider(options = {}) {
+  const execFileImpl = options.execFile || execFile;
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : 5000;
+
+  return {
+    async getActiveWindowInfo() {
+      const sampledAt = Date.now();
+      return new Promise((resolve) => {
+        execFileImpl(
+          'pmset',
+          ['-g', 'assertions'],
+          { timeout: timeoutMs, env: getSafeChildProcessEnv() },
+          (error, stdout, stderr) => {
+            if (error) {
+              resolve(unavailableActiveWindowInfo('provider-failed', sampledAt, {
+                code: error.code || null,
+                signal: error.signal || null,
+                message: error.message || String(error),
+                stderr: stderr || '',
+              }));
+              return;
+            }
+            const preventSleepMatch = stdout.match(/PreventUserIdleDisplaySleep\s+(\d+)/);
+            const isPrevented = Boolean(preventSleepMatch && preventSleepMatch[1] !== '0');
+
+            resolve({
+              active: true,
+              sampledAt,
+              source: 'pmset-assertions',
+              window: {
+                id: null,
+                title: '',
+                ownerName: '',
+                bounds: { x: 0, y: 0, width: 0, height: 0 },
+                isMinimized: false,
+                isMaximized: false,
+                isFullScreen: isPrevented,
+              },
+            });
+          }
+        );
+      });
+    },
+  };
+}
+
 function createActiveWindowProvider(platform = process.platform, options = {}) {
   if (platform === 'win32') return createWindowsActiveWindowProvider(options);
-  if (platform === 'darwin') return createUnavailableActiveWindowProvider('unsupported-platform');
+  if (platform === 'darwin') return createMacActiveWindowProvider(options);
   return createUnavailableActiveWindowProvider('unsupported-platform');
 }
 
 module.exports = {
   createActiveWindowProvider,
+  createMacActiveWindowProvider,
   createUnavailableActiveWindowProvider,
   createWindowsActiveWindowProvider,
   getSafeChildProcessEnv,
