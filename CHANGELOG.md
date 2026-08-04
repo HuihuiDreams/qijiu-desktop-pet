@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-08-04
+
 ### Added
 - **macOS CP 屏保支持 (`macOS CP Screensaver Support`)**：实现了 `createMacActiveWindowProvider`，利用 macOS 原生 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 休眠断言，向 macOS 用户开放了 CP 高甜屏保。注：此非侵入式检测方案与媒体播放状态强绑定，暂停的全屏视频会解除断言（允许屏保触发），而部分非全屏视频会议（如 Zoom/Meet）可能会保持断言（阻止触发）。
 
