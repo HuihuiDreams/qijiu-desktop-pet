@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Changed
+- Windows 中检测到 `Zoom.exe` 即在首次扫描隐藏桌宠。由于实测 Zoom 会议中与离会后的 UDP 数同为 `0, 3`，不再将 UDP 数作为 Windows Zoom 的会议判定依据，并直接返回检测结果而不等待 `netstat`；Teams 和其他应用的原有检测规则不变。
+
 ## [0.10.1] - 2026-08-04
 
 ### Added

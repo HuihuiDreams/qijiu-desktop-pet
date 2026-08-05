@@ -80,16 +80,10 @@ test('Windows snapshot skips netstat when no known meeting process is running', 
   assert.deepEqual(snapshot.apps, []);
 });
 
-test('Windows snapshot treats known processes without enough UDP endpoints as inactive', async () => {
+test('Windows snapshot treats a running Zoom process as immediately active', async () => {
   const execFile = createExecFileStub({
     'tasklist /fo csv /nh': [
       '"Zoom.exe","8800","Console","1","10,000 K"',
-    ],
-    'netstat -ano -p udp': [
-      [
-        '  UDP    0.0.0.0:50000          *:*                                    8800',
-        '  UDP    0.0.0.0:60000          *:*                                    1234',
-      ].join('\r\n'),
     ],
   });
 
@@ -99,12 +93,59 @@ test('Windows snapshot treats known processes without enough UDP endpoints as in
     udpThreshold: 5,
   });
 
-  assert.equal(snapshot.isActive, false);
-  assert.deepEqual(snapshot.detectedApps, []);
-  assert.deepEqual(
-    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
-    [1],
-  );
+  assert.equal(snapshot.isActive, true);
+  assert.equal(snapshot.startImmediately, true);
+  assert.deepEqual(snapshot.detectedApps, ['Zoom']);
+});
+
+test('Windows Zoom snapshot returns before UDP collection completes', async () => {
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+    if (key === 'tasklist /fo csv /nh') {
+      cb(null, '"Zoom.exe","8800","Console","1","10,000 K"', '');
+      return;
+    }
+    if (key === 'netstat -ano -p udp') {
+      return;
+    }
+    cb(new Error('unexpected command: ' + key));
+  };
+  let snapshot = null;
+
+  void collectMeetingUdpSnapshot({
+    platform: 'win32',
+    execFile,
+    udpThreshold: 5,
+  }).then((result) => {
+    snapshot = result;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.ok(snapshot);
+  assert.equal(snapshot.isActive, true);
+  assert.equal(snapshot.startImmediately, true);
+  assert.deepEqual(snapshot.detectedApps, ['Zoom']);
+});
+
+test('meeting detector starts on the first Zoom process snapshot', async () => {
+  const starts = [];
+  const detector = createMeetingDetector({
+    getSnapshot: async () => ({
+      isActive: true,
+      startImmediately: true,
+      detectedApps: ['Zoom'],
+      apps: [],
+    }),
+    startConfirmations: 2,
+    onMeetingStart: (payload) => starts.push(payload),
+  });
+
+  await detector.sampleOnce();
+
+  assert.equal(detector.getState().isInMeeting, true);
+  assert.equal(starts.length, 1);
+  assert.deepEqual(starts[0].detectedApps, ['Zoom']);
 });
 
 test('Windows snapshot falls back to PowerShell process lookup when tasklist is denied', async () => {

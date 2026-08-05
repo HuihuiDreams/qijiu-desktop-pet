@@ -18,6 +18,7 @@ const MEETING_APPS = [
     name: 'Zoom',
     win32: ['Zoom.exe'],
     darwin: ['zoom.us'],
+    win32StartImmediately: true,
   },
   {
     name: 'Webex',
@@ -253,6 +254,7 @@ async function collectWindowsSnapshot(options) {
       name: appInfo.name,
       processNames,
       processes: matchedProcesses,
+      startImmediately: appInfo.win32StartImmediately === true,
     };
   }).filter((appInfo) => appInfo.processes.length > 0);
 
@@ -262,6 +264,29 @@ async function collectWindowsSnapshot(options) {
       isActive: false,
       detectedApps: [],
       apps: [],
+    };
+  }
+
+  const immediateApps = appsWithProcesses.filter((appInfo) => appInfo.startImmediately);
+  if (immediateApps.length > 0) {
+    const apps = immediateApps.map((appInfo) => ({
+      name: appInfo.name,
+      processNames: appInfo.processNames,
+      active: true,
+      processes: appInfo.processes.map((processInfo) => ({
+        processName: processInfo.processName,
+        pid: processInfo.pid,
+        udpCount: 0,
+        udpEndpoints: [],
+      })),
+      startImmediately: true,
+    }));
+    return {
+      platform: 'win32',
+      isActive: true,
+      detectedApps: immediateApps.map((appInfo) => appInfo.name),
+      apps,
+      startImmediately: true,
     };
   }
 
@@ -291,7 +316,8 @@ async function collectWindowsSnapshot(options) {
       };
     });
     return {
-      ...appInfo,
+      name: appInfo.name,
+      processNames: appInfo.processNames,
       active: appProcesses.some((processInfo) => processInfo.udpCount >= udpThreshold),
       processes: appProcesses,
     };
@@ -427,7 +453,7 @@ function createMeetingDetector(options = {}) {
         consecutiveActiveSamples += 1;
         lastMeetingDetectedAt = currentTime;
         state = {
-          isInMeeting: consecutiveActiveSamples >= startConfirmations || state.isInMeeting,
+          isInMeeting: snapshot.startImmediately || consecutiveActiveSamples >= startConfirmations || state.isInMeeting,
           lastMeetingDetectedAt,
           detectedApps: snapshot.detectedApps || [],
         };

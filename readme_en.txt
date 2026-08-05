@@ -134,11 +134,11 @@ When the session completes, the window shows a gentle encouragement message. If 
 
 Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
 
-- The current MVP is mainly calibrated against Windows Teams.
-- After the meeting ends, pets usually reappear within about 15 seconds.
+- Windows Teams continues to hide pets based on verified meeting network activity; on Windows, opening Zoom hides the pets at the next scan.
+- Pets usually reappear within about 15 seconds after Zoom is closed or a Teams meeting ends.
 - If you manually hid the pets before the meeting, they will not be shown automatically afterward.
 - If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
-- The detector only uses meeting app process names and UDP endpoint counts. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
+- The detector only uses meeting app process names and UDP endpoint counts; Windows Zoom's open-to-hide behavior uses only its process name. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
 
 ========================================
 ⏰ Break Reminder
