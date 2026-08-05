@@ -21,6 +21,7 @@
 - 删除了各个类中废弃或未使用的死代码 API：`PetRenderer.spawnEffect`、`WindowManager.hasWindow`、`WeatherParticleLayer.hasParticleCounts`、`SkinManager.SKIN_NAMES`。
 - 移除了 `src/app.js` 中重复初始化的 `onLocaleChange` 语言切换事件监听器，精简了入口逻辑。
 - 简化了素材加载器与渲染精灵同步：废弃同步 `SpriteView.attach`，全面统一为异步的 `attach(pet)`（原 `reattach`）；删除了 `protectedAssetLoader.js` 中遗留的同步方法，提升了素材预加载期间的资源管理及一致性。
+- `release-preflight.yml` 的 macOS 校验 job 补充 `npm audit` 安全审计步骤（与 Windows job 对齐），防止仅平台相关的依赖树漏洞在发布前被漏检。
 
 ### Fixed
 - 修复系统启用“减少动态效果”时 CP 屏保暖光仍持续渐变的问题；现隐藏爱心粒子并保留静态暖光，避免用户仍看到循环动效。

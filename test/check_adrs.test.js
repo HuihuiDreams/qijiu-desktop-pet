@@ -2,10 +2,11 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { checkAdrFiles } = require('../scripts/check_adrs');
 
 test('checkAdrFiles correctly identifies missing headers in ADR files', () => {
-  const tmpDir = fs.mkdtempSync(path.join(__dirname, 'adr-test-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-test-'));
   
   // File 1: complete
   fs.writeFileSync(path.join(tmpDir, 'ADR-001-complete.md'), 

@@ -30,7 +30,7 @@ function checkAdrFiles(adrDir = getAdrDir()) {
     const content = stripBom(fs.readFileSync(path.join(adrDir, file), 'utf-8'));
     const missing = [];
 
-    if (!requiredHeaders[0].regex.test(content.split('\n')[0])) {
+    if (!requiredHeaders[0].regex.test(content.split(/\r?\n/)[0])) {
       missing.push('Title/Header');
     }
 
