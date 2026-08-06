@@ -386,13 +386,13 @@ src/assets/{skinId}/
 
 `meetingDetector.js` 负责主进程侧会议状态检测，设计背景记录在 [ADR-035](./decisions/ADR-035-meeting-auto-hide.md)。
 
-- Windows 优先使用 `tasklist /fo csv /nh` 获取当前已知会议应用 PID；若 `tasklist` 被权限策略拒绝，则回退到 `powershell.exe Get-Process` 仅查询已知会议应用进程名。随后用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量；若 `netstat` 被权限策略拒绝或返回失败，则将本次 UDP 状态标记为 unknown，让状态机保留当前会议隐藏状态并避免轮询日志刷屏。PID 只用于当次采样关联，不写死。Windows 的 `Zoom.exe` 是例外：按用户约定，进程存在即视为需要隐藏，命中后直接返回而不等待 UDP 查询。
+- Windows 优先使用 `tasklist /fo csv /nh` 获取当前已知会议应用 PID；若 `tasklist` 被权限策略拒绝，则回退到 `powershell.exe Get-Process` 仅查询已知会议应用进程名。随后用 `netstat -ano -p udp` 统计当次 PID 的 UDP 端点数量；若 `netstat` 被权限策略拒绝或返回失败，则将本次 UDP 状态标记为 unknown，让状态机保留当前会议隐藏状态并避免轮询日志刷屏。PID 只用于当次采样关联，不写死。
 - macOS 使用 `pgrep -x` 和 `lsof -nP -i UDP -p <pid> -Fn` 做同类检测。
-- 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。Zoom 实测在会议中与离会后均为 `0, 3`，无法使用该阈值区分；因此 Windows 检测到 `Zoom.exe` 后会在进程查询完成的首次采样隐藏桌宠，不再等待 `netstat`。
+- 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。
 - 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。
 - `services/PetVisibilityService.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
-- 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。Windows Zoom 的“打开即隐藏”仅使用其进程名。
-- `tools/measure-meeting-udp.js` 可用于后续校准 macOS Zoom、Slack、Discord 或不同 Teams 版本的阈值。
+- 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
+- `tools/measure-meeting-udp.js` 可用于后续校准 Zoom、Slack、Discord 或不同 Teams 版本的阈值。
 
 ### 3.13 轻量番茄钟
 
