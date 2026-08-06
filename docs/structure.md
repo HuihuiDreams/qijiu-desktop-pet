@@ -259,7 +259,7 @@ qijiu-desktop-pet/
 - 计算多显示器虚拟桌面范围与每块屏幕的可行走区域，并合并显示器指标突发事件、桥接 min/max 尺寸约束（`DisplayService.js`，底层复用 `displayBounds.js`/`displayFit.js`）。
 - 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件（`windows/PetWindow.js`）。
 - 监听 `powerMonitor` 睡眠/唤醒事件，向渲染进程同步真实时间差（`services/BreakReminderController.js`，用于修复 macOS 睡眠期间时间冻结的问题）。
-- 低频检测已知会议应用，在检测到 Teams/Zoom 等会议活动时自动隐藏桌宠、会议结束后恢复（`services/MeetingDetectorController.js` + `services/PetVisibilityService.js`，底层复用 `meetingDetector.js`）；桌宠可见性由 `PetVisibilityService` 按 `manual > meeting > pomodoro` 优先级统一仲裁，各隐藏来源相互独立。
+- 低频检测已知会议应用，在检测到 Teams 等会议活动时自动隐藏桌宠、会议结束后恢复（`services/MeetingDetectorController.js` + `services/PetVisibilityService.js`，底层复用 `meetingDetector.js`）；桌宠可见性由 `PetVisibilityService` 按 `manual > meeting > pomodoro` 优先级统一仲裁，各隐藏来源相互独立。
 - 在退出前请求渲染进程做最后一次状态保存，降低异常退出造成的数据丢失（`services/FinalSaveService.js`）。
 
 ### 3.2 渲染进程职责
@@ -392,7 +392,7 @@ src/assets/{skinId}/
 - 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。
 - `services/PetVisibilityService.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
 - 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
-- `tools/measure-meeting-udp.js` 可用于后续校准 Zoom、Slack、Discord 或不同 Teams 版本的阈值。
+- `tools/measure-meeting-udp.js` 可用于后续校准不同 Teams 版本的阈值。
 
 ### 3.13 轻量番茄钟
 
