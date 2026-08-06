@@ -167,6 +167,7 @@
     dialogBubble,
     getI18nUi: () => window.I18N_UI,
     CONFIG,
+    isScreensaverActive: () => screensaverSystem.isActive(),
   });
 
   // 清除当前互动覆盖层：皮肤切换与久坐提醒触发前都需要先清掉正在显示的覆盖层。
@@ -219,6 +220,10 @@
     clearInteractionOverlay,
     skinManager,
     particleLayer: screensaverParticleLayer,
+    // 屏保开始/结束的事件钩子：屏保开始会清掉展示中的气泡（回归气泡改由
+    // OfflineReturnSystem 暂存补发），屏保结束时事件驱动 flush，不依赖游戏循环。
+    onScreensaverStart: () => offlineReturnSystem.handleScreensaverStart(),
+    onScreensaverEnd: () => offlineReturnSystem.flushPendingReturnBubble(),
   });
   screensaverSystem.init();
 

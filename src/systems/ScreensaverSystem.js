@@ -20,6 +20,8 @@ class ScreensaverSystem {
       : null;
     this.skinManager = deps.skinManager || null;
     this.particleLayer = deps.particleLayer || null;
+    this.onScreensaverStart = typeof deps.onScreensaverStart === 'function' ? deps.onScreensaverStart : null;
+    this.onScreensaverEnd = typeof deps.onScreensaverEnd === 'function' ? deps.onScreensaverEnd : null;
 
     this.state = 'inactive';
     this.sessionId = 0;
@@ -211,6 +213,11 @@ class ScreensaverSystem {
       if (Array.isArray(pets) && pets.length > 0) {
         this.dialogBubble.removeForPets(pets);
       }
+    }
+
+    // 通知 OfflineReturnSystem：清掉的气泡若含离线回归气泡，需在屏保结束后补发
+    if (typeof this.onScreensaverStart === 'function') {
+      this.onScreensaverStart();
     }
 
     const pets = this.getPets();
@@ -650,6 +657,11 @@ class ScreensaverSystem {
     this.runningBackTargetCoords = null;
     this.runningBackDuration = 0;
     this.runningBackElapsed = 0;
+
+    // 屏保已退出：弹出屏保期间暂存的离线回归气泡（事件驱动，不依赖 rAF 循环）
+    if (typeof this.onScreensaverEnd === 'function') {
+      this.onScreensaverEnd();
+    }
   }
 
   /**

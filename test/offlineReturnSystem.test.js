@@ -87,8 +87,8 @@ test('handleOfflineReturn shows return dialogues once at least one shichen (2h) 
     const system = new OfflineReturnSystem(deps);
     system.handleOfflineReturn(1000);
 
-    assert.equal(scheduled.length, 2);
-    assert.deepEqual(scheduled.map((s) => s.ms), [1500, 3000]);
+    assert.equal(scheduled.length, 3); // 1.5s/3s 弹出 + 展示窗口结束后释放 pending
+    assert.deepEqual(scheduled.map((s) => s.ms), [1500, 3000, 7000]);
     scheduled.forEach((s) => s.cb());
 
     assert.deepEqual(dialogBubbleCalls, [
@@ -117,6 +117,157 @@ test('handleOfflineReturn uses I18N_UI return messages when available, including
       { pet: 'yueqi', text: 'custom-3-shichens', duration: 4000 },
       { pet: 'shenjiu', text: 'custom-shenjiu-line', duration: 4000 },
     ]);
+  });
+});
+
+test('handleOfflineReturn buffers bubbles when screensaver is active', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => true,
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000);
+
+    assert.equal(scheduled.length, 0); // No timeouts scheduled
+    assert.deepEqual(dialogBubbleCalls, []); // No bubbles shown immediately
+    assert.ok(system.pendingReturnBubble); // Bubble buffered
+    assert.equal(system.pendingReturnBubble.returnMsgYueqi, '你走了1个时辰…');
+    assert.equal(system.pendingReturnBubble.returnMsgShenjiu, '…哼，终于回来了。');
+  });
+});
+
+test('flushPendingReturnBubble shows buffered bubbles', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    let screensaverActive = true;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => screensaverActive,
+    });
+    const system = new OfflineReturnSystem(deps);
+
+    // First, buffer the bubble (screensaver active)
+    system.handleOfflineReturn(1000);
+    assert.equal(scheduled.length, 0);
+
+    // Then, flush it once the screensaver has ended
+    screensaverActive = false;
+    system.flushPendingReturnBubble();
+
+    assert.equal(system.pendingReturnBubble, null); // Buffer cleared
+    assert.equal(scheduled.length, 3);
+    assert.deepEqual(scheduled.map((s) => s.ms), [1500, 3000, 7000]);
+    scheduled.forEach((s) => s.cb());
+
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
+    assert.equal(system.pendingReturnBubble, null); // Released after full display
+  });
+});
+
+test('handleOfflineReturn keeps the sequence pending while in flight and releases it after the display window', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    const { deps } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => false, // explicitly inactive
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000);
+
+    // 序列在途时 pending 保留数据：即使屏保随后打断（removeForPets 清掉气泡），
+    // 也能在屏保结束后补发，不漏消息。
+    assert.ok(system.pendingReturnBubble);
+    assert.equal(scheduled.length, 3); // Timeouts scheduled directly
+
+    scheduled.forEach((s) => s.cb());
+    assert.equal(system.pendingReturnBubble, null); // 完整展示后释放
+  });
+});
+
+test('handleOfflineReturn re-buffers when the screensaver becomes active before the bubble fires', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    let screensaverActive = false;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => screensaverActive,
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000); // 结算时屏保不活跃 → 直接调度
+    assert.equal(scheduled.length, 3);
+
+    screensaverActive = true; // 气泡触发前屏保又开始了
+    scheduled[0].cb(); // 1.5s 触发 → 重新暂存而非展示
+    assert.deepEqual(dialogBubbleCalls, []);
+    assert.ok(system.pendingReturnBubble);
+
+    screensaverActive = false; // 屏保结束 → flush 补发
+    system.flushPendingReturnBubble();
+    const reScheduled = scheduled.slice(3);
+    assert.equal(reScheduled.length, 3);
+    reScheduled[0].cb();
+    reScheduled[1].cb();
+
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
+    assert.equal(system.pendingReturnBubble, null);
+  });
+});
+
+test('handleScreensaverStart resets shown flags so the whole sequence is re-delivered after flush', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => false,
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000);
+    scheduled[0].cb(); // yueqi 气泡已展示
+    assert.equal(dialogBubbleCalls.length, 1);
+
+    // 屏保开始（onStart removeForPets 清掉展示中的气泡）→ 整组重置为未展示
+    system.handleScreensaverStart();
+    assert.equal(system.pendingReturnBubble.shown.yueqi, false);
+    assert.equal(system.pendingReturnBubble.shown.shenjiu, false);
+
+    system.flushPendingReturnBubble(); // 屏保结束后补发
+    const reScheduled = scheduled.slice(3);
+    reScheduled[0].cb();
+    reScheduled[1].cb();
+
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
+  });
+});
+
+test('flushPendingReturnBubble is a no-op with no pending bubble', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const { deps, dialogBubbleCalls } = makeDeps();
+    const system = new OfflineReturnSystem(deps);
+    system.flushPendingReturnBubble();
+    assert.equal(scheduled.length, 0);
+    assert.deepEqual(dialogBubbleCalls, []);
   });
 });
 
