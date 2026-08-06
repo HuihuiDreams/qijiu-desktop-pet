@@ -220,9 +220,7 @@
     clearInteractionOverlay,
     skinManager,
     particleLayer: screensaverParticleLayer,
-    // 屏保开始/结束的事件钩子：屏保开始会清掉展示中的气泡（回归气泡改由
-    // OfflineReturnSystem 暂存补发），屏保结束时事件驱动 flush，不依赖游戏循环。
-    onScreensaverStart: () => offlineReturnSystem.handleScreensaverStart(),
+    // 屏保结束的事件钩子：屏保结束时事件驱动 flush 回归气泡，不依赖游戏循环。
     onScreensaverEnd: () => offlineReturnSystem.flushPendingReturnBubble(),
   });
   screensaverSystem.init();

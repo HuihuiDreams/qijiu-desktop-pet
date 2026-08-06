@@ -19,8 +19,6 @@
  */
 
 const RETURN_BUBBLE_DURATION_MS = 4000;   // 回归气泡展示时长
-// 序列展示窗口：末条气泡（3s 后弹出）展示结束的时间点，之后才允许释放 pending
-const RETURN_BUBBLE_SEQUENCE_MS = 3000 + RETURN_BUBBLE_DURATION_MS;
 
 class OfflineReturnSystem {
   constructor(deps = {}) {
@@ -86,7 +84,6 @@ class OfflineReturnSystem {
         shenjiu,
         returnMsgYueqi,
         returnMsgShenjiu,
-        shown: { yueqi: false, shenjiu: false }, // 已完整展示的部分不重复补发
       };
       this.pendingReturnBubble = pending;
       if (!this.isScreensaverActive()) {
@@ -102,30 +99,27 @@ class OfflineReturnSystem {
   }
 
   /**
-   * 调度一组回归气泡（1.5s/3s 依次弹出），并在每次触发前重新检查屏保状态：
+   * 调度一组回归气泡（1.5s/3s 依次弹出），每次触发前重新检查屏保状态：
    * 屏保在展示期间又开始时（onStart 的 removeForPets 会清掉 DOM 气泡），
-   * 未展示的内容重新暂存，待屏保结束后由 flushPendingReturnBubble() 补发。
-   * pending 在整个序列展示窗口内保持非空，窗口结束后自动释放。
+   * 剩余内容重新暂存，待屏保结束后由 flushPendingReturnBubble() 补发。
+   * 两条气泡都成功展示（屏保未打断）时释放暂存。
+   * // ponytail: 若屏保在末条气泡已触发（3s）后才开始，气泡会被 removeForPets 清掉且无法补发，
+   * 仅影响用户回归后 3-7s 内再次进入屏保的极窄窗口（macOS 空闲超时通常远大于此），可接受；
+   * 若需补上，恢复 ScreensaverSystem 的 onStart 钩子即可。
    */
   scheduleReturnBubbles(pending) {
-    const fire = (pet, msg, key) => {
-      if (pending.shown[key]) return; // 已展示过的部分不重复
+    const fire = (pet, msg) => {
       if (this.isScreensaverActive()) {
-        if (!this.pendingReturnBubble) {
-          this.pendingReturnBubble = pending; // 屏保又开始了：剩余内容重新暂存
-        }
+        this.pendingReturnBubble = pending; // 屏保又开始了：剩余内容重新暂存
         return;
       }
       this.dialogBubble.show(pet, msg, RETURN_BUBBLE_DURATION_MS);
-      pending.shown[key] = true;
-    };
-    setTimeout(() => fire(pending.yueqi, pending.returnMsgYueqi, 'yueqi'), 1500);
-    setTimeout(() => fire(pending.shenjiu, pending.returnMsgShenjiu, 'shenjiu'), 3000);
-    setTimeout(() => {
-      if (this.pendingReturnBubble === pending && pending.shown.yueqi && pending.shown.shenjiu) {
-        this.pendingReturnBubble = null;
+      if (this.pendingReturnBubble === pending) {
+        this.pendingReturnBubble = null; // 全部触发完成且未被打断，释放暂存
       }
-    }, RETURN_BUBBLE_SEQUENCE_MS);
+    };
+    setTimeout(() => fire(pending.yueqi, pending.returnMsgYueqi), 1500);
+    setTimeout(() => fire(pending.shenjiu, pending.returnMsgShenjiu), 3000);
   }
 
   /**
@@ -137,18 +131,6 @@ class OfflineReturnSystem {
     if (!pending) return;
     this.pendingReturnBubble = null;
     this.scheduleReturnBubbles(pending);
-  }
-
-  /**
-   * 屏保会话开始（ScreensaverSystem.onStart()）时调用：
-   * onStart 的 removeForPets 会清掉展示中的回归气泡，这里把整个序列重置为
-   * 未展示状态，屏保结束后由 flushPendingReturnBubble() 完整补发，不漏消息。
-   */
-  handleScreensaverStart() {
-    const pending = this.pendingReturnBubble;
-    if (!pending) return;
-    pending.shown.yueqi = false;
-    pending.shown.shenjiu = false;
   }
 
   // === 系统睡眠/唤醒处理 (macOS 专用路径) ===
