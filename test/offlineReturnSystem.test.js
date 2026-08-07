@@ -160,7 +160,7 @@ test('flushPendingReturnBubble shows buffered bubbles', () => {
     screensaverActive = false;
     system.flushPendingReturnBubble();
 
-    assert.equal(system.pendingReturnBubble, null); // Buffer cleared
+    assert.ok(system.pendingReturnBubble); // 补发序列在途时保留，供屏保再次打断后补发。
     assert.equal(scheduled.length, 2);
     assert.deepEqual(scheduled.map((s) => s.ms), [1500, 3000]);
     scheduled.forEach((s) => s.cb());
@@ -169,7 +169,7 @@ test('flushPendingReturnBubble shows buffered bubbles', () => {
       { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
-    assert.equal(system.pendingReturnBubble, null); // Released after full display
+    assert.equal(system.pendingReturnBubble, null); // 两条气泡都触发后释放
   });
 });
 
@@ -226,6 +226,34 @@ test('handleOfflineReturn re-buffers when the screensaver becomes active before 
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
     assert.equal(system.pendingReturnBubble, null);
+  });
+});
+
+test('flushPendingReturnBubble ignores the original callbacks after a short screensaver interruption', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    let screensaverActive = false;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => screensaverActive,
+    });
+    const system = new OfflineReturnSystem(deps);
+
+    system.handleOfflineReturn(1000);
+    screensaverActive = true;
+    scheduled[0].cb(); // 首条气泡发现屏保已开始，原序列应失效。
+
+    screensaverActive = false;
+    system.flushPendingReturnBubble(); // 屏保很快结束，补发一组新的序列。
+    scheduled[1].cb(); // 原序列的第二条回调不得再展示。
+    scheduled.slice(2).forEach((timer) => timer.cb());
+
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
   });
 });
 

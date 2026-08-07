@@ -44,6 +44,7 @@ class OfflineReturnSystem {
       ? deps.isScreensaverActive
       : () => false;
     this.pendingReturnBubble = null;
+    this.returnBubbleSequenceId = 0;
   }
 
   /**
@@ -102,19 +103,25 @@ class OfflineReturnSystem {
    * 调度一组回归气泡（1.5s/3s 依次弹出），每次触发前重新检查屏保状态：
    * 屏保在展示期间又开始时（onStart 的 removeForPets 会清掉 DOM 气泡），
    * 剩余内容重新暂存，待屏保结束后由 flushPendingReturnBubble() 补发。
-   * 两条气泡都成功展示（屏保未打断）时释放暂存。
+   * 同一序列的两个回调都成功展示（屏保未打断）时释放暂存。
    * // ponytail: 若屏保在末条气泡已触发（3s）后才开始，气泡会被 removeForPets 清掉且无法补发，
    * 仅影响用户回归后 3-7s 内再次进入屏保的极窄窗口（macOS 空闲超时通常远大于此），可接受；
    * 若需补上，恢复 ScreensaverSystem 的 onStart 钩子即可。
    */
   scheduleReturnBubbles(pending) {
+    const sequenceId = ++this.returnBubbleSequenceId;
+    let shownCount = 0;
     const fire = (pet, msg) => {
+      if (sequenceId !== this.returnBubbleSequenceId || this.pendingReturnBubble !== pending) {
+        return;
+      }
       if (this.isScreensaverActive()) {
-        this.pendingReturnBubble = pending; // 屏保又开始了：剩余内容重新暂存
+        this.returnBubbleSequenceId++; // 让同组尚未触发的旧回调失效，等待屏保结束后重排。
         return;
       }
       this.dialogBubble.show(pet, msg, RETURN_BUBBLE_DURATION_MS);
-      if (this.pendingReturnBubble === pending) {
+      shownCount++;
+      if (shownCount === 2) {
         this.pendingReturnBubble = null; // 全部触发完成且未被打断，释放暂存
       }
     };
@@ -129,7 +136,7 @@ class OfflineReturnSystem {
   flushPendingReturnBubble() {
     const pending = this.pendingReturnBubble;
     if (!pending) return;
-    this.pendingReturnBubble = null;
+    this.returnBubbleSequenceId++;
     this.scheduleReturnBubbles(pending);
   }
 

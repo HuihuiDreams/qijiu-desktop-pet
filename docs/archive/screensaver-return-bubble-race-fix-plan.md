@@ -3,7 +3,7 @@
 > 状态：已完成  
 > 最后更新：2026-08-06  
 > 关联 Bug：macOS 开盖后屏保仍在播放，但宠物已弹出「你走了 X 个时辰」  
-> 备注：代码评审后追加了“加固”改动（见文末「评审加固」），本计划的任务描述以最终实现为准。
+> 备注：代码评审后追加了“加固”改动；随后又进行了简化与序列令牌修正，当前实现以文末「后续简化与序列令牌修正」为准。
 
 ---
 
@@ -302,14 +302,18 @@
 
 原方案在游戏循环中检测屏保退出边沿；窗口隐藏/最小化时 rAF 暂停，暂存气泡要等窗口重新可见才弹出。改为由 `ScreensaverSystem.reset()`（屏保结束的事件驱动路径）直接触发 flush，不依赖循环调度。
 
+## 后续简化与序列令牌修正（2026-08-07）
+
+本归档中 H-1 记录的是当时采用 `shown`、`onScreensaverStart` 与展示窗口计时器的加固方案，已被后续实现替代。当前代码保留 `scheduleReturnBubbles()`，用 `returnBubbleSequenceId` 让屏保打断前的旧定时器失效；`pendingReturnBubble` 仅在当前序列的两条回调都成功触发后才释放。该令牌也覆盖了“屏保很快结束、flush 已调度补发，但旧的第二条回调仍待执行”的交错情形，避免重复展示。
+
 ### 行为变更说明
 
-- 屏保不活跃且序列在途时，`pendingReturnBubble` 从「始终为 null」变为「保留至展示窗口结束」，这是保证补发数据不丢失的必要代价；
-- `ScreensaverSystem` 新增两个可选注入回调（缺省为空操作），所有既有测试无需改动。
+- 屏保不活跃且序列在途时，`pendingReturnBubble` 从「始终为 null」变为「保留至当前序列两条回调均成功触发」，这是保证补发数据不丢失的必要代价；
+- `ScreensaverSystem` 保留 `onScreensaverEnd` 回调；`OfflineReturnSystem.returnBubbleSequenceId` 使补发后仍待执行的旧回调成为无操作。
 
 ### 相关测试
 
-- `test/offlineReturnSystem.test.js`：新增「触发时重检重新暂存」「屏保开始重置 shown 标记」「flush 无暂存无操作」等用例；
+- `test/offlineReturnSystem.test.js`：覆盖「触发时重检重新暂存」「短暂屏保结束后旧回调失效」「flush 无暂存无操作」等用例；
 - 全套 `npm test` 通过。
 
 ## Risks and Mitigations
@@ -319,7 +323,7 @@
 | `screensaverSystem` 在 `OfflineReturnSystem` 构造时尚未创建 | Low | `isScreensaverActive` 是闭包，运行时才求值；且两者都在同一 `async` 函数内顺序创建 |
 | 屏保持续播放很久时气泡大幅延迟 | Low | 合理行为 — 用户此时不在看；且气泡暂存只保留最新一份 |
 | 屏保被 cancel（静默取消）时无 runningBack 动画 | None | `reset()` 事件钩子不区分退出方式，cancel 同样触发 flush |
-| 屏保在序列展示窗口内重复开始（补发消息可能重复） | Low | `shown` 标记只补发未展示部分；重复仅发生在消息曾被 removeForPets 清掉（消息丢失风险大于重复） |
+| 屏保在序列展示期间重复开始 | Low | `returnBubbleSequenceId` 会使旧回调失效；当前暂存序列在屏保结束后重新调度 |
 
 ## Testing Strategy
 
