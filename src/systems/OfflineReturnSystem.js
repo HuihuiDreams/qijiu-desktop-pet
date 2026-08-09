@@ -49,19 +49,12 @@ class OfflineReturnSystem {
 
   /**
    * 保存两只宠物当前状态 + 当前皮肤 + lastVisibleTime。
+   * 保存前刷新 lastVisibleTime（文档可见时），确保时辰计算不基于陈旧时间戳。
    */
-  /**
-   * 刷新"用户上次可见"时间戳。游戏循环在正常模式（非暂停/非屏保/可见）时周期性调用，
-   * 确保保存的 lastVisibleTime 始终是用户最近一次盯着桌宠的真实时刻。
-   */
-  refreshLastVisibleTime() {
+  saveCurrentState() {
     if (this.isDocumentVisible()) {
       this.lastVisibleTime = this.now();
     }
-  }
-
-  saveCurrentState() {
-    this.refreshLastVisibleTime();
     const [yueqi, shenjiu] = this.getPets();
     return this.timeSystem.save(yueqi, shenjiu, this.skinManager.getCurrentSkin(), this.lastVisibleTime);
   }
@@ -103,11 +96,7 @@ class OfflineReturnSystem {
       }
     }
 
-    if (isUserPresent) {
-      this.lastVisibleTime = this.now();
-    }
-
-    this.saveCurrentState();
+    this.saveCurrentState(); // saveCurrentState 内部刷新 lastVisibleTime（用户在场时）
   }
 
   /**
@@ -157,10 +146,7 @@ class OfflineReturnSystem {
   // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
 
   handleSystemSuspend() {
-    if (this.isDocumentVisible()) {
-      this.lastVisibleTime = this.now();
-    }
-    this.saveCurrentState(); // 睡前即时存档，锁定新鲜 timestamp
+    this.saveCurrentState(); // 睡前即时存档，saveCurrentState 内部刷新 lastVisibleTime（文档可见时）
   }
 
   handleSystemResume(data) {

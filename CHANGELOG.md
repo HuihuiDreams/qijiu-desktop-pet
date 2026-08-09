@@ -17,6 +17,7 @@
 - 补充并大幅提升主进程核心服务模块（`TrayManager.js`, `PetWindow.js`, `SkinService.js`）的单元测试覆盖率，均提升至 80%~100%，包括完整的状态机流转、IPC 消息发送校验及界面行为验证。同时利用 `Module.prototype.require` 拦截技术在 Node.js 中安全地 Mock 了 `electron` 环境，保持生产代码的原味与整洁。
 - 补齐 `WeatherSyncController`、`SkinSelectorWindow`、`i18nHelpers`、`AmbientDialogueSystem` 四个模块的单元测试覆盖（共新增 32 个用例），覆盖此前未测试的 IPC handler、blur-close 状态机、DOM 操作分支及时段闲聊等缺失分支。
 - 重构测试文件：提取 `test/helpers/mockElectron.js` 集中管理 `Module.prototype.require` 补丁并配合 `test.after()` 即时还原，消除各测试文件由于 Node.js 测试并发执行导致的副作用污染隐患；重构 `weatherSyncController.behavior.test.js`，提取共用的 Timer Stub helper，消除近 20 行重复代码，提升测试整洁度。
+- 简化 `OfflineReturnSystem` 中 `lastVisibleTime` 的刷新逻辑：删除 `handleOfflineReturn`/`handleSystemSuspend` 中的冗余直接赋值及一次性的 `refreshLastVisibleTime()` 方法，统一内联进 `saveCurrentState()`，在每次保存前刷新（文档不可见时不刷新），确保时辰计算不基于陈旧时间戳。
 
 ## [0.10.1] - 2026-08-04
 
