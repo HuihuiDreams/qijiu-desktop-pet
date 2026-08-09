@@ -17,7 +17,10 @@ const electronMock = {
   }
 };
 
-let mockApp, mockMenu, mockTrayInstance, mockScreen;
+let mockApp = { getVersion: () => '1.0.0', isPackaged: true, quit: () => {} };
+let mockMenu = { buildFromTemplate: (template) => template };
+let mockScreen = { getAllDisplays: () => [{ id: 1 }, { id: 2 }] };
+let mockTrayInstance;
 
 const originalRequire = Module.prototype.require;
 Module.prototype.require = function(id) {
@@ -84,9 +87,12 @@ function withPlatform(platform, fn) {
 
 test('TrayManager - Full Coverage', async (t) => {
   t.beforeEach(() => {
-    mockApp = { getVersion: () => '1.0.0', isPackaged: true, quit: () => {} };
-    mockMenu = { buildFromTemplate: (template) => template };
-    mockScreen = { getAllDisplays: () => [{ id: 1 }, { id: 2 }] };
+    // Mutate in-place so TrayManager's captured `app` reference stays valid
+    mockApp.getVersion = () => '1.0.0';
+    mockApp.isPackaged = true;
+    mockApp.quit = () => {};
+    mockMenu.buildFromTemplate = (template) => template;
+    mockScreen.getAllDisplays = () => [{ id: 1 }, { id: 2 }];
     mockTrayInstance = null;
   });
 
