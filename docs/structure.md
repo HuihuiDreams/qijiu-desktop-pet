@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-07-28
+最后更新：2026-08-09
 
 ## 1. 架构总览
 
@@ -148,8 +148,8 @@ qijiu-desktop-pet/
 │  ├─ afterPack.js                      # Electron Builder 打包后处理
 │  ├─ check_adrs.js                     # ADR 格式检查脚本
 │  ├─ convert_images.js                 # 图片转换维护脚本
-│  ├─ fix_adrs.js / fix_adrs.py         # ADR 标题格式修复脚本
-│  ├─ generate_replacements.js          # ADR 标题替换片段生成脚本
+│  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
+│  ├─ run-tests.js                      # 测试运行入口
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
@@ -229,6 +229,8 @@ qijiu-desktop-pet/
 │  │  ├─ startupProbeMain.js             # 在真实 main.js 前安装无侵入启动计时探针
 │  │  └─ validateBaseline.js             # 正式基线协议、组合完整性和进程指标校验
 │  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本
+│  ├─ scratch_check_adrs.js             # ADR 格式批量检查脚本 (Node.js)
+│  ├─ scratch_check_adrs.py             # ADR 格式批量检查脚本 (Python)
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
@@ -396,7 +398,7 @@ src/assets/{skinId}/
 
 ### 3.13 轻量番茄钟
 
-轻量番茄钟是本地陪伴型倒计时功能，不是监督型专注检测。设计计划记录在 [cangqiong-pomodoro-plan.md](./plan/cangqiong-pomodoro-plan.md)。
+轻量番茄钟是本地陪伴型倒计时功能，不是监督型专注检测。设计计划记录在 [cangqiong-pomodoro-plan.md](./archive/cangqiong-pomodoro-plan.md)。
 
 - `src/systems/PomodoroSystem.js` 是纯倒计时状态机，使用 `startedAt`、`durationMs` 和 `endAt` 推导 `remainingMs` 与 `progress`，避免依赖 interval 累计。
 - `windows/PomodoroWindow.js` 拥有番茄钟窗口生命周期、`services/PomodoroService.js` 拥有会话状态机：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。

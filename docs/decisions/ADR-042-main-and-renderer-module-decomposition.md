@@ -1,12 +1,12 @@
 # ADR-042: 主进程与渲染进程巨石文件拆分方案（Main & Renderer Module Decomposition）
 
-## Status (状态)
+## Status
 已接受，Phase 0 落地（Accepted, Phase 0 landed）
 
-## Date (日期)
+## Date
 2026-07-20
 
-## Context (背景)
+## Context
 项目当前存在两个持续膨胀的“巨石文件”：
 
 1. **`src/main/AppLifecycle.js`**（约 1608 行）— 主进程的“上帝模块”。真正的 `class AppLifecycle` 本体只有约 200 行，其余是约 25 个模块级共享 `let` 状态、大量自由函数，以及 `require` 时就会执行的顶层 `ipcMain` 注册。职责横跨多屏几何、皮肤管理、番茄钟、天气同步、宠物可见性状态机、会议检测、退出前保存、更新进度窗口等十余个互不相关的领域。
@@ -14,7 +14,7 @@
 
 这两个文件的体量与职责密度使得每次小改动都伴随较高的回归风险（历史上已发生多次“重构引入功能回归、靠事后补测试修复”的教训，详见 `CHANGELOG.md` `[Unreleased]` 中“主进程架构重构与模块化”条目下的修复列表）。同时，仓库里已有 10+ 个主进程测试通过手写字符串拼接 `main.js + AppLifecycle.js + TrayManager.js`（甚至有个别文件重复拼接同一文件）来做源码级字符串/正则断言，这种写法与代码的物理位置强绑定：以后任何一次“把某段逻辑从 AppLifecycle.js 挪到独立模块”的搬迁，都要求同步修改这些测试的文件路径拼接，形成了阻碍渐进式重构的“测试位置耦合”。
 
-## Decision (决策)
+## Decision
 
 我们决定不引入打包工具（webpack / vite / esbuild 等），保持项目现有的“零构建步骤、`<script>` 标签直连”架构，采用两套已在代码库中验证过的既有拆分模式，将两个巨石文件渐进式地拆解为若干职责单一的模块：
 
@@ -36,7 +36,7 @@
    - 所有原先手写 `main.js + AppLifecycle.js + TrayManager.js`（及个别文件额外拼接的窗口模块）做字符串/正则断言的测试统一改为调用 `readMainProcessSource()`，使这些断言与被断言逻辑的具体文件位置解耦——后续把某段逻辑从 `AppLifecycle.js` 搬到独立的 `src/main/services/*.js` 模块时，这些测试原则上不需要再修改。
    - 少数需要校验“逻辑确实位于某个具体文件”的安全/回归类测试（例如 `finalSaveBeforeQuit`、`statusWindowRegression`、`updateProgressSecurity` 等对精确文件级断言有意保留的用例）不纳入本次统一改造，继续使用各自的单文件/精确路径读取——文件精确性在这些场景下本身就是被测试的特性，会在对应的搬迁阶段单独更新读取目标。
 
-## Consequences (影响)
+## Consequences
 
 - 正面：
   - 主进程与渲染进程都能按阶段（一个模块一个原子提交）渐进式拆分，每个阶段结束后应用可运行、`npm test` 全绿，止损点清晰。
@@ -48,7 +48,7 @@
   - `TrayManager.init(...)` 传入的依赖对象形状（约 36 个回调，定义于 `AppLifecycle.js`）在整个拆分过程中必须保持冻结，只允许把回调背后的实现重新指向新模块，精简该依赖对象的工作明确排除在本次重构范围之外。
   - IPC 通道名、`electron-store` 的 store key、IPC payload 结构、各类定时器间隔在整个拆分过程中全程冻结，不随文件搬迁发生任何行为变化。
 
-## Alternatives Considered (替代方案)
+## Alternatives Considered
 
 - **引入打包器（webpack/vite/esbuild）统一模块化**：可以获得更标准的 ES Module 语法和更强的静态分析能力，但会显著偏离项目现有的零构建步骤架构，增加构建配置、调试映射与打包体积的维护成本，且与当前“单文件对应单 `<script>` 标签”的简单心智模型冲突，本次不采纳。
 - **一次性整体重写两个巨石文件**：理论上可以更快达到目标终态，但两个文件历史上已多次证明“大范围一次性重构容易引入难以定位的行为回归”（见 `CHANGELOG.md` 中的相关修复记录），且难以在中途设置可靠的止损点。本次采纳分阶段、每阶段独立可提交可验证的渐进式路径。

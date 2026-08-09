@@ -1,4 +1,4 @@
-﻿# ADR-025: 更新进度弹窗与本地打包更新测试
+# ADR-025: 更新进度弹窗与本地打包更新测试
 
 ## Status
 Accepted; update progress window implementation superseded by ADR-014/ADR-029 hardening
@@ -67,7 +67,7 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
 - 本地更新验证需要构建并安装测试包，但不需要发布真实 Release。
 - 某些 Windows 环境中，`127.0.0.1:8765` 可能被本机软件占用或拦截。本机测试中 `127.0.0.1` 返回 `ERR_EMPTY_RESPONSE`，因此测试配置使用 `localhost:8765`。
 
-## 验证 (Verification)
+## Verification
 - `npm test` 已通过，覆盖了检查中 UI、开始下载、下载进度更新和进度窗口关闭。
 - 已手动验证本地 packaged 更新流程：
   - `npm run build -- --config docs/archive/electron-builder.update-test-old.yml`
@@ -76,7 +76,7 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
   - 安装 `dist-update-test/old/qijiu-update-test-setup-0.3.1.exe`
   - 触发检查更新，并下载伪新版本 `0.3.2`
 
-## 涉及文件 (Files Changed)
+## Files Changed
 | 文件 | 用途 |
 |---|---|
 | `updateManager.js` | 增加可注入的进度 UI 适配器和生命周期调用。 |
