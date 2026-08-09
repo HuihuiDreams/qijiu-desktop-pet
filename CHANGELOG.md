@@ -6,11 +6,13 @@
 
 ### Fixed
 - 修复了 macOS 开盖唤醒后，离线回归气泡（“你走了 X 个时辰”）与 CP 屏保退场动画可能同时出现的时序竞态问题；现在回归气泡会等待屏保安全退出后再自然弹出，同时宠物离线衰减仍能实时生效。
+- 补齐 DI 重构配套的 `TrayManager`/`PetWindow` 单元测试 mock：为 `webContents` 补上 `isDestroyed()`（`isSenderMainWindow` 鉴权路径需要），并为托盘番茄钟标签断言补充 `trayPomodoroRunning`/`trayPomodoroCompleted`/`trayMinuteUnit` 三个 I18N 键，修正新测试中与真实降级路径不一致的断言，全量测试恢复通过。
 - 加固屏保与回归气泡的时序协调：回归气泡序列在展示前重新检查屏保状态（屏保重新触发时重新暂存而非直接展示），序列在途期间保留暂存数据，屏保开始清掉展示中气泡时整组重置为未展示、屏保结束后补发，确保任何屏保时序下都不漏消息；flush 改为由 `ScreensaverSystem.reset()` 事件驱动触发，不再依赖游戏循环的 rAF 边沿检测（窗口隐藏时暂存气泡也能在屏保结束后及时补发）。详见 [评审加固文档](./docs/archive/screensaver-return-bubble-race-fix-plan.md)。
 - 修复屏保短暂打断回归气泡序列后，原有定时器仍会与补发序列重叠、导致沈九台词重复的问题；现在用序列编号使旧回调失效，并在两条气泡都成功触发后才释放暂存数据。
 
 ### Changed
 - 简化离线回归气泡的暂存逻辑：删除 `shown` 状态追踪与 `RETURN_BUBBLE_SEQUENCE_MS` 展示窗口计时器，同时移除 `ScreensaverSystem` 的 `onScreensaverStart` 注入钩子与 `OfflineReturnSystem.handleScreensaverStart()`；现在两条回归气泡的 `setTimeout` 在触发时各自重检屏保状态，被打断即把剩余内容重新暂存、屏保结束后补发，全部触发成功即释放暂存（`scheduleReturnBubbles()` 保留为两条定时器的共享实现）。已知边界：屏保在末条气泡已触发后才开始（用户回归后 3-7 秒内再次闲置）时，展示中的气泡被清除且不再补发，属可接受的极窄窗口。
+- 补充并大幅提升主进程核心服务模块（`TrayManager.js`, `PetWindow.js`, `SkinService.js`）的单元测试覆盖率，均提升至 80%~100%，包括完整的状态机流转、IPC 消息发送校验及界面行为验证。同时利用 `Module.prototype.require` 拦截技术在 Node.js 中安全地 Mock 了 `electron` 环境，保持生产代码的原味与整洁。
 
 ## [0.10.1] - 2026-08-04
 

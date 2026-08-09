@@ -459,6 +459,9 @@ npm run test:font
 - `test/finalSaveService.behavior.test.js`：最终保存 ACK 的 sender/requestId 校验、超时清理、重复关闭抑制和已销毁窗口降级。
 - `test/weatherSyncController.behavior.test.js`：持久化设置读取、异步设置竞争、天气消息下发和禁用分支。
 - `test/meetingDetectorController.behavior.test.js`：会议开始/结束回调转发、检测器替换和不支持平台门控。
+- `test/trayManager.test.js`：托盘菜单结构、各菜单项交互、语言切换与番茄钟托盘标签状态流转（依赖 `getPomodoroSnapshot()` 驱动 running/completed/idle 三种标签）。
+- `test/petWindow.test.js`：宠物窗口 IPC 注册、`set-ignore-mouse-events` 发件方鉴权与鼠标穿透开关归一化。
+- `test/skinService.test.js`：皮肤扫描/缓存、当前皮肤状态、选肤器请求鉴权与番茄钟素材解析。
 
 ### 4.3 其他自动化覆盖
 
