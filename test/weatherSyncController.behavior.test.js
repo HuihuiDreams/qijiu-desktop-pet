@@ -187,3 +187,229 @@ test('WeatherSyncController tells the renderer to deactivate weather without fet
   assert.equal(fetchCalled, false);
   assert.deepEqual(sent, [['weather-update', { active: false }]]);
 });
+
+test('set-city-name rejects non-string input', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async () => {},
+  });
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  Controller.init(deps);
+
+  assert.deepEqual(await ipcMain.handlers['set-city-name'](null, 123), { success: false });
+  assert.deepEqual(await ipcMain.handlers['set-city-name'](null, '  '), { success: false });
+});
+
+test('set-city-name success: geocode passes, saves, starts sync, returns { success: true, city }', async () => {
+  const ipcMain = createIpcMain();
+  let fetchCalled = false;
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => { fetchCalled = true; return { active: true }; },
+    processSettingsChange: async (settings) => ({
+      ...settings,
+      lat: 35.68,
+      lon: 139.76,
+      city: 'Tokyo'
+    }),
+  });
+  const { deps, storedSettings, getTrayRefreshCount } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
+  Controller.init(deps);
+
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  global.setInterval = () => 1;
+  global.clearInterval = () => {};
+  try {
+    const result = await ipcMain.handlers['set-city-name'](null, 'Tokyo');
+    // startWeatherSync is async, wait a tick for fetchWeather to complete
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual(result, { success: true, city: 'Tokyo' });
+    assert.equal(storedSettings().city, 'Tokyo');
+    assert.ok(getTrayRefreshCount() > 0);
+    assert.equal(fetchCalled, true);
+  } finally {
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+  }
+});
+
+test('set-city-name geocode failure: lat/lon remain null -> { success: false }', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => ({
+      ...settings,
+      lat: null,
+      lon: null,
+    }),
+  });
+  const { deps, storedSettings } = createDependencies(DEFAULT_SETTINGS);
+  Controller.init(deps);
+
+  const result = await ipcMain.handlers['set-city-name'](null, 'UnknownCity');
+  assert.deepEqual(result, { success: false });
+  assert.equal(storedSettings().city, '');
+});
+
+test('set-city-name processSettingsChange throws -> { success: false }', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async () => { throw new Error('Network error'); },
+  });
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  Controller.init(deps);
+
+  const result = await ipcMain.handlers['set-city-name'](null, 'Tokyo');
+  assert.deepEqual(result, { success: false });
+});
+
+test('store.onDidChange callback ignores falsy newValue', () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, storeListeners } = createDependencies(DEFAULT_SETTINGS);
+  Controller.init(deps);
+  
+  storeListeners.weatherSyncSettings(null);
+  assert.equal(Controller.getWeatherSyncSettings().city, '');
+});
+
+test('store.onDidChange callback triggers updateWeatherSyncSettings for truthy values', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, storeListeners } = createDependencies(DEFAULT_SETTINGS);
+  Controller.init(deps);
+
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  global.setInterval = () => 1;
+  global.clearInterval = () => {};
+  try {
+    storeListeners.weatherSyncSettings({ ...DEFAULT_SETTINGS, city: 'Osaka' });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(Controller.getWeatherSyncSettings().city, 'Osaka');
+  } finally {
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+  }
+});
+
+test('get-city-settings returns empty string when city is not set', () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
+  Controller.init(deps);
+
+  assert.deepEqual(ipcMain.handlers['get-city-settings'](), { city: '' });
+});
+
+test('getStoredWeatherSyncSettings returns defaults when store is unavailable', () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  deps.StoreManager.getStore = () => null;
+  Controller.init(deps);
+
+  const settings = Controller.getStoredWeatherSyncSettings();
+  assert.equal(settings.schemaVersion, 1);
+  assert.equal(settings.city, '');
+});
+
+test('saveWeatherSyncSettings returns defaults when store is unavailable', () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  deps.StoreManager.getStore = () => null;
+  Controller.init(deps);
+
+  const result = Controller.saveWeatherSyncSettings({ city: 'Test' });
+  assert.equal(result.city, '');
+});
+
+test('startWeatherSync clears an existing interval timer before starting a new one', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
+  Controller.init(deps);
+
+  let cleared = 0;
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  global.setInterval = () => 1;
+  global.clearInterval = () => { cleared += 1; };
+  try {
+    await Controller.startWeatherSync();
+    await Controller.startWeatherSync();
+    assert.equal(cleared, 1);
+  } finally {
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+  }
+});
+
+test('startWeatherSync does not send weather-update when mainWindow is destroyed (disabled path)', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {},
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent } = createDependencies(DEFAULT_SETTINGS);
+  deps.windowManager.mainWindow.isDestroyed = () => true;
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.deepEqual(sent, []);
+});
+
+test('doFetch does not send weather-update when fetchWeather returns null', async () => {
+  const ipcMain = createIpcMain();
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => null,
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
+  Controller.init(deps);
+
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  global.setInterval = () => 1;
+  global.clearInterval = () => {};
+  try {
+    await Controller.startWeatherSync();
+    assert.deepEqual(sent, []);
+  } finally {
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+  }
+});

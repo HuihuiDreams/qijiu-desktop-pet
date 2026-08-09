@@ -179,3 +179,80 @@ test('showNightDream triggers a linked reply from yueqi when shenjiu dreams and 
     }
   });
 });
+
+test('showNightDream uses highAffection pool when affection >= 80', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, shenjiu } = makeDeps({
+      getDialogues: () => ({
+        dream: { lowAffection: {}, highAffection: { shenjiu: ['high-affection-dream'] }, linked: {} },
+      }),
+    });
+    shenjiu.stats.affection = 90;
+    const system = new AmbientDialogueSystem(deps);
+    system.showNightDream(shenjiu);
+    assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'high-affection-dream', duration: 5000 }]);
+  });
+});
+
+test('showNightDream falls back to t() when dreamPool exists but poolCategory has no entry for the pet', () => {
+  const { deps, calls, shenjiu } = makeDeps({
+    getDialogues: () => ({
+      dream: { lowAffection: {}, highAffection: {}, linked: {} },
+    }),
+  });
+  const system = new AmbientDialogueSystem(deps);
+  system.showNightDream(shenjiu);
+  assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'T:nightShenjiu', duration: 5000 }]);
+});
+
+test('update fires day-phase chatter', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, shenjiu } = makeDeps();
+    shenjiu.timePhase = 'day';
+    const system = new AmbientDialogueSystem(deps);
+    const maxTimer = Math.max(system.chatterTimer, system.statWarningTimer);
+    system.update(maxTimer);
+    assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'T:dayShenjiu', duration: 5000 }]);
+  });
+});
+
+test('update fires dusk-phase chatter', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, shenjiu } = makeDeps();
+    shenjiu.timePhase = 'dusk';
+    const system = new AmbientDialogueSystem(deps);
+    const maxTimer = Math.max(system.chatterTimer, system.statWarningTimer);
+    system.update(maxTimer);
+    assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'T:duskShenjiu', duration: 5000 }]);
+  });
+});
+
+test('update fires evening-phase chatter', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, shenjiu } = makeDeps();
+    shenjiu.timePhase = 'evening';
+    const system = new AmbientDialogueSystem(deps);
+    const maxTimer = Math.max(system.chatterTimer, system.statWarningTimer);
+    system.update(maxTimer);
+    assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'T:eveningShenjiu', duration: 5000 }]);
+  });
+});
+
+test('chatter skips busy pet', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, shenjiu } = makeDeps();
+    shenjiu.isBusy = () => true;
+    const system = new AmbientDialogueSystem(deps);
+    const maxTimer = Math.max(system.chatterTimer, system.statWarningTimer);
+    system.update(maxTimer);
+    assert.deepEqual(calls.show, []);
+    assert.deepEqual(calls.showIdleChatter, []);
+  });
+});
+
+test('constructor falls back to identity function when deps.t is not a function', () => {
+  const { deps } = makeDeps({ t: 'not-a-function' });
+  const system = new AmbientDialogueSystem(deps);
+  assert.equal(system.t('some-key'), 'some-key');
+});
+

@@ -147,3 +147,127 @@ test('an active DeskPet app keeps the selector open when macOS reports no focuse
   assert.equal(selectorWindow.closeCalls, 0);
   assert.equal(windowManager.skinSelectorWindow, selectorWindow);
 });
+
+test('sendSkinSelectorData returns immediately when window is null or destroyed', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  assert.doesNotThrow(() => skinSelectorWindow.sendSkinSelectorData());
+});
+
+test('sendSkinSelectorData sends gallery data with isSelected correctly marked', () => {
+  const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow();
+  
+  skinSelectorWindow.init({
+    getCurrentSkinId: () => 'skin-b',
+    getSkinGalleryItems: () => [
+      { id: 'skin-a' },
+      { id: 'skin-b' },
+    ],
+    selectSkin: () => {},
+  });
+
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  let sentData = null;
+  win.webContents.send = (channel, data) => {
+    if (channel === 'skin-selector-data') sentData = data;
+  };
+
+  skinSelectorWindow.sendSkinSelectorData();
+
+  assert.ok(sentData);
+  assert.equal(sentData.length, 2);
+  assert.equal(sentData[0].isSelected, false);
+  assert.equal(sentData[1].isSelected, true);
+});
+
+test('openSkinSelectorWindow reuses existing window and refreshes data on second call', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win1 = skinSelectorWindow.openSkinSelectorWindow();
+  
+  let sendCalls = 0;
+  win1.webContents.send = (channel) => {
+    if (channel === 'skin-selector-data') sendCalls++;
+  };
+
+  const win2 = skinSelectorWindow.openSkinSelectorWindow();
+  
+  assert.equal(win1, win2);
+  assert.equal(sendCalls, 1);
+});
+
+test('cancelSkinSelection reverts to original skin when preview changed the skin', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  
+  let selectedSkin = null;
+  skinSelectorWindow.init({
+    getCurrentSkinId: () => 'skin-b',
+    getSkinGalleryItems: () => [],
+    selectSkin: (id) => { selectedSkin = id; },
+  });
+
+  skinSelectorWindow.setSkinSelectorOriginalSkinId('skin-a');
+  skinSelectorWindow.closeSkinSelectorWindow();
+  
+  assert.equal(selectedSkin, 'skin-a');
+  assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), null);
+});
+
+test('closeSkinSelectorWindow re-entrance protection: second call is a no-op', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  
+  win.close = () => {
+    win.closeCalls += 1;
+    skinSelectorWindow.closeSkinSelectorWindow();
+    win.destroyed = true;
+  };
+
+  skinSelectorWindow.closeSkinSelectorWindow();
+  assert.equal(win.closeCalls, 1);
+});
+
+test('closeSkinSelectorWindow when window is already null/destroyed resets closeInProgress', () => {
+  const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow();
+  windowManager.skinSelectorWindow = null;
+  assert.doesNotThrow(() => skinSelectorWindow.closeSkinSelectorWindow());
+});
+
+test('scheduleBlurClose does not schedule when close is already in progress', async () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  
+  win.close = () => {
+    win.closeCalls += 1;
+  };
+
+  skinSelectorWindow.closeSkinSelectorWindow();
+  win.listeners.blur();
+  
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(win.closeCalls, 1);
+});
+
+test('scheduleBlurClose does not schedule when a DeskPet window is focused', async () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  
+  windowManager.mainWindow = {};
+  setFocusedWindow(windowManager.mainWindow);
+  
+  win.listeners.blur();
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  
+  assert.equal(win.closeCalls, 0);
+});
+
+test('getter/setter verification', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  
+  skinSelectorWindow.setSkinSelectorSelectionInProgress(true);
+  assert.equal(skinSelectorWindow.isSkinSelectorSelectionInProgress(), true);
+  
+  skinSelectorWindow.setSkinSelectorSelectionInProgress(false);
+  assert.equal(skinSelectorWindow.isSkinSelectorSelectionInProgress(), false);
+  
+  skinSelectorWindow.setSkinSelectorOriginalSkinId('test-skin');
+  assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'test-skin');
+});
