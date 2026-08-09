@@ -59,15 +59,13 @@ const electronMock = {
   }
 };
 
-const originalRequire = Module.prototype.require;
-Module.prototype.require = function(id) {
-  if (id === 'electron') return electronMock;
-  return originalRequire.apply(this, arguments);
-};
+const { setupElectronMock } = require('./helpers/mockElectron');
+const restoreRequire = setupElectronMock(electronMock);
 
 const windowManager = require('../src/main/windows/WindowManager');
 const citySettingWindowModule = require('../src/main/windows/CitySettingWindow');
 const PetWindow = require('../src/main/windows/PetWindow');
+test.after(() => restoreRequire());
 
 function createMockDeps() {
   return {

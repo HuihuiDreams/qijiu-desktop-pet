@@ -13,6 +13,17 @@ const DEFAULT_SETTINGS = {
   schemaVersion: 1,
 };
 
+const _realSetInterval = global.setInterval;
+const _realClearInterval = global.clearInterval;
+function stubTimers() {
+  global.setInterval = () => 1;
+  global.clearInterval = () => {};
+}
+function restoreTimers() {
+  global.setInterval = _realSetInterval;
+  global.clearInterval = _realClearInterval;
+}
+
 function createIpcMain() {
   const handlers = {};
   return {
@@ -218,10 +229,7 @@ test('set-city-name success: geocode passes, saves, starts sync, returns { succe
   const { deps, storedSettings, getTrayRefreshCount } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
   Controller.init(deps);
 
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  global.setInterval = () => 1;
-  global.clearInterval = () => {};
+  stubTimers();
   try {
     const result = await ipcMain.handlers['set-city-name'](null, 'Tokyo');
     // startWeatherSync is async, wait a tick for fetchWeather to complete
@@ -231,8 +239,7 @@ test('set-city-name success: geocode passes, saves, starts sync, returns { succe
     assert.ok(getTrayRefreshCount() > 0);
     assert.equal(fetchCalled, true);
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    restoreTimers();
   }
 });
 
@@ -293,17 +300,13 @@ test('store.onDidChange callback triggers updateWeatherSyncSettings for truthy v
   const { deps, storeListeners } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  global.setInterval = () => 1;
-  global.clearInterval = () => {};
+  stubTimers();
   try {
     storeListeners.weatherSyncSettings({ ...DEFAULT_SETTINGS, city: 'Osaka' });
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(Controller.getWeatherSyncSettings().city, 'Osaka');
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    restoreTimers();
   }
 });
 
@@ -401,15 +404,11 @@ test('doFetch does not send weather-update when fetchWeather returns null', asyn
   const { deps, sent } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
   Controller.init(deps);
 
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  global.setInterval = () => 1;
-  global.clearInterval = () => {};
+  stubTimers();
   try {
     await Controller.startWeatherSync();
     assert.deepEqual(sent, []);
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    restoreTimers();
   }
 });

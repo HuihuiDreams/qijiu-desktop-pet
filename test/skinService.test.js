@@ -24,13 +24,11 @@ const mockElectron = {
   app: mockApp
 };
 
-const originalRequire = Module.prototype.require;
-Module.prototype.require = function(id) {
-  if (id === 'electron') return mockElectron;
-  return originalRequire.apply(this, arguments);
-};
+const { setupElectronMock } = require('./helpers/mockElectron');
+const restoreRequire = setupElectronMock(mockElectron);
 
 const SkinService = require('../src/main/services/SkinService');
+test.after(() => restoreRequire());
 
 const mockSkinSelectorWindow = {
   destroyed: false,

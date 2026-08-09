@@ -22,13 +22,11 @@ let mockMenu = { buildFromTemplate: (template) => template };
 let mockScreen = { getAllDisplays: () => [{ id: 1 }, { id: 2 }] };
 let mockTrayInstance;
 
-const originalRequire = Module.prototype.require;
-Module.prototype.require = function(id) {
-  if (id === 'electron') return electronMock;
-  return originalRequire.apply(this, arguments);
-};
+const { setupElectronMock } = require('./helpers/mockElectron');
+const restoreRequire = setupElectronMock(electronMock);
 
 const TrayManager = require('../src/main/TrayManager');
+test.after(() => restoreRequire());
 
 function createMockDeps() {
   return {

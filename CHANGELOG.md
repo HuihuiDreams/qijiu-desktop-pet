@@ -16,6 +16,7 @@
 - 简化离线回归气泡的暂存逻辑：删除 `shown` 状态追踪与 `RETURN_BUBBLE_SEQUENCE_MS` 展示窗口计时器，同时移除 `ScreensaverSystem` 的 `onScreensaverStart` 注入钩子与 `OfflineReturnSystem.handleScreensaverStart()`；现在两条回归气泡的 `setTimeout` 在触发时各自重检屏保状态，被打断即把剩余内容重新暂存、屏保结束后补发，全部触发成功即释放暂存（`scheduleReturnBubbles()` 保留为两条定时器的共享实现）。已知边界：屏保在末条气泡已触发后才开始（用户回归后 3-7 秒内再次闲置）时，展示中的气泡被清除且不再补发，属可接受的极窄窗口。
 - 补充并大幅提升主进程核心服务模块（`TrayManager.js`, `PetWindow.js`, `SkinService.js`）的单元测试覆盖率，均提升至 80%~100%，包括完整的状态机流转、IPC 消息发送校验及界面行为验证。同时利用 `Module.prototype.require` 拦截技术在 Node.js 中安全地 Mock 了 `electron` 环境，保持生产代码的原味与整洁。
 - 补齐 `WeatherSyncController`、`SkinSelectorWindow`、`i18nHelpers`、`AmbientDialogueSystem` 四个模块的单元测试覆盖（共新增 32 个用例），覆盖此前未测试的 IPC handler、blur-close 状态机、DOM 操作分支及时段闲聊等缺失分支。
+- 重构测试文件：提取 `test/helpers/mockElectron.js` 集中管理 `Module.prototype.require` 补丁并配合 `test.after()` 即时还原，消除各测试文件由于 Node.js 测试并发执行导致的副作用污染隐患；重构 `weatherSyncController.behavior.test.js`，提取共用的 Timer Stub helper，消除近 20 行重复代码，提升测试整洁度。
 
 ## [0.10.1] - 2026-08-04
 

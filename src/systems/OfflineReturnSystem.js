@@ -50,7 +50,18 @@ class OfflineReturnSystem {
   /**
    * 保存两只宠物当前状态 + 当前皮肤 + lastVisibleTime。
    */
+  /**
+   * 刷新"用户上次可见"时间戳。游戏循环在正常模式（非暂停/非屏保/可见）时周期性调用，
+   * 确保保存的 lastVisibleTime 始终是用户最近一次盯着桌宠的真实时刻。
+   */
+  refreshLastVisibleTime() {
+    if (this.isDocumentVisible()) {
+      this.lastVisibleTime = this.now();
+    }
+  }
+
   saveCurrentState() {
+    this.refreshLastVisibleTime();
     const [yueqi, shenjiu] = this.getPets();
     return this.timeSystem.save(yueqi, shenjiu, this.skinManager.getCurrentSkin(), this.lastVisibleTime);
   }

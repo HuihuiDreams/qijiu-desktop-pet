@@ -60,11 +60,16 @@ test('constructor accepts an explicit initialLastVisibleTime override', () => {
   assert.equal(system.lastVisibleTime, 7);
 });
 
-test('saveCurrentState persists both pets, the current skin, and lastVisibleTime', async () => {
-  const { deps, saveCalls } = makeDeps({ initialLastVisibleTime: 123 });
+test('saveCurrentState persists both pets, the current skin, and refreshes lastVisibleTime before save', async () => {
+  const { deps, saveCalls } = makeDeps({
+    initialLastVisibleTime: 123,
+    now: () => 999,
+    isDocumentVisible: () => true,
+  });
   const system = new OfflineReturnSystem(deps);
   await system.saveCurrentState();
-  assert.deepEqual(saveCalls, [{ petA: 'yueqi', petB: 'shenjiu', skinId: 'default', lastVisibleTime: 123 }]);
+  // lastVisibleTime is refreshed to now() before save when document is visible
+  assert.deepEqual(saveCalls, [{ petA: 'yueqi', petB: 'shenjiu', skinId: 'default', lastVisibleTime: 999 }]);
 });
 
 test('handleOfflineReturn applies decay to both pets and always saves', () => {
