@@ -199,6 +199,49 @@ test('WeatherSyncController tells the renderer to deactivate weather without fet
   assert.deepEqual(sent, [['weather-update', { active: false }]]);
 });
 
+test('WeatherSyncController keeps only the newest interval when weather sync starts overlap', async () => {
+  const ipcMain = createIpcMain();
+  const pendingFetches = [];
+  const originalSetInterval = global.setInterval;
+  const originalClearInterval = global.clearInterval;
+  const intervals = [];
+  global.setInterval = (callback, intervalMs) => {
+    intervals.push({ callback, intervalMs });
+    return intervals.length;
+  };
+  global.clearInterval = () => {};
+
+  try {
+    const Controller = loadFreshController({
+      ipcMain,
+      fetchWeather: () => new Promise((resolve) => pendingFetches.push(resolve)),
+      processSettingsChange: async (settings) => settings,
+    });
+    const { deps } = createDependencies({
+      ...DEFAULT_SETTINGS,
+      enabled: true,
+      city: 'Tokyo',
+      lat: 35.68,
+      lon: 139.76,
+    });
+    Controller.init(deps);
+
+    const firstStart = Controller.startWeatherSync();
+    const secondStart = Controller.startWeatherSync();
+    assert.equal(pendingFetches.length, 2);
+
+    pendingFetches[0]({ active: true, city: 'Tokyo' });
+    pendingFetches[1]({ active: true, city: 'Tokyo' });
+    await Promise.all([firstStart, secondStart]);
+
+    assert.equal(intervals.length, 1);
+    assert.equal(intervals[0].intervalMs, 60 * 60 * 1000);
+  } finally {
+    global.setInterval = originalSetInterval;
+    global.clearInterval = originalClearInterval;
+  }
+});
+
 test('set-city-name rejects non-string input', async () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({

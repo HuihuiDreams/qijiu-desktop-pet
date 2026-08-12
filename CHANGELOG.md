@@ -10,7 +10,7 @@
 - 加固屏保与回归气泡的时序协调：回归气泡序列在展示前重新检查屏保状态（屏保重新触发时重新暂存而非直接展示），序列在途期间保留暂存数据，屏保开始清掉展示中气泡时整组重置为未展示、屏保结束后补发，确保任何屏保时序下都不漏消息；flush 改为由 `ScreensaverSystem.reset()` 事件驱动触发，不再依赖游戏循环的 rAF 边沿检测（窗口隐藏时暂存气泡也能在屏保结束后及时补发）。详见 [评审加固文档](./docs/archive/screensaver-return-bubble-race-fix-plan.md)。
 - 修复屏保短暂打断回归气泡序列后，原有定时器仍会与补发序列重叠、导致沈九台词重复的问题；现在用序列编号使旧回调失效，并在两条气泡都成功触发后才释放暂存数据。
 - 修复 `test/trayManager.test.js` 中 5 个测试因 Electron mock 初始化时序问题失败的问题：`TrayManager.js` 在模块加载时通过解构 `const { app } = require('electron')` 一次性捕获 `app` 引用，而原测试在 `beforeEach` 中重新赋值 `mockApp` 变量，导致 `TrayManager` 内部持有 `undefined`（`app.getVersion()` 崩溃）或旧对象引用（`isPackaged` 修改不生效，`trayDevTools` 菜单项缺失）。修复方式：在 `require('../src/main/TrayManager')` 之前提前初始化 mock 对象，并将 `beforeEach` 改为就地 mutate 各属性而非重新赋值变量，测试全部恢复通过（pass 877 / fail 0）。
-
+- 天气同步在城市或开关设置发生重叠更新时，只保留最新一次启动创建的轮询；每次网络请求独立持有其超时与取消控制器，旧请求完成后不会干扰新请求。
 
 ### Changed
 - 简化离线回归气泡的暂存逻辑：删除 `shown` 状态追踪与 `RETURN_BUBBLE_SEQUENCE_MS` 展示窗口计时器，同时移除 `ScreensaverSystem` 的 `onScreensaverStart` 注入钩子与 `OfflineReturnSystem.handleScreensaverStart()`；现在两条回归气泡的 `setTimeout` 在触发时各自重检屏保状态，被打断即把剩余内容重新暂存、屏保结束后补发，全部触发成功即释放暂存（`scheduleReturnBubbles()` 保留为两条定时器的共享实现）。已知边界：屏保在末条气泡已触发后才开始（用户回归后 3-7 秒内再次闲置）时，展示中的气泡被清除且不再补发，属可接受的极窄窗口。

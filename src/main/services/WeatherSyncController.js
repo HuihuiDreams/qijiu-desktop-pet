@@ -19,6 +19,7 @@ let deps = {};
 let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
 let weatherSyncIntervalTimer = null;
 let weatherSyncSettingsUpdateId = 0;
+let weatherSyncStartId = 0;
 
 function init(dependencies) {
   deps = dependencies;
@@ -98,11 +99,13 @@ function saveWeatherSyncSettings(settings) {
 
 async function startWeatherSync() {
   const { windowManager } = deps;
+  const startId = ++weatherSyncStartId;
   if (weatherSyncIntervalTimer) {
     clearInterval(weatherSyncIntervalTimer);
     weatherSyncIntervalTimer = null;
   }
-  if (!weatherSyncSettings.enabled) {
+  const settings = weatherSyncSettings;
+  if (!settings.enabled) {
     if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
       windowManager.mainWindow.webContents.send('weather-update', { active: false });
     }
@@ -110,14 +113,16 @@ async function startWeatherSync() {
   }
 
   const doFetch = async () => {
-    const payload = await fetchWeather(weatherSyncSettings);
+    const payload = await fetchWeather(settings);
+    if (startId !== weatherSyncStartId) return;
     if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() && payload) {
       windowManager.mainWindow.webContents.send('weather-update', payload);
     }
   };
 
   await doFetch(); // immediately fetch
-  const intervalMs = weatherSyncSettings.refreshIntervalMinutes * 60 * 1000;
+  if (startId !== weatherSyncStartId) return;
+  const intervalMs = settings.refreshIntervalMinutes * 60 * 1000;
   weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
 }
 

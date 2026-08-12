@@ -356,6 +356,49 @@ describe('WeatherSyncService - fetchWeather', () => {
     assert.strictEqual(callCount, 2);
   });
 
+  it('keeps the newest request timeout bound to its own controller after an older request settles', async () => {
+    const originalSetTimeout = global.setTimeout;
+    const originalClearTimeout = global.clearTimeout;
+    const timeoutCallbacks = [];
+    global.setTimeout = (callback) => {
+      timeoutCallbacks.push(callback);
+      return timeoutCallbacks.length;
+    };
+    global.clearTimeout = () => {};
+
+    let resolveFirst;
+    let resolveSecond;
+    let secondController;
+    let callCount = 0;
+    const provider = {
+      fetch(_lat, _lon, controller) {
+        callCount += 1;
+        if (callCount === 1) {
+          return new Promise((resolve) => { resolveFirst = resolve; });
+        }
+        secondController = controller;
+        return new Promise((resolve) => { resolveSecond = resolve; });
+      },
+    };
+    const settings = { enabled: true, lat: 10, lon: 20, refreshIntervalMinutes: 60 };
+
+    try {
+      const firstRequest = fetchWeather(settings, provider);
+      const secondRequest = fetchWeather(settings, provider);
+      resolveFirst({ current_weather: { temperature: 18, weathercode: 1, is_day: 1 } });
+      await firstRequest;
+
+      timeoutCallbacks[1]();
+      assert.strictEqual(secondController.signal.aborted, true);
+
+      resolveSecond({ current_weather: { temperature: 19, weathercode: 2, is_day: 1 } });
+      await secondRequest;
+    } finally {
+      global.setTimeout = originalSetTimeout;
+      global.clearTimeout = originalClearTimeout;
+    }
+  });
+
   it('should fetch weather through the default HTTPS transport when Electron net is unavailable', async () => {
     const https = require('https');
     const originalGet = https.get;

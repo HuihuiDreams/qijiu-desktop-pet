@@ -313,13 +313,14 @@ async function fetchWeather(settings, provider = defaultProvider) {
     fetchTimeoutController.abort();
   }
 
-  fetchTimeoutController = new AbortController();
+  const controller = new AbortController();
+  fetchTimeoutController = controller;
   const timeoutId = setTimeout(() => {
-    if (fetchTimeoutController) fetchTimeoutController.abort();
+    controller.abort();
   }, WEATHER_FETCH_TIMEOUT_MS);
 
   try {
-    const response = await provider.fetch(settings.lat, settings.lon, fetchTimeoutController);
+    const response = await provider.fetch(settings.lat, settings.lon, controller);
     const current = response.current || {};
     const legacy = response.current_weather || {};
     
@@ -388,7 +389,9 @@ async function fetchWeather(settings, provider = defaultProvider) {
     return fallback;
   } finally {
     clearTimeout(timeoutId);
-    fetchTimeoutController = null;
+    if (fetchTimeoutController === controller) {
+      fetchTimeoutController = null;
+    }
   }
 }
 
