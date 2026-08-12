@@ -543,6 +543,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)：主进程与渲染进程巨石文件模块化拆分（`init(deps)` DI 模块 / 全局 class + 双导出守卫 / 统一测试 corpus）。
 - [ADR-043](./decisions/ADR-043-conditional-startup-cache-clearing.md)：按需启动缓存清理（加速热启动）。
 - [ADR-044](./decisions/ADR-044-cp-screensaver-session.md)：CP 局部屏保采用独立的主进程会话。
+- [ADR-045](./decisions/ADR-045-ai-diary-credential-boundary.md)：AI 日记的第三方凭据仅保存在已认证的服务端代理，Hub IPC 保持主进程授权与输入校验边界。
 
 
 ## 6. 维护提示
