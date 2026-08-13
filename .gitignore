@@ -30,3 +30,4 @@ docs/performance/*.json
 !docs/performance/README.md
 
 __pycache__/
+test-results/

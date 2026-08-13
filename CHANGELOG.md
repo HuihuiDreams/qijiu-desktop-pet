@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Fixed
+- 将测试运行产物 `test-results/` 加入 Git 忽略，避免本地测试状态文件被提交。
 - 修复了 macOS 开盖唤醒后，离线回归气泡（“你走了 X 个时辰”）与 CP 屏保退场动画可能同时出现的时序竞态问题；现在回归气泡会等待屏保安全退出后再自然弹出，同时宠物离线衰减仍能实时生效。
 - 补齐 DI 重构配套的 `TrayManager`/`PetWindow` 单元测试 mock：为 `webContents` 补上 `isDestroyed()`（`isSenderMainWindow` 鉴权路径需要），并为托盘番茄钟标签断言补充 `trayPomodoroRunning`/`trayPomodoroCompleted`/`trayMinuteUnit` 三个 I18N 键，修正新测试中与真实降级路径不一致的断言，全量测试恢复通过。
 - 加固屏保与回归气泡的时序协调：回归气泡序列在展示前重新检查屏保状态（屏保重新触发时重新暂存而非直接展示），序列在途期间保留暂存数据，屏保开始清掉展示中气泡时整组重置为未展示、屏保结束后补发，确保任何屏保时序下都不漏消息；flush 改为由 `ScreensaverSystem.reset()` 事件驱动触发，不再依赖游戏循环的 rAF 边沿检测（窗口隐藏时暂存气泡也能在屏保结束后及时补发）。详见 [评审加固文档](./docs/archive/screensaver-return-bubble-race-fix-plan.md)。
