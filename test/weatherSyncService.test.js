@@ -65,10 +65,14 @@ describe('WeatherSyncService - Settings Normalization', () => {
 });
 
 describe('WeatherSyncService - fetchWeather', () => {
-  const { FALLBACK_TTL_MS, fetchWeather, resetWeatherCache } = require('../weatherSyncService');
+  const { FALLBACK_TTL_MS, WEATHER_FETCH_TIMEOUT_MS, fetchWeather, resetWeatherCache } = require('../weatherSyncService');
 
   beforeEach(() => {
     resetWeatherCache();
+  });
+
+  it('allows a full 10 seconds for weather responses before falling back', () => {
+    assert.strictEqual(WEATHER_FETCH_TIMEOUT_MS, 10000);
   });
 
   it('should return inactive if disabled or missing coordinates', async () => {

@@ -54,7 +54,7 @@ function normalizeSettings(raw) {
 let currentWeatherData = null;
 let lastWeatherFetchTime = 0;
 let fetchTimeoutController = null;
-const WEATHER_FETCH_TIMEOUT_MS = 4000;
+const WEATHER_FETCH_TIMEOUT_MS = 10000;
 const GEOCODE_TIMEOUT_MS = 30000;
 // 请求失败后的短 TTL：最多 10 分钟后重试，不必等满整个刷新周期
 const FALLBACK_TTL_MS = 10 * 60 * 1000;
@@ -442,6 +442,7 @@ async function processSettingsChange(newSettings, provider = defaultProvider) {
 module.exports = {
   DEFAULT_WEATHER_SYNC_SETTINGS,
   MIN_REFRESH_INTERVAL_MINUTES,
+  WEATHER_FETCH_TIMEOUT_MS,
   GEOCODE_TIMEOUT_MS,
   FALLBACK_TTL_MS,
   WELL_KNOWN_CITY_ALIASES,

@@ -120,6 +120,11 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.intensity, 'heavy');
   });
 
+  await t.test('does not interpret a missing fallback temperature as 0°C', () => {
+    assert.strictEqual(WeatherAwarenessSystem.temperatureToBand(null), null);
+    assert.strictEqual(WeatherAwarenessSystem.temperatureToBand(undefined), null);
+  });
+
   await t.test('continues to derive weather kind from Open-Meteo weather codes', () => {
     system.setWeatherPayload({
       active: true,

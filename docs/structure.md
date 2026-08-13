@@ -276,6 +276,7 @@ qijiu-desktop-pet/
 - 定期保存状态，并在退出前执行 final save。
 
 天气 IPC 订阅在异步语言初始化前建立；若 `WeatherSyncController` 的首次 `weather-update` 早于 `WeatherAwarenessSystem` 创建，`app.js` 会暂存该 payload 并在系统就绪后立即应用，避免首次天气粒子状态丢失。
+天气网络请求通过 Electron 的系统代理与证书信任链发送；为兼容 Windows 上经 Zscaler 检查的较慢首个响应，`weatherSyncService.js` 的超时为 10 秒，超过该时间才降级为无天气粒子的安全状态。
 
 ### 3.3 宠物实体与渲染
 

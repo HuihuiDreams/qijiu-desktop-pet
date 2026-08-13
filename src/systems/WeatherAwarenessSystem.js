@@ -152,7 +152,11 @@ class WeatherAwarenessSystem {
    * 不暴露精确温度值，符合隐私和 payload 精简约定。
    */
   static temperatureToBand(celsius) {
-    const t = Number(celsius);
+    const t = typeof celsius === 'number'
+      ? celsius
+      : typeof celsius === 'string' && celsius.trim() !== ''
+        ? Number(celsius)
+        : NaN;
     if (!Number.isFinite(t)) return null;
     if (t < 5)  return 'cold';
     if (t < 15) return 'cool';
