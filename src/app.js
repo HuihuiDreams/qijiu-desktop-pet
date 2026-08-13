@@ -4,6 +4,16 @@
  */
 
 (async function main() {
+  let weatherAwarenessSystem = null;
+  let latestWeatherPayload = null;
+
+  // The main process can publish the initial weather result immediately after
+  // did-finish-load, before asynchronous renderer startup work has completed.
+  window.electronAPI.onWeatherUpdate?.((payload) => {
+    latestWeatherPayload = payload;
+    weatherAwarenessSystem?.setWeatherPayload(payload);
+  });
+
   // === 初始化 i18n （必须在其他系统之前）===
   const locale = await window.electronAPI.getLocale();
   window.__currentLocale = locale;
@@ -55,7 +65,10 @@
     enabled: CONFIG.WINDOW_AWARENESS_ENABLED !== false,
     ttlMs: CONFIG.WINDOW_AWARENESS_PLATFORM_TTL_MS,
   });
-  const weatherAwarenessSystem = new WeatherAwarenessSystem(CONFIG);
+  weatherAwarenessSystem = new WeatherAwarenessSystem(CONFIG);
+  if (latestWeatherPayload) {
+    weatherAwarenessSystem.setWeatherPayload(latestWeatherPayload);
+  }
   const nurtureSystemA = new NurtureSystem();
   const nurtureSystemB = new NurtureSystem();
   const interactionSystem = new InteractionSystem();
@@ -84,10 +97,6 @@
     stageGeometry.applyScreenInfo(info);
   });
   windowAwarenessSystem.start();
-
-  window.electronAPI.onWeatherUpdate?.((payload) => {
-    weatherAwarenessSystem.setWeatherPayload(payload);
-  });
 
   // macOS: 窗口迁移到新显示器后，调整所有宠物坐标
   window.electronAPI.onWindowMigrated?.((data) => {

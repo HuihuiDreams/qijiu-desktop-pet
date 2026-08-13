@@ -275,6 +275,8 @@ qijiu-desktop-pet/
 - 处理主进程广播的屏幕信息、语言变化、皮肤变化、显示/隐藏等事件。
 - 定期保存状态，并在退出前执行 final save。
 
+天气 IPC 订阅在异步语言初始化前建立；若 `WeatherSyncController` 的首次 `weather-update` 早于 `WeatherAwarenessSystem` 创建，`app.js` 会暂存该 payload 并在系统就绪后立即应用，避免首次天气粒子状态丢失。
+
 ### 3.3 宠物实体与渲染
 
 宠物相关代码分为三层：

@@ -13,6 +13,8 @@
 - 修复 `test/trayManager.test.js` 中 5 个测试因 Electron mock 初始化时序问题失败的问题：`TrayManager.js` 在模块加载时通过解构 `const { app } = require('electron')` 一次性捕获 `app` 引用，而原测试在 `beforeEach` 中重新赋值 `mockApp` 变量，导致 `TrayManager` 内部持有 `undefined`（`app.getVersion()` 崩溃）或旧对象引用（`isPackaged` 修改不生效，`trayDevTools` 菜单项缺失）。修复方式：在 `require('../src/main/TrayManager')` 之前提前初始化 mock 对象，并将 `beforeEach` 改为就地 mutate 各属性而非重新赋值变量，测试全部恢复通过（pass 877 / fail 0）。
 - 天气同步在城市或开关设置发生重叠更新时，只保留最新一次启动创建的轮询；每次网络请求独立持有其超时与取消控制器，旧请求完成后不会干扰新请求。
 
+- 修复天气同步首条结果在渲染器异步启动期间可能丢失的问题：渲染器现在优先订阅并暂存 `weather-update`，天气系统创建后立即应用暂存 payload，确保东京雷暴等首次同步结果能正常显示局部雨滴与闪电粒子。
+
 ### Changed
 - 简化离线回归气泡的暂存逻辑：删除 `shown` 状态追踪与 `RETURN_BUBBLE_SEQUENCE_MS` 展示窗口计时器，同时移除 `ScreensaverSystem` 的 `onScreensaverStart` 注入钩子与 `OfflineReturnSystem.handleScreensaverStart()`；现在两条回归气泡的 `setTimeout` 在触发时各自重检屏保状态，被打断即把剩余内容重新暂存、屏保结束后补发，全部触发成功即释放暂存（`scheduleReturnBubbles()` 保留为两条定时器的共享实现）。已知边界：屏保在末条气泡已触发后才开始（用户回归后 3-7 秒内再次闲置）时，展示中的气泡被清除且不再补发，属可接受的极窄窗口。
 - 补充并大幅提升主进程核心服务模块（`TrayManager.js`, `PetWindow.js`, `SkinService.js`）的单元测试覆盖率，均提升至 80%~100%，包括完整的状态机流转、IPC 消息发送校验及界面行为验证。同时利用 `Module.prototype.require` 拦截技术在 Node.js 中安全地 Mock 了 `electron` 环境，保持生产代码的原味与整洁。
