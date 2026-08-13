@@ -67,9 +67,12 @@ function loadFreshController({ ipcMain, fetchWeather, processSettingsChange }) {
   }
 }
 
-function createDependencies(initialSettings) {
+function createDependencies(initialSettings, initialWeatherCache) {
   const sent = [];
-  const storeValues = new Map([['weatherSyncSettings', initialSettings]]);
+  const storeValues = new Map([
+    ['weatherSyncSettings', initialSettings],
+    ['weatherSyncLastPayload', initialWeatherCache],
+  ]);
   const storeListeners = {};
   let trayRefreshCount = 0;
   const mainWindow = {
@@ -90,6 +93,7 @@ function createDependencies(initialSettings) {
     sent,
     storeListeners,
     storedSettings: () => storeValues.get('weatherSyncSettings'),
+    storedValue: (key) => storeValues.get(key),
     getTrayRefreshCount: () => trayRefreshCount,
   };
 }
@@ -114,6 +118,72 @@ test('WeatherSyncController exposes persisted city settings immediately after in
   assert.deepEqual(ipcMain.handlers['get-city-settings'](), { city: 'Tokyo' });
   assert.equal(typeof ipcMain.handlers['set-city-name'], 'function');
   assert.equal(typeof storeListeners.weatherSyncSettings, 'function');
+});
+
+test('WeatherSyncController immediately restores a recent successful payload for the saved coordinates', async () => {
+  const ipcMain = createIpcMain();
+  const cachedPayload = { active: true, weatherCode: 63, temperature: 25, fallback: false };
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => ({ active: true, weatherCode: 61, temperature: 24, fallback: false }),
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent, storedValue } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Tokyo',
+    lat: 35.6895,
+    lon: 139.69171,
+  }, {
+    lat: 35.6895,
+    lon: 139.69171,
+    savedAt: Date.now(),
+    payload: cachedPayload,
+  });
+  Controller.init(deps);
+
+  stubTimers();
+  try {
+    await Controller.startWeatherSync();
+  } finally {
+    restoreTimers();
+  }
+
+  assert.deepEqual(sent[0], ['weather-update', cachedPayload]);
+  assert.deepEqual(sent[1], ['weather-update', { active: true, weatherCode: 61, temperature: 24, fallback: false }]);
+  assert.deepEqual(storedValue('weatherSyncLastPayload')?.payload, { active: true, weatherCode: 61, temperature: 24, fallback: false });
+});
+
+test('WeatherSyncController keeps the restored payload when the startup request falls back', async () => {
+  const ipcMain = createIpcMain();
+  const cachedPayload = { active: true, weatherCode: 95, temperature: 25, fallback: false };
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => ({ active: true, weatherCode: null, fallback: true }),
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Tokyo',
+    lat: 35.6895,
+    lon: 139.69171,
+  }, {
+    lat: 35.6895,
+    lon: 139.69171,
+    savedAt: Date.now(),
+    payload: cachedPayload,
+  });
+  Controller.init(deps);
+
+  stubTimers();
+  try {
+    await Controller.startWeatherSync();
+  } finally {
+    restoreTimers();
+  }
+
+  assert.deepEqual(sent, [['weather-update', cachedPayload]]);
 });
 
 test('WeatherSyncController keeps the newest asynchronous settings update and publishes its weather payload', async () => {

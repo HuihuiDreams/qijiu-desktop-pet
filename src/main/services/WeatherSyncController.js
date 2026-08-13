@@ -14,6 +14,8 @@ const {
 } = require('../../../weatherSyncService');
 
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
+const WEATHER_SYNC_LAST_PAYLOAD_STORE_KEY = 'weatherSyncLastPayload';
+const WEATHER_SYNC_LAST_PAYLOAD_TTL_MS = 2 * 60 * 60 * 1000;
 
 let deps = {};
 let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
@@ -97,8 +99,40 @@ function saveWeatherSyncSettings(settings) {
   return normalized;
 }
 
+function sendWeatherUpdate(payload) {
+  const mainWindow = deps.windowManager.mainWindow;
+  if (mainWindow && !mainWindow.isDestroyed() && payload) {
+    mainWindow.webContents.send('weather-update', payload);
+  }
+}
+
+function getStoredWeatherPayload(settings) {
+  const store = deps.StoreManager.getStore();
+  const cached = store?.get(WEATHER_SYNC_LAST_PAYLOAD_STORE_KEY);
+  if (!cached || typeof cached !== 'object') return null;
+
+  const savedAt = Number(cached.savedAt);
+  const ageMs = Date.now() - savedAt;
+  if (!Number.isFinite(savedAt) || ageMs < 0 || ageMs > WEATHER_SYNC_LAST_PAYLOAD_TTL_MS) return null;
+  if (cached.lat !== settings.lat || cached.lon !== settings.lon) return null;
+
+  const payload = cached.payload;
+  if (!payload || typeof payload !== 'object' || payload.active !== true || payload.fallback === true) return null;
+  return payload;
+}
+
+function saveWeatherPayload(settings, payload) {
+  if (!payload || payload.active !== true || payload.fallback === true) return;
+  const store = deps.StoreManager.getStore();
+  store?.set(WEATHER_SYNC_LAST_PAYLOAD_STORE_KEY, {
+    lat: settings.lat,
+    lon: settings.lon,
+    savedAt: Date.now(),
+    payload,
+  });
+}
+
 async function startWeatherSync() {
-  const { windowManager } = deps;
   const startId = ++weatherSyncStartId;
   if (weatherSyncIntervalTimer) {
     clearInterval(weatherSyncIntervalTimer);
@@ -106,18 +140,22 @@ async function startWeatherSync() {
   }
   const settings = weatherSyncSettings;
   if (!settings.enabled) {
-    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-      windowManager.mainWindow.webContents.send('weather-update', { active: false });
-    }
+    sendWeatherUpdate({ active: false });
     return;
   }
+
+  let cachedPayload = getStoredWeatherPayload(settings);
+  if (cachedPayload) sendWeatherUpdate(cachedPayload);
 
   const doFetch = async () => {
     const payload = await fetchWeather(settings);
     if (startId !== weatherSyncStartId) return;
-    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed() && payload) {
-      windowManager.mainWindow.webContents.send('weather-update', payload);
+    if (payload?.active === true && payload.fallback !== true) {
+      saveWeatherPayload(settings, payload);
+      cachedPayload = payload;
     }
+    if (payload?.fallback === true && cachedPayload) return;
+    sendWeatherUpdate(payload);
   };
 
   await doFetch(); // immediately fetch

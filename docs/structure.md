@@ -277,6 +277,7 @@ qijiu-desktop-pet/
 
 天气 IPC 订阅在异步语言初始化前建立；若 `WeatherSyncController` 的首次 `weather-update` 早于 `WeatherAwarenessSystem` 创建，`app.js` 会暂存该 payload 并在系统就绪后立即应用，避免首次天气粒子状态丢失。
 天气网络请求通过 Electron 的系统代理与证书信任链发送；为兼容 Windows 上经 Zscaler 检查的较慢首个响应，`weatherSyncService.js` 的超时为 10 秒，超过该时间才降级为无天气粒子的安全状态。
+`WeatherSyncController` 会按城市坐标短期保存最近一次成功的天气 payload；桌宠重启时先回放匹配的缓存再后台刷新，若首个请求在企业代理下暂时降级，会保留已回放的效果而不清空。
 
 ### 3.3 宠物实体与渲染
 
@@ -461,7 +462,7 @@ npm run test:font
 
 - `test/appLifecycle.behavior.test.js`：服务启动接线、宠物窗口创建时机，以及二次启动/退出生命周期。
 - `test/finalSaveService.behavior.test.js`：最终保存 ACK 的 sender/requestId 校验、超时清理、重复关闭抑制和已销毁窗口降级。
-- `test/weatherSyncController.behavior.test.js`：持久化设置读取、异步设置竞争、天气消息下发和禁用分支。
+- `test/weatherSyncController.behavior.test.js`：持久化设置读取、重启天气缓存回放、异步设置竞争、天气消息下发和禁用分支。
 - `test/meetingDetectorController.behavior.test.js`：会议开始/结束回调转发、检测器替换和不支持平台门控。
 - `test/trayManager.test.js`：托盘菜单结构、各菜单项交互、语言切换与番茄钟托盘标签状态流转（依赖 `getPomodoroSnapshot()` 驱动 running/completed/idle 三种标签）。
 - `test/petWindow.test.js`：宠物窗口 IPC 注册、`set-ignore-mouse-events` 发件方鉴权与鼠标穿透开关归一化。

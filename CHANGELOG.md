@@ -15,6 +15,7 @@
 
 - 修复天气同步首条结果在渲染器异步启动期间可能丢失的问题：渲染器现在优先订阅并暂存 `weather-update`，天气系统创建后立即应用暂存 payload，确保东京雷暴等首次同步结果能正常显示局部雨滴与闪电粒子。
 - 修复 Windows 经 Zscaler 代理访问 Open-Meteo 时，首个天气响应可能超过原 4 秒限制而被错误降级的问题：天气请求超时延长至 10 秒，继续使用 Electron/系统代理与证书信任链，不绕过 TLS 校验；同时避免将降级 payload 的空温度误判为 0℃。
+- 修复 Windows 经 Zscaler 网络重启桌宠后天气粒子暂时消失的问题：同一城市会短期保存最近一次成功的天气结果，启动时立即回放该结果并在后台刷新；若首次请求暂时降级，不再清空已显示的天气效果。
 
 ### Changed
 - 简化离线回归气泡的暂存逻辑：删除 `shown` 状态追踪与 `RETURN_BUBBLE_SEQUENCE_MS` 展示窗口计时器，同时移除 `ScreensaverSystem` 的 `onScreensaverStart` 注入钩子与 `OfflineReturnSystem.handleScreensaverStart()`；现在两条回归气泡的 `setTimeout` 在触发时各自重检屏保状态，被打断即把剩余内容重新暂存、屏保结束后补发，全部触发成功即释放暂存（`scheduleReturnBubbles()` 保留为两条定时器的共享实现）。已知边界：屏保在末条气泡已触发后才开始（用户回归后 3-7 秒内再次闲置）时，展示中的气泡被清除且不再补发，属可接受的极窄窗口。
