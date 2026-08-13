@@ -40,7 +40,7 @@ function normalizeSettings(settings) {
   };
 }
 
-function loadFreshController({ ipcMain, fetchWeather, processSettingsChange }) {
+function loadFreshController({ ipcMain, fetchWeather, processSettingsChange, resetWeatherCache = () => {} }) {
   const originalLoad = Module._load;
   delete require.cache[CONTROLLER_PATH];
 
@@ -54,6 +54,7 @@ function loadFreshController({ ipcMain, fetchWeather, processSettingsChange }) {
         normalizeSettings,
         fetchWeather,
         processSettingsChange,
+        resetWeatherCache,
       };
     }
     return originalLoad.call(this, request, parent, isMain);
@@ -184,6 +185,41 @@ test('WeatherSyncController keeps the restored payload when the startup request 
   }
 
   assert.deepEqual(sent, [['weather-update', cachedPayload]]);
+});
+
+test('WeatherSyncController retries once after a cold-start fallback when no saved payload exists', async () => {
+  const ipcMain = createIpcMain();
+  const responses = [
+    { active: true, weatherCode: -1, fallback: true },
+    { active: true, weatherCode: 63, temperature: 25, fallback: false },
+  ];
+  let resetCount = 0;
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => responses.shift(),
+    processSettingsChange: async (settings) => settings,
+    resetWeatherCache: () => { resetCount += 1; },
+  });
+  const { deps, sent, storedValue } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Tokyo',
+    lat: 35.6895,
+    lon: 139.69171,
+  });
+  Controller.init(deps);
+
+  stubTimers();
+  try {
+    await Controller.startWeatherSync();
+  } finally {
+    restoreTimers();
+  }
+
+  assert.equal(responses.length, 0);
+  assert.equal(resetCount, 1);
+  assert.deepEqual(sent, [['weather-update', { active: true, weatherCode: 63, temperature: 25, fallback: false }]]);
+  assert.equal(storedValue('weatherSyncLastPayload')?.payload.weatherCode, 63);
 });
 
 test('WeatherSyncController keeps the newest asynchronous settings update and publishes its weather payload', async () => {

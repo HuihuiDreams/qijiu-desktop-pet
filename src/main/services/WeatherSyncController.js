@@ -11,6 +11,7 @@ const {
   normalizeSettings: normalizeWeatherSyncSettings,
   fetchWeather,
   processSettingsChange,
+  resetWeatherCache,
 } = require('../../../weatherSyncService');
 
 const WEATHER_SYNC_STORE_KEY = 'weatherSyncSettings';
@@ -148,8 +149,13 @@ async function startWeatherSync() {
   if (cachedPayload) sendWeatherUpdate(cachedPayload);
 
   const doFetch = async () => {
-    const payload = await fetchWeather(settings);
+    let payload = await fetchWeather(settings);
     if (startId !== weatherSyncStartId) return;
+    if (payload?.fallback === true && !cachedPayload) {
+      resetWeatherCache();
+      payload = await fetchWeather(settings);
+      if (startId !== weatherSyncStartId) return;
+    }
     if (payload?.active === true && payload.fallback !== true) {
       saveWeatherPayload(settings, payload);
       cachedPayload = payload;
