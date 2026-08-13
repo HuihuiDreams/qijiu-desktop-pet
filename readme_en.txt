@@ -62,9 +62,19 @@ When you switch language from the tray menu, the main window, right-click menus,
 💕 CP Sweet Screensaver
 ========================================
 
-After the system is idle longer than the configured threshold, Yueqi and Shenjiu will play a CP combo (shareFood -> hug -> kiss) at the center of the screen and loop until next input or a silent cancel (lock, fullscreen, etc.); when they detect you are back, each shows a dialogue bubble above their head (Yueqi: "So shy... 😳" etc.; Shenjiu: "Busted! ❗️" etc.) and then runs back to their original spots. Use "💕 Enable Sweat Screensaver" / "💕 Disable Sweat Screensaver" in the tray menu to toggle it, then choose 1 / 3 / 5 / 10 / 15 / 30 min under "💕 Screensaver Wait Time" (default: 3 min).
+After the system has been idle longer than the configured wait time, the screensaver starts:
+- Yueqi and Shenjiu play a CP combo at the center of the screen: share food -> hug -> kiss.
+- The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
+- When they detect that you are back, each pet shows a dialogue bubble above its head (Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
 
-Note: This app does NOT block or modify Windows screen-off / sleep timing. To see the animation make sure the Windows "turn off screen" and "sleep" timer is later than the selected CP wait time. Windows 11 defaults to about 5 minutes when plugged in, so if you want a wait of 5 minutes or longer, please lengthen the screen-off/sleep time in the system power settings.
+In the tray menu, you can:
+- Toggle the screensaver with "💕 Enable Sweat Screensaver" / "💕 Disable Sweat Screensaver".
+- Choose 1 / 3 / 5 / 10 / 15 / 30 min under "💕 Screensaver Wait Time" (default: 3 min).
+
+Note:
+This app does NOT block or modify Windows screen-off / sleep timing.
+To see the animation, make sure the Windows "turn off screen" and "sleep" timers are set later than the selected CP wait time.
+Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 minutes or longer, lengthen the screen-off / sleep timers in the system power settings.
 
 ========================================
 🎨 Skins & Display
