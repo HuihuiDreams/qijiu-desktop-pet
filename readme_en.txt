@@ -8,7 +8,9 @@ Yue Qingyuan (Yue Qi) and Shen Qingqiu (Shen Jiu) can walk, rest, cultivate, and
 ========================================
 
 This app supports both Windows and macOS:
-- Windows: Download the `.exe` installer and run it.
+- Windows:
+  - System Requirements: Windows 10 / 11 (64-bit). Legacy versions like Windows 7 / 8 / 8.1 and all 32-bit operating systems are not supported due to modern Electron architecture.
+  - Installation: Download the `.exe` installer and run it.
 - macOS:
   - System Requirements: macOS 12.0 (Monterey) or higher.
   - Architecture:

@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Changed
+- 在主 README (`README.md`) 及三语说明文档 (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`) 中补充 Windows 平台系统运行要求：明确指出需要 Windows 10 / 11（64 位），并说明因底层基于现代 Electron 架构，不支持 Windows 7 / 8 / 8.1 等旧版本操作系统，也不支持 32 位系统。
+
 ## [0.10.3] - 2026-08-14
 
 ### Fixed

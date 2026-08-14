@@ -8,6 +8,7 @@
 本应用支持 **Windows** 和 **macOS** 平台。你可以在 GitHub Releases 页面下载已打包好的安装包。
 
 ### 💻 Windows 平台
+* **系统要求**：Windows 10 / 11（64 位）。由于底层基于现代 Electron 架构，不支持 Windows 7 / 8 / 8.1 等旧版本操作系统，也不支持 32 位系统。
 * **安装包**：下载 `desktop-pet-setup-x.y.z.exe`。
 * **安装步骤**：双击运行安装程序，按照提示选择安装路径并完成安装即可。
 
