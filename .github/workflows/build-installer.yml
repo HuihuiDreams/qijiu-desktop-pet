@@ -105,22 +105,20 @@ jobs:
       - name: Generate protected skin assets
         run: npm run protect:assets
 
-      - name: Build and publish signed release
+      - name: Build signed Windows release
         if: env.SIGNING_ENABLED == 'true'
-        run: npx electron-builder --config.win.signAndEditExecutable=true --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        run: npx electron-builder --config.win.signAndEditExecutable=true --publish never
         # noinspection YAMLSchemaValidation, GitHubActionsContextInspection
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
           CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
           WIN_CSC_LINK: ${{ secrets['WIN_CSC_LINK'] }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets['WIN_CSC_KEY_PASSWORD'] }}
 
-      - name: Build and publish unsigned release
+      - name: Build unsigned Windows release
         if: env.SIGNING_ENABLED != 'true'
-        run: npx electron-builder --publish ${{ github.event_name == 'workflow_dispatch' && 'always' || 'onTag' }}
+        run: npx electron-builder --publish never
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Verify generated signatures
@@ -132,6 +130,32 @@ jobs:
         shell: pwsh
         run: |
           "This release was built without Windows Authenticode signing because WIN_CSC_* secrets were not configured." | Out-File -FilePath dist\UNSIGNED-RELEASE.txt -Encoding utf8
+
+      - name: Upload Windows release assets
+        shell: pwsh
+        run: |
+          $version = '${{ inputs.version }}'
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $tag = '${{ github.ref_name }}'
+          } else {
+            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
+          }
+          $repo = '${{ github.repository }}'
+
+          $viewResult = gh release view $tag --repo $repo 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --draft --repo $repo --title $tag --notes "Release $tag"
+          }
+
+          $assets = Get-ChildItem -Path dist -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.blockmap' -or $_.Name -eq 'latest.yml' -or $_.Name -eq 'UNSIGNED-RELEASE.txt' } | Select-Object -ExpandProperty FullName
+          if (-not $assets) {
+            Write-Error "No Windows release assets found under dist/."
+            exit 1
+          }
+
+          gh release upload $tag @assets --repo $repo --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload readme files to GitHub Release
         shell: pwsh
@@ -281,7 +305,7 @@ jobs:
           REPO="${{ github.repository }}"
 
           if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --repo "$REPO" --title "$TAG" --notes "Release $TAG" \
+            gh release create "$TAG" --draft --repo "$REPO" --title "$TAG" --notes "Release $TAG" \
               || gh release view "$TAG" --repo "$REPO" >/dev/null
           fi
 

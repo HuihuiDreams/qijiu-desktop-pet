@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-08-14
+
+### Fixed
+- 修复 GitHub Actions 安装包构建工作流 (`build-installer.yml`) 中 Windows 与 macOS 构件发布时的竞态冲突：Windows 任务打包时改用 `--publish never` 并通过 `gh release upload --clobber` 统一上传安装包（与 macOS 逻辑对齐），且首次创建 Release 时统一带上 `--draft` 参数，解决 `electron-builder` 在 release 已被先行创建发布时放弃上传 `.exe` 安装包的问题，并确保后续构建产物均以 草稿 (Draft) 状态保存。
+
 ## [0.10.2] - 2026-08-14
 ### Fixed
 - 将测试运行产物 `test-results/` 加入 Git 忽略，避免本地测试状态文件被提交。
