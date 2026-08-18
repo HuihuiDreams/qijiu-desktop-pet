@@ -62,6 +62,7 @@ const REQUIRED_DIALOGUE_CATEGORIES = [
   'weather_snow',
   'weather_clear',
   'weather_cloudy',
+  'weather_overcast',
   'weather_windy',
   'weather_thunderstorm',
   'weather_heat',

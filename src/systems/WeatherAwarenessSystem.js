@@ -103,7 +103,8 @@ class WeatherAwarenessSystem {
 
   static parseWeatherCode(code) {
     if (code === 0) return 'clear';
-    if (code === 1 || code === 2 || code === 3 || code === 45 || code === 48) return 'cloudy';
+    if (code === 1 || code === 2 || code === 45 || code === 48) return 'cloudy';
+    if (code === 3) return 'overcast';
     if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
     if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
     if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'snow';
@@ -127,7 +128,7 @@ class WeatherAwarenessSystem {
   }
 
   static isKnownWeatherKind(kind) {
-    return ['clear', 'cloudy', 'rain', 'snow', 'windy', 'thunderstorm', 'heat', 'unknown'].includes(kind);
+    return ['clear', 'cloudy', 'overcast', 'rain', 'snow', 'windy', 'thunderstorm', 'heat', 'unknown'].includes(kind);
   }
 
   static windToIntensity(windSpeed, windGusts) {
@@ -182,11 +183,11 @@ class WeatherAwarenessSystem {
           this.weatherPayload.windGusts,
         );
       const temperatureBand = WeatherAwarenessSystem.temperatureToBand(this.weatherPayload.temperature);
-      let weatherKind = (rawWindIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy'))
+      let weatherKind = (rawWindIntensity !== 'none' && (precipKind === 'clear' || precipKind === 'cloudy' || precipKind === 'overcast'))
         ? 'windy'
         : precipKind;
 
-      if ((weatherKind === 'clear' || weatherKind === 'cloudy' || weatherKind === 'windy') && temperatureBand === 'hot') {
+      if ((weatherKind === 'clear' || weatherKind === 'cloudy' || weatherKind === 'overcast' || weatherKind === 'windy') && temperatureBand === 'hot') {
         weatherKind = 'heat';
       }
 

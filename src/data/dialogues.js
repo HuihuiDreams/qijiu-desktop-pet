@@ -70,8 +70,12 @@ const _DIALOGUES_ZH_FALLBACK = {
     shenjiu: ['阳光刺眼…', '这天倒是不错。'],
   },
   weather_cloudy: {
+    yueqi: ['今天云朵挺多的。', '云来云往，倒也有趣。'],
+    shenjiu: ['多云…还算凉快。', '（抬头看了看天）'],
+  },
+  weather_overcast: {
     yueqi: ['天色阴沉，似乎要变天了。', '起风了。'],
-    shenjiu: ['阴天…让人提不起劲。', '（百无聊赖）'],
+    shenjiu: ['阴天…让人提不起劲。', '（天气阴沉沉的）'],
   },
   weather_windy: {
     yueqi: ['风有些大，小九别站在风口。', '山风急了，衣袂都乱了。'],

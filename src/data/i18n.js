@@ -302,6 +302,10 @@ const I18N = {
         shenjiu: ['阳光刺眼…', '这天倒是不错。'],
       },
       weather_cloudy: {
+        yueqi: ['今天云朵挺多的。', '云来云往，倒也有趣。'],
+        shenjiu: ['多云…还算凉快。', '（抬头看了看天）'],
+      },
+      weather_overcast: {
         yueqi: ['天色阴沉，似乎要变天了。', '起风了。'],
         shenjiu: ['阴天…让人提不起劲。', '（天气阴沉沉的）'],
       },
@@ -683,6 +687,10 @@ const I18N = {
         shenjiu: ['The sun is glaring...', 'Not bad today.'],
       },
       weather_cloudy: {
+        yueqi: ['There are quite a few clouds today.', 'Watching the clouds drift by is somewhat interesting.'],
+        shenjiu: ['Partly cloudy... at least it is cool.', '(Looks up at the sky)'],
+      },
+      weather_overcast: {
         yueqi: ['It looks gloomy, the weather might change.', 'The wind is picking up.'],
         shenjiu: ['Cloudy days... make me sluggish.', '(The sky is gloomy)'],
       },
@@ -1063,8 +1071,12 @@ const I18N = {
         shenjiu: ['日差しが眩しい…', 'まあ、悪くない天気だ。'],
       },
       weather_cloudy: {
+        yueqi: ['今日は雲が多いな。', '雲が流れるのを見るのも、なかなか面白い。'],
+        shenjiu: ['曇りか…まあ、涼しくていい。', '（空を見上げる）'],
+      },
+      weather_overcast: {
         yueqi: ['空が淀んでいる、天気が崩れそうだな。', '風が出てきたな。'],
-        shenjiu: ['曇り空は…気が滅入る。', '（空がどんよりとしている）'],
+        shenjiu: ['どんよりとした空は…気が滅入る。', '（空がどんよりとしている）'],
       },
       weather_windy: {
         yueqi: ['風が強いな、小九、風口には立たぬように。', '山風が急で、袖まで乱れてしまうな。'],

@@ -138,6 +138,24 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.intensity, 'normal');
   });
 
+  await t.test('distinguishes partly cloudy (code 2) and overcast (code 3)', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 2,
+      isDay: true,
+    });
+    assert.strictEqual(system.getCurrentState().weatherKind, 'cloudy');
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 3,
+      isDay: true,
+    });
+    assert.strictEqual(system.getCurrentState().weatherKind, 'overcast');
+  });
+
   await t.test('uses precipitation phase fields to correct snow codes that are actually rain', () => {
     system.setWeatherPayload({
       active: true,
@@ -174,11 +192,11 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(system.getCurrentState().weatherKind, 'thunderstorm');
   });
 
-  await t.test('uses strong wind as primary weather for clear and cloudy payloads', () => {
+  await t.test('uses strong wind as primary weather for clear, cloudy, and overcast payloads', () => {
     system.setWeatherPayload({
       active: true,
       stale: false,
-      weatherCode: 1,
+      weatherCode: 3, // overcast
       windSpeed: 19.8,
       windGusts: 0,
       isDay: true,
@@ -299,6 +317,19 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
       stale: false,
       weatherCode: 0,
       temperature: 35,
+      rain: 0,
+      snowfall: 0,
+      isDay: true,
+    });
+    state = system.getCurrentState();
+    assert.strictEqual(state.weatherKind, 'heat');
+    assert.strictEqual(state.temperatureBand, 'hot');
+
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 3,
+      temperature: 36,
       rain: 0,
       snowfall: 0,
       isDay: true,

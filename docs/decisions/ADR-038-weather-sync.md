@@ -36,7 +36,7 @@ Accepted
 
 4. **Payload 合约**：
    - 包含字段：`active`, `source`, `timePhase`, `weatherKind`, `intensity`, `windIntensity`, `temperatureBand`, `isDay`, `stale`, `sampledAt`, `expiresAt`。
-   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `precipitation`, `rain`, `showers`, `snowfall`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `rain`, `snow`, `windy`, `thunderstorm`, `heat`, `unknown` 等稳定状态。
+   - 主进程可额外携带经过值域清洗的 `weatherCode`, `temperature`, `precipitation`, `rain`, `showers`, `snowfall`, `windSpeed`, `windDirection`, `windGusts`，由 `WeatherAwarenessSystem` 转为 `clear`, `cloudy`, `overcast`, `rain`, `snow`, `windy`, `thunderstorm`, `heat`, `unknown` 等稳定状态。
    - 视觉排他优先级：当遇到雨、雪和雷暴 (`thunderstorm`) 时保持降水为主天气（优先级：`雷阵雨/雷暴 > 雨/雪 > 炎热 > 大风 > 晴/阴`）。其中当 `weatherKind === 'thunderstorm'` 时，为避免画面要素堆叠混乱，系统和粒子层会将 `windIntensity` 归一化为 `'none'`；大风仅在非雷暴状态下通过 `windIntensity` 叠加风痕；炎热 (`heat`) 通过自底向上的清透白金阳炎流线与脚底地表光晕表现，并伴有对应多语言 `weather_heat` 专属台词。
    - 性能约束：`WEATHER_MIN_REFRESH_MINUTES` 为 30 分钟，网络超时 `WEATHER_TIMEOUT_MS` 为 4000ms，连续失败冷却 `WEATHER_BACKOFF_MS` 为 20 分钟（常量统一维护在 `src/data/config.js`）。
 

@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Added
+- 新增 `overcast`（阴天）天气类型（映射 WMO 天气码 3），将“多云”与“阴天”的台词在表现上进行区分：
+  - `weather_cloudy` 现对应 WMO 码 1、2 等少云/多云状态，使用全新的轻快台词。
+  - `weather_overcast` 对应全覆盖阴天，继承原先较为沉郁压抑的台词。
+  - 该改动已在中、英、日三语语言包中同步支持，粒子表现保持无雨雪状态。
+
 ### Changed
 - 在主 README (`README.md`) 及三语说明文档 (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`) 中补充 Windows 平台系统运行要求：明确指出需要 Windows 10 / 11（64 位），并说明因底层基于现代 Electron 架构，不支持 Windows 7 / 8 / 8.1 等旧版本操作系统，也不支持 32 位系统。
 
