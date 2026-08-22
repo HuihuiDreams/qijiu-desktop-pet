@@ -35,12 +35,13 @@ const WindowI18n = {
       if (onCustomLocaleChange) onCustomLocaleChange(locale);
     };
 
-    if (window.electronAPI) {
-      if (window.electronAPI.getLocale) {
-        window.electronAPI.getLocale().then(handleLocaleChange);
+    const api = window.electronAPI || window.skinSelectorAPI;
+    if (api) {
+      if (api.getLocale) {
+        api.getLocale().then(handleLocaleChange);
       }
-      if (window.electronAPI.onLocaleChange) {
-        window.electronAPI.onLocaleChange(handleLocaleChange);
+      if (api.onLocaleChange) {
+        api.onLocaleChange(handleLocaleChange);
       }
     }
   }

@@ -14,6 +14,9 @@ class SkinManager {
     school_au: 1.08,
   };
 
+  // Mirrors CANDIDATE_KEYS in src/main/services/SkinService.js — keep in sync.
+  static OVERLAY_CANDIDATE_KEYS = ['hug', 'shareFood', 'kiss', 'throwup', 'cultivate'];
+
   constructor() {
     /** @type {string} 当前皮肤 ID */
     this.currentSkinId = 'default';
@@ -63,8 +66,7 @@ class SkinManager {
         console.warn('Failed to query overlay keys via IPC:', e);
       }
     }
-    const CANDIDATE_KEYS = ['hug', 'shareFood', 'kiss', 'throwup', 'cultivate'];
-    return CANDIDATE_KEYS;
+    return SkinManager.OVERLAY_CANDIDATE_KEYS;
   }
 
 

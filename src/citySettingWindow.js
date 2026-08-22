@@ -7,7 +7,7 @@ const confirmBtn = document.getElementById('city-confirm');
 const closeBtn = document.getElementById('city-close');
 const currentValueEl = document.getElementById('city-current-value');
 const statusEl = document.getElementById('city-status');
-
+let currentLocale;
 
 
 
@@ -100,21 +100,8 @@ inputEl.addEventListener('keydown', (e) => {
 closeBtn.addEventListener('click', () => {
   window.electronAPI.closeCitySettingWindow();
 });
-
-window.electronAPI.onLocaleChange?.((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-  loadCurrentCity();
-});
-
 // Init
-window.electronAPI.getLocale().then(locale => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
+window.electronAPI.getLocale().then(() => {
   loadCurrentCity();
   inputEl.focus();
 });

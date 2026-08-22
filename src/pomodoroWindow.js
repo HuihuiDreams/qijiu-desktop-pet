@@ -32,6 +32,7 @@ const progressEl = document.querySelector('.pomodoro-progress');
 const progressFillEl = document.getElementById('pomodoro-progress-fill');
 
 let currentState = { ...DEFAULT_POMODORO_STATE };
+let currentLocale;
 
 
 function unwrapResult(result) {
@@ -186,12 +187,6 @@ window.electronAPI.onPomodoroState((state) => {
   renderState(state);
 });
 
-window.electronAPI.onLocaleChange?.((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-});
 
 // Custom Tooltip Logic
 const tooltipEl = document.getElementById('pomodoro-tooltip');
@@ -294,13 +289,9 @@ function initTooltipEvents() {
   });
 }
 
-window.electronAPI.getLocale().then(locale => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
+window.electronAPI.getLocale().then(() => {
   initTooltipEvents();
   return refreshState();
 });
 
-WindowI18n.init(() => { renderConfig(lastConfig) });
+WindowI18n.init(refreshState);

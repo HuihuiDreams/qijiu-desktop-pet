@@ -107,10 +107,9 @@ test('city setting renderer supports Enter key to confirm', () => {
 test('city setting renderer initializes locale and loads current city on startup', () => {
   const source = readSource('src/citySettingWindow.js');
 
-  assert.match(source, /getLocale\(\)\.then/);
-  assert.match(source, /updateI18nElements/);
+  assert.match(source, /WindowI18n\.init/);
   assert.match(source, /loadCurrentCity/);
-  assert.match(source, /onLocaleChange/);
+  assert.match(source, /inputEl\.focus/);
 });
 
 test('city setting input enforces maxlength in HTML', () => {

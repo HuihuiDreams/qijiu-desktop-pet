@@ -1,26 +1,8 @@
 const contentEl = document.getElementById('status-content');
 const closeBtn = document.getElementById('status-close');
 
-
-
-window.electronAPI.getLocale().then(locale => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-});
-
+let currentLocale;
 let lastRenderData = null;
-
-window.electronAPI.onLocaleChange?.((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-  if (lastRenderData) {
-    renderStatus(lastRenderData);
-  }
-});
 
 
 function renderPetStats(pet) {

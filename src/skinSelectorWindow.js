@@ -7,6 +7,8 @@ const statusEl = document.getElementById('skin-selector-status');
 let lastItems = [];
 let previewedSkinId = null;
 let previewInFlight = false;
+let currentLocale;
+
 
 
 
@@ -143,25 +145,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 window.skinSelectorAPI.onData((items, options) => renderGallery(items, options));
-window.skinSelectorAPI.onLocaleChange((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-  renderGallery(lastItems, { resetSelection: false });
-});
-
-window.skinSelectorAPI.getLocale().then((locale) => {
-  currentLocale = locale;
-  document.documentElement.lang = locale;
-  document.documentElement.setAttribute("data-locale", locale);
-  updateI18nElements();
-  return window.skinSelectorAPI.getSkinGalleryItems();
-}).then(renderGallery).catch((error) => {
-  console.error('Failed to load skin gallery:', error);
-  setStatus(t('skinSelectorError'));
-});
 
 requestAnimationFrame(() => closeBtn.focus());
 
-WindowI18n.init((locale) => { renderGallery(lastItems, { resetSelection: false }) });
+WindowI18n.init((locale) => { renderGallery(lastItems, { resetSelection: false }); });

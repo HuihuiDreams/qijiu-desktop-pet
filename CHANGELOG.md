@@ -13,6 +13,12 @@
 ### Changed
 - 在主 README (`README.md`) 及三语说明文档 (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`) 中补充 Windows 平台系统运行要求：明确指出需要 Windows 10 / 11（64 位），并说明因底层基于现代 Electron 架构，不支持 Windows 7 / 8 / 8.1 等旧版本操作系统，也不支持 32 位系统。
 
+### Fixed
+- 修复 `pomodoroWindow.js` 中语言切换回调引用未定义函数 `renderConfig(lastConfig)` 导致的运行时 `ReferenceError`，改为正确调用 `refreshState()`。
+- 清理 `pomodoroWindow.js`、`citySettingWindow.js`、`statusWindow.js`、`skinSelectorWindow.js` 中与 `WindowI18n.init` 重复的手写 `getLocale()` + `onLocaleChange` 订阅，消除双重执行；统一为各文件补充 `let currentLocale` 声明，修复隐式全局变量污染。
+- 修复 `WindowI18n.init`（`src/utils/windowI18n.js`）仅检查 `window.electronAPI` 导致选肤窗口中静默失效的问题；现在自动降级检测 `window.skinSelectorAPI`，使选肤窗口的语言切换生效。
+- 将 `SkinManager.getAvailableOverlayKeys` 中的内联 `CANDIDATE_KEYS` 提炼为类静态常量 `SkinManager.OVERLAY_CANDIDATE_KEYS`，并添加注释说明需与 `SkinService.js` 保持同步。
+
 ## [0.10.3] - 2026-08-14
 
 ### Fixed
