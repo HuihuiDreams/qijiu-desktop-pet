@@ -52,6 +52,30 @@ test('applyScreenInfo forwards new size to MovementSystem and clamps every track
   assert.deepEqual(movementSystem.calls.clampPetToWalkAreas, pets);
 });
 
+test('applyScreenInfo: NaN width/height falls back to previous valid value', () => {
+  const geometry = new StageGeometry({ initialWidth: 1920, initialHeight: 1080 });
+  geometry.applyScreenInfo({ width: NaN, height: NaN });
+
+  assert.equal(geometry.width, 1920);
+  assert.equal(geometry.height, 1080);
+});
+
+test('applyScreenInfo: undefined width/height falls back to previous valid value', () => {
+  const geometry = new StageGeometry({ initialWidth: 800, initialHeight: 600 });
+  geometry.applyScreenInfo({ width: undefined, height: undefined });
+
+  assert.equal(geometry.width, 800);
+  assert.equal(geometry.height, 600);
+});
+
+test('applyScreenInfo: zero width/height falls back to previous valid value', () => {
+  const geometry = new StageGeometry({ initialWidth: 1280, initialHeight: 720 });
+  geometry.applyScreenInfo({ width: 0, height: 0 });
+
+  assert.equal(geometry.width, 1280);
+  assert.equal(geometry.height, 720);
+});
+
 test('getWalkAreaForPoint finds the walk area containing a point, using MovementSystem when available', () => {
   const walkAreas = [
     { x: 0, y: 0, width: 100, height: 100, scaleRatio: 1 },

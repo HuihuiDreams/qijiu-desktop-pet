@@ -40,8 +40,11 @@ class StageGeometry {
    * 并把所有宠物重新收敛回可行走区域内。
    */
   applyScreenInfo(info) {
-    const width = info.width;
-    const height = info.height;
+    const rawWidth = info.width;
+    const rawHeight = info.height;
+    // 热插拔时主进程可能下发 NaN/undefined，保留上一次有效尺寸而非写入无效值
+    const width = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : this.screenInfo.width;
+    const height = Number.isFinite(rawHeight) && rawHeight > 0 ? rawHeight : this.screenInfo.height;
     this.screenInfo = {
       width,
       height,

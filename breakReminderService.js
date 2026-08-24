@@ -125,7 +125,9 @@ function createBreakReminderService(deps) {
     if (!settings.enabled || !running) return;
 
     const currentTime = now();
-    const elapsed = lastSampleTime > 0 ? currentTime - lastSampleTime : sampleIntervalMs;
+    const rawElapsed = lastSampleTime > 0 ? currentTime - lastSampleTime : sampleIntervalMs;
+    // 钳制：防止 App Nap / 系统睡眠唤醒后单次 elapsed 暴涨导致提醒提前触发
+    const elapsed = Math.min(rawElapsed, sampleIntervalMs * 10);
     lastSampleTime = currentTime;
 
     // Read system idle state

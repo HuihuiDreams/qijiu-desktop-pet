@@ -349,16 +349,20 @@
     let deltaMs = currentTime - lastTime;
     lastTime = currentTime;
 
+    // 无条件钳制：防止系统睡眠唤醒后 spriteView/statusUpdateTimer 消费到超大 deltaMs
+    if (deltaMs > 60000) {
+      if (!isPaused && !breakReminderPresenter.isActive()) {
+        offlineReturnSystem.handleOfflineReturn(deltaMs);
+      }
+      deltaMs = 16;
+    } else if (deltaMs <= 0 || Number.isNaN(deltaMs)) {
+      deltaMs = 16;
+    }
+
     try {
       const isScreensaverActive = screensaverSystem.isActive();
 
       if (!isPaused && !breakReminderPresenter.isActive()) {
-        if (deltaMs > 60000) {
-          offlineReturnSystem.handleOfflineReturn(deltaMs);
-          deltaMs = 16;
-        } else if (deltaMs <= 0 || Number.isNaN(deltaMs)) {
-          deltaMs = 16;
-        }
 
         // Shared updates: Nurture stat decay
         nurtureSystemA.update(yueqi, deltaMs);

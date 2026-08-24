@@ -226,8 +226,51 @@ test('coversBounds: invalid dimensions returns false', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-//  Privacy: no window title/process/URL stored
+//  coversBounds — scaleFactor (DPI conversion)
 // ═══════════════════════════════════════════════════════════════════
+
+test('coversBounds: 125% DPI — physical px window covering 1536×864 screen correctly maps to 1920×1080 display DIP', () => {
+  // scaleFactor=1.25: physical window 1920×1080 → DIP 1536×864, display DIP also 1536×864
+  assert.equal(
+    coversBounds(
+      { x: 0, y: 0, width: 1920, height: 1080 }, // physical pixels from GetWindowRect
+      { x: 0, y: 0, width: 1536, height: 864 },   // display workArea in DIP
+      1.25,
+    ),
+    true,
+  );
+});
+
+test('coversBounds: 150% DPI — physical px window covering 2880×1800 maps to 1920×1200 DIP display', () => {
+  assert.equal(
+    coversBounds(
+      { x: 0, y: 0, width: 2880, height: 1800 },
+      { x: 0, y: 0, width: 1920, height: 1200 },
+      1.5,
+    ),
+    true,
+  );
+});
+
+test('coversBounds: 150% DPI — small physical-px window must not be misread as full-screen', () => {
+  // A 1920×1080 physical window on a 150% DPI display = 1280×720 DIP, which does NOT cover a 1920×1200 DIP display
+  assert.equal(
+    coversBounds(
+      { x: 0, y: 0, width: 1920, height: 1080 },
+      { x: 0, y: 0, width: 1920, height: 1200 },
+      1.5,
+    ),
+    false,
+  );
+});
+
+test('coversBounds: scaleFactor=1 (100% DPI) behaves identically to no-scaleFactor call', () => {
+  const bounds = { x: 0, y: 0, width: 1920, height: 1040 };
+  const target = { x: 0, y: 0, width: 1920, height: 1040 };
+  assert.equal(coversBounds(bounds, target, 1), coversBounds(bounds, target));
+});
+
+
 
 test('PresentationGuard does not store any window content', () => {
   // The guard source should not reference title/ownerName/url storage

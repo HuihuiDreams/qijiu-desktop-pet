@@ -18,6 +18,10 @@
 - 清理 `pomodoroWindow.js`、`citySettingWindow.js`、`statusWindow.js`、`skinSelectorWindow.js` 中与 `WindowI18n.init` 重复的手写 `getLocale()` + `onLocaleChange` 订阅，消除双重执行；统一为各文件补充 `let currentLocale` 声明，修复隐式全局变量污染。
 - 修复 `WindowI18n.init`（`src/utils/windowI18n.js`）仅检查 `window.electronAPI` 导致选肤窗口中静默失效的问题；现在自动降级检测 `window.skinSelectorAPI`，使选肤窗口的语言切换生效。
 - 将 `SkinManager.getAvailableOverlayKeys` 中的内联 `CANDIDATE_KEYS` 提炼为类静态常量 `SkinManager.OVERLAY_CANDIDATE_KEYS`，并添加注释说明需与 `SkinService.js` 保持同步。
+- 修复系统睡眠唤醒或托盘隐藏期间 `deltaMs` 钳制逻辑仅在 `!isPaused` 门内生效的问题（`src/app.js`）：`spriteView.update` 与 `statusUpdateTimer` 在门外消费了未钳制的原始值，导致单帧动画跳变与状态面板伪刷新；现将钳制移至所有消费前无条件执行。
+- 修复 `breakReminderService` 采样时 `elapsed` 未设上限的问题：App Nap 或系统睡眠唤醒后单次 `elapsed` 可超过采样间隔数十倍，导致久坐提醒比设定时间提前触发；现将 `elapsed` 钳制在 `sampleIntervalMs × 10` 以内。
+- 修复 `StageGeometry.applyScreenInfo()` 对 `width`/`height` 缺少 `Number.isFinite` 校验的问题：显示器热插拔时若主进程下发 `NaN`/`undefined`，宠物坐标会全部变为 `NaN` 导致角色消失；现在非法值时保留上一次有效尺寸。
+- 修复 Windows 125%–200% DPI 缩放下 `PresentationGuard.coversBounds()` 用物理像素坐标与 Electron DIP 坐标直接比较的问题：未最大化但物理上铺满屏的窗口会被误判为"演示模式"，错误抑制休息提醒与屏保；现在传入 `display.scaleFactor` 先将窗口坐标转为 DIP 再比较。
 
 ## [0.10.3] - 2026-08-14
 

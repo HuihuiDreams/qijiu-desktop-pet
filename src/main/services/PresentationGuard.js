@@ -80,11 +80,13 @@ function createPresentationGuard(deps = {}, options = {}) {
             return { canInterrupt: mode === 'screensaver' ? false : true, reason: mode === 'screensaver' ? 'display-query-failed' : null };
           }
           const isPresentation = displays.some((display) => {
-            // Both modes now use standard bounds checking logic from ScreensaverEligibilityGuard
-            const targetBounds = mode === 'screensaver' 
+            // Both modes now use standard bounds checking logic from ScreensaverEligibilityGuard.
+            // On Windows, win.bounds are physical pixels (GetWindowRect); display bounds are DIP.
+            // Pass scaleFactor so coversBounds can normalize before comparison.
+            const targetBounds = mode === 'screensaver'
               ? (display.bounds || display.workArea)
               : (display.workArea || display.bounds);
-            return coversBounds(win.bounds, targetBounds);
+            return coversBounds(win.bounds, targetBounds, display.scaleFactor);
           });
           if (isPresentation) {
             return { canInterrupt: false, reason: 'presentation' };
@@ -99,13 +101,17 @@ function createPresentationGuard(deps = {}, options = {}) {
   };
 }
 
-function coversBounds(windowBounds, targetBounds) {
+function coversBounds(windowBounds, targetBounds, scaleFactor) {
   if (!windowBounds || !targetBounds) return false;
 
-  const wx = Number(windowBounds.x);
-  const wy = Number(windowBounds.y);
-  const ww = Number(windowBounds.width);
-  const wh = Number(windowBounds.height);
+  const sf = Number.isFinite(scaleFactor) && scaleFactor > 0 ? scaleFactor : 1;
+
+  // Windows GetWindowRect returns physical pixels; Electron display bounds are DIP.
+  // Divide by scaleFactor to normalise before comparison.
+  const wx = Number(windowBounds.x) / sf;
+  const wy = Number(windowBounds.y) / sf;
+  const ww = Number(windowBounds.width) / sf;
+  const wh = Number(windowBounds.height) / sf;
 
   const ax = Number(targetBounds.x);
   const ay = Number(targetBounds.y);

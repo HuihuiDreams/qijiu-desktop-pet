@@ -213,6 +213,33 @@ test('dispose() cleans up', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
+//  Service: elapsed clamping on sleep/wake
+// ═══════════════════════════════════════════════════════════════════
+
+test('sleep-wake: huge elapsed gap is clamped and does not trigger reminder prematurely', () => {
+  // sampleIntervalMs=10s, interval=5min (300s). One wakeup jump of 1 hour must not fire.
+  const { service, clock, pm, reminders, sampleMs } = createTestService();
+  service.start();
+  pm.setIdleTime(5);
+  pm.setIdleState('active');
+
+  // Warm up: advance one normal sample so lastSampleTime is set
+  clock.advance(sampleMs);
+  clock.tickIntervals();
+  assert.equal(reminders.length, 0);
+
+  // Simulate system sleep: jump clock by 1 hour without ticking intervals
+  // Then tick one interval as if the OS woke up and the sample fired
+  clock.advance(3600 * 1000); // 1 hour gap
+  clock.tickIntervals();      // elapsed = 1 hour, should be clamped to sampleIntervalMs * 10
+
+  // Only 1 normal sample + 1 clamped sample ≤ 2 × (sampleIntervalMs × 10) = 200s < 300s interval
+  assert.equal(reminders.length, 0, 'reminder must NOT fire after a single sleep-wake jump');
+
+  service.stop();
+});
+
+// ═══════════════════════════════════════════════════════════════════
 //  Service: active accumulation and reminder trigger
 // ═══════════════════════════════════════════════════════════════════
 
