@@ -114,9 +114,9 @@ qijiu-desktop-pet/
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
-├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、presentationGuard 接线、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
+├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、presentationGuard 接线（Windows 以 screenToDipRect 归一化前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
-├─ src/main/services/ScreensaverEligibilityGuard.js # 屏保前置打扰守卫：Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；基于 activeWindowProvider 的 isFullScreen 与完整 display.bounds 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 始终返回 unsupported_platform
+├─ src/main/services/ScreensaverEligibilityGuard.js # 屏保前置打扰守卫：Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；以 Electron screenToDipRect 将原生物理窗口矩形转换为 DIP，适配混合 DPI 多屏后再与完整 display.bounds 比较；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 始终返回 unsupported_platform
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 TrayManager 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
@@ -134,7 +134,7 @@ qijiu-desktop-pet/
 ├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
-├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后；macOS 始终放行
+├─ presentationGuard.js                 # 提醒前置守卫：Windows 全屏/演示延后，原生窗口矩形先经 Electron screenToDipRect 转为 DIP；macOS 始终放行
 ├─ meetingDetector.js                   # 会议自动隐藏检测：已知会议进程 + UDP 端点数量轮询与防抖状态机
 ├─ weatherSyncService.js                # 天气感知与时空同步服务主进程：网络请求、缓存、节流和降级
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
@@ -383,7 +383,7 @@ src/assets/{skinId}/
 - 系统锁屏/挂起/恢复事件也会重置计时器。
 - 提醒触发前经过 `PresentationGuard` 检查：
   - macOS：始终允许提醒（不做全屏检测，避免请求辅助功能权限）。
-  - Windows：检查前台窗口是否全屏或覆盖整个工作区，若是则延后 60 秒重试。
+  - Windows：检查前台窗口是否全屏或覆盖整个工作区；原生物理矩形先通过 Electron `screenToDipRect` 转为对应显示器的 DIP 坐标，兼容混合 DPI 多屏，若命中则延后 60 秒重试。
   - 不保存窗口标题、进程名或 URL。
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
 - 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。

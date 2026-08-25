@@ -272,6 +272,33 @@ test('coversBounds: scaleFactor=1 (100% DPI) behaves identically to no-scaleFact
 
 
 
+test('Windows: detects a presentation window on a mixed-DPI secondary display', () => {
+  const physicalBounds = { x: 1920, y: 0, width: 1920, height: 1080 };
+  const dipBounds = { x: 1920, y: 0, width: 1280, height: 720 };
+  const guard = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: physicalBounds,
+        isFullScreen: false,
+        isMaximized: false,
+      },
+    }),
+    getDisplays: () => [{
+      bounds: dipBounds,
+      workArea: dipBounds,
+      scaleFactor: 1.5,
+    }],
+    screenToDipRect: (bounds) => {
+      assert.deepEqual(bounds, physicalBounds);
+      return dipBounds;
+    },
+  });
+
+  assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
+});
+
 test('PresentationGuard does not store any window content', () => {
   // The guard source should not reference title/ownerName/url storage
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'src/main/services/PresentationGuard.js'), 'utf8');

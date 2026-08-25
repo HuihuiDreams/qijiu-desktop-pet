@@ -7,7 +7,6 @@ const statusEl = document.getElementById('skin-selector-status');
 let lastItems = [];
 let previewedSkinId = null;
 let previewInFlight = false;
-let currentLocale;
 
 
 

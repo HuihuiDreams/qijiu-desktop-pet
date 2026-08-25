@@ -11,6 +11,7 @@ function createPresentationGuard(deps = {}, options = {}) {
     platform = process.platform,
     getActiveWindowInfo = null,
     getDisplays = null,
+    screenToDipRect = null,
     now = Date.now,
   } = deps;
 
@@ -79,14 +80,18 @@ function createPresentationGuard(deps = {}, options = {}) {
           if (!Array.isArray(displays)) {
             return { canInterrupt: mode === 'screensaver' ? false : true, reason: mode === 'screensaver' ? 'display-query-failed' : null };
           }
+          const usesScreenToDipRect = platform === 'win32' && typeof screenToDipRect === 'function';
+          const comparableWindowBounds = usesScreenToDipRect
+            ? screenToDipRect(win.bounds)
+            : win.bounds;
           const isPresentation = displays.some((display) => {
             // Both modes now use standard bounds checking logic from ScreensaverEligibilityGuard.
-            // On Windows, win.bounds are physical pixels (GetWindowRect); display bounds are DIP.
-            // Pass scaleFactor so coversBounds can normalize before comparison.
+            // On Windows, GetWindowRect is physical pixels while Electron display bounds are DIP.
+            // screenToDipRect handles mixed-DPI virtual-desktop offsets; the scale fallback is legacy-only.
             const targetBounds = mode === 'screensaver'
               ? (display.bounds || display.workArea)
               : (display.workArea || display.bounds);
-            return coversBounds(win.bounds, targetBounds, display.scaleFactor);
+            return coversBounds(comparableWindowBounds, targetBounds, usesScreenToDipRect ? undefined : display.scaleFactor);
           });
           if (isPresentation) {
             return { canInterrupt: false, reason: 'presentation' };

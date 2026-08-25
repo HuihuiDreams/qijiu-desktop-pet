@@ -87,3 +87,9 @@ test('skin selector maintains original active skin and selection during preview 
   assert.match(rendererSource, /window\.skinSelectorAPI\.onData\(\(items, options\) => renderGallery\(items, options\)\)/);
 });
 
+test('skin selector uses WindowI18n as its sole locale state owner', () => {
+  const rendererSource = readProjectFile('src/skinSelectorWindow.js');
+
+  assert.match(rendererSource, /WindowI18n\.init\(\(locale\) => \{ renderGallery\(lastItems, \{ resetSelection: false \}\); \}\);/);
+  assert.doesNotMatch(rendererSource, /\blet currentLocale\b/);
+});
