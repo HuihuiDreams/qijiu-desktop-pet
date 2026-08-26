@@ -298,12 +298,12 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.isDay, false);
   });
 
-  await t.test('maps hot temperature (>= 35) to heat weather and < 35 to warm/clear when no precipitation present', () => {
+  await t.test('maps hot temperature (>= 33) to heat weather and < 33 to warm/clear when no precipitation present', () => {
     system.setWeatherPayload({
       active: true,
       stale: false,
       weatherCode: 0,
-      temperature: 34,
+      temperature: 32.9,
       rain: 0,
       snowfall: 0,
       isDay: true,
@@ -316,7 +316,7 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
       active: true,
       stale: false,
       weatherCode: 0,
-      temperature: 35,
+      temperature: 33,
       rain: 0,
       snowfall: 0,
       isDay: true,
@@ -329,7 +329,7 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
       active: true,
       stale: false,
       weatherCode: 3,
-      temperature: 36,
+      temperature: 34,
       rain: 0,
       snowfall: 0,
       isDay: true,

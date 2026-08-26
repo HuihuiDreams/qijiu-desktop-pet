@@ -162,7 +162,7 @@ class WeatherAwarenessSystem {
     if (t < 5)  return 'cold';
     if (t < 15) return 'cool';
     if (t < 25) return 'mild';
-    if (t < 35) return 'warm';
+    if (t < 33) return 'warm';
     return 'hot';
   }
 
