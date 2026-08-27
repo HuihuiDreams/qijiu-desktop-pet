@@ -1,4 +1,4 @@
-﻿# ADR-030: 窗口感知平台采样
+# ADR-030: 窗口感知平台采样
 
 ## Status
 Accepted
@@ -22,7 +22,9 @@ Accepted
 - 渲染进程 `WindowAwarenessSystem` 只缓存最新 payload，并用 O(1) 的 `getCurrentPlatform()` 给游戏循环读取。
 - `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏/Dock 平台，只在 idle 重新选择目标时使用它们。
 
-Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms。该间隔使 CP 屏保能在 2 秒新鲜度守卫内安全读取缓存，同时避免 500–1000ms 的高频外部进程轮询。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms，覆盖两个采样周期再加少量余量。主进程会在窗口字段不变化时按采样间隔刷新同一 payload 的 `sampledAt`，避免去重后 renderer 长时间收不到 IPC，导致本来仍有效的窗口平台在 renderer 侧过期。macOS 和其它平台在活动窗口感知上返回 unavailable fallback；macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。
+Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms。该间隔使 CP 屏保能在 2 秒新鲜度守卫内安全读取缓存，同时避免 500–1000ms 的高频外部进程轮询。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms，覆盖两个采样周期再加少量余量。主进程会在窗口字段不变化时按采样间隔刷新同一 payload 的 `sampledAt`，避免去重后 renderer 长时间收不到 IPC，导致本来仍有效的窗口平台在 renderer 侧过期。
+
+macOS 使用 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 断言（通常由视频播放或演示触发），借此模拟 `isFullScreen` 状态，主要用于阻止 CP 屏保。该机制与媒体播放状态强绑定，暂停的视频会解除断言（允许屏保），部分非全屏视频会议（如 Zoom/Meet）可能会保持断言。macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。其它平台在活动窗口感知上返回 unavailable fallback。
 
 ## 平台选择概率
 活动窗口顶部平台的选择概率显式配置为：
@@ -58,10 +60,10 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 - 缺点：增加 Windows/macOS 打包和签名风险。
 - 结论：MVP 使用 PowerShell/User32 provider；如后续需要 native provider，必须保持现有 provider 合同不变。
 
-### macOS 活动窗口 provider 同步进入 MVP
-- 优点：跨平台能力更完整。
+### macOS 原生 Accessibility API 窗口提供者
+- 优点：跨平台能力更完整，能像 Windows 一样获取精准的窗口边界。
 - 缺点：需要 Accessibility 权限检测、授权引导、未授权 fallback 和额外多显示器测试。
-- 结论：延期。macOS 当前返回 unavailable fallback；未来 provider 必须在缺少权限时保持普通桌面移动可用。
+- 结论：延期。目前退而求其次使用 `pmset` 检测防止睡眠断言，满足了防打扰（屏保拦截）的核心诉求，而无需向用户索要无障碍权限。未来如果有需要在 macOS 窗体上漫步，再考虑补齐 Accessibility provider，且必须在缺少权限时保持普通桌面移动可用。
 
 ## Consequences
 - 活动窗口感知不可用时，渲染进程行为仍保持确定。
@@ -69,4 +71,4 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 - 活动窗口变化不会立刻抢走正在移动或交互中的宠物目标。
 - renderer TTL 大于主进程采样间隔，避免 `main.platform` 有值但 `renderer.platform` 周期性变成 `null`。
 - 70% 的活动窗口顶部概率由配置项表达，测试覆盖命中和未命中两条路径，防止代码再次出现“概率判断”和“实际目标范围”不一致。
-- 未来 macOS provider 可在同一合同下实现，并继续保留 permission missing 时的 unavailable fallback。
+- 未来完整的 macOS provider 可在同一合同下实现，并继续保留 permission missing 时的 unavailable fallback。当前基于 `pmset` 的非侵入式方案以最小代价满足了核心场景（屏保防御）。
