@@ -71,6 +71,23 @@ function rewriteMacExecutableName(context) {
   if (result.status !== 0) {
     throw new Error(`Failed to update macOS CFBundleExecutable: ${result.stderr || result.stdout}`);
   }
+
+  // Fixing the ad-hoc signature since we modified Info.plist and renamed the executable.
+  // Without this, the app will crash on launch with Permission Denied (1100) on macOS ARM64.
+  const codesignResult = spawnSync('/usr/bin/codesign', [
+    '--force',
+    '--deep',
+    '--sign',
+    '-',
+    appPath,
+  ], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+
+  if (codesignResult.status !== 0) {
+    throw new Error(`Failed to ad-hoc sign the app: ${codesignResult.stderr || codesignResult.stdout}`);
+  }
 }
 
 function resolveWindowsPowerShellPath(env) {
