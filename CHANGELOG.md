@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Fixed
+- 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
+
 ## [0.10.4] - 2026-08-28
 
 ### Added
