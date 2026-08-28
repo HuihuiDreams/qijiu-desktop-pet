@@ -49,10 +49,10 @@ CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节
 **实现要点**
 
 - 新增 `DIALOGUES.screensaverCaught.{yueqi, shenjiu}` 三语词条（zh / en / ja）。
-- 气泡显示时长仍为 800ms，与 `caught` 状态计时对齐。
+- 气泡显示时长为 4000ms（与其他气泡保持一致），虽然 `caught` 状态仅为 800ms，但在 `flushPendingReturnBubble()` 时会强制清理残留气泡以免与回归问候重叠。
 - 移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop` 动画。
 - `ScreensaverSystem.showCaughtIndicator` 重命名为 `showCaughtBubbles`，通过注入的 `dialogBubble` 渲染。
-- `Decision` 段落中「普通输入时，`!` 会先保留一次绘制机会、展示 800ms，并按目标显示器 DPI 定位后再回位」同步更新为「双宠头顶气泡，文案来自 i18n，展示 800ms 后回位」。
+- `Decision` 段落中「普通输入时，`!` 会先保留一次绘制机会、展示 800ms，并按目标显示器 DPI 定位后再回位」同步更新为「双宠头顶气泡，文案来自 i18n，展示 4000ms 后随回归气泡清理或自然消失，宠物在 800ms 停顿后开始回位」。
 - 相关单元测试（`challengerStep3_1.test.js` / `screensaverOverlay.test.js`）已改为断言 `dialogBubble.show` 调用而非 CSS 节点。
 
 ### 2026-07-29: 屏保视觉与性能优化
@@ -123,7 +123,7 @@ renderer 重载一律取消而不回放。
 普通输入后 Controller 立即释放屏保租约并回到待机轮询，渲染器随后完成「被抓包 → 回位」并发送匹配的 `screensaver-finished` 确认：
 
 - 普通输入时，双宠头顶各自弹出 `DIALOGUES.screensaverCaught` 对话气泡（文案由 `i18n.js` 提供，支持 zh / en / ja）。
-- 先保留一次绘制机会，展示 800ms，再按目标显示器 DPI 定位后回位。
+- 宠物进入 `caught` 停顿 800ms（气泡本身有效期 4000ms），再按目标显示器 DPI 定位后回位（`runningBack`）。
 - 若渲染器在 active 阶段自行安全结束，该确认也会释放租约。
 
 ### 7. 闲置期间连招循环

@@ -136,6 +136,14 @@ class OfflineReturnSystem {
   flushPendingReturnBubble() {
     const pending = this.pendingReturnBubble;
     if (!pending) return;
+    // 清除屏保退场残留的「被发现了」气泡，避免与回归问候气泡叠加。
+    // reset(true) 会 preserveBubbles（让 caught 气泡自然消失），但 caught 气泡的
+    // 4000ms 时长尚未结束时 flush 就会调度 1500ms 后的回归气泡，造成两组气泡重叠。
+    const pets = this.getPets();
+    if (this.dialogBubble && typeof this.dialogBubble.removeForPets === 'function'
+        && Array.isArray(pets) && pets.length > 0) {
+      this.dialogBubble.removeForPets(pets);
+    }
     this.returnBubbleSequenceId++;
     this.scheduleReturnBubbles(pending);
   }

@@ -24,6 +24,7 @@
 - 修复 `breakReminderService` 采样时 `elapsed` 未设上限的问题：App Nap 或系统睡眠唤醒后单次 `elapsed` 可超过采样间隔数十倍，导致久坐提醒比设定时间提前触发；现将 `elapsed` 钳制在 `sampleIntervalMs × 10` 以内。
 - 修复 `StageGeometry.applyScreenInfo()` 对 `width`/`height` 缺少 `Number.isFinite` 校验的问题：显示器热插拔时若主进程下发 `NaN`/`undefined`，宠物坐标会全部变为 `NaN` 导致角色消失；现在非法值时保留上一次有效尺寸。
 - 修复 Windows 混合 DPI 多屏下 `PresentationGuard` 将虚拟桌面全局物理坐标直接除以单个 `display.scaleFactor` 的问题：副屏上覆盖完整工作区的无边框演示窗口会漏判，导致休息提醒或屏保错误打断演示。现在由 Electron `screen.screenToDipRect()` 按窗口所在显示器转换完整矩形后再比较 DIP 坐标。
+- 修复 macOS 开盖唤醒时屏保「被发现了」气泡与回归问候「你走了 X 个时辰」气泡叠加显示的时序问题：屏保经 `screensaver-stop(input)` 退出时 `reset(true)` 保留了 caught 气泡（4000ms），紧接着 `flushPendingReturnBubble()` 调度的 1500ms 回归气泡会在 caught 气泡尚未消失时弹出；现在 `flushPendingReturnBubble()` 在调度前先清除残留气泡。
 
 ## [0.10.3] - 2026-08-14
 

@@ -13,6 +13,7 @@ function makeDeps(overrides = {}) {
   const decayCalls = { A: [], B: [] };
   const saveCalls = [];
   const dialogBubbleCalls = [];
+  const removeForPetsCalls = [];
 
   const deps = {
     getPets: () => [yueqi, shenjiu],
@@ -26,7 +27,10 @@ function makeDeps(overrides = {}) {
       deserializePet: () => {},
     },
     skinManager: { getCurrentSkin: () => 'default' },
-    dialogBubble: { show: (pet, text, duration) => dialogBubbleCalls.push({ pet: pet.id, text, duration }) },
+    dialogBubble: {
+      show: (pet, text, duration) => dialogBubbleCalls.push({ pet: pet.id, text, duration }),
+      removeForPets: (pets) => removeForPetsCalls.push(pets.map((p) => p.id)),
+    },
     getI18nUi: () => null,
     CONFIG: { DECAY_INTERVAL: 60000 },
     now: () => 1_000_000,
@@ -34,7 +38,7 @@ function makeDeps(overrides = {}) {
     ...overrides,
   };
 
-  return { deps, yueqi, shenjiu, decayCalls, saveCalls, dialogBubbleCalls };
+  return { deps, yueqi, shenjiu, decayCalls, saveCalls, dialogBubbleCalls, removeForPetsCalls };
 }
 
 function withStubbedSetTimeout(fn) {
@@ -398,4 +402,40 @@ test('applyLoadedState falls back to now() when the saved lastVisibleTime is mis
 
   assert.equal(system.lastVisibleTime, 8888);
   assert.deepEqual(decayCalls.A, []);
+});
+
+test('flushPendingReturnBubble clears residual caught bubbles before scheduling greeting', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const twoHoursMs = 7200000;
+    let screensaverActive = true;
+    const { deps, dialogBubbleCalls, removeForPetsCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - twoHoursMs,
+      isDocumentVisible: () => true,
+      isScreensaverActive: () => screensaverActive,
+    });
+    const system = new OfflineReturnSystem(deps);
+
+    // Buffer the bubble (screensaver active — simulates display-sleep wake scenario)
+    system.handleOfflineReturn(1000);
+    assert.equal(scheduled.length, 0);
+
+    // Screensaver exits via stop(input) → caught → runningBack → reset(true) → onScreensaverEnd.
+    // At this point caught "被发现了" bubbles are still showing (preserved by reset(true)).
+    // flushPendingReturnBubble must clear them before scheduling greeting bubbles.
+    screensaverActive = false;
+    system.flushPendingReturnBubble();
+
+    // removeForPets was called BEFORE the greeting timers were scheduled
+    assert.equal(removeForPetsCalls.length, 1);
+    assert.deepEqual(removeForPetsCalls[0], ['yueqi', 'shenjiu']);
+
+    // Greeting bubbles are still scheduled normally
+    assert.equal(scheduled.length, 2);
+    scheduled.forEach((s) => s.cb());
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
+  });
 });
