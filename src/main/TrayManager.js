@@ -57,7 +57,7 @@ function buildTrayMenu() {
       await deps.initStore();
       if (deps.getStore()) deps.getStore().set(deps.LOCALE_KEY, lang);
       refreshTrayMenu();
-      if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('locale-changed', lang);
+      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('locale-changed', lang);
       if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
         windowManager.statusWindow.webContents.send('locale-changed', lang);
       }
@@ -84,7 +84,7 @@ function buildTrayMenu() {
     {
       label: (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed() && windowManager.statusWindow.isVisible()) ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
       click: () => {
-        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-status-panel');
+        if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('toggle-status-panel');
       },
     },
     {
@@ -125,7 +125,7 @@ function buildTrayMenu() {
     {
       label: trayMenuLabel('trayResetPos'),
       click: () => {
-        if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('reset-positions');
+        if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('reset-positions');
       },
     },
     ...(process.platform === 'darwin' && screen.getAllDisplays().length > 1 ? [{
@@ -240,7 +240,7 @@ function buildTrayMenu() {
       {
         label: trayMenuLabel('trayDevTools'),
         click: () => {
-          if (windowManager.mainWindow) windowManager.mainWindow.webContents.openDevTools({ mode: 'detach' });
+          if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.openDevTools({ mode: 'detach' });
         },
       },
     ] : []),

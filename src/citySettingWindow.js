@@ -7,7 +7,7 @@ const confirmBtn = document.getElementById('city-confirm');
 const closeBtn = document.getElementById('city-close');
 const currentValueEl = document.getElementById('city-current-value');
 const statusEl = document.getElementById('city-status');
-let currentLocale;
+
 
 
 
@@ -101,9 +101,5 @@ closeBtn.addEventListener('click', () => {
   window.electronAPI.closeCitySettingWindow();
 });
 // Init
-window.electronAPI.getLocale().then(() => {
-  loadCurrentCity();
-  inputEl.focus();
-});
-
+requestAnimationFrame(() => inputEl.focus());
 WindowI18n.init(loadCurrentCity);

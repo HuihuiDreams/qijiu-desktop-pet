@@ -17,7 +17,7 @@ function init(dependencies) {
     const store = StoreManager.getStore();
     if (store) store.set(LOCALE_KEY, lang);
     trayManager.refreshTrayMenu();
-    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('locale-changed', lang);
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('locale-changed', lang);
     if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
       windowManager.statusWindow.webContents.send('locale-changed', lang);
     }

@@ -1,7 +1,7 @@
 const contentEl = document.getElementById('status-content');
 const closeBtn = document.getElementById('status-close');
 
-let currentLocale;
+
 let lastRenderData = null;
 
 
@@ -76,9 +76,7 @@ function renderPetStats(pet) {
 
 // Body padding (10px each side).
 const BODY_PADDING = 20;
-// Titlebar height + its bottom margin (≈ 18px margin + ~49px bar = ~67px)
-// plus the panel's own vertical padding (24px top + 20px bottom).
-const TITLEBAR_AND_PANEL_PADDING = 92;
+
 
 function renderStatus(data) {
   lastRenderData = data;

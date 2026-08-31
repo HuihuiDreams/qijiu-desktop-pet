@@ -13,6 +13,11 @@
 ### Fixed
 - 修复 macOS 环境下运行 Playwright E2E 测试结束时频繁弹出的“Electron 意外退出”崩溃弹窗问题；在 `closeApp` 辅助函数中加入 `app.quit()` 优雅退出逻辑，避免被 Playwright 强制终止导致系统拦截报错。
 - 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
+- 为 `LocaleService.js` 和 `TrayManager.js` 中 `mainWindow` 的 5 处 `webContents.send` / `openDevTools` 调用补充 `!mainWindow.isDestroyed()` 防御性校验，与子窗口已有的守卫保持一致，消除窗口销毁竞态下的潜在崩溃。
+- 移除 `citySettingWindow.js` 和 `pomodoroWindow.js` 中与 `WindowI18n.init` 重复的 `getLocale().then()` 调用，避免首帧双重回调（`loadCurrentCity` / `refreshState` 被执行两次）。
+
+### Removed
+- 清理 `citySettingWindow.js`、`pomodoroWindow.js`、`statusWindow.js` 中遗留的未使用变量 `let currentLocale` 及 `statusWindow.js` 中孤立的常量 `TITLEBAR_AND_PANEL_PADDING`。
 
 ## [0.10.4] - 2026-08-28
 

@@ -32,7 +32,7 @@ const progressEl = document.querySelector('.pomodoro-progress');
 const progressFillEl = document.getElementById('pomodoro-progress-fill');
 
 let currentState = { ...DEFAULT_POMODORO_STATE };
-let currentLocale;
+
 
 
 function unwrapResult(result) {
@@ -289,9 +289,5 @@ function initTooltipEvents() {
   });
 }
 
-window.electronAPI.getLocale().then(() => {
-  initTooltipEvents();
-  return refreshState();
-});
-
+initTooltipEvents();
 WindowI18n.init(refreshState);
