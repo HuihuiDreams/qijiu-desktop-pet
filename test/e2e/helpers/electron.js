@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const electronPath = require('electron');
 const { _electron: electron } = require('playwright');
 
 const projectRoot = path.resolve(__dirname, '../../..');
@@ -23,7 +24,7 @@ async function launchApp() {
   // Prevent Electron from running as Node when launched by Playwright
   delete launchEnv.ELECTRON_RUN_AS_NODE;
 
-  const executablePath = getElectronExecutable();
+  const executablePath = electronPath;
 
   const electronApp = await electron.launch({
     executablePath,
@@ -47,6 +48,14 @@ async function launchApp() {
  */
 async function closeApp(electronApp, userDataDir) {
   if (electronApp) {
+    try {
+      // Gracefully quit to avoid macOS "unexpected exit" crash reporter dialogs
+      await electronApp.evaluate(({ app }) => {
+        app.quit();
+      });
+    } catch (e) {
+      // Ignore errors if already closed
+    }
     await electronApp.close().catch(() => {});
   }
   if (userDataDir) {
@@ -54,23 +63,6 @@ async function closeApp(electronApp, userDataDir) {
   }
 }
 
-function getElectronExecutable() {
-  if (process.platform === 'win32') {
-    return path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
-  }
-  if (process.platform === 'darwin') {
-    return path.join(
-      projectRoot,
-      'node_modules',
-      'electron',
-      'dist',
-      'Electron.app',
-      'Contents',
-      'MacOS',
-      'Electron',
-    );
-  }
-  return path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron');
-}
+
 
 module.exports = { launchApp, closeApp };

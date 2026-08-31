@@ -7,8 +7,11 @@
 ### Added
 - 建立 Playwright E2E 测试体系：新增 `playwright.config.js`（串行执行、40s 超时、独立 userData 隔离），`test/e2e/helpers/electron.js` 封装 `launchApp`/`closeApp`，以及四个 spec 文件（`startup.spec.js`、`skinSelector.spec.js`、`contextMenu.spec.js`、`breakReminder.spec.js`），共覆盖 16 个端到端测试场景。通过 `npm run test:e2e` 独立触发，不影响 `npm test` 的 Node 单测执行速度。
 
-### Fixed
+### Changed
+- 简化 E2E 测试中的 Electron 路径解析：移除多余的跨平台路径拼接逻辑，直接使用 `require('electron')` 导出，提高代码整洁度。
 
+### Fixed
+- 修复 macOS 环境下运行 Playwright E2E 测试结束时频繁弹出的“Electron 意外退出”崩溃弹窗问题；在 `closeApp` 辅助函数中加入 `app.quit()` 优雅退出逻辑，避免被 Playwright 强制终止导致系统拦截报错。
 - 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
 
 ## [0.10.4] - 2026-08-28
