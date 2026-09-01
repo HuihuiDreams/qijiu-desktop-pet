@@ -14,6 +14,25 @@ function tick() {
   return new Promise((resolve) => setImmediate(resolve));
 }
 
+function createVerifiedDownloadInfo(metadata = {}) {
+  const crypto = require('node:crypto');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-verified-update-'));
+  const downloadedFile = path.join(tmpDir, 'installer.bin');
+  const contents = 'verified-update-package';
+  fs.writeFileSync(downloadedFile, contents);
+  return {
+    info: {
+      ...metadata,
+      downloadedFile,
+      sha512: crypto.createHash('sha512').update(contents).digest('base64'),
+    },
+    cleanup: () => fs.rmSync(tmpDir, { recursive: true, force: true }),
+  };
+}
+
 function createHarness(options = {}) {
   const updater = new EventEmitter();
   const messages = [];
@@ -225,28 +244,38 @@ test('metadata not found only shows the latest-version message once', async () =
 });
 
 test('update-downloaded asks before quit and install', async () => {
+  const verifiedDownload = createVerifiedDownloadInfo({ version: '0.1.8' });
   const { updater, messages, progressEvents } = createHarness({
     responses: [{ response: 0 }],
   });
 
-  updater.emit('update-downloaded', { version: '0.1.8' });
-  await tick();
+  try {
+    updater.emit('update-downloaded', verifiedDownload.info);
+    await tick();
 
-  assert.equal(messages[0].title, 'updateReadyTitle');
-  assert.deepEqual(updater.quitAndInstallArgs, [false, true]);
-  assert.equal(progressEvents[0][0], 'close');
+    assert.equal(messages[0].title, 'updateReadyTitle');
+    assert.deepEqual(updater.quitAndInstallArgs, [false, true]);
+    assert.equal(progressEvents[0][0], 'close');
+  } finally {
+    verifiedDownload.cleanup();
+  }
 });
 
 test('update-downloaded respects a user cancel', async () => {
+  const verifiedDownload = createVerifiedDownloadInfo({ releaseName: '0.1.8' });
   const { updater, messages } = createHarness({
     responses: [{ response: 1 }],
   });
 
-  updater.emit('update-downloaded', { releaseName: '0.1.8' });
-  await tick();
+  try {
+    updater.emit('update-downloaded', verifiedDownload.info);
+    await tick();
 
-  assert.equal(messages[0].message, 'updateReadyMsg'.replace('{version}', '0.1.8'));
-  assert.equal(updater.quitAndInstallArgs, undefined);
+    assert.equal(messages[0].message, 'updateReadyMsg'.replace('{version}', '0.1.8'));
+    assert.equal(updater.quitAndInstallArgs, undefined);
+  } finally {
+    verifiedDownload.cleanup();
+  }
 });
 
 test('update-available uses no-version copy when metadata has no version', async () => {
@@ -421,12 +450,49 @@ test('verifyDownloadedPackageIntegrity verifies base64 and hex sha512 (SBP-001)'
   const tmpFile = path.join(os.tmpdir(), 'deskpet-test-update.bin');
   fs.writeFileSync(tmpFile, 'deskpet-secure-update-content');
   const hashBase64 = crypto.createHash('sha512').update('deskpet-secure-update-content').digest('base64');
+  const hashHex = crypto.createHash('sha512').update('deskpet-secure-update-content').digest('hex');
   const badHash = 'badhash';
 
   assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashBase64 }), true);
+  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashHex }), true);
   assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: badHash }), false);
 
   if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+});
+
+test('verifyDownloadedPackageIntegrity fails closed for missing or unreadable metadata', () => {
+  const path = require('node:path');
+  const os = require('node:os');
+
+  assert.equal(verifyDownloadedPackageIntegrity(null), false);
+  assert.equal(verifyDownloadedPackageIntegrity({}), false);
+  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe' }), false);
+  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe', sha512: 123 }), false);
+  assert.equal(verifyDownloadedPackageIntegrity({ sha512: 'abc' }), false);
+  assert.equal(verifyDownloadedPackageIntegrity({
+    downloadedFile: path.join(os.tmpdir(), 'deskpet-update-does-not-exist.bin'),
+    sha512: 'abc',
+  }), false);
+});
+
+test('update-downloaded refuses a package when checksum metadata is missing', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-update-no-hash-'));
+  const tmpFile = path.join(tmpDir, 'installer.bin');
+  fs.writeFileSync(tmpFile, 'unverified-update');
+
+  try {
+    const { updater, manager } = createHarness();
+    updater.emit('update-downloaded', { downloadedFile: tmpFile });
+    await tick();
+
+    assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
+    assert.equal(updater.quitAndInstallArgs, undefined);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('update-downloaded intercepts corrupted package integrity (SBP-001)', async () => {
@@ -598,4 +664,104 @@ test('mac manual update surfaces fetch errors and closes progress', async () => 
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('mac manual update aborts timed-out requests and allows retrying', async () => {
+  const messages = [];
+  const progressEvents = [];
+  let attempts = 0;
+  let aborts = 0;
+  const manager = createUpdateManager({
+    isMac: true,
+    macCheckTimeoutMs: 10,
+    fetchImpl: (_url, { signal }) => {
+      attempts += 1;
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => {
+          aborts += 1;
+          const error = new Error('The update request was aborted.');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      });
+    },
+  });
+  manager.initUpdateManager({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.1.0',
+    },
+    dialog: {
+      showMessageBox: async (options) => {
+        messages.push(options);
+        return { response: 0 };
+      },
+    },
+    refreshTrayMenu: () => {},
+    updateProgressUi: {
+      showChecking: (payload) => progressEvents.push(['checking', payload]),
+      close: () => progressEvents.push(['close']),
+    },
+    t: (key) => ({
+      updateErrTitle: 'Update failed',
+      updateErrDownload: 'Download timed out.',
+      updateErrDetailPrefix: 'Reason: ',
+      updateBtnOk: 'OK',
+    })[key] || key,
+  });
+
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(attempts, 1);
+  assert.equal(aborts, 1);
+  assert.equal(manager.getUpdateMenuState().checking, false);
+  assert.equal(manager.getUpdateMenuState().enabled, true);
+  assert.equal(manager.getUpdateMenuState().error, 'Download timed out.');
+  assert.equal(messages[0].message, 'Download timed out.');
+  assert.deepEqual(progressEvents.map(([name]) => name), ['checking', 'close']);
+
+  await manager.checkForUpdatesFromTray();
+
+  assert.equal(attempts, 2);
+  assert.equal(aborts, 2);
+  assert.equal(manager.getUpdateMenuState().checking, false);
+  assert.deepEqual(progressEvents.map(([name]) => name), [
+    'checking',
+    'close',
+    'checking',
+    'close',
+  ]);
+});
+
+test('mac manual update clears its timeout after a normal response', async () => {
+  let requestSignal = null;
+  const manager = createUpdateManager({
+    isMac: true,
+    macCheckTimeoutMs: 20,
+    fetchImpl: async (_url, { signal }) => {
+      requestSignal = signal;
+      return {
+        ok: true,
+        async json() {
+          return { tag_name: 'v0.1.0' };
+        },
+      };
+    },
+  });
+  manager.initUpdateManager({
+    app: {
+      isPackaged: true,
+      getVersion: () => '0.1.0',
+    },
+    dialog: {
+      showMessageBox: () => new Promise((resolve) => {
+        setTimeout(() => resolve({ response: 0 }), 30);
+      }),
+    },
+  });
+
+  await manager.checkForUpdatesFromTray();
+
+  assert.ok(requestSignal);
+  assert.equal(requestSignal.aborted, false);
 });

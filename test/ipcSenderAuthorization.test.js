@@ -1,6 +1,23 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { isSenderMainWindow } = require('../src/main/services/IpcSenderAuthorization');
+const {
+  isSenderAnyWindow,
+  isSenderMainWindow,
+  isSenderWindow,
+} = require('../src/main/services/IpcSenderAuthorization');
+
+test('IpcSenderAuthorization - authorizes a live named window and an explicit allowlist', () => {
+  const sender = { isDestroyed: () => false, id: 7 };
+  const allowedWindow = { isDestroyed: () => false, webContents: sender };
+  const otherWindow = {
+    isDestroyed: () => false,
+    webContents: { isDestroyed: () => false, id: 8 },
+  };
+
+  assert.strictEqual(isSenderWindow({ sender }, allowedWindow), true);
+  assert.strictEqual(isSenderAnyWindow({ sender }, [otherWindow, allowedWindow]), true);
+  assert.strictEqual(isSenderAnyWindow({ sender }, [otherWindow]), false);
+});
 
 test('IpcSenderAuthorization - should authorize valid main window sender', () => {
   const mockWebContents = { isDestroyed: () => false };

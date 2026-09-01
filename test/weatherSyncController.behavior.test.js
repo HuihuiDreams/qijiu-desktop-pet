@@ -80,6 +80,10 @@ function createDependencies(initialSettings, initialWeatherCache) {
     isDestroyed: () => false,
     webContents: { send: (channel, payload) => sent.push([channel, payload]) },
   };
+  const citySettingWindow = {
+    isDestroyed: () => false,
+    webContents: { isDestroyed: () => false },
+  };
   const store = {
     get: (key) => storeValues.get(key),
     set: (key, value) => storeValues.set(key, value),
@@ -89,13 +93,14 @@ function createDependencies(initialSettings, initialWeatherCache) {
     deps: {
       StoreManager: { getStore: () => store },
       trayManager: { refreshTrayMenu: () => { trayRefreshCount += 1; } },
-      windowManager: { mainWindow },
+      windowManager: { mainWindow, citySettingWindow },
     },
     sent,
     storeListeners,
     storedSettings: () => storeValues.get('weatherSyncSettings'),
     storedValue: (key) => storeValues.get(key),
     getTrayRefreshCount: () => trayRefreshCount,
+    cityEvent: { sender: citySettingWindow.webContents },
   };
 }
 
@@ -106,7 +111,7 @@ test('WeatherSyncController exposes persisted city settings immediately after in
     fetchWeather: async () => ({ active: true }),
     processSettingsChange: async (settings) => settings,
   });
-  const { deps, storeListeners } = createDependencies({
+  const { deps, storeListeners, cityEvent } = createDependencies({
     ...DEFAULT_SETTINGS,
     city: 'Tokyo',
     enabled: true,
@@ -116,7 +121,7 @@ test('WeatherSyncController exposes persisted city settings immediately after in
 
   Controller.init(deps);
 
-  assert.deepEqual(ipcMain.handlers['get-city-settings'](), { city: 'Tokyo' });
+  assert.deepEqual(ipcMain.handlers['get-city-settings'](cityEvent), { city: 'Tokyo' });
   assert.equal(typeof ipcMain.handlers['set-city-name'], 'function');
   assert.equal(typeof storeListeners.weatherSyncSettings, 'function');
 });
@@ -355,11 +360,11 @@ test('set-city-name rejects non-string input', async () => {
     fetchWeather: async () => {},
     processSettingsChange: async () => {},
   });
-  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  const { deps, cityEvent } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  assert.deepEqual(await ipcMain.handlers['set-city-name'](null, 123), { success: false });
-  assert.deepEqual(await ipcMain.handlers['set-city-name'](null, '  '), { success: false });
+  assert.deepEqual(await ipcMain.handlers['set-city-name'](cityEvent, 123), { success: false });
+  assert.deepEqual(await ipcMain.handlers['set-city-name'](cityEvent, '  '), { success: false });
 });
 
 test('set-city-name success: geocode passes, saves, starts sync, returns { success: true, city }', async () => {
@@ -375,12 +380,12 @@ test('set-city-name success: geocode passes, saves, starts sync, returns { succe
       city: 'Tokyo'
     }),
   });
-  const { deps, storedSettings, getTrayRefreshCount } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
+  const { deps, storedSettings, getTrayRefreshCount, cityEvent } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
   Controller.init(deps);
 
   stubTimers();
   try {
-    const result = await ipcMain.handlers['set-city-name'](null, 'Tokyo');
+    const result = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
     // startWeatherSync is async, wait a tick for fetchWeather to complete
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(result, { success: true, city: 'Tokyo' });
@@ -403,10 +408,10 @@ test('set-city-name geocode failure: lat/lon remain null -> { success: false }',
       lon: null,
     }),
   });
-  const { deps, storedSettings } = createDependencies(DEFAULT_SETTINGS);
+  const { deps, storedSettings, cityEvent } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  const result = await ipcMain.handlers['set-city-name'](null, 'UnknownCity');
+  const result = await ipcMain.handlers['set-city-name'](cityEvent, 'UnknownCity');
   assert.deepEqual(result, { success: false });
   assert.equal(storedSettings().city, '');
 });
@@ -418,10 +423,10 @@ test('set-city-name processSettingsChange throws -> { success: false }', async (
     fetchWeather: async () => {},
     processSettingsChange: async () => { throw new Error('Network error'); },
   });
-  const { deps } = createDependencies(DEFAULT_SETTINGS);
+  const { deps, cityEvent } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  const result = await ipcMain.handlers['set-city-name'](null, 'Tokyo');
+  const result = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
   assert.deepEqual(result, { success: false });
 });
 
@@ -466,10 +471,10 @@ test('get-city-settings returns empty string when city is not set', () => {
     fetchWeather: async () => {},
     processSettingsChange: async (settings) => settings,
   });
-  const { deps } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
+  const { deps, cityEvent } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
   Controller.init(deps);
 
-  assert.deepEqual(ipcMain.handlers['get-city-settings'](), { city: '' });
+  assert.deepEqual(ipcMain.handlers['get-city-settings'](cityEvent), { city: '' });
 });
 
 test('getStoredWeatherSyncSettings returns defaults when store is unavailable', () => {

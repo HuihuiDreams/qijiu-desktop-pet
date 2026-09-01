@@ -13,6 +13,7 @@ const {
 } = require('../../../breakReminderService');
 const { createPresentationGuard } = require('./PresentationGuard');
 const { BREAK_REMINDER_STORE_KEY } = require('../constants');
+const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 const BREAK_REMINDER_TRAY_INTERVALS = [30, 45, 60, 90, 120];
 
@@ -28,7 +29,8 @@ function init(dependencies) {
   const { isPetCurrentlyHidden } = PetVisibilityService;
   const { powerMonitor, screen } = require('electron');
 
-  ipcMain.on('break-reminder-dismissed', () => {
+  ipcMain.on('break-reminder-dismissed', (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return;
     if (deps.interruptionCoordinator && typeof deps.interruptionCoordinator.release === 'function') {
       deps.interruptionCoordinator.release('break-reminder');
     }

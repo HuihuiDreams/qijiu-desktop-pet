@@ -53,7 +53,7 @@ test('pomodoro handlers honor the snapshot IPC contract used by the renderer', (
   // pomodoro-start must accept the plain minutes number the renderer sends and
   // await the async session start — not destructure {workDuration, breakDuration}
   // and wrap an un-awaited Promise (which fails structured-clone over IPC).
-  assert.match(pomodoroSource, /ipcMain\.handle\('pomodoro-start',\s*async\s*\(_event,\s*minutes\)/);
+  assert.match(pomodoroSource, /ipcMain\.handle\('pomodoro-start',\s*async\s*\(event,\s*minutes\)/);
   assert.match(pomodoroSource, /await deps\.startPomodoroSession\(minutes\)/);
   assert.equal(pomodoroSource.includes('workDuration'), false, 'must not destructure workDuration');
 

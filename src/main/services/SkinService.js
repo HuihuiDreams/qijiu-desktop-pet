@@ -8,17 +8,20 @@ const {
 } = require('../../../ipcContracts');
 const { createAssetUrl, hasProtectedAsset, listAvailableSkinIds } = require('../../../protectedAssetLoader');
 const { buildSkinGalleryItems } = require('../../../skinGallery');
+const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 let deps = {};
 
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.handle('get-available-skins', () => {
+  ipcMain.handle('get-available-skins', (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return [];
     return scanAvailableSkins();
   });
 
-  ipcMain.handle('get-available-overlay-keys', (_event, skinId) => {
+  ipcMain.handle('get-available-overlay-keys', (event, skinId) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return [];
     return getAvailableOverlayKeys(skinId || currentSkinId);
   });
 
@@ -29,8 +32,11 @@ function init(dependencies) {
     return getSkinGalleryItems();
   });
 
-  ipcMain.handle('set-current-skin', async (_event, skinId) => {
+  ipcMain.handle('set-current-skin', async (event, skinId) => {
     const { sendPomodoroState, trayManager } = deps;
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) {
+      return createIpcFailure('FORBIDDEN', 'Skin access denied');
+    }
     if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
       return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
     }

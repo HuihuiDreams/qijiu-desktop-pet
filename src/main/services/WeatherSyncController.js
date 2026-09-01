@@ -6,6 +6,7 @@
  * init(deps) 模式，deps: { windowManager, trayManager, StoreManager }。
  */
 const { ipcMain } = require('electron');
+const { isSenderWindow } = require('./IpcSenderAuthorization');
 const {
   DEFAULT_WEATHER_SYNC_SETTINGS,
   normalizeSettings: normalizeWeatherSyncSettings,
@@ -27,11 +28,13 @@ let weatherSyncStartId = 0;
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.handle('get-city-settings', () => {
+  ipcMain.handle('get-city-settings', (event) => {
+    if (!isSenderWindow(event, deps.windowManager.citySettingWindow)) return { success: false };
     return { city: weatherSyncSettings.city || '' };
   });
 
-  ipcMain.handle('set-city-name', async (_event, cityName) => {
+  ipcMain.handle('set-city-name', async (event, cityName) => {
+    if (!isSenderWindow(event, deps.windowManager.citySettingWindow)) return { success: false };
     if (typeof cityName !== 'string' || !cityName.trim()) {
       return { success: false };
     }

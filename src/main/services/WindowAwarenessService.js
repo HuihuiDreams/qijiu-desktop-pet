@@ -8,6 +8,7 @@
 const { ipcMain } = require('electron');
 const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('../../../activeWindowProvider');
 const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
+const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000;
 const WINDOW_AWARENESS_STORE_KEY = 'windowAwarenessEnabled';
@@ -26,7 +27,8 @@ function init(dependencies) {
     }
   }
 
-  ipcMain.handle('get-active-window-info', async () => {
+  ipcMain.handle('get-active-window-info', async (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return null;
     if (!activeWindowSampler) startActiveWindowAwareness();
     return activeWindowSampler.sampleOnce();
   });

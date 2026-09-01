@@ -2,6 +2,7 @@ const { ipcMain } = require('electron');
 const StoreManager = require('./StoreManager');
 const AutoLaunchService = require('./AutoLaunchService');
 const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY, POMODORO_LAST_MINUTES_KEY } = require('../constants');
+const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 // 允许存储的合法 Key 列表 (安全白名单)
 const ALLOWED_STORE_KEYS = [
@@ -12,8 +13,9 @@ const ALLOWED_STORE_KEYS = [
   POMODORO_LAST_MINUTES_KEY,
 ];
 
-function init() {
-  ipcMain.handle('save-data', async (_event, key, value) => {
+function init({ windowManager }) {
+  ipcMain.handle('save-data', async (event, key, value) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return false;
     if (!ALLOWED_STORE_KEYS.includes(key)) {
       console.warn(`[Security] 拦截到非法的数据保存请求: ${key}`);
       return false;
@@ -30,7 +32,8 @@ function init() {
     }
   });
 
-  ipcMain.handle('load-data', async (_event, key) => {
+  ipcMain.handle('load-data', async (event, key) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return null;
     if (!ALLOWED_STORE_KEYS.includes(key)) {
       console.warn(`[Security] 拦截到非法的数据读取请求: ${key}`);
       return null;
@@ -45,11 +48,17 @@ function init() {
     }
   });
 
-  ipcMain.handle('set-auto-launch', async (_event, enabled) => {
+  ipcMain.handle('set-auto-launch', async (event, enabled) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) {
+      return { success: false, preference: false, loginItem: { openAtLogin: false } };
+    }
     return AutoLaunchService.setAutoLaunchPreference(enabled);
   });
 
-  ipcMain.handle('get-auto-launch', async () => {
+  ipcMain.handle('get-auto-launch', async (event) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) {
+      return { success: false, preference: false, loginItem: { openAtLogin: false } };
+    }
     return AutoLaunchService.getAutoLaunchPreference();
   });
 }

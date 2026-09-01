@@ -7,6 +7,8 @@
  * 均经注入的 deps 触达，使其可被 node --test 直接加载做行为级单测。
  * init(deps) 模式，deps: { ipcMain, windowManager, trayManager }。
  */
+const { isSenderMainWindow } = require('./IpcSenderAuthorization');
+
 let deps = {};
 let petHidden = false;         // 桌宠隐藏状态（手动）
 let meetingHidden = false;     // 会议检测导致的自动隐藏状态
@@ -18,7 +20,8 @@ function init(dependencies) {
   deps = dependencies;
   const { ipcMain } = deps;
 
-  ipcMain.handle('get-pet-visibility-state', () => {
+  ipcMain.handle('get-pet-visibility-state', (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return null;
     return getPetVisibilityState();
   });
 }

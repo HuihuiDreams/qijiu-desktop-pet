@@ -45,6 +45,7 @@ const mockMainWindow = {
   destroyed: false,
   isDestroyed: () => mockMainWindow.destroyed,
   webContents: {
+    isDestroyed: () => false,
     send: (channel, data) => {
       mockWindowSent = { channel, data };
     }
@@ -97,7 +98,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const deps = createMockDeps();
     SkinService.init(deps);
     
-    const result = await mockIpcHandlers['get-available-skins']();
+    const result = await mockIpcHandlers['get-available-skins']({ sender: mockMainWindow.webContents });
     assert.ok(Array.isArray(result));
   });
 
@@ -105,7 +106,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const deps = createMockDeps();
     SkinService.init(deps);
     
-    const result = await mockIpcHandlers['get-available-overlay-keys'](null, 'default');
+    const result = await mockIpcHandlers['get-available-overlay-keys']({ sender: mockMainWindow.webContents }, 'default');
     assert.ok(Array.isArray(result));
   });
 
@@ -140,7 +141,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const deps = createMockDeps();
     SkinService.init(deps);
     
-    const result = await mockIpcHandlers['set-current-skin'](null, 'default');
+    const result = await mockIpcHandlers['set-current-skin']({ sender: mockMainWindow.webContents }, 'default');
     assert.equal(result.success, true);
     assert.equal(result.data.skinId, 'default');
     assert.equal(mockPomodoroSent, true);
@@ -152,7 +153,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const deps = createMockDeps();
     SkinService.init(deps);
     
-    const result = await mockIpcHandlers['set-current-skin'](null, 'non_existent_skin');
+    const result = await mockIpcHandlers['set-current-skin']({ sender: mockMainWindow.webContents }, 'non_existent_skin');
     assert.equal(result.success, false);
     assert.equal(result.error.code, 'VALIDATION_ERROR');
   });

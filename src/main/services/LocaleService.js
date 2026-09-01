@@ -1,6 +1,7 @@
 const { app, ipcMain } = require('electron');
 const { LOCALE_KEY } = require('../constants');
 const StoreManager = require('./StoreManager');
+const { isSenderAnyWindow, isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 let deps = {};
 let currentLocale = 'zh'; // 当前语言（zh / en / ja），启动时从 store 加载或自动检测
@@ -8,9 +9,20 @@ let currentLocale = 'zh'; // 当前语言（zh / en / ja），启动时从 store
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.handle('get-locale', () => currentLocale);
-  ipcMain.handle('set-locale', async (_event, lang) => {
+  ipcMain.handle('get-locale', (event) => {
+    const { windowManager } = deps;
+    const allowedWindows = [
+      windowManager.mainWindow,
+      windowManager.statusWindow,
+      windowManager.pomodoroWindow,
+      windowManager.citySettingWindow,
+      windowManager.skinSelectorWindow,
+    ];
+    return isSenderAnyWindow(event, allowedWindows) ? currentLocale : null;
+  });
+  ipcMain.handle('set-locale', async (event, lang) => {
     const { windowManager, skinSelectorWindowModule, trayManager } = deps;
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return { success: false };
     if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
     currentLocale = lang;
     await StoreManager.initStore();

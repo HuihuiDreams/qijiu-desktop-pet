@@ -54,3 +54,11 @@ Accepted
 因此，选肤专属的画廊读取、选择、预览、确定、取消和关闭 handler 还会比较 `event.sender.id` 与当前 `skinSelectorWindow.webContents.id`。不匹配或选肤窗口不存在时，统一返回结构化 `FORBIDDEN`，不改变合法选肤页面的 preload 调用契约。
 
 这一授权检查与皮肤 ID 白名单互补：前者约束“哪个 renderer 可以调用”，后者约束“允许调用什么值”。`skinSelectorIntegration` 测试覆盖全部选肤专属 handler 的授权门，防止后续新增或改动通道时遗漏该边界。
+
+## 补充：全部子窗口最小 preload 与 IPC 授权矩阵 (2026-09-01)
+
+状态窗、番茄钟和城市设置窗曾复用主窗口完整 `preload.js`，因此任一子窗口 renderer 都能获得存档、自动启动、皮肤切换等与自身职责无关的方法。仅缩小 preload 仍不足以构成安全边界，因为获得 `ipcRenderer` 的页面仍可能按通道名直接调用主进程 handler。
+
+本次将两层约束同时落地：三个子窗口分别改用专用最小 preload；所有 renderer 发起的特权 handler 在任何输入处理或副作用之前，通过 `IpcSenderAuthorization` 将 `event.sender` 绑定到当前仍存活的主窗口或所属子窗口。语言读取显式允许五个 DeskPet 业务窗口，语言修改和全局状态操作仅允许主窗口，子窗口只允许操作自身状态。未授权 `send` 被忽略，未授权 `invoke` 维持各既有接口的失败形状。
+
+选肤器继续使用既有 sender ID 鉴权和 `app.openSkinSelectorForQA` 主进程入口；QA 不获得通用 IPC 绕过能力。该设计同时由权限矩阵单测、伪造 sender 行为测试和 Electron E2E preload 暴露面检查守护。

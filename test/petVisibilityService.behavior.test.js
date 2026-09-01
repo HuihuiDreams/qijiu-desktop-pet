@@ -16,6 +16,7 @@ function createStubDeps() {
   const mainWindow = {
     isDestroyed: () => false,
     webContents: {
+      isDestroyed: () => false,
       send: (channel, ...args) => sent.push([channel, ...args]),
     },
   };
@@ -52,7 +53,7 @@ test('init registers the get-pet-visibility-state IPC handler via injected ipcMa
   Service.init(deps);
 
   assert.equal(typeof ipcHandlers['get-pet-visibility-state'], 'function');
-  assert.deepEqual(ipcHandlers['get-pet-visibility-state'](), {
+  assert.deepEqual(ipcHandlers['get-pet-visibility-state']({ sender: deps.windowManager.mainWindow.webContents }), {
     visible: true,
     reason: 'visible',
     sources: { manual: false, meeting: false, pomodoro: false },

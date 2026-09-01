@@ -7,6 +7,8 @@ const DEFAULT_UPDATE_STATE = Object.freeze({
   error: null,
 });
 
+const DEFAULT_MAC_CHECK_TIMEOUT_MS = 15_000;
+
 // macOS 下没有 Apple Developer 证书时，Squirrel.Mac 会因 ad-hoc 签名
 // 不满足代码要求而报错。此标志用于在 macOS 上跳过 electron-updater，
 // 改为引导用户到 GitHub Releases 页面手动下载。
@@ -77,6 +79,7 @@ function collectErrorSignals(error, seen = new Set()) {
 
   append('codes', error.code);
   append('codes', error.errno);
+  append('codes', error.name);
   append('statuses', error.statusCode);
   append('statuses', error.status);
   append('statuses', error.response?.statusCode);
@@ -133,7 +136,7 @@ function classifyUpdateError(error, t = (k => k)) {
   }
 
   if (
-    hasCode('ECONNRESET', 'ETIMEDOUT', 'ESOCKETTIMEDOUT', 'ECONNABORTED', 'EPIPE') ||
+    hasCode('ECONNRESET', 'ETIMEDOUT', 'ESOCKETTIMEDOUT', 'ECONNABORTED', 'EPIPE', 'ABORTERROR') ||
     messageTextUpper.includes('ERR_CONNECTION_RESET') ||
     messageTextUpper.includes('ERR_TIMED_OUT') ||
     messageTextUpper.includes('SOCKET HANG UP') ||
@@ -160,20 +163,17 @@ function getTranslatedText(t, key, fallback) {
 
 // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
 function verifyDownloadedPackageIntegrity(info) {
-  if (!info || !info.downloadedFile) {
-    return true;
-  }
+  if (!info || typeof info.downloadedFile !== 'string' || !info.downloadedFile.trim()) return false;
   const expectedSha512 = info.sha512 || info.files?.[0]?.sha512;
-  if (!expectedSha512) {
-    return true;
-  }
+  if (typeof expectedSha512 !== 'string' || !expectedSha512.trim()) return false;
   try {
     const fs = require('fs');
     const crypto = require('crypto');
     const fileBuffer = fs.readFileSync(info.downloadedFile);
     const actualHash = crypto.createHash('sha512').update(fileBuffer).digest('base64');
     const actualHex = crypto.createHash('sha512').update(fileBuffer).digest('hex');
-    return actualHash === expectedSha512 || actualHex === expectedSha512.toLowerCase();
+    const normalizedExpectedHash = expectedSha512.trim();
+    return actualHash === normalizedExpectedHash || actualHex === normalizedExpectedHash.toLowerCase();
   } catch (_err) {
     return false;
   }
@@ -183,6 +183,10 @@ function createUpdateManager(options = {}) {
   const isMac = options.isMac ?? false;
   const getAutoUpdater = options.getAutoUpdater || loadDefaultAutoUpdater;
   const getLog = options.getLog || loadDefaultLog;
+  const fetchImpl = options.fetchImpl || ((...args) => globalThis.fetch(...args));
+  const macCheckTimeoutMs = Number.isFinite(options.macCheckTimeoutMs) && options.macCheckTimeoutMs > 0
+    ? options.macCheckTimeoutMs
+    : DEFAULT_MAC_CHECK_TIMEOUT_MS;
 
   let autoUpdater = null;
   let log = null;
@@ -498,12 +502,22 @@ function createUpdateManager(options = {}) {
   }
 
   async function checkMacManualUpdates() {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), macCheckTimeoutMs);
     try {
-      const response = await fetch('https://api.github.com/repos/HuihuiDreams/qijiu-desktop-pet/releases/latest');
-      if (!response.ok) {
-        throw new Error(`GitHub API error: ${response.status}`);
+      let data;
+      try {
+        const response = await fetchImpl(
+          'https://api.github.com/repos/HuihuiDreams/qijiu-desktop-pet/releases/latest',
+          { signal: abortController.signal },
+        );
+        if (!response.ok) {
+          throw new Error(`GitHub API error: ${response.status}`);
+        }
+        data = await response.json();
+      } finally {
+        clearTimeout(timeoutId);
       }
-      const data = await response.json();
       const latestVersion = data.tag_name ? data.tag_name.replace(/^v/, '') : null;
       const currentVersion = getCurrentVersion();
 

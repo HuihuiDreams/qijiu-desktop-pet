@@ -6,6 +6,8 @@ const { readMainProcessSource } = require('./helpers/sourceCorpus');
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 const smokeScriptPath = path.join(__dirname, '..', 'tools', 'playwright-electron-smoke.js');
+const fontSpecPath = path.join(__dirname, 'e2e', 'font.spec.js');
+const legacyFontSpecPath = path.join(__dirname, 'checkFont.spec.js');
 
 test('package exposes an isolated Playwright Electron smoke command', () => {
   assert.equal(
@@ -23,7 +25,22 @@ test('package exposes the Electron performance sampling command', () => {
 
 test('Node and Playwright tests use separate commands', () => {
   assert.equal(packageJson.scripts.test, 'node scripts/run-tests.js');
-  assert.equal(packageJson.scripts['test:font'], 'playwright test test/checkFont.spec.js');
+  assert.equal(packageJson.scripts['test:font'], 'playwright test font.spec.js');
+  assert.equal(fs.existsSync(fontSpecPath), true, 'font spec should live under Playwright testDir');
+  assert.equal(fs.existsSync(legacyFontSpecPath), false, 'legacy out-of-tree font spec should be removed');
+});
+
+test('font E2E uses the isolated launcher and the real locale API', () => {
+  const fontSpecSource = fs.readFileSync(fontSpecPath, 'utf8');
+
+  assert.match(fontSpecSource, /require\('\.\/helpers\/electron'\)/);
+  assert.match(fontSpecSource, /await launchApp\(\)/);
+  assert.match(fontSpecSource, /await closeApp\(electronApp, userDataDir\)/);
+  assert.match(fontSpecSource, /await window\.electronAPI\.setLocale\('ja'\)/);
+  assert.match(fontSpecSource, /finally\s*{/);
+  assert.doesNotMatch(fontSpecSource, /setSetting\(/);
+  assert.doesNotMatch(fontSpecSource, /document\.documentElement\.lang\s*=/);
+  assert.doesNotMatch(fontSpecSource, /waitForTimeout\(/);
 });
 
 test('Playwright Electron smoke script uses an isolated profile and cleans it up', () => {

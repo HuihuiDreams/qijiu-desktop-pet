@@ -256,7 +256,7 @@ class AppLifecycle {
       skinSelectorWindowModule,
       trayManager
     });
-    StorageIpc.init();
+    StorageIpc.init({ windowManager });
     SkinService.init({
       windowManager,
       skinSelectorWindowModule,

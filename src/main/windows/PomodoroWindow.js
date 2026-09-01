@@ -1,6 +1,7 @@
 const { BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
+const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAuthorization');
 
 const POMODORO_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 let pomodoroAlwaysOnTop = true;
@@ -9,7 +10,10 @@ let deps = {};
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.handle('pomodoro-open-window', async () => {
+  ipcMain.handle('pomodoro-open-window', async (event) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       await deps.initStore();
       openPomodoroWindow();
@@ -20,7 +24,10 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.handle('pomodoro-get-state', async () => {
+  ipcMain.handle('pomodoro-get-state', async (event) => {
+    if (!isSenderWindow(event, windowManager.pomodoroWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       return deps.createIpcSuccess(deps.getPomodoroSnapshot());
     } catch (error) {
@@ -29,7 +36,10 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.handle('pomodoro-start', async (_event, minutes) => {
+  ipcMain.handle('pomodoro-start', async (event, minutes) => {
+    if (!isSenderWindow(event, windowManager.pomodoroWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       await deps.startPomodoroSession(minutes);
       return deps.createIpcSuccess(deps.getPomodoroSnapshot());
@@ -39,7 +49,10 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.handle('pomodoro-stop', async () => {
+  ipcMain.handle('pomodoro-stop', async (event) => {
+    if (!isSenderWindow(event, windowManager.pomodoroWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       deps.stopPomodoroSession();
       return deps.createIpcSuccess(deps.getPomodoroSnapshot());
@@ -49,7 +62,10 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.handle('pomodoro-close-window', async () => {
+  ipcMain.handle('pomodoro-close-window', async (event) => {
+    if (!isSenderWindow(event, windowManager.pomodoroWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       return deps.createIpcSuccess(closePomodoroWindow());
     } catch (error) {
@@ -58,7 +74,10 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.handle('pomodoro-set-always-on-top', async (_event, enabled) => {
+  ipcMain.handle('pomodoro-set-always-on-top', async (event, enabled) => {
+    if (!isSenderWindow(event, windowManager.pomodoroWindow)) {
+      return deps.createIpcFailure('FORBIDDEN', 'Pomodoro access denied');
+    }
     try {
       pomodoroAlwaysOnTop = Boolean(enabled);
       applyPomodoroWindowPinState(pomodoroAlwaysOnTop);
@@ -102,7 +121,7 @@ function createPomodoroWindow() {
     maximizable: false,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, '..', '..', '..', 'preload.js'),
+      preload: path.join(__dirname, '..', '..', '..', 'pomodoroPreload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

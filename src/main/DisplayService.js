@@ -17,6 +17,7 @@ const {
   getResizeBridgeConstraints,
 } = require('../../displayFit');
 const { normalizeWindowMigrationDirection } = require('../../ipcContracts');
+const { isSenderMainWindow } = require('./services/IpcSenderAuthorization');
 
 const DISPLAY_METRICS_SETTLE_MS = 250;
 
@@ -33,7 +34,8 @@ const displayFitScheduler = createDisplayFitScheduler({
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.on('request-window-migration', (_event, direction) => {
+  ipcMain.on('request-window-migration', (event, direction) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return;
     const normalizedDirection = normalizeWindowMigrationDirection(direction);
     if (!normalizedDirection) return;
     if (process.platform !== 'darwin' || !currentPetDisplay) return;
@@ -44,12 +46,14 @@ function init(dependencies) {
     }
   });
 
-  ipcMain.on('drag-started', () => {
+  ipcMain.on('drag-started', (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return;
     if (process.platform !== 'darwin') return;
     startDragPoll();
   });
 
-  ipcMain.on('drag-ended', () => {
+  ipcMain.on('drag-ended', (event) => {
+    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return;
     stopDragPoll();
   });
 }

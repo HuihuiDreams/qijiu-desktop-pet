@@ -130,6 +130,9 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Verify packaged application contents
+        run: npm run verify:package
+
   preflight-mac:
     name: Validate macOS release readiness
     runs-on: macos-latest
@@ -160,6 +163,9 @@ jobs:
         run: npx electron-builder --mac --dir
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Verify packaged application contents
+        run: npm run verify:package
 
       - name: Validate macOS executable metadata
         shell: bash

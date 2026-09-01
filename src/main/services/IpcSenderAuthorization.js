@@ -6,22 +6,32 @@
  * @param {BrowserWindow} mainWindow 期望的发件方窗口
  * @returns {boolean} 是否授权
  */
-function isSenderMainWindow(event, mainWindow) {
+function isSenderWindow(event, targetWindow) {
   if (!event || !event.sender) {
     return false;
   }
 
-  if (!mainWindow || mainWindow.isDestroyed()) {
+  if (!targetWindow || targetWindow.isDestroyed()) {
     return false;
   }
 
-  if (!mainWindow.webContents || mainWindow.webContents.isDestroyed()) {
+  if (!targetWindow.webContents || targetWindow.webContents.isDestroyed()) {
     return false;
   }
 
-  return event.sender === mainWindow.webContents;
+  return event.sender === targetWindow.webContents;
+}
+
+function isSenderAnyWindow(event, windows) {
+  return Array.isArray(windows) && windows.some((window) => isSenderWindow(event, window));
+}
+
+function isSenderMainWindow(event, mainWindow) {
+  return isSenderWindow(event, mainWindow);
 }
 
 module.exports = {
-  isSenderMainWindow
+  isSenderAnyWindow,
+  isSenderMainWindow,
+  isSenderWindow,
 };

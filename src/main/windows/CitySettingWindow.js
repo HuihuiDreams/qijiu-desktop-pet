@@ -1,13 +1,15 @@
 const { BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
+const { isSenderWindow } = require('../services/IpcSenderAuthorization');
 
 const CITY_SETTING_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 const CITY_SETTING_TOP_PULSE_MS = 180;
 let citySettingTopPulseTimer = null;
 
 function init() {
-  ipcMain.handle('close-city-setting-window', () => {
+  ipcMain.handle('close-city-setting-window', (event) => {
+    if (!isSenderWindow(event, windowManager.citySettingWindow)) return { success: false };
     closeCitySettingWindow();
     return { success: true };
   });
@@ -62,7 +64,7 @@ function createCitySettingWindow() {
     maximizable: false,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, '..', '..', '..', 'preload.js'),
+      preload: path.join(__dirname, '..', '..', '..', 'citySettingPreload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,

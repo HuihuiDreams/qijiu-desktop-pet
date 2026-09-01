@@ -124,6 +124,9 @@ qijiu-desktop-pet/
 ├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY）
 
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
+├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
+├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
+├─ citySettingPreload.js                # 城市设置窗最小 preload：语言、城市读写与关闭
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
@@ -215,6 +218,7 @@ qijiu-desktop-pet/
 │     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner：单元、黑盒行为与集成测试
+│  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，font.spec.js 通过真实 locale-changed 验证日语字体且可由 test:font 独立运行
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
@@ -366,9 +370,10 @@ src/assets/{skinId}/
 ### 3.10 更新系统
 
 `updateManager.js` 封装更新流程：
+- 下载完成后必须同时取得本地安装包路径和 SHA-512 元数据，并在安装确认前完成 Base64 或 Hex 摘要比对；任何缺失、不可读或不匹配情况都按 `integrity-check-failed` 终止，成功下载本身不等于可信更新。
 
 - Windows 主要走 `electron-updater` 和 GitHub Releases。
-- macOS 包含手动更新提示和可执行文件名处理。
+- macOS 包含手动更新提示和可执行文件名处理；GitHub Releases 请求使用 `AbortController` 固定在 15 秒后中止，所有成功与失败路径都会清理定时器，超时后恢复托盘入口以允许重试。
 - 支持检查中、下载中、下载完成、无更新、错误等状态。
 - 主进程会展示可见的更新进度窗口，并通过 `updateProgressPreload.js` 的最小 IPC 通道同步进度和托盘菜单状态。
 - 404 或 release 元数据缺失会被归类为"已是最新/暂无更新"一类的可理解提示，而不是直接暴露底层错误。
@@ -431,7 +436,7 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 涉及窗口全局状态的敏感 IPC（如 `set-ignore-mouse-events` 鼠标穿透）强制校验发件方必须是 `mainWindow.webContents`，拒绝未授权渲染进程越权篡改，确保 fail-closed 防御态势（经 `IpcSenderAuthorization.js` 鉴权）。
+- 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟和城市设置窗分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
 - 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。所有正常关闭均由 `SkinSelectorWindow.closeSkinSelectorWindow()` 串行化，忽略关闭自身触发的 `blur`，并仅在 `closed` 后复位关闭状态；`blur` 会保留一个短暂的焦点交接窗口，结合应用级 `browser-window-focus` 与 macOS `app.isActive()` 判断，切换或关闭番茄钟、状态等 DeskPet 窗口时保持预览，仅在焦点确实离开应用后关闭。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
@@ -562,6 +567,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
 - `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
+- electron-builder 还会排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`；Windows 和 macOS 构建完成后由 `npm run verify:package` 扫描全部 `app.asar`，若内部 Agent 文件残留或没有生成可验证的包则立即失败。
 
 ## 受保护皮肤资产
 

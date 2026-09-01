@@ -86,3 +86,15 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
 | `docs/archive/electron-builder.update-test-old.yml` | 构建本地测试旧版本。 |
 | `docs/archive/electron-builder.update-test-new.yml` | 构建本地测试伪新版本。 |
 | `.gitignore` | 忽略一次性输出目录 `dist-update-test/`。 |
+
+## 补充：下载完整性校验默认拒绝 (2026-09-01)
+
+更新包的本地 SHA-512 校验采用 fail-closed 语义：只有下载路径存在、校验元数据为非空字符串、文件可读且 Base64 或 Hex 摘要匹配时，才能进入安装确认。缺少 `downloadedFile`、`sha512`（含 `files[0].sha512` 回退）、文件读取失败或摘要不匹配时统一设置 `integrity-check-failed` 并停止安装。
+
+这避免把 electron-updater 的“下载完成”事件误当成应用层完整性证明；相应单测覆盖合法双格式摘要、缺失元数据、不可读文件、损坏包以及不调用 `quitAndInstall` 的负向路径。
+
+## 补充：macOS 手动更新检查超时 (2026-09-01)
+
+macOS 手动检查 GitHub Releases 时创建独立 `AbortController`，请求最长等待 15 秒，并在 `finally` 清理定时器。超时与主动中止按下载/网络错误处理，统一复位 `checking`、关闭进度窗口并刷新托盘，使用户可以立即重试。
+
+`createUpdateManager` 仅为测试提供 `fetchImpl` 和 `macCheckTimeoutMs` 注入点，生产默认调用及 IPC 契约不变。单元测试覆盖永久挂起请求、超时后的再次检查、正常响应、HTTP 错误和成功路径的定时器清理。

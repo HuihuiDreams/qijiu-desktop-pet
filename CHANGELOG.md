@@ -15,9 +15,17 @@
 - 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
 - 为 `LocaleService.js` 和 `TrayManager.js` 中 `mainWindow` 的 5 处 `webContents.send` / `openDevTools` 调用补充 `!mainWindow.isDestroyed()` 防御性校验，与子窗口已有的守卫保持一致，消除窗口销毁竞态下的潜在崩溃。
 - 移除 `citySettingWindow.js` 和 `pomodoroWindow.js` 中与 `WindowI18n.init` 重复的 `getLocale().then()` 调用，避免首帧双重回调（`loadCurrentCity` / `refreshState` 被执行两次）。
+- 为 macOS 手动更新的 GitHub Releases 请求增加 15 秒超时；超时会按下载错误收尾、关闭进度窗并恢复托盘检查入口，避免网络挂起后无法重试。
+- 将日语字体 Playwright 用例移入统一的 `test/e2e` 测试目录并修正 `test:font` 命令；用例改用隔离的 Electron/userData 启动器和真实 `setLocale('ja')` 通知链，移除失效的 `setSetting`、手工 `lang` 篡改与固定延迟，同时以 `finally` 保证清理。
 
 ### Removed
 - 清理 `citySettingWindow.js`、`pomodoroWindow.js`、`statusWindow.js` 中遗留的未使用变量 `let currentLocale` 及 `statusWindow.js` 中孤立的常量 `TITLEBAR_AND_PANEL_PADDING`。
+
+### Security
+- 收紧安装包内容边界：electron-builder 显式排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`，并在 Windows、macOS 预检及正式构建后扫描 `app.asar`，阻止内部 Agent 规则或临时工作区进入发行包。
+- 按窗口最小权限收紧 renderer IPC：状态窗、番茄钟和城市设置窗改用专用 preload，所有存档、自动启动、语言、皮肤、窗口与设置通道在主进程校验实时 `event.sender`，伪造、缺失或已销毁窗口请求均在产生副作用前拒绝，同时保留 `app.openSkinSelectorForQA` 冒烟入口。
+
+- 将下载更新包的 SHA-512 校验改为 fail-closed：缺少下载路径或校验值、元数据类型错误、文件不可读及摘要不匹配时一律阻止安装并记录 `integrity-check-failed`，仅合法 Base64/Hex 摘要可进入安装确认。
 
 ## [0.10.4] - 2026-08-28
 

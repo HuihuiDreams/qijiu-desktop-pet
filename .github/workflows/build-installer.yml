@@ -121,6 +121,9 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Verify packaged application contents
+        run: npm run verify:package
+
       - name: Verify generated signatures
         if: env.SIGNING_ENABLED == 'true'
         run: npm run verify:signatures
@@ -245,6 +248,9 @@ jobs:
         run: npx electron-builder --mac --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Verify packaged application contents
+        run: npm run verify:package
 
       - name: Validate macOS executable metadata
         shell: bash

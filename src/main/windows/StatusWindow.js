@@ -2,6 +2,7 @@ const { BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const { normalizeStatusWindowSize } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
+const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAuthorization');
 
 let deps = {};
 let lastStatusWindowData = null;
@@ -9,23 +10,28 @@ let lastStatusWindowData = null;
 function init(dependencies) {
   deps = dependencies;
 
-  ipcMain.on('show-status-window', (_event, data) => {
+  ipcMain.on('show-status-window', (event, data) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return;
     showStatusWindow(data);
   });
 
-  ipcMain.on('hide-status-window', () => {
+  ipcMain.on('hide-status-window', (event) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return;
     hideStatusWindow();
   });
 
-  ipcMain.on('update-status-window', (_event, data) => {
+  ipcMain.on('update-status-window', (event, data) => {
+    if (!isSenderMainWindow(event, windowManager.mainWindow)) return;
     updateStatusWindow(data);
   });
 
-  ipcMain.on('resize-status-window', (_event, size) => {
+  ipcMain.on('resize-status-window', (event, size) => {
+    if (!isSenderWindow(event, windowManager.statusWindow)) return;
     resizeStatusWindow(size);
   });
 
-  ipcMain.handle('status-close-window', () => {
+  ipcMain.handle('status-close-window', (event) => {
+    if (!isSenderWindow(event, windowManager.statusWindow)) return { success: false };
     closeStatusWindow();
     return { success: true };
   });
@@ -94,7 +100,7 @@ function createStatusWindow() {
     maximizable: false,
     hasShadow: false,
     webPreferences: {
-      preload: path.join(__dirname, '..', '..', '..', 'preload.js'),
+      preload: path.join(__dirname, '..', '..', '..', 'statusPreload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
