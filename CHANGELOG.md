@@ -9,6 +9,7 @@
 
 ### Changed
 - 简化 E2E 测试中的 Electron 路径解析：移除多余的跨平台路径拼接逻辑，直接使用 `require('electron')` 导出，提高代码整洁度。
+- 优化更新安装包完整性校验为非阻塞流式 I/O：`updateManager.js` 中的 `verifyDownloadedPackageIntegrity` 弃用同步 `fs.readFileSync`，改为基于 Node.js 原生 `fs.createReadStream` 与 `stream/promises.pipeline` 的异步流式分块计算，单次 `hash.digest()` 同时匹配 Base64 与 Hex 摘要，消除大安装包（70MB~120MB）完整性校验对主进程事件循环的短暂阻塞（[ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)）。
 
 ### Fixed
 - 修复 macOS 环境下运行 Playwright E2E 测试结束时频繁弹出的“Electron 意外退出”崩溃弹窗问题；在 `closeApp` 辅助函数中加入 `app.quit()` 优雅退出逻辑，避免被 Playwright 强制终止导致系统拦截报错。
@@ -24,7 +25,6 @@
 ### Security
 - 收紧安装包内容边界：electron-builder 显式排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`，并在 Windows、macOS 预检及正式构建后扫描 `app.asar`，阻止内部 Agent 规则或临时工作区进入发行包。
 - 按窗口最小权限收紧 renderer IPC：状态窗、番茄钟和城市设置窗改用专用 preload，所有存档、自动启动、语言、皮肤、窗口与设置通道在主进程校验实时 `event.sender`，伪造、缺失或已销毁窗口请求均在产生副作用前拒绝，同时保留 `app.openSkinSelectorForQA` 冒烟入口。
-
 - 将下载更新包的 SHA-512 校验改为 fail-closed：缺少下载路径或校验值、元数据类型错误、文件不可读及摘要不匹配时一律阻止安装并记录 `integrity-check-failed`，仅合法 Base64/Hex 摘要可进入安装确认。
 
 ## [0.10.4] - 2026-08-28

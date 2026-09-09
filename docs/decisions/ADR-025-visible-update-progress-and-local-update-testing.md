@@ -98,3 +98,12 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
 macOS 手动检查 GitHub Releases 时创建独立 `AbortController`，请求最长等待 15 秒，并在 `finally` 清理定时器。超时与主动中止按下载/网络错误处理，统一复位 `checking`、关闭进度窗口并刷新托盘，使用户可以立即重试。
 
 `createUpdateManager` 仅为测试提供 `fetchImpl` 和 `macCheckTimeoutMs` 注入点，生产默认调用及 IPC 契约不变。单元测试覆盖永久挂起请求、超时后的再次检查、正常响应、HTTP 错误和成功路径的定时器清理。
+
+## 补充：流式异步非阻塞完整性校验 (2026-09-09)
+
+针对体积约 70MB~120MB 的安装包，`verifyDownloadedPackageIntegrity` 弃用同步 `fs.readFileSync`，重构为基于 Node.js 原生 `fs.createReadStream` 与 `node:stream/promises` 的 `pipeline(stream, hash)` 异步流式计算。
+
+- **非阻塞事件循环**：哈希计算过程由底层 libuv 分块流式读取与流式 Transform 驱动，彻底避免在大包校验期间阻塞 Electron 主进程事件循环。
+- **单次计算双格式比对**：通过 `const digestBuffer = hash.digest()` 一次性获取 Buffer 结果，分别调用 `digestBuffer.toString('base64')` 与 `digestBuffer.toString('hex')` 进行双格式匹配，无需为 Base64/Hex 构建多个 Hash 实例或重复读取流。
+- **防御一致性 (Fail-Closed)**：保持输入校验前置失败以及文件不存在、流读取失败时的安全拒绝机制。
+

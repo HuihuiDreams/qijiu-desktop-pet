@@ -10,8 +10,19 @@ const {
   verifyDownloadedPackageIntegrity,
 } = require('../updateManager');
 
-function tick() {
-  return new Promise((resolve) => setImmediate(resolve));
+function tick(iterations = 10) {
+  return new Promise((resolve) => {
+    let count = 0;
+    const step = () => {
+      count += 1;
+      if (count >= iterations) {
+        resolve();
+      } else {
+        setImmediate(step);
+      }
+    };
+    setImmediate(step);
+  });
 }
 
 function createVerifiedDownloadInfo(metadata = {}) {
@@ -441,7 +452,7 @@ test('update manager applies injected translations to error detail prefixes', as
   assert.deepEqual(messages[0].buttons, ['OK']);
 });
 
-test('verifyDownloadedPackageIntegrity verifies base64 and hex sha512 (SBP-001)', () => {
+test('verifyDownloadedPackageIntegrity verifies base64 and hex sha512 (SBP-001)', async () => {
   const os = require('node:os');
   const path = require('node:path');
   const fs = require('node:fs');
@@ -453,23 +464,44 @@ test('verifyDownloadedPackageIntegrity verifies base64 and hex sha512 (SBP-001)'
   const hashHex = crypto.createHash('sha512').update('deskpet-secure-update-content').digest('hex');
   const badHash = 'badhash';
 
-  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashBase64 }), true);
-  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashHex }), true);
-  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: badHash }), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashBase64 }), true);
+  assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashHex }), true);
+  assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: badHash }), false);
 
   if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
 });
 
-test('verifyDownloadedPackageIntegrity fails closed for missing or unreadable metadata', () => {
+test('verifyDownloadedPackageIntegrity streams multi-chunk files and verifies integrity', async () => {
+  const os = require('node:os');
+  const path = require('node:path');
+  const fs = require('node:fs');
+  const crypto = require('node:crypto');
+
+  const tmpFile = path.join(os.tmpdir(), 'deskpet-test-multichunk.bin');
+  // 128KB payload spanning multiple 64KB stream chunks
+  const chunkData = Buffer.alloc(128 * 1024, 'a');
+  fs.writeFileSync(tmpFile, chunkData);
+  const hashBase64 = crypto.createHash('sha512').update(chunkData).digest('base64');
+  const hashHex = crypto.createHash('sha512').update(chunkData).digest('hex');
+
+  try {
+    assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashBase64 }), true);
+    assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: tmpFile, sha512: hashHex }), true);
+  } finally {
+    if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+  }
+});
+
+test('verifyDownloadedPackageIntegrity fails closed for missing or unreadable metadata', async () => {
   const path = require('node:path');
   const os = require('node:os');
 
-  assert.equal(verifyDownloadedPackageIntegrity(null), false);
-  assert.equal(verifyDownloadedPackageIntegrity({}), false);
-  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe' }), false);
-  assert.equal(verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe', sha512: 123 }), false);
-  assert.equal(verifyDownloadedPackageIntegrity({ sha512: 'abc' }), false);
-  assert.equal(verifyDownloadedPackageIntegrity({
+  assert.equal(await verifyDownloadedPackageIntegrity(null), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({}), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe' }), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({ downloadedFile: 'installer.exe', sha512: 123 }), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({ sha512: 'abc' }), false);
+  assert.equal(await verifyDownloadedPackageIntegrity({
     downloadedFile: path.join(os.tmpdir(), 'deskpet-update-does-not-exist.bin'),
     sha512: 'abc',
   }), false);

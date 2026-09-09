@@ -162,16 +162,20 @@ function getTranslatedText(t, key, fallback) {
 }
 
 // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
-function verifyDownloadedPackageIntegrity(info) {
+async function verifyDownloadedPackageIntegrity(info) {
   if (!info || typeof info.downloadedFile !== 'string' || !info.downloadedFile.trim()) return false;
   const expectedSha512 = info.sha512 || info.files?.[0]?.sha512;
   if (typeof expectedSha512 !== 'string' || !expectedSha512.trim()) return false;
   try {
     const fs = require('fs');
     const crypto = require('crypto');
-    const fileBuffer = fs.readFileSync(info.downloadedFile);
-    const actualHash = crypto.createHash('sha512').update(fileBuffer).digest('base64');
-    const actualHex = crypto.createHash('sha512').update(fileBuffer).digest('hex');
+    const { pipeline } = require('stream/promises');
+    const hash = crypto.createHash('sha512');
+    const stream = fs.createReadStream(info.downloadedFile);
+    await pipeline(stream, hash);
+    const actualBuffer = hash.digest();
+    const actualHash = actualBuffer.toString('base64');
+    const actualHex = actualBuffer.toString('hex');
     const normalizedExpectedHash = expectedSha512.trim();
     return actualHash === normalizedExpectedHash || actualHex === normalizedExpectedHash.toLowerCase();
   } catch (_err) {
@@ -398,7 +402,7 @@ function createUpdateManager(options = {}) {
     if (isMac) return; // Mac doesn't reach here
 
     // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
-    if (!verifyDownloadedPackageIntegrity(info)) {
+    if (!(await verifyDownloadedPackageIntegrity(info))) {
       setState({
         checking: false,
         downloading: false,
