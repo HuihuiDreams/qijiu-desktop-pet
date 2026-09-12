@@ -1,7 +1,7 @@
-﻿# ADR-017: 引入 SpriteView 重构多帧动画系统
+# ADR-017: 引入 SpriteView 重构多帧动画系统
 
 ## Status
-已接受 (Accepted)
+Accepted
 
 ## Date
 2026-05-06

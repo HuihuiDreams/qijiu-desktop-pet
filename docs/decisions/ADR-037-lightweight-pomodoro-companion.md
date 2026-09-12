@@ -102,7 +102,7 @@ Accepted
 - 未来若要增加统计、历史记录、奖励或监督式检测，需要另写计划和 ADR，不能在本决策下顺手扩展。
 - 自动化测试需要覆盖倒计时状态机、窗口安全边界、preload API、托盘入口、输入归一化和宠物隐藏/恢复状态。
 
-## Verification
+### 验证 (Verification)
 
 - `test/pomodoroSystem.test.js` 覆盖开始、剩余时间、完成、停止和非法输入 fallback。
 - `test/pomodoroWindow.test.js` 覆盖窗口文件、严格 CSP、关键 UI 元素和安全 DOM 更新。

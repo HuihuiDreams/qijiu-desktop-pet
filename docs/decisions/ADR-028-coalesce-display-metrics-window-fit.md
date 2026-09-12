@@ -1,4 +1,4 @@
-﻿# ADR-028: 合并显示器指标事件后再适配桌宠窗口
+# ADR-028: 合并显示器指标事件后再适配桌宠窗口
 
 ## Status
 Accepted
@@ -71,15 +71,7 @@ Accepted
 - 显示器拓扑变化生效前会有一个很短的、有意的等待时间。
 - `displayFit.js` 是纯逻辑模块，可以在不启动 Electron 的情况下用单元测试验证 debounce 和约束桥接行为。
 
-## 改动文件
-
-| 文件 | 改动 |
-|---|---|
-| `displayFit.js` | 新增窗口几何相等判断、resize 约束桥接计算、显示器适配 scheduler。 |
-| `main.js` | Electron 显示器事件改为通过 scheduler 合并触发，并通过 `lockPetWindowToBounds()` 锁定窗口 bounds。 |
-| `test/displayFit.test.js` | 覆盖 bounds 相等判断、约束桥接、事件合并行为。 |
-
-## 验证
+### 验证
 
 - `npm test -- test/displayFit.test.js`
 - `npm test`

@@ -1,13 +1,10 @@
-﻿# ADR-003: 修仙风格养成数值体系设计
+# ADR-003: 修仙风格养成数值体系设计
 
 ## Status
-Accepted; affection decay policy superseded by ADR-006 update
+Accepted
 
 ## Date
 2026-04-28
-
-## Updates
-- 2026-06-08: 好感度“自然不衰减”的早期平衡决策已被 [ADR-006](./ADR-006-state-persistence-and-offline-decay.md) 的后续更新取代。当前实现通过 `CONFIG.AFFECTION_DECAY = 1 / 24` 让好感度每 2 小时下降 1 点，并在 `NurtureSystem.applyDecay()` 与离线衰减链路中统一结算。因此，本 ADR 中关于“好感度仅通过互动提升 / 好感度也自然衰减被拒绝”的段落只保留为历史背景，不应再作为当前数值设计约束。
 
 ## Context
 需要为岳七和沈九设计一套养成数值系统，参考 VPet 的好感度/饥饿/体力/心情框架，但需要适配《人渣反派自救系统》的修仙世界观。同时用户明确要求数值衰减速度为"几小时"级别（写实节奏）。
@@ -48,3 +45,4 @@ Accepted; affection decay policy superseded by ADR-006 update
 - 自动互动冷却为 1 分钟；单人打坐每秒恢复 1 点灵力，“一起修炼”按单人打坐完整收益的 1.5 倍计算并四舍五入
 - 离线衰减计算需要在启动时根据时间差批量执行
 - 数值平衡可通过 `config.js` 集中调整，无需改动逻辑代码
+- **后续更新 (2026-06-08)**: 好感度“自然不衰减”的早期平衡决策已被 [ADR-006](./ADR-006-state-persistence-and-offline-decay.md) 的后续更新取代。当前实现通过 `CONFIG.AFFECTION_DECAY = 1 / 24` 让好感度每 2 小时下降 1 点，并在 `NurtureSystem.applyDecay()` 与离线衰减链路中统一结算。因此，本 ADR 中关于“好感度仅通过互动提升 / 好感度也自然衰减被拒绝”的段落只保留为历史背景，不应再作为当前数值设计约束。

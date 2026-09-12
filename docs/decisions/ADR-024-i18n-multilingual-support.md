@@ -1,7 +1,7 @@
-﻿# ADR-024: 多语言支持 (i18n)
+# ADR-024: 多语言支持 (i18n)
 
 ## Status
-已接受 (Accepted)
+Accepted
 
 ## Date
 2026-05-20
@@ -90,19 +90,3 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 - 切换语言时主进程向所有窗口广播事件，新增窗口类型时需确保将其加入广播列表。
 - 状态面板使用 `lastRenderData` 缓存最近一次数据，语言切换时强制重绘；若缓存为空（面板从未收到数据），则跳过重绘，无副作用。
 - 英文 UI 天然比中/日文更长，涉及固定宽度区域（菜单、气泡、标签）时需测试三种语言下的显示效果。
-
-## 涉及文件 (Files Changed)
-
-| 文件 | 变更 |
-|---|---|
-| `src/data/i18n.js` | 新增，统一多语言字典 |
-| `src/data/dialogues.js` | 重构为 `initDialogues(locale)` 动态初始化 |
-| `src/app.js` | 新增 `window.t()`、`updateI18nRefs()`、`locale-changed` 监听 |
-| `src/statusWindow.js` | 新增局部 `t()`、`locale-changed` 监听、`lastRenderData` 缓存重绘 |
-| `src/ui/ContextMenu.js` | 菜单项文字改用 `window.t()` |
-| `src/debug.js` | 硬编码台词改为读取 `DIALOGUES` |
-| `src/index.css` | `.overlay-bubble` 新增折行样式 |
-| `src/status.css` | `.stat-label` 加宽至 85px |
-| `main.js` | 新增 `trayT()`、语言持久化、向所有窗口广播 `locale-changed` |
-| `updateManager.js` | `dialog` 文案改用注入的 `t` 函数 |
-| `preload.js` | 新增 `getLocale`、`setLocale`、`onLocaleChange` 桥接 |

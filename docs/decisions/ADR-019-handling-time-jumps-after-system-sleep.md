@@ -1,4 +1,4 @@
-﻿# ADR-019: 处理系统休眠后的时间跳跃 (Handling Time Jumps After System Sleep)
+# ADR-019: 处理系统休眠后的时间跳跃 (Handling Time Jumps After System Sleep)
 
 ## Status
 Accepted
@@ -9,7 +9,7 @@ Accepted
 ## Context
 用户反馈在电脑进入睡眠/休眠模式（Sleep Mode）很长时间后唤醒，发现桌宠的属性数值没有变化，且没有触发预期的“离线归来”欢迎对白。尽管应用在休眠期间一直保持开启状态，但时间流逝的影响未能正确体现。
 
-## 问题分析 (Problem)
+### 问题分析
 1. **循环暂停**：在浏览器/Electron 环境中，当电脑进入休眠时，`requestAnimationFrame` 会被挂起，游戏主循环停止运行。
 2. **时间跳跃（仅 Windows）**：在 Windows 上，当电脑唤醒时，`performance.now()` 会返回当前时间，导致唤醒后的第一帧 `deltaMs` 变得极其巨大（可能是数小时）。
 3. **时间冻结（macOS 特有）**：在 macOS 上，`performance.now()` 在睡眠期间会**冻结**，唤醒后从暂停值继续，而非跳跃到当前墙钟时间。因此 `deltaMs` 只是一个正常帧间隔（~16ms），**无法检测到休眠发生**。

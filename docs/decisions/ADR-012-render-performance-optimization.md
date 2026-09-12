@@ -1,14 +1,10 @@
 # ADR-012: 渲染层性能优化与防抖
 
 ## Status
-Accepted; StatusBar rendering section superseded by later independent status window architecture
+Accepted
 
 ## Date
 2026-05-01
-
-## Updates
-- 2026-07-23: 天气粒子层 (`WeatherParticleLayer`) 的渲染优化也延续了本 ADR 提倡的缓存与防抖（Dirty Check）原则。通过缓存 `normalizePets` 和 DOM `_groups` 引用，并引入位置 delta 检查跳过无用 DOM style 写入（规避 Layout Thrashing）；同时在 CSS 层面剥离了开销高昂的 GPU 合成属性（`mask-image`、`clip-path` 动画和 `drop-shadow`），改用 `opacity` 淡入淡出以消除重光栅化成本。
-- 2026-06-30: 本 ADR 中“`StatusBar` 初始化静态 DOM 并增量更新节点”的决策描述适用于当时的内嵌状态面板。当前架构中，`src/ui/StatusBar.js` 只负责把宠物状态快照发送给独立状态窗口；实际 DOM 渲染由 `src/statusWindow.js` 完成，并在内容变化时使用 `replaceChildren()` 重建状态块。状态窗口的尺寸反馈与稳定性约束以后续 [ADR-027](./ADR-027-status-window-width-growth-fix.md) 和 `docs/structure.md` 为准。`PetRenderer` 的 `transform` 移动、状态 dirty check 和主进程内存优化仍是当前有效指导。
 
 ## Context
 随着游戏的运行，我们发现桌宠应用占用了大量的 CPU 资源，并伴随较高的内存波动。分析后发现，在游戏的主循环（每秒 60 帧）中存在大量的低效 DOM 操作：
@@ -38,3 +34,5 @@ Accepted; StatusBar rendering section superseded by later independent status win
 - **大幅降低 CPU 负载**：避免了无意义的重排和重绘。
 - **减少内存抖动与整体占用**：避免了每帧创建新 DOM 节点带来的 GC 峰值，主进程的内存限制有效压低了闲置内存的水位。
 - **维护成本微增**：`StatusBar` 的代码结构比直接拼字符串更复杂（需要维护节点引用），但在高频 UI 更新的场景下这是必须付出的代价。
+- **后续更新 (2026-06-30)**: 本 ADR 中“`StatusBar` 初始化静态 DOM 并增量更新节点”的决策描述适用于当时的内嵌状态面板。当前架构中，`src/ui/StatusBar.js` 只负责把宠物状态快照发送给独立状态窗口；实际 DOM 渲染由 `src/statusWindow.js` 完成，并在内容变化时使用 `replaceChildren()` 重建状态块。状态窗口的尺寸反馈与稳定性约束以后续 [ADR-027](./ADR-027-status-window-width-growth-fix.md) 和 `docs/structure.md` 为准。`PetRenderer` 的 `transform` 移动、状态 dirty check 和主进程内存优化仍是当前有效指导。
+- **后续更新 (2026-07-23)**: 天气粒子层 (`WeatherParticleLayer`) 的渲染优化也延续了本 ADR 提倡的缓存与防抖（Dirty Check）原则。通过缓存 `normalizePets` 和 DOM `_groups` 引用，并引入位置 delta 检查跳过无用 DOM style 写入（规避 Layout Thrashing）；同时在 CSS 层面剥离了开销高昂的 GPU 合成属性（`mask-image`、`clip-path` 动画和 `drop-shadow`），改用 `opacity` 淡入淡出以消除重光栅化成本。

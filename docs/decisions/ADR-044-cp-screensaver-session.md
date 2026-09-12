@@ -8,59 +8,6 @@ Accepted
 
 2026-07-27
 
-## Updates
-
-### 2026-07-28: 活跃会话期瞬态失败容忍策略
-
-**问题**
-
-活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood` 并进入约 1 秒 `idle_pause` 后便被瞬间取消，宠物瞬移回原位。
-
-**根因**
-
-`ScreensaverController` 进入 `active` 后改为 1 秒轮询，并在此轮询中重查 `ScreensaverEligibilityGuard`。Windows 活动窗口采样器的 `sampledAt` 取自 PowerShell 调用起始时间（`activeWindowProvider.js:200`），叠加 2 秒采样间隔（`ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000`）与 2 秒信任窗口（`DEFAULT_MAX_CACHE_AGE_MS = 2000`）后，缓存极易在 1 秒轮询边界内越过 2 秒阈值，返回 `stale_cache` / `provider-error` / `unknown-state` 等瞬态拒绝。
-
-`poll()` 中 active 分支「守卫返回不可中断即立即 `cancelSession`」的逻辑把这些瞬态采样间隙误当作资格变化，发送 `screensaver-cancel` 触发渲染器 `reset()`，导致演出被撕毁。
-
-**修订**
-
-引入「触发前严格、活跃中宽容」的分层资格语义：
-
-- `evaluateTrigger`（待机触发前）路径仍一律要求新鲜、可信数据才能放行，瞬态原因照常拒绝。
-- `active` 期间的连续再校验路径只在守卫返回 `fullscreen` / `presentation` 这类确凿不适合信号时取消会话。
-- `stale_cache` / `provider-error` / `unknown-state` / `display-query-failed` / `unsupported_platform` 视为暂不可判断，延后到下一轮轮询再判，避免因采样间隙撕毁一个本就验证过、用户也未操作的演出。
-
-**实现要点**
-
-- 新增 `DEFINITIVE_ELIGIBILITY_LOSS_REASONS = new Set(['fullscreen', 'presentation'])`。
-- 新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`（已验证修复前 fail、修复后 pass；当时全套测试 804 tests / 803 pass / 0 fail）。
-- `Decision` 段落中对 active 分支「中途失效立即取消」与瞬态原因「语义保持不变」的描述已同步更新。
-
-### 2026-07-28: 被抓包提示改为双宠对话气泡
-
-**问题**
-
-CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节点，与角色没有任何视觉关联。
-
-**修订**
-
-复用既有 `DialogBubble.show`，在两只宠物头顶分别弹出对话气泡。
-
-**实现要点**
-
-- 新增 `DIALOGUES.screensaverCaught.{yueqi, shenjiu}` 三语词条（zh / en / ja）。
-- 气泡显示时长为 4000ms（与其他气泡保持一致），虽然 `caught` 状态仅为 800ms，但在 `flushPendingReturnBubble()` 时会强制清理残留气泡以免与回归问候重叠。
-- 移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop` 动画。
-- `ScreensaverSystem.showCaughtIndicator` 重命名为 `showCaughtBubbles`，通过注入的 `dialogBubble` 渲染。
-- `Decision` 段落中「普通输入时，`!` 会先保留一次绘制机会、展示 800ms，并按目标显示器 DPI 定位后再回位」同步更新为「双宠头顶气泡，文案来自 i18n，展示 4000ms 后随回归气泡清理或自然消失，宠物在 800ms 停顿后开始回位」。
-- 相关单元测试（`challengerStep3_1.test.js` / `screensaverOverlay.test.js`）已改为断言 `dialogBubble.show` 调用而非 CSS 节点。
-
-### 2026-07-29: 屏保视觉与性能优化
-
-**修订**
-
-引入了更丰富的多色阶暖光背景和具备 S 型摇曳感的心形粒子轨迹。通过在 CSS 中对动画元素显式声明 `will-change: transform, opacity;` 和对根节点添加 `contain: strict;`，在提升视觉高级感的同时，严格保障了渲染性能的零损耗。
-
 ## Context
 
 CP 局部屏保需要基于系统闲置时间在透明、非聚焦、鼠标穿透的宠物窗口中播放演出。现有久坐提醒也读取 `powerMonitor`，但它以连续活跃时长触发；天气层、宠物可见性、全屏抑制和睡眠恢复均各有独立状态与生命周期。
@@ -181,3 +128,56 @@ renderer 重载一律取消而不回放。
 - macOS 利用 `pmset` 实现了非侵入式的全屏和演示检测，补齐了 macOS 端的触发守卫。
 - 实现时必须同步更新 `docs/structure.md`、`CHANGELOG.md`、测试和本 ADR 的状态。
 - 屏保 Overlay 图片以 `transform: translate(-50%, -50%)` 将其中心对齐场景视觉中点，配合 `width: baseWidth * visualScale, height: auto`，确保素材 intrinsic 宽高比不必与 `320×200` 一致也能正确居中。
+
+## Amendments
+
+### 2026-07-28: 活跃会话期瞬态失败容忍策略
+
+**问题**
+
+活跃 CP 屏保会话在用户未操作的情况下，仅播放一轮 `shareFood` 并进入约 1 秒 `idle_pause` 后便被瞬间取消，宠物瞬移回原位。
+
+**根因**
+
+`ScreensaverController` 进入 `active` 后改为 1 秒轮询，并在此轮询中重查 `ScreensaverEligibilityGuard`。Windows 活动窗口采样器的 `sampledAt` 取自 PowerShell 调用起始时间（`activeWindowProvider.js:200`），叠加 2 秒采样间隔（`ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000`）与 2 秒信任窗口（`DEFAULT_MAX_CACHE_AGE_MS = 2000`）后，缓存极易在 1 秒轮询边界内越过 2 秒阈值，返回 `stale_cache` / `provider-error` / `unknown-state` 等瞬态拒绝。
+
+`poll()` 中 active 分支「守卫返回不可中断即立即 `cancelSession`」的逻辑把这些瞬态采样间隙误当作资格变化，发送 `screensaver-cancel` 触发渲染器 `reset()`，导致演出被撕毁。
+
+**修订**
+
+引入「触发前严格、活跃中宽容」的分层资格语义：
+
+- `evaluateTrigger`（待机触发前）路径仍一律要求新鲜、可信数据才能放行，瞬态原因照常拒绝。
+- `active` 期间的连续再校验路径只在守卫返回 `fullscreen` / `presentation` 这类确凿不适合信号时取消会话。
+- `stale_cache` / `provider-error` / `unknown-state` / `display-query-failed` / `unsupported_platform` 视为暂不可判断，延后到下一轮轮询再判，避免因采样间隙撕毁一个本就验证过、用户也未操作的演出。
+
+**实现要点**
+
+- 新增 `DEFINITIVE_ELIGIBILITY_LOSS_REASONS = new Set(['fullscreen', 'presentation'])`。
+- 新增回归测试 `transient eligibility loss mid-session (stale_cache) does not cancel an active session`（已验证修复前 fail、修复后 pass；当时全套测试 804 tests / 803 pass / 0 fail）。
+- `Decision` 段落中对 active 分支「中途失效立即取消」与瞬态原因「语义保持不变」的描述已同步更新。
+
+### 2026-07-28: 被抓包提示改为双宠对话气泡
+
+**问题**
+
+CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节点，与角色没有任何视觉关联。
+
+**修订**
+
+复用既有 `DialogBubble.show`，在两只宠物头顶分别弹出对话气泡。
+
+**实现要点**
+
+- 新增 `DIALOGUES.screensaverCaught.{yueqi, shenjiu}` 三语词条（zh / en / ja）。
+- 气泡显示时长为 4000ms（与其他气泡保持一致），虽然 `caught` 状态仅为 800ms，但在 `flushPendingReturnBubble()` 时会强制清理残留气泡以免与回归问候重叠。
+- 移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop` 动画。
+- `ScreensaverSystem.showCaughtIndicator` 重命名为 `showCaughtBubbles`，通过注入的 `dialogBubble` 渲染。
+- `Decision` 段落中「普通输入时，`!` 会先保留一次绘制机会、展示 800ms，并按目标显示器 DPI 定位后再回位」同步更新为「双宠头顶气泡，文案来自 i18n，展示 4000ms 后随回归气泡清理或自然消失，宠物在 800ms 停顿后开始回位」。
+- 相关单元测试（`challengerStep3_1.test.js` / `screensaverOverlay.test.js`）已改为断言 `dialogBubble.show` 调用而非 CSS 节点。
+
+### 2026-07-29: 屏保视觉与性能优化
+
+**修订**
+
+引入了更丰富的多色阶暖光背景和具备 S 型摇曳感的心形粒子轨迹。通过在 CSS 中对动画元素显式声明 `will-change: transform, opacity;` 和对根节点添加 `contain: strict;`，在提升视觉高级感的同时，严格保障了渲染性能的零损耗。

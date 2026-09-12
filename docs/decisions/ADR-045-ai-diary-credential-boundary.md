@@ -54,7 +54,7 @@ arbitrary renderers from making requests or selecting privileged pet actions.
 - Rejected: main-process placement improves API isolation but does not prevent
   extraction of a credential shipped in a desktop application.
 
-## Consequences if Accepted
+## Consequences
 
 - The AI diary feature has a new backend and authentication prerequisite.
 - The upstream API Key can be rotated or revoked without shipping a client

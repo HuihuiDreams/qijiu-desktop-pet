@@ -1,4 +1,4 @@
-﻿# ADR-029: 安全审计与本地硬化
+# ADR-029: 安全审计与本地硬化
 
 ## Status
 Accepted
@@ -53,22 +53,15 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 - 后续贡献者有更明确的规则：除非有记录充分的理由，否则动态 DOM 使用结构化 API，进程调用使用结构化参数。
 - 不预期产生用户可见行为变化。
 
-## 验证
+### 验证
 - `npm test`
 - `npm audit --audit-level=high --strict-ssl=false`
 - `npm audit --omit=dev --audit-level=high --strict-ssl=false`
 - 对应用代码和脚本进行 secret pattern 扫描
 
-## 变更文件
-| 文件 | 目的 |
-|---|---|
-| `src/pet/PetRenderer.js` | 将宠物节点渲染从 `innerHTML` 改为 DOM API。 |
-| `test/htmlInjectionHardening.test.js` | 为 `PetRenderer` 增加注入硬化回归测试。 |
-| `scripts/convert_images.js` | 使用 `spawnSync` 参数数组调用 `ffmpeg`。 |
-| `.gitignore` | 忽略更多本地密钥文件模式。 |
-| `package-lock.json` | 将 `tmp` 解析到已修复的 `0.2.6`。 |
+## Amendments
 
-## 补充：更新进度窗口硬化 (2026-06-09)
+### 补充：更新进度窗口硬化 (2026-06-09)
 
 后续安全优化继续减少 Electron 本地页面的字符串执行面：
 

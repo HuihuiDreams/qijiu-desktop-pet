@@ -1,4 +1,4 @@
-﻿# ADR-027: 修仙状态窗口宽度自动增大修复
+# ADR-027: 修仙状态窗口宽度自动增大修复
 
 ## Status
 Accepted
@@ -81,10 +81,3 @@ renderStatus()
 - 窗口宽度会根据实际字体渲染尺寸自适应（320px–480px 范围内），在不同系统字体和 DPI 缩放下都能正常显示内容。
 - 语言切换后，如果多语言文案的宽度不同，窗口会重新适配，不会出现内容溢出或过窄。
 - **注意**：新增 UI 元素到 `.status-panel` 时，应保证其不会在 `min-width: 320px` 下换行，也不会在 `max-width: 480px` 下溢出。
-
-## 涉及文件 (Files Changed)
-
-| 文件 | 修改内容 |
-|---|---|
-| `src/status.css` | `.status-panel` 从 `width: 100%` 改为 `width: max-content; min-width: 320px; max-width: 480px` |
-| `src/statusWindow.js` | `renderStatus()` 改为读取 `panel.scrollWidth`（内容固有宽度）代替 `getBoundingClientRect().width`，并附有注释说明循环原理 |

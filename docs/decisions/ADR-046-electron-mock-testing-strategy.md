@@ -31,6 +31,12 @@ Accepted
    ```
 3. **即时隔离与还原**：在每一个测试套件的末尾（例如 `test.after()` 或 `after()` 钩子），必须还原 `Module.prototype.require = originalRequire` 并清空 Node 模块缓存 `delete require.cache[require.resolve('...')]`，以防止当前测试修改的全局状态污染其他并发或连续执行的测试文件。
 
+## Alternatives Considered
+- **重构生产代码支持依赖注入 (Dependency Injection)**：将 `app` 和 `ipcMain` 等作为参数传递给类构造函数。
+  - *缺点*：改造范围过大，且主进程大量模块属于单例模式，DI 化会增加冗余样板代码，违背 KISS 原则。
+- **使用第三方 Mock 库 (如 `proxyquire`, `mockery`)**：
+  - *缺点*：引入额外的外部依赖，且在复杂模块缓存下经常出现意外穿透，不如直接拦截原生的 `require` 来的透明且符合当前项目的极简风格。
+
 ## Consequences
 - **Positive**:
   - **保持生产代码原样**：生产代码无需进行任何“为测试而生”的妥协或修改（无需强行 DI 化）。代码依然可以使用原生的 `require('electron')` 习惯。
@@ -39,9 +45,3 @@ Accepted
 - **Negative**:
   - **副作用管理要求严苛**：这种 Node 底层机制的修改是全局性的，如果忘记清理钩子或缓存刷新机制失败，极易造成后续测试诡异崩溃。需要严格遵守 `after`/`test.after` 的清理约定。
   - **时序依赖**：必须在 require 任何被测试的主进程模块之前，先 require 并初始化 `mockElectron.js`。
-
-## Alternatives Considered
-- **重构生产代码支持依赖注入 (Dependency Injection)**：将 `app` 和 `ipcMain` 等作为参数传递给类构造函数。
-  - *缺点*：改造范围过大，且主进程大量模块属于单例模式，DI 化会增加冗余样板代码，违背 KISS 原则。
-- **使用第三方 Mock 库 (如 `proxyquire`, `mockery`)**：
-  - *缺点*：引入额外的外部依赖，且在复杂模块缓存下经常出现意外穿透，不如直接拦截原生的 `require` 来的透明且符合当前项目的极简风格。

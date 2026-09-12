@@ -1,13 +1,10 @@
 # ADR-025: 更新进度弹窗与本地打包更新测试
 
 ## Status
-Accepted; update progress window implementation superseded by ADR-014/ADR-029 hardening
+Accepted
 
 ## Date
 2026-05-22
-
-## Updates
-- 2026-06-09: 本 ADR 中“更新进度窗口使用 `data:` URL 和生成 HTML”的实现方案已被后续安全加固取代。当前进度窗口由 `main.js` 加载本地 `src/update-progress.html`，配合 `src/update-progress.css`、`src/update-progress.js` 和 `updateProgressPreload.js`，通过 IPC 接收进度 payload，不再使用 `data:text/html`、内联脚本或 `webContents.executeJavaScript()`。这次替代记录在 [ADR-014](./ADR-014-electron-security-hardening.md) 与 [ADR-029](./ADR-029-security-audit-and-local-hardening.md) 的补充段落中。本 ADR 的“可见更新进度”和“本地 packaged 更新测试”目标仍然有效。
 
 ## Context
 有用户反馈点击“检查更新”之后看起来没有反应。实际更新检查已经触发，但即时状态只体现在托盘菜单文案里。用户点击菜单项后通常会关闭托盘菜单，因此很容易错过“正在检查更新”的状态反馈。
@@ -66,8 +63,10 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
 - 主进程新增一个小型 `BrowserWindow`，因此生命周期清理变得重要。当前实现会在无更新、发现更新、失败和下载完成路径关闭该窗口。
 - 本地更新验证需要构建并安装测试包，但不需要发布真实 Release。
 - 某些 Windows 环境中，`127.0.0.1:8765` 可能被本机软件占用或拦截。本机测试中 `127.0.0.1` 返回 `ERR_EMPTY_RESPONSE`，因此测试配置使用 `localhost:8765`。
+- **后续更新 (2026-06-09)**: 本 ADR 中“更新进度窗口使用 `data:` URL 和生成 HTML”的实现方案已被后续安全加固取代。当前进度窗口由 `main.js` 加载本地 `src/update-progress.html`，配合 `src/update-progress.css`、`src/update-progress.js` 和 `updateProgressPreload.js`，通过 IPC 接收进度 payload，不再使用 `data:text/html`、内联脚本或 `webContents.executeJavaScript()`。这次替代记录在 [ADR-014](./ADR-014-electron-security-hardening.md) 与 [ADR-029](./ADR-029-security-audit-and-local-hardening.md) 的补充段落中。本 ADR 的“可见更新进度”和“本地 packaged 更新测试”目标仍然有效。
 
-## Verification
+### 验证
+
 - `npm test` 已通过，覆盖了检查中 UI、开始下载、下载进度更新和进度窗口关闭。
 - 已手动验证本地 packaged 更新流程：
   - `npm run build -- --config docs/archive/electron-builder.update-test-old.yml`
@@ -76,30 +75,21 @@ Accepted; update progress window implementation superseded by ADR-014/ADR-029 ha
   - 安装 `dist-update-test/old/qijiu-update-test-setup-0.3.1.exe`
   - 触发检查更新，并下载伪新版本 `0.3.2`
 
-## Files Changed
-| 文件 | 用途 |
-|---|---|
-| `updateManager.js` | 增加可注入的进度 UI 适配器和生命周期调用。 |
-| `main.js` | 实现更新进度 `BrowserWindow`。 |
-| `src/data/i18n.js` | 增加进度窗口标题的多语言文案。 |
-| `test/updateManager.test.js` | 覆盖更新进度 UI 流程。 |
-| `docs/archive/electron-builder.update-test-old.yml` | 构建本地测试旧版本。 |
-| `docs/archive/electron-builder.update-test-new.yml` | 构建本地测试伪新版本。 |
-| `.gitignore` | 忽略一次性输出目录 `dist-update-test/`。 |
+## Amendments
 
-## 补充：下载完整性校验默认拒绝 (2026-09-01)
+### 补充：下载完整性校验默认拒绝 (2026-09-01)
 
 更新包的本地 SHA-512 校验采用 fail-closed 语义：只有下载路径存在、校验元数据为非空字符串、文件可读且 Base64 或 Hex 摘要匹配时，才能进入安装确认。缺少 `downloadedFile`、`sha512`（含 `files[0].sha512` 回退）、文件读取失败或摘要不匹配时统一设置 `integrity-check-failed` 并停止安装。
 
 这避免把 electron-updater 的“下载完成”事件误当成应用层完整性证明；相应单测覆盖合法双格式摘要、缺失元数据、不可读文件、损坏包以及不调用 `quitAndInstall` 的负向路径。
 
-## 补充：macOS 手动更新检查超时 (2026-09-01)
+### 补充：macOS 手动更新检查超时 (2026-09-01)
 
 macOS 手动检查 GitHub Releases 时创建独立 `AbortController`，请求最长等待 15 秒，并在 `finally` 清理定时器。超时与主动中止按下载/网络错误处理，统一复位 `checking`、关闭进度窗口并刷新托盘，使用户可以立即重试。
 
 `createUpdateManager` 仅为测试提供 `fetchImpl` 和 `macCheckTimeoutMs` 注入点，生产默认调用及 IPC 契约不变。单元测试覆盖永久挂起请求、超时后的再次检查、正常响应、HTTP 错误和成功路径的定时器清理。
 
-## 补充：流式异步非阻塞完整性校验 (2026-09-09)
+### 补充：流式异步非阻塞完整性校验 (2026-09-09)
 
 针对体积约 70MB~120MB 的安装包，`verifyDownloadedPackageIntegrity` 弃用同步 `fs.readFileSync`，重构为基于 Node.js 原生 `fs.createReadStream` 与 `node:stream/promises` 的 `pipeline(stream, hash)` 异步流式计算。
 

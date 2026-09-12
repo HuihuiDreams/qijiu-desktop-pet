@@ -26,7 +26,7 @@ Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms�
 
 macOS 使用 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 断言（通常由视频播放或演示触发），借此模拟 `isFullScreen` 状态，主要用于阻止 CP 屏保。该机制与媒体播放状态强绑定，暂停的视频会解除断言（允许屏保），部分非全屏视频会议（如 Zoom/Meet）可能会保持断言。macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。其它平台在活动窗口感知上返回 unavailable fallback。
 
-## 平台选择概率
+### 平台选择概率
 活动窗口顶部平台的选择概率显式配置为：
 
 ```js
@@ -39,7 +39,7 @@ CONFIG.WINDOW_AWARENESS_PLATFORM_CHANCE = 0.7
 
 任务栏/Dock 平台使用同一套 `surfacePlatforms` 机制，但权重由 `CONFIG.TASKBAR_PLATFORM_WEIGHT` 控制。当宠物已经在活动窗口顶部或任务栏/Dock 边缘上时，有 70% 概率继续沿当前边缘移动，避免刚停下又立刻跳回普通桌面。活动窗口顶部平台使用几何目标线判断“已经站在边缘上”，即使当前 active-window sample 短暂缺失，也可以基于缓存目标继续一次自然的边缘行走。
 
-## 不可用与边界行为
+### 不可用与边界行为
 以下场景不生成活动窗口顶部 platform，移动系统回退到普通 walk area：
 
 - 活动窗口不可用或 provider 失败。

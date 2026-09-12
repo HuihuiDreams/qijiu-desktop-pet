@@ -1,13 +1,10 @@
-﻿# ADR-002: 鼠标穿透与交互区域切换策略
+# ADR-002: 鼠标穿透与交互区域切换策略
 
 ## Status
 Accepted
 
 ## Date
 2026-04-28
-
-## Updates
-- 2026-06-30: 动态切换鼠标穿透的核心决策仍然有效，但早期 `mouseleave` 守卫示例不再覆盖全部实现细节。当前实现还包括 `leaseMs` 穿透租约、拖拽 watchdog、拖拽开始/结束通知、天气粒子交互静音，以及右键菜单等交互面的主动租约续期。新增交互元素仍应遵守默认穿透、交互期间解除穿透、关闭后恢复穿透的原则；具体边界以 `main.js` 的 `setMousePassthrough()`、`ipcContracts.js` 的鼠标穿透参数归一化、`PetRenderer.js` 和 `ContextMenu.js` 的当前实现为准。
 
 ## Context
 桌面宠物应用创建了一个覆盖全屏的透明窗口。面临的核心矛盾是：
@@ -47,3 +44,4 @@ if (!pet.isDragging && !menuOpen && !panelOpen) {
 - 所有新增的可交互 UI 元素（菜单、面板、对话框）都必须在 `mouseenter` 时调用 `setIgnoreMouseEvents(false)`，在关闭/隐藏时恢复穿透
 - `mouseleave` 守卫条件需要随 UI 元素增加而更新
 - 拖曳期间必须锁定非穿透状态直到 `mouseup`
+- **后续更新 (2026-06-30)**: 动态切换鼠标穿透的核心决策仍然有效，但早期 `mouseleave` 守卫示例不再覆盖全部实现细节。当前实现还包括 `leaseMs` 穿透租约、拖拽 watchdog、拖拽开始/结束通知、天气粒子交互静音，以及右键菜单等交互面的主动租约续期。新增交互元素仍应遵守默认穿透、交互期间解除穿透、关闭后恢复穿透的原则；具体边界以 `main.js` 的 `setMousePassthrough()`、`ipcContracts.js` 的鼠标穿透参数归一化、`PetRenderer.js` 和 `ContextMenu.js` 的当前实现为准。

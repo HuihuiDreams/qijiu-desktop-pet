@@ -8,6 +8,7 @@
 - 建立 Playwright E2E 测试体系：新增 `playwright.config.js`（串行执行、40s 超时、独立 userData 隔离），`test/e2e/helpers/electron.js` 封装 `launchApp`/`closeApp`，以及四个 spec 文件（`startup.spec.js`、`skinSelector.spec.js`、`contextMenu.spec.js`、`breakReminder.spec.js`），共覆盖 16 个端到端测试场景。通过 `npm run test:e2e` 独立触发，不影响 `npm test` 的 Node 单测执行速度。
 
 ### Changed
+- 规范化全量 46 篇架构决策记录 (ADR)：依据 ADR 标准模板统一修正 Status 枚举值、规范各章节顺序（`Decision` → `Alternatives Considered` → `Consequences`）、统一中文括号标题，并将非标准补充段落归整为 `## Amendments` 或折入 `Consequences`；同时在 `docs/structure.md` 中补齐全部 ADR-001 至 ADR-046 完整索引，并新增 `docs/decisions/README.md` 索引目录。
 - 简化 E2E 测试中的 Electron 路径解析：移除多余的跨平台路径拼接逻辑，直接使用 `require('electron')` 导出，提高代码整洁度。
 - 优化更新安装包完整性校验为非阻塞流式 I/O：`updateManager.js` 中的 `verifyDownloadedPackageIntegrity` 弃用同步 `fs.readFileSync`，改为基于 Node.js 原生 `fs.createReadStream` 与 `stream/promises.pipeline` 的异步流式分块计算，单次 `hash.digest()` 同时匹配 Base64 与 Hex 摘要，消除大安装包（70MB~120MB）完整性校验对主进程事件循环的短暂阻塞（[ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)）。
 

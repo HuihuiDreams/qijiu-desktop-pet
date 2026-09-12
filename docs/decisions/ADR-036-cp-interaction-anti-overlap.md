@@ -1,7 +1,7 @@
 # ADR-036: CP 互动防交叠机制
 
 ## Status
-已接受
+Accepted
 
 ## Date
 2026-06-08
@@ -36,6 +36,6 @@
 - **正面影响**：任务栏/Dock 边缘平台上的打招呼场景也会在边界夹取后保持至少一个宠物宽度的间距。
 - **负面影响**：如果两只桌宠完全重合，互动开始时会有轻微“跳位”感；通常每只最多移动半个宠物宽度，仍比重叠显示更可接受。
 
-## 测试策略
+### 测试策略
 - `test/interactionSystem.test.js` 覆盖完全同坐标的最坏场景，确认 `InteractionSystem.update()` 后两只桌宠至少相隔一个宠物宽度，并且朝向正确。
 - `test/movementSystem.test.js` 覆盖任务栏边缘场景，确认单独边界夹取造成距离压缩后，`separatePetsWithinWalkAreas()` 能把两只桌宠重新分开。

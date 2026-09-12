@@ -1,4 +1,4 @@
-﻿# ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
+# ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
 
 ## Status
 Accepted
@@ -64,7 +64,8 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 - macOS 11 用户不再被文档误导；当前 Electron 42 包最低支持 macOS 12.0。
 - 如果未来改动打包逻辑导致 `CFBundleExecutable` 回退为中文名，CI 会阻止发布。
 
-## 验证 (Verification)
+### 验证
+
 - `npm test` 通过，新增 `test/macosPackaging.test.js` 覆盖 macOS 包内可执行文件命名和手动更新提示。
 - `npm run verify:installer` 通过。
 - 本地执行 `npx electron-builder --mac --dir` 后验证：
@@ -74,7 +75,8 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
   - `codesign --verify --deep --strict` 通过。
 - 本地完整构建 `desktop-pet-setup-0.4.1-arm64.dmg` 后挂载验证，DMG 内 `.app` 同样满足上述条件。
 
-## CI 保护 (CI Guardrails)
+### CI 保护
+
 两个 GitHub Actions workflow 都增加了 macOS 包内元数据检查：
 
 - `.github/workflows/release-preflight.yml`
@@ -87,15 +89,3 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 3. 要求 `Contents/MacOS/DeskPet` 存在且可执行。
 4. 要求 `Contents/MacOS/七九爱宠` 不存在。
 5. 执行 `codesign --verify --deep --strict`。
-
-## 涉及文件 (Files Changed)
-| 文件 | 用途 |
-|---|---|
-| `scripts/afterPack.js` | macOS 打包后重写包内可执行文件名和 `CFBundleExecutable`。 |
-| `package.json` | 显式设置 `mac.minimumSystemVersion = 12.0`。 |
-| `src/data/i18n.js` | 更新 macOS 手动更新弹窗文案，提示先退出旧版本。 |
-| `README.md` / `readme*.txt` | 更新 macOS 系统版本、手动更新和 Gatekeeper 说明。 |
-| `.github/workflows/release-preflight.yml` | 在 macOS 预检中校验包内可执行文件元数据。 |
-| `.github/workflows/build-installer.yml` | 在正式 macOS 发布中校验包内可执行文件元数据。 |
-| `test/macosPackaging.test.js` | 增加打包命名和更新提示回归测试。 |
-| `CHANGELOG.md` | 记录本次 macOS 更新修复和发布流程保护。 |

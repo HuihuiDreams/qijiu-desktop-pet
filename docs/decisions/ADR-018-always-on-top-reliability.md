@@ -1,7 +1,7 @@
 # ADR-018: 窗口始终置顶可靠性增强策略
 
 ## Status
-已接受 (Accepted)
+Accepted
 
 ## Date
 2026-05-07

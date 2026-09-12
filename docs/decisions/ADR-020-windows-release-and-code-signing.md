@@ -1,16 +1,10 @@
-﻿# ADR-020: Windows Release 与代码签名发布策略
+# ADR-020: Windows Release 与代码签名发布策略
 
 ## Status
 Accepted
 
 ## Date
 2026-05-11
-
-## 2026-05-11 补充
-`0.1.8` 起，Windows 代码签名从强制要求调整为可选能力。当前应用只面向小范围分发，
-因此当仓库未配置 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD` 时，发布 workflow
-可以继续构建未签名的 NSIS 安装包。后续如果分发范围扩大，公开发布仍应优先使用
-Authenticode 签名。
 
 ## Context
 项目已经具备 Windows NSIS 安装包能力，并通过 GitHub Releases 面向普通用户分发。近期发布链路连续做了几类调整：
@@ -83,3 +77,4 @@ Authenticode 签名。
 - SmartScreen 警告不会立刻完全消失：新应用和新文件 hash 仍需要积累文件信誉和发布者信誉。
 - 本地开发和小范围发布可继续使用 `npm run build` 生成未签名安装包；公开发布以 CI 签名结果为准。
 - 后续若接入 Microsoft Trusted Signing、EV/OV 证书轮换或硬件密钥签名，只需要替换签名 secret / 签名服务配置，发布策略本身不变。
+- **后续更新 (2026-05-11)**: `0.1.8` 起，Windows 代码签名从强制要求调整为可选能力。当前应用只面向小范围分发，因此当仓库未配置 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD` 时，发布 workflow 可以继续构建未签名的 NSIS 安装包。后续如果分发范围扩大，公开发布仍应优先使用 Authenticode 签名。

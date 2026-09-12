@@ -1,13 +1,10 @@
-﻿# ADR-022: 多显示器支持边界
+# ADR-022: 多显示器支持边界
 
 ## Status
 Accepted
 
 ## Date
 2026-05-12
-
-## 更新日期
-2026-05-18
 
 ## Context
 桌宠应用使用一个透明的 Electron 窗口作为移动舞台。多显示器支持需要同时解决两个层面的问题：
@@ -57,6 +54,15 @@ Accepted
    ```
 
 11. 暴露 `window.__DEBUG_SCREEN()` 作为运行时调试入口，返回原始显示器信息、`windowScaleFactor`、`devicePixelRatio`、窗口尺寸、以及移动系统实际使用的 `walkAreas`。
+
+### 实现备注
+
+- `main.js` 通过 `screen-info` 向 renderer 发送 `width`、`height`、`walkAreas`、`windowScaleFactor` 和原始显示器诊断信息。
+- `main.js` 在 `display-added`、`display-removed` 和 `display-metrics-changed` 后重新适配窗口和屏幕信息。
+- `displayBounds.js` 负责显示器边界转换，保证这部分逻辑可以脱离 Electron 做单元测试。
+- `MovementSystem` 在 `normalizeWalkAreas()` 中保留 `scaleRatio`，因为 UI 视觉缩放依赖和移动系统一致的显示器区域判断。
+- `PetRenderer` 使用 `transform-origin: top left` 缩放小人，因此所有基于小人中心的效果都必须使用缩放后的视觉中心。
+- `ContextMenu` 使用 CSS 变量 `--display-scale`，让菜单常态和 reveal 动画保持同一视觉比例。
 
 ## Alternatives Considered
 ### 直接把 Electron DIP 坐标当作 renderer CSS 坐标
@@ -109,16 +115,7 @@ Accepted
   window.__DEBUG_PETS.shenjiu
   ```
 
-## 实现备注
-
-- `main.js` 通过 `screen-info` 向 renderer 发送 `width`、`height`、`walkAreas`、`windowScaleFactor` 和原始显示器诊断信息。
-- `main.js` 在 `display-added`、`display-removed` 和 `display-metrics-changed` 后重新适配窗口和屏幕信息。
-- `displayBounds.js` 负责显示器边界转换，保证这部分逻辑可以脱离 Electron 做单元测试。
-- `MovementSystem` 在 `normalizeWalkAreas()` 中保留 `scaleRatio`，因为 UI 视觉缩放依赖和移动系统一致的显示器区域判断。
-- `PetRenderer` 使用 `transform-origin: top left` 缩放小人，因此所有基于小人中心的效果都必须使用缩放后的视觉中心。
-- `ContextMenu` 使用 CSS 变量 `--display-scale`，让菜单常态和 reveal 动画保持同一视觉比例。
-
-## 已知边界
+### 已知边界
 
 - 当前模型仍以一个跨屏透明窗口承载所有宠物和 UI。它依赖 Electron 在目标 Windows 布局下允许 `enableLargerThanScreen` 和固定窗口 bounds 生效。
 - `scaleRatio` 解决的是混合 DPI 下的视觉比例和可见区域换算，不代表每个显示器都有独立 renderer 或独立 `devicePixelRatio`。

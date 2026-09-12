@@ -517,16 +517,26 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 
 ## 5. 架构决策索引
 
-主要 ADR：
+全部 ADR 文件及规范见 [docs/decisions/README.md](./decisions/README.md)。完整决策列表：
 
 - [ADR-001](./decisions/ADR-001-use-electron-framework.md)：使用 Electron 框架。
 - [ADR-002](./decisions/ADR-002-mouse-clickthrough-strategy.md)：鼠标点击穿透策略。
+- [ADR-003](./decisions/ADR-003-xianxia-nurture-system.md)：修仙风格养成数值体系设计。
 - [ADR-004](./decisions/ADR-004-drag-implementation.md)：拖拽实现。
 - [ADR-005](./decisions/ADR-005-gameloop-crash-protection.md)：game loop 崩溃保护。
 - [ADR-006](./decisions/ADR-006-state-persistence-and-offline-decay.md)：状态持久化和离线衰减。
+- [ADR-007](./decisions/ADR-007-dynamic-interaction-menu-text.md)：动态交互菜单名称设计。
+- [ADR-008](./decisions/ADR-008-git-push-validation-workflow.md)：Git 提交强制验证工作流。
+- [ADR-009](./decisions/ADR-009-kiss-interaction-overlay.md)：采用全局覆盖层实现特殊互动。
+- [ADR-010](./decisions/ADR-010-reserve-historical-adr-number.md)：保留历史 ADR 编号空缺。
+- [ADR-011](./decisions/ADR-011-hide-show-pet-functionality.md)：增加隐藏/显示桌宠及游戏逻辑暂停机制。
 - [ADR-012](./decisions/ADR-012-render-performance-optimization.md)：渲染性能优化。
+- [ADR-013](./decisions/ADR-013-devtools-memory-optimization.md)：移除自动挂载 DevTools 以优化基础内存占用。
 - [ADR-014](./decisions/ADR-014-electron-security-hardening.md)：Electron 安全加固。
+- [ADR-015](./decisions/ADR-015-code-quality-optimizations.md)：代码质量与性能优化。
+- [ADR-016](./decisions/ADR-016-frontend-visual-redesign.md)：前端视觉重构与水墨仙侠美学。
 - [ADR-017](./decisions/ADR-017-migrate-to-spriteview.md)：迁移到 SpriteView。
+- [ADR-018](./decisions/ADR-018-always-on-top-reliability.md)：窗口始终置顶可靠性增强策略。
 - [ADR-019](./decisions/ADR-019-handling-time-jumps-after-system-sleep.md)：系统睡眠后的时间跳变处理。
 - [ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)：Windows 发布与签名。
 - [ADR-021](./decisions/ADR-021-single-instance-launch-lock.md)：单实例启动锁。
