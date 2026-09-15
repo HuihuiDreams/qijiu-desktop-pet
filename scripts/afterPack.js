@@ -74,10 +74,11 @@ function rewriteMacExecutableName(context) {
 
   // Fixing the ad-hoc signature since we modified Info.plist and renamed the executable.
   // Without this, the app will crash on launch with Permission Denied (1100) on macOS ARM64.
-  // Re-sign the .app bundle (not just the binary) so the bundle seal (CodeResources) is
-  // also updated. Omit --deep so nested Electron helpers keep their original signatures.
+  // Re-sign the .app bundle with --deep so nested frameworks and helper apps (which are unsigned
+  // in x64 electron distributions) receive consistent ad-hoc signatures without failing.
   const codesignResult = spawnSync('/usr/bin/codesign', [
     '--force',
+    '--deep',
     '--sign',
     '-',
     appPath,

@@ -12,8 +12,8 @@ test('macOS packaging rewrites the internal executable to an ASCII name', () => 
   assert.match(afterPackSource, /CFBundleExecutable/);
   assert.match(afterPackSource, /fs\.renameSync\(originalExecutablePath, asciiExecutablePath\)/);
   assert.match(afterPackSource, /\/usr\/bin\/codesign/);
-  assert.doesNotMatch(afterPackSource, /['"]--deep['"]/,
-    'codesign must not use deprecated --deep flag');
+  assert.match(afterPackSource, /['"]--deep['"]/,
+    'codesign must use --deep flag to sign nested unsigned frameworks in cross-arch builds');
 });
 
 test('macOS release workflows enforce Chinese wrapper app and ASCII executable names', () => {

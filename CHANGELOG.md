@@ -15,7 +15,7 @@
 - 规范化全量 46 篇架构决策记录 (ADR)：依据 ADR 标准模板统一修正 Status 枚举值、规范各章节顺序（`Decision` → `Alternatives Considered` → `Consequences`）、统一中文括号标题，并将非标准补充段落归整为 `## Amendments` 或折入 `Consequences`；同时在 `docs/structure.md` 中补齐全部 ADR-001 至 ADR-046 完整索引，并新增 `docs/decisions/README.md` 索引目录。
 
 ### Fixed
-- 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
+- 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；在无证书构建模式下使用 `--deep` 对整个 `.app` Bundle 执行递归 ad-hoc 签名，避免 x64 架构下嵌套未签名框架（`ReactiveObjC.framework` 等）导致 `codesign` 报 `code object is not signed at all` 并在 CI 中中断打包。
 - 修复 macOS 环境下运行 Playwright E2E 测试结束时频繁弹出的“Electron 意外退出”崩溃弹窗问题；在 `closeApp` 辅助函数中加入 `app.quit()` 优雅退出逻辑，避免被 Playwright 强制终止导致系统拦截报错。
 - 为 `LocaleService.js` 和 `TrayManager.js` 中 `mainWindow` 的 5 处 `webContents.send` / `openDevTools` 调用补充 `!mainWindow.isDestroyed()` 防御性校验，与子窗口已有的守卫保持一致，消除窗口销毁竞态下的潜在崩溃。
 - 移除 `citySettingWindow.js` 和 `pomodoroWindow.js` 中与 `WindowI18n.init` 重复的 `getLocale().then()` 调用，避免首帧双重回调（`loadCurrentCity` / `refreshState` 被执行两次）。
