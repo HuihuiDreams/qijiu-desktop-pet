@@ -30,6 +30,7 @@
 - 收紧安装包内容边界：electron-builder 显式排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`，并在 Windows、macOS 预检及正式构建后扫描 `app.asar`，阻止内部 Agent 规则或临时工作区进入发行包。
 - 按窗口最小权限收紧 renderer IPC：状态窗、番茄钟和城市设置窗改用专用 preload，所有存档、自动启动、语言、皮肤、窗口与设置通道在主进程校验实时 `event.sender`，伪造、缺失或已销毁窗口请求均在产生副作用前拒绝，同时保留 `app.openSkinSelectorForQA` 冒烟入口。
 - 将下载更新包的 SHA-512 校验改为 fail-closed：缺少下载路径或校验值、元数据类型错误、文件不可读及摘要不匹配时一律阻止安装并记录 `integrity-check-failed`，仅合法 Base64/Hex 摘要可进入安装确认。
+- 修复依赖项安全漏洞：升级 `fast-uri`（至 3.1.7）与 `js-yaml`（至 4.3.2），消除 NPM 审计中的高危安全告警（GHSA-5jgf-p345-68v8、GHSA-2883-xcg3-v3hh），确保发布前安全审计（`npm audit --omit=dev --audit-level=high`）合规通过。
 
 ## [0.10.4] - 2026-08-28
 
