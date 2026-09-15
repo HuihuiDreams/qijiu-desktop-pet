@@ -13,6 +13,7 @@
 - 优化更新安装包完整性校验为非阻塞流式 I/O：`updateManager.js` 中的 `verifyDownloadedPackageIntegrity` 弃用同步 `fs.readFileSync`，改为基于 Node.js 原生 `fs.createReadStream` 与 `stream/promises.pipeline` 的异步流式分块计算，单次 `hash.digest()` 同时匹配 Base64 与 Hex 摘要，消除大安装包（70MB~120MB）完整性校验对主进程事件循环的短暂阻塞（[ADR-025](docs/decisions/ADR-025-visible-update-progress-and-local-update-testing.md)）。
 
 ### Fixed
+- 修复更新下载完成后的测试同步：流式 SHA-512 校验改为异步 I/O 后，测试改为等待实际的弹窗或完整性校验状态，避免固定次数事件循环轮询在文件读取尚未完成时产生误报。
 - 修复 macOS 环境下运行 Playwright E2E 测试结束时频繁弹出的“Electron 意外退出”崩溃弹窗问题；在 `closeApp` 辅助函数中加入 `app.quit()` 优雅退出逻辑，避免被 Playwright 强制终止导致系统拦截报错。
 - 修复 `afterPack` 中重命名 macOS 可执行文件后未重新签名导致 Apple Silicon 上启动崩溃（Permission Denied 1100）的问题；仅对被重命名的二进制文件执行 ad-hoc 签名，避免使用已弃用的 `--deep` 标志覆盖嵌套 Electron 组件的有效签名。
 - 为 `LocaleService.js` 和 `TrayManager.js` 中 `mainWindow` 的 5 处 `webContents.send` / `openDevTools` 调用补充 `!mainWindow.isDestroyed()` 防御性校验，与子窗口已有的守卫保持一致，消除窗口销毁竞态下的潜在崩溃。

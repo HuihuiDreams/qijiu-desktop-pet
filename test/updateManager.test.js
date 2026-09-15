@@ -25,6 +25,16 @@ function tick(iterations = 10) {
   });
 }
 
+async function waitFor(predicate, timeoutMs = 1000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!predicate()) {
+    if (Date.now() >= deadline) {
+      throw new Error('Timed out waiting for update handler completion');
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
 function createVerifiedDownloadInfo(metadata = {}) {
   const crypto = require('node:crypto');
   const fs = require('node:fs');
@@ -262,7 +272,7 @@ test('update-downloaded asks before quit and install', async () => {
 
   try {
     updater.emit('update-downloaded', verifiedDownload.info);
-    await tick();
+    await waitFor(() => messages.length === 1 && updater.quitAndInstallArgs);
 
     assert.equal(messages[0].title, 'updateReadyTitle');
     assert.deepEqual(updater.quitAndInstallArgs, [false, true]);
@@ -280,7 +290,7 @@ test('update-downloaded respects a user cancel', async () => {
 
   try {
     updater.emit('update-downloaded', verifiedDownload.info);
-    await tick();
+    await waitFor(() => messages.length === 1);
 
     assert.equal(messages[0].message, 'updateReadyMsg'.replace('{version}', '0.1.8'));
     assert.equal(updater.quitAndInstallArgs, undefined);
@@ -518,7 +528,7 @@ test('update-downloaded refuses a package when checksum metadata is missing', as
   try {
     const { updater, manager } = createHarness();
     updater.emit('update-downloaded', { downloadedFile: tmpFile });
-    await tick();
+    await waitFor(() => manager.getUpdateMenuState().error === 'integrity-check-failed');
 
     assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
     assert.equal(updater.quitAndInstallArgs, undefined);
@@ -537,7 +547,7 @@ test('update-downloaded intercepts corrupted package integrity (SBP-001)', async
 
   const { updater, manager, messages } = createHarness();
   updater.emit('update-downloaded', { downloadedFile: tmpFile, sha512: 'invalid-hash' });
-  await tick();
+  await waitFor(() => manager.getUpdateMenuState().error === 'integrity-check-failed');
 
   assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
   assert.equal(messages.length, 0);
