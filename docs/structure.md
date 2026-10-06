@@ -408,7 +408,7 @@ src/assets/{skinId}/
 - macOS 使用 `pgrep -x` 和 `lsof -a -nP -i UDP -p <pid> -Fn` 做同类检测（显式指定 `-a` 确保目标 PID 与 UDP 协议条件按交集匹配，排除非网络文件与其他进程 UDP 端点）。
 - 默认每 5 秒采样一次。当前 Windows Teams 实测基线为未开会 `0, 2`，会议/共享中 `0, 6`，MVP 阈值为任一同名进程 UDP `>= 5`，连续 2 次命中后判定会议中。
 - 低于阈值持续 15 秒后判定会议结束，避免短暂网络波动导致桌宠闪现。
-- `services/PetVisibilityService.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。
+- `services/PetVisibilityService.js` 使用独立的 `meetingHidden` 状态标记，与手动 `petHidden` 分离。用户通过托盘手动显示桌宠时会清除会议自动隐藏状态；用户手动隐藏的桌宠不会在会议结束后被自动显示。渲染端通过 `isPaused = !isVisible || isUserPaused` 计算有效暂停，会议开始/结束仅切换可见性，不覆盖用户主动设置的暂停走动状态。
 - 检测边界仅限进程名和 UDP 端点数量，不读取会议标题、窗口标题、浏览器 URL、音视频内容或屏幕内容。
 - `tools/measure-meeting-udp.js` 可用于后续校准不同 Teams 版本的阈值。
 
@@ -420,7 +420,7 @@ src/assets/{skinId}/
 - `windows/PomodoroWindow.js` 拥有番茄钟窗口生命周期、`services/PomodoroService.js` 拥有会话状态机：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。
 - 窗口使用 `src/pomodoro.html`、`src/pomodoro.css` 和 `src/pomodoroWindow.js`，视觉上复用状态窗口和右键菜单的玉色玻璃系统。
 - 分钟输入默认使用 `electron-store` 中的 `lastPomodoroMinutes`，首次使用或非法输入时回退到 25 分钟，并将单次时长限制在安全范围内。
-- 专注开始时，主进程记录 `pomodoroFocusSnapshot.wasPaused`，设置独立的 `pomodoroPetHidden` 覆盖态，隐藏桌面宠物并暂停移动；完成、手动停止或关闭窗口后恢复到专注前的隐藏/暂停状态。
+- 专注开始时，主进程记录 `pomodoroFocusSnapshot.wasPaused`，设置独立的 `pomodoroPetHidden` 覆盖态，隐藏桌面宠物并暂停移动；完成、手动停止或关闭窗口后恢复到专注前的隐藏/暂停状态，渲染端有效暂停计算保证专注前已暂停的小人不会被恢复显示误唤醒。
 - 番茄钟窗口的生命周期管理（包括窗口状态 IPC 响应与专属置顶状态 `alwaysOnTop`）完全独立封装在 `src/main/windows/PomodoroWindow.js` 中。
 - 番茄钟窗口内的宠物不是主窗口 DOM 迁移，而是根据当前皮肤显示素材：初始页使用 `left_cultivate.webp` / `right_cultivate.webp`，倒计时页使用 `cultivate.webp`，完成页使用 `kiss.webp`，缺失时回退到 `assets/default/`。
 - 置顶状态只影响番茄钟窗口；主透明桌宠窗口仍沿用自己的置顶守卫策略。

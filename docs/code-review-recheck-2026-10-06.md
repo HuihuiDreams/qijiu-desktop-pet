@@ -77,6 +77,8 @@
 **实际验证：** 隔离 Electron 中依次调用真实服务的 `setPaused(true)`、`hidePetManually()`、`showPetManually()`。主进程仍报告暂停；将宠物设为 idle、`idleTimer=10000` 后，约 250ms 后计时已降至 `9733.3`，表明 renderer 又在执行移动系统更新。
 
 **测试缺口与建议：** 当前可见性行为测试只验证主进程状态和消息，未验证 renderer 消费结果。将“用户暂停”与“隐藏导致的有效暂停”分开计算，或下发完整有效状态；增加跨进程测试，验证手动显示、会议结束、番茄钟结束均保留原暂停选择。
+ 
+**修复记录（2026-10-06）：** 已修复。在 `src/app.js` 中将用户暂停意图（`isUserPaused`）与渲染端有效暂停（`isPaused = !isVisible || isUserPaused`）解耦，并在首帧 `getPetVisibilityState()`、`onTogglePause` 及 `onTogglePetVisibility` 中统一维护；主进程 `PetVisibilityService.js` 的 `getPetVisibilityState()` 返回值补齐 `isPaused` 字段并在 `enterPomodoroPetFocus` 中先置暂停再发可见性通知。新增 `test/petVisibilityRendererIntegration.test.js`，验证手动隐藏/显示、会议隐藏/结束、番茄钟专注/恢复三种生命周期在暂停状态下均不会错误唤醒 `MovementSystem`，未暂停时恢复正常移动。通过 `node --test test/petVisibilityRendererIntegration.test.js test/petVisibilityService.behavior.test.js` 与全量测试。
 
 ### R4 · P2：皮肤加载中取消预览会丢失回滚
 

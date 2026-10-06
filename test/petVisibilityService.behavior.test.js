@@ -57,6 +57,7 @@ test('init registers the get-pet-visibility-state IPC handler via injected ipcMa
     visible: true,
     reason: 'visible',
     sources: { manual: false, meeting: false, pomodoro: false },
+    isPaused: false,
   });
 });
 

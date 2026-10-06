@@ -74,6 +74,14 @@
   const interactionSystem = new InteractionSystem();
   const timeSystem = new TimeSystem();
   const skinManager = new SkinManager();
+  let isUserPaused = false;
+  let isVisible = true;
+  let isPaused = false;
+
+  const updateEffectivePause = () => {
+    isPaused = !isVisible || isUserPaused;
+  };
+
   window.__DEBUG_VISIBILITY = {
     visible: true,
     reason: 'visible',
@@ -89,7 +97,17 @@
   };
 
   window.electronAPI.getPetVisibilityState()
-    .then((state) => setDebugVisibility(state?.visible, state))
+    .then((state) => {
+      setDebugVisibility(state?.visible, state);
+      if (state && typeof state.isPaused === 'boolean') {
+        isUserPaused = state.isPaused;
+      }
+      if (state && typeof state.visible === 'boolean') {
+        isVisible = Boolean(state.visible);
+        stage.style.display = isVisible ? '' : 'none';
+      }
+      updateEffectivePause();
+    })
     .catch(() => {});
 
   // 监听主进程的屏幕信息更新事件
@@ -284,11 +302,11 @@
     statusBar.toggle(yueqi, shenjiu);
   });
 
-  let isPaused = false;
   let interactionOverlayActive = false; // 记录是否当前正在显示互动覆盖层
 
   window.electronAPI.onTogglePause((paused) => {
-    isPaused = paused;
+    isUserPaused = Boolean(paused);
+    updateEffectivePause();
   });
 
   window.electronAPI.onResetPositions(() => {
@@ -310,7 +328,11 @@
     setDebugVisibility(visible, state);
     const petStage = document.getElementById('pet-stage');
     petStage.style.display = visible ? '' : 'none';
-    isPaused = !visible;
+    isVisible = Boolean(visible);
+    if (state && typeof state.isPaused === 'boolean') {
+      isUserPaused = state.isPaused;
+    }
+    updateEffectivePause();
     if (!visible) {
       weatherParticleLayer.clear();
     }

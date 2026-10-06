@@ -37,10 +37,11 @@ function getPetVisibilityState() {
     pomodoro: pomodoroPetHidden,
   };
 
-  if (petHidden) return { visible: false, reason: 'manual', sources };
-  if (meetingHidden) return { visible: false, reason: 'meeting', sources };
-  if (pomodoroPetHidden) return { visible: false, reason: 'pomodoro', sources };
-  return { visible: true, reason: 'visible', sources };
+  const base = { sources, isPaused };
+  if (petHidden) return { visible: false, reason: 'manual', ...base };
+  if (meetingHidden) return { visible: false, reason: 'meeting', ...base };
+  if (pomodoroPetHidden) return { visible: false, reason: 'pomodoro', ...base };
+  return { visible: true, reason: 'visible', ...base };
 }
 
 function sendPetVisibility(visible) {
@@ -58,11 +59,11 @@ function enterPomodoroPetFocus() {
   if (typeof deps.cancelScreensaverSession === 'function') {
     deps.cancelScreensaverSession('pet-hidden');
   }
-  sendPetVisibility(false);
   if (!isPaused) {
     isPaused = true;
     if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', true);
   }
+  sendPetVisibility(false);
   trayManager.refreshTrayMenu();
 }
 

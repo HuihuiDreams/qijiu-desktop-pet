@@ -109,3 +109,8 @@ Accepted
 - `test/pomodoroTray.test.js` 覆盖主进程窗口创建、托盘入口、IPC handler 和宠物隐藏/恢复边界。
 - `test/ipcContracts.test.js` 覆盖 `normalizePomodoroMinutes()`。
 - `test/preloadSubscriptions.test.js` 覆盖 preload 暴露的番茄钟 API 与 `pomodoro-state` 订阅。
+
+## Amendments
+
+### 2026-10-06: 专注退出恢复暂停快照与可见性消息时序
+番茄钟恢复专注前暂停快照时，与 `toggle-pet-visibility` 携带的 `isPaused` 保持一致，并在渲染端将不可见性与用户暂停选择独立计算，防止番茄钟结束后的显示通知误清除专注前的用户暂停选择。
