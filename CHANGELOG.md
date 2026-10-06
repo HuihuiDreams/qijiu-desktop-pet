@@ -7,6 +7,7 @@
 ### Added
 - 新增全代码库五维质量与架构深度审查报告（[`docs/code-review-report-2026-10-06.md`](docs/code-review-report-2026-10-06.md)），涵盖正确性、简洁性、架构设计、安全加固及性能效率的完整审计评估与评级（A+）。
 - 新增[全仓库代码审查复核报告](docs/code-review-recheck-2026-10-06.md)，记录七项问题及修复状态、复现证据、测试结果及平台与依赖审计限制。
+- 新增[代码审查复核修复计划](docs/code-review-fix-plan-2026-10-06.md)，按 R2、R3、R4、R5、R7、R6 明确独立修复、行为测试、中文变更记录、文档同步及分平台验收要求。
 
 ### Changed
 - 优化 `BreakReminderPresenter.js` 的定时器清理逻辑，在 `dismiss()` 时主动回收 300ms/800ms 气泡延时回调，提升自动化测试环境的稳定性（由于内部已有状态防御，原未清理的计时器在生产环境中属 False Positive，不会引发实际 Bug）。
