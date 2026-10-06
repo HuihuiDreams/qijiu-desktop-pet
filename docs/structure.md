@@ -2,7 +2,9 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-09-15
+最后更新：2026-10-06
+
+审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
 ## 1. 架构总览
 
@@ -210,8 +212,8 @@ qijiu-desktop-pet/
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
-│  │  ├─ WeatherParticleLayer.js        # 渲染层天气粒子效果生成与管理
-│  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
+│  │  ├─ WeatherParticleLayer.js        # 局部天气粒子数量限制与节点管理：输入不变时复用节点，配置变化时清除并重建，隐藏或禁用时清理
+│  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（每次 mount 清除并重建节点，最多 12 个爱心粒子，跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
@@ -282,6 +284,9 @@ qijiu-desktop-pet/
 - 定期保存状态，并在退出前执行 final save。
 
 天气 IPC 订阅在异步语言初始化前建立；若 `WeatherSyncController` 的首次 `weather-update` 早于 `WeatherAwarenessSystem` 创建，`app.js` 会暂存该 payload 并在系统就绪后立即应用，避免首次天气粒子状态丢失。
+
+`WeatherParticleLayer` 在天气类型、强度、缩放、互动状态及宠物数量等输入不变时复用已有 DOM 节点，逐帧更新粒子组位置，并跳过位置不变时的重复样式写入；上述输入变化时清除并重建粒子层，隐藏、禁用或没有有效宠物时清理节点。`ScreensaverParticleLayer` 每次 `mount()` 清除并重建节点，最多生成 12 个爱心粒子，通过 CSS keyframe 动画控制 `opacity` 与 `transform`，减弱动态效果开启时不生成爱心粒子。两者均未实现预分配对象池。
+
 天气网络请求通过 Electron 的系统代理与证书信任链发送；为兼容 Windows 上经 Zscaler 检查的较慢首个响应，`weatherSyncService.js` 的超时为 10 秒，超过该时间才降级为无天气粒子的安全状态。
 `WeatherSyncController` 会按城市坐标短期保存最近一次成功的天气 payload；桌宠重启时先回放匹配的缓存再后台刷新，若首个请求在企业代理下暂时降级，会保留已回放的效果而不清空；首次运行尚无缓存时，控制器会在冷启动请求降级后清除失败缓存并自动重试一次，以适配 Zscaler 首次握手慢、后续连接快速的行为。
 
@@ -390,7 +395,7 @@ src/assets/{skinId}/
 - 系统锁屏/挂起/恢复事件也会重置计时器。
 - 提醒触发前经过 `PresentationGuard` 检查：
   - macOS：始终允许提醒（不做全屏检测，避免请求辅助功能权限）。
-  - Windows：检查前台窗口是否全屏或覆盖整个工作区；原生物理矩形先通过 Electron `screenToDipRect` 转为对应显示器的 DIP 坐标，兼容混合 DPI 多屏，若命中则延后 60 秒重试。
+  - Windows：检查前台窗口是否全屏；非最大化窗口覆盖完整显示器时视为演示窗口，命中则延后 60 秒重试。屏保与久坐提醒接线均以 `screen.screenToDipRect(null, rect)` 将原生物理矩形转为 DIP 坐标；首参 `null` 让 Electron 按该矩形选择显示器进行换算，不绑定可能跨屏的桌宠窗口。
   - 不保存窗口标题、进程名或 URL。
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
 - 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。

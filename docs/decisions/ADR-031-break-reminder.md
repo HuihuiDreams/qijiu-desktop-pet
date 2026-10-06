@@ -53,3 +53,11 @@ Accepted
 - 提醒定位优化：通过 `displayBounds.js` 标记主显示器（`isPrimary`），确保多屏环境下桌宠始终瞬移到主屏中心进行提醒。
 - 与窗口感知（Window Awareness）解耦：当用户在托盘关闭“界面感知”时，Windows 的前台窗口探测器返回 `disabled`，此时 `PresentationGuard` 会安全降级，始终允许提醒打断，确保久坐提醒功能不受感知开关影响。
 - 不影响现有宠物普通移动、交互、皮肤切换等功能。
+
+## Amendments
+
+### 2026-10-06：修复 Windows 坐标转换接线（R1）
+
+`BreakReminderController` 向统一 `PresentationGuard` 注入的适配器改为 `screen.screenToDipRect(null, rect)`，补齐 Electron 必需的首个参数。`null` 表示按前台窗口矩形选择显示器，避免绑定跨屏的桌宠窗口。原单参数调用会抛错，使提醒守卫跳过演示窗口的几何保护。
+
+新增 `test/presentationGuardWiring.test.js`，执行生产初始化接线与真实守卫，严格校验原生 API 的两个参数，并覆盖普通窗口放行、演示窗口拒绝及全屏前置拒绝。修复与验证记录见[审查复核报告 R1](../code-review-recheck-2026-10-06.md#r1--p1screentodiprect-接线遗漏首个参数)。

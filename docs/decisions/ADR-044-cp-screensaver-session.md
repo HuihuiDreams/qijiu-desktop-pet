@@ -181,3 +181,9 @@ CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节
 **修订**
 
 引入了更丰富的多色阶暖光背景和具备 S 型摇曳感的心形粒子轨迹。通过在 CSS 中对动画元素显式声明 `will-change: transform, opacity;` 和对根节点添加 `contain: strict;`，在提升视觉高级感的同时，严格保障了渲染性能的零损耗。
+
+### 2026-10-06：修复 Windows 屏保坐标转换接线（R1）
+
+`AppLifecycle.initScreensaverSystem()` 注入的坐标适配器改为 `screen.screenToDipRect(null, rect)`，与久坐提醒保持一致。原单参数调用会使普通窗口的几何检查抛错，并以 `display-query-failed` 拒绝屏保触发。首参 `null` 让 Electron 按矩形所在显示器换算。
+
+`test/presentationGuardWiring.test.js` 补充屏保生产接线回归，覆盖普通窗口放行、演示窗口拒绝及全屏前置拒绝；提醒侧同步修订见 [ADR-031](./ADR-031-break-reminder.md#amendments)。

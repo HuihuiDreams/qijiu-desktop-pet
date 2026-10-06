@@ -102,8 +102,8 @@
 1. **高性能渲染管线**
    - 渲染层完全采用 `requestAnimationFrame` 驱动游戏循环；
    - 角色位移与缩放全部采用硬件加速变换：`transform: translate3d(x, y, 0) scale(s)`，有效避免了使用 `left`/`top` 属性引起的浏览器重排（Layout Reflow）。
-2. **粒子对象池与复用 (Particle Pooling)**
-   - 天气粒子层 ([`WeatherParticleLayer.js`](../src/ui/WeatherParticleLayer.js)) 和屏保粒子层 ([`ScreensaverParticleLayer.js`](../src/ui/ScreensaverParticleLayer.js)) 实现了预分配池化复用机制，避免了雨雪/高温粒子在频繁生灭中产生的大量微小对象分配与 V8 垃圾回收（GC）毛刺。
+2. **粒子数量限制与节点复用**
+   - 天气粒子层 ([`WeatherParticleLayer.js`](../src/ui/WeatherParticleLayer.js)) 按天气类型与强度限制粒子数量；天气、强度、缩放、互动状态及宠物数量等输入不变时复用已有 DOM 节点，输入变化时清除并重建粒子层。屏保粒子层 ([`ScreensaverParticleLayer.js`](../src/ui/ScreensaverParticleLayer.js)) 每次 `mount()` 清除并重建节点，最多生成 12 个爱心粒子，并通过 CSS keyframe 动画控制 `opacity` 与 `transform`。两者均未实现预分配对象池，垃圾回收影响尚未通过性能测量验证。
 3. **更新包校验的流式异步 I/O**
    - [`updateManager.js`](../updateManager.js) 中的安装包哈希校验采用 `fs.createReadStream` 与 `stream/promises.pipeline` 异步流式计算，避免了同步读取 80MB~120MB 大文件对主进程事件循环长达数十毫秒的卡顿。
 4. **低功耗运行优化**
@@ -159,7 +159,7 @@
 | **可读性与简洁性 (Simplicity)** | 95 | 优秀 | 契合 Karpathy 原则，无过度设计，逻辑清晰直观 |
 | **架构设计 (Architecture)** | 96 | 优秀 | 严格的三层边界解耦，DI 依赖注入利于独立测试，ADR 闭环记录完善 |
 | **安全性 (Security)** | 98 | 卓越 | 0 处 innerHTML、沙盒化 Context Isolation、IPC 严格鉴权、AES-256 加密协议 |
-| **性能表现 (Performance)** | 94 | 优秀 | rAF 硬件加速渲染、粒子对象池、流式大文件哈希校验 |
+| **性能表现 (Performance)** | 94 | 优秀 | rAF 硬件加速渲染、粒子数量限制与天气节点复用、流式大文件哈希校验 |
 
 **综合评审建议**：
 代码库整体质量极高，工程化水平过硬。仅需对 `docs/structure.md` 中微小的文档漂移进行同步，并在后续维护中持续遵循现有的敏捷单测与 ADR 规范。
