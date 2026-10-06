@@ -90,3 +90,8 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 - 切换语言时主进程向所有窗口广播事件，新增窗口类型时需确保将其加入广播列表。
 - 状态面板使用 `lastRenderData` 缓存最近一次数据，语言切换时强制重绘；若缓存为空（面板从未收到数据），则跳过重绘，无副作用。
 - 英文 UI 天然比中/日文更长，涉及固定宽度区域（菜单、气泡、标签）时需测试三种语言下的显示效果。
+
+## Amendments
+
+### 2026-10-06: 托盘语言切换保留选肤试穿状态 (R7)
+主进程 `AppLifecycle.initTray` 中透传 `sendSkinSelectorData` 参数，并在 `SkinSelectorWindow.sendSkinSelectorData` 中合并传入选项，使托盘切换语言时下发的 `{ resetSelection: false }` 不被丢弃。选肤器窗口接收语言变更刷新展示时可靠保留当前试穿中的临时选中卡片与高亮状态，避免界面被错误重置为已保存皮肤。

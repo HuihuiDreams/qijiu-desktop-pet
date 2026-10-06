@@ -271,3 +271,27 @@ test('getter/setter verification', () => {
   skinSelectorWindow.setSkinSelectorOriginalSkinId('test-skin');
   assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'test-skin');
 });
+
+test('sendSkinSelectorData forwards sendOptions preserving resetSelection', () => {
+  const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow();
+  let sentChannel = null;
+  let sentData = null;
+  let sentOptions = null;
+
+  windowManager.skinSelectorWindow = {
+    isDestroyed: () => false,
+    webContents: {
+      send: (channel, data, options) => {
+        sentChannel = channel;
+        sentData = data;
+        sentOptions = options;
+      },
+    },
+  };
+
+  skinSelectorWindow.sendSkinSelectorData({ resetSelection: false });
+
+  assert.equal(sentChannel, 'skin-selector-data');
+  assert.ok(Array.isArray(sentData));
+  assert.deepEqual(sentOptions, { isInitialLoad: false, resetSelection: false });
+});

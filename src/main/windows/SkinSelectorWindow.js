@@ -30,7 +30,7 @@ function getInitialSkinSelectorWindowBounds() {
   };
 }
 
-function sendSkinSelectorData(sendOptions = { isInitialLoad: false }) {
+function sendSkinSelectorData(sendOptions = {}) {
   if (!windowManager.skinSelectorWindow || windowManager.skinSelectorWindow.isDestroyed()) return;
 
   const currentSkinId = deps.getCurrentSkinId();
@@ -39,7 +39,8 @@ function sendSkinSelectorData(sendOptions = { isInitialLoad: false }) {
     ...item,
     isSelected: item.id === currentSkinId,
   }));
-  windowManager.skinSelectorWindow.webContents.send('skin-selector-data', data, sendOptions);
+  const options = { isInitialLoad: false, ...sendOptions };
+  windowManager.skinSelectorWindow.webContents.send('skin-selector-data', data, options);
 }
 
 function isValidSkinSelectorSender(event) {

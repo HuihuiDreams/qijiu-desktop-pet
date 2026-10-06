@@ -212,7 +212,7 @@ class AppLifecycle {
       I18N, initStore: () => StoreManager.initStore(),
       getStore: () => StoreManager.getStore(),
       LOCALE_KEY,
-      sendSkinSelectorData: () => skinSelectorWindowModule.sendSkinSelectorData(),
+      sendSkinSelectorData: (...args) => skinSelectorWindowModule.sendSkinSelectorData(...args),
       openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
       openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
       getIsPaused: PetVisibilityService.getIsPaused,

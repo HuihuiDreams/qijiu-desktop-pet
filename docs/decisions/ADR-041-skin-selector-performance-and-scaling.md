@@ -42,3 +42,6 @@ Accepted
 2. 渲染端 `SkinSwitchController` 在试穿模式下不调用 `setCurrentSkin`，不触发 `saveCurrentState()` 本地磁盘写盘，并在加载完成或异常时向主进程回报加载结果（`report-skin-loaded`）。
 3. 主进程分别维护已确认皮肤（`confirmedSkinId`）与预览目标（`previewTargetSkinId`），并在 `StorageIpc` 的 `save-data` 边界对 `petState.skinId` 作主进程最终钳制，彻底防止每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤。
 4. 确认提交（`confirm-skin`）对在途慢加载执行等待仲裁（加载失败拒绝提交），确认成功后正式写盘、更新托盘与番茄钟；取消或关窗时安全回滚原皮肤。
+
+### 2026-10-06: 托盘语言切换保留试穿高亮 (R7)
+修正主进程组合根 `AppLifecycle.initTray` 中的无参注入包装，完整透传托盘切语言时触发的 `sendSkinSelectorData({ resetSelection: false })`，并在 `SkinSelectorWindow` 内部合并参数，确保在选肤器试穿期间用户切换托盘语言时，选肤界面的选中高亮卡片不会被重置为已确认皮肤。

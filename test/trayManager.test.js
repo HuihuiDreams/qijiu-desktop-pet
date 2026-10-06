@@ -128,6 +128,7 @@ test('TrayManager - Full Coverage', async (t) => {
     deps.setBreakReminderEnabled = (v) => actions.push(`setBreakReminderEnabled:${v}`);
     deps.setBreakReminderIntervalMinutes = (v) => actions.push(`setBreakReminderIntervalMinutes:${v}`);
     deps.setCurrentLocale = (l) => actions.push(`locale:${l}`);
+    deps.sendSkinSelectorData = (opts) => actions.push(`sendSkinSelectorData:${JSON.stringify(opts)}`);
 
     mockApp.isPackaged = false; // To show devtools
 
@@ -229,6 +230,7 @@ test('TrayManager - Full Coverage', async (t) => {
     const langItem = findItem('trayLanguage');
     await langItem.submenu[1].click(); // 'en'
     assert.ok(actions.includes('locale:en'));
+    assert.ok(actions.includes('sendSkinSelectorData:{"resetSelection":false}'));
     assert.equal(localeChangedCount, 5); // 5 windows updated
     
     let quitCalled = false;

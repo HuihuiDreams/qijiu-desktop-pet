@@ -22,6 +22,7 @@
 - 修复审查问题 R3：分离渲染进程用户暂停意图（`isUserPaused`）与可见性有效暂停（`isPaused = !isVisible || isUserPaused`），并在主进程 `getPetVisibilityState` 中透传 `isPaused` 状态与对齐番茄钟专注进入时序；消除手动显示、会议结束或番茄钟结束时因无条件 `isPaused = !visible` 冲掉用户暂停选择的缺陷；新增渲染端消费与移动系统抑制的集成回归测试（[ADR-011](docs/decisions/ADR-011-hide-show-pet-functionality.md)、[ADR-037](docs/decisions/ADR-037-lightweight-pomodoro-companion.md)）。
 - 修复审查问题 R4：在 `SkinSwitchController.js` 中将并发切换直接丢弃重构为串行加载并保留最新待执行请求，丢弃过时在途请求对主进程状态与存档的回写，并在异常时安全收敛；新增慢加载期间取消回滚、连续选择覆盖以及加载失败恢复的自动化测试（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复审查问题 R5：选肤器试穿预览与正式确认解耦，实现预览不提交、确认后保存闭环。试穿预览通知显式携带 `{ isPreview: true }`，渲染侧切肤不再反向触发 `setCurrentSkin`，主进程跳过托盘原生菜单重建与番茄钟同步；主进程分别维护已确认皮肤与预览目标，并在 `StorageIpc` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝预览期间自动保存（每分钟）、离线衰减保存与退出保存泄漏未确认的试穿皮肤；点击确定时对加载状态作仲裁（在途加载等待收敛，加载失败不予提交）并正式写盘持久化与同步托盘/番茄钟，取消或关窗可靠回滚原皮肤（[ADR-006](docs/decisions/ADR-006-state-persistence-and-offline-decay.md)、[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
+- 修复审查问题 R7：主进程 `AppLifecycle.initTray` 中透传 `sendSkinSelectorData` 参数，并在 `SkinSelectorWindow.sendSkinSelectorData` 中合并传入选项，使托盘切换语言时下发的 `{ resetSelection: false }` 不被丢弃；选肤器窗口接收语言变更刷新展示时可靠保留当前试穿中的临时选中卡片与高亮状态，避免界面被错误重置为已保存皮肤；补全托盘生命周期与窗口选项透传的自动化回归测试（[ADR-024](docs/decisions/ADR-024-i18n-multilingual-support.md)、[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 
 ## [0.10.5] - 2026-09-15
 

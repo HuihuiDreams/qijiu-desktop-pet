@@ -180,3 +180,24 @@ test('AppLifecycle exposes 7 static initialization methods', () => {
   }
 });
 
+test('AppLifecycle forwards sendSkinSelectorData options to skinSelectorWindowModule', () => {
+  const harness = createHarness();
+  const { AppLifecycle, restore } = loadFreshLifecycle(harness);
+  try {
+    let trayInitConfig = null;
+    harness.services.trayManager.init = (cfg) => { trayInitConfig = cfg; };
+    AppLifecycle.initTray();
+    assert.ok(trayInitConfig);
+    assert.equal(typeof trayInitConfig.sendSkinSelectorData, 'function');
+
+    trayInitConfig.sendSkinSelectorData({ resetSelection: false });
+
+    const sendCall = harness.calls.find(([name]) => name === 'skinSelectorWindowModule.sendSkinSelectorData');
+    assert.ok(sendCall, 'skinSelectorWindowModule.sendSkinSelectorData must be called');
+    assert.deepEqual(sendCall[1], { resetSelection: false }, 'must forward { resetSelection: false } options');
+  } finally {
+    restore();
+  }
+});
+
+

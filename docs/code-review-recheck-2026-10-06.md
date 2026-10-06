@@ -138,6 +138,12 @@
 
 **建议：** 包装函数透传参数，并补充通过真实 `AppLifecycle → TrayManager → SkinSelectorWindow` 接线的测试。现有测试仅分别匹配调用端文本和 renderer 逻辑，未检查中间包装。手工验证切换三种语言后卡片、预览、确认结果保持一致。
 
+**修复记录（2026-10-06）：** 已修复。
+1. 在 `AppLifecycle.js` 中将注入给 `TrayManager.init` 的 `sendSkinSelectorData` 包装由无参数箭头函数修改为参数透传：`(...args) => skinSelectorWindowModule.sendSkinSelectorData(...args)`；
+2. 在 `SkinSelectorWindow.js` 中将 `sendSkinSelectorData` 默认选项与入参解构合并：`const options = { isInitialLoad: false, ...sendOptions };`，确保托盘多语言回调下发的 `{ resetSelection: false }` 不被冲掉；
+3. 补充 `appLifecycle.behavior.test.js`、`trayManager.test.js` 和 `skinSelectorWindow.behavior.test.js` 的行为测试，断言选项透传与渲染端通知 payload 保持 `{ resetSelection: false }`；
+4. 运行并通过全部单元测试及 Playwright E2E 选肤器测试。
+
 ## 3. 测试与验证记录
 
 | 检查 | 本次结果 | 说明 |
