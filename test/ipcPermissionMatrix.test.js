@@ -19,6 +19,7 @@ const PROTECTED_CHANNELS = [
   ['src/main/services/SkinService.js', 'get-available-skins'],
   ['src/main/services/SkinService.js', 'get-available-overlay-keys'],
   ['src/main/services/SkinService.js', 'set-current-skin'],
+  ['src/main/services/SkinService.js', 'report-skin-loaded'],
   ['src/main/DisplayService.js', 'request-window-migration'],
   ['src/main/DisplayService.js', 'drag-started'],
   ['src/main/DisplayService.js', 'drag-ended'],

@@ -338,8 +338,8 @@
     }
   });
 
-  window.electronAPI.onSwitchSkin((skinId) => {
-    skinSwitchController.applySkinById(skinId);
+  window.electronAPI.onSwitchSkin((skinId, options) => {
+    skinSwitchController.applySkinById(skinId, options);
   });
 
   // === 久坐提醒处理 ===

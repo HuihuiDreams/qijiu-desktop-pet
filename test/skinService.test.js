@@ -46,8 +46,8 @@ const mockMainWindow = {
   isDestroyed: () => mockMainWindow.destroyed,
   webContents: {
     isDestroyed: () => false,
-    send: (channel, data) => {
-      mockWindowSent = { channel, data };
+    send: (channel, data, options) => {
+      mockWindowSent = { channel, data, options };
     }
   }
 };
@@ -181,6 +181,24 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.equal(mockWindowSent.data, 'default');
   });
   
+  await t.test('preview-skin does not change confirmed skin and sends isPreview: true', async () => {
+    const deps = createMockDeps();
+    SkinService.init(deps);
+    SkinService.setCurrentSkinId('default');
+
+    const validEvent = { sender: { id: 999 } };
+    mockTrayRefreshed = false;
+    mockPomodoroSent = false;
+    const result = await mockIpcHandlers['preview-skin'](validEvent, 'birds');
+    assert.equal(result.success, true);
+    assert.equal(SkinService.getCurrentSkinId(), 'default', 'confirmed skin must stay default');
+    assert.equal(mockTrayRefreshed, false, 'tray menu should not be rebuilt on preview');
+    assert.equal(mockPomodoroSent, false, 'pomodoro state should not be sent on preview');
+    assert.equal(mockWindowSent.channel, 'switch-skin');
+    assert.equal(mockWindowSent.data, 'birds');
+    assert.deepEqual(mockWindowSent.options, { isPreview: true });
+  });
+
   await t.test('preview-skin sets skin temporarily', async () => {
     const deps = createMockDeps();
     SkinService.init(deps);
@@ -199,13 +217,71 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.equal(result.success, false);
   });
 
-  await t.test('confirm-skin completes selection', async () => {
-    const deps = createMockDeps();
+  await t.test('confirm-skin completes selection and commits preview skin', async () => {
+    let mockStoreData = { petState: { skinId: 'default', score: 10 } };
+    const deps = {
+      ...createMockDeps(),
+      StoreManager: {
+        getStore: () => ({
+          get: (k) => mockStoreData[k],
+          set: (k, v) => { mockStoreData[k] = v; },
+        }),
+      },
+    };
     SkinService.init(deps);
-    
+    SkinService.setCurrentSkinId('default');
+
     const validEvent = { sender: { id: 999 } };
+    const mainEvent = { sender: mockMainWindow.webContents };
+    await mockIpcHandlers['preview-skin'](validEvent, 'birds');
+    // Renderer reports birds loaded
+    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true });
+
+    mockTrayRefreshed = false;
+    mockPomodoroSent = false;
     const result = await mockIpcHandlers['confirm-skin'](validEvent);
     assert.equal(result.success, true);
+    assert.equal(SkinService.getCurrentSkinId(), 'birds');
+    assert.equal(mockTrayRefreshed, true, 'tray menu must be refreshed on confirm');
+    assert.equal(mockPomodoroSent, true, 'pomodoro state must be sent on confirm');
+    assert.equal(mockStoreData.petState.skinId, 'birds', 'store petState must be committed to birds');
+  });
+
+  await t.test('confirm-skin rejects if preview skin load failed', async () => {
+    const deps = createMockDeps();
+    SkinService.init(deps);
+    SkinService.setCurrentSkinId('default');
+
+    const validEvent = { sender: { id: 999 } };
+    const mainEvent = { sender: mockMainWindow.webContents };
+    await mockIpcHandlers['preview-skin'](validEvent, 'birds');
+    // Renderer reports birds failed to load
+    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: false, error: 'Network error' });
+
+    const result = await mockIpcHandlers['confirm-skin'](validEvent);
+    assert.equal(result.success, false);
+    assert.equal(SkinService.getCurrentSkinId(), 'default', 'skin must remain default');
+  });
+
+  await t.test('confirm-skin waits for slow load and commits on success', async () => {
+    const deps = createMockDeps();
+    SkinService.init(deps);
+    SkinService.setCurrentSkinId('default');
+
+    const validEvent = { sender: { id: 999 } };
+    const mainEvent = { sender: mockMainWindow.webContents };
+    await mockIpcHandlers['preview-skin'](validEvent, 'birds');
+
+    // Confirm is triggered while birds is still loading
+    const confirmPromise = mockIpcHandlers['confirm-skin'](validEvent);
+    // After 10ms, renderer reports success
+    setTimeout(() => {
+      mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true });
+    }, 10);
+
+    const result = await confirmPromise;
+    assert.equal(result.success, true);
+    assert.equal(SkinService.getCurrentSkinId(), 'birds');
   });
 
   await t.test('confirm-skin fails for invalid sender', async () => {

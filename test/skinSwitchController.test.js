@@ -248,3 +248,49 @@ test('refreshAvailableSkins does not touch SkinManager when electronAPI rejects'
   await assert.doesNotReject(() => controller.refreshAvailableSkins());
   assert.deepEqual(setAvailableCalls, []);
 });
+
+test('applySkinById with isPreview: true does not setCurrentSkin or saveCurrentState and reports skin loaded', async () => {
+  const skinManager = makeSkinManagerStub();
+  const electronAPI = makeElectronApiStub();
+  const reportSkinLoadedCalls = [];
+  electronAPI.reportSkinLoaded = (skinId, res) => reportSkinLoadedCalls.push({ skinId, res });
+  let saveCalled = false;
+
+  const controller = new SkinSwitchController({
+    skinManager,
+    skinTargets: {},
+    electronAPI,
+    saveCurrentState: async () => { saveCalled = true; },
+  });
+
+  await controller.applySkinById('birds', { isPreview: true });
+
+  assert.equal(skinManager.applyCalls.length, 1);
+  assert.equal(skinManager.applyCalls[0].skinId, 'birds');
+  assert.deepEqual(electronAPI.setCurrentSkinCalls, [], 'must not call setCurrentSkin on preview');
+  assert.equal(saveCalled, false, 'must not saveCurrentState on preview');
+  assert.deepEqual(reportSkinLoadedCalls, [{ skinId: 'birds', res: { success: true } }]);
+});
+
+test('applySkinById reports error to reportSkinLoaded when applySkin fails', async () => {
+  const skinManager = makeSkinManagerStub();
+  skinManager.applySkin = async () => { throw new Error('failed to load sprite'); };
+  const electronAPI = makeElectronApiStub();
+  const reportSkinLoadedCalls = [];
+  electronAPI.reportSkinLoaded = (skinId, res) => reportSkinLoadedCalls.push({ skinId, res });
+
+  const controller = new SkinSwitchController({
+    skinManager,
+    skinTargets: {},
+    electronAPI,
+    saveCurrentState: async () => {},
+  });
+
+  await controller.applySkinById('birds', { isPreview: true });
+
+  assert.equal(reportSkinLoadedCalls.length, 1);
+  assert.equal(reportSkinLoadedCalls[0].skinId, 'birds');
+  assert.equal(reportSkinLoadedCalls[0].res.success, false);
+  assert.equal(reportSkinLoadedCalls[0].res.error, 'failed to load sprite');
+});
+

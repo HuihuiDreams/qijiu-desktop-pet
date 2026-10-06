@@ -32,7 +32,7 @@ test('app.js wires SkinManager into a SkinSwitchController instance', () => {
   assert.match(appSource, /const skinManager = new SkinManager\(\)/);
   assert.match(appSource, /const skinSwitchController = new SkinSwitchController\(\{/);
   assert.match(appSource, /window\.electronAPI\.onSwitchSkin/);
-  assert.match(appSource, /skinSwitchController\.applySkinById\(skinId\)/);
+  assert.match(appSource, /skinSwitchController\.applySkinById\(skinId,\s*options\)/);
   assert.match(appSource, /skinSwitchController\.refreshAvailableSkins\(\)/);
 });
 

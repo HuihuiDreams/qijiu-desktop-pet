@@ -105,10 +105,13 @@ function openSkinSelectorWindow() {
 }
 
 function cancelSkinSelection() {
-  if (skinSelectorOriginalSkinId != null && skinSelectorOriginalSkinId !== deps.getCurrentSkinId()) {
-    deps.selectSkin(skinSelectorOriginalSkinId);
-  }
+  const original = skinSelectorOriginalSkinId;
   skinSelectorOriginalSkinId = null;
+  if (typeof deps.revertSkinPreview === 'function') {
+    deps.revertSkinPreview(original);
+  } else if (original != null && original !== deps.getCurrentSkinId()) {
+    deps.selectSkin(original);
+  }
 }
 
 function isDeskPetWindow(win) {

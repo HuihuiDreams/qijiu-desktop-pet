@@ -41,7 +41,10 @@ function init(dependencies) {
       return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
     }
     try {
-      currentSkinId = skinId;
+      confirmedSkinId = skinId;
+      previewTargetSkinId = null;
+      lastLoadedSkinId = skinId;
+      lastLoadSuccess = true;
       sendPomodoroState();
       trayManager.refreshTrayMenu();
       return createIpcSuccess({ skinId });
@@ -49,6 +52,15 @@ function init(dependencies) {
       console.error('Failed to set current skin:', error);
       return createIpcFailure('INTERNAL_ERROR', 'Failed to set current skin');
     }
+  });
+
+  ipcMain.handle('report-skin-loaded', async (event, skinId, result = {}) => {
+    if (!isSenderMainWindow(event, deps.windowManager?.mainWindow)) {
+      return createIpcFailure('FORBIDDEN', 'Skin report access denied');
+    }
+    const success = result.success !== false;
+    recordSkinLoadResult(skinId, success, result.error || null);
+    return createIpcSuccess({ skinId, success });
   });
 
   ipcMain.handle('select-skin', async (event, skinId) => {
@@ -81,7 +93,7 @@ function init(dependencies) {
 
     try {
       skinSelectorWindowModule.setSkinSelectorSelectionInProgress();
-      selectSkin(skinId);
+      selectSkin(skinId, { isPreview: true });
       return createIpcSuccess({ skinId });
     } catch (error) {
       console.error('Failed to preview skin:', error);
@@ -90,14 +102,47 @@ function init(dependencies) {
   });
 
   ipcMain.handle('confirm-skin', async (event) => {
-    const { skinSelectorWindowModule } = deps;
+    const { skinSelectorWindowModule, sendPomodoroState, trayManager } = deps;
     if (!isSkinSelectorRequest(event)) {
       return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
     }
     try {
+      const targetSkinId = previewTargetSkinId || confirmedSkinId;
+
+      if (previewTargetSkinId && previewTargetSkinId !== confirmedSkinId) {
+        if (lastLoadedSkinId !== targetSkinId) {
+          const loadResult = await waitForSkinLoad(targetSkinId, 2500);
+          if (!loadResult.success) {
+            return createIpcFailure('LOAD_FAILED', loadResult.error || 'Skin failed to load');
+          }
+        } else if (!lastLoadSuccess) {
+          return createIpcFailure('LOAD_FAILED', lastLoadError || 'Skin failed to load');
+        }
+
+        confirmedSkinId = targetSkinId;
+        previewTargetSkinId = null;
+
+        const store = deps.StoreManager?.getStore?.();
+        if (store) {
+          const petState = store.get('petState');
+          if (petState && typeof petState === 'object') {
+            store.set('petState', { ...petState, skinId: confirmedSkinId });
+          }
+        }
+
+        sendPomodoroState();
+        trayManager.refreshTrayMenu();
+
+        if (deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
+          deps.windowManager.mainWindow.webContents.send('switch-skin', confirmedSkinId, { isPreview: false, persist: true });
+        }
+      } else {
+        previewTargetSkinId = null;
+      }
+
       skinSelectorWindowModule.setSkinSelectorOriginalSkinId();
       hideSkinSelector();
-      return createIpcSuccess({ skinId: currentSkinId });
+      return createIpcSuccess({ skinId: confirmedSkinId });
     } catch (error) {
       console.error('Failed to confirm skin:', error);
       return createIpcFailure('INTERNAL_ERROR', 'Failed to confirm skin');
@@ -160,7 +205,45 @@ function getSkinArtistName(skinId) {
   return key ? deps.trayManager.trayT(key) : '';
 }
 
-let currentSkinId = 'default'; // 当前皮肤 ID（用于托盘菜单 radio 标记）
+let confirmedSkinId = 'default'; // 当前已确认提交的皮肤 ID
+let previewTargetSkinId = null; // 当前正在预览的皮肤 ID（未确认时为 null）
+let lastLoadedSkinId = 'default';
+let lastLoadSuccess = true;
+let lastLoadError = null;
+let pendingLoadResolvers = [];
+
+function recordSkinLoadResult(skinId, success, error = null) {
+  lastLoadedSkinId = skinId;
+  lastLoadSuccess = success;
+  lastLoadError = error;
+
+  const remaining = [];
+  for (const item of pendingLoadResolvers) {
+    if (item.skinId === skinId) {
+      if (item.timer) clearTimeout(item.timer);
+      item.resolve({ success, error });
+    } else {
+      remaining.push(item);
+    }
+  }
+  pendingLoadResolvers = remaining;
+}
+
+function waitForSkinLoad(targetSkinId, timeoutMs = 2500) {
+  if (lastLoadedSkinId === targetSkinId) {
+    return Promise.resolve({ success: lastLoadSuccess, error: lastLoadError });
+  }
+  return new Promise((resolve) => {
+    let timer = null;
+    let entry = null;
+    timer = setTimeout(() => {
+      pendingLoadResolvers = pendingLoadResolvers.filter(p => p !== entry);
+      resolve({ success: false, error: 'TIMEOUT' });
+    }, timeoutMs);
+    entry = { skinId: targetSkinId, resolve, timer };
+    pendingLoadResolvers.push(entry);
+  });
+}
 
 /**
  * 返回可用皮肤 ID 列表。
@@ -236,6 +319,7 @@ function hasSkinAsset(skinId, filename) {
 
 function getSkinGalleryItems() {
   const { skinSelectorWindowModule } = deps;
+  const currentSkinId = confirmedSkinId;
   const activeSkinId = skinSelectorWindowModule.getSkinSelectorOriginalSkinId() != null ? skinSelectorWindowModule.getSkinSelectorOriginalSkinId() : currentSkinId;
   return buildSkinGalleryItems({
     skinIds: scanAvailableSkins(),
@@ -249,39 +333,76 @@ function getSkinGalleryItems() {
 }
 
 function selectSkin(skinId) {
+  const options = arguments[1] || {};
   const { windowManager, sendPomodoroState, trayManager } = deps;
-  currentSkinId = skinId;
-  if (typeof deps.cancelScreensaverSession === 'function') {
-    deps.cancelScreensaverSession('skin-changed');
+  const isPreview = options.isPreview === true;
+
+  if (isPreview) {
+    previewTargetSkinId = skinId;
+    if (typeof deps.cancelScreensaverSession === 'function') {
+      deps.cancelScreensaverSession('skin-changed');
+    }
+    if (windowManager?.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('switch-skin', skinId, { isPreview: true });
+    }
+  } else {
+    confirmedSkinId = skinId;
+    previewTargetSkinId = null;
+    lastLoadedSkinId = skinId;
+    lastLoadSuccess = true;
+    if (typeof deps.cancelScreensaverSession === 'function') {
+      deps.cancelScreensaverSession('skin-changed');
+    }
+    if (windowManager?.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('switch-skin', skinId, { isPreview: false });
+    }
+    if (typeof sendPomodoroState === 'function') {
+      sendPomodoroState();
+    }
+    if (trayManager?.refreshTrayMenu) {
+      trayManager.refreshTrayMenu();
+    }
   }
-  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-    windowManager.mainWindow.webContents.send('switch-skin', skinId);
-  }
-  sendPomodoroState();
-  trayManager.refreshTrayMenu();
   return { skinId };
 }
 
 function isSkinSelectorRequest(event) {
   const { windowManager } = deps;
   return Boolean(
-    windowManager.skinSelectorWindow
+    windowManager?.skinSelectorWindow
     && !windowManager.skinSelectorWindow.isDestroyed()
     && event?.sender?.id === windowManager.skinSelectorWindow.webContents.id,
   );
 }
 
+function revertSkinPreview(originalSkinId) {
+  for (const item of pendingLoadResolvers) {
+    if (item.timer) clearTimeout(item.timer);
+    item.resolve({ success: false, error: 'CANCELLED' });
+  }
+  pendingLoadResolvers = [];
+
+  const targetId = originalSkinId || confirmedSkinId;
+  confirmedSkinId = targetId;
+  previewTargetSkinId = null;
+  lastLoadedSkinId = confirmedSkinId;
+  lastLoadSuccess = true;
+
+  if (deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
+    deps.windowManager.mainWindow.webContents.send('switch-skin', confirmedSkinId, { isPreview: false });
+  }
+}
+
 function cancelSkinPreview() {
   const { skinSelectorWindowModule } = deps;
-  if (skinSelectorWindowModule.getSkinSelectorOriginalSkinId() != null && skinSelectorWindowModule.getSkinSelectorOriginalSkinId() !== currentSkinId) {
-    selectSkin(skinSelectorWindowModule.getSkinSelectorOriginalSkinId());
-  }
-  skinSelectorWindowModule.setSkinSelectorOriginalSkinId();
+  const originalSkinId = skinSelectorWindowModule?.getSkinSelectorOriginalSkinId?.();
+  revertSkinPreview(originalSkinId);
+  skinSelectorWindowModule?.setSkinSelectorOriginalSkinId?.();
   hideSkinSelector();
 }
 
 function hideSkinSelector() {
-  deps.skinSelectorWindowModule.closeSkinSelectorWindow();
+  deps.skinSelectorWindowModule?.closeSkinSelectorWindow?.();
 }
 
 /**
@@ -313,10 +434,18 @@ module.exports = {
   getSkinGalleryItems,
   selectSkin,
   isSkinSelectorRequest,
+  revertSkinPreview,
   cancelSkinPreview,
   hideSkinSelector,
   resolvePomodoroAsset,
   getAvailableOverlayKeys,
-  getCurrentSkinId: () => currentSkinId,
-  setCurrentSkinId: (val) => { currentSkinId = val; },
+  getCurrentSkinId: () => confirmedSkinId,
+  getConfirmedSkinId: () => confirmedSkinId,
+  getPreviewSkinId: () => previewTargetSkinId,
+  setCurrentSkinId: (val) => {
+    confirmedSkinId = val;
+    previewTargetSkinId = null;
+    lastLoadedSkinId = val;
+    lastLoadSuccess = true;
+  },
 };

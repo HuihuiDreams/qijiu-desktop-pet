@@ -110,6 +110,12 @@
 
 **建议：** 区分已确认皮肤和临时预览，预览消息显式携带其语义；确认成功才提交皮肤选择。仅在预览时设置 `persist:false` 还不够，还要避免每分钟自动保存及退出保存把临时皮肤写入正式存档。验证预览期间存档不变、确认后改变、取消及关闭窗口后恢复。
 
+**修复记录（2026-10-06）：** 已修复。
+1. 在 `SkinService.js` 中将已确认皮肤（`confirmedSkinId`）与预览目标（`previewTargetSkinId`）状态严格解耦。试穿预览通知显式携带 `{ isPreview: true }`，预览期间跳过托盘菜单重建与番茄钟同步；
+2. 渲染端 `SkinSwitchController.js` 在试穿预览下不调用 `setCurrentSkin`，不触发 `saveCurrentState()` 本地写盘，并在加载完成或异常时向主进程回报 `report-skin-loaded`；
+3. 主进程 `StorageIpc.js` 在 `save-data` 边界对 `petState.skinId` 执行强制钳制（只允许写入 `getConfirmedSkinId()`），杜绝每分钟自动保存、离线结算保存或退出保存泄漏临时试穿皮肤；
+4. 确认提交（`confirm-skin`）对在途慢加载执行等待仲裁（加载失败拒绝提交），确认成功后正式写盘、更新托盘与番茄钟；取消或关窗时安全回滚原皮肤。新增单元与集成测试覆盖无持久化试穿、自动保存隔离、加载失败拒绝、慢加载收敛确认及取消回滚路径，并通过全部单测与选肤器 Playwright E2E 测试。
+
 ### R6 · P2：异步城市查询覆盖较新的天气开关状态
 
 **位置：** [WeatherSyncController.js](../src/main/services/WeatherSyncController.js) 第 43–67 行；对照同文件第 177–182 行已有的更新编号保护。

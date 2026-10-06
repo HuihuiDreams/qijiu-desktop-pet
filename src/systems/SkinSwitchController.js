@@ -78,14 +78,25 @@ class SkinSwitchController {
 
           // 若在加载期间产生了新的待执行请求，不覆盖主进程状态也不保存过时状态
           if (!this.pendingRequest) {
-            this.electronAPI.setCurrentSkin(nextSkinId);
-            if (currentOptions.persist !== false) {
+            const isPreview = currentOptions.isPreview === true;
+            const shouldPersist = !isPreview && currentOptions.persist !== false;
+
+            if (!isPreview && this.electronAPI && typeof this.electronAPI.setCurrentSkin === 'function') {
+              this.electronAPI.setCurrentSkin(nextSkinId);
+            }
+            if (shouldPersist) {
               await this.saveCurrentState();
+            }
+            if (this.electronAPI && typeof this.electronAPI.reportSkinLoaded === 'function') {
+              await this.electronAPI.reportSkinLoaded(nextSkinId, { success: true });
             }
           }
         } catch (err) {
           switchError = err;
           console.error('切换皮肤失败:', err);
+          if (!this.pendingRequest && this.electronAPI && typeof this.electronAPI.reportSkinLoaded === 'function') {
+            await this.electronAPI.reportSkinLoaded(currentSkinId, { success: false, error: err?.message || String(err) });
+          }
         }
 
         if (currentDeferred) {

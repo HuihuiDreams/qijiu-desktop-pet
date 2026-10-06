@@ -256,18 +256,23 @@ class AppLifecycle {
       skinSelectorWindowModule,
       trayManager
     });
-    StorageIpc.init({ windowManager });
+    StorageIpc.init({
+      windowManager,
+      getConfirmedSkinId: SkinService.getConfirmedSkinId,
+    });
     SkinService.init({
       windowManager,
       skinSelectorWindowModule,
       trayManager,
+      StoreManager,
       sendPomodoroState: PomodoroService.sendPomodoroState,
       cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
     });
     skinSelectorWindowModule.init({
       selectSkin: SkinService.selectSkin,
       getCurrentSkinId: SkinService.getCurrentSkinId,
-      getSkinGalleryItems: SkinService.getSkinGalleryItems
+      getSkinGalleryItems: SkinService.getSkinGalleryItems,
+      revertSkinPreview: SkinService.revertSkinPreview,
     });
     pomodoroWindowModule.init({
       getPomodoroSystem: PomodoroService.getPomodoroSystem,

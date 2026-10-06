@@ -109,7 +109,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
-├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、当前皮肤状态、选肤器请求鉴权、番茄钟素材解析、全部 8 个皮肤 IPC handler
+├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
 ├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
@@ -122,7 +122,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 TrayManager 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
-├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data、set/get-auto-launch
+├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data（save-data 强制钳制 petState.skinId 为已确认皮肤以防试穿泄漏）、set/get-auto-launch
 ├─ src/main/services/AutoLaunchService.js # 开机自启服务：基于 electron.app.setLoginItemSettings 的状态读写与统一结果包装
 ├─ src/main/services/StoreManager.js    # electron-store 统一初始化与单例管理器
 ├─ src/main/services/IpcSenderAuthorization.js # IPC 调用方安全鉴权：严格校验 event.sender 是否匹配目标 BrowserWindow，防止跨窗口或伪造调用
@@ -361,7 +361,7 @@ src/assets/{skinId}/
    └─ walk_left01.webp ... walk_right04.webp
 ```
 
-`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并维护当前皮肤状态，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，确保取消操作可靠回滚至原皮肤。
+`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
 
 ### 3.9 多语言系统
 

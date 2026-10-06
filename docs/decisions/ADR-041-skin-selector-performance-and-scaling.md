@@ -35,3 +35,10 @@ Accepted
 
 ### 2026-10-06: 慢加载取消与连续预览串行收敛 (R4)
 在 `SkinSwitchController.js` 中将原先并发切换直接忽略（`if (this.skinSwitchInProgress) return;`）重构为串行加载并保留最新待执行请求模型。慢加载期间收到的后续请求（如取消回滚或选择新皮肤）暂存为单一最新请求并替换中间请求；在途加载完成后若检测到已有新请求，则跳过对主进程与持久化状态的回写，直接执行最新待执行请求，确保最终状态可靠收敛，避免加载中取消丢失回滚。
+
+### 2026-10-06: 试穿预览解耦与确认持久化闭环 (R5)
+将选肤器试穿预览 (`previewSkin`) 与确认生效 (`confirmSkin`) 的职责边界与 IPC 契约解耦：
+1. 试穿预览通知显式携带 `{ isPreview: true }` 选项，主进程仅向桌宠主窗口派发换装事件，不再由渲染侧回发 `setCurrentSkin`，不触发托盘原生上下文菜单的反复销毁重建 (`buildFromTemplate`)，亦不修改番茄钟伴侣素材。
+2. 渲染端 `SkinSwitchController` 在试穿模式下不调用 `setCurrentSkin`，不触发 `saveCurrentState()` 本地磁盘写盘，并在加载完成或异常时向主进程回报加载结果（`report-skin-loaded`）。
+3. 主进程分别维护已确认皮肤（`confirmedSkinId`）与预览目标（`previewTargetSkinId`），并在 `StorageIpc` 的 `save-data` 边界对 `petState.skinId` 作主进程最终钳制，彻底防止每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤。
+4. 确认提交（`confirm-skin`）对在途慢加载执行等待仲裁（加载失败拒绝提交），确认成功后正式写盘、更新托盘与番茄钟；取消或关窗时安全回滚原皮肤。

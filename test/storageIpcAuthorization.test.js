@@ -68,6 +68,21 @@ test('StorageIpc only allows the live main window to read or mutate settings', a
 
     assert.equal(await ipcMain.handlers.get('save-data')(mainEvent, 'petState', { safe: true }), true);
     assert.deepEqual(await ipcMain.handlers.get('load-data')(mainEvent, 'petState'), { safe: true });
+
+    // Test confirmedSkinId enforcement
+    delete require.cache[modulePath];
+    const restoreElectronAgain = setupElectronMock({ ipcMain });
+    const StorageIpcWithConfirmed = require(modulePath);
+    restoreElectronAgain();
+    StorageIpcWithConfirmed.init({
+      windowManager,
+      getConfirmedSkinId: () => 'default',
+    });
+    assert.equal(
+      await ipcMain.handlers.get('save-data')(mainEvent, 'petState', { skinId: 'unconfirmed_preview', safe: true }),
+      true
+    );
+    assert.equal(storedValues.get('petState').skinId, 'default', 'petState skinId must be clamped to confirmed skin');
   } finally {
     restoreElectron();
     StoreManager.initStore = originals.initStore;

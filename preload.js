@@ -80,8 +80,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAvailableSkins: () => ipcRenderer.invoke('get-available-skins'),
   getAvailableOverlayKeys: (skinId) => ipcRenderer.invoke('get-available-overlay-keys', skinId),
   setCurrentSkin: (skinId) => ipcRenderer.invoke('set-current-skin', skinId),
+  reportSkinLoaded: (skinId, result) => ipcRenderer.invoke('report-skin-loaded', skinId, result),
   onSwitchSkin: (callback) => {
-    return subscribeIpc('switch-skin', (_event, skinId) => callback(skinId));
+    return subscribeIpc('switch-skin', (_event, skinId, options) => callback(skinId, options));
   },
 
   // 多语言系统 (i18n)

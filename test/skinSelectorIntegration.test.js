@@ -15,7 +15,7 @@ test('main process exposes gallery data and validated skin selection IPC', () =>
   assert.match(mainSource, /ipcMain\.handle\('get-skin-gallery-items'/);
   assert.match(mainSource, /ipcMain\.handle\('select-skin'/);
   assert.match(mainSource, /function selectSkin\(skinId\)/);
-  assert.match(mainSource, /mainWindow\.webContents\.send\('switch-skin', skinId\)/);
+  assert.match(mainSource, /mainWindow\.webContents\.send\('switch-skin', skinId/);
 });
 
 test('tray opens the gallery instead of rendering a skin radio submenu', () => {

@@ -16,7 +16,7 @@ const ALLOWED_STORE_KEYS = [
   POMODORO_LAST_MINUTES_KEY,
 ];
 
-function init({ windowManager }) {
+function init({ windowManager, getConfirmedSkinId }) {
   ipcMain.handle('save-data', async (event, key, value) => {
     if (!isSenderMainWindow(event, windowManager.mainWindow)) return false;
     if (!ALLOWED_STORE_KEYS.includes(key)) {
@@ -27,6 +27,17 @@ function init({ windowManager }) {
       await StoreManager.initStore();
       const store = StoreManager.getStore();
       if (!store) return false;
+      if (key === 'petState' && value && typeof value === 'object') {
+        const confirmedSkinId = typeof getConfirmedSkinId === 'function'
+          ? getConfirmedSkinId()
+          : value.skinId;
+        if (confirmedSkinId !== undefined) {
+          value = {
+            ...value,
+            skinId: confirmedSkinId,
+          };
+        }
+      }
       store.set(key, value);
       return true;
     } catch (error) {
