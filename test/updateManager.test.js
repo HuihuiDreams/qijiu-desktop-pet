@@ -807,3 +807,34 @@ test('mac manual update clears its timeout after a normal response', async () =>
   assert.ok(requestSignal);
   assert.equal(requestSignal.aborted, false);
 });
+
+test('mac manual update supports injected getShell option', async () => {
+  const openedUrls = [];
+  const manager = createUpdateManager({
+    isMac: true,
+    getShell: () => ({
+      openExternal: (url) => openedUrls.push(url),
+    }),
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return { tag_name: 'v2.0.0' };
+      },
+    }),
+  });
+
+  manager.initUpdateManager({
+    app: {
+      isPackaged: true,
+      getVersion: () => '1.0.0',
+    },
+    dialog: {
+      showMessageBox: async () => ({ response: 0 }),
+    },
+    t: (k) => k,
+  });
+
+  await manager.checkForUpdatesFromTray();
+  assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest']);
+});
+

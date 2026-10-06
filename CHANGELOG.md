@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Added
+- 新增全代码库五维质量与架构深度审查报告（[`docs/code-review-report-2026-10-06.md`](docs/code-review-report-2026-10-06.md)），涵盖正确性、简洁性、架构设计、安全加固及性能效率的完整审计评估与评级（A+）。
+
+### Changed
+- 优化 `BreakReminderPresenter.js` 的定时器清理逻辑，在 `dismiss()` 时主动回收 300ms/800ms 气泡延时回调，提升自动化测试环境的稳定性（由于内部已有状态防御，原未清理的计时器在生产环境中属 False Positive，不会引发实际 Bug）。
+- 同步修正 `docs/structure.md` 中主进程服务目录树与架构图，反映重构收拢后的统一 `PresentationGuard.js` 打扰守卫，移除已失效的旧文件引用，并补全 `AutoLaunchService.js`、`StoreManager.js` 与 `IpcSenderAuthorization.js` 的模块说明。
+- 规范化 `updateManager.js` 中的外部链接打开依赖：提取 `loadDefaultShell()` 并为 `createUpdateManager` 支持 `options.getShell` 依赖注入，消除了 macOS 手动更新分支内的内联 `require('electron')`，保持统一的模块化加载风格并补全隔离单测。
+- 在 `src/main/services/StorageIpc.js` 中补充 `ALLOWED_STORE_KEYS` 白名单安全注释，显式说明屏保与天气配置由主进程独占管理的设计意图与权限边界。
+
 ## [0.10.5] - 2026-09-15
 
 ### Added

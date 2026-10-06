@@ -29,6 +29,14 @@ function loadDefaultLog() {
   }
 }
 
+function loadDefaultShell() {
+  try {
+    return require('electron').shell;
+  } catch (_error) {
+    return null;
+  }
+}
+
 function cloneState(state) {
   return { ...state };
 }
@@ -187,6 +195,7 @@ function createUpdateManager(options = {}) {
   const isMac = options.isMac ?? false;
   const getAutoUpdater = options.getAutoUpdater || loadDefaultAutoUpdater;
   const getLog = options.getLog || loadDefaultLog;
+  const getShell = options.getShell || loadDefaultShell;
   const fetchImpl = options.fetchImpl || ((...args) => globalThis.fetch(...args));
   const macCheckTimeoutMs = Number.isFinite(options.macCheckTimeoutMs) && options.macCheckTimeoutMs > 0
     ? options.macCheckTimeoutMs
@@ -347,8 +356,8 @@ function createUpdateManager(options = {}) {
       });
 
       if (result.response === 0) {
-        const { shell } = require('electron');
-        shell.openExternal(GITHUB_RELEASES_URL);
+        const shell = getShell();
+        shell?.openExternal?.(GITHUB_RELEASES_URL);
       }
       return;
     }
@@ -601,6 +610,6 @@ module.exports = {
   getUpdateMenuState: defaultUpdateManager.getUpdateMenuState,
   classifyUpdateError,
   createUpdateManager,
-  createMacManualUpdateManager: () => createUpdateManager({ isMac: true }), // Backwards compatibility if needed
+  createMacManualUpdateManager: (options = {}) => createUpdateManager({ isMac: true, ...options }), // Backwards compatibility if needed
   verifyDownloadedPackageIntegrity,
 };

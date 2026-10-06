@@ -35,6 +35,18 @@ class BreakReminderPresenter {
 
     this.breakReminderActive = false;
     this.breakReminderDismissTimer = null;
+    this.breakReminderBubbleTimers = [];
+  }
+
+  _clearTimers() {
+    if (this.breakReminderDismissTimer) {
+      clearTimeout(this.breakReminderDismissTimer);
+      this.breakReminderDismissTimer = null;
+    }
+    if (this.breakReminderBubbleTimers.length > 0) {
+      this.breakReminderBubbleTimers.forEach((timer) => clearTimeout(timer));
+      this.breakReminderBubbleTimers = [];
+    }
   }
 
   isActive() {
@@ -47,10 +59,7 @@ class BreakReminderPresenter {
   dismiss() {
     if (!this.breakReminderActive) return;
     this.breakReminderActive = false;
-    if (this.breakReminderDismissTimer) {
-      clearTimeout(this.breakReminderDismissTimer);
-      this.breakReminderDismissTimer = null;
-    }
+    this._clearTimers();
 
     const [yueqi, shenjiu] = this.getPets();
     // 清除气泡
@@ -93,6 +102,7 @@ class BreakReminderPresenter {
     );
     if (!layout) {
       this.breakReminderActive = false;
+      this._clearTimers();
       this.electronAPI.dismissBreakReminder();
       return;
     }
@@ -126,14 +136,16 @@ class BreakReminderPresenter {
       : '…别坐太久了。';
 
     // 显示气泡
-    setTimeout(() => {
-      if (!this.breakReminderActive) return;
-      this.dialogBubble.show(yueqi, yueqiText, 18000);
-    }, 300);
-    setTimeout(() => {
-      if (!this.breakReminderActive) return;
-      this.dialogBubble.show(shenjiu, shenjiuText, 17500);
-    }, 800);
+    this.breakReminderBubbleTimers.push(
+      setTimeout(() => {
+        if (!this.breakReminderActive) return;
+        this.dialogBubble.show(yueqi, yueqiText, 18000);
+      }, 300),
+      setTimeout(() => {
+        if (!this.breakReminderActive) return;
+        this.dialogBubble.show(shenjiu, shenjiuText, 17500);
+      }, 800),
+    );
 
     // 20秒后自动消失
     this.breakReminderDismissTimer = setTimeout(() => this.dismiss(), 20000);

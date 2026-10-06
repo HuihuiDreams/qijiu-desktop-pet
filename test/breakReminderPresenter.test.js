@@ -217,5 +217,10 @@ test('dismiss() clears the auto-dismiss timer, restores idle state, and notifies
 
     const autoDismissTimer = scheduled.find((s) => s.ms === 20000);
     assert.equal(autoDismissTimer.cleared, true);
+
+    const bubbleTimer300 = scheduled.find((s) => s.ms === 300);
+    const bubbleTimer800 = scheduled.find((s) => s.ms === 800);
+    assert.equal(bubbleTimer300.cleared, true);
+    assert.equal(bubbleTimer800.cleared, true);
   });
 });

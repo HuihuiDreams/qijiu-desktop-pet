@@ -4,7 +4,10 @@ const AutoLaunchService = require('./AutoLaunchService');
 const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY, POMODORO_LAST_MINUTES_KEY } = require('../constants');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
-// 允许存储的合法 Key 列表 (安全白名单)
+// 允许渲染进程通过 save-data/load-data IPC 存取的合法 Key 列表 (安全白名单)。
+// 注意：screensaverSettings (SCREENSAVER_STORE_KEY) 与 weatherSyncSettings 由主进程控制器
+// (ScreensaverController / WeatherSyncController) 独占托管并通过 StoreManager 直接操作，
+// 遵循最小权限原则，故意不对渲染进程暴露直接读写能力，切勿在此随意添加。
 const ALLOWED_STORE_KEYS = [
   'autoLaunch',
   'petState',
