@@ -60,6 +60,10 @@ function createSkinSelectorWindow() {
     transparent: true,
     frame: false,
     alwaysOnTop: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, '..', '..', '..', 'skinSelectorPreload.js'),
       contextIsolation: true,
@@ -126,8 +130,42 @@ function isDeskPetWindow(win) {
   ].includes(win);
 }
 
+let isTrayMenuOpen = false;
+let lastTrayInteractionTime = 0;
+const TRAY_INTERACTION_GRACE_MS = 800;
+
 function isDeskPetAppActive() {
   return typeof app.isActive === 'function' && app.isActive();
+}
+
+function isTrayActive() {
+  if (isTrayMenuOpen) return true;
+  if (Date.now() - lastTrayInteractionTime < TRAY_INTERACTION_GRACE_MS) return true;
+  if (typeof deps.isTrayActive === 'function' && deps.isTrayActive()) return true;
+  return false;
+}
+
+function handleTrayMenuOpen() {
+  isTrayMenuOpen = true;
+  lastTrayInteractionTime = Date.now();
+  cancelPendingBlurClose();
+}
+
+function handleTrayMenuClose() {
+  isTrayMenuOpen = false;
+  lastTrayInteractionTime = Date.now();
+}
+
+function handleTrayInteraction() {
+  lastTrayInteractionTime = Date.now();
+  cancelPendingBlurClose();
+}
+
+function isDeskPetContextActive() {
+  if (isDeskPetWindow(BrowserWindow.getFocusedWindow())) return true;
+  if (isDeskPetAppActive()) return true;
+  if (isTrayActive()) return true;
+  return false;
 }
 
 function cancelPendingBlurClose() {
@@ -142,7 +180,7 @@ function cancelPendingBlurClose() {
 }
 
 function scheduleBlurClose() {
-  if (skinSelectorCloseInProgress || isDeskPetWindow(BrowserWindow.getFocusedWindow())) return;
+  if (skinSelectorCloseInProgress || isDeskPetContextActive()) return;
 
   cancelPendingBlurClose();
   skinSelectorFocusListener = (_event, win) => {
@@ -155,7 +193,7 @@ function scheduleBlurClose() {
       app.removeListener('browser-window-focus', skinSelectorFocusListener);
       skinSelectorFocusListener = null;
     }
-    if (!isDeskPetWindow(BrowserWindow.getFocusedWindow()) && !isDeskPetAppActive()) {
+    if (!isDeskPetContextActive()) {
       closeSkinSelectorWindow();
     }
   }, SKIN_SELECTOR_FOCUS_HANDOFF_MS);
@@ -192,5 +230,9 @@ module.exports = {
   setSkinSelectorSelectionInProgress: (val) => { skinSelectorSelectionInProgress = val; },
   setSkinSelectorOriginalSkinId: (val) => { skinSelectorOriginalSkinId = val; },
   getSkinSelectorOriginalSkinId,
-  sendSkinSelectorData
+  sendSkinSelectorData,
+  handleTrayMenuOpen,
+  handleTrayMenuClose,
+  handleTrayInteraction,
+  isTrayActive
 };

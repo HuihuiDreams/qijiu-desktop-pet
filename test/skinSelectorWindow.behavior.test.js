@@ -5,7 +5,7 @@ const test = require('node:test');
 
 const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWindow');
 
-function loadFreshSkinSelectorWindow() {
+function loadFreshSkinSelectorWindow(extraDeps = {}) {
   const windowManager = { skinSelectorWindow: null };
   const app = new EventEmitter();
   let appActive = false;
@@ -19,7 +19,8 @@ function loadFreshSkinSelectorWindow() {
       return focusedWindow;
     }
 
-    constructor() {
+    constructor(options) {
+      this.options = options || {};
       this.listeners = {};
       this.closeCalls = 0;
       this.destroyed = false;
@@ -84,6 +85,7 @@ function loadFreshSkinSelectorWindow() {
       getCurrentSkinId: () => 'default',
       getSkinGalleryItems: () => [],
       selectSkin: () => {},
+      ...extraDeps,
     });
     return {
       skinSelectorWindow,
@@ -295,3 +297,70 @@ test('sendSkinSelectorData forwards sendOptions preserving resetSelection', () =
   assert.ok(Array.isArray(sentData));
   assert.deepEqual(sentOptions, { isInitialLoad: false, resetSelection: false });
 });
+
+test('creates the skin selector window with hasShadow false to prevent macOS border line and resizable false', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.createSkinSelectorWindow();
+  assert.equal(win.options.hasShadow, false);
+  assert.equal(win.options.resizable, false);
+  assert.equal(win.options.transparent, true);
+  assert.equal(win.options.frame, false);
+});
+
+test('opening the tray menu cancels pending blur close and keeps skin selector open', async () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+
+  // Window blurs as user clicks tray icon
+  selectorWindow.listeners.blur();
+
+  // Tray menu opens
+  skinSelectorWindow.handleTrayMenuOpen();
+
+  await new Promise((resolve) => setTimeout(resolve, 130));
+
+  assert.equal(selectorWindow.closeCalls, 0);
+  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
+});
+
+test('a recent tray interaction keeps skin selector open when blur occurs', async () => {
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+
+  // Tray menu was clicked/interacted with
+  skinSelectorWindow.handleTrayInteraction();
+
+  // Window blurs
+  selectorWindow.listeners.blur();
+
+  await new Promise((resolve) => setTimeout(resolve, 130));
+
+  assert.equal(selectorWindow.closeCalls, 0);
+  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
+});
+
+test('deps.isTrayActive returning true keeps skin selector open on blur', async () => {
+  let trayActive = true;
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow({
+    isTrayActive: () => trayActive,
+  });
+  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+
+  selectorWindow.listeners.blur();
+  await new Promise((resolve) => setTimeout(resolve, 130));
+
+  assert.equal(selectorWindow.closeCalls, 0);
+  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
+
+  // Once tray is no longer active, blur closes window
+  trayActive = false;
+  selectorWindow.listeners.blur();
+  await new Promise((resolve) => setTimeout(resolve, 130));
+
+  assert.equal(selectorWindow.closeCalls, 1);
+  assert.equal(windowManager.skinSelectorWindow, null);
+});
+

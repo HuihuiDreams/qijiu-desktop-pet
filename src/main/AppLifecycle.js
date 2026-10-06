@@ -240,6 +240,9 @@ class AppLifecycle {
       setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
       AutoLaunchService,
       checkForUpdatesFromTray,
+      onTrayMenuOpen: () => skinSelectorWindowModule.handleTrayMenuOpen?.(),
+      onTrayMenuClose: () => skinSelectorWindowModule.handleTrayMenuClose?.(),
+      onTrayInteraction: () => skinSelectorWindowModule.handleTrayInteraction?.(),
 
       windowManager
     });
@@ -273,6 +276,7 @@ class AppLifecycle {
       getCurrentSkinId: SkinService.getCurrentSkinId,
       getSkinGalleryItems: SkinService.getSkinGalleryItems,
       revertSkinPreview: SkinService.revertSkinPreview,
+      isTrayActive: () => trayManager.isTrayActive(),
     });
     pomodoroWindowModule.init({
       getPomodoroSystem: PomodoroService.getPomodoroSystem,

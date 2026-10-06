@@ -266,4 +266,49 @@ test('TrayManager - Full Coverage', async (t) => {
     item.click();
     assert.ok(opened);
   });
+
+  await t.test('isTrayActive and tray menu lifecycle events report correct activity', () => {
+    const deps = createMockDeps();
+    let menuOpenCalls = 0;
+    let menuCloseCalls = 0;
+    let interactionCalls = 0;
+    deps.onTrayMenuOpen = () => { menuOpenCalls++; };
+    deps.onTrayMenuClose = () => { menuCloseCalls++; };
+    deps.onTrayInteraction = () => { interactionCalls++; };
+
+    let menuListeners = {};
+    mockMenu.buildFromTemplate = (template) => {
+      const arr = [...template];
+      arr.on = (evt, cb) => {
+        menuListeners[evt] = cb;
+      };
+      return arr;
+    };
+
+    TrayManager.init(deps);
+    TrayManager.createTray();
+
+    assert.equal(typeof menuListeners['menu-will-show'], 'function');
+    assert.equal(typeof menuListeners['menu-will-close'], 'function');
+
+    assert.equal(TrayManager.isTrayMenuOpen(), false);
+
+    // Simulate menu show
+    menuListeners['menu-will-show']();
+    assert.equal(TrayManager.isTrayMenuOpen(), true);
+    assert.equal(TrayManager.isTrayActive(), true);
+    assert.equal(menuOpenCalls, 1);
+
+    // Simulate menu close
+    menuListeners['menu-will-close']();
+    assert.equal(TrayManager.isTrayMenuOpen(), false);
+    assert.equal(TrayManager.isTrayActive(), true);
+    assert.equal(menuCloseCalls, 1);
+
+    // Simulate tray click
+    mockTrayInstance.events.click();
+    assert.equal(interactionCalls, 1);
+    assert.equal(TrayManager.isTrayActive(), true);
+  });
 });
+

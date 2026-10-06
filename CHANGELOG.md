@@ -24,6 +24,8 @@
 - 修复审查问题 R5：选肤器试穿预览与正式确认解耦，实现预览不提交、确认后保存闭环。试穿预览通知显式携带 `{ isPreview: true }`，渲染侧切肤不再反向触发 `setCurrentSkin`，主进程跳过托盘原生菜单重建与番茄钟同步；主进程分别维护已确认皮肤与预览目标，并在 `StorageIpc` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝预览期间自动保存（每分钟）、离线衰减保存与退出保存泄漏未确认的试穿皮肤；点击确定时对加载状态作仲裁（在途加载等待收敛，加载失败不予提交）并正式写盘持久化与同步托盘/番茄钟，取消或关窗可靠回滚原皮肤（[ADR-006](docs/decisions/ADR-006-state-persistence-and-offline-decay.md)、[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复审查问题 R6：在 `WeatherSyncController.js` 中为城市查询引入 `weatherSyncCityRequestId` 请求仲裁并在完成时重新读取最新配置，丢弃过时在途城市结果；消除在城市地理编码期间通过托盘关闭天气同步时，旧查询完成无条件按发起前快照覆盖写盘导致同步被意外“复活”的竞态漏洞；同时确保多城市连续提交或关窗重开逆序到达时始终以最新提交城市为准；新增在途开关切换与乱序城市结算的自动化行为测试（[ADR-038](docs/decisions/ADR-038-weather-sync.md)）。
 - 修复审查问题 R7：主进程 `AppLifecycle.initTray` 中透传 `sendSkinSelectorData` 参数，并在 `SkinSelectorWindow.sendSkinSelectorData` 中合并传入选项，使托盘切换语言时下发的 `{ resetSelection: false }` 不被丢弃；选肤器窗口接收语言变更刷新展示时可靠保留当前试穿中的临时选中卡片与高亮状态，避免界面被错误重置为已保存皮肤；补全托盘生命周期与窗口选项透传的自动化回归测试（[ADR-024](docs/decisions/ADR-024-i18n-multilingual-support.md)、[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
+- 修复选肤窗口外侧黑色阴影边框回归问题：为 `SkinSelectorWindow.js` 中 `BrowserWindow` 实例补齐 `hasShadow: false` 与 `resizable: false`，与其他透明子窗口（`CitySettingWindow`、`PomodoroWindow`、`StatusWindow`）规范对齐，彻底消除 macOS 下透明无边框窗口默认系统投影被合成器渲染为外侧一圈黑色边框/矩形框的视觉瑕疵。
+- 修复选肤窗口开启时点击托盘菜单导致窗口消失的回归问题：在 `TrayManager.js` 与 `SkinSelectorWindow.js` 中建立托盘活动生命周期互通机制，通过监听托盘菜单 `menu-will-show`/`menu-will-close` 与点击交互事件维护 `isTrayActive` 及交互宽限期；当用户点击托盘菜单或在其展开期间，立即取消并抑制选肤窗的失焦关闭（`scheduleBlurClose`），杜绝 macOS 下因原生状态栏菜单接管焦点导致误判为焦点离开应用而连带销毁选肤窗口与撤销预览的缺陷。
 
 ## [0.10.5] - 2026-09-15
 
