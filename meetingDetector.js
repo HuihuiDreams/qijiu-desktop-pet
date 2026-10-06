@@ -316,7 +316,7 @@ async function collectMacProcessInfo(execFileImpl, processName, commandTimeoutMs
       const { stdout: lsofOutput } = await runExecFile(
         execFileImpl,
         'lsof',
-        ['-nP', '-i', 'UDP', '-p', pid, '-Fn'],
+        ['-a', '-nP', '-i', 'UDP', '-p', pid, '-Fn'],
         commandTimeoutMs,
       );
       const udpEndpoints = lsofOutput

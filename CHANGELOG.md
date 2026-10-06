@@ -18,6 +18,7 @@
 ### Fixed
 - 修正全代码库审查报告中的粒子对象池描述，按实际实现说明粒子数量限制、天气节点复用和屏保节点重建，并移除未经测量验证的垃圾回收收益断言；同步更新 `docs/structure.md` 的粒子层目录说明与运行时机制。
 - 修复审查问题 R1：屏保与久坐提醒的 Windows 坐标转换接线补齐 `screen.screenToDipRect(null, rect)` 首参，避免原生 API 抛错造成屏保误拒绝或提醒跳过演示窗口保护；新增两条生产接线回归测试（[ADR-031](docs/decisions/ADR-031-break-reminder.md)、[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)）。
+- 修复审查问题 R2：macOS 会议检测中为 `lsof` 命令行参数补齐 `-a` 选项（`lsof -a -nP -i UDP -p <pid> -Fn`），将目标 PID 与 UDP 协议条件约束为交集（AND），避免原默认并集（OR）逻辑将目标进程普通文件或其他进程的 UDP 端点误计入阈值，从而防止非通话状态误隐藏桌宠；补充区分并集与交集的命令 fake 自动化回归测试（[ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md)）。
 
 ## [0.10.5] - 2026-09-15
 

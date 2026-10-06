@@ -63,6 +63,8 @@
 **受控验证：** 使用实际 `collectMeetingUdpSnapshot()`，注入一个目标 PID 和含应用目录、可执行文件、两个 `/dev/null`、日志文件的五条 `n` 记录，不提供 UDP 记录。结果为 `isActive: true`、`udpCount: 5`。这是解析路径的受控验证；本机为 Windows，未执行 macOS `lsof`。
 
 **测试缺口与建议：** 增加 `-a`，让选择范围限定为目标 PID 的 UDP 文件；测试应覆盖普通文件不能使会议计数增加，必要时校验 PID/协议字段。macOS 手工验证“仅打开客户端”“进入通话”“其他应用产生 UDP 流量”“退出通话”四种状态。
+ 
+**修复记录（2026-10-06）：** 已修复。在 `meetingDetector.js` 的 `collectMacProcessInfo` 中为 `lsof` 增加了 `-a` 参数（`lsof -a -nP -i UDP -p <pid> -Fn`）。在 `test/meetingDetector.test.js` 中新增区分并集与交集的命令 fake 测试，验证仅目标 PID 的 UDP 参与计数，普通文件与其他进程 UDP 被排除。通过 `node --test test/meetingDetector.test.js test/meetingDetectorController.behavior.test.js` 与全量测试。macOS 手工四状态验证待实际通话环境补充执行。
 
 ### R3 · P2：显示通知无条件解除渲染端暂停
 

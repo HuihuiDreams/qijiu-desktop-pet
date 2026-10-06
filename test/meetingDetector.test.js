@@ -262,7 +262,7 @@ test('meeting detector keeps current state when a snapshot is unknown', async ()
 test('macOS snapshot counts UDP endpoints from pgrep and lsof', async () => {
   const execFile = createExecFileStub({
     'pgrep -x zoom.us': ['4242\n'],
-    'lsof -nP -i UDP -p 4242 -Fn': [
+    'lsof -a -nP -i UDP -p 4242 -Fn': [
       [
         'n*:50000',
         'n*:50001',
@@ -272,6 +272,122 @@ test('macOS snapshot counts UDP endpoints from pgrep and lsof', async () => {
       ].join('\n'),
     ],
   });
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, true);
+  assert.deepEqual(snapshot.detectedApps, ['Zoom']);
+  assert.deepEqual(
+    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
+    [5],
+  );
+});
+
+test('macOS snapshot enforces intersection (-a) so other process UDP and non-network files are excluded', async () => {
+  const fakeSystemFiles = [
+    { pid: '4242', protocol: 'FILE', name: '/Users/test/zoom.log' },
+    { pid: '9999', protocol: 'UDP', name: '*:50000' },
+    { pid: '9999', protocol: 'UDP', name: '*:50001' },
+    { pid: '9999', protocol: 'UDP', name: '*:50002' },
+    { pid: '9999', protocol: 'UDP', name: '*:50003' },
+    { pid: '9999', protocol: 'UDP', name: '*:50004' },
+    { pid: '9999', protocol: 'UDP', name: '*:50005' },
+  ];
+
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    if (command === 'pgrep' && args[0] === '-x' && args[1] === 'zoom.us') {
+      cb(null, '4242\n', '');
+      return;
+    }
+    if (command === 'lsof') {
+      const hasAnd = args.includes('-a');
+      const pIndex = args.indexOf('-p');
+      const targetPid = pIndex !== -1 ? args[pIndex + 1] : null;
+      const iIndex = args.indexOf('-i');
+      const targetProto = iIndex !== -1 ? args[iIndex + 1] : null;
+
+      let matched;
+      if (hasAnd) {
+        matched = fakeSystemFiles.filter((f) =>
+          (!targetPid || f.pid === targetPid) &&
+          (!targetProto || f.protocol === targetProto)
+        );
+      } else {
+        matched = fakeSystemFiles.filter((f) =>
+          (targetPid && f.pid === targetPid) ||
+          (targetProto && f.protocol === targetProto)
+        );
+      }
+
+      const output = matched.map((f) => `n${f.name}`).join('\n');
+      cb(null, output, '');
+      return;
+    }
+    cb(new Error(`unexpected command: ${command} ${args.join(' ')}`));
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(snapshot.isActive, false);
+  assert.deepEqual(snapshot.detectedApps, []);
+  assert.deepEqual(
+    snapshot.apps.find((app) => app.name === 'Zoom').processes.map((processInfo) => processInfo.udpCount),
+    [0],
+  );
+});
+
+test('macOS snapshot activates when target process UDP endpoints reach threshold with intersection', async () => {
+  const fakeSystemFiles = [
+    { pid: '4242', protocol: 'FILE', name: '/Users/test/zoom.log' },
+    { pid: '4242', protocol: 'UDP', name: '*:50000' },
+    { pid: '4242', protocol: 'UDP', name: '*:50001' },
+    { pid: '4242', protocol: 'UDP', name: '*:50002' },
+    { pid: '4242', protocol: 'UDP', name: '*:50003' },
+    { pid: '4242', protocol: 'UDP', name: '*:50004' },
+    { pid: '9999', protocol: 'UDP', name: '*:60000' },
+  ];
+
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    if (command === 'pgrep' && args[0] === '-x' && args[1] === 'zoom.us') {
+      cb(null, '4242\n', '');
+      return;
+    }
+    if (command === 'lsof') {
+      const hasAnd = args.includes('-a');
+      const pIndex = args.indexOf('-p');
+      const targetPid = pIndex !== -1 ? args[pIndex + 1] : null;
+      const iIndex = args.indexOf('-i');
+      const targetProto = iIndex !== -1 ? args[iIndex + 1] : null;
+
+      let matched;
+      if (hasAnd) {
+        matched = fakeSystemFiles.filter((f) =>
+          (!targetPid || f.pid === targetPid) &&
+          (!targetProto || f.protocol === targetProto)
+        );
+      } else {
+        matched = fakeSystemFiles.filter((f) =>
+          (targetPid && f.pid === targetPid) ||
+          (targetProto && f.protocol === targetProto)
+        );
+      }
+
+      const output = matched.map((f) => `n${f.name}`).join('\n');
+      cb(null, output, '');
+      return;
+    }
+    cb(new Error(`unexpected command: ${command} ${args.join(' ')}`));
+  };
 
   const snapshot = await collectMeetingUdpSnapshot({
     platform: 'darwin',
