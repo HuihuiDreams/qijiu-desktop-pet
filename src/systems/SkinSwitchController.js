@@ -21,10 +21,11 @@ class SkinSwitchController {
       ? deps.clearInteractionOverlay
       : () => {};
     this.skinSwitchInProgress = false;
+    this.pendingRequest = null;
   }
 
   isSwitching() {
-    return this.skinSwitchInProgress;
+    return this.skinSwitchInProgress || this.pendingRequest !== null;
   }
 
   /**
@@ -42,28 +43,70 @@ class SkinSwitchController {
   }
 
   /**
-   * 切换到指定皮肤 ID；未知 ID 回退到 default。同一时间只允许一次切换在途。
+   * 切换到指定皮肤 ID；未知 ID 回退到 default。串行加载并保留最后待执行请求。
    * @param {string} skinId
    * @param {{ persist?: boolean }} options - persist 默认 true，加载存档时传 false 避免覆盖式重复保存
    */
   async applySkinById(skinId, options = {}) {
-    if (this.skinSwitchInProgress) return;
+    if (this.skinSwitchInProgress) {
+      if (this.pendingRequest) {
+        this.pendingRequest.resolve({ success: false, superseded: true });
+      }
+      return new Promise((resolve, reject) => {
+        this.pendingRequest = { skinId, options, resolve, reject };
+      });
+    }
+
     this.skinSwitchInProgress = true;
-    const shouldPersist = options.persist !== false;
+    let currentSkinId = skinId;
+    let currentOptions = options;
+    let currentDeferred = null;
 
     try {
-      const availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
-      const nextSkinId = availableSkinIds.includes(skinId) ? skinId : 'default';
+      while (true) {
+        let switchError = null;
+        let appliedSkinId = null;
 
-      this.clearInteractionOverlay();
+        try {
+          const availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
+          const nextSkinId = availableSkinIds.includes(currentSkinId) ? currentSkinId : 'default';
 
-      await this.skinManager.applySkin(nextSkinId, this.skinTargets);
-      this.electronAPI.setCurrentSkin(nextSkinId);
-      if (shouldPersist) {
-        await this.saveCurrentState();
+          this.clearInteractionOverlay();
+
+          await this.skinManager.applySkin(nextSkinId, this.skinTargets);
+          appliedSkinId = nextSkinId;
+
+          // 若在加载期间产生了新的待执行请求，不覆盖主进程状态也不保存过时状态
+          if (!this.pendingRequest) {
+            this.electronAPI.setCurrentSkin(nextSkinId);
+            if (currentOptions.persist !== false) {
+              await this.saveCurrentState();
+            }
+          }
+        } catch (err) {
+          switchError = err;
+          console.error('切换皮肤失败:', err);
+        }
+
+        if (currentDeferred) {
+          currentDeferred.resolve({
+            success: !switchError,
+            skinId: appliedSkinId,
+            error: switchError,
+          });
+          currentDeferred = null;
+        }
+
+        if (this.pendingRequest) {
+          const next = this.pendingRequest;
+          this.pendingRequest = null;
+          currentSkinId = next.skinId;
+          currentOptions = next.options;
+          currentDeferred = next;
+        } else {
+          break;
+        }
       }
-    } catch (err) {
-      console.error('切换皮肤失败:', err);
     } finally {
       this.skinSwitchInProgress = false;
     }

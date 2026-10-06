@@ -20,6 +20,7 @@
 - 修复审查问题 R1：屏保与久坐提醒的 Windows 坐标转换接线补齐 `screen.screenToDipRect(null, rect)` 首参，避免原生 API 抛错造成屏保误拒绝或提醒跳过演示窗口保护；新增两条生产接线回归测试（[ADR-031](docs/decisions/ADR-031-break-reminder.md)、[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)）。
 - 修复审查问题 R2：macOS 会议检测中为 `lsof` 命令行参数补齐 `-a` 选项（`lsof -a -nP -i UDP -p <pid> -Fn`），将目标 PID 与 UDP 协议条件约束为交集（AND），避免原默认并集（OR）逻辑将目标进程普通文件或其他进程的 UDP 端点误计入阈值，从而防止非通话状态误隐藏桌宠；补充区分并集与交集的命令 fake 自动化回归测试（[ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md)）。
 - 修复审查问题 R3：分离渲染进程用户暂停意图（`isUserPaused`）与可见性有效暂停（`isPaused = !isVisible || isUserPaused`），并在主进程 `getPetVisibilityState` 中透传 `isPaused` 状态与对齐番茄钟专注进入时序；消除手动显示、会议结束或番茄钟结束时因无条件 `isPaused = !visible` 冲掉用户暂停选择的缺陷；新增渲染端消费与移动系统抑制的集成回归测试（[ADR-011](docs/decisions/ADR-011-hide-show-pet-functionality.md)、[ADR-037](docs/decisions/ADR-037-lightweight-pomodoro-companion.md)）。
+- 修复审查问题 R4：在 `SkinSwitchController.js` 中将并发切换直接丢弃重构为串行加载并保留最新待执行请求，丢弃过时在途请求对主进程状态与存档的回写，并在异常时安全收敛；新增慢加载期间取消回滚、连续选择覆盖以及加载失败恢复的自动化测试（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 
 ## [0.10.5] - 2026-09-15
 

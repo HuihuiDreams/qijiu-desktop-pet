@@ -30,3 +30,8 @@ Accepted
 - 为 `docs/plan/visual-skin-selector-plan.md` 与 `docs/structure.md` 建立了清晰的切肤与画廊窗口性能基准记录与演进指引。
 - 明确区分了“当下局部冗余”与“未来长列表瓶颈”，避免了在需求或物料尚未变庞大前过早优化（Premature Optimization）带来的代码复杂性。
 - 保留了 `createSkinSelectorWindow()` 的后台隐藏常驻策略，确认 `30MB ~ 60MB RSS` 内存代价换取 `<16ms` 瞬时呼出速度是针对当前跨平台桌面应用的正确工程权衡。
+
+## Amendments
+
+### 2026-10-06: 慢加载取消与连续预览串行收敛 (R4)
+在 `SkinSwitchController.js` 中将原先并发切换直接忽略（`if (this.skinSwitchInProgress) return;`）重构为串行加载并保留最新待执行请求模型。慢加载期间收到的后续请求（如取消回滚或选择新皮肤）暂存为单一最新请求并替换中间请求；在途加载完成后若检测到已有新请求，则跳过对主进程与持久化状态的回写，直接执行最新待执行请求，确保最终状态可靠收敛，避免加载中取消丢失回滚。
