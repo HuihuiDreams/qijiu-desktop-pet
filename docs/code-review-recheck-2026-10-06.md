@@ -128,6 +128,12 @@
 
 **建议：** 城市更新和托盘更新共用版本/请求仲裁；完成时合并最新开关值，丢弃过时城市结果。测试同时覆盖关闭开关、重新打开窗口查询不同城市以及响应逆序完成。
 
+**修复记录（2026-10-06）：** 已修复。
+1. 在 `WeatherSyncController.js` 中引入 `weatherSyncCityRequestId` 请求仲裁递增计数器；
+2. 在 `set-city-name` 查询完成后，若 `requestId !== weatherSyncCityRequestId` 则判定为过时请求，直接丢弃并不予写盘；
+3. 查询成功结算前重新读取最新的 `getStoredWeatherSyncSettings()`，保留用户在查询在途期间从托盘修改的 `enabled` 开关状态和刷新频率，递增 `weatherSyncSettingsUpdateId` 防止过时配置回写；
+4. 补充 `weatherSyncController.behavior.test.js` 自动化测试，覆盖在途关闭托盘开关不复活、连续请求快查询优先、关窗重开逆序到达丢弃旧查询等场景，并通过全量单测与天气服务测试。
+
 ### R7 · P2：托盘语言切换丢掉选肤状态保留选项
 
 **位置：** [AppLifecycle.js](../src/main/AppLifecycle.js) 第 215 行；[TrayManager.js](../src/main/TrayManager.js) 第 72 行；[src/skinSelectorWindow.js](../src/skinSelectorWindow.js) 第 73–90 行。

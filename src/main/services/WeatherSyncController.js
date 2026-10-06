@@ -24,6 +24,7 @@ let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
 let weatherSyncIntervalTimer = null;
 let weatherSyncSettingsUpdateId = 0;
 let weatherSyncStartId = 0;
+let weatherSyncCityRequestId = 0;
 
 function init(dependencies) {
   deps = dependencies;
@@ -40,6 +41,7 @@ function init(dependencies) {
     }
 
     const trimmed = cityName.trim().slice(0, 100);
+    const requestId = ++weatherSyncCityRequestId;
     const currentStored = getStoredWeatherSyncSettings();
 
     // Force enabled to true temporarily to bypass processSettingsChange's fast-return
@@ -54,16 +56,27 @@ function init(dependencies) {
 
     try {
       const processed = await processSettingsChange(newSettings);
+      if (requestId !== weatherSyncCityRequestId) {
+        return { success: false };
+      }
       if (processed.lat === null || processed.lon === null) {
         return { success: false };
       }
 
-      // Restore the user's actual enabled preference before saving
-      processed.enabled = currentStored.enabled;
+      // Re-read latest stored settings so that user changes (e.g. toggling enabled off
+      // via tray) while geocoding was in-flight are preserved rather than overwritten by currentStored.
+      const latestStored = getStoredWeatherSyncSettings();
+      weatherSyncSettings = {
+        ...processed,
+        enabled: latestStored.enabled,
+        refreshIntervalMinutes: latestStored.refreshIntervalMinutes,
+      };
 
-      weatherSyncSettings = processed;
+      // Invalidate any older in-flight updateWeatherSyncSettings
+      ++weatherSyncSettingsUpdateId;
+
       saveWeatherSyncSettings(weatherSyncSettings);
-      deps.trayManager.refreshTrayMenu();
+      deps.trayManager?.refreshTrayMenu?.();
       startWeatherSync();
       return { success: true, city: processed.city };
     } catch (err) {
@@ -175,7 +188,11 @@ async function startWeatherSync() {
 
 async function updateWeatherSyncSettings(newSettings) {
   const updateId = ++weatherSyncSettingsUpdateId;
+  const previousCity = weatherSyncSettings.city;
   weatherSyncSettings = normalizeWeatherSyncSettings(newSettings);
+  if (weatherSyncSettings.city && weatherSyncSettings.city !== previousCity) {
+    ++weatherSyncCityRequestId;
+  }
   deps.trayManager.refreshTrayMenu();
 
   const processedSettings = await processSettingsChange(weatherSyncSettings);

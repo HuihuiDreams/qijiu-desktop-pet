@@ -115,7 +115,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
-├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
+├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（Windows 以 screenToDipRect 归一化前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；以 Electron screenToDipRect 将原生物理窗口矩形转换为 DIP，适配混合 DPI 多屏后再与完整 display.bounds 比较；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
@@ -474,7 +474,7 @@ npm run test:font
 
 - `test/appLifecycle.behavior.test.js`：服务启动接线、宠物窗口创建时机，以及二次启动/退出生命周期。
 - `test/finalSaveService.behavior.test.js`：最终保存 ACK 的 sender/requestId 校验、超时清理、重复关闭抑制和已销毁窗口降级。
-- `test/weatherSyncController.behavior.test.js`：持久化设置读取、重启天气缓存回放、无缓存冷启动自动重试、异步设置竞争、天气消息下发和禁用分支。
+- `test/weatherSyncController.behavior.test.js`：持久化设置读取、重启天气缓存回放、无缓存冷启动自动重试、在途城市查询与开关仲裁、乱序城市请求丢弃、异步设置竞争、天气消息下发和禁用分支。
 - `test/meetingDetectorController.behavior.test.js`：会议开始/结束回调转发、检测器替换和不支持平台门控。
 - `test/trayManager.test.js`：托盘菜单结构、各菜单项交互、语言切换与番茄钟托盘标签状态流转（依赖 `getPomodoroSnapshot()` 驱动 running/completed/idle 三种标签）。
 - `test/petWindow.test.js`：宠物窗口 IPC 注册、`set-ignore-mouse-events` 发件方鉴权与鼠标穿透开关归一化。

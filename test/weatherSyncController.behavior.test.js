@@ -430,6 +430,178 @@ test('set-city-name processSettingsChange throws -> { success: false }', async (
   assert.deepEqual(result, { success: false });
 });
 
+test('set-city-name while in-flight does not revive weather sync if disabled via tray', async () => {
+  const ipcMain = createIpcMain();
+  let fetchCount = 0;
+  let resolveGeocode;
+  const geocodePromise = new Promise((resolve) => { resolveGeocode = resolve; });
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => { fetchCount += 1; return { active: true }; },
+    processSettingsChange: async (settings) => {
+      if (settings.city === 'Tokyo' && settings.lat === null) {
+        await geocodePromise;
+        return {
+          ...settings,
+          lat: 35.68,
+          lon: 139.76,
+          city: settings.city,
+        };
+      }
+      return settings;
+    },
+  });
+
+  const { deps, storedSettings, cityEvent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'London',
+  });
+  Controller.init(deps);
+  stubTimers();
+
+  try {
+    // 1. User starts city query for Tokyo
+    const cityPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+
+    // 2. While in-flight, user turns off weather sync from tray
+    await Controller.updateWeatherSyncSettings({
+      ...Controller.getWeatherSyncSettings(),
+      enabled: false,
+    });
+    assert.equal(storedSettings().enabled, false);
+    assert.equal(Controller.getWeatherSyncSettings().enabled, false);
+
+    const fetchesBefore = fetchCount;
+
+    // 3. Geocode for Tokyo now completes
+    resolveGeocode();
+    const result = await cityPromise;
+
+    // 4. City query completes, city is updated to Tokyo, but enabled remains FALSE
+    assert.deepEqual(result, { success: true, city: 'Tokyo' });
+    assert.equal(storedSettings().city, 'Tokyo');
+    assert.equal(storedSettings().enabled, false, 'Weather sync must remain disabled');
+    assert.equal(Controller.getWeatherSyncSettings().enabled, false, 'Controller enabled must remain false');
+    assert.equal(fetchCount, fetchesBefore, 'Must not revive weather fetch timer');
+    await new Promise(resolve => setImmediate(resolve));
+  } finally {
+    restoreTimers();
+  }
+});
+
+test('consecutive city queries: older slow query completing after newer fast query is discarded', async () => {
+  const ipcMain = createIpcMain();
+  let resolveOsaka;
+  const osakaPromise = new Promise((resolve) => { resolveOsaka = resolve; });
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => ({ active: true }),
+    processSettingsChange: async (settings) => {
+      if (settings.city === 'Osaka') {
+        await osakaPromise;
+        return { ...settings, lat: 34.69, lon: 135.50, city: 'Osaka' };
+      }
+      if (settings.city === 'Tokyo') {
+        return { ...settings, lat: 35.68, lon: 139.76, city: 'Tokyo' };
+      }
+      return settings;
+    },
+  });
+
+  const { deps, storedSettings, cityEvent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Kyoto',
+  });
+  Controller.init(deps);
+  stubTimers();
+
+  try {
+    // 1. Submit slow query Osaka
+    const osakaResultPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Osaka');
+
+    // 2. Submit fast query Tokyo
+    const tokyoResult = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+    assert.deepEqual(tokyoResult, { success: true, city: 'Tokyo' });
+    assert.equal(storedSettings().city, 'Tokyo');
+
+    // 3. Now slow Osaka query settles
+    resolveOsaka();
+    const osakaResult = await osakaResultPromise;
+
+    // 4. Stale Osaka query must be discarded
+    assert.deepEqual(osakaResult, { success: false }, 'Older superseded query must return { success: false }');
+    assert.equal(storedSettings().city, 'Tokyo', 'Stored city must remain Tokyo, not overwritten by Osaka');
+    assert.equal(Controller.getWeatherSyncSettings().city, 'Tokyo');
+    await new Promise(resolve => setImmediate(resolve));
+  } finally {
+    restoreTimers();
+  }
+});
+
+test('closing city window and reopening to query a different city invalidates older query even if older settles first', async () => {
+  const ipcMain = createIpcMain();
+  let resolveOsaka;
+  let resolveTokyo;
+  const osakaPromise = new Promise((resolve) => { resolveOsaka = resolve; });
+  const tokyoPromise = new Promise((resolve) => { resolveTokyo = resolve; });
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => ({ active: true }),
+    processSettingsChange: async (settings) => {
+      if (settings.city === 'Osaka') {
+        await osakaPromise;
+        return { ...settings, lat: 34.69, lon: 135.50, city: 'Osaka' };
+      }
+      if (settings.city === 'Tokyo') {
+        await tokyoPromise;
+        return { ...settings, lat: 35.68, lon: 139.76, city: 'Tokyo' };
+      }
+      return settings;
+    },
+  });
+
+  const { deps, storedSettings, cityEvent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Kyoto',
+  });
+  Controller.init(deps);
+  stubTimers();
+
+  try {
+    // 1. Submit query Osaka
+    const osakaResultPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Osaka');
+
+    // 2. Simulate closing window and reopening to query Tokyo
+    deps.windowManager.citySettingWindow = {
+      isDestroyed: () => false,
+      webContents: { isDestroyed: () => false },
+    };
+    const newCityEvent = { sender: deps.windowManager.citySettingWindow.webContents };
+    const tokyoResultPromise = ipcMain.handlers['set-city-name'](newCityEvent, 'Tokyo');
+
+    // 3. Osaka settles FIRST
+    resolveOsaka();
+    const osakaResult = await osakaResultPromise;
+    assert.deepEqual(osakaResult, { success: false }, 'Older Osaka query must be discarded even if it settles first');
+
+    // 4. Tokyo settles LATER
+    resolveTokyo();
+    const tokyoResult = await tokyoResultPromise;
+    assert.deepEqual(tokyoResult, { success: true, city: 'Tokyo' });
+    assert.equal(storedSettings().city, 'Tokyo');
+    assert.equal(Controller.getWeatherSyncSettings().city, 'Tokyo');
+    await new Promise(resolve => setImmediate(resolve));
+  } finally {
+    restoreTimers();
+  }
+});
+
 test('store.onDidChange callback ignores falsy newValue', () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({
