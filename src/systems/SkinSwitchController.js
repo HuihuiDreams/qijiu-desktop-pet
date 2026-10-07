@@ -66,6 +66,7 @@ class SkinSwitchController {
       while (true) {
         let switchError = null;
         let appliedSkinId = null;
+        const reportOptions = currentOptions.requestId === undefined ? {} : { requestId: currentOptions.requestId };
 
         try {
           const availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
@@ -88,14 +89,14 @@ class SkinSwitchController {
               await this.saveCurrentState();
             }
             if (this.electronAPI && typeof this.electronAPI.reportSkinLoaded === 'function') {
-              await this.electronAPI.reportSkinLoaded(nextSkinId, { success: true });
+              await this.electronAPI.reportSkinLoaded(nextSkinId, { success: true, ...reportOptions });
             }
           }
         } catch (err) {
           switchError = err;
           console.error('切换皮肤失败:', err);
           if (!this.pendingRequest && this.electronAPI && typeof this.electronAPI.reportSkinLoaded === 'function') {
-            await this.electronAPI.reportSkinLoaded(currentSkinId, { success: false, error: err?.message || String(err) });
+            await this.electronAPI.reportSkinLoaded(currentSkinId, { success: false, error: err?.message || String(err), ...reportOptions });
           }
         }
 

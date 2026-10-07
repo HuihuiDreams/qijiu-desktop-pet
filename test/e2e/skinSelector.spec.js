@@ -135,4 +135,56 @@ test.describe('skin selector', () => {
     await windowClosedPromise;
     expect(selectorWindow.isClosed()).toBe(true);
   });
+
+  test('reopening an active preview keeps the highlighted card and confirms that skin', async () => {
+    await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    const [selectorWindow] = await Promise.all([
+      electronApp.waitForEvent('window', { timeout: 15000 }),
+      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
+    ]);
+    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
+    await birdsCard.click();
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('birds');
+    const savedBefore = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
+    expect(savedBefore?.skinId ?? 'default').toBe('default');
+
+    await electronApp.evaluate(({ app }) => app.openSkinSelectorForQA());
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    const closed = selectorWindow.waitForEvent('close');
+    await selectorWindow.locator('#skin-selector-confirm').click();
+    await closed;
+    await expect.poll(() => appWindow.evaluate(async () => (await window.electronAPI.loadData('petState'))?.skinId)).toBe('birds');
+  });
+
+  test('required image failure shows a confirmation error and keeps the original saved skin', async () => {
+    await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    const [selectorWindow] = await Promise.all([
+      electronApp.waitForEvent('window', { timeout: 15000 }),
+      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
+    ]);
+    await appWindow.evaluate(() => {
+      window.__qaOriginalImage = window.Image;
+      window.Image = class {
+        set src(value) { queueMicrotask(() => this.onerror?.(new Event('error'))); }
+      };
+    });
+    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
+    await birdsCard.click();
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    await selectorWindow.locator('#skin-selector-confirm').click();
+    await expect(selectorWindow.locator('#skin-selector-status')).not.toHaveText('');
+    expect(selectorWindow.isClosed()).toBe(false);
+    const saved = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
+    expect(saved?.skinId ?? 'default').toBe('default');
+
+    await appWindow.evaluate(() => {
+      window.Image = window.__qaOriginalImage;
+      delete window.__qaOriginalImage;
+    });
+    const closed = selectorWindow.waitForEvent('close');
+    await selectorWindow.locator('#skin-selector-cancel').click();
+    await closed;
+    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('default');
+  });
 });

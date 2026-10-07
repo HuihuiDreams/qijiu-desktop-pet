@@ -213,6 +213,20 @@ test('cancelSkinSelection reverts to original skin when preview changed the skin
   assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), null);
 });
 
+test('reopening an active skin selection preserves the preview card and original skin', () => {
+  let currentSkinId = 'default';
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow({ getCurrentSkinId: () => currentSkinId });
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  let sentOptions = null;
+  win.webContents.send = (channel, data, options) => { sentOptions = options; };
+  currentSkinId = 'birds';
+
+  skinSelectorWindow.openSkinSelectorWindow();
+
+  assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'default');
+  assert.equal(sentOptions.resetSelection, false, 'existing preview selection must survive gallery refresh');
+});
+
 test('closeSkinSelectorWindow re-entrance protection: second call is a no-op', () => {
   const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
   const win = skinSelectorWindow.openSkinSelectorWindow();
@@ -364,3 +378,54 @@ test('deps.isTrayActive returning true keeps skin selector open on blur', async 
   assert.equal(windowManager.skinSelectorWindow, null);
 });
 
+test('dismissing the tray outside DeskPet closes and rolls back without a second blur', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  let rollbackCount = 0;
+  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow({
+    revertSkinPreview: () => { rollbackCount += 1; },
+  });
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+  skinSelectorWindow.handleTrayMenuOpen();
+  win.listeners.blur();
+  skinSelectorWindow.handleTrayMenuClose();
+
+  t.mock.timers.tick(799);
+  assert.equal(win.closeCalls, 0, 'tray focus handoff still has a grace period');
+  t.mock.timers.tick(201);
+  assert.equal(win.closeCalls, 1);
+  assert.equal(rollbackCount, 1);
+  assert.equal(windowManager.skinSelectorWindow, null);
+});
+
+test('a tray click without a menu eventually closes an unfocused selector', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { skinSelectorWindow, setFocusedWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+  skinSelectorWindow.handleTrayInteraction();
+  win.listeners.blur();
+
+  t.mock.timers.tick(1000);
+  assert.equal(win.closeCalls, 1);
+});
+
+test('returning focus or reopening the tray cancels its pending outside-focus check', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { skinSelectorWindow, setFocusedWindow, handOffFocusTo } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  setFocusedWindow(null);
+  skinSelectorWindow.handleTrayMenuOpen();
+  win.listeners.blur();
+  skinSelectorWindow.handleTrayMenuClose();
+  handOffFocusTo(win);
+  t.mock.timers.tick(1000);
+  assert.equal(win.closeCalls, 0);
+
+  setFocusedWindow(null);
+  skinSelectorWindow.handleTrayInteraction();
+  skinSelectorWindow.handleTrayMenuOpen();
+  t.mock.timers.tick(1000);
+  assert.equal(win.closeCalls, 0);
+  skinSelectorWindow.closeSkinSelectorWindow();
+});

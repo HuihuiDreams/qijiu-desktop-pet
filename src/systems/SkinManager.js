@@ -95,8 +95,8 @@ class SkinManager {
     if (spriteView) {
       spriteView.updateImageMap(paths.imageMap);
       await Promise.all([
-        petA ? spriteView.attach(petA) : Promise.resolve(),
-        petB ? spriteView.attach(petB) : Promise.resolve(),
+        petA ? spriteView.attach(petA, { validateRequired: true }) : Promise.resolve(),
+        petB ? spriteView.attach(petB, { validateRequired: true }) : Promise.resolve(),
       ]);
     }
 

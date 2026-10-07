@@ -45,12 +45,12 @@ class SpriteView {
     };
   }
 
-  attach(pet) {
+  attach(pet, { validateRequired = false } = {}) {
     pet._sv_lastResource = null;
     pet._sv_frameIndex = 0;
     pet._sv_frameTimer = 0;
     pet._sv_lastSpriteKey = null;
-    return this._preloadPetSpritesAsync(pet);
+    return this._preloadPetSpritesAsync(pet, validateRequired);
   }
 
   _collectPetResources(pet) {
@@ -186,7 +186,7 @@ class SpriteView {
     this.imageMap = newMap;
   }
 
-  _preloadPetSpritesAsync(pet) {
+  _preloadPetSpritesAsync(pet, validateRequired) {
     if (typeof Image === 'undefined') return Promise.resolve();
 
     if (Array.isArray(pet._sv_preloadedImages)) {
@@ -196,17 +196,21 @@ class SpriteView {
       });
     }
 
+    const requiredResources = new Set([pet.image, ...Object.values(pet.sprites || {})
+      .flatMap((sprite) => sprite.frames || [])].filter(Boolean));
+    const failedResources = [];
     const images = [];
     const promises = this._collectPetResources(pet).map((resource) => {
       return new Promise((resolve) => {
         const image = new Image();
-        const done = () => {
+        const done = (success) => {
           image.onload = null;
           image.onerror = null;
+          if (!success && requiredResources.has(resource)) failedResources.push(resource);
           resolve();
         };
-        image.onload = done;
-        image.onerror = done;
+        image.onload = () => done(true);
+        image.onerror = () => done(false);
         image.src = resource;
         images.push(image);
       });
@@ -214,7 +218,11 @@ class SpriteView {
 
     pet._sv_preloadedImages = images;
 
-    return Promise.all(promises).then(() => {});
+    return Promise.all(promises).then(() => {
+      if (validateRequired && failedResources.length > 0) {
+        throw new Error(`Failed to load required skin images: ${failedResources.join(', ')}`);
+      }
+    });
   }
 }
 

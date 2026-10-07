@@ -542,6 +542,46 @@ test('consecutive city queries: older slow query completing after newer fast que
   }
 });
 
+for (const firstCompleted of ['Tokyo', 'London']) {
+  test(`city query preserves a pending enable toggle when ${firstCompleted} geocoding completes first`, async () => {
+    const ipcMain = createIpcMain();
+    const pending = new Map();
+    const Controller = loadFreshController({
+      ipcMain,
+      fetchWeather: async (settings) => ({ active: true, city: settings.city }),
+      processSettingsChange: (settings) => new Promise((resolve) => {
+        pending.set(settings.city, () => resolve({ ...settings, lat: 35.68, lon: 139.76 }));
+      }),
+    });
+    const { deps, cityEvent, storedSettings } = createDependencies({
+      ...DEFAULT_SETTINGS, enabled: false, city: 'London',
+    });
+    Controller.init(deps);
+    stubTimers();
+    try {
+      const cityQuery = ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+      const enableToggle = Controller.updateWeatherSyncSettings({
+        ...Controller.getStoredWeatherSyncSettings(), enabled: true, refreshIntervalMinutes: 30,
+      });
+      assert.equal(Controller.getWeatherSyncSettings().enabled, true);
+      assert.equal(storedSettings().enabled, false, 'enable is still waiting for geocoding');
+
+      pending.get(firstCompleted)();
+      await (firstCompleted === 'Tokyo' ? cityQuery : enableToggle);
+      pending.get(firstCompleted === 'Tokyo' ? 'London' : 'Tokyo')();
+      await Promise.all([cityQuery, enableToggle]);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.equal(Controller.getWeatherSyncSettings().enabled, true);
+      assert.equal(storedSettings().enabled, true);
+      assert.equal(storedSettings().city, 'Tokyo');
+      assert.equal(storedSettings().refreshIntervalMinutes, 30);
+    } finally {
+      restoreTimers();
+    }
+  });
+}
+
 test('closing city window and reopening to query a different city invalidates older query even if older settles first', async () => {
   const ipcMain = createIpcMain();
   let resolveOsaka;

@@ -110,6 +110,16 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.ok(Array.isArray(result));
   });
 
+  await t.test('get-available-overlay-keys defaults to the confirmed skin when skinId is omitted', async () => {
+    SkinService.init(createMockDeps());
+    SkinService.setCurrentSkinId('birds');
+    const event = { sender: mockMainWindow.webContents };
+    const expected = SkinService.getAvailableOverlayKeys('birds');
+
+    assert.deepEqual(await mockIpcHandlers['get-available-overlay-keys'](event), expected);
+    assert.deepEqual(await mockIpcHandlers['get-available-overlay-keys'](event, ''), expected);
+  });
+
   await t.test('get-skin-gallery-items requires correct event sender', async () => {
     const deps = createMockDeps();
     SkinService.init(deps);
@@ -196,7 +206,8 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.equal(mockPomodoroSent, false, 'pomodoro state should not be sent on preview');
     assert.equal(mockWindowSent.channel, 'switch-skin');
     assert.equal(mockWindowSent.data, 'birds');
-    assert.deepEqual(mockWindowSent.options, { isPreview: true });
+    assert.equal(mockWindowSent.options.isPreview, true);
+    assert.ok(Number.isSafeInteger(mockWindowSent.options.requestId));
   });
 
   await t.test('preview-skin sets skin temporarily', async () => {
@@ -235,7 +246,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const mainEvent = { sender: mockMainWindow.webContents };
     await mockIpcHandlers['preview-skin'](validEvent, 'birds');
     // Renderer reports birds loaded
-    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true });
+    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true, requestId: mockWindowSent.options.requestId });
 
     mockTrayRefreshed = false;
     mockPomodoroSent = false;
@@ -256,7 +267,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const mainEvent = { sender: mockMainWindow.webContents };
     await mockIpcHandlers['preview-skin'](validEvent, 'birds');
     // Renderer reports birds failed to load
-    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: false, error: 'Network error' });
+    await mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: false, error: 'Network error', requestId: mockWindowSent.options.requestId });
 
     const result = await mockIpcHandlers['confirm-skin'](validEvent);
     assert.equal(result.success, false);
@@ -276,7 +287,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     const confirmPromise = mockIpcHandlers['confirm-skin'](validEvent);
     // After 10ms, renderer reports success
     setTimeout(() => {
-      mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true });
+      mockIpcHandlers['report-skin-loaded'](mainEvent, 'birds', { success: true, requestId: mockWindowSent.options.requestId });
     }, 10);
 
     const result = await confirmPromise;

@@ -22,7 +22,7 @@ function init(dependencies) {
 
   ipcMain.handle('get-available-overlay-keys', (event, skinId) => {
     if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return [];
-    return getAvailableOverlayKeys(skinId || currentSkinId);
+    return getAvailableOverlayKeys(skinId || confirmedSkinId);
   });
 
   ipcMain.handle('get-skin-gallery-items', (event) => {
@@ -39,6 +39,9 @@ function init(dependencies) {
     }
     if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
       return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
+    }
+    if (previewTargetSkinId) {
+      return createIpcFailure('STALE_REQUEST', 'A skin preview is active');
     }
     try {
       confirmedSkinId = skinId;
@@ -59,7 +62,7 @@ function init(dependencies) {
       return createIpcFailure('FORBIDDEN', 'Skin report access denied');
     }
     const success = result.success !== false;
-    recordSkinLoadResult(skinId, success, result.error || null);
+    recordSkinLoadResult(skinId, success, result.error || null, result.requestId);
     return createIpcSuccess({ skinId, success });
   });
 
@@ -108,15 +111,20 @@ function init(dependencies) {
     }
     try {
       const targetSkinId = previewTargetSkinId || confirmedSkinId;
+      const requestId = skinLoadRequestId;
 
-      if (previewTargetSkinId && previewTargetSkinId !== confirmedSkinId) {
-        if (lastLoadedSkinId !== targetSkinId) {
-          const loadResult = await waitForSkinLoad(targetSkinId, 2500);
+      if (previewTargetSkinId) {
+        if (lastLoadedSkinId !== targetSkinId || lastLoadedRequestId !== requestId) {
+          const loadResult = await waitForSkinLoad(targetSkinId, requestId, 2500);
           if (!loadResult.success) {
             return createIpcFailure('LOAD_FAILED', loadResult.error || 'Skin failed to load');
           }
         } else if (!lastLoadSuccess) {
           return createIpcFailure('LOAD_FAILED', lastLoadError || 'Skin failed to load');
+        }
+
+        if (requestId !== skinLoadRequestId || targetSkinId !== previewTargetSkinId || !isSkinSelectorRequest(event)) {
+          return createIpcFailure('STALE_REQUEST', 'Skin preview changed');
         }
 
         confirmedSkinId = targetSkinId;
@@ -210,16 +218,28 @@ let previewTargetSkinId = null; // 当前正在预览的皮肤 ID（未确认时
 let lastLoadedSkinId = 'default';
 let lastLoadSuccess = true;
 let lastLoadError = null;
+let skinLoadRequestId = 0;
+let lastLoadedRequestId = null;
 let pendingLoadResolvers = [];
 
-function recordSkinLoadResult(skinId, success, error = null) {
+function cancelPendingSkinLoads(error) {
+  for (const item of pendingLoadResolvers) {
+    clearTimeout(item.timer);
+    item.resolve({ success: false, error });
+  }
+  pendingLoadResolvers = [];
+}
+
+function recordSkinLoadResult(skinId, success, error = null, requestId) {
+  if (previewTargetSkinId && (requestId !== skinLoadRequestId || skinId !== previewTargetSkinId)) return;
   lastLoadedSkinId = skinId;
+  lastLoadedRequestId = requestId;
   lastLoadSuccess = success;
   lastLoadError = error;
 
   const remaining = [];
   for (const item of pendingLoadResolvers) {
-    if (item.skinId === skinId) {
+    if (item.skinId === skinId && item.requestId === requestId) {
       if (item.timer) clearTimeout(item.timer);
       item.resolve({ success, error });
     } else {
@@ -229,8 +249,8 @@ function recordSkinLoadResult(skinId, success, error = null) {
   pendingLoadResolvers = remaining;
 }
 
-function waitForSkinLoad(targetSkinId, timeoutMs = 2500) {
-  if (lastLoadedSkinId === targetSkinId) {
+function waitForSkinLoad(targetSkinId, requestId, timeoutMs = 2500) {
+  if (lastLoadedSkinId === targetSkinId && lastLoadedRequestId === requestId) {
     return Promise.resolve({ success: lastLoadSuccess, error: lastLoadError });
   }
   return new Promise((resolve) => {
@@ -240,7 +260,7 @@ function waitForSkinLoad(targetSkinId, timeoutMs = 2500) {
       pendingLoadResolvers = pendingLoadResolvers.filter(p => p !== entry);
       resolve({ success: false, error: 'TIMEOUT' });
     }, timeoutMs);
-    entry = { skinId: targetSkinId, resolve, timer };
+    entry = { skinId: targetSkinId, requestId, resolve, timer };
     pendingLoadResolvers.push(entry);
   });
 }
@@ -336,14 +356,20 @@ function selectSkin(skinId) {
   const options = arguments[1] || {};
   const { windowManager, sendPomodoroState, trayManager } = deps;
   const isPreview = options.isPreview === true;
+  cancelPendingSkinLoads('SUPERSEDED');
+  const requestId = ++skinLoadRequestId;
 
   if (isPreview) {
     previewTargetSkinId = skinId;
+    lastLoadedSkinId = null;
+    lastLoadedRequestId = null;
+    lastLoadSuccess = false;
+    lastLoadError = null;
     if (typeof deps.cancelScreensaverSession === 'function') {
       deps.cancelScreensaverSession('skin-changed');
     }
     if (windowManager?.mainWindow && !windowManager.mainWindow.isDestroyed()) {
-      windowManager.mainWindow.webContents.send('switch-skin', skinId, { isPreview: true });
+      windowManager.mainWindow.webContents.send('switch-skin', skinId, { isPreview: true, requestId });
     }
   } else {
     confirmedSkinId = skinId;
@@ -376,11 +402,8 @@ function isSkinSelectorRequest(event) {
 }
 
 function revertSkinPreview(originalSkinId) {
-  for (const item of pendingLoadResolvers) {
-    if (item.timer) clearTimeout(item.timer);
-    item.resolve({ success: false, error: 'CANCELLED' });
-  }
-  pendingLoadResolvers = [];
+  cancelPendingSkinLoads('CANCELLED');
+  ++skinLoadRequestId;
 
   const targetId = originalSkinId || confirmedSkinId;
   confirmedSkinId = targetId;
@@ -443,6 +466,8 @@ module.exports = {
   getConfirmedSkinId: () => confirmedSkinId,
   getPreviewSkinId: () => previewTargetSkinId,
   setCurrentSkinId: (val) => {
+    cancelPendingSkinLoads('CANCELLED');
+    ++skinLoadRequestId;
     confirmedSkinId = val;
     previewTargetSkinId = null;
     lastLoadedSkinId = val;

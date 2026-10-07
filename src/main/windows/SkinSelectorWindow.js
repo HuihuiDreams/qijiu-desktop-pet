@@ -95,16 +95,19 @@ function createSkinSelectorWindow() {
 function openSkinSelectorWindow() {
   cancelPendingBlurClose();
   const wasAlreadyCreated = !!(windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed());
+  const preserveSelection = wasAlreadyCreated && skinSelectorOriginalSkinId != null;
   const win = createSkinSelectorWindow();
-  skinSelectorOriginalSkinId = deps.getCurrentSkinId();
-  skinSelectorSelectionInProgress = false;
+  if (!preserveSelection) {
+    skinSelectorOriginalSkinId = deps.getCurrentSkinId();
+    skinSelectorSelectionInProgress = false;
+  }
   if (!win.isVisible()) {
     win.show();
   }
   win.moveTop();
   win.focus();
   if (wasAlreadyCreated) {
-    sendSkinSelectorData({ isInitialLoad: false });
+    sendSkinSelectorData({ isInitialLoad: false, resetSelection: !preserveSelection });
   }
   return win;
 }
@@ -154,11 +157,12 @@ function handleTrayMenuOpen() {
 function handleTrayMenuClose() {
   isTrayMenuOpen = false;
   lastTrayInteractionTime = Date.now();
+  scheduleBlurClose({ waitForTray: true });
 }
 
 function handleTrayInteraction() {
   lastTrayInteractionTime = Date.now();
-  cancelPendingBlurClose();
+  scheduleBlurClose({ waitForTray: true });
 }
 
 function isDeskPetContextActive() {
@@ -179,8 +183,10 @@ function cancelPendingBlurClose() {
   }
 }
 
-function scheduleBlurClose() {
-  if (skinSelectorCloseInProgress || isDeskPetContextActive()) return;
+function scheduleBlurClose({ waitForTray = false } = {}) {
+  if (skinSelectorCloseInProgress || !windowManager.skinSelectorWindow || windowManager.skinSelectorWindow.isDestroyed()) return;
+  // A tray handoff already blurred the selector; recheck even without another blur.
+  if (!waitForTray && isDeskPetContextActive()) return;
 
   cancelPendingBlurClose();
   skinSelectorFocusListener = (_event, win) => {
@@ -196,7 +202,7 @@ function scheduleBlurClose() {
     if (!isDeskPetContextActive()) {
       closeSkinSelectorWindow();
     }
-  }, SKIN_SELECTOR_FOCUS_HANDOFF_MS);
+  }, (waitForTray ? TRAY_INTERACTION_GRACE_MS : 0) + SKIN_SELECTOR_FOCUS_HANDOFF_MS);
 }
 
 function closeSkinSelectorWindow() {

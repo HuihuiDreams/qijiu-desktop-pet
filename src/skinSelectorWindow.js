@@ -55,9 +55,11 @@ async function previewSkin(skinId) {
 async function confirmSelection() {
   if (previewInFlight) return;
   try {
-    await window.skinSelectorAPI.confirmSkin();
+    const result = await window.skinSelectorAPI.confirmSkin();
+    if (!result?.success) setStatus(t('skinSelectorError'));
   } catch (error) {
     console.error('Failed to confirm skin:', error);
+    setStatus(t('skinSelectorError'));
   }
 }
 

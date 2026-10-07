@@ -115,7 +115,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
-├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
+├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（Windows 以 screenToDipRect 归一化前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；以 Electron screenToDipRect 将原生物理窗口矩形转换为 DIP，适配混合 DPI 多屏后再与完整 display.bounds 比较；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
@@ -362,6 +362,16 @@ src/assets/{skinId}/
 ```
 
 `services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
+
+`SkinManager` 换肤时启用 `SpriteView.attach` 的 `validateRequired` 校验，区分必要立绘/走动帧与可选状态动作图片：必要资源的加载错误会传递至 `SkinSwitchController` 和主进程，确认失败时保持已确认皮肤及存档不变；回选已确认皮肤也校验本次预览结果，可选动作图片缺失继续降级。应用初次挂载默认图片仍允许降级，避免图片损坏阻断启动。选肤器使用现有多语言错误提示显示确认失败。
+
+重复打开仍在进行的选肤会话时，`SkinSelectorWindow` 保留会话原皮肤，并以 `resetSelection: false` 刷新画廊，避免覆盖渲染端当前预览高亮；新会话才初始化原皮肤与卡片选择。
+
+每次试穿由主进程生成独立 `requestId`，通过 `switch-skin` 选项下发并由 `report-skin-loaded` 结果回传；仅当前预览请求的结果可解锁确认。换肤或取消会清理旧等待，确认在提交前再次检查请求与发件窗口，避免同一皮肤的旧回报或已取消会话覆盖新选择。预览期间拒绝迟到的 `set-current-skin` 回写。
+
+托盘菜单展开时暂停选肤器失焦关闭，菜单关闭或仅点击托盘后主动安排宽限期后的焦点检查，不依赖第二次 `blur`；焦点确已离开应用时关闭并回滚试穿，应用窗口重新获得焦点或菜单再次展开则取消检查。窗口关闭会清理计时器和焦点监听器。
+
+`get-available-overlay-keys` 未传皮肤编号或传空字符串时，默认查询主进程已确认皮肤的互动素材，避免临时试穿状态影响默认查询。
 
 ### 3.9 多语言系统
 

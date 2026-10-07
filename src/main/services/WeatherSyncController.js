@@ -63,16 +63,16 @@ function init(dependencies) {
         return { success: false };
       }
 
-      // Re-read latest stored settings so that user changes (e.g. toggling enabled off
-      // via tray) while geocoding was in-flight are preserved rather than overwritten by currentStored.
-      const latestStored = getStoredWeatherSyncSettings();
+      // In-memory settings include the latest user intent even while its geocoding
+      // has not completed and the store still contains an older toggle preference.
+      const latestSettings = weatherSyncSettings;
       weatherSyncSettings = {
         ...processed,
-        enabled: latestStored.enabled,
-        refreshIntervalMinutes: latestStored.refreshIntervalMinutes,
+        enabled: latestSettings.enabled,
+        refreshIntervalMinutes: latestSettings.refreshIntervalMinutes,
       };
 
-      // Invalidate any older in-flight updateWeatherSyncSettings
+      // The pending toggle intent is merged above; discard its older city result.
       ++weatherSyncSettingsUpdateId;
 
       saveWeatherSyncSettings(weatherSyncSettings);

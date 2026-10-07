@@ -263,13 +263,13 @@ test('applySkinById with isPreview: true does not setCurrentSkin or saveCurrentS
     saveCurrentState: async () => { saveCalled = true; },
   });
 
-  await controller.applySkinById('birds', { isPreview: true });
+  await controller.applySkinById('birds', { isPreview: true, requestId: 17 });
 
   assert.equal(skinManager.applyCalls.length, 1);
   assert.equal(skinManager.applyCalls[0].skinId, 'birds');
   assert.deepEqual(electronAPI.setCurrentSkinCalls, [], 'must not call setCurrentSkin on preview');
   assert.equal(saveCalled, false, 'must not saveCurrentState on preview');
-  assert.deepEqual(reportSkinLoadedCalls, [{ skinId: 'birds', res: { success: true } }]);
+  assert.deepEqual(reportSkinLoadedCalls, [{ skinId: 'birds', res: { success: true, requestId: 17 } }]);
 });
 
 test('applySkinById reports error to reportSkinLoaded when applySkin fails', async () => {
@@ -286,11 +286,11 @@ test('applySkinById reports error to reportSkinLoaded when applySkin fails', asy
     saveCurrentState: async () => {},
   });
 
-  await controller.applySkinById('birds', { isPreview: true });
+  await controller.applySkinById('birds', { isPreview: true, requestId: 18 });
 
   assert.equal(reportSkinLoadedCalls.length, 1);
   assert.equal(reportSkinLoadedCalls[0].skinId, 'birds');
   assert.equal(reportSkinLoadedCalls[0].res.success, false);
   assert.equal(reportSkinLoadedCalls[0].res.error, 'failed to load sprite');
+  assert.equal(reportSkinLoadedCalls[0].res.requestId, 18);
 });
-
