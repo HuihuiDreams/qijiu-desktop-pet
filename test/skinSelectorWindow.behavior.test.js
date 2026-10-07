@@ -1,5 +1,4 @@
 const assert = require('node:assert/strict');
-const { EventEmitter } = require('node:events');
 const Module = require('node:module');
 const test = require('node:test');
 
@@ -7,23 +6,16 @@ const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWind
 
 function loadFreshSkinSelectorWindow(extraDeps = {}) {
   const windowManager = { skinSelectorWindow: null };
-  const app = new EventEmitter();
-  let appActive = false;
-  let focusedWindow = null;
-  app.isActive = () => appActive;
   const originalLoad = Module._load;
   delete require.cache[WINDOW_MODULE_PATH];
 
   class FakeBrowserWindow {
-    static getFocusedWindow() {
-      return focusedWindow;
-    }
-
     constructor(options) {
       this.options = options || {};
       this.listeners = {};
       this.closeCalls = 0;
       this.destroyed = false;
+      this.minimized = false;
       this.webContents = {
         on: () => {},
         setWindowOpenHandler: () => {},
@@ -45,6 +37,12 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
       return false;
     }
 
+    isMinimized() { return this.minimized; }
+
+    restore() { this.minimized = false; }
+
+    blur() { this.listeners.blur?.(); }
+
     show() {}
 
     moveTop() {}
@@ -53,6 +51,7 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
 
     close() {
       this.closeCalls += 1;
+      this.listeners.close?.();
       // macOS can emit blur while a focused floating window is closing.
       this.listeners.blur?.();
       this.destroyed = true;
@@ -63,9 +62,7 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
   Module._load = function loadSkinSelectorDependencies(request, parent, isMain) {
     if (parent?.filename === WINDOW_MODULE_PATH && request === 'electron') {
       return {
-        app,
         BrowserWindow: FakeBrowserWindow,
-        ipcMain: {},
         screen: {
           getCursorScreenPoint: () => ({ x: 0, y: 0 }),
           getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1600, height: 900 } }),
@@ -90,17 +87,49 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
     return {
       skinSelectorWindow,
       windowManager,
-      setAppActive: (active) => { appActive = active; },
-      setFocusedWindow: (win) => { focusedWindow = win; },
-      handOffFocusTo: (win) => {
-        focusedWindow = win;
-        app.emit('browser-window-focus', {}, win);
-      },
     };
   } finally {
     Module._load = originalLoad;
   }
 }
+
+test('retains preview when focus moves to another app or the Windows tray overflow', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  let rollbackCount = 0;
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow({
+    revertSkinPreview: () => { rollbackCount++; },
+  });
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  skinSelectorWindow.setSkinSelectorSelectionInProgress(true);
+  win.blur();
+  t.mock.timers.tick(5000);
+
+  assert.equal(win.closeCalls, 0);
+  assert.equal(rollbackCount, 0);
+  assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'default');
+  assert.equal(skinSelectorWindow.isSkinSelectorSelectionInProgress(), true);
+  skinSelectorWindow.closeSkinSelectorWindow();
+  assert.equal(rollbackCount, 1);
+});
+
+test('native close of a skin selector rolls back the preview exactly once', () => {
+  let rollbackCount = 0;
+  const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow({
+    revertSkinPreview: () => { rollbackCount++; },
+  });
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  win.close();
+
+  assert.equal(rollbackCount, 1);
+  assert.equal(windowManager.skinSelectorWindow, null);
+});
+
+test('the selector uses ordinary window stacking and can be minimized', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+  assert.equal(win.options.alwaysOnTop, false);
+  assert.equal(win.options.minimizable, true);
+});
 
 test('closing the skin selector ignores the blur emitted by its own close operation', () => {
   const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow();
@@ -109,45 +138,6 @@ test('closing the skin selector ignores the blur emitted by its own close operat
   assert.doesNotThrow(() => skinSelectorWindow.closeSkinSelectorWindow());
   assert.equal(win.closeCalls, 1);
   assert.equal(windowManager.skinSelectorWindow, null);
-});
-
-test('a delayed focus handoff to another DeskPet window keeps the skin selector open', () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow, handOffFocusTo } = loadFreshSkinSelectorWindow();
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  const pomodoroWindow = { isDestroyed: () => false };
-  windowManager.pomodoroWindow = pomodoroWindow;
-  setFocusedWindow(null);
-
-  selectorWindow.listeners.blur();
-  handOffFocusTo(pomodoroWindow);
-
-  assert.equal(selectorWindow.closeCalls, 0);
-  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
-});
-
-test('moving focus outside DeskPet closes the skin selector after the handoff window', async () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-
-  selectorWindow.listeners.blur();
-  await new Promise((resolve) => setTimeout(resolve, 120));
-
-  assert.equal(selectorWindow.closeCalls, 1);
-  assert.equal(windowManager.skinSelectorWindow, null);
-});
-
-test('an active DeskPet app keeps the selector open when macOS reports no focused window', async () => {
-  const { skinSelectorWindow, windowManager, setAppActive, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-  setAppActive(true);
-
-  selectorWindow.listeners.blur();
-  await new Promise((resolve) => setTimeout(resolve, 120));
-
-  assert.equal(selectorWindow.closeCalls, 0);
-  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
 });
 
 test('sendSkinSelectorData returns immediately when window is null or destroyed', () => {
@@ -247,34 +237,6 @@ test('closeSkinSelectorWindow when window is already null/destroyed resets close
   assert.doesNotThrow(() => skinSelectorWindow.closeSkinSelectorWindow());
 });
 
-test('scheduleBlurClose does not schedule when close is already in progress', async () => {
-  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
-  const win = skinSelectorWindow.openSkinSelectorWindow();
-  
-  win.close = () => {
-    win.closeCalls += 1;
-  };
-
-  skinSelectorWindow.closeSkinSelectorWindow();
-  win.listeners.blur();
-  
-  await new Promise((resolve) => setTimeout(resolve, 120));
-  assert.equal(win.closeCalls, 1);
-});
-
-test('scheduleBlurClose does not schedule when a DeskPet window is focused', async () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const win = skinSelectorWindow.openSkinSelectorWindow();
-  
-  windowManager.mainWindow = {};
-  setFocusedWindow(windowManager.mainWindow);
-  
-  win.listeners.blur();
-  await new Promise((resolve) => setTimeout(resolve, 120));
-  
-  assert.equal(win.closeCalls, 0);
-});
-
 test('getter/setter verification', () => {
   const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
   
@@ -321,111 +283,15 @@ test('creates the skin selector window with hasShadow false to prevent macOS bor
   assert.equal(win.options.frame, false);
 });
 
-test('opening the tray menu cancels pending blur close and keeps skin selector open', async () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-
-  // Window blurs as user clicks tray icon
-  selectorWindow.listeners.blur();
-
-  // Tray menu opens
-  skinSelectorWindow.handleTrayMenuOpen();
-
-  await new Promise((resolve) => setTimeout(resolve, 130));
-
-  assert.equal(selectorWindow.closeCalls, 0);
-  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
-});
-
-test('a recent tray interaction keeps skin selector open when blur occurs', async () => {
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-
-  // Tray menu was clicked/interacted with
-  skinSelectorWindow.handleTrayInteraction();
-
-  // Window blurs
-  selectorWindow.listeners.blur();
-
-  await new Promise((resolve) => setTimeout(resolve, 130));
-
-  assert.equal(selectorWindow.closeCalls, 0);
-  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
-});
-
-test('deps.isTrayActive returning true keeps skin selector open on blur', async () => {
-  let trayActive = true;
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow({
-    isTrayActive: () => trayActive,
-  });
-  const selectorWindow = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-
-  selectorWindow.listeners.blur();
-  await new Promise((resolve) => setTimeout(resolve, 130));
-
-  assert.equal(selectorWindow.closeCalls, 0);
-  assert.equal(windowManager.skinSelectorWindow, selectorWindow);
-
-  // Once tray is no longer active, blur closes window
-  trayActive = false;
-  selectorWindow.listeners.blur();
-  await new Promise((resolve) => setTimeout(resolve, 130));
-
-  assert.equal(selectorWindow.closeCalls, 1);
-  assert.equal(windowManager.skinSelectorWindow, null);
-});
-
-test('dismissing the tray outside DeskPet closes and rolls back without a second blur', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
-  let rollbackCount = 0;
-  const { skinSelectorWindow, windowManager, setFocusedWindow } = loadFreshSkinSelectorWindow({
-    revertSkinPreview: () => { rollbackCount += 1; },
-  });
+test('reopening a minimized selector restores the same preview session', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
   const win = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-  skinSelectorWindow.handleTrayMenuOpen();
-  win.listeners.blur();
-  skinSelectorWindow.handleTrayMenuClose();
+  let sentOptions;
+  win.webContents.send = (channel, items, options) => { sentOptions = options; };
+  win.minimized = true;
 
-  t.mock.timers.tick(799);
-  assert.equal(win.closeCalls, 0, 'tray focus handoff still has a grace period');
-  t.mock.timers.tick(201);
-  assert.equal(win.closeCalls, 1);
-  assert.equal(rollbackCount, 1);
-  assert.equal(windowManager.skinSelectorWindow, null);
-});
-
-test('a tray click without a menu eventually closes an unfocused selector', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
-  const { skinSelectorWindow, setFocusedWindow } = loadFreshSkinSelectorWindow();
-  const win = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-  skinSelectorWindow.handleTrayInteraction();
-  win.listeners.blur();
-
-  t.mock.timers.tick(1000);
-  assert.equal(win.closeCalls, 1);
-});
-
-test('returning focus or reopening the tray cancels its pending outside-focus check', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
-  const { skinSelectorWindow, setFocusedWindow, handOffFocusTo } = loadFreshSkinSelectorWindow();
-  const win = skinSelectorWindow.openSkinSelectorWindow();
-  setFocusedWindow(null);
-  skinSelectorWindow.handleTrayMenuOpen();
-  win.listeners.blur();
-  skinSelectorWindow.handleTrayMenuClose();
-  handOffFocusTo(win);
-  t.mock.timers.tick(1000);
-  assert.equal(win.closeCalls, 0);
-
-  setFocusedWindow(null);
-  skinSelectorWindow.handleTrayInteraction();
-  skinSelectorWindow.handleTrayMenuOpen();
-  t.mock.timers.tick(1000);
-  assert.equal(win.closeCalls, 0);
-  skinSelectorWindow.closeSkinSelectorWindow();
+  assert.equal(skinSelectorWindow.openSkinSelectorWindow(), win);
+  assert.equal(win.minimized, false);
+  assert.equal(sentOptions.resetSelection, false);
+  assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'default');
 });

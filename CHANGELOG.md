@@ -25,13 +25,12 @@
 - 修复审查问题 R6：在 `WeatherSyncController.js` 中为城市查询引入 `weatherSyncCityRequestId` 请求仲裁并在完成时重新读取最新配置，丢弃过时在途城市结果；消除在城市地理编码期间通过托盘关闭天气同步时，旧查询完成无条件按发起前快照覆盖写盘导致同步被意外“复活”的竞态漏洞；同时确保多城市连续提交或关窗重开逆序到达时始终以最新提交城市为准；新增在途开关切换与乱序城市结算的自动化行为测试（[ADR-038](docs/decisions/ADR-038-weather-sync.md)）。
 - 修复审查问题 R7：主进程 `AppLifecycle.initTray` 中透传 `sendSkinSelectorData` 参数，并在 `SkinSelectorWindow.sendSkinSelectorData` 中合并传入选项，使托盘切换语言时下发的 `{ resetSelection: false }` 不被丢弃；选肤器窗口接收语言变更刷新展示时可靠保留当前试穿中的临时选中卡片与高亮状态，避免界面被错误重置为已保存皮肤；补全托盘生命周期与窗口选项透传的自动化回归测试（[ADR-024](docs/decisions/ADR-024-i18n-multilingual-support.md)、[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复选肤窗口外侧黑色阴影边框回归问题：为 `SkinSelectorWindow.js` 中 `BrowserWindow` 实例补齐 `hasShadow: false` 与 `resizable: false`，与其他透明子窗口（`CitySettingWindow`、`PomodoroWindow`、`StatusWindow`）规范对齐，彻底消除 macOS 下透明无边框窗口默认系统投影被合成器渲染为外侧一圈黑色边框/矩形框的视觉瑕疵。
-- 修复选肤窗口开启时点击托盘菜单导致窗口消失的回归问题：在 `TrayManager.js` 与 `SkinSelectorWindow.js` 中建立托盘活动生命周期互通机制，通过监听托盘菜单 `menu-will-show`/`menu-will-close` 与点击交互事件维护 `isTrayActive` 及交互宽限期；当用户点击托盘菜单或在其展开期间，立即取消并抑制选肤窗的失焦关闭（`scheduleBlurClose`），杜绝 macOS 下因原生状态栏菜单接管焦点导致误判为焦点离开应用而连带销毁选肤窗口与撤销预览的缺陷。
 - 修复皮肤加载失败仍可确认的问题：主动换肤时必要立绘与走动帧加载失败会向主进程报告并拒绝保存，回选已确认皮肤也检查本次加载；启动及可选动作图片保留降级行为，选肤器显示确认失败提示并允许取消或重新选择（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复试穿期间重复打开选肤器导致卡片重置、确认结果与界面不一致的问题：已有选肤会话保留原皮肤和预览高亮，只刷新画廊数据（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复同一皮肤重复试穿时复用旧加载结果的问题：每次预览生成独立请求编号，加载回报与确认等待绑定当前请求；切换、取消或关窗使旧确认失效，防止旧结果提交皮肤或关闭新会话（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
-- 修复托盘菜单关闭后选肤器失焦不再回滚的问题：菜单关闭或仅点击托盘后，在交互宽限期结束时重新检查应用焦点；点击其他应用会关闭并撤销试穿，返回应用或重新打开菜单会取消待执行检查（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复城市查询覆盖仍在地理编码中的天气开启操作：城市结算合并控制器内存中的最新开关与刷新间隔，避免旧存档将新开启意图写回关闭；覆盖两种查询完成顺序（[ADR-038](docs/decisions/ADR-038-weather-sync.md)）。
 - 修复省略皮肤编号查询互动叠加层时引用已删除变量导致的 `ReferenceError`：查询默认使用主进程已确认皮肤，补充省略参数与空字符串的回归测试。
+- 修复选肤器切换工作窗口或打开 Windows 托盘隐藏图标区后消失的问题：取消失焦自动关闭，窗口采用普通层级并允许最小化，再次打开恢复同一试穿会话；删除焦点计时器与托盘保护接线，恢复系统原生托盘菜单，仅确定、取消或主动关闭结束选肤，系统关闭窗口也安全回滚试穿；补充回归与真实 Electron 测试（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 
 ## [0.10.5] - 2026-09-15
 

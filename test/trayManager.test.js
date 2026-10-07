@@ -10,15 +10,20 @@ const electronMock = {
   },
   get screen() { return mockScreen; },
   Tray: class {
-    constructor() { mockTrayInstance = this; this.events = {}; }
-    on(evt, cb) { this.events[evt] = cb; }
+    constructor() { mockTrayInstance = this; }
     setToolTip(t) { this.tooltip = t; }
     setContextMenu(m) { this.contextMenu = m; }
   }
 };
 
 let mockApp = { getVersion: () => '1.0.0', isPackaged: true, quit: () => {} };
-let mockMenu = { buildFromTemplate: (template) => template };
+let mockLastMenu;
+function buildMockMenu(template) {
+  const menu = [...template];
+  mockLastMenu = menu;
+  return menu;
+}
+let mockMenu = { buildFromTemplate: buildMockMenu };
 let mockScreen = { getAllDisplays: () => [{ id: 1 }, { id: 2 }] };
 let mockTrayInstance;
 
@@ -89,7 +94,8 @@ test('TrayManager - Full Coverage', async (t) => {
     mockApp.getVersion = () => '1.0.0';
     mockApp.isPackaged = true;
     mockApp.quit = () => {};
-    mockMenu.buildFromTemplate = (template) => template;
+    mockMenu.buildFromTemplate = buildMockMenu;
+    mockLastMenu = null;
     mockScreen.getAllDisplays = () => [{ id: 1 }, { id: 2 }];
     mockTrayInstance = null;
   });
@@ -99,13 +105,14 @@ test('TrayManager - Full Coverage', async (t) => {
     TrayManager.init(deps);
     withPlatform('win32', () => { TrayManager.createTray(); });
     assert.ok(mockTrayInstance);
+    assert.equal(mockTrayInstance.contextMenu, mockLastMenu);
   });
 
   await t.test('darwin platform handles template images and display switches', () => {
     const deps = createMockDeps();
     TrayManager.init(deps);
     withPlatform('darwin', () => { TrayManager.createTray(); });
-    const menu = mockTrayInstance.contextMenu;
+    const menu = mockLastMenu;
     const switchScreenItem = menu.find(i => i.label && i.label.includes('traySwitchScreen'));
     assert.ok(switchScreenItem);
   });
@@ -171,7 +178,7 @@ test('TrayManager - Full Coverage', async (t) => {
     TrayManager.init(deps);
     TrayManager.createTray();
     
-    const findItem = (labelFragment) => mockTrayInstance.contextMenu.find(i => i.label && i.label.includes(labelFragment));
+    const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
     
     findItem('trayChooseSkin').click();
     assert.ok(actions.includes('openSkinSelector'));
@@ -247,18 +254,18 @@ test('TrayManager - Full Coverage', async (t) => {
     TrayManager.init(deps);
     TrayManager.createTray();
     
-    let item = mockTrayInstance.contextMenu.find(i => i.click && i.label && i.label.includes('trayPomodoroOpen'));
+    let item = mockLastMenu.find(i => i.click && i.label && i.label.includes('trayPomodoroOpen'));
     assert.ok(item);
     
     currentPomodoro = { status: 'running', remainingMs: 65000 };
     TrayManager.refreshTrayMenu();
-    item = mockTrayInstance.contextMenu.find(i => i.click && i.label && i.label.includes('专注中'));
+    item = mockLastMenu.find(i => i.click && i.label && i.label.includes('专注中'));
     assert.ok(item, 'Should show running label');
     assert.ok(item.label.includes('2'), 'Should ceil minutes to 2');
     
     currentPomodoro = { status: 'completed' };
     TrayManager.refreshTrayMenu();
-    item = mockTrayInstance.contextMenu.find(i => i.click && i.label && i.label.includes('专注完成'));
+    item = mockLastMenu.find(i => i.click && i.label && i.label.includes('专注完成'));
     assert.ok(item, 'Should show completed label');
     
     let opened = false;
@@ -267,48 +274,4 @@ test('TrayManager - Full Coverage', async (t) => {
     assert.ok(opened);
   });
 
-  await t.test('isTrayActive and tray menu lifecycle events report correct activity', () => {
-    const deps = createMockDeps();
-    let menuOpenCalls = 0;
-    let menuCloseCalls = 0;
-    let interactionCalls = 0;
-    deps.onTrayMenuOpen = () => { menuOpenCalls++; };
-    deps.onTrayMenuClose = () => { menuCloseCalls++; };
-    deps.onTrayInteraction = () => { interactionCalls++; };
-
-    let menuListeners = {};
-    mockMenu.buildFromTemplate = (template) => {
-      const arr = [...template];
-      arr.on = (evt, cb) => {
-        menuListeners[evt] = cb;
-      };
-      return arr;
-    };
-
-    TrayManager.init(deps);
-    TrayManager.createTray();
-
-    assert.equal(typeof menuListeners['menu-will-show'], 'function');
-    assert.equal(typeof menuListeners['menu-will-close'], 'function');
-
-    assert.equal(TrayManager.isTrayMenuOpen(), false);
-
-    // Simulate menu show
-    menuListeners['menu-will-show']();
-    assert.equal(TrayManager.isTrayMenuOpen(), true);
-    assert.equal(TrayManager.isTrayActive(), true);
-    assert.equal(menuOpenCalls, 1);
-
-    // Simulate menu close
-    menuListeners['menu-will-close']();
-    assert.equal(TrayManager.isTrayMenuOpen(), false);
-    assert.equal(TrayManager.isTrayActive(), true);
-    assert.equal(menuCloseCalls, 1);
-
-    // Simulate tray click
-    mockTrayInstance.events.click();
-    assert.equal(interactionCalls, 1);
-    assert.equal(TrayManager.isTrayActive(), true);
-  });
 });
-

@@ -2,36 +2,6 @@ const { app, Menu, nativeImage, screen } = require('electron');
 const { SCREENSAVER_ALLOWED_IDLE_MINUTES } = require('./services/screensaverAllowedMinutes');
 let tray = null;
 let deps = {};
-let isTrayMenuOpen = false;
-let lastTrayInteractionTime = 0;
-const TRAY_INTERACTION_GRACE_MS = 800;
-
-function isTrayActive() {
-  if (isTrayMenuOpen) return true;
-  if (Date.now() - lastTrayInteractionTime < TRAY_INTERACTION_GRACE_MS) return true;
-  return false;
-}
-
-function recordTrayInteraction() {
-  lastTrayInteractionTime = Date.now();
-  if (typeof deps.onTrayInteraction === 'function') {
-    deps.onTrayInteraction();
-  }
-}
-
-function setTrayMenuOpen(open) {
-  isTrayMenuOpen = Boolean(open);
-  lastTrayInteractionTime = Date.now();
-  if (isTrayMenuOpen) {
-    if (typeof deps.onTrayMenuOpen === 'function') {
-      deps.onTrayMenuOpen();
-    }
-  } else {
-    if (typeof deps.onTrayMenuClose === 'function') {
-      deps.onTrayMenuClose();
-    }
-  }
-}
 
 function init(dependencies) {
   deps = dependencies;
@@ -289,15 +259,6 @@ function buildTrayMenu() {
     },
   ]);
 
-  if (menu && typeof menu.on === 'function') {
-    menu.on('menu-will-show', () => {
-      setTrayMenuOpen(true);
-    });
-    menu.on('menu-will-close', () => {
-      setTrayMenuOpen(false);
-    });
-  }
-
   return menu;
 }
 
@@ -351,16 +312,6 @@ function createTray() {
 
   const { Tray } = require('electron');
   tray = new Tray(icon);
-  
-  if (typeof tray.on === 'function') {
-    tray.on('click', () => {
-      recordTrayInteraction();
-    });
-    tray.on('right-click', () => {
-      recordTrayInteraction();
-    });
-  }
-  
   refreshTrayMenu();
 }
 
@@ -382,8 +333,4 @@ module.exports = {
   trayT,
   trayText,
   getTray,
-  isTrayActive,
-  isTrayMenuOpen: () => isTrayMenuOpen,
-  recordTrayInteraction,
-  setTrayMenuOpen
 };

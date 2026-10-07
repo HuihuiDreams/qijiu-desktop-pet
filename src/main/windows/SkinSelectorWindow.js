@@ -1,15 +1,11 @@
-const { app, BrowserWindow, screen, ipcMain } = require('electron');
+const { BrowserWindow, screen } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
 let skinSelectorCloseInProgress = false;
-let skinSelectorBlurCloseTimer = null;
-let skinSelectorFocusListener = null;
 let deps = {};
-
-const SKIN_SELECTOR_FOCUS_HANDOFF_MS = 100;
 
 function init(dependencies) {
   deps = dependencies;
@@ -59,9 +55,9 @@ function createSkinSelectorWindow() {
     show: false,
     transparent: true,
     frame: false,
-    alwaysOnTop: true,
+    alwaysOnTop: false,
     resizable: false,
-    minimizable: false,
+    minimizable: true,
     maximizable: false,
     hasShadow: false,
     webPreferences: {
@@ -77,23 +73,23 @@ function createSkinSelectorWindow() {
   windowManager.skinSelectorWindow.webContents.on('did-finish-load', () => sendSkinSelectorData({ isInitialLoad: true }));
   windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.skinSelectorWindow.on('close', () => {
+    if (skinSelectorCloseInProgress) return;
+    skinSelectorCloseInProgress = true;
+    cancelSkinSelection();
+    skinSelectorSelectionInProgress = false;
+  });
   windowManager.skinSelectorWindow.on('closed', () => {
-    cancelPendingBlurClose();
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
     skinSelectorCloseInProgress = false;
-  });
-  
-  windowManager.skinSelectorWindow.on('blur', () => {
-    scheduleBlurClose();
   });
 
   return windowManager.skinSelectorWindow;
 }
 
 function openSkinSelectorWindow() {
-  cancelPendingBlurClose();
   const wasAlreadyCreated = !!(windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed());
   const preserveSelection = wasAlreadyCreated && skinSelectorOriginalSkinId != null;
   const win = createSkinSelectorWindow();
@@ -101,6 +97,7 @@ function openSkinSelectorWindow() {
     skinSelectorOriginalSkinId = deps.getCurrentSkinId();
     skinSelectorSelectionInProgress = false;
   }
+  if (win.isMinimized()) win.restore();
   if (!win.isVisible()) {
     win.show();
   }
@@ -122,93 +119,9 @@ function cancelSkinSelection() {
   }
 }
 
-function isDeskPetWindow(win) {
-  return Boolean(win) && [
-    windowManager.mainWindow,
-    windowManager.statusWindow,
-    windowManager.skinSelectorWindow,
-    windowManager.pomodoroWindow,
-    windowManager.citySettingWindow,
-    windowManager.updateProgressWindow,
-  ].includes(win);
-}
-
-let isTrayMenuOpen = false;
-let lastTrayInteractionTime = 0;
-const TRAY_INTERACTION_GRACE_MS = 800;
-
-function isDeskPetAppActive() {
-  return typeof app.isActive === 'function' && app.isActive();
-}
-
-function isTrayActive() {
-  if (isTrayMenuOpen) return true;
-  if (Date.now() - lastTrayInteractionTime < TRAY_INTERACTION_GRACE_MS) return true;
-  if (typeof deps.isTrayActive === 'function' && deps.isTrayActive()) return true;
-  return false;
-}
-
-function handleTrayMenuOpen() {
-  isTrayMenuOpen = true;
-  lastTrayInteractionTime = Date.now();
-  cancelPendingBlurClose();
-}
-
-function handleTrayMenuClose() {
-  isTrayMenuOpen = false;
-  lastTrayInteractionTime = Date.now();
-  scheduleBlurClose({ waitForTray: true });
-}
-
-function handleTrayInteraction() {
-  lastTrayInteractionTime = Date.now();
-  scheduleBlurClose({ waitForTray: true });
-}
-
-function isDeskPetContextActive() {
-  if (isDeskPetWindow(BrowserWindow.getFocusedWindow())) return true;
-  if (isDeskPetAppActive()) return true;
-  if (isTrayActive()) return true;
-  return false;
-}
-
-function cancelPendingBlurClose() {
-  if (skinSelectorBlurCloseTimer) {
-    clearTimeout(skinSelectorBlurCloseTimer);
-    skinSelectorBlurCloseTimer = null;
-  }
-  if (skinSelectorFocusListener) {
-    app.removeListener('browser-window-focus', skinSelectorFocusListener);
-    skinSelectorFocusListener = null;
-  }
-}
-
-function scheduleBlurClose({ waitForTray = false } = {}) {
-  if (skinSelectorCloseInProgress || !windowManager.skinSelectorWindow || windowManager.skinSelectorWindow.isDestroyed()) return;
-  // A tray handoff already blurred the selector; recheck even without another blur.
-  if (!waitForTray && isDeskPetContextActive()) return;
-
-  cancelPendingBlurClose();
-  skinSelectorFocusListener = (_event, win) => {
-    if (isDeskPetWindow(win)) cancelPendingBlurClose();
-  };
-  app.on('browser-window-focus', skinSelectorFocusListener);
-  skinSelectorBlurCloseTimer = setTimeout(() => {
-    skinSelectorBlurCloseTimer = null;
-    if (skinSelectorFocusListener) {
-      app.removeListener('browser-window-focus', skinSelectorFocusListener);
-      skinSelectorFocusListener = null;
-    }
-    if (!isDeskPetContextActive()) {
-      closeSkinSelectorWindow();
-    }
-  }, (waitForTray ? TRAY_INTERACTION_GRACE_MS : 0) + SKIN_SELECTOR_FOCUS_HANDOFF_MS);
-}
-
 function closeSkinSelectorWindow() {
   if (skinSelectorCloseInProgress) return;
 
-  cancelPendingBlurClose();
   skinSelectorCloseInProgress = true;
   cancelSkinSelection();
   skinSelectorSelectionInProgress = false;
@@ -237,8 +150,4 @@ module.exports = {
   setSkinSelectorOriginalSkinId: (val) => { skinSelectorOriginalSkinId = val; },
   getSkinSelectorOriginalSkinId,
   sendSkinSelectorData,
-  handleTrayMenuOpen,
-  handleTrayMenuClose,
-  handleTrayInteraction,
-  isTrayActive
 };

@@ -187,4 +187,76 @@ test.describe('skin selector', () => {
     await closed;
     await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('default');
   });
+
+  test('another working window and the native tray popup keep the preview session open', async () => {
+    await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    const [selectorWindow] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
+    ]);
+    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
+    await birdsCard.click();
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+
+    await electronApp.evaluate(async ({ app, BrowserWindow }) => {
+      const workingWindow = new BrowserWindow({
+        width: 360, height: 160, x: 30, y: 30, title: 'DeskPet QA working window',
+        webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+      });
+      app.__qaWorkingWindow = workingWindow;
+      await workingWindow.loadURL('about:blank');
+      workingWindow.focus();
+    });
+    await expect.poll(() => electronApp.evaluate(({ app }) => app.__qaWorkingWindow.isFocused())).toBe(true);
+    await new Promise(resolve => setTimeout(resolve, 1300));
+    expect(selectorWindow.isClosed()).toBe(false);
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+
+    await electronApp.evaluate(({ app }) => {
+      // The overflow panel also removes focus without a DeskPet tray event.
+      app.__qaWorkingWindow.blur();
+      process.mainModule.require('./src/main/TrayManager').getTray().popUpContextMenu();
+    });
+    await new Promise(resolve => setTimeout(resolve, 1300));
+    expect(selectorWindow.isClosed()).toBe(false);
+
+    await electronApp.evaluate(({ app }) => {
+      process.mainModule.require('./src/main/TrayManager').getTray().closeContextMenu();
+      app.__qaWorkingWindow.close();
+      delete app.__qaWorkingWindow;
+      app.openSkinSelectorForQA();
+      process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.minimize();
+    });
+    await expect.poll(() => electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.isMinimized())).toBe(true);
+    expect(selectorWindow.isClosed()).toBe(false);
+    await electronApp.evaluate(({ app }) => app.openSkinSelectorForQA());
+    await expect.poll(() => electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.isMinimized())).toBe(false);
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+
+    const closed = selectorWindow.waitForEvent('close');
+    await selectorWindow.locator('#skin-selector-cancel').click();
+    await closed;
+    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('default');
+    const saved = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
+    expect(saved?.skinId ?? 'default').toBe('default');
+  });
+
+  test('closing the native selector window cancels its preview', async () => {
+    await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    const [selectorWindow] = await Promise.all([
+      electronApp.waitForEvent('window'),
+      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
+    ]);
+    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
+    await birdsCard.click();
+    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+
+    const closed = selectorWindow.waitForEvent('close');
+    await electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.close());
+    await closed;
+    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('default');
+    expect(await electronApp.evaluate(() => process.mainModule.require('./src/main/services/SkinService').getPreviewSkinId())).toBeNull();
+    const saved = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
+    expect(saved?.skinId ?? 'default').toBe('default');
+  });
 });

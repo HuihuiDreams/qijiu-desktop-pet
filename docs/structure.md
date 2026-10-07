@@ -369,7 +369,7 @@ src/assets/{skinId}/
 
 每次试穿由主进程生成独立 `requestId`，通过 `switch-skin` 选项下发并由 `report-skin-loaded` 结果回传；仅当前预览请求的结果可解锁确认。换肤或取消会清理旧等待，确认在提交前再次检查请求与发件窗口，避免同一皮肤的旧回报或已取消会话覆盖新选择。预览期间拒绝迟到的 `set-current-skin` 回写。
 
-托盘菜单展开时暂停选肤器失焦关闭，菜单关闭或仅点击托盘后主动安排宽限期后的焦点检查，不依赖第二次 `blur`；焦点确已离开应用时关闭并回滚试穿，应用窗口重新获得焦点或菜单再次展开则取消检查。窗口关闭会清理计时器和焦点监听器。
+选肤器采用普通窗口层级（不置顶、允许最小化），不监听 `blur` 自动关闭，也不依赖托盘活动计时器。切换工作窗口、打开 Windows 托盘隐藏图标区或桌宠菜单时保留窗口及试穿状态；再次通过托盘打开会恢复已最小化的同一窗口并保留高亮。`TrayManager` 使用系统原生 `setContextMenu()` 挂载菜单。确定提交，取消或主动关闭回滚；原生窗口 `close` 事件与程序关闭共享防重入状态，确保系统关闭窗口也撤销未确认预览。
 
 `get-available-overlay-keys` 未传皮肤编号或传空字符串时，默认查询主进程已确认皮肤的互动素材，避免临时试穿状态影响默认查询。
 
@@ -454,7 +454,7 @@ src/assets/{skinId}/
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
 - 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟和城市设置窗分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
-- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。所有正常关闭均由 `SkinSelectorWindow.closeSkinSelectorWindow()` 串行化，忽略关闭自身触发的 `blur`，并仅在 `closed` 后复位关闭状态；`blur` 会保留一个短暂的焦点交接窗口，结合应用级 `browser-window-focus`、macOS `app.isActive()` 及托盘活动生命周期（`isTrayActive`）综合判断，切换或关闭番茄钟、状态等 DeskPet 窗口或操作托盘菜单时保持预览，仅在焦点确实离开应用后关闭。窗口配置规范化为 `hasShadow: false` 与 `resizable: false`，杜绝 macOS 下透明无边框窗口的系统阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口采用 `alwaysOnTop: false` 与 `minimizable: true`，被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
