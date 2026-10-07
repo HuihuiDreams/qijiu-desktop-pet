@@ -363,7 +363,7 @@ src/assets/{skinId}/
 
 `services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
 
-`SkinManager` 换肤时启用 `SpriteView.attach` 的 `validateRequired` 校验，区分必要立绘/走动帧与可选状态动作图片：必要资源的加载错误会传递至 `SkinSwitchController` 和主进程，确认失败时保持已确认皮肤及存档不变；回选已确认皮肤也校验本次预览结果，可选动作图片缺失继续降级。应用初次挂载默认图片仍允许降级，避免图片损坏阻断启动。选肤器使用现有多语言错误提示显示确认失败。
+`SkinManager` 换肤时启用 `SpriteView.attach` 的 `validateRequired` 校验，区分必要立绘/走动帧与可选状态动作图片：必要资源加载失败时先恢复上一套成功应用的宠物立绘、走动帧、图片比例、状态图片和叠加层路径，并通过默认挂载重置动画缓存；`SkinManager.currentSkinId` 仅在加载成功后更新。原加载错误继续传递至 `SkinSwitchController` 和主进程，确认失败时保持已确认皮肤及存档不变；回选已确认皮肤也校验本次预览结果，可选动作图片缺失继续降级。应用初次挂载默认图片仍允许降级，避免图片损坏阻断启动。选肤器使用现有多语言错误提示显示确认失败。
 
 重复打开仍在进行的选肤会话时，`SkinSelectorWindow` 保留会话原皮肤，并以 `resetSelection: false` 刷新画廊，避免覆盖渲染端当前预览高亮；新会话才初始化原皮肤与卡片选择。
 

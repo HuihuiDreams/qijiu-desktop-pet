@@ -80,25 +80,36 @@ class SkinManager {
    */
   async applySkin(skinId, targets) {
     const paths = this.buildPaths(skinId);
-    this.currentSkinId = skinId;
-
+    const previousPaths = this.buildPaths(this.currentSkinId);
     const { petA, petB, spriteView, renderer } = targets;
 
-    // 1. 更新 Pet 实例的 image 和 sprites
-    if (petA) petA.updateSkin(paths.petA);
-    if (petB) petB.updateSkin(paths.petB);
+    const applyPaths = (skinPaths) => {
+      if (petA) petA.updateSkin(skinPaths.petA);
+      if (petB) petB.updateSkin(skinPaths.petB);
+      if (renderer) renderer.setSkinPrefix(skinPaths.overlayPrefix);
+      if (spriteView) spriteView.updateImageMap(skinPaths.imageMap);
+    };
 
-    // 2. 更新 PetRenderer 的叠加层路径前缀（并触发互动覆盖层图片预加载）
-    if (renderer) renderer.setSkinPrefix(paths.overlayPrefix);
-
-    // 3. 更新 SpriteView 的 imageMap 并并发预加载两只宠物的新皮肤素材
-    if (spriteView) {
-      spriteView.updateImageMap(paths.imageMap);
-      await Promise.all([
-        petA ? spriteView.attach(petA, { validateRequired: true }) : Promise.resolve(),
-        petB ? spriteView.attach(petB, { validateRequired: true }) : Promise.resolve(),
-      ]);
+    applyPaths(paths);
+    try {
+      if (spriteView) {
+        await Promise.all([
+          petA ? spriteView.attach(petA, { validateRequired: true }) : Promise.resolve(),
+          petB ? spriteView.attach(petB, { validateRequired: true }) : Promise.resolve(),
+        ]);
+      }
+    } catch (error) {
+      // 恢复上一套成功应用的素材，并沿用初次挂载的降级策略，保留原加载错误。
+      applyPaths(previousPaths);
+      if (spriteView) {
+        await Promise.all([
+          petA ? spriteView.attach(petA) : Promise.resolve(),
+          petB ? spriteView.attach(petB) : Promise.resolve(),
+        ]);
+      }
+      throw error;
     }
+    this.currentSkinId = skinId;
 
     return paths;
   }
