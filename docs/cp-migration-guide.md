@@ -209,7 +209,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 两个 CP 应用需要共存时，在真实安装版中验证它们能同时运行、存档互不覆盖、开机启动与卸载互不影响。开发模式还要使用不同 QA 数据目录。
 
-更新源切换后，分别验证 Windows 自动更新和 macOS 手动更新，确认下载的是新 CP 安装包，不能把新版本接回七九更新源。发版流程与签名检查见 [发布指南](./release-workflow.md)、[代码签名说明](./release-code-signing.md)。
+更新源切换后，分别验证 Windows 自动更新和 macOS 手动更新，确认下载的是新 CP 安装包，不能把新版本接回七九更新源。发版流程与签名检查见 [提交与发布指南](./git-workflow.md#发布流程)、[代码签名说明](./release-code-signing.md)。
 
 ## 8. 验收与回滚
 

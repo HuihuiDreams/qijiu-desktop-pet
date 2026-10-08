@@ -15,6 +15,9 @@
 - 同步修正 `docs/structure.md` 中主进程服务目录树与架构图，反映重构收拢后的统一 `PresentationGuard.js` 打扰守卫，移除已失效的旧文件引用，并补全 `AutoLaunchService.js`、`StoreManager.js` 与 `IpcSenderAuthorization.js` 的模块说明。
 - 规范化 `updateManager.js` 中的外部链接打开依赖：提取 `loadDefaultShell()` 并为 `createUpdateManager` 支持 `options.getShell` 依赖注入，消除了 macOS 手动更新分支内的内联 `require('electron')`，保持统一的模块化加载风格并补全隔离单测。
 - 在 `src/main/services/StorageIpc.js` 中补充 `ALLOWED_STORE_KEYS` 白名单安全注释，显式说明屏保与天气配置由主进程独占管理的设计意图与权限边界。
+- 更新桌宠维护技能，按当前拆分架构明确主进程与渲染模块归属，修正测试目录，补齐选肤预览确认、跨屏窗口稳定后通知、分平台打包验证及项目推送流程。
+- 同步四份 README 的选肤说明，明确试穿不保存、失焦与最小化保留试穿、取消或主动关闭恢复原皮肤，以及必要素材加载失败后的恢复与保存限制；修正两人平均好感的互动门槛和开发、打包验证命令说明，补充端到端测试与包内容检查入口。
+- 将 Git 提交与发布流程统一到 `docs/git-workflow.md`，删除重复的 `docs/release-workflow.md` 并同步文档引用；按实际脚本说明全量暂存、内部路径检查与测试职责，补齐资源保护和构建后包内容验证，明确既有 tag 复用、草稿手动发布、macOS ad-hoc 签名及更新验收流程。
 
 ### Fixed
 - 修正全代码库审查报告中的粒子对象池描述，按实际实现说明粒子数量限制、天气节点复用和屏保节点重建，并移除未经测量验证的垃圾回收收益断言；同步更新 `docs/structure.md` 的粒子层目录说明与运行时机制。

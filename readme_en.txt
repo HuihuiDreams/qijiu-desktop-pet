@@ -38,7 +38,7 @@ After launch, both characters will appear on your desktop.
 The tray menu lets you:
 - "📊 Show Status Panel"
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
-- "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click any card to instantly preview the skin on your desktop pets, click "Confirm" to apply, or click "Cancel" / press ESC / click outside the window to close and restore the original skin.
+- "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
 - "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking"
 - "👻 Hide Pets" or "👻 Show Pets": temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
 - "🔄 Reset Position"
@@ -91,11 +91,11 @@ The app currently includes four built-in skins:
 Visual Skin Gallery:
 Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin gallery window. Each skin card displays the exclusive preview image (kiss sprite), skin name, and artist signature ("🎨 Artist") across separate lines.
 - Live Preview: Clicking any card instantly updates the desktop characters so you can preview the skin in real time.
-- Confirm & Cancel: When you are satisfied with the preview, click "Confirm" to officially save and apply the skin. Clicking "Cancel", pressing ESC, or clicking outside the window (blur) automatically closes the gallery and restores your original skin.
+- Confirm & Cancel: Previews do not change your saved skin. When you are satisfied, click "Confirm" to save. Clicking "Cancel", pressing ESC, or closing the window restores your original skin. Switching to another window or minimizing keeps the preview; open the gallery again from the tray to continue choosing.
 
 Skin Actions & Fallback:
 Skins replace standing, walking, hungry, sleeping, feeding, cultivating, care, kiss, hug, and share-food visuals together.
-If one action asset is missing from a skin, the app tries to fall back to the default asset so switching skins does not leave a blank sprite.
+Missing optional action assets use default assets where possible. If a required standing image or walking frame fails to load during a switch, the app restores the last successfully loaded skin. "Confirm" then shows an error and refuses to save; you can choose another skin or cancel.
 
 When pets move between displays with different scale factors, the character sprites, right-click menu, and Qi effects scale with the current display to keep their visual size consistent.
 
@@ -182,9 +182,9 @@ Ways to increase it:
 - It may also increase when the two walk close enough to trigger an interaction.
 
 Higher affection unlocks closer interactions:
-- Above 20: they may cultivate together.
-- Above 50: they may hug.
-- Above 70: they may kiss.
+- Average Affection of both pets reaches 20: they may cultivate together.
+- Average Affection of both pets reaches 50: they may hug.
+- Average Affection of both pets reaches 70: they may kiss.
 
 2. 🍖 Satiety
 

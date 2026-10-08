@@ -246,8 +246,7 @@ qijiu-desktop-pet/
    ├─ structure.md                      # 本文档
    ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
-   ├─ git-workflow.md                   # Git 提交和推送工作流
-   ├─ release-workflow.md               # 发布流程
+   ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
    ├─ release-code-signing.md           # 代码签名说明
    ├─ troubleshooting.txt               # 故障排查记录/草稿
    ├─ skin_assets_requirements.*        # 皮肤资源命名和尺寸要求

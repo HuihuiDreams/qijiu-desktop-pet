@@ -273,7 +273,7 @@
 - `test/protectedAssetLoader.test.js`
 - `test/playwrightElectronSmoke.test.js`
 - `tools/playwright-electron-smoke.js`
-- `docs/release-workflow.md`
+- `docs/git-workflow.md`（发布流程已合并至此）
 
 **预估工作量：** 小到中型：3-4 个文件
 
