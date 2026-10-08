@@ -2,9 +2,11 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-06
+最后更新：2026-10-08
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
+
+角色迁移：[更换 CP 的迁移指南](./cp-migration-guide.md)，说明同仓库 CP 分支维护与通用功能同步，以及替换岳七与沈九为其他角色时的素材、文案、互动、存档与独立发布步骤。
 
 ## 1. 架构总览
 
@@ -242,6 +244,7 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
+   ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # Git 提交和推送工作流
    ├─ release-workflow.md               # 发布流程
