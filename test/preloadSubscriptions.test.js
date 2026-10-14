@@ -38,6 +38,7 @@ test('preload on* APIs return cleanup functions from subscribeIpc', () => {
     'screensaver-start',
     'screensaver-stop',
     'screensaver-cancel',
+    'pet-scale-changed',
   ];
 
   for (const channel of expectedChannels) {
@@ -75,3 +76,9 @@ test('preload exposes screensaver notification APIs through electronAPI', () => 
   assert.match(preloadSource, /notifyScreensaverReady:\s*\(\)\s*=>\s*ipcRenderer\.send\('screensaver-ready'\)/);
   assert.match(preloadSource, /notifyScreensaverFinished:\s*\(sessionId\)\s*=>\s*ipcRenderer\.send\('screensaver-finished', sessionId\)/);
 });
+
+test('preload exposes pet scale APIs through electronAPI', () => {
+  assert.match(preloadSource, /getPetScale:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('get-pet-scale'\)/);
+  assert.match(preloadSource, /onPetScaleChanged:\s*\(callback\)\s*=>/);
+});
+

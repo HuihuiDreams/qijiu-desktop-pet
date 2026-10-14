@@ -9,6 +9,8 @@
 - 新增[全仓库代码审查复核报告](docs/code-review-recheck-2026-10-06.md)，记录七项问题及修复状态、复现证据、测试结果及平台与依赖审计限制。
 - 新增[代码审查复核修复计划](docs/code-review-fix-plan-2026-10-06.md)，按 R2、R3、R4、R5、R7、R6 明确独立修复、行为测试、中文变更记录、文档同步及分平台验收要求。
 - 新增[更换 CP 的迁移指南](docs/cp-migration-guide.md)，说明将岳七与沈九替换为其他角色时的名称、三语对白、皮肤素材、互动规则、内部标识、存档隔离、独立发布与验收回滚步骤，补充同仓库分支维护、通用功能同步及逐步提取角色配置的建议，并同步项目结构索引。
+- 新增桌宠体型大小缩放支持（50%~150%），基于逻辑尺寸 `pet.size` 与脚底底边中点锚定算法（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）；主进程通过 `PetScaleService` 管理持久化配置 `petScalePercent` 与实时拖动预览/确认状态机，渲染进程启动自动恢复并在变更时同步约束可行走区域。
+- 新增托盘菜单“📏 调整大小…”入口与独立体型调节子窗口（`src/pet-scale.html`、`src/pet-scale.css`、`src/petScaleWindow.js`），提供 50%~150% 滑块拖动实时预览、恢复默认（100%）、确认持久化保存与取消/ESC/关闭安全回滚的原生交互体验，并完成中/英/日三语字典国际化与权限矩阵安全加固。
 
 ### Changed
 - 优化 `BreakReminderPresenter.js` 的定时器清理逻辑，在 `dismiss()` 时主动回收 300ms/800ms 气泡延时回调，提升自动化测试环境的稳定性（由于内部已有状态防御，原未清理的计时器在生产环境中属 False Positive，不会引发实际 Bug）。
@@ -36,6 +38,7 @@
 - 修复省略皮肤编号查询互动叠加层时引用已删除变量导致的 `ReferenceError`：查询默认使用主进程已确认皮肤，补充省略参数与空字符串的回归测试。
 - 修复选肤器切换工作窗口或打开 Windows 托盘隐藏图标区后消失的问题：取消失焦自动关闭，窗口采用普通层级并允许最小化，再次打开恢复同一试穿会话；删除焦点计时器与托盘保护接线，恢复系统原生托盘菜单，仅确定、取消或主动关闭结束选肤，系统关闭窗口也安全回滚试穿；补充回归与真实 Electron 测试（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复必要皮肤素材加载失败后渲染端仍使用失败皮肤的问题：恢复上一套成功应用的立绘、走动帧、图片比例、状态图片与叠加层路径，并重置动画缓存；确认继续拒绝失败请求，补充实际渲染状态与后续换肤恢复的回归断言（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
+- 修复桌宠体型调节窗口失焦后消失的问题：对齐选肤窗口（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）的普通窗口生命周期模型，移除导致失焦后窗口被系统隐藏的 `setVisibleOnAllWorkspaces` 与置顶脉冲，改为普通层级（`alwaysOnTop: false`）并支持最小化（`minimizable: true`）；切换工作窗口或点击桌面时保持窗口与实时预览，仅在点击右上角关闭按钮（X）、取消、确定、ESC 或原生关窗时结束并安全回滚未确认的体型修改。
 
 ## [0.10.5] - 2026-09-15
 

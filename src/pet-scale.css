@@ -1,0 +1,264 @@
+/* Override index.css transparent-overlay resets for this standalone window */
+html, body {
+  pointer-events: auto;
+  margin: 0;
+}
+
+body {
+  padding: 8px;
+  color: var(--color-ink);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+/* ── Main panel ── */
+
+.scale-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 16px 18px 14px;
+  box-sizing: border-box;
+  animation: scalePanelIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scalePanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Title bar ── */
+
+.scale-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, transparent, var(--color-jade), rgba(201, 162, 77, 0.48), transparent) 1;
+  color: var(--color-jade-deep);
+  text-shadow: var(--title-text-shadow);
+  cursor: grab;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 2px;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.scale-titlebar > span {
+  padding-left: 12px;
+}
+
+.scale-close-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-ink-light);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.scale-close-button:hover {
+  background: var(--color-jade-mist);
+  border-color: rgba(110, 198, 160, 0.22);
+  color: var(--color-jade-deep);
+}
+
+.scale-close-button:active {
+  transform: scale(0.94);
+}
+
+.scale-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Content ── */
+
+.scale-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 4px;
+}
+
+/* Current scale info row */
+
+.scale-current-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scale-current-info {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.scale-label {
+  color: var(--color-ink-light);
+  font-size: 14px;
+}
+
+.scale-current-value {
+  color: var(--color-jade-deep);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  min-width: 48px;
+}
+
+.scale-reset-button {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid rgba(110, 198, 160, 0.35);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-jade-deep);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scale-reset-button:hover {
+  background: var(--color-jade-mist);
+  border-color: var(--color-jade);
+}
+
+.scale-reset-button:active {
+  transform: scale(0.95);
+}
+
+/* ── Slider styling ── */
+
+.scale-slider-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scale-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(110, 198, 160, 0.4), rgba(201, 162, 77, 0.4));
+  outline: none;
+  margin: 10px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.scale-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-jade), var(--color-gold));
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.scale-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  box-shadow: 0 3px 8px rgba(61, 139, 107, 0.35);
+}
+
+.scale-slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+.scale-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-ink-light);
+  padding: 0 4px;
+}
+
+/* ── Action buttons ── */
+
+.scale-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.scale-button {
+  height: 34px;
+  min-width: 76px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scale-button--cancel {
+  border: 1px solid rgba(84, 106, 123, 0.3);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-ink-light);
+}
+
+.scale-button--cancel:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(84, 106, 123, 0.5);
+  color: var(--color-ink);
+}
+
+.scale-button--cancel:active {
+  transform: scale(0.96);
+}
+
+.scale-button--confirm {
+  border: 1px solid rgba(61, 139, 107, 0.34);
+  background: linear-gradient(135deg, rgba(110, 198, 160, 0.92), rgba(201, 162, 77, 0.62));
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(61, 139, 107, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.scale-button--confirm:hover {
+  box-shadow: 0 6px 14px rgba(61, 139, 107, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.scale-button--confirm:active {
+  transform: scale(0.96);
+}
+
+.scale-button:focus-visible,
+.scale-slider:focus-visible,
+.scale-reset-button:focus-visible,
+.scale-close-button:focus-visible {
+  outline: 2px solid rgba(110, 198, 160, 0.7);
+  outline-offset: 2px;
+}

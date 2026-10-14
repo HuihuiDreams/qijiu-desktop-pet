@@ -71,6 +71,9 @@ function buildTrayMenu() {
         windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
         deps.sendSkinSelectorData({ resetSelection: false });
       }
+      if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
+        windowManager.petScaleWindow.webContents.send('locale-changed', lang);
+      }
     },
   }));
 
@@ -99,6 +102,12 @@ function buildTrayMenu() {
       label: trayMenuLabel('trayChooseSkin'),
       click: () => {
         deps.openSkinSelector();
+      },
+    },
+    {
+      label: trayMenuLabel('trayPetScale'),
+      click: () => {
+        deps.openPetScaleWindow();
       },
     },
     {

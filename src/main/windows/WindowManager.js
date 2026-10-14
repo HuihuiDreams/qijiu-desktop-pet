@@ -10,7 +10,8 @@ class WindowManager {
       skinSelector: null,
       pomodoro: null,
       citySetting: null,
-      updateProgress: null
+      updateProgress: null,
+      petScale: null
     };
   }
 
@@ -33,6 +34,9 @@ class WindowManager {
 
   get updateProgressWindow() { return this.windows.updateProgress; }
   set updateProgressWindow(val) { this.windows.updateProgress = val; }
+
+  get petScaleWindow() { return this.windows.petScale; }
+  set petScaleWindow(val) { this.windows.petScale = val; }
 
   // --- Utility Methods ---
 

@@ -342,6 +342,17 @@
     skinSwitchController.applySkinById(skinId, options);
   });
 
+  const applyPetScale = (scale) => {
+    if (Number.isFinite(scale) && scale > 0) {
+      pets.forEach((pet) => pet.applyScale(scale));
+      pets.forEach(keepPetReachable);
+    }
+  };
+
+  window.electronAPI.onPetScaleChanged?.((scale) => {
+    applyPetScale(scale);
+  });
+
   // === 久坐提醒处理 ===
   // 实际展示/消失逻辑已下沉到 BreakReminderPresenter（见上方实例化），此处只保留 IPC 订阅。
   window.electronAPI.onBreakReminder((payload) => breakReminderPresenter.handleTriggered(payload));
@@ -353,6 +364,15 @@
   window.electronAPI.onSystemResume?.((data) => offlineReturnSystem.handleSystemResume(data));
 
   // === 加载保存的状态 ===
+  if (typeof window.electronAPI?.getPetScale === 'function') {
+    try {
+      const initialScale = await window.electronAPI.getPetScale();
+      applyPetScale(initialScale);
+    } catch (err) {
+      console.error('Failed to load initial pet scale:', err);
+    }
+  }
+
   await skinSwitchController.refreshAvailableSkins();
   const savedState = await timeSystem.load();
   offlineReturnSystem.applyLoadedState(savedState);

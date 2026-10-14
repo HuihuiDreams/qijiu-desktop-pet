@@ -71,12 +71,31 @@ function normalizePomodoroMinutes(value, fallback = DEFAULT_POMODORO_MINUTES) {
   return Math.min(minutes, MAX_POMODORO_MINUTES);
 }
 
+const PET_SCALE_MIN_PERCENT = 50;
+const PET_SCALE_MAX_PERCENT = 150;
+const PET_SCALE_STEP_PERCENT = 5;
+const PET_SCALE_DEFAULT_PERCENT = 100;
+
+function normalizePetScalePercent(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return PET_SCALE_DEFAULT_PERCENT;
+  }
+  const stepped = Math.round(value / PET_SCALE_STEP_PERCENT) * PET_SCALE_STEP_PERCENT;
+  return Math.min(Math.max(stepped, PET_SCALE_MIN_PERCENT), PET_SCALE_MAX_PERCENT);
+}
+
 module.exports = {
+  PET_SCALE_DEFAULT_PERCENT,
+  PET_SCALE_MAX_PERCENT,
+  PET_SCALE_MIN_PERCENT,
+  PET_SCALE_STEP_PERCENT,
   createIpcFailure,
   createIpcSuccess,
   isAllowedSkinId,
   normalizeMousePassthroughRequest,
+  normalizePetScalePercent,
   normalizePomodoroMinutes,
   normalizeStatusWindowSize,
   normalizeWindowMigrationDirection,
 };
+

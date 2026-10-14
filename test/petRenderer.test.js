@@ -655,3 +655,80 @@ test('pet dragging updates position and limits to screen bounds', () => {
   global.setTimeout = originalSetTimeout;
   global.clearTimeout = originalClearTimeout;
 });
+
+test('PetRenderer.update sets --pet-size when size changes and caches rendered size', () => {
+  const setProperties = [];
+  const fakeElement = {
+    style: {
+      transform: '',
+      setProperty(name, value) {
+        setProperties.push({ name, value });
+      },
+    },
+    classList: {
+      remove() {},
+      add() {},
+      contains() { return false; },
+    },
+  };
+
+  const renderer = new PetRenderer({}, null, () => 1);
+  const pet = {
+    x: 10,
+    y: 20,
+    size: 96,
+    element: fakeElement,
+    _renderedSize: null,
+    isHungry() { return false; },
+    isLowMood() { return false; },
+  };
+
+  renderer.update(pet);
+  assert.equal(pet._renderedSize, 96);
+  assert.ok(setProperties.some(p => p.name === '--pet-size' && p.value === '96px'));
+
+  const initialCount = setProperties.filter(p => p.name === '--pet-size').length;
+  renderer.update(pet);
+  assert.equal(setProperties.filter(p => p.name === '--pet-size').length, initialCount);
+
+  pet.size = 144;
+  renderer.update(pet);
+  assert.equal(pet._renderedSize, 144);
+  assert.equal(setProperties.filter(p => p.name === '--pet-size').length, initialCount + 1);
+  assert.equal(setProperties[setProperties.length - 1].value, '144px');
+});
+
+test('PetRenderer.showOverlay scales overlay width proportionally to pet size', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  }, null, () => 1.5); // visualScale = 1.5
+
+  const petA = { x: 100, y: 100, size: 48 };
+  const petB = { x: 200, y: 100, size: 48 };
+
+  const originalDocument = global.document;
+  const originalRequestAnimationFrame = global.requestAnimationFrame;
+  global.requestAnimationFrame = (cb) => cb();
+  global.document = {
+    createElement() {
+      return {
+        id: '',
+        style: {},
+        addEventListener() {},
+      };
+    },
+  };
+
+  try {
+    const result = renderer.showOverlay(petA, petB, 'kiss');
+    // baseWidth 176 * visualScale 1.5 * petScale 0.5 = 132
+    assert.equal(result.width, 176 * 1.5 * 0.5);
+  } finally {
+    global.document = originalDocument;
+    global.requestAnimationFrame = originalRequestAnimationFrame;
+  }
+});
+

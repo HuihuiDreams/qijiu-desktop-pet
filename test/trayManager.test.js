@@ -72,6 +72,7 @@ function createMockDeps() {
     getStore: () => ({ set: () => {} }),
     openPomodoroWindow: () => {},
     openSkinSelector: () => {},
+    openPetScaleWindow: () => {},
     openCitySettingWindow: () => {},
     sendSkinSelectorData: () => {},
     checkForUpdatesFromTray: async () => {}
@@ -122,6 +123,7 @@ test('TrayManager - Full Coverage', async (t) => {
     let actions = [];
     
     deps.openSkinSelector = () => actions.push('openSkinSelector');
+    deps.openPetScaleWindow = () => actions.push('openPetScaleWindow');
     deps.openPomodoroWindow = () => actions.push('openPomodoroWindow');
     deps.setIsPaused = (v) => actions.push(`setIsPaused:${v}`);
     deps.showPetManually = () => actions.push('showPet');
@@ -172,6 +174,10 @@ test('TrayManager - Full Coverage', async (t) => {
       skinSelectorWindow: {
         isDestroyed: () => false,
         webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
+      },
+      petScaleWindow: {
+        isDestroyed: () => false,
+        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
       }
     };
 
@@ -182,6 +188,9 @@ test('TrayManager - Full Coverage', async (t) => {
     
     findItem('trayChooseSkin').click();
     assert.ok(actions.includes('openSkinSelector'));
+
+    findItem('trayPetScale').click();
+    assert.ok(actions.includes('openPetScaleWindow'));
     
     findItem('trayPauseWalk').click();
     assert.ok(actions.includes('setIsPaused:true'));
@@ -238,7 +247,7 @@ test('TrayManager - Full Coverage', async (t) => {
     await langItem.submenu[1].click(); // 'en'
     assert.ok(actions.includes('locale:en'));
     assert.ok(actions.includes('sendSkinSelectorData:{"resetSelection":false}'));
-    assert.equal(localeChangedCount, 5); // 5 windows updated
+    assert.equal(localeChangedCount, 6); // 6 windows updated (including petScaleWindow)
     
     let quitCalled = false;
     mockApp.quit = () => { quitCalled = true; };

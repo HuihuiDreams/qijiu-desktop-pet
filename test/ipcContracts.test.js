@@ -101,3 +101,27 @@ test('normalizePomodoroMinutes falls back for unsafe input', () => {
 test('normalizePomodoroMinutes clamps very long sessions', () => {
   assert.equal(normalizePomodoroMinutes(999), 240);
 });
+
+test('normalizePetScalePercent falls back to 100 for non-number input', () => {
+  const { normalizePetScalePercent } = require('../ipcContracts');
+  assert.equal(normalizePetScalePercent(undefined), 100);
+  assert.equal(normalizePetScalePercent(null), 100);
+  assert.equal(normalizePetScalePercent(Number.NaN), 100);
+  assert.equal(normalizePetScalePercent('abc'), 100);
+  assert.equal(normalizePetScalePercent('120'), 100);
+});
+
+test('normalizePetScalePercent clamps to the 50-150 range', () => {
+  const { normalizePetScalePercent } = require('../ipcContracts');
+  assert.equal(normalizePetScalePercent(10), 50);
+  assert.equal(normalizePetScalePercent(999), 150);
+  assert.equal(normalizePetScalePercent(Infinity), 100);
+});
+
+test('normalizePetScalePercent rounds to the nearest 5 percent step', () => {
+  const { normalizePetScalePercent } = require('../ipcContracts');
+  assert.equal(normalizePetScalePercent(73), 75);
+  assert.equal(normalizePetScalePercent(72.4), 70);
+  assert.equal(normalizePetScalePercent(120), 120);
+});
+

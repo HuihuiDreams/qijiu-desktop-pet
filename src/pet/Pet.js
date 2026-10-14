@@ -37,8 +37,14 @@ class Pet {
     };
 
     // 其他
-    this.size = CONFIG.PET_SIZE; // 宠物尺寸
-    this.speed = CONFIG.MOVE_SPEED; // 宠物速度
+    const baseSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const baseSpeed = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.MOVE_SPEED) && CONFIG.MOVE_SPEED > 0
+      ? CONFIG.MOVE_SPEED
+      : 1;
+    this.size = baseSize; // 宠物尺寸
+    this.speed = baseSpeed; // 宠物速度
     this.element = null;        // 关联的 DOM 元素 (由 PetRenderer 设置)
   }
 
@@ -90,4 +96,38 @@ class Pet {
   isHungry() { return this.stats.hunger < 25; }
   isLowQi() { return this.stats.qi < 20; }
   isLowMood() { return this.stats.mood < 25; }
+
+  /**
+   * 应用体型缩放（百分比，如 50 ~ 150）。
+   * 缩放时锚定脚底（底边中点不变），并同步调整目标移动坐标。
+   * 拖拽中仅更新尺寸，不调整位置，避免鼠标指针下跳变。
+   * @param {number} percent - 缩放百分比 (50 - 150)
+   */
+  applyScale(percent) {
+    const p = Number(percent);
+    if (!Number.isFinite(p) || p <= 0) return;
+
+    const baseSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const newSize = (baseSize * p) / 100;
+    const deltaSize = newSize - this.size;
+    this.size = newSize;
+
+    if (!this.isDragging) {
+      this.x -= deltaSize / 2;
+      this.y -= deltaSize;
+      if (Number.isFinite(this.targetX)) {
+        this.targetX -= deltaSize / 2;
+      }
+      if (Number.isFinite(this.targetY)) {
+        this.targetY -= deltaSize;
+      }
+    }
+  }
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { Pet };
+}
+

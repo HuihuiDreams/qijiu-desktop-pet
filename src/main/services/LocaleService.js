@@ -17,6 +17,7 @@ function init(dependencies) {
       windowManager.pomodoroWindow,
       windowManager.citySettingWindow,
       windowManager.skinSelectorWindow,
+      windowManager.petScaleWindow,
     ];
     return isSenderAnyWindow(event, allowedWindows) ? currentLocale : null;
   });
@@ -42,6 +43,9 @@ function init(dependencies) {
     if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
       windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
       skinSelectorWindowModule.sendSkinSelectorData({ resetSelection: false });
+    }
+    if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
+      windowManager.petScaleWindow.webContents.send('locale-changed', lang);
     }
     return { success: true, locale: lang };
   });

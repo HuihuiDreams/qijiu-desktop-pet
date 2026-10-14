@@ -28,3 +28,11 @@ test('xianxia-panel centralizes panel decoration across windows', () => {
   assert.doesNotMatch(pomodoroCss, /\.pomodoro-panel::before/);
   assert.doesNotMatch(cityCss, /\.city-panel::before/);
 });
+
+test('index.css uses var(--pet-size, 96px) for .pet-body dimensions and font-size', () => {
+  const petBodyRule = indexCss.match(/(?:^|\n)\.pet-body\s*\{[^}]+\}/)?.[0] || '';
+  assert.match(petBodyRule, /width:\s*var\(--pet-size,\s*96px\);/);
+  assert.match(petBodyRule, /height:\s*var\(--pet-size,\s*96px\);/);
+  assert.match(petBodyRule, /font-size:\s*calc\(var\(--pet-size,\s*96px\)\s*\/\s*2\);/);
+});
+

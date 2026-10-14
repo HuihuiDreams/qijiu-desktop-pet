@@ -54,8 +54,10 @@ function createHarness() {
     PomodoroService: createCallableModule('PomodoroService', ['init', 'stopPomodoroTicker', 'getPomodoroSnapshot', 'sendPomodoroState', 'getPomodoroSystem', 'startPomodoroSession', 'stopPomodoroSession'], calls),
     WeatherSyncController: createCallableModule('WeatherSyncController', ['init', 'getWeatherSyncSettings', 'getStoredWeatherSyncSettings', 'updateWeatherSyncSettings'], calls),
     BreakReminderController: createCallableModule('BreakReminderController', ['init', 'getBreakReminderEnabled', 'setBreakReminderEnabled', 'getBreakReminderIntervalMinutes', 'setBreakReminderIntervalMinutes', 'getBreakReminderService'], calls),
+    PetScaleService: createCallableModule('PetScaleService', ['init', 'getCommittedPercent', 'preview', 'confirm', 'cancel'], calls),
     statusWindowModule: createCallableModule('statusWindowModule', ['init'], calls),
     citySettingWindowModule: createCallableModule('citySettingWindowModule', ['init', 'openCitySettingWindow'], calls),
+    petScaleWindowModule: createCallableModule('petScaleWindowModule', ['init', 'openPetScaleWindow', 'closePetScaleWindow'], calls),
     skinSelectorWindowModule: createCallableModule('skinSelectorWindowModule', ['init', 'openSkinSelectorWindow', 'sendSkinSelectorData'], calls),
     pomodoroWindowModule: createCallableModule('pomodoroWindowModule', ['init', 'openPomodoroWindow'], calls),
     updateProgressWindowModule: createCallableModule('updateProgressWindowModule', ['init', 'showUpdateProgressWindow', 'setUpdateProgress', 'closeUpdateProgressWindow'], calls),
@@ -93,9 +95,11 @@ function loadFreshLifecycle(harness) {
     './services/PomodoroService': services.PomodoroService,
     './services/WeatherSyncController': services.WeatherSyncController,
     './services/BreakReminderController': services.BreakReminderController,
+    './services/PetScaleService': services.PetScaleService,
     './windows/WindowManager': services.windowManager,
     './windows/StatusWindow': services.statusWindowModule,
     './windows/CitySettingWindow': services.citySettingWindowModule,
+    './windows/PetScaleWindow': services.petScaleWindowModule,
     './windows/SkinSelectorWindow': services.skinSelectorWindowModule,
     './windows/PomodoroWindow': services.pomodoroWindowModule,
     './windows/UpdateProgressWindow': services.updateProgressWindowModule,
@@ -149,6 +153,8 @@ test('AppLifecycle initializes services before creating the pet window and tears
     assert.ok(indexOfCall(harness.calls, 'PetVisibilityService.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'MeetingDetectorController.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'petWindowModule.init') < createWindowIndex);
+    assert.ok(indexOfCall(harness.calls, 'petScaleWindowModule.init') > createWindowIndex);
+    assert.ok(indexOfCall(harness.calls, 'PetScaleService.init') > createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'trayManager.createTray') > createWindowIndex);
 
     harness.appEvents['second-instance']();

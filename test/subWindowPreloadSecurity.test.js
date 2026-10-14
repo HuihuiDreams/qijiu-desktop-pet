@@ -50,3 +50,22 @@ test('city setting window uses a minimal dedicated preload', () => {
   }
   for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
 });
+
+test('pet scale window uses a minimal dedicated preload', () => {
+  const source = read('petScalePreload.js');
+  const windowSource = read('src/main/windows/PetScaleWindow.js');
+
+  assert.match(windowSource, /preload: path\.join\([^\n]*'petScalePreload\.js'\)/);
+  for (const api of [
+    'getLocale',
+    'onLocaleChange',
+    'getPetScaleSettings',
+    'previewPetScale',
+    'confirmPetScale',
+    'cancelPetScale',
+    'closePetScaleWindow',
+  ]) {
+    assert.match(source, new RegExp(`${api}:`));
+  }
+  for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
+});

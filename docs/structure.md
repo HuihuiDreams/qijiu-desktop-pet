@@ -88,11 +88,16 @@ graph TB
         CitySettingHtml["src/city-setting.html + city-setting.css"] --> CitySettingJs["src/citySettingWindow.js"]
     end
 
+    subgraph PetScale["Pet Scale Renderer Process"]
+        PetScaleHtml["src/pet-scale.html + pet-scale.css"] --> PetScaleJs["src/petScaleWindow.js"]
+    end
+
     Preload["preload.js"] --> Renderer
     Preload --> Status
     Preload --> Pomodoro
     Preload --> CitySetting
     SkinSelectorPreload["skinSelectorPreload.js"] --> SkinSelector
+    PetScalePreload["petScalePreload.js"] --> PetScale
     UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
@@ -110,11 +115,14 @@ qijiu-desktop-pet/
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
+├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
+├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/普通层级与最小化支持/设置读取/预览/确认/取消 + 对应 IPC
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
 ├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
+├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
@@ -134,6 +142,7 @@ qijiu-desktop-pet/
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
 ├─ citySettingPreload.js                # 城市设置窗最小 preload：语言、城市读写与关闭
+├─ petScalePreload.js                   # 体型设置专用最小 preload：语言、设置读取、预览/确认/取消/关闭
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
@@ -181,6 +190,9 @@ qijiu-desktop-pet/
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
+│  ├─ pet-scale.html                    # 桌宠体型设置独立窗口 HTML，使用严格 CSP
+│  ├─ pet-scale.css                     # 桌宠体型设置差异样式，复用 .xianxia-panel 基类与设计令牌，包含滑块与数值样式
+│  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
@@ -584,6 +596,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-044](./decisions/ADR-044-cp-screensaver-session.md)：CP 局部屏保采用独立的主进程会话。
 - [ADR-045](./decisions/ADR-045-ai-diary-credential-boundary.md)：AI 日记的第三方凭据仅保存在已认证的服务端代理，Hub IPC 保持主进程授权与输入校验边界。
 - [ADR-046](./decisions/ADR-046-electron-mock-testing-strategy.md)：主进程测试的 Electron Mock 拦截策略。
+- [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定、拖动实时预览与独立设置子窗口）。
 
 
 ## 6. 维护提示

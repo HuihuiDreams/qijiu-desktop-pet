@@ -7,10 +7,12 @@ const LOCALE_KEY = 'locale';
 const BREAK_REMINDER_STORE_KEY = 'breakReminderSettings';
 const POMODORO_LAST_MINUTES_KEY = 'lastPomodoroMinutes';
 const SCREENSAVER_STORE_KEY = 'screensaverSettings';
+const PET_SCALE_STORE_KEY = 'petScalePercent';
 
 module.exports = {
   LOCALE_KEY,
   BREAK_REMINDER_STORE_KEY,
   POMODORO_LAST_MINUTES_KEY,
   SCREENSAVER_STORE_KEY,
+  PET_SCALE_STORE_KEY,
 };

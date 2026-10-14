@@ -19,9 +19,11 @@ const MeetingDetectorController = require('./services/MeetingDetectorController'
 const PomodoroService = require('./services/PomodoroService');
 const WeatherSyncController = require('./services/WeatherSyncController');
 const BreakReminderController = require('./services/BreakReminderController');
+const PetScaleService = require('./services/PetScaleService');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
+const petScaleWindowModule = require('./windows/PetScaleWindow');
 const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
 const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
@@ -236,6 +238,7 @@ class AppLifecycle {
       getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
       updateWeatherSyncSettings: WeatherSyncController.updateWeatherSyncSettings,
       openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
+      openPetScaleWindow: () => petScaleWindowModule.openPetScaleWindow(),
       getWindowAwarenessEnabled: WindowAwarenessService.isEnabled,
       setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
       AutoLaunchService,
@@ -250,6 +253,11 @@ class AppLifecycle {
       refreshTrayMenu: () => trayManager.refreshTrayMenu()
     });
     citySettingWindowModule.init();
+    petScaleWindowModule.init();
+    PetScaleService.init({
+      windowManager,
+      StoreManager,
+    });
     LocaleService.init({
       windowManager,
       skinSelectorWindowModule,

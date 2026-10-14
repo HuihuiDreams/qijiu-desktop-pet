@@ -122,6 +122,9 @@ class PetRenderer {
     const visualScale = this.getPetVisualScale(pet);
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
     el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
+    const petSize = Number.isFinite(pet.size) && pet.size > 0 ? pet.size : 96;
+    el.style.setProperty('--pet-size', `${petSize}px`);
+    pet._renderedSize = pet.size;
 
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
@@ -242,6 +245,11 @@ class PetRenderer {
     const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
     el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
+    if (pet._renderedSize !== pet.size) {
+      const petSize = Number.isFinite(pet.size) && pet.size > 0 ? pet.size : 96;
+      el.style.setProperty('--pet-size', `${petSize}px`);
+      pet._renderedSize = pet.size;
+    }
 
     // 优化：仅当状态真正发生改变时才操作 DOM classList，减少重绘与垃圾回收
     const stateChanged = pet._renderedState !== pet.state;
@@ -287,11 +295,19 @@ class PetRenderer {
     const centerB = this.getPetVisualCenter(petB);
     const visualScale = (centerA.scale + centerB.scale) / 2;
 
-    const overlayWidth = INTERACTION_OVERLAY_BASE_WIDTH * visualScale;
+    const basePetSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const sizeA = Number.isFinite(petA.size) && petA.size > 0 ? petA.size : basePetSize;
+    const sizeB = Number.isFinite(petB.size) && petB.size > 0 ? petB.size : basePetSize;
+    const petScale = (sizeA + sizeB) / (2 * basePetSize);
+    const combinedScale = visualScale * petScale;
+
+    const overlayWidth = INTERACTION_OVERLAY_BASE_WIDTH * combinedScale;
     const cx = (centerA.x + centerB.x) / 2;
     const cy = (centerA.y + centerB.y) / 2;
     const overlayLeft = cx - overlayWidth / 2;
-    const overlayTop = cy - INTERACTION_OVERLAY_TOP_OFFSET * visualScale;
+    const overlayTop = cy - INTERACTION_OVERLAY_TOP_OFFSET * combinedScale;
 
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';

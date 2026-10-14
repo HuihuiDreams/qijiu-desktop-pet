@@ -76,6 +76,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return subscribeIpc('toggle-pet-visibility', (_event, visible, state) => callback(visible, state));
   },
 
+  // 桌宠体型大小
+  getPetScale: () => ipcRenderer.invoke('get-pet-scale'),
+  onPetScaleChanged: (callback) => {
+    return subscribeIpc('pet-scale-changed', (_event, scale) => callback(scale));
+  },
+
   // 皮肤系统
   getAvailableSkins: () => ipcRenderer.invoke('get-available-skins'),
   getAvailableOverlayKeys: (skinId) => ipcRenderer.invoke('get-available-overlay-keys', skinId),
