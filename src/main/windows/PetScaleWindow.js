@@ -54,7 +54,7 @@ function init() {
 
 function getInitialPetScaleWindowBounds() {
   const width = 380;
-  const height = 240;
+  const height = 260;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;

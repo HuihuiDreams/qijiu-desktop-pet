@@ -13,6 +13,7 @@
 - 新增托盘菜单“📏 调整大小…”入口与独立体型调节子窗口（`src/pet-scale.html`、`src/pet-scale.css`、`src/petScaleWindow.js`），提供 50%~150% 滑块拖动实时预览、恢复默认（100%）、确认持久化保存与取消/ESC/关闭安全回滚的原生交互体验，并完成中/英/日三语字典国际化与权限矩阵安全加固。
 
 ### Changed
+- 优化桌宠大小调节窗口（`PetScaleWindow`）布局与视觉层级：窗口初始高度由 240px 微调至 260px，面板启用弹性伸缩并拓宽内边距（`16px 22px 20px`），彻底消除右下角操作按钮（取消/确定）与底部内嵌装饰线/角花的重叠踩线问题；滑块刻度数值（50%、100%、150%）字体由 11px 提升至 13px 半粗体，配合等宽数字与精致胶囊轨道边框，显著增强跨 DPI 屏幕下的可读性与呼吸感。
 - 优化 `BreakReminderPresenter.js` 的定时器清理逻辑，在 `dismiss()` 时主动回收 300ms/800ms 气泡延时回调，提升自动化测试环境的稳定性（由于内部已有状态防御，原未清理的计时器在生产环境中属 False Positive，不会引发实际 Bug）。
 - 同步修正 `docs/structure.md` 中主进程服务目录树与架构图，反映重构收拢后的统一 `PresentationGuard.js` 打扰守卫，移除已失效的旧文件引用，并补全 `AutoLaunchService.js`、`StoreManager.js` 与 `IpcSenderAuthorization.js` 的模块说明。
 - 规范化 `updateManager.js` 中的外部链接打开依赖：提取 `loadDefaultShell()` 并为 `createUpdateManager` 支持 `options.getShell` 依赖注入，消除了 macOS 手动更新分支内的内联 `require('electron')`，保持统一的模块化加载风格并补全隔离单测。

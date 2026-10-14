@@ -102,7 +102,7 @@ test('pet scale main process window module configuration and ordinary window sta
   const source = readSource('src/main/windows/PetScaleWindow.js');
 
   assert.match(source, /const width = 380/);
-  assert.match(source, /const height = 240/);
+  assert.match(source, /const height = 260/);
   assert.match(source, /show:\s*false/);
   assert.match(source, /transparent:\s*true/);
   assert.match(source, /frame:\s*false/);
