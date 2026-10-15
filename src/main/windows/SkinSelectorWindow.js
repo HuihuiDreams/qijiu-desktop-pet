@@ -112,9 +112,12 @@ function openSkinSelectorWindow() {
 function cancelSkinSelection() {
   const original = skinSelectorOriginalSkinId;
   skinSelectorOriginalSkinId = null;
+  if (original == null) {
+    return;
+  }
   if (typeof deps.revertSkinPreview === 'function') {
     deps.revertSkinPreview(original);
-  } else if (original != null && original !== deps.getCurrentSkinId()) {
+  } else if (original !== deps.getCurrentSkinId()) {
     deps.selectSkin(original);
   }
 }

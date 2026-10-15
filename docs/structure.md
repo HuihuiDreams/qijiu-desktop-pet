@@ -167,7 +167,8 @@ qijiu-desktop-pet/
 │  ├─ check_adrs.js                     # ADR 格式检查脚本
 │  ├─ convert_images.js                 # 图片转换维护脚本
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
-│  ├─ run-tests.js                      # 测试运行入口
+│  ├─ run-tests.js                      # 单元与行为测试运行入口 (npm test)
+│  ├─ run-integration-tests.js          # 跨模块集成测试运行入口 (npm run test:integration)
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
@@ -235,7 +236,13 @@ qijiu-desktop-pet/
 │     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
 │     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
 ├─ test/
-│  ├─ *.test.js                         # Node.js test runner：单元、黑盒行为与集成测试
+│  ├─ *.test.js                         # Node.js test runner：单元与行为测试 (npm test)
+│  ├─ integration/                      # 跨模块/IPC 轻量级集成测试套件 (npm run test:integration)；通过模拟 IPC 调度、窗口事件记录与 StoreManager 内存存储，验证多窗口状态机、安全拦截与持久化闭环
+│  │  ├─ harness/                       # 集成测试统一环境装配（内存 Store、模拟 WebContents、窗口生命周期与 ipcMain 拦截调度）
+│  │  ├─ harness.integration.test.js    # 环境装配器契约测试（内存 Store、窗口与 webContents 销毁联动、直接/间接 IPC sender 适配）
+│  │  ├─ petScale.integration.test.js   # 体型缩放端到端集成测试（授权校验、设置读取、拖动预览广播、取消回滚、确认持久化）
+│  │  ├─ skinLifecycle.integration.test.js # 选肤器端到端集成测试（真实窗口双向装配、换肤预览、加载汇报、确认落盘、取消安全回滚与鉴权拦截）
+│  │  └─ storage.integration.test.js    # 存储 IPC 白名单、持久化读写与 skinId 强制归一化安全集成测试
 │  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，font.spec.js 通过真实 locale-changed 验证日语字体且可由 test:font 独立运行
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程

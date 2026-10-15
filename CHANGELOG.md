@@ -11,6 +11,7 @@
 - 新增[更换 CP 的迁移指南](docs/cp-migration-guide.md)，说明将岳七与沈九替换为其他角色时的名称、三语对白、皮肤素材、互动规则、内部标识、存档隔离、独立发布与验收回滚步骤，补充同仓库分支维护、通用功能同步及逐步提取角色配置的建议，并同步项目结构索引。
 - 新增桌宠体型大小缩放支持（50%~150%），基于逻辑尺寸 `pet.size` 与脚底底边中点锚定算法（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）；主进程通过 `PetScaleService` 管理持久化配置 `petScalePercent` 与实时拖动预览/确认状态机，渲染进程启动自动恢复并在变更时同步约束可行走区域。
 - 新增托盘菜单“📏 调整大小…”入口与独立体型调节子窗口（`src/pet-scale.html`、`src/pet-scale.css`、`src/petScaleWindow.js`），提供 50%~150% 滑块拖动实时预览、恢复默认（100%）、确认持久化保存与取消/ESC/关闭安全回滚的原生交互体验，并完成中/英/日三语字典国际化与权限矩阵安全加固。
+- 建立跨模块/IPC 轻量级集成测试体系（Integration Test）：新增测试套件目录 `test/integration/`、环境装配器 `createIntegrationHarness.js` 与独立运行脚本 `scripts/run-integration-tests.js`（支持命令参数与用例过滤），并在 `package.json` 中配置 `npm run test:integration` 与 `npm run test:all`。首期覆盖环境装配契约（harness）、桌宠体型缩放（`PetScaleService` ↔ `PetScaleWindow` ↔ IPC ↔ `StoreManager`）、存储安全白名单（`StorageIpc` ↔ 持久化读写 ↔ `skinId` 强制归一化）以及选肤器预览/确认/取消状态机（`SkinService` ↔ `SkinSelectorWindow` ↔ IPC 广播）全链路集成测试，填补单元测试与 Playwright E2E 之间的中层集成测试空白。
 
 ### Changed
 - 优化桌宠大小调节窗口（`PetScaleWindow`）布局与视觉层级：窗口初始高度由 240px 微调至 260px，面板启用弹性伸缩并拓宽内边距（`16px 22px 20px`），彻底消除右下角操作按钮（取消/确定）与底部内嵌装饰线/角花的重叠踩线问题；滑块刻度数值（50%、100%、150%）字体由 11px 提升至 13px 半粗体，配合等宽数字与精致胶囊轨道边框，显著增强跨 DPI 屏幕下的可读性与呼吸感。
@@ -23,6 +24,7 @@
 - 将 Git 提交与发布流程统一到 `docs/git-workflow.md`，删除重复的 `docs/release-workflow.md` 并同步文档引用；按实际脚本说明全量暂存、内部路径检查与测试职责，补齐资源保护和构建后包内容验证，明确既有 tag 复用、草稿手动发布、macOS ad-hoc 签名及更新验收流程。
 
 ### Fixed
+- 修复选肤器窗口（`SkinSelectorWindow`）在换肤确认关闭时仍触发 `cancelSkinSelection` 回滚广播的缺陷：为 `cancelSkinSelection` 补齐 `originalSkinId == null` 守卫，避免皮肤持久化确认并清除 `originalSkinId` 后，窗口关闭仍向渲染进程广播无 `persist` 标识的冗余 `switch-skin` 回滚事件。
 - 修正全代码库审查报告中的粒子对象池描述，按实际实现说明粒子数量限制、天气节点复用和屏保节点重建，并移除未经测量验证的垃圾回收收益断言；同步更新 `docs/structure.md` 的粒子层目录说明与运行时机制。
 - 修复审查问题 R1：屏保与久坐提醒的 Windows 坐标转换接线补齐 `screen.screenToDipRect(null, rect)` 首参，避免原生 API 抛错造成屏保误拒绝或提醒跳过演示窗口保护；新增两条生产接线回归测试（[ADR-031](docs/decisions/ADR-031-break-reminder.md)、[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)）。
 - 修复审查问题 R2：macOS 会议检测中为 `lsof` 命令行参数补齐 `-a` 选项（`lsof -a -nP -i UDP -p <pid> -Fn`），将目标 PID 与 UDP 协议条件约束为交集（AND），避免原默认并集（OR）逻辑将目标进程普通文件或其他进程的 UDP 端点误计入阈值，从而防止非通话状态误隐藏桌宠；补充区分并集与交集的命令 fake 自动化回归测试（[ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md)）。
