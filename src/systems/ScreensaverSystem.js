@@ -134,8 +134,20 @@ class ScreensaverSystem {
       return null;
     }
 
-    const rawScaleX = availWidth / BASE_WIDTH;
-    const rawScaleY = availHeight / BASE_HEIGHT;
+    const targetAreaScale = Number(targetArea.scaleRatio);
+    const displayScale = Number.isFinite(targetAreaScale) && targetAreaScale > 0
+      ? targetAreaScale
+      : 1;
+    const basePetSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const petScale = Number.isFinite((sizeA + sizeB) / (2 * basePetSize)) && (sizeA + sizeB) > 0
+      ? (sizeA + sizeB) / (2 * basePetSize)
+      : 1.0;
+
+    // 空间检查使用与 Overlay 渲染相同的体型和显示器倍率。
+    const rawScaleX = availWidth / (BASE_WIDTH * petScale * displayScale);
+    const rawScaleY = availHeight / (BASE_HEIGHT * petScale * displayScale);
     const rawScale = Math.min(rawScaleX, rawScaleY);
 
     if (rawScale < 0.65) {
@@ -143,10 +155,6 @@ class ScreensaverSystem {
     }
 
     const scaleRatio = Math.min(1.0, Math.max(0.65, rawScale));
-    const targetAreaScale = Number(targetArea.scaleRatio);
-    const displayScale = Number.isFinite(targetAreaScale) && targetAreaScale > 0
-      ? targetAreaScale
-      : 1;
     const pairLayout = this.stageGeometry
       && typeof this.stageGeometry.getCenteredPairLayout === 'function'
       ? this.stageGeometry.getCenteredPairLayout(
@@ -166,13 +174,6 @@ class ScreensaverSystem {
     const pairHeight = pairLayout
       ? (pairLayout.bounds.bottom - pairLayout.bounds.top) / displayScale
       : BASE_HEIGHT;
-
-    const basePetSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
-      ? CONFIG.PET_SIZE
-      : 96;
-    const petScale = Number.isFinite((sizeA + sizeB) / (2 * basePetSize)) && (sizeA + sizeB) > 0
-      ? (sizeA + sizeB) / (2 * basePetSize)
-      : 1.0;
 
     return {
       targetArea,

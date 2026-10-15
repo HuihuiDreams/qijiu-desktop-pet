@@ -198,4 +198,5 @@ CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节
 
 - 在 `ScreensaverSystem.js`（`showScreensaverOverlay`）中计算 `overlayWidth` 时接入 `petScale`，使立绘随体型等比收放（50%~150%）。
 - 在 `computeSceneBounds` 中将粒子层基准宽高的最小底线从硬编码常量升级为 `BASE_WIDTH * petScale` 与 `BASE_HEIGHT * petScale`，彻底消除截断阻断，实现无论放大还是缩小，粉红暖光晕与爱心粒子层均与桌宠及互动立绘保持严格等比例联动。
+- 空间适配按 `BASE_WIDTH/BASE_HEIGHT * petScale * displayScale` 计算，再应用场景缩放，宽高各保留合计 40px 留白；沿用 0.65～1 的场景缩放范围，需要缩至 0.65 以下时返回 `null` 并取消屏保，避免放大体型或混合 DPI 下仍按未缩放基准放行。`test/screensaverOverlay.test.js` 覆盖默认与较小体型、窄屏与低高度、混合 DPI、0.65 边界及空间不足拒绝，并检查实际生成的 Overlay 宽度与水平边界。
 

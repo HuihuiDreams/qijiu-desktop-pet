@@ -237,6 +237,9 @@ test('CHALLENGE 2 - Display area scaling boundary cases (0.64 -> cancel, 0.80 ->
 
   const petA = createFakePet('yueqi', 50, 50);
   const petB = createFakePet('shenjiu', 100, 50);
+  // These boundary calculations use the default 96px pet size.
+  petA.size = 96;
+  petB.size = 96;
   const electronAPI = createFakeElectronApi();
 
   const systemSmall = new ScreensaverSystem({

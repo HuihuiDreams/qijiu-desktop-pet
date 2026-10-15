@@ -336,6 +336,50 @@ test('ScreensaverSystem - scene scale calculation and cancellation when space < 
   assert.equal(systemWithStart.sessionId, 0);
 });
 
+for (const scenario of [
+  { name: 'default pets retain their size', size: 96, dpi: 1, width: 400, height: 600, scale: 1 },
+  { name: 'large pets on a narrow display', size: 144, dpi: 1, width: 400, height: 600, scale: 0.75 },
+  { name: 'large pets on a short display', size: 144, dpi: 1, width: 800, height: 280, scale: 0.8 },
+  { name: 'minimum supported scene scale', size: 144, dpi: 1, width: 352, height: 600, scale: 0.65 },
+  { name: 'large pets on mixed DPI', size: 144, dpi: 1.5, width: 600, height: 900, scale: 560 / 720 },
+  { name: 'small pets fit without extra shrinking', size: 48, dpi: 1, width: 220, height: 600, scale: 1 },
+  { name: 'insufficient width for large pets', size: 144, dpi: 1, width: 320, height: 600, scale: null },
+  { name: 'insufficient height for large pets', size: 144, dpi: 1, width: 800, height: 220, scale: null },
+  { name: 'insufficient space after DPI scaling', size: 144, dpi: 1.5, width: 400, height: 900, scale: null },
+]) {
+  test(`ScreensaverSystem - scene fit accounts for pet size and DPI: ${scenario.name}`, () => {
+    const { documentMock, body } = createFakeDom();
+    body.ownerDocument = documentMock;
+    const area = { x: 100, y: 50, width: scenario.width, height: scenario.height, scaleRatio: scenario.dpi };
+    const system = new ScreensaverSystem({
+      renderer: { stage: body },
+      getPets: () => [
+        { x: 120, y: 100, size: scenario.size },
+        { x: 220, y: 100, size: scenario.size },
+      ],
+      stageGeometry: { getWalkAreaForPoint: () => area },
+    });
+
+    const scene = system.computeSceneBounds();
+    if (scenario.scale === null) {
+      assert.equal(scene, null, 'must reject scenes needing a scale below 0.65');
+      return;
+    }
+
+    assert.ok(scene);
+    assert.ok(Math.abs(scene.scaleRatio - scenario.scale) < 1e-10);
+    system.sceneBounds = scene;
+    system.showScreensaverOverlay('hug');
+    const overlay = body.querySelector('.screensaver-overlay-image');
+    assert.ok(overlay);
+    const width = parseFloat(overlay.style.width);
+    const center = parseFloat(overlay.style.left);
+    assert.ok(center - width / 2 >= area.x + 20 - 1e-10);
+    assert.ok(center + width / 2 <= area.x + area.width - 20 + 1e-10);
+    assert.ok(scene.baseHeight * scene.visualScale * (scenario.size / 96) <= area.height - 40 + 1e-10);
+  });
+}
+
 test('ScreensaverSystem - DOM overlay creation with session attribute and no interaction-overlay collision', async () => {
   const { documentMock } = createFakeDom();
   global.document = documentMock;

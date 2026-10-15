@@ -45,7 +45,7 @@
 - 修复双人互动期间调节体型时叠加图不实时缩放的问题：预览及取消回滚同步更新现有互动图和气泡位置，保留气泡字号、台词与原到期时间，避免重播动画（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复体型调节窗口聚焦“取消”“关闭”或“恢复默认”按钮后按 Enter 会先误保存的问题：按钮交由原生键盘激活，仅非按钮区域使用 Enter 确认，同时避免“确定”重复提交并保留 Esc 取消（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复缩减桌宠体型后双人互动对话气泡重叠的问题：在 `PetRenderer` 中为覆盖层互动（喂食、拥抱、亲吻、双修等）新增动态碰撞检测与垂直错落避让算法（`adjustOverlayBubblesOverlap`）；当体型缩小时两人头部水平间距变窄导致气泡水平重合，将发起方（岳七）的气泡垂直抬升并设定 8px 安全间距与更高层级，确保台词阅读顺序自然且互不遮挡，在体型放大或文字简短无冲突时自动恢复对称平排，并在体型实时调节过程中动态响应（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
-- 修复缩减桌宠体型后局部屏保双人互动图不缩放导致比例失调的问题：在 `ScreensaverSystem.js`（`showScreensaverOverlay`）中补齐 `petScale` 体型缩放比例因子接线，消除原写死按全场景基准宽（320px）渲染导致的视觉反差（单人走入为 48px，双人互动瞬间突变为 320px 巨大立绘）；使局部屏保连招中的双人互动图与单人行走尺寸保持等比收放（50%~150%），彻底解决双人图显得异常巨大的问题（[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
+- 修复缩减桌宠体型后局部屏保双人互动图不缩放导致比例失调的问题：在 `ScreensaverSystem.js`（`showScreensaverOverlay`）中补齐 `petScale` 体型缩放比例因子接线，消除原写死按全场景基准宽（320px）渲染导致的视觉反差（单人走入为 48px，双人互动瞬间突变为 320px 巨大立绘）；使局部屏保连招中的双人互动图与单人行走尺寸保持等比收放（50%~150%）。空间检查同步计入体型和显示器倍率，避免放大体型后互动图在窄屏越界；场景最多缩至 65%，空间仍不足时取消屏保（[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复缩减桌宠体型后局部屏保粉红背景光晕未等比缩小的问题：在 `ScreensaverSystem.js`（`computeSceneBounds`）中将场景粒子的基准宽高底线（`BASE_WIDTH` / `BASE_HEIGHT`）与 `petScale` 联动，消除 50% 体型时被 320px 硬编码底线截断导致光晕停留在 66.7% 的问题，实现无论放大还是缩小，粉红背景暖光晕与爱心粒子层均与桌宠及互动立绘保持严格等比例收放（[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 
 
