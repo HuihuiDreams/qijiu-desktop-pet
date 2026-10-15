@@ -187,3 +187,15 @@ CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节
 `AppLifecycle.initScreensaverSystem()` 注入的坐标适配器改为 `screen.screenToDipRect(null, rect)`，与久坐提醒保持一致。原单参数调用会使普通窗口的几何检查抛错，并以 `display-query-failed` 拒绝屏保触发。首参 `null` 让 Electron 按矩形所在显示器换算。
 
 `test/presentationGuardWiring.test.js` 补充屏保生产接线回归，覆盖普通窗口放行、演示窗口拒绝及全屏前置拒绝；提醒侧同步修订见 [ADR-031](./ADR-031-break-reminder.md#amendments)。
+
+### 2026-10-15：局部屏保立绘与粉红背景联动桌宠体型缩放
+
+**问题**
+
+在引入桌宠体型自由调节功能（[ADR-047](./ADR-047-pet-scale-setting.md)）后，局部屏保触发时的双人互动 Overlay（如 `shareFood`、`hug`、`kiss`）原先直接按场景基准宽度（`BASE_WIDTH = 320`）硬编码渲染，导致桌宠调小（如 50% 体型、48px）时，屏保双人图瞬间膨胀为 320px 巨大立绘，视觉断层严重。同时，背后的粉红光晕计算受 `Math.max(BASE_WIDTH, pairWidth * 1.25)` 截断阻断，在 50% 缩放下被 320px 固死保底卡在 448px（66.7%），未能等比缩小至 336px。
+
+**修订**
+
+- 在 `ScreensaverSystem.js`（`showScreensaverOverlay`）中计算 `overlayWidth` 时接入 `petScale`，使立绘随体型等比收放（50%~150%）。
+- 在 `computeSceneBounds` 中将粒子层基准宽高的最小底线从硬编码常量升级为 `BASE_WIDTH * petScale` 与 `BASE_HEIGHT * petScale`，彻底消除截断阻断，实现无论放大还是缩小，粉红暖光晕与爱心粒子层均与桌宠及互动立绘保持严格等比例联动。
+

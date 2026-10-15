@@ -358,14 +358,92 @@ class PetRenderer {
     this.stage.querySelectorAll('.overlay-bubble').forEach((bubble) => {
       this.positionOverlayBubble(bubble, position, Number(bubble.dataset.headXRatio));
     });
+    this.adjustOverlayBubblesOverlap(position);
   }
 
-  positionOverlayBubble(el, overlayPos, headXRatio) {
+  positionOverlayBubble(el, overlayPos, headXRatio, stackOffset = 0) {
     const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
     el.style.setProperty('--bubble-scale', visualScale);
     el.style.left = `${overlayPos.x + overlayPos.width * headXRatio}px`;
     const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
-    el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
+    const offset = Number.isFinite(stackOffset) ? Math.ceil(stackOffset) : 0;
+    el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale + offset}px`;
+    if (typeof el.style?.setProperty === 'function') {
+      el.style.setProperty('--bubble-stack-offset', `${offset}px`);
+    } else if (el.style) {
+      el.style['--bubble-stack-offset'] = `${offset}px`;
+    }
+  }
+
+  adjustOverlayBubblesOverlap(overlayPos) {
+    const bubbles = Array.from(this.stage?.querySelectorAll?.('.overlay-bubble') || []);
+    if (bubbles.length < 2) return;
+
+    bubbles.sort((a, b) => Number(a.dataset.headXRatio) - Number(b.dataset.headXRatio));
+    const [bubbleLeft, bubbleRight] = bubbles;
+
+    const getElementWidth = (el, rect) => {
+      if (Number.isFinite(el.offsetWidth) && el.offsetWidth > 0) return el.offsetWidth;
+      if (rect && Number.isFinite(rect.width) && rect.width > 0) return rect.width;
+      return 0;
+    };
+
+    const getElementHeight = (el, rect) => {
+      if (Number.isFinite(el.offsetHeight) && el.offsetHeight > 0) return el.offsetHeight;
+      if (rect && Number.isFinite(rect.height) && rect.height > 0) return rect.height;
+      if (rect && Number.isFinite(rect.bottom) && Number.isFinite(rect.top)) return rect.bottom - rect.top;
+      return 0;
+    };
+
+    const rectLeft = typeof bubbleLeft.getBoundingClientRect === 'function' ? bubbleLeft.getBoundingClientRect() : null;
+    const rectRight = typeof bubbleRight.getBoundingClientRect === 'function' ? bubbleRight.getBoundingClientRect() : null;
+
+    const widthLeft = getElementWidth(bubbleLeft, rectLeft);
+    const widthRight = getElementWidth(bubbleRight, rectRight);
+    const heightLeft = getElementHeight(bubbleLeft, rectLeft);
+
+    if (widthLeft === 0 || widthRight === 0) return;
+
+    const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
+    const gap = 8 * visualScale;
+
+    const headXLeft = Number(bubbleLeft.dataset.headXRatio);
+    const headXRight = Number(bubbleRight.dataset.headXRatio);
+    const centerLeft = overlayPos.x + overlayPos.width * headXLeft;
+    const centerRight = overlayPos.x + overlayPos.width * headXRight;
+    const centerDistance = Math.abs(centerRight - centerLeft);
+
+    const isCenterOverlapping = centerDistance < (widthLeft + widthRight) / 2 + gap;
+    const isRectOverlapping = Boolean(
+      rectLeft && rectRight &&
+      Number.isFinite(rectLeft.left) && Number.isFinite(rectRight.right) &&
+      rectLeft.left < rectRight.right + gap && rectLeft.right + gap > rectRight.left
+    );
+
+    const isOverlapping = isCenterOverlapping || isRectOverlapping;
+
+    if (isOverlapping) {
+      const lift = Math.ceil((heightLeft > 0 ? heightLeft : 32 * visualScale) + gap);
+      const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+      const heightRight = getElementHeight(bubbleRight, rectRight) || (32 * visualScale);
+      const baseBottom = innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale;
+      const maxBottom = innerHeight - (heightRight + gap);
+
+      if (baseBottom + lift <= maxBottom) {
+        this.positionOverlayBubble(bubbleLeft, overlayPos, headXLeft, 0);
+        this.positionOverlayBubble(bubbleRight, overlayPos, headXRight, lift);
+        if (bubbleRight.style) bubbleRight.style.zIndex = '102';
+      } else {
+        this.positionOverlayBubble(bubbleLeft, overlayPos, headXLeft, -lift);
+        this.positionOverlayBubble(bubbleRight, overlayPos, headXRight, 0);
+        if (bubbleLeft.style) bubbleLeft.style.zIndex = '102';
+      }
+    } else {
+      this.positionOverlayBubble(bubbleLeft, overlayPos, headXLeft, 0);
+      this.positionOverlayBubble(bubbleRight, overlayPos, headXRight, 0);
+      if (bubbleLeft.style) bubbleLeft.style.zIndex = '101';
+      if (bubbleRight.style) bubbleRight.style.zIndex = '101';
+    }
   }
 
   /**
@@ -400,6 +478,7 @@ class PetRenderer {
 
     if (shenjuText) makeOverlayBubble(shenjuText, INTERACTION_BUBBLE_HEAD_X.shenjiu);
     if (yueqiText) makeOverlayBubble(yueqiText, INTERACTION_BUBBLE_HEAD_X.yueqi);
+    this.adjustOverlayBubblesOverlap(overlayPos);
   }
 
   /**

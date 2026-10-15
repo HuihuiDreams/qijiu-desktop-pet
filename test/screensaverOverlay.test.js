@@ -632,3 +632,34 @@ test('ScreensaverSystem - centers overlay with transform so intrinsic aspect rat
 
   delete global.document;
 });
+
+test('ScreensaverSystem - showScreensaverOverlay scales overlay proportionally with pet scale', () => {
+  const { documentMock, body } = createFakeDom();
+  global.document = documentMock;
+
+  const electronAPI = createFakeElectronApi();
+  const petA = { size: 48 }; // 50% scale
+  const petB = { size: 48 };
+  const system = new ScreensaverSystem({
+    electronAPI,
+    renderer: { stage: body },
+    getPets: () => [petA, petB],
+  });
+  system.sessionId = 99;
+  system.sceneBounds = {
+    baseWidth: 320,
+    baseHeight: 200,
+    visualScale: 1,
+    midpoint: { x: 500, y: 400 },
+  };
+
+  system.showScreensaverOverlay('hug');
+
+  const overlay = body.querySelector('.screensaver-overlay-image');
+  assert.ok(overlay);
+  // baseWidth 320 * visualScale 1 * petScale 0.5 = 160px
+  assert.equal(overlay.style.width, '160px');
+
+  delete global.document;
+});
+

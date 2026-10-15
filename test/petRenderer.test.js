@@ -733,3 +733,232 @@ test('PetRenderer.showOverlay scales overlay width proportionally to pet size', 
   }
 });
 
+test('showOverlayBubbles lifts right bubble when interaction bubbles overlap horizontally (small pet scale)', () => {
+  const appended = [];
+  const stage = {
+    appendChild(element) {
+      appended.push(element);
+    },
+    querySelectorAll(selector) {
+      if (selector === '.overlay-bubble') {
+        return appended.filter(el => el.className?.includes('overlay-bubble'));
+      }
+      return [];
+    },
+  };
+  const renderer = new PetRenderer(stage);
+  const overlayPos = {
+    x: 500,
+    y: 300,
+    width: 88, // 50% scale
+    scale: 1,
+  };
+
+  const originalDocument = global.document;
+  const originalSetTimeout = global.setTimeout;
+  global.setTimeout = (cb) => {
+    cb();
+    return 1;
+  };
+
+  global.document = {
+    createElement() {
+      const style = {};
+      style.setProperty = (name, value) => {
+        style[name] = value;
+      };
+      const classes = new Set();
+      return {
+        className: '',
+        dataset: {},
+        textContent: '',
+        offsetWidth: 100,
+        offsetHeight: 36,
+        style,
+        classList: {
+          add(c) {
+            classes.add(c);
+            this._classes = Array.from(classes).join(' ');
+          },
+          contains(c) {
+            return classes.has(c);
+          },
+        },
+        remove() {},
+      };
+    },
+  };
+
+  try {
+    renderer.showOverlayBubbles('…幼稚。', '小九，尝尝这个。', overlayPos, 1000);
+    assert.equal(appended.length, 2);
+
+    const [leftBubble, rightBubble] = appended;
+    const baseBottom = 600 - overlayPos.y + 16; // 316px
+    assert.equal(leftBubble.style.bottom, `${baseBottom}px`);
+    // Overlap: center distance is 88 * 0.8 = 70.4px < (100 + 100) / 2 + 8 = 108px
+    // Lift is leftHeight (36) + gap (8) = 44px
+    assert.equal(rightBubble.style.bottom, `${baseBottom + 44}px`);
+    assert.equal(rightBubble.style['--bubble-stack-offset'], '44px');
+    assert.equal(rightBubble.style.zIndex, '102');
+  } finally {
+    global.document = originalDocument;
+    global.setTimeout = originalSetTimeout;
+  }
+});
+
+test('showOverlayBubbles keeps bubbles side-by-side when they do not overlap', () => {
+  const appended = [];
+  const stage = {
+    appendChild(element) {
+      appended.push(element);
+    },
+    querySelectorAll(selector) {
+      if (selector === '.overlay-bubble') {
+        return appended.filter(el => el.className?.includes('overlay-bubble'));
+      }
+      return [];
+    },
+  };
+  const renderer = new PetRenderer(stage);
+  const overlayPos = {
+    x: 500,
+    y: 300,
+    width: 176, // 100% scale
+    scale: 1,
+  };
+
+  const originalDocument = global.document;
+  const originalSetTimeout = global.setTimeout;
+  global.setTimeout = (cb) => {
+    cb();
+    return 1;
+  };
+
+  global.document = {
+    createElement() {
+      const style = {};
+      style.setProperty = (name, value) => {
+        style[name] = value;
+      };
+      const classes = new Set();
+      return {
+        className: '',
+        dataset: {},
+        textContent: '',
+        offsetWidth: 40,
+        offsetHeight: 30,
+        style,
+        classList: {
+          add(c) {
+            classes.add(c);
+          },
+          contains(c) {
+            return classes.has(c);
+          },
+        },
+        remove() {},
+      };
+    },
+  };
+
+  try {
+    renderer.showOverlayBubbles('A', 'B', overlayPos, 1000);
+    assert.equal(appended.length, 2);
+
+    const [leftBubble, rightBubble] = appended;
+    const baseBottom = 600 - overlayPos.y + 16;
+    assert.equal(leftBubble.style.bottom, `${baseBottom}px`);
+    assert.equal(rightBubble.style.bottom, `${baseBottom}px`);
+    assert.equal(rightBubble.style['--bubble-stack-offset'], '0px');
+  } finally {
+    global.document = originalDocument;
+    global.setTimeout = originalSetTimeout;
+  }
+});
+
+test('updateOverlay dynamically adjusts overlay bubble stack offset on pet scale change', () => {
+  const elements = [];
+  const overlayElement = {
+    id: 'interaction-overlay',
+    style: { setProperty(name, value) { this[name] = value; } },
+  };
+  elements.push(overlayElement);
+
+  const stage = {
+    appendChild(element) {
+      elements.push(element);
+    },
+    querySelectorAll(selector) {
+      if (selector === '.overlay-bubble') {
+        return elements.filter(el => el.className?.includes('overlay-bubble'));
+      }
+      return [];
+    },
+  };
+
+  const renderer = new PetRenderer(stage);
+  const originalDocument = global.document;
+  const originalSetTimeout = global.setTimeout;
+  global.setTimeout = (cb) => {
+    cb();
+    return 1;
+  };
+
+  global.document = {
+    getElementById(id) {
+      return elements.find(el => el.id === id) || null;
+    },
+    createElement() {
+      const style = {};
+      style.setProperty = (name, value) => {
+        style[name] = value;
+      };
+      const classes = new Set();
+      return {
+        className: '',
+        dataset: {},
+        textContent: '',
+        offsetWidth: 100,
+        offsetHeight: 36,
+        style,
+        classList: {
+          add(c) {
+            classes.add(c);
+          },
+          contains(c) {
+            return classes.has(c);
+          },
+        },
+        remove() {},
+      };
+    },
+  };
+
+  try {
+    // Start with 100% scale (no overlap for width=176 if offsetWidth was small, but here offsetWidth=100)
+    // At pet size 48 (50% scale):
+    const petA = { x: 500, y: 300, size: 48 };
+    const petB = { x: 540, y: 300, size: 48 };
+
+    renderer.showOverlayBubbles('left', 'right', renderer.getOverlayPosition(petA, petB), 1000);
+    const bubbles = stage.querySelectorAll('.overlay-bubble');
+    const [leftBubble, rightBubble] = bubbles;
+
+    // At 50% scale, bubbles overlap, rightBubble should be lifted
+    assert.equal(rightBubble.style['--bubble-stack-offset'], '44px');
+
+    // Now scale up to 150% (size 144) where centerDistance is 176 * 1.5 * 0.8 = 211px > (100+100)/2 + 8 = 108px
+    petA.size = 144;
+    petB.size = 144;
+    renderer.updateOverlay(petA, petB);
+
+    // Overlap should be cleared!
+    assert.equal(rightBubble.style['--bubble-stack-offset'], '0px');
+  } finally {
+    global.document = originalDocument;
+    global.setTimeout = originalSetTimeout;
+  }
+});
+
+

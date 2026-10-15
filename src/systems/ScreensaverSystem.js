@@ -167,6 +167,13 @@ class ScreensaverSystem {
       ? (pairLayout.bounds.bottom - pairLayout.bounds.top) / displayScale
       : BASE_HEIGHT;
 
+    const basePetSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const petScale = Number.isFinite((sizeA + sizeB) / (2 * basePetSize)) && (sizeA + sizeB) > 0
+      ? (sizeA + sizeB) / (2 * basePetSize)
+      : 1.0;
+
     return {
       targetArea,
       midpoint: sceneCenter,
@@ -177,8 +184,8 @@ class ScreensaverSystem {
       visualScale: scaleRatio * displayScale,
       baseWidth: BASE_WIDTH,
       baseHeight: BASE_HEIGHT,
-      particleBaseWidth: Math.max(BASE_WIDTH, pairWidth * 1.25),
-      particleBaseHeight: Math.max(BASE_HEIGHT, pairHeight * 3),
+      particleBaseWidth: Math.max(BASE_WIDTH * petScale, pairWidth * 1.25),
+      particleBaseHeight: Math.max(BASE_HEIGHT * petScale, pairHeight * 3),
       pairLayout,
     };
   }
@@ -364,6 +371,19 @@ class ScreensaverSystem {
     this.comboStepTimer = 500;
   }
 
+  getPetScale() {
+    const pets = this.getPets();
+    if (!Array.isArray(pets) || pets.length === 0) return 1.0;
+    const basePetSize = typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.PET_SIZE) && CONFIG.PET_SIZE > 0
+      ? CONFIG.PET_SIZE
+      : 96;
+    const petA = pets[0];
+    const petB = pets[1];
+    const sizeA = Number.isFinite(petA?.size) && petA.size > 0 ? petA.size : basePetSize;
+    const sizeB = Number.isFinite(petB?.size) && petB.size > 0 ? petB.size : basePetSize;
+    return (sizeA + sizeB) / (2 * basePetSize);
+  }
+
   /**
    * 渲染屏保 Overlay DOM 元素。
    * 必须使用 `data-screensaver-session-id` 属性与 `.screensaver-overlay-image` 类，严禁使用 `interaction-overlay` ID。
@@ -388,7 +408,8 @@ class ScreensaverSystem {
     const overlayPrefix = `pet-asset://skin/${skinId}/`;
 
     const visualScale = scene.visualScale || scene.scaleRatio;
-    const overlayWidth = scene.baseWidth * visualScale;
+    const petScale = this.getPetScale();
+    const overlayWidth = scene.baseWidth * visualScale * petScale;
     const cx = scene.midpoint.x;
     const cy = scene.midpoint.y;
     // 使用 transform 将图片中心对齐场景中点，避免依赖图片 intrinsic 宽高比。
