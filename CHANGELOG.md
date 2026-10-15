@@ -41,6 +41,10 @@
 - 修复必要皮肤素材加载失败后渲染端仍使用失败皮肤的问题：恢复上一套成功应用的立绘、走动帧、图片比例、状态图片与叠加层路径，并重置动画缓存；确认继续拒绝失败请求，补充实际渲染状态与后续换肤恢复的回归断言（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复桌宠体型调节窗口失焦后消失的问题：对齐选肤窗口（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）的普通窗口生命周期模型，移除导致失焦后窗口被系统隐藏的 `setVisibleOnAllWorkspaces` 与置顶脉冲，改为普通层级（`alwaysOnTop: false`）并支持最小化（`minimizable: true`）；切换工作窗口或点击桌面时保持窗口与实时预览，仅在点击右上角关闭按钮（X）、取消、确定、ESC 或原生关窗时结束并安全回滚未确认的体型修改。
 
+- 修复混合 DPI 显示器上调整体型导致脚底漂移的问题：按每只宠物当前屏幕的 `scaleRatio` 计算视觉尺寸差，同步修正位置与移动目标；移动系统的边界、平台高度与跨屏落点统一使用所在屏幕的视觉尺寸，避免预览被额外夹紧、取消后位置偏移或脱离平台，补充真实移动与几何系统的缩放及回滚回归测试（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
+- 修复双人互动期间调节体型时叠加图不实时缩放的问题：预览及取消回滚同步更新现有互动图和气泡位置，保留气泡字号、台词与原到期时间，避免重播动画（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
+- 修复体型调节窗口聚焦“取消”“关闭”或“恢复默认”按钮后按 Enter 会先误保存的问题：按钮交由原生键盘激活，仅非按钮区域使用 Enter 确认，同时避免“确定”重复提交并保留 Esc 取消（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
+
 ## [0.10.5] - 2026-09-15
 
 ### Added

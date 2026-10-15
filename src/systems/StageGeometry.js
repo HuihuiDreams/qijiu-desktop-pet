@@ -106,9 +106,13 @@ class StageGeometry {
   }
 
   /**
-   * 宠物中心点所在可行走区域的视觉缩放比例。
+   * 与移动系统共用视觉边界优先、跨屏时中心点兜底的显示器归属。
    */
   getVisualScaleForPet(pet) {
+    const movementSystem = this.getMovementSystem();
+    if (typeof movementSystem?.getMovementScaleForPet === 'function') {
+      return movementSystem.getMovementScaleForPet(pet);
+    }
     return this.getVisualScaleForPoint(pet.x + pet.size / 2, pet.y + pet.size / 2);
   }
 

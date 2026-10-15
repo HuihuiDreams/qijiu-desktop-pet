@@ -281,16 +281,7 @@ class PetRenderer {
   }
 
 
-  /**
-   * 在 petA 和 petB 的中心位置显示双人互动的叠加层图片。
-   * 同时在显示期间隐藏两只宠物原本的身体图像。
-   * 返回叠加层图片在 stage 上的 {x, y, width} 供气泡定位使用。
-   */
-  showOverlay(petA, petB, type) {
-    // 隐藏两只宠物原本的身体
-    if (petA.element) petA.element.querySelector('.pet-body').style.visibility = 'hidden';
-    if (petB.element) petB.element.querySelector('.pet-body').style.visibility = 'hidden';
-
+  getOverlayPosition(petA, petB) {
     const centerA = this.getPetVisualCenter(petA);
     const centerB = this.getPetVisualCenter(petB);
     const visualScale = (centerA.scale + centerB.scale) / 2;
@@ -309,15 +300,34 @@ class PetRenderer {
     const overlayLeft = cx - overlayWidth / 2;
     const overlayTop = cy - INTERACTION_OVERLAY_TOP_OFFSET * combinedScale;
 
+    return {
+      x: overlayLeft,
+      y: overlayTop,
+      width: overlayWidth,
+      baseWidth: INTERACTION_OVERLAY_BASE_WIDTH,
+      scale: visualScale,
+    };
+  }
+
+  /**
+   * 在 petA 和 petB 的中心位置显示双人互动的叠加层图片。
+   * 同时在显示期间隐藏两只宠物原本的身体图像。
+   * 返回叠加层图片在 stage 上的 {x, y, width} 供气泡定位使用。
+   */
+  showOverlay(petA, petB, type) {
+    if (petA.element) petA.element.querySelector('.pet-body').style.visibility = 'hidden';
+    if (petB.element) petB.element.querySelector('.pet-body').style.visibility = 'hidden';
+    const position = this.getOverlayPosition(petA, petB);
+
     const overlay = document.createElement('img');
     overlay.id = 'interaction-overlay';
     overlay.src = `${this.skinPrefix}${type}.webp`;
     overlay.alt = type;
     overlay.style.position = 'absolute';
-    overlay.style.width = `${overlayWidth}px`;
+    overlay.style.width = `${position.width}px`;
     overlay.style.height = 'auto';
-    overlay.style.left = `${overlayLeft}px`;
-    overlay.style.top = `${overlayTop}px`;
+    overlay.style.left = `${position.x}px`;
+    overlay.style.top = `${position.y}px`;
     overlay.style.pointerEvents = 'none';
     overlay.style.zIndex = '100';
     overlay.style.opacity = '0';
@@ -334,14 +344,28 @@ class PetRenderer {
       });
     });
 
-    // 返回覆盖层的位置信息，供气泡定位使用
-    return {
-      x: overlayLeft,
-      y: overlayTop,
-      width: overlayWidth,
-      baseWidth: INTERACTION_OVERLAY_BASE_WIDTH,
-      scale: visualScale,
-    };
+    return position;
+  }
+
+  // 体型预览只更新几何，不重建节点或延长现有气泡的寿命。
+  updateOverlay(petA, petB) {
+    const overlay = document.getElementById('interaction-overlay');
+    if (!overlay) return;
+    const position = this.getOverlayPosition(petA, petB);
+    overlay.style.width = `${position.width}px`;
+    overlay.style.left = `${position.x}px`;
+    overlay.style.top = `${position.y}px`;
+    this.stage.querySelectorAll('.overlay-bubble').forEach((bubble) => {
+      this.positionOverlayBubble(bubble, position, Number(bubble.dataset.headXRatio));
+    });
+  }
+
+  positionOverlayBubble(el, overlayPos, headXRatio) {
+    const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
+    el.style.setProperty('--bubble-scale', visualScale);
+    el.style.left = `${overlayPos.x + overlayPos.width * headXRatio}px`;
+    const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
+    el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
   }
 
   /**
@@ -354,20 +378,14 @@ class PetRenderer {
    */
   showOverlayBubbles(shenjuText, yueqiText, overlayPos, duration) {
     this._clearOverlayBubbles();
-    const visualScale = Number.isFinite(overlayPos?.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
-
     const makeOverlayBubble = (text, headXRatio) => {
       const el = document.createElement('div');
       el.className = 'dialog-bubble overlay-bubble';
       el.textContent = text;
       el.style.position = 'absolute';
-      el.style.setProperty('--bubble-scale', visualScale);
-      // 水平居中于角色头部
-      const headX = overlayPos.x + overlayPos.width * headXRatio;
-      el.style.left = `${headX}px`;
+      el.dataset.headXRatio = String(headXRatio);
+      this.positionOverlayBubble(el, overlayPos, headXRatio);
       el.style.transform = 'translateX(-50%)';
-      const innerHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
-      el.style.bottom = `${innerHeight - overlayPos.y + INTERACTION_BUBBLE_TOP_GAP * visualScale}px`;
       el.style.top = 'auto'; // 移除 top 定位
       el.style.zIndex = '101';
       el.style.pointerEvents = 'none';

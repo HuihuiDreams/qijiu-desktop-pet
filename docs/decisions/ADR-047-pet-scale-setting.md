@@ -18,25 +18,29 @@ Accepted
 我们决定采用**直接调整逻辑尺寸 `pet.size` 并以脚底底边中点（Bottom-Center）为锚点**的方案，并保持文字 UI 元素不随用户缩放改变。
 
 1. **逻辑尺寸驱动 (`pet.size = CONFIG.PET_SIZE * percent / 100`)**：
-   - 保持 `pet.size` 为真正的实体几何边界。
-   - `MovementSystem`（碰撞边界、任务栏平台行走、跨屏边缘检测）、`InteractionSystem`（靠近触发距离）、`StageGeometry`（可行走区域与布局计算）天然以 `pet.size` 为基准运算，因而无需入侵重写各系统的物理公式。
+   - 保持 `pet.size` 为用户体型对应的逻辑尺寸，渲染到舞台上的尺寸为 `pet.size * scaleRatio`。
+   - `MovementSystem` 的目标范围、平台高度、完整边界判定与跨屏桥接落点使用候选显示器的视觉尺寸。平台按各候选 `walkArea` 的 DPI 计算可达交集，即使活动窗口平台没有 `scaleRatio` 也能与渲染尺寸一致；不能仅修正缩放位移而继续用未乘 DPI 的逻辑尺寸夹紧，否则预览时会额外移动、取消后位置漂移并丢失平台附着。
+   - `StageGeometry` 的宠物视觉比例查询与移动系统共用显示器归属：优先匹配完整视觉边界，四边比较保留 `1e-7` 舞台像素的浮点容差，跨屏过渡时保留原逻辑中心兜底。否则 DPI 比例低于 0.5 时，允许视觉贴边后逻辑中心可能越界或落入邻屏，或分数尺寸的乘加误差导致匹配失败，触发错误比例并把立绘放大到屏幕外。
    - 视觉层使用 CSS 变量 `--pet-size: ${pet.size}px` 驱动 `.pet-body` 的宽、高及 Emoji 字号，避免固定像素导致渲染变形。
 
 2. **脚底锚定算法 (`Bottom-Center Anchoring`)**：
-   - 当体型发生变化（`deltaSize = newSize - oldSize`）且宠物不在被拖拽状态时，执行锚点位移：
+   - 渲染端从 `StageGeometry.getVisualScaleForPet()` 读取每只宠物当前显示器的 `scaleRatio`，传给 `Pet.applyScale(percent, visualScale)`。当体型发生变化（`deltaSize = (newSize - oldSize) * visualScale`）且宠物不在被拖拽状态时，执行锚点位移，并同步调整目标坐标：
      `x -= deltaSize / 2`
      `y -= deltaSize`
    - 保证宠物站在任务栏或窗口平台边缘时，缩放不会导致宠物悬空或陷入平台内部。
+   - 放大后视觉边界确实超出可行走区域时仍执行正常约束；例如紧贴右边缘时放大需要向左移动，此时取消不承诺恢复被边界约束前的位置。
    - 拖拽进行中（`isDragging === true`）只变更 `size`，不施加坐标位移，防止鼠标指针下发生跳跃。
 
 3. **视觉与字号分层解耦**：
    - 对话气泡（`dialog-bubble`）和右键菜单（`context-menu`）不跟随用户体型缩放，保持 100% 标准字号与清晰排版，仅跟随屏幕 DPI（`scaleRatio`）进行物理缩放，确保 50% 缩小状态下台词依然完全清晰可读。
    - 亲亲/拥抱双人互动叠加层（`showOverlay`）宽度乘以双宠平均体型比例，保证 CP 互动视觉与实际体型协调一致。
+   - 互动进行中收到体型预览或回滚时，在宠物坐标约束完成后调用 `updateOverlay()`，复用现有图片和气泡节点重新定位；气泡仅随 DPI 调整字号，不重启淡入淡出动画或延长显示时间。
 
 4. **设置窗口生命周期与层级（对齐选肤器 ADR-041）**：
    - 调整大小窗口采用普通窗口层级（`alwaysOnTop: false`、允许最小化 `minimizable: true`、`show: false` 准备好后唤起），不使用 `setVisibleOnAllWorkspaces` 与置顶脉冲（`pulseTop`）。
    - 用户切换工作窗口、点击桌面或失焦时保留窗口与实时调节状态，不监听 `blur` 自动关闭。
    - 仅在点击右上角“关闭”按钮（X）、“取消”按钮、ESC 键或系统关闭窗口时安全回滚至调节前体型；点击“确定”时持久化保存并关闭。
+   - 焦点位于按钮时，Enter 由原生按钮激活机制执行对应动作（取消、关闭、恢复默认或确认）；非按钮区域保留 Enter 确认，避免全局快捷键先于取消动作误保存或重复确认。
 
 ## Alternatives Considered
 - **在 `getVisualScaleForPet` 中叠加用户缩放**：
@@ -53,3 +57,12 @@ Accepted
   - 文字阅读体验无损：气泡在任何体型下均保真可读。
 - **Negative**:
   - 极小尺寸（如 50%）时，对话气泡的相对面积看起来比宠物本身更大，但在桌面小组件中，信息可读性的优先级高于气泡严格比例。
+
+## Verification
+
+- 自动化回归：`node --test test/petScale.test.js test/petRenderer.test.js test/petScaleRendererSubscription.test.js test/petScaleWindowRenderer.behavior.test.js test/petScaleMovement.behavior.test.js test/movementSystem.test.js test/stageGeometry.test.js`，再运行 `npm test`。覆盖非 1 DPI 锚点、目标坐标、预览/回滚时互动图与气泡几何、气泡原到期时间及按钮 Enter 行为；使用真实 `Pet`、`StageGeometry` 与 `MovementSystem` 覆盖 DPI 1、2/3、1.5、1/3 下站立/行走宠物的任务栏与活动窗口平台附着、取消后位置恢复、下一帧行走、右下边界可见性、跨屏落点及低 DPI 屏幕紧邻其他比例屏幕时的归属；DPI 0.4 与非整数屏幕边界下逐档遍历 50%～150%，验证浮点误差不会引起比例跳变。
+- 手动检查锚点：在不同 DPI 显示器的可行走区域内部（远离边界约束）分别把体型从 100% 调到 150%、50%，确认脚底中点不漂移，取消后恢复原尺寸。
+- 手动检查平台与边界：让宠物站立或沿任务栏、活动窗口顶部行走，预览 150%、50% 后取消，确认脚底仍贴平台、回滚后没有额外上下移动；在屏幕右下角重复操作，确认完整立绘保持可见，再检查跨屏往返落点没有越界。
+- 手动检查互动：在亲吻或拥抱进行时拖动滑块，确认当前互动图立即等比缩放，气泡跟随头部且文字不随体型缩放；取消恢复原图尺寸，互动与气泡按原时间结束。
+- 手动检查键盘：预览一个非默认值后，用 Tab 聚焦“取消”“关闭”“恢复默认”“确定”并分别按 Enter，确认仅执行对应动作；非按钮区域 Enter 保存，Esc 回滚，保存后重启仍恢复已确认尺寸。
+- 2026-10-15 已用独立临时存档在 Windows Electron 验证四个按钮的原生 Enter 行为，并注入 `scaleRatio = 2/3` 验证实际 DOM 脚底坐标、互动图缩放、气泡节点复用及取消回滚，无页面异常或游戏循环错误。本次移动约束修复另在实际混合 DPI 副屏（`scaleRatio = 2/3`）通过原生滑块及取消按钮验证 100% → 150% → 50% → 取消：DOM 脚底恒为 1248、保持任务栏平台附着并恢复原位置；取消后继续水平行走，以及不携带 DPI 的活动窗口平台预览和 Esc 回滚也通过。macOS 尚需按以上步骤验收。

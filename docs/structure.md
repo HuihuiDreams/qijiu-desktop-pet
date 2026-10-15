@@ -192,7 +192,7 @@ qijiu-desktop-pet/
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
 │  ├─ pet-scale.html                    # 桌宠体型设置独立窗口 HTML，使用严格 CSP
 │  ├─ pet-scale.css                     # 桌宠体型设置差异样式，复用 .xianxia-panel 基类与设计令牌，包含滑块与数值样式
-│  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程
+│  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程；按钮保留原生 Enter 动作，非按钮区域 Enter 确认、Esc 取消
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
@@ -204,20 +204,20 @@ qijiu-desktop-pet/
 │  │  ├─ dialogues.js                   # 对话与交互文本
 │  │  └─ i18n.js                        # zh / en / ja 多语言字典
 │  ├─ pet/
-│  │  ├─ Pet.js                         # 宠物实体状态：位置、方向、数值、动作状态
-│  │  ├─ PetRenderer.js                 # 宠物 DOM 渲染、交互事件绑定、拖拽入口
+│  │  ├─ Pet.js                         # 宠物实体状态：位置、方向、数值、动作状态；applyScale 接收当前显示器 scaleRatio，按视觉尺寸差锚定脚底并同步移动目标
+│  │  ├─ PetRenderer.js                 # 宠物 DOM 渲染、交互事件绑定、拖拽入口；体型预览/回滚时复用现有互动叠加图和气泡更新几何位置，保留动画与气泡到期时间
 │  │  └─ SpriteView.js                  # 基于状态的图片帧播放、预加载和切换稳定性处理
 │  ├─ systems/
 │  │  ├─ AmbientDialogueSystem.js       # 闲聊/状态警告/深夜梦话节奏调度：update(deltaMs) 每帧推进两个计时器（app.js 拆分 Phase R3）
 │  │  ├─ InteractionSystem.js           # 双人距离检测、CP 互动、冷却、互动效果
-│  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制
+│  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制；按目标区域 DPI 的视觉尺寸计算平台高度、边界与跨屏落点
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible()/isScreensaverActive() 便于测试）；回归气泡经 scheduleReturnBubbles() 的 1.5s/3s 两条 setTimeout 在触发前重检屏保状态（屏保打断时保留 pendingReturnBubble 并递增 returnBubbleSequenceId 使旧回调失效，全部触发成功即释放），屏保结束（onScreensaverEnd → flushPendingReturnBubble）补发暂存气泡（并在补发前清除残留被抓包气泡以防叠加）；saveCurrentState()（自动保存/退出保存）在保存前刷新 lastVisibleTime，防止长时间使用后退出重开时时辰计算基于陈旧时间戳导致误报
 │  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
 │  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack)，复用 StageGeometry 的久坐提醒双宠居中布局并按其跨度扩展氛围层；连招采用固定顺序 shareFood → hug → kiss 过滤后循环播放：可用 Overlay >=2 时持续循环至用户输入或静默取消，零或一个时停在中心 idle_waiting；普通输入进入一次性 caught 展示至少 800ms CSS 文本 ! 并回位，caught/runningBack 对重复 input stop 幂等；提示与场景共同应用 DPI 缩放，支持皮肤 Overlay keys 校验跳过、runningBack 目标点 walkArea 夹紧与安全复位；CP 屏保 Overlay 使用 transform: translate(-50%, -50%) 将图片中心对齐场景中点，不依赖素材 intrinsic 宽高比；reset() 末尾触发 onScreensaverEnd（离线回归气泡的补发事件钩子，替代游戏循环 rAF 边沿检测）
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：串行加载与最新待执行请求队列、过时加载回写抑制、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
-│  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、视觉缩放查询、支持 DPI 视觉尺寸的双宠居中布局、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
+│  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、与移动系统共用显示器归属的视觉缩放查询、支持 DPI 视觉尺寸的双宠居中布局、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
 │  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
 │  │  ├─ WeatherAwarenessSystem.js      # 接收并应用主进程下发的天气和时段抽象 payload
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
@@ -319,7 +319,8 @@ qijiu-desktop-pet/
 - `DisplayService.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
 - `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`；`StageGeometry` 使用其中的主屏标记计算托盘重置位置，确保 Windows 多屏环境回到主屏中部。
 - `displayFit.js` 将 `display-added`、`display-removed` 和 `display-metrics-changed` 的短时间连发合并为一次窗口适配，避免 macOS 数位板驱动等场景下出现多次可见 resize。
-- `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。
+- `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。目标范围与完整边界判定使用候选显示器的 `pet.size * scaleRatio`；平台在每个候选 `walkArea` 内按该屏 DPI 计算脚底高度和可达交集，不依赖活动窗口平台携带 DPI。跨屏桥接复用目标可达范围，保持缩放、取消回滚及后续行走的几何约束一致。
+- `StageGeometry.getVisualScaleForPet()` 与移动系统共用显示器归属：优先匹配能容纳完整视觉边界的 `walkArea`，跨屏过渡时回退原逻辑中心判定，避免 DPI 比例小于 0.5 时贴边宠物误用默认或邻屏比例。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
 
 ### 3.5 Surface Awareness

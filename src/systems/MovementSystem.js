@@ -156,13 +156,14 @@ class MovementSystem {
     )) || null;
   }
 
-  getTargetRange(area, pet, margin) {
+  getTargetRange(area, pet, margin, visualScale = this.getScaleRatioForArea(area)) {
+    const size = pet.size * visualScale;
     if (this.isSurfacePlatform(area)) {
-      const xMargin = Math.min(margin, Math.max(0, (area.width - pet.size) / 2));
-      const platformY = area.y + area.height / 2 - pet.size;
+      const xMargin = Math.min(margin, Math.max(0, (area.width - size) / 2));
+      const platformY = area.y + area.height / 2 - size;
       return {
         minX: area.x + xMargin,
-        maxX: area.x + area.width - pet.size - xMargin,
+        maxX: area.x + area.width - size - xMargin,
         minY: platformY,
         maxY: platformY,
       };
@@ -170,23 +171,28 @@ class MovementSystem {
 
     return {
       minX: area.x + margin,
-      maxX: area.x + area.width - pet.size - margin,
+      maxX: area.x + area.width - size - margin,
       minY: area.y + margin,
-      maxY: area.y + area.height - pet.size - margin,
+      maxY: area.y + area.height - size - margin,
     };
   }
 
   getReachableTargetRange(area, pet, margin) {
-    const range = this.getTargetRange(area, pet, margin);
-    if (!this.isSurfacePlatform(area)) return range;
+    if (!this.isSurfacePlatform(area)) return this.getTargetRange(area, pet, margin);
 
+    // 活动窗口平台不携带 DPI；平台与可行走区域必须使用同一屏幕的视觉尺寸。
     const reachableRanges = this.getWalkAreas()
-      .map((walkArea) => ({
-        minX: Math.max(range.minX, walkArea.x),
-        maxX: Math.min(range.maxX, walkArea.x + walkArea.width - pet.size),
-        minY: Math.max(range.minY, walkArea.y),
-        maxY: Math.min(range.maxY, walkArea.y + walkArea.height - pet.size),
-      }))
+      .map((walkArea) => {
+        const visualScale = this.getScaleRatioForArea(walkArea);
+        const size = pet.size * visualScale;
+        const range = this.getTargetRange(area, pet, margin, visualScale);
+        return {
+          minX: Math.max(range.minX, walkArea.x),
+          maxX: Math.min(range.maxX, walkArea.x + walkArea.width - size),
+          minY: Math.max(range.minY, walkArea.y),
+          maxY: Math.min(range.maxY, walkArea.y + walkArea.height - size),
+        };
+      })
       .filter((candidate) => (
         candidate.minX <= candidate.maxX
         && candidate.minY <= candidate.maxY
@@ -266,12 +272,15 @@ class MovementSystem {
   getMovementScaleForPet(pet) {
     const centerX = pet.x + pet.size / 2;
     const centerY = pet.y + pet.size / 2;
-    const walkArea = this.getWalkAreas().find((area) => (
-      centerX >= area.x
-      && centerX <= area.x + area.width
-      && centerY >= area.y
-      && centerY <= area.y + area.height
-    ));
+    const areas = this.getWalkAreas();
+    // 小比例屏幕的逻辑中心可能越界；跨屏过渡时再沿用中心点判定。
+    const walkArea = this.findAreaContainingPetBounds(pet, pet.x, pet.y, areas)
+      || areas.find((area) => (
+        centerX >= area.x
+        && centerX <= area.x + area.width
+        && centerY >= area.y
+        && centerY <= area.y + area.height
+      ));
 
     return this.getScaleRatioForArea(walkArea);
   }
@@ -283,13 +292,16 @@ class MovementSystem {
     pet.targetY = this.clampToRange(pet.targetY, range.minY, range.maxY);
   }
 
-  findAreaContainingPetBounds(pet, x = pet.x, y = pet.y) {
-    return this.getMovementAreas().find((area) => (
-      x >= area.x
-      && y >= area.y
-      && x + pet.size <= area.x + area.width
-      && y + pet.size <= area.y + area.height
-    )) || null;
+  findAreaContainingPetBounds(pet, x = pet.x, y = pet.y, areas = this.getMovementAreas()) {
+    // 分数 DPI 的乘加误差不应让贴边宠物失去显示器归属。
+    const epsilon = 1e-7;
+    return areas.find((area) => {
+      const size = pet.size * this.getScaleRatioForArea(area);
+      return x >= area.x - epsilon
+        && y >= area.y - epsilon
+        && x + size <= area.x + area.width + epsilon
+        && y + size <= area.y + area.height + epsilon;
+    }) || null;
   }
 
   getNearestPositionInWalkAreas(pet, x = pet.x, y = pet.y) {
@@ -344,21 +356,23 @@ class MovementSystem {
 
   bridgeToTargetArea(pet, currentArea, targetArea) {
     if (!targetArea || this.sameArea(currentArea, targetArea)) return false;
+    const range = this.getReachableTargetRange(targetArea, pet, 0);
+    if (!range) return false;
 
     if (!currentArea || targetArea.x >= currentArea.x + currentArea.width) {
-      pet.x = targetArea.x;
+      pet.x = range.minX;
     } else if (targetArea.x + targetArea.width <= currentArea.x) {
-      pet.x = targetArea.x + targetArea.width - pet.size;
+      pet.x = range.maxX;
     } else {
-      pet.x = this.clampToRange(pet.x, targetArea.x, targetArea.x + targetArea.width - pet.size);
+      pet.x = this.clampToRange(pet.x, range.minX, range.maxX);
     }
 
     if (!currentArea || targetArea.y >= currentArea.y + currentArea.height) {
-      pet.y = targetArea.y;
+      pet.y = range.minY;
     } else if (targetArea.y + targetArea.height <= currentArea.y) {
-      pet.y = targetArea.y + targetArea.height - pet.size;
+      pet.y = range.maxY;
     } else {
-      pet.y = this.clampToRange(pet.y, targetArea.y, targetArea.y + targetArea.height - pet.size);
+      pet.y = this.clampToRange(pet.y, range.minY, range.maxY);
     }
 
     return true;

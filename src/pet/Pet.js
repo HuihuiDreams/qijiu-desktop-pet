@@ -102,8 +102,9 @@ class Pet {
    * 缩放时锚定脚底（底边中点不变），并同步调整目标移动坐标。
    * 拖拽中仅更新尺寸，不调整位置，避免鼠标指针下跳变。
    * @param {number} percent - 缩放百分比 (50 - 150)
+   * @param {number} visualScale - 当前显示器的 scaleRatio，坐标位移使用视觉尺寸差
    */
-  applyScale(percent) {
+  applyScale(percent, visualScale = 1) {
     const p = Number(percent);
     if (!Number.isFinite(p) || p <= 0) return;
 
@@ -111,7 +112,8 @@ class Pet {
       ? CONFIG.PET_SIZE
       : 96;
     const newSize = (baseSize * p) / 100;
-    const deltaSize = newSize - this.size;
+    const scale = Number.isFinite(visualScale) && visualScale > 0 ? visualScale : 1;
+    const deltaSize = (newSize - this.size) * scale;
     this.size = newSize;
 
     if (!this.isDragging) {

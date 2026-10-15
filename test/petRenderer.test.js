@@ -293,6 +293,7 @@ test('interaction overlay bubbles follow the overlay visual scale', () => {
       };
       return {
         className: '',
+        dataset: {},
         textContent: '',
         style,
         classList: {
@@ -467,7 +468,7 @@ test('hideOverlay clears overlay bubbles and cancels timers', () => {
   global.clearTimeout = (id) => clearedTimers.push(id);
   global.document = {
     createElement() {
-      return { className: '', style: { setProperty() {} }, classList: { add() {} }, remove() {} };
+      return { className: '', dataset: {}, style: { setProperty() {} }, classList: { add() {} }, remove() {} };
     },
     getElementById() { return null; }
   };

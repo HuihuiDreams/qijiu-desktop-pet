@@ -344,8 +344,9 @@
 
   const applyPetScale = (scale) => {
     if (Number.isFinite(scale) && scale > 0) {
-      pets.forEach((pet) => pet.applyScale(scale));
+      pets.forEach((pet) => pet.applyScale(scale, getVisualScaleForPet(pet)));
       pets.forEach(keepPetReachable);
+      if (interactionOverlayActive) renderer.updateOverlay(yueqi, shenjiu);
     }
   };
 
