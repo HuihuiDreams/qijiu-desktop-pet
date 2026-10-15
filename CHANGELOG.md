@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-15
+
 ### Added
 - 新增全代码库五维质量与架构深度审查报告（[`docs/code-review-report-2026-10-06.md`](docs/code-review-report-2026-10-06.md)），涵盖正确性、简洁性、架构设计、安全加固及性能效率的完整审计评估与评级（A+）。
 - 新增[全仓库代码审查复核报告](docs/code-review-recheck-2026-10-06.md)，记录七项问题及修复状态、复现证据、测试结果及平台与依赖审计限制。
@@ -42,14 +44,12 @@
 - 修复选肤器切换工作窗口或打开 Windows 托盘隐藏图标区后消失的问题：取消失焦自动关闭，窗口采用普通层级并允许最小化，再次打开恢复同一试穿会话；删除焦点计时器与托盘保护接线，恢复系统原生托盘菜单，仅确定、取消或主动关闭结束选肤，系统关闭窗口也安全回滚试穿；补充回归与真实 Electron 测试（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复必要皮肤素材加载失败后渲染端仍使用失败皮肤的问题：恢复上一套成功应用的立绘、走动帧、图片比例、状态图片与叠加层路径，并重置动画缓存；确认继续拒绝失败请求，补充实际渲染状态与后续换肤恢复的回归断言（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)）。
 - 修复桌宠体型调节窗口失焦后消失的问题：对齐选肤窗口（[ADR-041](docs/decisions/ADR-041-skin-selector-performance-and-scaling.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）的普通窗口生命周期模型，移除导致失焦后窗口被系统隐藏的 `setVisibleOnAllWorkspaces` 与置顶脉冲，改为普通层级（`alwaysOnTop: false`）并支持最小化（`minimizable: true`）；切换工作窗口或点击桌面时保持窗口与实时预览，仅在点击右上角关闭按钮（X）、取消、确定、ESC 或原生关窗时结束并安全回滚未确认的体型修改。
-
 - 修复混合 DPI 显示器上调整体型导致脚底漂移的问题：按每只宠物当前屏幕的 `scaleRatio` 计算视觉尺寸差，同步修正位置与移动目标；移动系统的边界、平台高度与跨屏落点统一使用所在屏幕的视觉尺寸，避免预览被额外夹紧、取消后位置偏移或脱离平台，补充真实移动与几何系统的缩放及回滚回归测试（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复双人互动期间调节体型时叠加图不实时缩放的问题：预览及取消回滚同步更新现有互动图和气泡位置，保留气泡字号、台词与原到期时间，避免重播动画（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复体型调节窗口聚焦“取消”“关闭”或“恢复默认”按钮后按 Enter 会先误保存的问题：按钮交由原生键盘激活，仅非按钮区域使用 Enter 确认，同时避免“确定”重复提交并保留 Esc 取消（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复缩减桌宠体型后双人互动对话气泡重叠的问题：在 `PetRenderer` 中为覆盖层互动（喂食、拥抱、亲吻、双修等）新增动态碰撞检测与垂直错落避让算法（`adjustOverlayBubblesOverlap`）；当体型缩小时两人头部水平间距变窄导致气泡水平重合，将发起方（岳七）的气泡垂直抬升并设定 8px 安全间距与更高层级，确保台词阅读顺序自然且互不遮挡，在体型放大或文字简短无冲突时自动恢复对称平排，并在体型实时调节过程中动态响应（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复缩减桌宠体型后局部屏保双人互动图不缩放导致比例失调的问题：在 `ScreensaverSystem.js`（`showScreensaverOverlay`）中补齐 `petScale` 体型缩放比例因子接线，消除原写死按全场景基准宽（320px）渲染导致的视觉反差（单人走入为 48px，双人互动瞬间突变为 320px 巨大立绘）；使局部屏保连招中的双人互动图与单人行走尺寸保持等比收放（50%~150%）。空间检查同步计入体型和显示器倍率，避免放大体型后互动图在窄屏越界；场景最多缩至 65%，空间仍不足时取消屏保（[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复缩减桌宠体型后局部屏保粉红背景光晕未等比缩小的问题：在 `ScreensaverSystem.js`（`computeSceneBounds`）中将场景粒子的基准宽高底线（`BASE_WIDTH` / `BASE_HEIGHT`）与 `petScale` 联动，消除 50% 体型时被 320px 硬编码底线截断导致光晕停留在 66.7% 的问题，实现无论放大还是缩小，粉红背景暖光晕与爱心粒子层均与桌宠及互动立绘保持严格等比例收放（[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md)、[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
-
 
 ## [0.10.5] - 2026-09-15
 
