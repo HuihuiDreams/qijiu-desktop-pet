@@ -7,53 +7,7 @@ const { PET_SCALE_STORE_KEY } = require('../constants');
 const { normalizePetScalePercent, PET_SCALE_DEFAULT_PERCENT } = require('../../../ipcContracts');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
-let deps = {};
-let committedPercent = PET_SCALE_DEFAULT_PERCENT;
-let previewPercent = null;
-
-function broadcastScale(percent) {
-  const mainWindow = deps.windowManager?.mainWindow;
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('pet-scale-changed', percent);
-  }
-}
-
-function getCommittedPercent() {
-  return committedPercent;
-}
-
-function getPreviewPercent() {
-  return previewPercent ?? committedPercent;
-}
-
-function preview(percent) {
-  const normalized = normalizePetScalePercent(percent);
-  previewPercent = normalized;
-  broadcastScale(normalized);
-  return normalized;
-}
-
-function confirm() {
-  const target = previewPercent ?? committedPercent;
-  committedPercent = target;
-  previewPercent = null;
-
-  const store = deps.StoreManager?.getStore?.() || deps.store;
-  if (store && typeof store.set === 'function') {
-    store.set(PET_SCALE_STORE_KEY, committedPercent);
-  }
-
-  broadcastScale(committedPercent);
-  return committedPercent;
-}
-
-function cancel() {
-  previewPercent = null;
-  broadcastScale(committedPercent);
-  return committedPercent;
-}
-
-function createPetScaleService(dependencies = {}) {
+function createPetScaleService(dependencies = {}, options = {}) {
   const serviceDeps = { ...dependencies };
   let localCommitted = PET_SCALE_DEFAULT_PERCENT;
   let localPreview = null;
@@ -70,14 +24,16 @@ function createPetScaleService(dependencies = {}) {
     }
   };
 
-  const ipc = serviceDeps.ipcMain || electronIpcMain;
-  if (ipc && typeof ipc.handle === 'function') {
-    ipc.handle('get-pet-scale', (event) => {
-      if (!isSenderMainWindow(event, serviceDeps.windowManager?.mainWindow)) {
-        return null;
-      }
-      return localCommitted;
-    });
+  if (options.registerIpc !== false) {
+    const ipc = serviceDeps.ipcMain || electronIpcMain;
+    if (ipc && typeof ipc.handle === 'function') {
+      ipc.handle('get-pet-scale', (event) => {
+        if (!isSenderMainWindow(event, serviceDeps.windowManager?.mainWindow)) {
+          return null;
+        }
+        return localCommitted;
+      });
+    }
   }
 
   return {
@@ -107,33 +63,20 @@ function createPetScaleService(dependencies = {}) {
   };
 }
 
-function init(dependencies) {
-  deps = dependencies;
-  const store = deps.StoreManager?.getStore?.() || deps.store;
-  if (store && typeof store.get === 'function') {
-    committedPercent = normalizePetScalePercent(store.get(PET_SCALE_STORE_KEY));
-  } else {
-    committedPercent = PET_SCALE_DEFAULT_PERCENT;
-  }
-  previewPercent = null;
+let activeService = createPetScaleService({}, { registerIpc: false });
 
-  const ipc = deps.ipcMain || electronIpcMain;
-  if (ipc && typeof ipc.handle === 'function') {
-    ipc.handle('get-pet-scale', (event) => {
-      if (!isSenderMainWindow(event, deps.windowManager?.mainWindow)) {
-        return null;
-      }
-      return getCommittedPercent();
-    });
-  }
+function init(dependencies = {}) {
+  activeService = createPetScaleService(dependencies);
+  return activeService;
 }
 
 module.exports = {
   init,
   createPetScaleService,
-  getCommittedPercent,
-  getPreviewPercent,
-  preview,
-  confirm,
-  cancel,
+  getCommittedPercent: () => activeService.getCommittedPercent(),
+  getPreviewPercent: () => activeService.getPreviewPercent(),
+  preview: (percent) => activeService.preview(percent),
+  confirm: () => activeService.confirm(),
+  cancel: () => activeService.cancel(),
 };
+

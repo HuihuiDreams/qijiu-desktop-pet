@@ -41,7 +41,6 @@ const PROTECTED_CHANNELS = [
   ['src/main/services/WeatherSyncController.js', 'set-city-name'],
   ['src/main/windows/CitySettingWindow.js', 'close-city-setting-window'],
   ['src/main/services/PetScaleService.js', 'get-pet-scale'],
-  ['src/main/windows/PetScaleWindow.js', 'close-pet-scale-window'],
   ['src/main/windows/PetScaleWindow.js', 'pet-scale-get-settings'],
   ['src/main/windows/PetScaleWindow.js', 'pet-scale-preview'],
   ['src/main/windows/PetScaleWindow.js', 'pet-scale-confirm'],

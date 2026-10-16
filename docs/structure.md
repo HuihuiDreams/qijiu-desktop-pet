@@ -142,7 +142,7 @@ qijiu-desktop-pet/
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
 ├─ citySettingPreload.js                # 城市设置窗最小 preload：语言、城市读写与关闭
-├─ petScalePreload.js                   # 体型设置专用最小 preload：语言、设置读取、预览/确认/取消/关闭
+├─ petScalePreload.js                   # 体型设置专用最小 preload：语言、设置读取、预览/确认/取消
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
@@ -167,8 +167,8 @@ qijiu-desktop-pet/
 │  ├─ check_adrs.js                     # ADR 格式检查脚本
 │  ├─ convert_images.js                 # 图片转换维护脚本
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
-│  ├─ run-tests.js                      # 单元与行为测试运行入口 (npm test)
-│  ├─ run-integration-tests.js          # 跨模块集成测试运行入口 (npm run test:integration)
+│  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
+│  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验

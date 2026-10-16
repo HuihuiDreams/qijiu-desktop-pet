@@ -6,6 +6,8 @@
   const cancelBtn = document.getElementById('scale-cancel');
   const confirmBtn = document.getElementById('scale-confirm');
 
+  let defaultPercent = 100;
+
   function updateDisplay(percent) {
     if (valueEl) valueEl.textContent = `${percent}%`;
     if (sliderEl) sliderEl.value = percent;
@@ -16,6 +18,9 @@
     try {
       const settings = await window.electronAPI.getPetScaleSettings();
       if (!settings) return;
+      if (Number.isFinite(settings.defaultPercent)) {
+        defaultPercent = settings.defaultPercent;
+      }
       if (sliderEl) {
         sliderEl.min = String(settings.minPercent);
         sliderEl.max = String(settings.maxPercent);
@@ -41,7 +46,6 @@
   }
 
   function handleReset() {
-    const defaultPercent = 100;
     updateDisplay(defaultPercent);
     window.electronAPI?.previewPetScale?.(defaultPercent);
   }

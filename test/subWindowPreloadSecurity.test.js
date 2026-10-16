@@ -63,9 +63,9 @@ test('pet scale window uses a minimal dedicated preload', () => {
     'previewPetScale',
     'confirmPetScale',
     'cancelPetScale',
-    'closePetScaleWindow',
   ]) {
     assert.match(source, new RegExp(`${api}:`));
   }
+  assert.equal(source.includes('closePetScaleWindow:'), false);
   for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
 });

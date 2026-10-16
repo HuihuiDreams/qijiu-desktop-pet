@@ -12,5 +12,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   previewPetScale: (percent) => ipcRenderer.invoke('pet-scale-preview', percent),
   confirmPetScale: () => ipcRenderer.invoke('pet-scale-confirm'),
   cancelPetScale: () => ipcRenderer.invoke('pet-scale-cancel'),
-  closePetScaleWindow: () => ipcRenderer.invoke('close-pet-scale-window'),
 });

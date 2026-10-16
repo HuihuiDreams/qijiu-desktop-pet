@@ -131,6 +131,10 @@ test('Integration: PetScale lifecycle, preview, cancel, and persistence', async 
     assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 110, 'Preview must NOT write to Store');
     assert.equal(PetScaleService.getCommittedPercent(), 110);
     assert.equal(PetScaleService.getPreviewPercent(), 80);
+
+    // Querying settings while previewing returns the active preview percent so reloading stays in sync
+    const previewSettings = await harness.ipcMain.invoke('pet-scale-get-settings', scaleWin);
+    assert.equal(previewSettings.currentPercent, 80);
   });
 
   await t.test('4. Canceling reverts pet scale to committed value and destroys window', async () => {

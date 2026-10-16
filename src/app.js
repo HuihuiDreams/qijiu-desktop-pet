@@ -481,12 +481,12 @@
             if (isOverlay) {
               interactionOverlayActive = true;
               const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
-              renderer.spawnQiAuraAt(
-                overlayPos.x + overlayPos.width / 2,
-                overlayPos.y + 82,
-                (overlayPos.baseWidth || overlayPos.width) * 1.2,
+              const auraX = overlayPos.x + overlayPos.width / 2;
+              const auraY = overlayPos.y + 82 * (overlayPos.width / (overlayPos.baseWidth || 176));
+              renderer.spawnOverlayQiAura(
+                overlayPos,
                 overlayKey,
-                getVisualScaleForPoint(overlayPos.x + overlayPos.width / 2, overlayPos.y + 82)
+                getVisualScaleForPoint(auraX, auraY)
               );
 
               const pool = DIALOGUES[interaction.key];

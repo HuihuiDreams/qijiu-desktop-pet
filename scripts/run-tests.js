@@ -4,10 +4,19 @@ const { spawnSync } = require('node:child_process');
 
 const projectRoot = path.resolve(__dirname, '..');
 const testDir = path.join(projectRoot, 'test');
+const integrationTestDir = path.join(testDir, 'integration');
 
-const testFiles = fs.readdirSync(testDir)
+const unitTestFiles = fs.readdirSync(testDir)
   .filter((file) => file.endsWith('.test.js'))
   .map((file) => path.join('test', file));
+
+const integrationTestFiles = fs.existsSync(integrationTestDir)
+  ? fs.readdirSync(integrationTestDir)
+      .filter((file) => file.endsWith('.test.js'))
+      .map((file) => path.join('test', 'integration', file))
+  : [];
+
+const testFiles = [...unitTestFiles, ...integrationTestFiles];
 
 const result = spawnSync(process.execPath, ['--test', ...testFiles], {
   cwd: projectRoot,

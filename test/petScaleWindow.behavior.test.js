@@ -89,6 +89,7 @@ function loadFreshPetScaleWindow(extraDeps = {}) {
         confirm: extraDeps.confirm || (() => 100),
         preview: extraDeps.preview || ((p) => p),
         getCommittedPercent: extraDeps.getCommittedPercent || (() => 100),
+        getPreviewPercent: extraDeps.getPreviewPercent || extraDeps.getCommittedPercent || (() => 100),
       };
     }
     return originalLoad.call(this, request, parent, isMain);

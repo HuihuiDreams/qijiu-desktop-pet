@@ -2,6 +2,7 @@
 // by the active walk area's scaleRatio before positioning visual overlay pieces.
 const INTERACTION_OVERLAY_BASE_WIDTH = 176;
 const INTERACTION_OVERLAY_TOP_OFFSET = 64;
+const INTERACTION_OVERLAY_AURA_TOP_OFFSET = 82;
 const INTERACTION_BUBBLE_TOP_GAP = 16;
 const INTERACTION_BUBBLE_HEAD_X = {
   shenjiu: 0.1,
@@ -87,6 +88,23 @@ class PetRenderer {
   spawnQiAura(pet, tone = 'default') {
     const { x, y, scale: visualScale } = this.getPetVisualCenter(pet);
     this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone, visualScale);
+  }
+
+  spawnOverlayQiAura(overlayPos, tone = 'default', visualScale = overlayPos?.scale) {
+    if (!overlayPos) return;
+    const baseWidth = Number.isFinite(overlayPos.baseWidth) && overlayPos.baseWidth > 0
+      ? overlayPos.baseWidth
+      : INTERACTION_OVERLAY_BASE_WIDTH;
+    const width = Number.isFinite(overlayPos.width) && overlayPos.width > 0
+      ? overlayPos.width
+      : baseWidth;
+    const overlayScale = Number.isFinite(overlayPos.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
+    const scale = Number.isFinite(visualScale) && visualScale > 0 ? visualScale : overlayScale;
+    const combinedScale = width / baseWidth;
+    const auraX = overlayPos.x + width / 2;
+    const auraY = overlayPos.y + INTERACTION_OVERLAY_AURA_TOP_OFFSET * combinedScale;
+    const auraVisualScale = scale === overlayScale ? 1 : scale / overlayScale;
+    this.spawnQiAuraAt(auraX, auraY, width * 1.2, tone, auraVisualScale);
   }
 
   /**

@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+### Changed
+- 重构 `src/main/services/PetScaleService.js` 消除内部双套状态机实现：模块级 `init()` 与导出方法统一委托给 `createPetScaleService()` 实例，使单元测试与生产运行共享完全一致的状态与 IPC 逻辑。
+- 将 `test/integration/*.test.js` 纳入 `scripts/run-tests.js` 默认收集范围，使 `npm test` 统一执行单元、行为与跨模块集成测试套件，同时保留 `npm run test:integration` 作为集成测试独立快速运行入口。
+- 优化桌宠体型调节窗口状态同步与 IPC 暴露面：`src/petScaleWindow.js` 的恢复默认操作改为读取主进程下发的 `settings.defaultPercent`；`PetScaleWindow.js` 的 `pet-scale-get-settings` 返回当前活动预览值 `PetScaleService.getPreviewPercent()` 以保证预览期间重读设置与主界面状态一致；移除未使用的冗余 `close-pet-scale-window` IPC 通道与 preload 暴露项（窗口关闭统一收敛至 `pet-scale-cancel` / `pet-scale-confirm`）。
+- 同步更新 `docs/decisions/README.md` 架构决策目录，补齐 `ADR-047`（桌宠体型大小缩放与渲染架构方案）索引条目。
+
+### Fixed
+- 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
+
 ## [0.11.0] - 2026-10-15
 
 ### Added

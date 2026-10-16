@@ -14,16 +14,10 @@ let scaleConfirmed = false;
 let petScaleCloseInProgress = false;
 
 function init() {
-  ipcMain.handle('close-pet-scale-window', (event) => {
-    if (!isSenderWindow(event, windowManager.petScaleWindow)) return { success: false };
-    closePetScaleWindow();
-    return { success: true };
-  });
-
   ipcMain.handle('pet-scale-get-settings', (event) => {
     if (!isSenderWindow(event, windowManager.petScaleWindow)) return null;
     return {
-      currentPercent: PetScaleService.getCommittedPercent(),
+      currentPercent: PetScaleService.getPreviewPercent(),
       defaultPercent: PET_SCALE_DEFAULT_PERCENT,
       minPercent: PET_SCALE_MIN_PERCENT,
       maxPercent: PET_SCALE_MAX_PERCENT,

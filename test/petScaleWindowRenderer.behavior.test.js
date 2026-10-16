@@ -4,7 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-function loadScaleWindow() {
+function loadScaleWindow(settings = null) {
   const calls = [];
   const elements = new Map();
   let keydown;
@@ -18,6 +18,7 @@ function loadScaleWindow() {
     },
     window: {
       electronAPI: {
+        getPetScaleSettings: settings ? async () => settings : undefined,
         previewPetScale: (percent) => calls.push(['preview', percent]),
         confirmPetScale: () => calls.push(['confirm']),
         cancelPetScale: () => calls.push(['cancel']),
@@ -27,6 +28,7 @@ function loadScaleWindow() {
   });
   return {
     calls,
+    elements,
     press(key, buttonId = null) {
       const button = elements.get(buttonId);
       const event = {
@@ -59,4 +61,18 @@ test('Enter outside buttons confirms and Escape on a button cancels', () => {
   window.press('Enter');
   window.press('Escape', 'scale-confirm');
   assert.deepEqual(window.calls, [['confirm'], ['cancel']]);
+});
+
+test('scale-reset uses defaultPercent returned from getPetScaleSettings', async () => {
+  const window = loadScaleWindow({
+    currentPercent: 130,
+    defaultPercent: 95,
+    minPercent: 50,
+    maxPercent: 150,
+    stepPercent: 5,
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  window.elements.get('scale-reset').listeners.click();
+  assert.deepEqual(window.calls, [['preview', 95]]);
+  assert.equal(window.elements.get('scale-current-value').textContent, '95%');
 });

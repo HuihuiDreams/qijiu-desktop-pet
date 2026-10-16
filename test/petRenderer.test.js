@@ -961,4 +961,42 @@ test('updateOverlay dynamically adjusts overlay bubble stack offset on pet scale
   }
 });
 
+test('spawnOverlayQiAura scales aura center Y offset and diameter proportionally with pet size and visual scale', () => {
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  }, null, () => 1.5);
+
+  const petA = { x: 100, y: 200, size: 48 };
+  const petB = { x: 180, y: 200, size: 48 };
+  const overlayPos = renderer.getOverlayPosition(petA, petB);
+
+  const originalDocument = global.document;
+  global.document = {
+    createElement() {
+      return {
+        className: '',
+        style: {},
+        addEventListener() {},
+      };
+    },
+  };
+
+  try {
+    renderer.spawnOverlayQiAura(overlayPos, 'kiss');
+    assert.equal(appended.length, 1);
+
+    const combinedScale = 1.5 * 0.5; // visualScale 1.5 * petScale 0.5 = 0.75
+    assert.equal(appended[0].className, 'qi-aura qi-aura--kiss');
+    assert.equal(appended[0].style.left, `${overlayPos.x + overlayPos.width / 2}px`);
+    assert.equal(appended[0].style.top, `${overlayPos.y + 82 * combinedScale}px`);
+    assert.equal(appended[0].style.width, `${overlayPos.width * 1.2}px`);
+    assert.equal(appended[0].style.height, `${overlayPos.width * 1.2}px`);
+  } finally {
+    global.document = originalDocument;
+  }
+});
+
 
