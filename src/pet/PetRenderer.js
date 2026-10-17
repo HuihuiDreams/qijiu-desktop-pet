@@ -90,7 +90,7 @@ class PetRenderer {
     this.spawnQiAuraAt(x, y, Math.max(112, pet.size * 1.45), tone, visualScale);
   }
 
-  spawnOverlayQiAura(overlayPos, tone = 'default', visualScale = overlayPos?.scale) {
+  spawnOverlayQiAura(overlayPos, tone = 'default', resolveVisualScale = null) {
     if (!overlayPos) return;
     const baseWidth = Number.isFinite(overlayPos.baseWidth) && overlayPos.baseWidth > 0
       ? overlayPos.baseWidth
@@ -99,10 +99,11 @@ class PetRenderer {
       ? overlayPos.width
       : baseWidth;
     const overlayScale = Number.isFinite(overlayPos.scale) && overlayPos.scale > 0 ? overlayPos.scale : 1;
-    const scale = Number.isFinite(visualScale) && visualScale > 0 ? visualScale : overlayScale;
     const combinedScale = width / baseWidth;
     const auraX = overlayPos.x + width / 2;
     const auraY = overlayPos.y + INTERACTION_OVERLAY_AURA_TOP_OFFSET * combinedScale;
+    const resolvedScale = typeof resolveVisualScale === 'function' ? resolveVisualScale(auraX, auraY) : undefined;
+    const scale = Number.isFinite(resolvedScale) && resolvedScale > 0 ? resolvedScale : overlayScale;
     const auraVisualScale = scale === overlayScale ? 1 : scale / overlayScale;
     this.spawnQiAuraAt(auraX, auraY, width * 1.2, tone, auraVisualScale);
   }

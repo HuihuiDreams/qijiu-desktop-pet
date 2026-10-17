@@ -481,13 +481,7 @@
             if (isOverlay) {
               interactionOverlayActive = true;
               const overlayPos = renderer.showOverlay(yueqi, shenjiu, overlayKey);
-              const auraX = overlayPos.x + overlayPos.width / 2;
-              const auraY = overlayPos.y + 82 * (overlayPos.width / (overlayPos.baseWidth || 176));
-              renderer.spawnOverlayQiAura(
-                overlayPos,
-                overlayKey,
-                getVisualScaleForPoint(auraX, auraY)
-              );
+              renderer.spawnOverlayQiAura(overlayPos, overlayKey, getVisualScaleForPoint);
 
               const pool = DIALOGUES[interaction.key];
               const shenjuText = interaction.dialogue?.shenjiu || (pool?.shenjiu?.length

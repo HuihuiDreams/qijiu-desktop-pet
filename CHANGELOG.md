@@ -6,6 +6,7 @@
 
 ### Changed
 - 重构 `src/main/services/PetScaleService.js` 消除内部双套状态机实现：模块级 `init()` 与导出方法统一委托给 `createPetScaleService()` 实例，使单元测试与生产运行共享完全一致的状态与 IPC 逻辑。
+- 调整 `spawnOverlayQiAura()` 签名由传入预计算 DPI 缩放值改为接收 `(x, y) => scale` 查询回调，由光环锚点在 `PetRenderer` 内部溯源显示器 DPI 倍率；同步移除 `src/app.js` 中对 `INTERACTION_OVERLAY_AURA_TOP_OFFSET` / `INTERACTION_OVERLAY_BASE_WIDTH` 光环几何常量的重复实现，避免常量变更后查询点与真实光环圆心漂移。
 - 将 `test/integration/*.test.js` 纳入 `scripts/run-tests.js` 默认收集范围，使 `npm test` 统一执行单元、行为与跨模块集成测试套件，同时保留 `npm run test:integration` 作为集成测试独立快速运行入口。
 - 优化桌宠体型调节窗口状态同步与 IPC 暴露面：`src/petScaleWindow.js` 的恢复默认操作改为读取主进程下发的 `settings.defaultPercent`；`PetScaleWindow.js` 的 `pet-scale-get-settings` 返回当前活动预览值 `PetScaleService.getPreviewPercent()` 以保证预览期间重读设置与主界面状态一致；移除未使用的冗余 `close-pet-scale-window` IPC 通道与 preload 暴露项（窗口关闭统一收敛至 `pet-scale-cancel` / `pet-scale-confirm`）。
 - 同步更新 `docs/decisions/README.md` 架构决策目录，补齐 `ADR-047`（桌宠体型大小缩放与渲染架构方案）索引条目。
