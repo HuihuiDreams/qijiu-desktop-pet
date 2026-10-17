@@ -354,4 +354,36 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.strictEqual(state.weatherKind, 'rain');
     assert.strictEqual(state.temperatureBand, 'hot');
   });
+
+  await t.test('caches getCurrentState result object and invalidates on changes', () => {
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 0,
+      isDay: true,
+    });
+
+    const state1 = system.getCurrentState();
+    const state2 = system.getCurrentState();
+    assert.strictEqual(state1, state2, 'Repeated calls without change should return identical state object reference');
+
+    // Invalidation via setWeatherPayload
+    system.setWeatherPayload({
+      active: true,
+      stale: false,
+      weatherCode: 1,
+      isDay: true,
+    });
+    const state3 = system.getCurrentState();
+    assert.notStrictEqual(state1, state3, 'setWeatherPayload should invalidate cached state object');
+
+    // Invalidation via updateLocalTimePhase / phase change
+    system._getCurrentDate = () => new Date(2026, 0, 1, 1, 0, 0); // night (01:00)
+    system._lastComputedMinute = -1;
+    system._lastCheckTimestamp = 0;
+    system.updateLocalTimePhase(9999999);
+    const state4 = system.getCurrentState();
+    assert.strictEqual(state4.timePhase, 'night');
+    assert.notStrictEqual(state3, state4, 'timePhase change should invalidate cached state object');
+  });
 });

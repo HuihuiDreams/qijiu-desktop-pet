@@ -6,6 +6,7 @@ const {
   createMeetingDetector,
   getSafeChildProcessEnv,
   getSystemBinaryPath,
+  _clearDarwinBinaryPathCacheForQA,
 } = require('../meetingDetector');
 
 function createExecFileStub(outputsByCommand) {
@@ -614,3 +615,77 @@ test('meeting detector start and stop control polling interval', async () => {
   detector.stop(); // second stop does nothing
   assert.equal(cleared, true);
 });
+
+test('macOS getSystemBinaryPath caches binary path checks', () => {
+  const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+  const fs = require('fs');
+  const originalExistsSync = fs.existsSync;
+  let existsSyncCallCount = 0;
+
+  _clearDarwinBinaryPathCacheForQA();
+  try {
+    Object.defineProperty(process, 'platform', { value: 'darwin' });
+    fs.existsSync = (p) => {
+      existsSyncCallCount++;
+      return true;
+    };
+
+    const firstPgrep = getSystemBinaryPath('pgrep');
+    const secondPgrep = getSystemBinaryPath('pgrep');
+    assert.equal(firstPgrep, '/usr/bin/pgrep');
+    assert.equal(secondPgrep, '/usr/bin/pgrep');
+    assert.equal(existsSyncCallCount, 1, 'fs.existsSync should only be called once for cached pgrep');
+
+    const firstLsof = getSystemBinaryPath('lsof');
+    const secondLsof = getSystemBinaryPath('lsof');
+    assert.equal(firstLsof, '/usr/sbin/lsof');
+    assert.equal(secondLsof, '/usr/sbin/lsof');
+    assert.equal(existsSyncCallCount, 2, 'fs.existsSync should only be called once for cached lsof');
+  } finally {
+    _clearDarwinBinaryPathCacheForQA();
+    Object.defineProperty(process, 'platform', originalPlatform);
+    fs.existsSync = originalExistsSync;
+  }
+});
+
+test('macOS snapshot probes meeting apps in parallel and preserves order', async () => {
+  let activeInFlightProbes = 0;
+  let maxConcurrentProbes = 0;
+
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+
+    activeInFlightProbes++;
+    if (activeInFlightProbes > maxConcurrentProbes) {
+      maxConcurrentProbes = activeInFlightProbes;
+    }
+
+    setTimeout(() => {
+      activeInFlightProbes--;
+      if (key === 'pgrep -x Teams') {
+        cb(null, '1001\n', '');
+      } else if (key === 'pgrep -x zoom.us') {
+        cb(null, '1002\n', '');
+      } else if (key.startsWith('lsof -a -nP -i UDP -p 1001')) {
+        cb(null, 'n*:50000\nn*:50001\nn*:50002\nn*:50003\nn*:50004\n', '');
+      } else if (key.startsWith('lsof -a -nP -i UDP -p 1002')) {
+        cb(null, 'n*:50010\n', '');
+      } else {
+        cb(new Error('Process not running'));
+      }
+    }, 10);
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    udpThreshold: 5,
+  });
+
+  assert.equal(maxConcurrentProbes > 1, true, 'Probing should happen concurrently across apps');
+  assert.equal(snapshot.isActive, true);
+  assert.deepEqual(snapshot.detectedApps, ['Teams']);
+  assert.deepEqual(snapshot.apps.map(a => a.name), ['Teams', 'Zoom']);
+});
+

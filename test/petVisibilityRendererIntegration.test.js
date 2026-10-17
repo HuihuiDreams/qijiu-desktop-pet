@@ -204,3 +204,75 @@ test('R3: src/app.js implements effective pause calculation and avoids isPaused 
   assert.ok(!appSource.includes('isPaused = !visible;'), 'app.js must not unconditionally overwrite isPaused with !visible');
   assert.match(appSource, /isUserPaused/, 'app.js must track user pause choice');
 });
+
+test('R4: src/app.js suspends gameLoop requestAnimationFrame when hidden and resumes when visible', () => {
+  const appSource = fs.readFileSync(require.resolve('../src/app.js'), 'utf8');
+  assert.ok(appSource.includes('scheduleGameLoop'), 'app.js must define or use scheduleGameLoop');
+  assert.ok(appSource.includes('cancelAnimationFrame'), 'app.js must cancel active RAF when hiding');
+  assert.match(appSource, /if\s*\(!isVisible\)\s*{\s*return;?\s*}/, 'gameLoop must return early when isVisible is false');
+
+  // Verify lifecycle logic via isolated simulation
+  let rafId = null;
+  let isVisible = true;
+  let rafCallCount = 0;
+  let cancelCallCount = 0;
+  let lastTime = 0;
+  let updateCount = 0;
+
+  function fakeRaf(cb) {
+    rafCallCount++;
+    return rafCallCount;
+  }
+  function fakeCancelRaf(id) {
+    cancelCallCount++;
+  }
+
+  function scheduleGameLoop() {
+    if (rafId === null && isVisible) {
+      rafId = fakeRaf(gameLoop);
+    }
+  }
+
+  function gameLoop(currentTime) {
+    rafId = null;
+    if (!isVisible) {
+      return;
+    }
+    updateCount++;
+    scheduleGameLoop();
+  }
+
+  // 1. Initial schedule while visible
+  scheduleGameLoop();
+  assert.equal(rafCallCount, 1);
+  assert.notEqual(rafId, null);
+
+  // 2. Hide pet: cancels active RAF and sets rafId to null
+  isVisible = false;
+  if (rafId !== null) {
+    fakeCancelRaf(rafId);
+    rafId = null;
+  }
+  assert.equal(cancelCallCount, 1);
+  assert.equal(rafId, null);
+
+  // Calling scheduleGameLoop while hidden should NOT schedule RAF
+  scheduleGameLoop();
+  assert.equal(rafCallCount, 1, 'No RAF scheduled while hidden');
+
+  // If a stale frame executes while hidden, it returns early and does not schedule next frame
+  gameLoop(100);
+  assert.equal(updateCount, 0, 'No updates run while hidden');
+  assert.equal(rafCallCount, 1, 'gameLoop must not request next frame while hidden');
+
+  // 3. Show pet: resets lastTime and resumes scheduleGameLoop
+  isVisible = true;
+  scheduleGameLoop();
+  assert.equal(rafCallCount, 2, 'RAF resumed on show');
+  assert.notEqual(rafId, null);
+
+  // Duplicate calls to scheduleGameLoop do not create concurrent loops
+  scheduleGameLoop();
+  assert.equal(rafCallCount, 2, 'Duplicate schedule call must not schedule another RAF');
+});
+

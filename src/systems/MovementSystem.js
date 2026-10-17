@@ -45,6 +45,7 @@ class MovementSystem {
     this.walkAreas = this.normalizeWalkAreas(walkAreas);
     this.activePlatform = null;
     this.surfacePlatforms = [];
+    this._lastSurfacePlatformsInput = null;
   }
 
   /**
@@ -108,7 +109,39 @@ class MovementSystem {
     this.setSurfacePlatforms(platform ? [platform] : []);
   }
 
+  _areSurfacePlatformInputsEqual(nextPlatforms) {
+    if (!Array.isArray(nextPlatforms) || !Array.isArray(this._lastSurfacePlatformsInput)) {
+      return false;
+    }
+    if (nextPlatforms.length !== this._lastSurfacePlatformsInput.length) {
+      return false;
+    }
+    for (let i = 0; i < nextPlatforms.length; i++) {
+      const a = nextPlatforms[i];
+      const b = this._lastSurfacePlatformsInput[i];
+      if (
+        !a || !b ||
+        a.x !== b.x ||
+        a.y !== b.y ||
+        a.width !== b.width ||
+        a.height !== b.height ||
+        a.scaleRatio !== b.scaleRatio ||
+        a.source !== b.source ||
+        Boolean(a.isPrimary) !== Boolean(b.isPrimary)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   setSurfacePlatforms(platforms) {
+    if (this._areSurfacePlatformInputsEqual(platforms)) {
+      return;
+    }
+    this._lastSurfacePlatformsInput = Array.isArray(platforms)
+      ? platforms.map((p) => (p && typeof p === 'object' ? { ...p } : p))
+      : null;
     this.surfacePlatforms = this.normalizeWalkAreas(Array.isArray(platforms) ? platforms : []);
     this.activePlatform = this.surfacePlatforms.find((area) => this.isActiveWindowPlatform(area)) || null;
   }

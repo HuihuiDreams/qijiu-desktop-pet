@@ -998,5 +998,127 @@ test('spawnOverlayQiAura scales aura center Y offset and diameter proportionally
     global.document = originalDocument;
   }
 });
+test('PetRenderer dirty checks transform and imageScale on update', () => {
+  let transformSetCount = 0;
+  let transformValue = '';
+  const setProperties = [];
 
+  const fakeElement = {
+    style: {
+      get transform() {
+        return transformValue;
+      },
+      set transform(val) {
+        transformSetCount++;
+        transformValue = val;
+      },
+      setProperty(name, value) {
+        setProperties.push({ name, value });
+      },
+    },
+    classList: {
+      remove() {},
+      add() {},
+      contains() { return false; },
+    },
+  };
 
+  let visualScaleToReturn = 1;
+  const renderer = new PetRenderer({ appendChild() {} }, null, () => visualScaleToReturn);
+  const pet = {
+    id: 'testpet',
+    x: 10,
+    y: 20,
+    size: 96,
+    imageScale: 1.2,
+    element: fakeElement,
+    _renderedSize: null,
+    isHungry() { return false; },
+    isLowMood() { return false; },
+  };
+
+  // Test createPetElement initializes cache fields
+  global.window = {
+    innerWidth: 800,
+    innerHeight: 600,
+    electronAPI: { setIgnoreMouseEvents() {} },
+    addEventListener() {},
+  };
+  global.document = {
+    body: { classList: createFakeClassList() },
+    createElement() {
+      const el = createFakeDomElement();
+      el.classList = createFakeClassList();
+      return el;
+    },
+    addEventListener() {},
+    getElementById() {
+      return createFakeElement(['hidden']);
+    },
+  };
+
+  try {
+    const createdEl = renderer.createPetElement(pet);
+    assert.equal(pet._renderedX, 10);
+    assert.equal(pet._renderedY, 20);
+    assert.equal(pet._renderedVisualScale, 1);
+    assert.equal(pet._renderedImageScale, 1.2);
+  } finally {
+    delete global.window;
+    delete global.document;
+  }
+
+  // Now test update(pet) with fakeElement
+  pet.element = fakeElement;
+  // Initialize caches as createPetElement would
+  pet._renderedX = 10;
+  pet._renderedY = 20;
+  pet._renderedVisualScale = 1;
+  pet._renderedImageScale = 1.2;
+  fakeElement.style.transform = 'translate3d(10px, 20px, 0) scale(1)';
+  transformSetCount = 0;
+  setProperties.length = 0;
+
+  // First call with unchanged values: dirty check should prevent setting transform and imageScale
+  renderer.update(pet);
+  assert.equal(transformSetCount, 0, 'transform should not be set when position and scale did not change');
+  assert.equal(setProperties.filter(p => p.name === '--pet-image-scale').length, 0, '--pet-image-scale should not be set when imageScale did not change');
+
+  // Change x
+  pet.x = 15;
+  renderer.update(pet);
+  assert.equal(transformSetCount, 1, 'transform should update when x changes');
+  assert.equal(fakeElement.style.transform, 'translate3d(15px, 20px, 0) scale(1)');
+  assert.equal(pet._renderedX, 15);
+  assert.equal(setProperties.filter(p => p.name === '--pet-image-scale').length, 0);
+
+  // Unchanged again
+  renderer.update(pet);
+  assert.equal(transformSetCount, 1, 'transform should not update when unchanged');
+
+  // Change y
+  pet.y = 25;
+  renderer.update(pet);
+  assert.equal(transformSetCount, 2, 'transform should update when y changes');
+  assert.equal(fakeElement.style.transform, 'translate3d(15px, 25px, 0) scale(1)');
+  assert.equal(pet._renderedY, 25);
+
+  // Change visualScale
+  visualScaleToReturn = 1.5;
+  renderer.update(pet);
+  assert.equal(transformSetCount, 3, 'transform should update when visualScale changes');
+  assert.equal(fakeElement.style.transform, 'translate3d(15px, 25px, 0) scale(1.5)');
+  assert.equal(pet._renderedVisualScale, 1.5);
+
+  // Change imageScale
+  pet.imageScale = 1.5;
+  renderer.update(pet);
+  assert.equal(transformSetCount, 3, 'transform should not update if only imageScale changes');
+  assert.equal(setProperties.filter(p => p.name === '--pet-image-scale').length, 1, '--pet-image-scale should update when imageScale changes');
+  assert.equal(setProperties[setProperties.length - 1].value, 1.5);
+  assert.equal(pet._renderedImageScale, 1.5);
+
+  // Calling again with unchanged imageScale
+  renderer.update(pet);
+  assert.equal(setProperties.filter(p => p.name === '--pet-image-scale').length, 1, '--pet-image-scale should not update again');
+});

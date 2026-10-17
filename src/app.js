@@ -43,6 +43,8 @@
 
   // 等待主进程的屏幕信息
   let pets = [];
+  let yueqi = null;
+  let shenjiu = null;
   const stageGeometry = new StageGeometry({
     getMovementSystem: () => movementSystem,
     getPets: () => pets,
@@ -77,6 +79,15 @@
   let isUserPaused = false;
   let isVisible = true;
   let isPaused = false;
+  let rafId = null;
+  let isLoopStarted = false;
+  let lastTime = performance.now();
+
+  function scheduleGameLoop() {
+    if (isLoopStarted && rafId === null && isVisible) {
+      rafId = requestAnimationFrame(gameLoop);
+    }
+  }
 
   const updateEffectivePause = () => {
     isPaused = !isVisible || isUserPaused;
@@ -103,8 +114,29 @@
         isUserPaused = state.isPaused;
       }
       if (state && typeof state.visible === 'boolean') {
-        isVisible = Boolean(state.visible);
-        stage.style.display = isVisible ? '' : 'none';
+        const nextVisible = Boolean(state.visible);
+        if (isVisible !== nextVisible) {
+          isVisible = nextVisible;
+          stage.style.display = isVisible ? '' : 'none';
+          if (!isVisible) {
+            if (rafId !== null) {
+              cancelAnimationFrame(rafId);
+              rafId = null;
+            }
+          } else {
+            lastTime = performance.now();
+            if (yueqi && shenjiu) {
+              renderer.update(yueqi);
+              renderer.update(shenjiu);
+              spriteView.update(yueqi, 0);
+              spriteView.update(shenjiu, 0);
+            }
+            scheduleGameLoop();
+          }
+        } else {
+          isVisible = nextVisible;
+          stage.style.display = isVisible ? '' : 'none';
+        }
       }
       updateEffectivePause();
     })
@@ -130,17 +162,28 @@
     // keepPetReachable 会在后续的 screen-info 事件中触发
   });
 
+  let _lastActivePlatform = null;
+  let _lastTaskbarPlatforms = null;
+  let _cachedSurfacePlatforms = [];
+
   const getSurfacePlatforms = (now) => {
     if (!windowAwarenessSystem.isSurfaceAwarenessEnabled()) return [];
     const activePlatform = windowAwarenessSystem.getCurrentPlatform(now);
-    return activePlatform
-      ? [activePlatform, ...stageGeometry.screenInfo.taskbarPlatforms]
-      : stageGeometry.screenInfo.taskbarPlatforms;
+    const taskbarPlatforms = stageGeometry.screenInfo.taskbarPlatforms;
+    if (activePlatform === _lastActivePlatform && taskbarPlatforms === _lastTaskbarPlatforms) {
+      return _cachedSurfacePlatforms;
+    }
+    _lastActivePlatform = activePlatform;
+    _lastTaskbarPlatforms = taskbarPlatforms;
+    _cachedSurfacePlatforms = activePlatform
+      ? [activePlatform, ...taskbarPlatforms]
+      : taskbarPlatforms;
+    return _cachedSurfacePlatforms;
   };
 
   // === 创建宠物 ===
-  const yueqi = new Pet(CONFIG.PET_A);
-  const shenjiu = new Pet(CONFIG.PET_B);
+  yueqi = new Pet(CONFIG.PET_A);
+  shenjiu = new Pet(CONFIG.PET_B);
   pets = [yueqi, shenjiu];
 
   // 初始化时将它们分开一定距离
@@ -335,6 +378,19 @@
     updateEffectivePause();
     if (!visible) {
       weatherParticleLayer.clear();
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    } else {
+      lastTime = performance.now();
+      if (yueqi && shenjiu) {
+        renderer.update(yueqi);
+        renderer.update(shenjiu);
+        spriteView.update(yueqi, 0);
+        spriteView.update(shenjiu, 0);
+      }
+      scheduleGameLoop();
     }
   });
 
@@ -395,10 +451,15 @@
   let migrationCooldown = 0; // macOS: 跨屏迁移冷却时间
 
   // === 游戏主循环 ===
-  let lastTime = performance.now();
+  lastTime = performance.now();
   let statusUpdateTimer = 0;
 
   function gameLoop(currentTime) {
+    rafId = null;
+    if (!isVisible) {
+      return;
+    }
+
     let deltaMs = currentTime - lastTime;
     lastTime = currentTime;
 
@@ -550,11 +611,12 @@
       console.error('游戏循环发生错误:', err);
     }
 
-    requestAnimationFrame(gameLoop);
+    scheduleGameLoop();
   }
 
   // 启动循环
-  requestAnimationFrame(gameLoop);
+  isLoopStarted = true;
+  scheduleGameLoop();
 
   // 关闭时保存
   window.electronAPI.onSaveBeforeQuit(() => offlineReturnSystem.saveCurrentState());

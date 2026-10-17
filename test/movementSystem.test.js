@@ -628,3 +628,39 @@ test('walking pets keep their cached active window target when the active window
   assert.equal(pet.x > 100, true);
   assert.equal(pet.x < 1000, true);
 });
+
+test('MovementSystem.setSurfacePlatforms dirty checks platform inputs and preserves array reference', () => {
+  const movementSystem = new MovementSystem(1920, 1080);
+  const platformsInput = [
+    { x: 0, y: 1000, width: 1920, height: 40, scaleRatio: 1, source: 'taskbar-edge', isPrimary: true },
+    { x: 200, y: 300, width: 800, height: 30, scaleRatio: 1, source: 'active-window-top' },
+  ];
+
+  movementSystem.setSurfacePlatforms(platformsInput);
+  const firstResult = movementSystem.surfacePlatforms;
+  assert.equal(firstResult.length, 2);
+  assert.equal(movementSystem.activePlatform.source, 'active-window-top');
+
+  // Call again with new array containing identical property values
+  const sameContentPlatforms = [
+    { x: 0, y: 1000, width: 1920, height: 40, scaleRatio: 1, source: 'taskbar-edge', isPrimary: true },
+    { x: 200, y: 300, width: 800, height: 30, scaleRatio: 1, source: 'active-window-top' },
+  ];
+  movementSystem.setSurfacePlatforms(sameContentPlatforms);
+  assert.strictEqual(movementSystem.surfacePlatforms, firstResult, 'surfacePlatforms array reference should be preserved when inputs are identical');
+
+  // Change a coordinate
+  const modifiedPlatforms = [
+    { x: 0, y: 1000, width: 1920, height: 40, scaleRatio: 1, source: 'taskbar-edge', isPrimary: true },
+    { x: 250, y: 300, width: 800, height: 30, scaleRatio: 1, source: 'active-window-top' },
+  ];
+  movementSystem.setSurfacePlatforms(modifiedPlatforms);
+  assert.notStrictEqual(movementSystem.surfacePlatforms, firstResult, 'surfacePlatforms should update when coordinate changes');
+  assert.equal(movementSystem.activePlatform.x, 250);
+
+  // Clear platforms
+  movementSystem.setSurfacePlatforms([]);
+  assert.equal(movementSystem.surfacePlatforms.length, 0);
+  assert.equal(movementSystem.activePlatform, null);
+});
+

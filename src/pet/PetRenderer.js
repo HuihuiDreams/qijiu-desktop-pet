@@ -140,10 +140,15 @@ class PetRenderer {
     // 初始位置，使用 transform 控制位置以启用 GPU 硬件加速并避免布局重排
     const visualScale = this.getPetVisualScale(pet);
     el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
-    el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
+    const imageScale = this.getPetImageScale(pet);
+    el.style.setProperty('--pet-image-scale', imageScale);
     const petSize = Number.isFinite(pet.size) && pet.size > 0 ? pet.size : 96;
     el.style.setProperty('--pet-size', `${petSize}px`);
     pet._renderedSize = pet.size;
+    pet._renderedX = pet.x;
+    pet._renderedY = pet.y;
+    pet._renderedVisualScale = visualScale;
+    pet._renderedImageScale = imageScale;
 
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
@@ -262,8 +267,18 @@ class PetRenderer {
 
     // 优化：使用 transform 代替 left/top，极大地减少布局重排 (Layout Thrashing) 的性能开销
     const visualScale = this.getVisualScaleForPet ? this.getVisualScaleForPet(pet) : 1;
-    el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
-    el.style.setProperty('--pet-image-scale', this.getPetImageScale(pet));
+    if (pet._renderedX !== pet.x || pet._renderedY !== pet.y || pet._renderedVisualScale !== visualScale) {
+      el.style.transform = `translate3d(${pet.x}px, ${pet.y}px, 0) scale(${visualScale})`;
+      pet._renderedX = pet.x;
+      pet._renderedY = pet.y;
+      pet._renderedVisualScale = visualScale;
+    }
+
+    const imageScale = this.getPetImageScale(pet);
+    if (pet._renderedImageScale !== imageScale) {
+      el.style.setProperty('--pet-image-scale', imageScale);
+      pet._renderedImageScale = imageScale;
+    }
     if (pet._renderedSize !== pet.size) {
       const petSize = Number.isFinite(pet.size) && pet.size > 0 ? pet.size : 96;
       el.style.setProperty('--pet-size', `${petSize}px`);

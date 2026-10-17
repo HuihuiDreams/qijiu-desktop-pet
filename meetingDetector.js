@@ -36,6 +36,12 @@ const MEETING_APPS = [
   },
 ];
 
+const darwinBinaryPathCache = new Map();
+
+function _clearDarwinBinaryPathCacheForQA() {
+  darwinBinaryPathCache.clear();
+}
+
 function getSystemBinaryPath(command) {
   if (process.platform === 'win32') {
     const sysRoot = process.env.SystemRoot || process.env.windir || 'C:\\Windows';
@@ -49,11 +55,18 @@ function getSystemBinaryPath(command) {
   }
 
   if (process.platform === 'darwin') {
+    if (darwinBinaryPathCache.has(command)) {
+      return darwinBinaryPathCache.get(command);
+    }
     if (command === 'pgrep') {
-      return fs.existsSync('/usr/bin/pgrep') ? '/usr/bin/pgrep' : '/bin/pgrep';
+      const resolved = fs.existsSync('/usr/bin/pgrep') ? '/usr/bin/pgrep' : '/bin/pgrep';
+      darwinBinaryPathCache.set(command, resolved);
+      return resolved;
     }
     if (command === 'lsof') {
-      return fs.existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : '/usr/bin/lsof';
+      const resolved = fs.existsSync('/usr/sbin/lsof') ? '/usr/sbin/lsof' : '/usr/bin/lsof';
+      darwinBinaryPathCache.set(command, resolved);
+      return resolved;
     }
   }
 
@@ -350,8 +363,7 @@ async function collectMacSnapshot(options) {
     udpThreshold = DEFAULT_UDP_THRESHOLD,
   } = options;
 
-  const apps = [];
-  for (const appInfo of meetingApps) {
+  const appResults = await Promise.all(meetingApps.map(async (appInfo) => {
     const processNames = getProcessNamesForPlatform(appInfo, 'darwin');
     const processes = [];
     for (const processName of processNames) {
@@ -362,14 +374,17 @@ async function collectMacSnapshot(options) {
       }
     }
     if (processes.length > 0) {
-      apps.push({
+      return {
         name: appInfo.name,
         processNames,
         active: processes.some((processInfo) => processInfo.udpCount >= udpThreshold),
         processes,
-      });
+      };
     }
-  }
+    return null;
+  }));
+
+  const apps = appResults.filter(Boolean);
 
   return {
     platform: 'darwin',
@@ -493,6 +508,7 @@ module.exports = {
   createMeetingDetector,
   getSafeChildProcessEnv,
   getSystemBinaryPath,
+  _clearDarwinBinaryPathCacheForQA,
   parseTasklistCsv,
   parseWindowsUdpEndpoints,
 };

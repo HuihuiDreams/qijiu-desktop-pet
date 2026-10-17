@@ -28,6 +28,12 @@ class WeatherAwarenessSystem {
 
     this.weatherPayload = null;
 
+    this._cachedState = null;
+    this._cachedPayloadRef = null;
+    this._cachedPayloadStale = null;
+    this._cachedTimePhase = null;
+    this._cachedIsDay = null;
+
     this._lastComputedMinute = -1; // 用于按分钟更新 phase
     this._lastCheckTimestamp = 0;  // 用于避免高频分配 Date 对象的绝对时间戳 (毫秒)
   }
@@ -91,6 +97,7 @@ class WeatherAwarenessSystem {
   }
 
   setWeatherPayload(payload) {
+    this._cachedState = null;
     if (!payload || !payload.active || payload.stale) {
       this.weatherPayload = null;
       // 立即重置强制更新本地时段
@@ -167,6 +174,17 @@ class WeatherAwarenessSystem {
   }
 
   getCurrentState() {
+    if (
+      this._cachedState !== null &&
+      this._cachedPayloadRef === this.weatherPayload &&
+      this._cachedPayloadStale === Boolean(this.weatherPayload?.stale) &&
+      this._cachedTimePhase === this.currentState.timePhase &&
+      this._cachedIsDay === this.currentState.isDay
+    ) {
+      return this._cachedState;
+    }
+
+    let nextState;
     if (this.weatherPayload && !this.weatherPayload.stale) {
       // 从 weatherPayload 中的 weatherCode 解析出 weatherKind
       const parsedKind = this.weatherPayload.fallback
@@ -199,7 +217,7 @@ class WeatherAwarenessSystem {
         ? this.weatherPayload.timePhase
         : this.currentState.timePhase;
 
-      return {
+      nextState = {
         ...this.currentState,
         timePhase: phase,
         weatherKind,
@@ -209,13 +227,21 @@ class WeatherAwarenessSystem {
         isDay: this.weatherPayload.isDay,
         stale: false,
       };
+    } else {
+      nextState = {
+        ...this.currentState,
+        weatherKind: 'unknown',
+        windIntensity: 'none',
+        intensity: 'none'
+      };
     }
-    return {
-      ...this.currentState,
-      weatherKind: 'unknown',
-      windIntensity: 'none',
-      intensity: 'none'
-    };
+
+    this._cachedPayloadRef = this.weatherPayload;
+    this._cachedPayloadStale = Boolean(this.weatherPayload?.stale);
+    this._cachedTimePhase = this.currentState.timePhase;
+    this._cachedIsDay = this.currentState.isDay;
+    this._cachedState = nextState;
+    return nextState;
   }
 }
 
