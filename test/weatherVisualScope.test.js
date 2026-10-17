@@ -17,4 +17,7 @@ test('weather visuals stay local to pets and do not tint the whole screen', () =
   assert.match(effectsCss, /weatherWindDrift/);
   assert.match(effectsCss, /weather-lightning/);
   assert.match(effectsCss, /transform:\s*translate3d/);
+  assert.match(effectsCss, /calc\(170px \* var\(--weather-effect-scale, 1\)\)/);
+  assert.match(effectsCss, /calc\(150px \* var\(--weather-effect-scale, 1\)\)/);
+  assert.match(effectsCss, /calc\(-165px \* var\(--weather-effect-scale, 1\)\)/);
 });

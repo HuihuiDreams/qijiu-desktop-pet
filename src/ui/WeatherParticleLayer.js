@@ -91,6 +91,8 @@ class WeatherParticleLayer {
     this.layer.dataset.intensity = intensity;
     this.layer.dataset.windIntensity = windIntensity;
     this.layer.style.setProperty('--weather-effect-scale', scaleRatio);
+    this._lastLayerScale = scaleRatio;
+    this._lastGroupScales = [];
 
     const groupCount = Math.max(particleCounts.weather.length, particleCounts.wind.length);
     for (let groupIndex = 0; groupIndex < groupCount; groupIndex++) {
@@ -98,6 +100,7 @@ class WeatherParticleLayer {
       group.className = `weather-particle-group weather-particle-group--${weatherKind}`;
       group.dataset.petIndex = String(groupIndex);
       group.style.setProperty('--weather-effect-scale', scaleRatio);
+      this._lastGroupScales[groupIndex] = scaleRatio;
 
       const visualWeatherKind = weatherKind === 'thunderstorm' ? 'rain' : weatherKind;
       const weatherCount = particleCounts.weather[groupIndex] || 0;
@@ -132,6 +135,8 @@ class WeatherParticleLayer {
     }
     this._groups = null;
     this._lastPositions = [];
+    this._lastLayerScale = null;
+    this._lastGroupScales = [];
     this.particleCounts = { weather: [], wind: [] };
   }
 
@@ -158,6 +163,18 @@ class WeatherParticleLayer {
   normalizeScaleRatio(scaleRatio) {
     const value = Number(scaleRatio);
     return Number.isFinite(value) && value > 0 ? value : 1;
+  }
+
+  getBasePetSize() {
+    const value = Number(this.config?.PET_SIZE);
+    return Number.isFinite(value) && value > 0 ? value : 96;
+  }
+
+  getPetEffectScale(pet, scaleRatio = 1) {
+    const baseSize = this.getBasePetSize();
+    const petSize = Number(pet?.size);
+    const petScale = Number.isFinite(petSize) && petSize > 0 ? petSize / baseSize : 1;
+    return scaleRatio * petScale;
   }
 
   normalizePets(pets) {
@@ -213,9 +230,10 @@ class WeatherParticleLayer {
   }
 
 
-  _applyGroupStyle(group, index, width, height, left, top, opacity, visibility) {
+  _applyGroupStyle(group, index, width, height, left, top, opacity, visibility, effectScale) {
     if (!this._lastPositions) this._lastPositions = [];
-    const cacheKey = `${width}_${height}_${left}_${top}_${opacity}_${visibility}`;
+    if (!this._lastGroupScales) this._lastGroupScales = [];
+    const cacheKey = `${width}_${height}_${left}_${top}_${opacity}_${visibility}_${effectScale}`;
     if (this._lastPositions[index] === cacheKey) return;
     this._lastPositions[index] = cacheKey;
 
@@ -223,6 +241,10 @@ class WeatherParticleLayer {
       group.style.opacity = '0';
       group.style.visibility = 'hidden';
     } else {
+      if (Number.isFinite(effectScale) && effectScale > 0 && this._lastGroupScales[index] !== effectScale) {
+        group.style.setProperty('--weather-effect-scale', effectScale);
+        this._lastGroupScales[index] = effectScale;
+      }
       group.style.width = `${width}px`;
       group.style.height = `${height}px`;
       group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
@@ -231,10 +253,17 @@ class WeatherParticleLayer {
     }
   }
 
-  positionGroups(pets, scaleRatio, options = {}) {
+  positionGroups(pets, scaleRatio = 1, options = {}) {
     if (!this.layer || !this._groups) return;
     const groups = this._groups;
     if (!groups.length) return;
+    scaleRatio = this.normalizeScaleRatio(scaleRatio);
+
+    const primaryEffectScale = this.getPetEffectScale(pets[0], scaleRatio);
+    if (Number.isFinite(primaryEffectScale) && primaryEffectScale > 0 && this._lastLayerScale !== primaryEffectScale) {
+      this.layer.style.setProperty('--weather-effect-scale', primaryEffectScale);
+      this._lastLayerScale = primaryEffectScale;
+    }
 
     const isInteracting = Boolean(options.isInteracting || options.interactionOverlayActive);
     const overlayEl = (typeof document !== 'undefined' && typeof document.getElementById === 'function')
@@ -245,10 +274,14 @@ class WeatherParticleLayer {
     if (isInteracting && pets.length >= 2 && pets[0] && pets[1]) {
       const petA = pets[0];
       const petB = pets[1];
-      const baseWidthA = Math.max(132, petA.size * 1.65) * scaleRatio;
-      const baseHeightA = Math.max(120, petA.size * 1.45) * scaleRatio;
-      const baseWidthB = Math.max(132, petB.size * 1.65) * scaleRatio;
-      const baseHeightB = Math.max(120, petB.size * 1.45) * scaleRatio;
+      const baseWidthA = petA.size * 1.65 * scaleRatio;
+      const baseHeightA = petA.size * 1.45 * scaleRatio;
+      const baseWidthB = petB.size * 1.65 * scaleRatio;
+      const baseHeightB = petB.size * 1.45 * scaleRatio;
+      const mergedEffectScale = Math.max(
+        this.getPetEffectScale(petA, scaleRatio),
+        this.getPetEffectScale(petB, scaleRatio),
+      );
 
       let cx, cy, mergedWidth, mergedHeight;
       if (hasOverlay && overlayEl && overlayEl.style.left) {
@@ -275,20 +308,21 @@ class WeatherParticleLayer {
       const top = cy - mergedHeight * 0.28;
 
       if (groups[0]) {
-        this._applyGroupStyle(groups[0], 0, mergedWidth, mergedHeight, left, top, '1', 'visible');
+        this._applyGroupStyle(groups[0], 0, mergedWidth, mergedHeight, left, top, '1', 'visible', mergedEffectScale);
       }
       if (groups[1]) {
-        this._applyGroupStyle(groups[1], 1, 0, 0, 0, 0, '0', 'hidden');
+        this._applyGroupStyle(groups[1], 1, 0, 0, 0, 0, '0', 'hidden', mergedEffectScale);
       }
       for (let i = 2; i < groups.length; i++) {
         const group = groups[i];
         const pet = pets[i];
         if (!pet) continue;
-        const width = Math.max(132, pet.size * 1.65) * scaleRatio;
-        const height = Math.max(120, pet.size * 1.45) * scaleRatio;
+        const width = pet.size * 1.65 * scaleRatio;
+        const height = pet.size * 1.45 * scaleRatio;
         const pLeft = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
         const pTop = pet.y - height * 0.28;
-        this._applyGroupStyle(group, i, width, height, pLeft, pTop, '1', 'visible');
+        const effectScale = this.getPetEffectScale(pet, scaleRatio);
+        this._applyGroupStyle(group, i, width, height, pLeft, pTop, '1', 'visible', effectScale);
       }
       return;
     }
@@ -296,11 +330,12 @@ class WeatherParticleLayer {
     groups.forEach((group, index) => {
       const pet = pets[index];
       if (!pet) return;
-      const width = Math.max(132, pet.size * 1.65) * scaleRatio;
-      const height = Math.max(120, pet.size * 1.45) * scaleRatio;
+      const width = pet.size * 1.65 * scaleRatio;
+      const height = pet.size * 1.45 * scaleRatio;
       const left = pet.x + (pet.size * scaleRatio) / 2 - width / 2;
       const top = pet.y - height * 0.28;
-      this._applyGroupStyle(group, index, width, height, left, top, '1', 'visible');
+      const effectScale = this.getPetEffectScale(pet, scaleRatio);
+      this._applyGroupStyle(group, index, width, height, left, top, '1', 'visible', effectScale);
     });
   }
 

@@ -136,7 +136,7 @@ body.weather-interaction-muted .weather-particle-layer {
 
 .weather-particle {
   position: absolute;
-  top: -18px;
+  top: calc(-18px * var(--weather-effect-scale, 1));
   left: 0;
   pointer-events: none;
   opacity: var(--weather-particle-opacity, 0.42);
@@ -171,7 +171,7 @@ body.weather-interaction-muted .weather-particle-layer {
   height: calc(36px * var(--weather-effect-scale, 1));
   background: none;
   transform-origin: left center;
-  transform: translate3d(-64px, 0, 0) rotate(-10deg) scaleX(0.85);
+  transform: translate3d(calc(-64px * var(--weather-effect-scale, 1)), 0, 0) rotate(-10deg) scaleX(0.85);
   animation-name: weatherWindDrift;
   overflow: visible;
 }
@@ -319,43 +319,43 @@ body.weather-interaction-muted .weather-particle-layer {
 
 @keyframes weatherRainFall {
   from {
-    transform: translate3d(0, -24px, 0) rotate(10deg);
+    transform: translate3d(0, calc(-24px * var(--weather-effect-scale, 1)), 0) rotate(10deg);
   }
 
   to {
-    transform: translate3d(var(--weather-particle-drift, 12px), 170px, 0) rotate(10deg);
+    transform: translate3d(calc(var(--weather-particle-drift, 12px) * var(--weather-effect-scale, 1)), calc(170px * var(--weather-effect-scale, 1)), 0) rotate(10deg);
   }
 }
 
 @keyframes weatherSnowFall {
   from {
-    transform: translate3d(0, -20px, 0);
+    transform: translate3d(0, calc(-20px * var(--weather-effect-scale, 1)), 0);
   }
 
   to {
-    transform: translate3d(var(--weather-particle-drift, 18px), 150px, 0);
+    transform: translate3d(calc(var(--weather-particle-drift, 18px) * var(--weather-effect-scale, 1)), calc(150px * var(--weather-effect-scale, 1)), 0);
   }
 }
 
 @keyframes weatherWindDrift {
   0% {
     opacity: 0;
-    transform: translate3d(-64px, 12px, 0) rotate(-12deg) scaleX(0.2);
+    transform: translate3d(calc(-64px * var(--weather-effect-scale, 1)), calc(12px * var(--weather-effect-scale, 1)), 0) rotate(-12deg) scaleX(0.2);
   }
 
   36% {
     opacity: 1;
-    transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.35), -6px, 0) rotate(-10deg) scaleX(1);
+    transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.35 * var(--weather-effect-scale, 1)), calc(-6px * var(--weather-effect-scale, 1)), 0) rotate(-10deg) scaleX(1);
   }
 
   72% {
     opacity: 1;
-    transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.78), -22px, 0) rotate(-8deg) scaleX(1.04);
+    transform: translate3d(calc(var(--weather-particle-drift, 112px) * 0.78 * var(--weather-effect-scale, 1)), calc(-22px * var(--weather-effect-scale, 1)), 0) rotate(-8deg) scaleX(1.04);
   }
 
   100% {
     opacity: 0;
-    transform: translate3d(var(--weather-particle-drift, 112px), -32px, 0) rotate(-7deg) scaleX(1.08);
+    transform: translate3d(calc(var(--weather-particle-drift, 112px) * var(--weather-effect-scale, 1)), calc(-32px * var(--weather-effect-scale, 1)), 0) rotate(-7deg) scaleX(1.08);
   }
 }
 
@@ -414,22 +414,22 @@ body.weather-interaction-muted .weather-particle-layer {
   }
 
   20% {
-    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.4), -30px, 0) scaleX(1.1) scaleY(0.8) skewX(-8deg);
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.4 * var(--weather-effect-scale, 1)), calc(-30px * var(--weather-effect-scale, 1)), 0) scaleX(1.1) scaleY(0.8) skewX(-8deg);
     opacity: var(--weather-particle-opacity, 0.45);
   }
 
   50% {
-    transform: translate3d(calc(var(--weather-particle-drift, 8px) * 0.6), -75px, 0) scaleX(1.35) scaleY(1) skewX(6deg);
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * 0.6 * var(--weather-effect-scale, 1)), calc(-75px * var(--weather-effect-scale, 1)), 0) scaleX(1.35) scaleY(1) skewX(6deg);
     opacity: var(--weather-particle-opacity, 0.45);
   }
 
   80% {
-    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.2), -125px, 0) scaleX(1.5) scaleY(1.15) skewX(-4deg);
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * -0.2 * var(--weather-effect-scale, 1)), calc(-125px * var(--weather-effect-scale, 1)), 0) scaleX(1.5) scaleY(1.15) skewX(-4deg);
     opacity: calc(var(--weather-particle-opacity, 0.45) * 0.6);
   }
 
   100% {
-    transform: translate3d(var(--weather-particle-drift, 8px), -165px, 0) scaleX(1.7) scaleY(1.25) skewX(2deg);
+    transform: translate3d(calc(var(--weather-particle-drift, 8px) * var(--weather-effect-scale, 1)), calc(-165px * var(--weather-effect-scale, 1)), 0) scaleX(1.7) scaleY(1.25) skewX(2deg);
     opacity: 0;
   }
 }

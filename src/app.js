@@ -347,6 +347,16 @@
       pets.forEach((pet) => pet.applyScale(scale, getVisualScaleForPet(pet)));
       pets.forEach(keepPetReachable);
       if (interactionOverlayActive) renderer.updateOverlay(yueqi, shenjiu);
+      if (typeof weatherParticleLayer !== 'undefined' && weatherParticleLayer?.layer) {
+        const normalizedPets = weatherParticleLayer.normalizePets(pets);
+        const scaleRatio = typeof getWeatherEffectScale === 'function'
+          ? getWeatherEffectScale()
+          : weatherParticleLayer.scaleRatio;
+        weatherParticleLayer.positionGroups(normalizedPets, scaleRatio, {
+          interactionOverlayActive,
+          isInteracting: typeof interactionSystem !== 'undefined' && Boolean(interactionSystem?.isInteracting),
+        });
+      }
     }
   };
 

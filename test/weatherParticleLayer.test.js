@@ -367,6 +367,12 @@ test('WeatherParticleLayer merges and centers particle groups during pet interac
     // Ensure groupA transform is centered around cx and not left at petA's original x
     const transformA = groupA.style.transform;
     assert.ok(transformA && transformA.includes('translate3d('), 'groupA should have translate3d transform');
+
+    // Scale pets during interaction and verify mergedEffectScale picks the larger pet scale * scaleRatio
+    pets[0].size = 48;
+    pets[1].size = 144;
+    layer.positionGroups(layer.normalizePets(pets), undefined, { isInteracting: true });
+    assert.equal(groupA.style['--weather-effect-scale'], 1.5);
   } finally {
     delete global.document;
   }
@@ -477,3 +483,45 @@ test('WeatherParticleLayer reuses particleCounts arrays when weather is unchange
     delete global.document;
   }
 });
+
+test('WeatherParticleLayer scales group bounds and --weather-effect-scale with pet size (50% to 150%) without rebuilding nodes', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, { PET_SIZE: 96, WEATHER_RAIN_PARTICLE_MAX: 10 });
+    const pets = [{ x: 100, y: 200, size: 96 }];
+
+    layer.sync({ weatherKind: 'rain', intensity: 'normal' }, { visible: true, scaleRatio: 1.25, pets });
+    const initialLayerEl = root.children[0];
+    const groupEl = initialLayerEl.children[0];
+    assert.equal(groupEl.style.width, `${96 * 1.65 * 1.25}px`);
+    assert.equal(groupEl.style.height, `${96 * 1.45 * 1.25}px`);
+    assert.equal(groupEl.style['--weather-effect-scale'], 1.25);
+
+    // Shrink pet to 50% (size = 48): group must shrink below the old 132x120 floor and scale --weather-effect-scale
+    pets[0].size = 48;
+    layer.sync({ weatherKind: 'rain', intensity: 'normal' }, { visible: true, scaleRatio: 1.25, pets });
+    assert.equal(root.children[0], initialLayerEl, 'Must reuse existing layer DOM element when pet size scales');
+    assert.equal(groupEl.style.width, `${48 * 1.65 * 1.25}px`);
+    assert.equal(groupEl.style.height, `${48 * 1.45 * 1.25}px`);
+    assert.equal(groupEl.style['--weather-effect-scale'], 1.25 * 0.5);
+    assert.equal(initialLayerEl.style['--weather-effect-scale'], 1.25 * 0.5);
+
+    // Enlarge pet to 150% (size = 144)
+    pets[0].size = 144;
+    layer.sync({ weatherKind: 'rain', intensity: 'normal' }, { visible: true, scaleRatio: 1.25, pets });
+    assert.equal(root.children[0], initialLayerEl);
+    assert.equal(groupEl.style.width, `${144 * 1.65 * 1.25}px`);
+    assert.equal(groupEl.style.height, `${144 * 1.45 * 1.25}px`);
+    assert.equal(groupEl.style['--weather-effect-scale'], 1.25 * 1.5);
+    assert.equal(initialLayerEl.style['--weather-effect-scale'], 1.25 * 1.5);
+  } finally {
+    delete global.document;
+  }
+});
+

@@ -34,6 +34,7 @@ Accepted
 3. **视觉与字号分层解耦**：
    - 对话气泡（`dialog-bubble`）和右键菜单（`context-menu`）不跟随用户体型缩放，保持 100% 标准字号与清晰排版，仅跟随屏幕 DPI（`scaleRatio`）进行物理缩放，确保 50% 缩小状态下台词依然完全清晰可读。
    - 亲亲/拥抱双人互动叠加层（`showOverlay`）宽度及伴生灵气光环（`spawnOverlayQiAura`）的直径与中心纵向偏移同步乘以双宠平均体型比例，保证 CP 互动视觉与实际体型协调一致。
+   - 局部天气粒子层（`WeatherParticleLayer`）的容器宽高、粒子单体尺寸与关键帧位移距离通过 `--weather-effect-scale = scaleRatio * (pet.size / CONFIG.PET_SIZE)` 同步跟随宠物体型（50%~150%）等比收放，且在体型拖动预览期间直接更新 CSS 变量与几何样式而不重建粒子 DOM 节点。
    - 互动进行中收到体型预览或回滚时，在宠物坐标约束完成后调用 `updateOverlay()`，复用现有图片和气泡节点重新定位；气泡仅随 DPI 调整字号，不重启淡入淡出动画或延长显示时间。
 
 4. **设置窗口生命周期与层级（对齐选肤器 ADR-041）**：
