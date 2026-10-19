@@ -16,6 +16,8 @@
 - 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复桌宠体型缩放（50%~150%）后局部天气粒子效果比例失调的问题：`WeatherParticleLayer` 将宠物体型倍率（`pet.size / CONFIG.PET_SIZE`）与显示器 DPI `scaleRatio` 合并写入 `--weather-effect-scale`，移除容器 `132×120` 固定最小下限以允许 50% 小体型时等比收缩，并在 `src/effects.css` 中将雨雪下落、风痕漂移与高温阳炎升腾的关键帧位移距离同 `--weather-effect-scale` 联动，避免 50% 体型下粒子与范围过大及 150% 体型下粒子在半空提前消失；同时在拖动滑块预览体型时实时同步更新活跃天气粒子组且不重建 DOM 节点（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 
+- 修复高温天气底座光晕宽度重复乘以体型与显示器 DPI 倍率的问题：百分比宽度仅随已缩放的粒子容器变化，避免小体型下过窄、放大后过宽并被裁切；保留像素尺寸与动画位移的等比缩放。
+
 ## [0.11.0] - 2026-10-15
 
 ### Added

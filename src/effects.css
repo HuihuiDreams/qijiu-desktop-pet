@@ -259,7 +259,7 @@ body.weather-interaction-muted .weather-particle-layer {
   position: absolute;
   left: -4%;
   top: 92%;
-  width: calc(108% * var(--weather-effect-scale, 1));
+  width: 108%;
   height: calc(36px * var(--weather-effect-scale, 1));
   border-radius: 50% / 100%;
   pointer-events: none;
@@ -273,7 +273,7 @@ body.weather-interaction-muted .weather-particle-layer {
 .weather-heat-glow--2 {
   left: 4%;
   top: 98%;
-  width: calc(92% * var(--weather-effect-scale, 1));
+  width: 92%;
   height: calc(24px * var(--weather-effect-scale, 1));
   background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(255, 255, 255, 0.32) 0%, rgba(255, 252, 248, 0.12) 60%, rgba(255, 255, 255, 0) 100%);
   filter: blur(calc(10px * var(--weather-effect-scale, 1)));

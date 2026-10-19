@@ -21,3 +21,11 @@ test('weather visuals stay local to pets and do not tint the whole screen', () =
   assert.match(effectsCss, /calc\(150px \* var\(--weather-effect-scale, 1\)\)/);
   assert.match(effectsCss, /calc\(-165px \* var\(--weather-effect-scale, 1\)\)/);
 });
+
+test('heat glow percentage widths inherit the scaled group width without another scale factor', () => {
+  for (const selector of ['.weather-heat-glow', '.weather-heat-glow--2']) {
+    const rule = effectsCss.slice(effectsCss.indexOf(`${selector} {`)).split('}')[0];
+    const width = rule.match(/\bwidth:\s*([^;]+);/)[1];
+    assert.match(width, /^\d+(?:\.\d+)?%$/, `${selector} width must scale only through its container`);
+  }
+});
