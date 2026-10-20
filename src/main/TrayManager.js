@@ -43,6 +43,9 @@ function buildTrayMenu() {
   const appVersion = app.getVersion();
   const currentLocale = deps.getCurrentLocale();
   const { windowManager } = deps;
+  const isBreakReminderEnabled = Boolean(deps.getBreakReminderEnabled && deps.getBreakReminderEnabled());
+  const screensaverSettings = deps.getScreensaverSettings ? deps.getScreensaverSettings() : { enabled: false };
+  const isScreensaverEnabled = Boolean(screensaverSettings?.enabled);
 
   const langSubmenu = [
     { lang: 'zh', key: 'langZh' },
@@ -150,7 +153,7 @@ function buildTrayMenu() {
     { type: 'separator' },
 
     {
-      label: deps.getBreakReminderEnabled() ? trayMenuLabel('trayBreakReminderOn') : trayMenuLabel('trayBreakReminderOff'),
+      label: isBreakReminderEnabled ? trayMenuLabel('trayBreakReminderOn') : trayMenuLabel('trayBreakReminderOff'),
       click: async () => {
         const newEnabled = !deps.getBreakReminderEnabled();
         deps.setBreakReminderEnabled(newEnabled);
@@ -163,6 +166,7 @@ function buildTrayMenu() {
     },
     {
       label: trayMenuLabel('trayBreakReminderInterval'),
+      enabled: isBreakReminderEnabled,
       submenu: deps.BREAK_REMINDER_TRAY_INTERVALS.map(minutes => ({
         label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
         type: 'radio',
@@ -178,7 +182,7 @@ function buildTrayMenu() {
       })),
     },
     {
-      label: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { enabled: false }).enabled
+      label: isScreensaverEnabled
         ? trayMenuLabel('trayScreensaverOn')
         : trayMenuLabel('trayScreensaverOff'),
       click: async () => {
@@ -190,10 +194,11 @@ function buildTrayMenu() {
     },
     {
       label: trayMenuLabel('trayScreensaverThreshold'),
+      enabled: isScreensaverEnabled,
       submenu: SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
         label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
         type: 'radio',
-        checked: (deps.getScreensaverSettings ? deps.getScreensaverSettings() : { idleThresholdMinutes: 3 }).idleThresholdMinutes === minutes,
+        checked: (screensaverSettings.idleThresholdMinutes ?? 3) === minutes,
         click: async () => {
           if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
           const current = deps.getScreensaverSettings();

@@ -17,6 +17,7 @@
 - 优化桌宠体型调节窗口状态同步与 IPC 暴露面：`src/petScaleWindow.js` 的恢复默认操作改为读取主进程下发的 `settings.defaultPercent`；`PetScaleWindow.js` 的 `pet-scale-get-settings` 返回当前活动预览值 `PetScaleService.getPreviewPercent()` 以保证预览期间重读设置与主界面状态一致；移除未使用的冗余 `close-pet-scale-window` IPC 通道与 preload 暴露项（窗口关闭统一收敛至 `pet-scale-cancel` / `pet-scale-confirm`）。
 - 同步更新 `docs/decisions/README.md` 架构决策目录，补齐 `ADR-047`（桌宠体型大小缩放与渲染架构方案）索引条目。
 - 实施运行时与渲染性能全面优化：在 `PetRenderer.update` 中对位移（`x, y, visualScale`）与图片缩放（`imageScale`）增加 dirty check，避免静止帧重复改写 DOM `transform` 与 CSS 变量；在 `WeatherAwarenessSystem.getCurrentState` 与 `MovementSystem.setSurfacePlatforms` 中引入状态快照与入参对比缓存，消除主循环中的高频对象分配与数组规整 GC 开销；桌宠隐藏态（`!isVisible`）下主动挂起 `requestAnimationFrame` 并在显示时重置 `lastTime` 恢复循环，消除后台 RAF 空转；在 `meetingDetector` 中对 macOS 系统二进制路径探测增加模块级缓存并将多会议应用探测由串行改为 `Promise.all` 并行采集（[ADR-012](docs/decisions/ADR-012-render-performance-optimization.md)）。
+- 优化托盘菜单交互可用状态：在托盘菜单中联动久坐提醒与高甜屏保的开启状态，当关闭久坐提醒时将“⏰ 提醒间隔”子菜单项置灰禁用（`enabled: false`），当关闭高甜屏保时将“💕 屏保触发等待”子菜单项置灰禁用，仅在对应功能开启后才允许展开与调整间隔或等待时长。
 
 ### Fixed
 - 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。

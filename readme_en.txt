@@ -44,9 +44,9 @@ The tray menu lets you:
 - "🔄 Reset Position"
 - "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
 - "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder"
-- "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes
+- "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes (selectable only when break reminder is enabled; disabled when off)
 - "💕 Enable Sweat Screensaver" or "💕 Disable Sweat Screensaver"
-- "💕 Screensaver Wait Time": choose 1, 3, 5, 10, 15, or 30 min (default: 3 min)
+- "💕 Screensaver Wait Time": choose 1, 3, 5, 10, 15, or 30 min (default: 3 min; selectable only when screensaver is enabled; disabled when off)
 - "🌤️ Enable Weather Sync" or "🌤️ Disable Weather Sync"
 - "🌤️ Set City"
 - "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"

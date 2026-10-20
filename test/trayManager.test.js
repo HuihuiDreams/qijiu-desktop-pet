@@ -283,4 +283,40 @@ test('TrayManager - Full Coverage', async (t) => {
     assert.ok(opened);
   });
 
+  await t.test('disables interval and threshold submenus when break reminder or screensaver is disabled', async () => {
+    const deps = createMockDeps();
+    let breakEnabled = false;
+    let ssSettings = { enabled: false, idleThresholdMinutes: 3 };
+
+    deps.getBreakReminderEnabled = () => breakEnabled;
+    deps.setBreakReminderEnabled = (v) => { breakEnabled = v; };
+    deps.getScreensaverSettings = () => ssSettings;
+    deps.updateScreensaverSettings = (s) => { ssSettings = s; };
+
+    TrayManager.init(deps);
+    TrayManager.createTray();
+
+    const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
+
+    // When disabled, interval and threshold items must be disabled (enabled: false)
+    assert.equal(findItem('trayBreakReminderInterval').enabled, false);
+    assert.equal(findItem('trayScreensaverThreshold').enabled, false);
+
+    // Toggle break reminder ON
+    await findItem('trayBreakReminderOff').click();
+    assert.equal(findItem('trayBreakReminderInterval').enabled, true);
+
+    // Toggle screensaver ON
+    await findItem('trayScreensaverOff').click();
+    assert.equal(findItem('trayScreensaverThreshold').enabled, true);
+
+    // Toggle break reminder OFF
+    await findItem('trayBreakReminderOn').click();
+    assert.equal(findItem('trayBreakReminderInterval').enabled, false);
+
+    // Toggle screensaver OFF
+    await findItem('trayScreensaverOn').click();
+    assert.equal(findItem('trayScreensaverThreshold').enabled, false);
+  });
+
 });
