@@ -371,8 +371,8 @@ html[data-locale="en"] .pomodoro-dial-emblem {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html:not([data-locale="en"]) .pomodoro-dial-emblem {
-    animation: none;
+  .pomodoro-dial-emblem {
+    animation: none !important;
   }
 }
 
@@ -565,8 +565,9 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
-    animation: pomodoroStampFadeReduced 0.6s ease-out forwards;
+  .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal,
+  html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
+    animation: pomodoroStampFadeReduced 0.6s ease-out forwards !important;
   }
   .pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple {
     display: none;

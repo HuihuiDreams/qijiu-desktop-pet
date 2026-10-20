@@ -74,7 +74,12 @@ test('ContextMenu header text does not duplicate displayName in real DOM', () =>
     constructor() {
       this.children = [];
       this.childNodes = [];
-      this.classList = { add() {}, remove() {}, contains: () => false };
+      const classes = new Set();
+      this.classList = {
+        add: (...c) => c.forEach(item => classes.add(item)),
+        remove: (...c) => c.forEach(item => classes.delete(item)),
+        contains: (c) => classes.has(c),
+      };
       this.style = { setProperty() {} };
       this.dataset = {};
     }
@@ -128,6 +133,13 @@ test('ContextMenu header text does not duplicate displayName in real DOM', () =>
     assert.ok(textSpan, 'textSpan should exist');
     const matches = textSpan.textContent.match(/Yue Qingyuan/g) || [];
     assert.equal(matches.length, 1, `Expected "Yue Qingyuan" to appear exactly once, got: "${textSpan.textContent}"`);
+
+    // Verify dynamic custom pet class cleanup on show / hide
+    contextMenu.show({ id: 'custompet', name: 'Custom Pet', nickname: 'Custom', isBusy: () => false }, 10, 10);
+    assert.equal(menuEl.classList.contains('context-menu--custompet'), true);
+    contextMenu.hide();
+    assert.equal(menuEl.classList.contains('context-menu--custompet'), false);
+    assert.equal(menuEl.dataset.petId, undefined);
   } finally {
     global.document = originalDocument;
     global.window = originalWindow;
@@ -151,6 +163,8 @@ test('pomodoro completion ceremony renders stamp, golden ripples, and audio chim
   assert.match(css, /@keyframes pomodoroRippleExpand\s*\{/);
   assert.match(css, /@keyframes pomodoroStampFadeReduced\s*\{/);
   assert.match(css, /\.pomodoro-stamp-ceremony--active \.pomodoro-stamp-seal/);
+  assert.match(css, /\.pomodoro-dial-emblem\s*\{[^}]*animation:\s*none\s*!important/);
+  assert.match(css, /html\[data-locale="en"\]\s+\.pomodoro-stamp-ceremony--active\s+\.pomodoro-stamp-seal\s*\{[^}]*animation:\s*pomodoroStampFadeReduced[^}]*!important/);
 
   // JS chime synthesizer & triggers
   assert.match(js, /function playMeditationChime\(\)/);

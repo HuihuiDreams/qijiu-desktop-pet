@@ -22,6 +22,7 @@
 - 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复桌宠体型缩放（50%~150%）后局部天气粒子效果比例失调的问题：`WeatherParticleLayer` 将宠物体型倍率（`pet.size / CONFIG.PET_SIZE`）与显示器 DPI `scaleRatio` 合并写入 `--weather-effect-scale`，移除容器 `132×120` 固定最小下限以允许 50% 小体型时等比收缩，并在 `src/effects.css` 中将雨雪下落、风痕漂移与高温阳炎升腾的关键帧位移距离同 `--weather-effect-scale` 联动，避免 50% 体型下粒子与范围过大及 150% 体型下粒子在半空提前消失；同时在拖动滑块预览体型时实时同步更新活跃天气粒子组且不重建 DOM 节点（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复高温天气底座光晕宽度重复乘以体型与显示器 DPI 倍率的问题：百分比宽度仅随已缩放的粒子容器变化，避免小体型下过窄、放大后过宽并被裁切；保留像素尺寸与动画位移的等比缩放。
+- 修复番茄钟静修窗口在系统开启减弱动态效果（`prefers-reduced-motion`）且处于英文环境时动效降级失效的问题：为表盘底心呼吸动效与落印仪式补齐 `!important` 与显式多语言选择器权重，确保英文模式下表盘底心静止且落印仪式平滑淡显而非高空砸落；同时为 `ContextMenu` 的宠物动态样式类移除补充动态 ID 清理与状态面板 null 守卫，增强非预设 CP 扩展下的类名清理健壮性。
 
 ### Removed
 - 移除修仙状态面板右下角的英文标语“Make QiJiu Great Again!”及关联多语言字典键 `statusFooter`，精简页脚视觉层级并使状态面板底边专注于水墨与泥金微印。

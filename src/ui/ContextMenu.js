@@ -144,6 +144,9 @@ class ContextMenu {
    */
   show(pet, x, y) {
     document.body?.classList?.add('weather-interaction-muted');
+    if (this.currentPet?.id) {
+      this.menuEl.classList.remove(`context-menu--${this.currentPet.id}`);
+    }
     this.currentPet = pet;
     this.menuEl.dataset.petId = pet.id;
     this.menuEl.classList.remove('context-menu--yueqi', 'context-menu--shenjiu');
@@ -233,6 +236,9 @@ class ContextMenu {
 
   hide() {
     this.menuEl.classList.add('hidden');
+    if (this.currentPet?.id) {
+      this.menuEl.classList.remove(`context-menu--${this.currentPet.id}`);
+    }
     this.menuEl.classList.remove('context-menu--yueqi', 'context-menu--shenjiu');
     delete this.menuEl.dataset.petId;
     document.body?.classList?.remove('weather-interaction-muted');
@@ -240,9 +246,10 @@ class ContextMenu {
 
     // 菜单关闭后，检查是否有其他交互面板开着（如状态面板）
     // 如果状态面板是开着的，则不要重新启用点击穿透，否则状态面板会无法点击
-    const panelOpen = !document.getElementById('status-panel').classList.contains('hidden');
+    const statusPanel = document.getElementById('status-panel');
+    const panelOpen = Boolean(statusPanel && !statusPanel.classList.contains('hidden'));
     if (!panelOpen) {
-      window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
+      window.electronAPI?.setIgnoreMouseEvents?.(true, { forward: true });
     }
   }
 
