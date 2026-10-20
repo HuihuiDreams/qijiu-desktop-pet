@@ -287,14 +287,106 @@ html[lang="en"] .pomodoro-titlebar>span {
   text-align: center;
 }
 
+.pomodoro-dial-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(240px, 92%);
+  height: 76px;
+  margin: 2px 0 2px;
+}
+
+.pomodoro-dial-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 38px;
+  border: 1px solid rgba(201, 162, 77, 0.16);
+  background: radial-gradient(ellipse at center, rgba(201, 162, 77, 0.06) 0%, rgba(110, 198, 160, 0.03) 60%, transparent 100%);
+  box-shadow: inset 0 0 14px rgba(201, 162, 77, 0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pomodoro-dial-ring::before,
+.pomodoro-dial-ring::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  opacity: 0.35;
+}
+
+.pomodoro-dial-ring::before {
+  left: 8px;
+}
+
+.pomodoro-dial-ring::after {
+  right: 8px;
+}
+
+.pomodoro-dial-emblem {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(135deg, var(--color-gold) 0%, #e8ca77 50%, #b88e38 100%);
+  -webkit-mask-image: url('./assets/calligraphy-qj.webp');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('./assets/calligraphy-qj.webp');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 10px rgba(201, 162, 77, 0.35));
+  animation: pomodoroMeditationBreath 4s ease-in-out infinite;
+}
+
+/* In English mode: keep the breathing emblem slightly softer */
+html[data-locale="en"] .pomodoro-dial-emblem {
+  opacity: 0.14;
+}
+
+@keyframes pomodoroMeditationBreath {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.97);
+    opacity: 0.16;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.03);
+    opacity: 0.24;
+    filter: drop-shadow(0 0 14px rgba(201, 162, 77, 0.45));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-locale="en"]) .pomodoro-dial-emblem {
+    animation: none;
+  }
+}
+
 .pomodoro-timer {
+  position: relative;
+  z-index: 1;
   color: var(--color-ink);
   font-family: "JetBrains Mono", "Geist Mono", monospace;
-  font-size: 54px;
+  font-size: 52px;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: 0.5px;
   line-height: 1;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 16px rgba(201, 162, 77, 0.12);
 }
 
 .pomodoro-progress {
@@ -325,9 +417,169 @@ html[lang="en"] .pomodoro-titlebar>span {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent);
 }
 
+#pomodoro-completed {
+  position: relative;
+}
+
 .pomodoro-pets--complete .pomodoro-pet {
   filter:
     drop-shadow(0 5px 12px rgba(30, 42, 54, 0.14)) drop-shadow(0 0 12px rgba(110, 198, 160, 0.22));
+}
+
+/* Pomodoro Completion QiJiu Stamp & Qi Ripple Ceremony */
+.pomodoro-stamp-ceremony {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.pomodoro-stamp-seal {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  width: 90px;
+  height: 90px;
+  transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+  background: linear-gradient(135deg, var(--color-gold) 0%, #f3df9b 45%, #b88e38 100%);
+  -webkit-mask-image: url('./assets/calligraphy-qj.webp');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('./assets/calligraphy-qj.webp');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  opacity: 0;
+  filter: drop-shadow(0 0 10px rgba(201, 162, 77, 0.4));
+  pointer-events: none;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
+  animation: pomodoroStampDrop 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
+  animation-name: pomodoroStampDropEn;
+}
+
+@keyframes pomodoroStampDrop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(2.4) rotate(-14deg);
+    filter: blur(2px) drop-shadow(0 20px 24px rgba(201, 162, 77, 0.8));
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.92) rotate(-4deg);
+    filter: drop-shadow(0 0 22px rgba(201, 162, 77, 0.95));
+  }
+  38% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(-3deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 16px rgba(201, 162, 77, 0.75));
+  }
+  75% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0.30;
+    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+    filter: drop-shadow(0 0 8px rgba(201, 162, 77, 0.35));
+  }
+}
+
+@keyframes pomodoroStampDropEn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(2.4) rotate(-14deg);
+    filter: blur(2px) drop-shadow(0 20px 24px rgba(201, 162, 77, 0.8));
+  }
+  24% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.92) rotate(-4deg);
+    filter: drop-shadow(0 0 22px rgba(201, 162, 77, 0.95));
+  }
+  38% {
+    transform: translate(-50%, -50%) scale(1.05) rotate(-3deg);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+    opacity: 0.90;
+    filter: drop-shadow(0 0 16px rgba(201, 162, 77, 0.7));
+  }
+  75% {
+    opacity: 0.70;
+  }
+  100% {
+    opacity: 0.20;
+    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+    filter: drop-shadow(0 0 6px rgba(201, 162, 77, 0.25));
+  }
+}
+
+.pomodoro-stamp-ripple {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid rgba(201, 162, 77, 0.75);
+  box-shadow: 0 0 16px rgba(201, 162, 77, 0.5), inset 0 0 12px rgba(201, 162, 77, 0.3);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple--1 {
+  animation: pomodoroRippleExpand 1.5s cubic-bezier(0.1, 0.7, 0.3, 1) 0.22s forwards;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple--2 {
+  animation: pomodoroRippleExpand 1.6s cubic-bezier(0.1, 0.7, 0.3, 1) 0.36s forwards;
+}
+
+@keyframes pomodoroRippleExpand {
+  0% {
+    width: 24px;
+    height: 24px;
+    opacity: 0.95;
+    border-width: 3px;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  50% {
+    opacity: 0.6;
+    border-color: rgba(232, 202, 119, 0.65);
+  }
+  100% {
+    width: 260px;
+    height: 260px;
+    opacity: 0;
+    border-width: 1px;
+    transform: translate(-50%, -50%) scale(1.6);
+    box-shadow: 0 0 28px rgba(201, 162, 77, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
+    animation: pomodoroStampFadeReduced 0.6s ease-out forwards;
+  }
+  .pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple {
+    display: none;
+  }
+}
+
+@keyframes pomodoroStampFadeReduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.30;
+  }
 }
 
 @media (max-width: 380px) {
@@ -346,7 +598,16 @@ html[lang="en"] .pomodoro-titlebar>span {
   }
 
   .pomodoro-timer {
-    font-size: 52px;
+    font-size: 46px;
+  }
+
+  .pomodoro-dial-wrapper {
+    height: 68px;
+  }
+
+  .pomodoro-dial-emblem {
+    width: 66px;
+    height: 66px;
   }
 }
 

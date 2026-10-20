@@ -47,7 +47,38 @@
   display: none;
 }
 
+/* Background ink watermark spine (Vertical names: 岳清源 / 沈清秋) */
+.context-menu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  background-size: auto 70%;
+  z-index: 0;
+}
+
+.context-menu--yueqi::before {
+  background-image: url('./assets/calligraphy-yqy.webp');
+}
+
+.context-menu--shenjiu::before {
+  background-image: url('./assets/calligraphy-sqq.webp');
+}
+
+/* In English mode: keep the vertical watermark spine extremely faint */
+html[data-locale="en"] .context-menu::before {
+  opacity: 0.045;
+}
+
 .menu-header {
+  position: relative;
+  z-index: 1;
   padding: 10px 16px 8px;
   font-family: var(--font-display);
   font-size: 15px;
@@ -60,6 +91,42 @@
   letter-spacing: 0;
   /* Subtle ink-wash decoration */
   background: linear-gradient(90deg, var(--color-jade-mist) 0%, transparent 80%);
+}
+
+.menu-header-text {
+  display: inline;
+}
+
+.menu-header-calligraphy {
+  display: none;
+}
+
+/* In zh and ja: show calligraphy for the character's horizontal name */
+html:not([data-locale="en"]) .menu-header-text {
+  display: none;
+}
+
+html:not([data-locale="en"]) .menu-header-calligraphy {
+  display: inline-block;
+  height: 22px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left center;
+  vertical-align: middle;
+}
+
+html:not([data-locale="en"]) .context-menu--yueqi .menu-header-calligraphy {
+  background-image: url('./assets/calligraphy-yq.webp');
+  width: 48px;
+}
+
+html:not([data-locale="en"]) .context-menu--shenjiu .menu-header-calligraphy {
+  background-image: url('./assets/calligraphy-sj.webp');
+  width: 38px;
+}
+
+html[data-locale="en"] .menu-header-calligraphy {
+  display: none !important;
 }
 
 .menu-item {
@@ -125,6 +192,8 @@
 }
 
 .menu-separator {
+  position: relative;
+  z-index: 1;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(110, 198, 160, 0.2), transparent);
   margin: 4px 12px;

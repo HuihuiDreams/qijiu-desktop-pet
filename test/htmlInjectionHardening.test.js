@@ -14,7 +14,6 @@ test('ContextMenu renders dynamic pet header content without innerHTML', () => {
 
   assert.equal(source.includes('innerHTML'), false);
   assert.ok(source.includes("document.createElement('img')"));
-  assert.ok(source.includes('document.createTextNode'));
   assert.ok(source.includes('textContent'));
 });
 

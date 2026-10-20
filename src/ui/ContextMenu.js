@@ -145,6 +145,10 @@ class ContextMenu {
   show(pet, x, y) {
     document.body?.classList?.add('weather-interaction-muted');
     this.currentPet = pet;
+    this.menuEl.dataset.petId = pet.id;
+    this.menuEl.classList.remove('context-menu--yueqi', 'context-menu--shenjiu');
+    this.menuEl.classList.add(`context-menu--${pet.id}`);
+
     const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
     const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
     const name = window.t && window.t(nameKey) !== nameKey ? window.t(nameKey) : pet.name;
@@ -165,7 +169,17 @@ class ContextMenu {
       this.headerEl.appendChild(icon);
     }
 
-    this.headerEl.appendChild(document.createTextNode(` ${displayName}`));
+    const textSpan = document.createElement('span');
+    textSpan.className = 'menu-header-text';
+    textSpan.textContent = ` ${displayName}`;
+    this.headerEl.appendChild(textSpan);
+
+    const calligraphyEl = document.createElement('span');
+    calligraphyEl.className = 'menu-header-calligraphy';
+    if (typeof calligraphyEl.setAttribute === 'function') {
+      calligraphyEl.setAttribute('aria-hidden', 'true');
+    }
+    this.headerEl.appendChild(calligraphyEl);
 
     // 动态更新抚摸/关怀动作的菜单文本（语言敏感）
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
@@ -219,6 +233,8 @@ class ContextMenu {
 
   hide() {
     this.menuEl.classList.add('hidden');
+    this.menuEl.classList.remove('context-menu--yueqi', 'context-menu--shenjiu');
+    delete this.menuEl.dataset.petId;
     document.body?.classList?.remove('weather-interaction-muted');
     this.currentPet = null;
 

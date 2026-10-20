@@ -4,7 +4,13 @@
 
 ## [Unreleased]
 
+### Added
+- 新增书法微装饰与水墨暗纹系统：将岳清源、沈清秋（竖排）与岳七、沈九（横排）的书法作品融入右键菜单（`ContextMenu`）与修仙状态面板（`StatusWindow`）；中/日文模式下展示横排书法标题名牌，英文模式下保持标准西文标题同时共享极淡的水墨背景暗纹（`岳清源` / `沈清秋`）与右下角“七九”泥金闲章，提升文化沉浸感且不干扰西文可读性；新增针对书法素材与多语言隔离的自动化测试套件（`test/calligraphyDecoration.test.js`）。
+- 在番茄钟静修窗口（`PomodoroWindow`）计时盘中心融入“七九”暗金行草底心与静修表盘环：倒计时运行态下，表盘圆心全语种淡显 4s 冥想吐纳呼吸感的暗金“七九”书法图腾（英文模式调为超淡光晕），且支持 `prefers-reduced-motion` 动效降级保护。
+- 新增番茄钟静修圆满「七九」暗金盖印与灵气波纹落定仪式：静修倒计时结束时，在界面正中落下“七九”暗金印章并触发冲击波纹与双重淡金色灵气扩散动效；基于纯原生 Web Audio API 动态合成空灵悠远的铜磬敲钟共鸣音频（`playMeditationChime`），无需外部音频文件与网络请求且严格契约 CSP 安全策略；动画落定后平滑转为高雅的水墨闲章水印衬托双人立绘，且完善支持 `prefers-reduced-motion` 动效降级保护。
+
 ### Changed
+- 托盘说明文案 `trayDesc` 由原 `statusFooter`（“Make QiJiu Great Again!”）改为复用 `trayTitle`，随 `statusFooter` 字典键移除而同步调整。
 - 重构 `src/main/services/PetScaleService.js` 消除内部双套状态机实现：模块级 `init()` 与导出方法统一委托给 `createPetScaleService()` 实例，使单元测试与生产运行共享完全一致的状态与 IPC 逻辑。
 - 调整 `spawnOverlayQiAura()` 签名由传入预计算 DPI 缩放值改为接收 `(x, y) => scale` 查询回调，由光环锚点在 `PetRenderer` 内部溯源显示器 DPI 倍率；同步移除 `src/app.js` 中对 `INTERACTION_OVERLAY_AURA_TOP_OFFSET` / `INTERACTION_OVERLAY_BASE_WIDTH` 光环几何常量的重复实现，避免常量变更后查询点与真实光环圆心漂移。
 - 将 `test/integration/*.test.js` 纳入 `scripts/run-tests.js` 默认收集范围，使 `npm test` 统一执行单元、行为与跨模块集成测试套件，同时保留 `npm run test:integration` 作为集成测试独立快速运行入口。
@@ -15,8 +21,10 @@
 ### Fixed
 - 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复桌宠体型缩放（50%~150%）后局部天气粒子效果比例失调的问题：`WeatherParticleLayer` 将宠物体型倍率（`pet.size / CONFIG.PET_SIZE`）与显示器 DPI `scaleRatio` 合并写入 `--weather-effect-scale`，移除容器 `132×120` 固定最小下限以允许 50% 小体型时等比收缩，并在 `src/effects.css` 中将雨雪下落、风痕漂移与高温阳炎升腾的关键帧位移距离同 `--weather-effect-scale` 联动，避免 50% 体型下粒子与范围过大及 150% 体型下粒子在半空提前消失；同时在拖动滑块预览体型时实时同步更新活跃天气粒子组且不重建 DOM 节点（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
-
 - 修复高温天气底座光晕宽度重复乘以体型与显示器 DPI 倍率的问题：百分比宽度仅随已缩放的粒子容器变化，避免小体型下过窄、放大后过宽并被裁切；保留像素尺寸与动画位移的等比缩放。
+
+### Removed
+- 移除修仙状态面板右下角的英文标语“Make QiJiu Great Again!”及关联多语言字典键 `statusFooter`，精简页脚视觉层级并使状态面板底边专注于水墨与泥金微印。
 
 ## [0.11.0] - 2026-10-15
 

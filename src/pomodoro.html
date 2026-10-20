@@ -47,7 +47,11 @@
       </div>
 
       <div id="pomodoro-running" class="pomodoro-state pomodoro-state--hidden">
-        <div id="pomodoro-timer" class="pomodoro-timer">25:00</div>
+        <div class="pomodoro-dial-wrapper">
+          <div class="pomodoro-dial-ring" aria-hidden="true"></div>
+          <span class="pomodoro-dial-emblem" aria-hidden="true"></span>
+          <div id="pomodoro-timer" class="pomodoro-timer">25:00</div>
+        </div>
         <div class="pomodoro-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <div id="pomodoro-progress-fill" class="pomodoro-progress-fill"></div>
         </div>
@@ -58,6 +62,11 @@
       </div>
 
       <div id="pomodoro-completed" class="pomodoro-state pomodoro-state--hidden">
+        <div id="pomodoro-stamp-ceremony" class="pomodoro-stamp-ceremony" aria-hidden="true">
+          <div class="pomodoro-stamp-ripple pomodoro-stamp-ripple--1"></div>
+          <div class="pomodoro-stamp-ripple pomodoro-stamp-ripple--2"></div>
+          <div class="pomodoro-stamp-seal"></div>
+        </div>
         <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">静修圆满</h1>
         <div class="pomodoro-pets pomodoro-pets--complete" aria-hidden="true">
           <img id="pomodoro-complete-kiss" class="pomodoro-pet pomodoro-pet--scene" alt="">

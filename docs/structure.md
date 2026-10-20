@@ -186,8 +186,8 @@ qijiu-desktop-pet/
 │  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌
-│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换和完成态
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心与静修圆满落印/灵气波纹动效
+│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
@@ -231,6 +231,7 @@ qijiu-desktop-pet/
 │  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（每次 mount 清除并重建节点，最多 12 个爱心粒子，跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
+│     ├─ calligraphy-*.webp             # 水墨书法题签、纵向暗纹与闲章（中日文 UI 微装饰）
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
 │     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
 │     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤

@@ -73,6 +73,8 @@ body {
 }
 
 .pet-status-block {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: max-content 1fr 32px;
   align-items: center;
@@ -90,11 +92,42 @@ body {
     inset 3px 0 0 rgba(110, 198, 160, 0.18);
 }
 
+/* Background ink watermark spine (Vertical names: 岳清源 / 沈清秋) */
+.pet-status-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: auto 75%;
+  z-index: 0;
+}
+
+.pet-status-block--yueqi::before {
+  background-image: url('./assets/calligraphy-yqy.webp');
+}
+
+.pet-status-block--shenjiu::before {
+  background-image: url('./assets/calligraphy-sqq.webp');
+}
+
+/* In English mode: keep the vertical watermark spine extremely faint */
+html[data-locale="en"] .pet-status-block::before {
+  opacity: 0.045;
+}
+
 .pet-status-block:last-child {
   margin-bottom: 0;
 }
 
 .pet-status-name {
+  position: relative;
+  z-index: 1;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -104,6 +137,38 @@ body {
   font-family: var(--font-display);
   font-size: 15px;
   letter-spacing: 1px;
+}
+
+.pet-status-name-text {
+  display: inline;
+}
+
+.pet-status-calligraphy {
+  display: none;
+}
+
+/* In zh and ja: show calligraphy for the character's horizontal name */
+html:not([data-locale="en"]) .pet-status-name-text {
+  display: none;
+}
+
+html:not([data-locale="en"]) .pet-status-calligraphy {
+  display: inline-block;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: left center;
+  vertical-align: middle;
+}
+
+html:not([data-locale="en"]) .pet-status-block--yueqi .pet-status-calligraphy {
+  background-image: url('./assets/calligraphy-yq.webp');
+  width: 52px;
+}
+
+html:not([data-locale="en"]) .pet-status-block--shenjiu .pet-status-calligraphy {
+  background-image: url('./assets/calligraphy-sj.webp');
+  width: 40px;
 }
 
 .status-pet-icon {
@@ -119,6 +184,8 @@ body {
 }
 
 .stat-label {
+  position: relative;
+  z-index: 1;
   color: var(--color-ink-light);
   font-size: 12px;
   text-align: right;
@@ -126,17 +193,47 @@ body {
   width: auto;
 }
 
+.stat-bar {
+  position: relative;
+  z-index: 1;
+}
+
+.stat-value {
+  position: relative;
+  z-index: 1;
+}
+
 .status-footer {
-  text-align: right;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.9);
-  margin-top: 12px;
-  margin-bottom: -10px;
-  margin-right: -4px;
-  letter-spacing: 0.5px;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 20px;
+  margin-top: 10px;
+  margin-bottom: -6px;
+  padding-right: 2px;
+  pointer-events: none;
   -webkit-user-select: none;
   user-select: none;
-  pointer-events: none;
+}
+
+/* Subtle gilded seal for 七九 (泥金印) */
+.status-seal-qijiu {
+  display: inline-block;
+  width: 22px;
+  height: 24px;
+  background: linear-gradient(135deg, var(--color-gold) 0%, #e8ca77 50%, #b88e38 100%);
+  -webkit-mask-image: url('./assets/calligraphy-qj.webp');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('./assets/calligraphy-qj.webp');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  opacity: 0.85;
+  filter: drop-shadow(0 1px 2px rgba(201, 162, 77, 0.28));
+}
+
+html[data-locale="en"] .status-seal-qijiu {
+  opacity: 0.70;
 }

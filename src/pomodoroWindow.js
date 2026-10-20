@@ -32,6 +32,71 @@ const progressEl = document.querySelector('.pomodoro-progress');
 const progressFillEl = document.getElementById('pomodoro-progress-fill');
 
 let currentState = { ...DEFAULT_POMODORO_STATE };
+let hasCompletedCeremonyPlayed = false;
+
+function playMeditationChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    // 先登记关闭，即使后续节点创建抛错也能释放 AudioContext
+    setTimeout(() => {
+      try {
+        ctx.close();
+      } catch (_) {}
+    }, 3500);
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.22, now);
+    masterGain.connect(ctx.destination);
+
+    // Meditative singing bowl / chime partials (fundamental + harmonic overtones)
+    const partials = [
+      { freq: 528, gain: 0.6, decay: 3.2 },
+      { freq: 530.5, gain: 0.35, decay: 2.8 }, // acoustic shimmer / subtle beating
+      { freq: 1457, gain: 0.22, decay: 2.0 },  // ~2.76x overtone
+      { freq: 2851, gain: 0.10, decay: 1.2 },  // ~5.4x shimmer
+    ];
+
+    partials.forEach(({ freq, gain, decay }) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gainNode.gain.setValueAtTime(0.0001, now);
+      gainNode.gain.exponentialRampToValueAtTime(gain, now + 0.006);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+      osc.connect(gainNode);
+      gainNode.connect(masterGain);
+
+      osc.start(now);
+      osc.stop(now + decay);
+    });
+  } catch (err) {
+    console.warn('[Pomodoro] Chime playback skipped:', err);
+  }
+}
+
+function triggerCompletionCeremony() {
+  const ceremonyEl = document.getElementById('pomodoro-stamp-ceremony');
+  if (ceremonyEl) {
+    ceremonyEl.classList.remove('pomodoro-stamp-ceremony--active');
+    void ceremonyEl.offsetWidth; // Force CSS reflow to re-trigger animations
+    ceremonyEl.classList.add('pomodoro-stamp-ceremony--active');
+  }
+  // Synchronize singing bowl chime strike with the stamp impact moment (~220ms)
+  setTimeout(() => {
+    playMeditationChime();
+  }, 220);
+}
+
 
 
 
@@ -125,6 +190,13 @@ function renderState(nextState) {
   renderPets(currentState.assets);
   renderPinState(Boolean(currentState.isAlwaysOnTop));
   showState(currentState.status);
+
+  if (currentState.status === 'running' || currentState.status === 'idle') {
+    hasCompletedCeremonyPlayed = false;
+  } else if (currentState.status === 'completed' && !hasCompletedCeremonyPlayed) {
+    hasCompletedCeremonyPlayed = true;
+    triggerCompletionCeremony();
+  }
 }
 
 function getInputMinutes() {
