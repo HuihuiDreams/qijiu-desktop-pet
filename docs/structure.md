@@ -176,17 +176,17 @@ qijiu-desktop-pet/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
 │  ├─ effects.css                       # 天气与粒子动效独立样式
-│  ├─ context-menu.css                  # 右键菜单样式
+│  ├─ context-menu.css                  # 右键菜单样式；中/日文书法标题保留仅视觉隐藏的文字姓名供读屏访问
 │  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
 │  ├─ app.js                            # 渲染进程组合根：初始化、game loop、保存、皮肤切换、状态同步；渲染进程巨石文件拆分（ADR-042 Phase R1 起）逐步收敛为薄编排层
 │  ├─ i18nHelpers.js                    # 渲染进程 i18n 纯函数辅助：getI18nDictionaries/translateUi/getI18nUi/applyI18n，locale → zh → key 回退链，无可变状态
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
 │  ├─ status.html                       # 独立状态窗口 HTML
-│  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类
+│  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心与静修圆满落印/灵气波纹动效
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌

@@ -31,7 +31,10 @@ test('context-menu.css isolates calligraphy decorations and keeps english waterm
   assert.match(css, /html\[data-locale="en"\]\s+\.context-menu::before\s*\{[^}]*opacity:\s*0\.045/);
 
   // Header horizontal calligraphy rules (text shown in en, calligraphy in zh/ja)
-  assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.menu-header-text\s*\{[^}]*display:\s*none/);
+  const nameRule = css.match(/html:not\(\[data-locale="en"\]\)\s+\.menu-header-text\s*\{([^}]*)\}/)?.[1] || '';
+  assert.doesNotMatch(nameRule, /display:\s*none|visibility:\s*hidden/);
+  assert.match(nameRule, /position:\s*absolute/);
+  assert.match(nameRule, /clip-path:\s*inset\(50%\)/);
   assert.match(css, /html\[data-locale="en"\]\s+\.menu-header-calligraphy\s*\{[^}]*display:\s*none\s*!important/);
 });
 
@@ -44,7 +47,10 @@ test('status.css isolates calligraphy card names and keeps background watermark 
   assert.match(css, /html\[data-locale="en"\]\s+\.pet-status-block::before\s*\{[^}]*opacity:\s*0\.045/);
 
   // Horizontal card name calligraphy
-  assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.pet-status-name-text\s*\{[^}]*display:\s*none/);
+  const nameRule = css.match(/html:not\(\[data-locale="en"\]\)\s+\.pet-status-name-text\s*\{([^}]*)\}/)?.[1] || '';
+  assert.doesNotMatch(nameRule, /display:\s*none|visibility:\s*hidden/);
+  assert.match(nameRule, /position:\s*absolute/);
+  assert.match(nameRule, /clip-path:\s*inset\(50%\)/);
   assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.pet-status-block--yueqi\s+\.pet-status-calligraphy/);
   assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.pet-status-block--shenjiu\s+\.pet-status-calligraphy/);
 
@@ -53,12 +59,12 @@ test('status.css isolates calligraphy card names and keeps background watermark 
   assert.match(css, /calligraphy-qj\.webp/);
 });
 
-test('pomodoro.css renders dial emblem with subtle english opacity tuning', () => {
+test('pomodoro.css uses the same dial emblem opacity across locales', () => {
   const css = fs.readFileSync(path.join(ROOT, 'src', 'pomodoro.css'), 'utf8');
 
   assert.match(css, /\.pomodoro-dial-emblem\s*\{[^}]*display:\s*block/);
   assert.match(css, /calligraphy-qj\.webp/);
-  assert.match(css, /html\[data-locale="en"\]\s+\.pomodoro-dial-emblem\s*\{[^}]*opacity:\s*0\.14/);
+  assert.doesNotMatch(css, /html\[data-locale="en"\]\s+\.pomodoro-dial-emblem\s*\{/);
 });
 
 test('statusWindow.js attaches pet modifier class and calligraphy container', () => {

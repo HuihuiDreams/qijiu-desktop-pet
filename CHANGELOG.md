@@ -6,7 +6,7 @@
 
 ### Added
 - 新增书法微装饰与水墨暗纹系统：将岳清源、沈清秋（竖排）与岳七、沈九（横排）的书法作品融入右键菜单（`ContextMenu`）与修仙状态面板（`StatusWindow`）；中/日文模式下展示横排书法标题名牌，英文模式下保持标准西文标题同时共享极淡的水墨背景暗纹（`岳清源` / `沈清秋`）与右下角“七九”泥金闲章，提升文化沉浸感且不干扰西文可读性；新增针对书法素材与多语言隔离的自动化测试套件（`test/calligraphyDecoration.test.js`）。
-- 在番茄钟静修窗口（`PomodoroWindow`）计时盘中心融入“七九”暗金行草底心与静修表盘环：倒计时运行态下，表盘圆心全语种淡显 4s 冥想吐纳呼吸感的暗金“七九”书法图腾（英文模式调为超淡光晕），且支持 `prefers-reduced-motion` 动效降级保护。
+- 在番茄钟静修窗口（`PomodoroWindow`）计时盘中心融入“七九”暗金行草底心与静修表盘环：倒计时运行态下，表盘圆心全语种淡显 4s 冥想吐纳呼吸感的暗金“七九”书法图腾，且支持 `prefers-reduced-motion` 动效降级保护。
 - 新增番茄钟静修圆满「七九」暗金盖印与灵气波纹落定仪式：静修倒计时结束时，在界面正中落下“七九”暗金印章并触发冲击波纹与双重淡金色灵气扩散动效；基于纯原生 Web Audio API 动态合成空灵悠远的铜磬敲钟共鸣音频（`playMeditationChime`），无需外部音频文件与网络请求且严格契约 CSP 安全策略；动画落定后平滑转为高雅的水墨闲章水印衬托双人立绘，且完善支持 `prefers-reduced-motion` 动效降级保护。
 
 ### Changed
@@ -19,11 +19,15 @@
 - 实施运行时与渲染性能全面优化：在 `PetRenderer.update` 中对位移（`x, y, visualScale`）与图片缩放（`imageScale`）增加 dirty check，避免静止帧重复改写 DOM `transform` 与 CSS 变量；在 `WeatherAwarenessSystem.getCurrentState` 与 `MovementSystem.setSurfacePlatforms` 中引入状态快照与入参对比缓存，消除主循环中的高频对象分配与数组规整 GC 开销；桌宠隐藏态（`!isVisible`）下主动挂起 `requestAnimationFrame` 并在显示时重置 `lastTime` 恢复循环，消除后台 RAF 空转；在 `meetingDetector` 中对 macOS 系统二进制路径探测增加模块级缓存并将多会议应用探测由串行改为 `Promise.all` 并行采集（[ADR-012](docs/decisions/ADR-012-render-performance-optimization.md)）。
 - 优化托盘菜单交互可用状态：在托盘菜单中联动久坐提醒与高甜屏保的开启状态，当关闭久坐提醒时将“⏰ 提醒间隔”子菜单项置灰禁用（`enabled: false`），当关闭高甜屏保时将“💕 屏保触发等待”子菜单项置灰禁用，仅在对应功能开启后才允许展开与调整间隔或等待时长。
 
+- 统一番茄钟表盘“七九”底心在中、英、日文模式下的深浅，移除英文专用透明度覆盖；普通呼吸动画与减弱动态模式均使用相同透明度。
+
 ### Fixed
 - 修复双人覆盖层互动（亲吻、拥抱、双修、喂食）触发时的伴生灵气光环（`qi-aura`）未随桌宠体型缩放的问题：在 `PetRenderer` 中新增 `spawnOverlayQiAura()`，使光环圆心纵向偏移（`82 * combinedScale`）与光环直径（`overlayPos.width * 1.2`）同步计入用户体型比例与显示器 DPI 倍率，消除小体型下光环尺寸过大及向下偏离人物中心的视觉错位（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复桌宠体型缩放（50%~150%）后局部天气粒子效果比例失调的问题：`WeatherParticleLayer` 将宠物体型倍率（`pet.size / CONFIG.PET_SIZE`）与显示器 DPI `scaleRatio` 合并写入 `--weather-effect-scale`，移除容器 `132×120` 固定最小下限以允许 50% 小体型时等比收缩，并在 `src/effects.css` 中将雨雪下落、风痕漂移与高温阳炎升腾的关键帧位移距离同 `--weather-effect-scale` 联动，避免 50% 体型下粒子与范围过大及 150% 体型下粒子在半空提前消失；同时在拖动滑块预览体型时实时同步更新活跃天气粒子组且不重建 DOM 节点（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）。
 - 修复高温天气底座光晕宽度重复乘以体型与显示器 DPI 倍率的问题：百分比宽度仅随已缩放的粒子容器变化，避免小体型下过窄、放大后过宽并被裁切；保留像素尺寸与动画位移的等比缩放。
 - 修复番茄钟静修窗口在系统开启减弱动态效果（`prefers-reduced-motion`）且处于英文环境时动效降级失效的问题：为表盘底心呼吸动效与落印仪式补齐 `!important` 与显式多语言选择器权重，确保英文模式下表盘底心静止且落印仪式平滑淡显而非高空砸落；同时为 `ContextMenu` 的宠物动态样式类移除补充动态 ID 清理与状态面板 null 守卫，增强非预设 CP 扩展下的类名清理健壮性。
+
+- 修复右键菜单与修仙状态面板在中/日文模式下无法通过读屏软件读取角色姓名的问题：文字姓名改为仅视觉隐藏，保留完整姓名与昵称供辅助技术访问。
 
 ### Removed
 - 移除修仙状态面板右下角的英文标语“Make QiJiu Great Again!”及关联多语言字典键 `statusFooter`，精简页脚视觉层级并使状态面板底边专注于水墨与泥金微印。

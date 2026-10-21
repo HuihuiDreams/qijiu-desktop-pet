@@ -353,11 +353,6 @@ html[lang="en"] .pomodoro-titlebar>span {
   animation: pomodoroMeditationBreath 4s ease-in-out infinite;
 }
 
-/* In English mode: keep the breathing emblem slightly softer */
-html[data-locale="en"] .pomodoro-dial-emblem {
-  opacity: 0.14;
-}
-
 @keyframes pomodoroMeditationBreath {
   0%, 100% {
     transform: translate(-50%, -50%) scale(0.97);
