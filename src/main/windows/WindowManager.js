@@ -37,13 +37,6 @@ class WindowManager {
 
   get petScaleWindow() { return this.windows.petScale; }
   set petScaleWindow(val) { this.windows.petScale = val; }
-
-  // --- Utility Methods ---
-
-
-  getAllWindows() {
-    return Object.values(this.windows).filter(w => w && !w.isDestroyed());
-  }
 }
 
 module.exports = new WindowManager();

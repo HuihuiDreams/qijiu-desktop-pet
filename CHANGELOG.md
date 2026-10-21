@@ -4,6 +4,12 @@
 
 ## [Unreleased]
 
+### Changed
+- 精简屏保测试：删除与 `screensaverController.test.js`、`screensaverOverlay.test.js` 大量重复的 `challengeStep1`、`challengerStep3_1`、`screensaverEmpiricalVerification` 三个验收历史测试文件，仅将独有用例（锁屏/挂起风暴、设置禁用回退轮询间隔、主窗口销毁、未激活时 `screensaver-ready` 空操作、重复 start/stop、延迟帧推进、`reset(true)` 保留抓包气泡）并入上述两个文件；同时去除不测试真实代码的游戏循环模拟用例。
+
+### Removed
+- 移除无调用方的 `WindowManager.getAllWindows()`。
+
 ## [0.11.1] - 2026-10-21
 
 ### Added

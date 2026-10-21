@@ -707,3 +707,109 @@ test('ScreensaverSystem - showScreensaverOverlay scales overlay proportionally w
   delete global.document;
 });
 
+test('ScreensaverSystem - a new start preempts the active session and reports the prior one as finished', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({
+    electronAPI,
+    getPets: () => [createFakePet('yueqi'), createFakePet('shenjiu')],
+  });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 100, startedAt: Date.now() });
+  electronAPI.emitStart({ sessionId: 200, startedAt: Date.now() });
+
+  assert.equal(system.sessionId, 200);
+  assert.equal(system.state, 'entering');
+  assert.ok(
+    electronAPI.sentMessages.find((m) => m.channel === 'finished' && m.sessionId === 100),
+    'Session 100 should issue finished notification when preempted by new start',
+  );
+});
+
+test('ScreensaverSystem - repeated stop stays caught and cancel resets to inactive', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 1, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 1, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  electronAPI.emitStop({ sessionId: 1, reason: 'input' });
+  assert.equal(system.state, 'caught');
+  assert.equal(system.sessionId, 1);
+
+  electronAPI.emitCancel({ sessionId: 1, reason: 'fullscreen' });
+  assert.equal(system.state, 'inactive');
+  assert.equal(system.sessionId, 0);
+});
+
+test('ScreensaverSystem - delayed frames still progress caught -> runningBack -> inactive', () => {
+  const electronAPI = createFakeElectronApi();
+  const system = new ScreensaverSystem({ electronAPI });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 50, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 50, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  // The first delayed frame reserves a paint opportunity for the caught indicator.
+  system.update(10000);
+  assert.equal(system.state, 'caught');
+  assert.equal(system.stateTimer, 800);
+
+  system.update(800);
+  assert.equal(system.state, 'runningBack');
+  assert.equal(system.stateTimer, 500);
+
+  system.update(10000);
+  assert.equal(system.state, 'inactive');
+  assert.equal(system.isActive(), false);
+});
+
+test('ScreensaverSystem - reset(true) preserves caught bubbles while reset() removes them', () => {
+  const { documentMock } = createFakeDom();
+  global.document = documentMock;
+  global.DIALOGUES = {
+    screensaverCaught: {
+      yueqi: ['好羞…😳'],
+      shenjiu: ['被发现了❗️'],
+    },
+  };
+
+  const electronAPI = createFakeElectronApi();
+  const removeForPetsCalls = [];
+  const system = new ScreensaverSystem({
+    electronAPI,
+    getPets: () => [createFakePet('yueqi', 100, 100), createFakePet('shenjiu', 300, 100)],
+    renderer: { stage: documentMock.body },
+    dialogBubble: {
+      show: () => {},
+      removeForPets: (pets) => removeForPetsCalls.push(pets.map((p) => p.id)),
+      remove: () => {},
+    },
+  });
+  system.init();
+
+  electronAPI.emitStart({ sessionId: 701, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 701, reason: 'input' });
+  assert.equal(system.state, 'caught');
+
+  // onStart legitimately calls removeForPets; only count calls from the runningBack -> inactive reset(true).
+  removeForPetsCalls.length = 0;
+  system.update(16);
+  system.update(800);
+  assert.equal(system.state, 'runningBack');
+  system.update(500);
+  assert.equal(system.state, 'inactive');
+  assert.equal(removeForPetsCalls.length, 0, 'reset(true) must not remove bubbles before natural timeout');
+
+  electronAPI.emitStart({ sessionId: 702, startedAt: Date.now() });
+  electronAPI.emitStop({ sessionId: 702, reason: 'input' });
+  system.reset();
+  assert.ok(removeForPetsCalls.length > 0, 'reset() without flag must remove bubbles');
+
+  delete global.document;
+  delete global.DIALOGUES;
+});
+

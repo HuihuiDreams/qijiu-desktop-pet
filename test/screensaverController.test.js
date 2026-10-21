@@ -38,6 +38,7 @@ function createFakeClock() {
       }
     },
     get pendingIntervals() { return intervals.length; },
+    get activeIntervalDetails() { return intervals.map(i => ({ id: i.id, ms: i.ms })); },
   };
 }
 
@@ -687,4 +688,91 @@ test('ScreensaverController - renderer completion releases the active screensave
   assert.equal(controller.getState().state, 'inactive');
   assert.equal(coordinator.getCurrentHolder(), null);
   controller.dispose();
+});
+
+function createActiveScreensaverFixture({ idle = 300, ipc = false } = {}) {
+  const clock = createFakeClock();
+  const powerMonitor = createFakePowerMonitor(idle);
+  const mainWindow = createFakeMainWindow();
+  const ipcMain = createFakeIpcMain();
+  const coordinator = createInterruptionCoordinator();
+  const guard = createScreensaverEligibilityGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({ active: true, window: { isFullScreen: false }, timestamp: clock.now() }),
+    now: clock.now,
+  });
+  const controller = createScreensaverController({
+    powerMonitor,
+    interruptionCoordinator: coordinator,
+    eligibilityGuard: guard,
+    getMainWindow: () => mainWindow,
+    ...(ipc ? { ipcMain } : {}),
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    settings: { enabled: true, idleThresholdMinutes: 5 },
+  });
+  return { clock, powerMonitor, mainWindow, ipcMain, coordinator, controller };
+}
+
+test('ScreensaverController - rapid lock/unlock/suspend/resume storm ends inactive and requires a fresh active cycle', () => {
+  const { powerMonitor, coordinator, controller } = createActiveScreensaverFixture();
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+
+  powerMonitor.emit('lock-screen');
+  powerMonitor.emit('unlock-screen');
+  powerMonitor.emit('suspend');
+  powerMonitor.emit('resume');
+  powerMonitor.emit('lock-screen');
+
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(coordinator.getCurrentHolder(), null);
+  assert.equal(controller.getState().requiresFreshActiveCycle, true);
+
+  controller._poll();
+  assert.equal(controller.getState().state, 'inactive');
+});
+
+test('ScreensaverController - disabling settings while active cancels the session and restores the standby poll interval', () => {
+  const { clock, coordinator, controller } = createActiveScreensaverFixture();
+
+  controller.start();
+  assert.equal(clock.activeIntervalDetails[0].ms, 5000);
+
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(clock.activeIntervalDetails[0].ms, 1000);
+
+  controller.updateSettings({ enabled: false, idleThresholdMinutes: 5 });
+
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(coordinator.getCurrentHolder(), null);
+  assert.equal(clock.activeIntervalDetails[0].ms, 5000);
+});
+
+test('ScreensaverController - main window destroyed mid-session cancels the session', () => {
+  const { mainWindow, controller } = createActiveScreensaverFixture();
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+
+  mainWindow.destroy();
+  controller._poll();
+  assert.equal(controller.getState().state, 'inactive');
+});
+
+test('ScreensaverController - screensaver-ready while inactive is a safe no-op', () => {
+  const { mainWindow, ipcMain, controller } = createActiveScreensaverFixture({ idle: 0, ipc: true });
+
+  controller.start();
+  assert.equal(controller.getState().state, 'inactive');
+
+  ipcMain.emit('screensaver-ready', { sender: mainWindow.webContents });
+
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(mainWindow.sentEvents.length, 0);
 });
