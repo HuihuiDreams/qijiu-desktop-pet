@@ -196,6 +196,7 @@ qijiu-desktop-pet/
 │  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程；按钮保留原生 Enter 动作，非按钮区域 Enter 确认、Esc 取消
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
+│  ├─ settings-calligraphy.css          # 换肤、城市与体型窗口共用的七九金色文字；保留三语标题，无竖排书法底纹，装饰不拦截输入
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式

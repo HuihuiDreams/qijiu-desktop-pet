@@ -31,3 +31,4 @@ docs/performance/*.json
 
 __pycache__/
 test-results/
+/output/

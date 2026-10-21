@@ -5,6 +5,24 @@ const test = require('node:test');
 
 const ROOT = path.join(__dirname, '..');
 
+test('settings windows keep only the Qijiu seal alongside localized titles', () => {
+  for (const [file, titleKey] of [
+    ['skin-selector.html', 'skinSelectorTitle'],
+    ['city-setting.html', 'citySettingTitle'],
+    ['pet-scale.html', 'petScaleTitle'],
+  ]) {
+    const html = fs.readFileSync(path.join(ROOT, 'src', file), 'utf8');
+    assert.match(html, /href="settings-calligraphy\.css"/);
+    assert.doesNotMatch(html, /class="settings-calligraphy"/);
+    assert.match(html, new RegExp(`class="settings-calligraphy-title" data-i18n="${titleKey}">[^<]+<`));
+  }
+
+  const css = fs.readFileSync(path.join(ROOT, 'src', 'settings-calligraphy.css'), 'utf8');
+  assert.doesNotMatch(css, /calligraphy-(?:yqy|sqq)\.webp/);
+  assert.match(css, /mask:\s*url\('\.\/assets\/calligraphy-qj\.webp'\)/);
+  assert.match(css, /pointer-events:\s*none/);
+});
+
 test('all required calligraphy webp assets exist in src/assets', () => {
   const assets = [
     'calligraphy-yqy.webp',
