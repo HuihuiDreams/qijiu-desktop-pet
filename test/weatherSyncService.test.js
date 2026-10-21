@@ -661,8 +661,6 @@ describe('WeatherSyncService - processSettingsChange', () => {
       city: '',
       lat: 11,
       lon: 21,
-      _oldLat: 10,
-      _oldLon: 20,
       refreshIntervalMinutes: 60,
     });
     const second = await fetchWeather(updatedSettings, provider);
@@ -688,8 +686,6 @@ describe('WeatherSyncService - processSettingsChange', () => {
       city: '',
       lat: 10,
       lon: 20,
-      _oldLat: 10,
-      _oldLon: 20,
       refreshIntervalMinutes: 60,
     });
     const second = await fetchWeather(unchangedSettings, provider);

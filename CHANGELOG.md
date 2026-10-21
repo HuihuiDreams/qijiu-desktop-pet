@@ -6,6 +6,7 @@
 
 ### Changed
 - 精简屏保测试：删除与 `screensaverController.test.js`、`screensaverOverlay.test.js` 大量重复的 `challengeStep1`、`challengerStep3_1`、`screensaverEmpiricalVerification` 三个验收历史测试文件，仅将独有用例（锁屏/挂起风暴、设置禁用回退轮询间隔、主窗口销毁、未激活时 `screensaver-ready` 空操作、重复 start/stop、延迟帧推进、`reset(true)` 保留抓包气泡）并入上述两个文件；同时去除不测试真实代码的游戏循环模拟用例。
+- 天气缓存改为按经纬度校验命中，并移除 `processSettingsChange` 中无生产调用方的 `_oldLat/_oldLon` 判断：此前每次设置变更都会无条件清空缓存，现在仅坐标变化或地理编码成功时才会重新请求。
 
 ### Removed
 - 移除无调用方的 `WindowManager.getAllWindows()`。

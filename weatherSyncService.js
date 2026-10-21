@@ -52,6 +52,7 @@ function normalizeSettings(raw) {
 }
 
 let currentWeatherData = null;
+let currentWeatherCoords = null;
 let lastWeatherFetchTime = 0;
 let fetchTimeoutController = null;
 const WEATHER_FETCH_TIMEOUT_MS = 10000;
@@ -305,7 +306,12 @@ async function fetchWeather(settings, provider = defaultProvider) {
   const now = Date.now();
   const ttlMs = settings.refreshIntervalMinutes * 60 * 1000;
 
-  if (currentWeatherData && (now - lastWeatherFetchTime) < ttlMs) {
+  if (
+    currentWeatherData &&
+    currentWeatherCoords?.lat === settings.lat &&
+    currentWeatherCoords?.lon === settings.lon &&
+    (now - lastWeatherFetchTime) < ttlMs
+  ) {
     return currentWeatherData;
   }
 
@@ -364,6 +370,7 @@ async function fetchWeather(settings, provider = defaultProvider) {
     };
 
     currentWeatherData = payload;
+    currentWeatherCoords = { lat: settings.lat, lon: settings.lon };
     lastWeatherFetchTime = now;
     return payload;
 
@@ -384,6 +391,7 @@ async function fetchWeather(settings, provider = defaultProvider) {
       timestamp: now
     };
     currentWeatherData = fallback;
+    currentWeatherCoords = { lat: settings.lat, lon: settings.lon };
     // 失败后只缓存 FALLBACK_TTL_MS（10 分钟），让短暂断网后尽快重试
     lastWeatherFetchTime = now - (settings.refreshIntervalMinutes * 60 * 1000) + FALLBACK_TTL_MS;
     return fallback;
@@ -397,6 +405,7 @@ async function fetchWeather(settings, provider = defaultProvider) {
 
 function resetWeatherCache() {
   currentWeatherData = null;
+  currentWeatherCoords = null;
   lastWeatherFetchTime = 0;
   if (fetchTimeoutController) {
     fetchTimeoutController.abort();
@@ -429,11 +438,6 @@ async function processSettingsChange(newSettings, provider = defaultProvider) {
     } finally {
       clearTimeout(timeoutId);
     }
-  }
-
-  // If coordinates changed explicitly or via geocode, reset cache
-  if (norm.lat !== newSettings._oldLat || norm.lon !== newSettings._oldLon) {
-    resetWeatherCache();
   }
 
   return norm;
