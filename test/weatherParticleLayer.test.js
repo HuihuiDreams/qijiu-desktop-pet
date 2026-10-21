@@ -164,7 +164,7 @@ test('WeatherParticleLayer clears particles when hidden or switched to snow', ()
   }
 });
 
-test('WeatherParticleLayer creates bounded wind particles for windy weather', () => {
+test('WeatherParticleLayer creates increasing bounded wind particles for all three wind levels', () => {
   const root = createFakeElement();
   global.document = {
     createElement() {
@@ -177,17 +177,19 @@ test('WeatherParticleLayer creates bounded wind particles for windy weather', ()
       WEATHER_WIND_PARTICLE_MAX: 12,
     });
 
-    layer.sync(
-      { weatherKind: 'windy', intensity: 'normal', windIntensity: 'normal' },
-      { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
-    );
+    for (const [windIntensity, count] of [['light', 3], ['normal', 5], ['heavy', 12]]) {
+      layer.sync(
+        { weatherKind: 'windy', intensity: 'normal', windIntensity },
+        { visible: true, pets: [{ x: 100, y: 120, size: 96 }] },
+      );
 
-    const weatherLayer = root.children[0];
-    const group = weatherLayer.children[0];
-    assert.equal(weatherLayer.dataset.weather, 'windy');
-    assert.equal(weatherLayer.dataset.windIntensity, 'normal');
-    assert.equal(group.children.length, 5);
-    assert.ok(group.children.every(child => child.className.includes('weather-particle--wind')));
+      const weatherLayer = root.children[0];
+      const group = weatherLayer.children[0];
+      assert.equal(weatherLayer.dataset.weather, 'windy');
+      assert.equal(weatherLayer.dataset.windIntensity, windIntensity);
+      assert.equal(group.children.length, count);
+      assert.ok(group.children.every(child => child.className.includes('weather-particle--wind')));
+    }
   } finally {
     delete global.document;
   }

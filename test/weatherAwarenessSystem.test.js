@@ -212,7 +212,7 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
       active: true,
       stale: false,
       weatherCode: 1,
-      windSpeed: 19.7,
+      windSpeed: 12.2,
       windGusts: 28.7,
       isDay: true,
     });
@@ -220,6 +220,18 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     const state = system.getCurrentState();
     assert.strictEqual(state.weatherKind, 'cloudy');
     assert.strictEqual(state.windIntensity, 'none');
+  });
+
+  await t.test('maps average wind speed in km/h to three ambience levels at their boundaries', () => {
+    for (const [windSpeed, expected] of [
+      [12.23, 'none'], [12.24, 'light'], [13.9, 'light'],
+      [19.79, 'light'], [19.8, 'normal'], [28.79, 'normal'], [28.8, 'heavy'],
+    ]) {
+      system.setWeatherPayload({ active: true, stale: false, weatherCode: 0, windSpeed, windGusts: 56.9 });
+      const state = system.getCurrentState();
+      assert.strictEqual(state.windIntensity, expected, `windSpeed=${windSpeed} km/h`);
+      assert.strictEqual(state.weatherKind, expected === 'none' ? 'clear' : 'windy');
+    }
   });
 
   await t.test('ignores gusts and uses only wind speed for wind intensity', () => {

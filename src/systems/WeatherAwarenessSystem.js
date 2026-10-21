@@ -145,6 +145,7 @@ class WeatherAwarenessSystem {
     // 只基于平均风速进行判定，忽略阵风 (windGusts)
     if (validSpeed >= 28.8) return 'heavy';
     if (validSpeed >= 19.8) return 'normal';
+    if (validSpeed >= 12.24) return 'light'; // 3.4 m/s，输入单位为 km/h
     return 'none';
   }
 
