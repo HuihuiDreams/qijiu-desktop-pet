@@ -158,7 +158,7 @@ qijiu-desktop-pet/
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ package-lock.json                    # npm 锁文件
 ├─ CHANGELOG.md                         # 版本变更记录
-├─ README.md / readme*.txt              # 用户说明与多语言说明文本
+├─ README.md / readme*.txt              # 用户说明与中英日说明文本，包含体型预览/保存、书法装饰与静修完成音效及演出
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
 ├─ build/
 │  └─ installer.nsh                     # Windows NSIS 安装器定制脚本

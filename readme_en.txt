@@ -37,6 +37,7 @@ After launch, both characters will appear on your desktop.
 
 The tray menu lets you:
 - "📊 Show Status Panel"
+- "📏 Resize Pet…": resize both pets together with a live preview; confirm to save.
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
 - "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
 - "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking"
@@ -99,6 +100,13 @@ Missing optional action assets use default assets where possible. If a required 
 
 When pets move between displays with different scale factors, the character sprites, right-click menu, and Qi effects scale with the current display to keep their visual size consistent.
 
+Pet Size:
+Open "📏 Resize Pet…" from the tray and drag the slider to preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, Qi auras, the local screensaver scene, and weather effects scale with them.
+Click "Confirm" to save. "Cancel", Esc, or closing the window restores the previous size. "Reset" previews 100%; confirm to save it. Switching to another window or minimizing keeps the preview.
+
+Calligraphy Details:
+Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold “七九” seal. Skin, city, and size settings show the same gold ornament beside their localized titles.
+
 ========================================
 📦 Updates
 ========================================
@@ -136,9 +144,10 @@ Cang Qiong Seclusion is the lightweight Pomodoro feature.
 Open it from the tray menu with "🧘🏻‍♂️ Cang Qiong Seclusion"; while running, the tray menu shows "🧘🏻‍♂️ In Seclusion N min", and after completion it shows "🧘🏻‍♂️ Seclusion Complete".
 
 Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
-After you start, Yue Qi and Shen Jiu leave the desktop and appear inside the countdown window as two still pets, alongside the timer and progress bar.
+After you start, Yue Qi and Shen Jiu leave the desktop and appear together in a cultivation illustration, alongside the timer and progress bar. A faint gold “七九” calligraphy emblem gently pulses at the center of the dial.
 The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the session completes, the window shows a gentle encouragement message. If you exit early or close the window, the pets return to their previous visibility and walking state.
+When the countdown ends, a resonant singing-bowl chime plays as a gold “七九” seal lands with expanding ripples. The seal then fades into an ink watermark behind a kissing illustration and an encouragement message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+Click "Exit Seclusion", stop early, or close the window to return the pets to their previous visibility and walking state.
 
 ========================================
 📹 Meeting Auto-Hide
