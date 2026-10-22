@@ -16,8 +16,14 @@ const WindowI18n = {
       });
       document.querySelectorAll("[data-i18n-title]").forEach((element) => {
         const translated = window.t(element.dataset.i18nTitle);
-        element.title = translated;
+        element.dataset.tooltip = translated;
         element.setAttribute("aria-label", translated);
+        const hasCustomTooltip = element.hasAttribute("data-custom-tooltip") || "customTooltip" in element.dataset;
+        if (!hasCustomTooltip) {
+          element.title = translated;
+        } else {
+          element.removeAttribute("title");
+        }
       });
       document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
         element.setAttribute("aria-label", window.t(element.dataset.i18nAriaLabel));
@@ -46,3 +52,7 @@ const WindowI18n = {
     }
   }
 };
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { WindowI18n };
+}

@@ -607,10 +607,14 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
   }
 }
 
-/* Tooltip styles */
+/* Tooltip styles with CSS Anchor Positioning & Popover Top Layer */
 .pomodoro-tooltip {
-  position: absolute;
-  z-index: 1000;
+  position: fixed;
+  position-anchor: --pomodoro-tooltip-anchor;
+  position-area: block-end;
+  position-try-fallbacks: flip-block;
+  inset: auto;
+  margin: 6px 0;
   padding: 6px 10px;
   background: rgba(30, 42, 54, 0.9);
   backdrop-filter: blur(8px);
@@ -619,13 +623,44 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
   font-family: var(--font-display);
   font-size: 11px;
   border-radius: 6px;
-  pointer-events: none;
-  opacity: 0;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
 }
 
+.pomodoro-tooltip:popover-open,
 .pomodoro-tooltip--visible {
   opacity: 1;
+  transform: translateY(0) scale(1);
 }
+
+@starting-style {
+  .pomodoro-tooltip:popover-open {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pomodoro-tooltip {
+    transition-duration: 0.01ms;
+    transform: none;
+  }
+
+  .pomodoro-tooltip:popover-open,
+  .pomodoro-tooltip--visible {
+    transform: none;
+  }
+
+  @starting-style {
+    .pomodoro-tooltip:popover-open {
+      transform: none;
+    }
+  }
+}
+
