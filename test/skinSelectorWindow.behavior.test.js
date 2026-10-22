@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const Module = require('node:module');
+const path = require('node:path');
 const test = require('node:test');
 
 const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWindow');
@@ -295,3 +297,44 @@ test('reopening a minimized selector restores the same preview session', () => {
   assert.equal(sentOptions.resetSelection, false);
   assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'default');
 });
+
+test('skin-selector.css applies content-visibility only to below-the-fold cards (n + 7)', () => {
+  const cssPath = path.join(__dirname, '../src/skin-selector.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  // Verify below-the-fold rule exists with content-visibility: auto and contain-intrinsic-size
+  assert.match(
+    css,
+    /\.skin-card:nth-child\(n\s*\+\s*7\)\s*\{[^}]*content-visibility:\s*auto;[^}]*contain-intrinsic-size:\s*auto none auto 182px;[^}]*\}/s,
+    'below-the-fold cards (n + 7) must have content-visibility: auto and contain-intrinsic-size'
+  );
+
+  // Verify above-the-fold cards (base .skin-card) do NOT have content-visibility
+  const baseCardMatch = css.match(/\.skin-card\s*\{([^}]+)\}/s);
+  assert.ok(baseCardMatch, 'base .skin-card rule must exist');
+  assert.doesNotMatch(
+    baseCardMatch[1],
+    /content-visibility/,
+    'above-the-fold .skin-card must not have content-visibility to avoid delaying critical page load'
+  );
+});
+
+test('skin-selector.css scopes hover to non-disabled cards to prevent floating locked cards', () => {
+  const cssPath = path.join(__dirname, '../src/skin-selector.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  // Scoped hover rule must exist
+  assert.match(
+    css,
+    /\.skin-card:hover:not\(:disabled\)/,
+    '.skin-card:hover must be scoped with :not(:disabled)'
+  );
+
+  // Unscoped .skin-card:hover must NOT exist
+  assert.doesNotMatch(
+    css,
+    /\.skin-card:hover(?!\s*:\s*not\(:disabled\))/,
+    'unscoped .skin-card:hover must not exist'
+  );
+});
+

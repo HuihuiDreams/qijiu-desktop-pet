@@ -118,7 +118,13 @@ button {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.skin-card:hover,
+/* 仅对首屏视口（前 6 张卡片）以外的离屏卡片启用延迟渲染 */
+.skin-card:nth-child(n + 7) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 182px;
+}
+
+.skin-card:hover:not(:disabled),
 .skin-card:focus-visible {
   border-color: var(--color-jade);
   box-shadow:
