@@ -179,3 +179,21 @@ test('active window sampler can start, stop and return last payload', async () =
   sampler.stop(); // second stop does nothing
   assert.equal(cleared, true);
 });
+
+test('active window sampler disposes provider on stop', () => {
+  let disposed = false;
+  const sampler = createActiveWindowSampler({
+    provider: {
+      async getActiveWindowInfo() { return { active: false }; },
+      dispose() { disposed = true; },
+    },
+    getWindowBounds: () => ({ x: 0, y: 0, width: 1920, height: 1080 }),
+    getDisplays: () => displays,
+    setIntervalImpl: () => 1,
+    clearIntervalImpl: () => {},
+  });
+
+  sampler.start();
+  sampler.stop();
+  assert.equal(disposed, true);
+});

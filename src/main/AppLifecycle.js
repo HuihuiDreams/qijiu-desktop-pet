@@ -166,6 +166,7 @@ class AppLifecycle {
       windowManager,
       trayManager,
       StoreManager,
+      powerMonitor,
       getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
       getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
     });

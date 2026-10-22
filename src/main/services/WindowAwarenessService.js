@@ -6,7 +6,7 @@
  * 产生跨模块循环依赖）。
  */
 const { ipcMain } = require('electron');
-const { createActiveWindowProvider, unavailableActiveWindowInfo } = require('../../../activeWindowProvider');
+const { createActiveWindowProvider, createUnavailableActiveWindowProvider, unavailableActiveWindowInfo } = require('../../../activeWindowProvider');
 const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
@@ -19,7 +19,7 @@ let windowAwarenessEnabled = true;
 
 function init(dependencies) {
   deps = dependencies;
-  const { StoreManager } = deps;
+  const { StoreManager, powerMonitor } = deps;
   if (StoreManager) {
     const store = StoreManager.getStore();
     if (store && store.has(WINDOW_AWARENESS_STORE_KEY)) {
@@ -27,16 +27,29 @@ function init(dependencies) {
     }
   }
 
-  ipcMain.handle('get-active-window-info', async (event) => {
-    if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return null;
-    if (!activeWindowSampler) startActiveWindowAwareness();
-    return activeWindowSampler.sampleOnce();
-  });
+  if (powerMonitor && typeof powerMonitor.on === 'function') {
+    powerMonitor.on('suspend', () => {
+      stopActiveWindowAwareness();
+    });
+    powerMonitor.on('resume', () => {
+      if (windowAwarenessEnabled && deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
+        startActiveWindowAwareness();
+      }
+    });
+  }
+
+  if (ipcMain && typeof ipcMain.handle === 'function') {
+    ipcMain.handle('get-active-window-info', async (event) => {
+      if (!isSenderMainWindow(event, deps.windowManager?.mainWindow)) return null;
+      if (!activeWindowSampler) startActiveWindowAwareness();
+      return activeWindowSampler.sampleOnce();
+    });
+  }
 }
 
 function sendActiveWindowInfo(activeWindowInfo) {
   const { windowManager } = deps;
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed() || !activeWindowInfo) return;
+  if (!windowManager?.mainWindow || windowManager.mainWindow.isDestroyed() || !activeWindowInfo) return;
   windowManager.mainWindow.webContents.send('active-window-info', activeWindowInfo);
 }
 
@@ -56,8 +69,8 @@ function stopActiveWindowAwareness() {
 function startActiveWindowAwareness() {
   stopActiveWindowAwareness();
   const provider = windowAwarenessEnabled
-    ? createActiveWindowProvider(process.platform)
-    : { getActiveWindowInfo: async () => unavailableActiveWindowInfo('disabled') };
+    ? (deps.createActiveWindowProvider ? deps.createActiveWindowProvider(process.platform) : createActiveWindowProvider(process.platform))
+    : createUnavailableActiveWindowProvider('disabled');
 
   activeWindowSampler = createActiveWindowSampler({
     provider,

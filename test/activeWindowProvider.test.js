@@ -96,6 +96,152 @@ test('Windows provider failure returns unavailable fallback', async () => {
   assert.equal(info.details.stderr, 'bad things');
 });
 
+test('Windows provider reuses persistent child process across multiple samples', async () => {
+  const { EventEmitter } = require('events');
+  const { PassThrough } = require('stream');
+
+  let spawnCalls = 0;
+  let receivedCommand = '';
+  const mockChild = new EventEmitter();
+  mockChild.stdin = new PassThrough();
+  mockChild.stdout = new PassThrough();
+  mockChild.stderr = new PassThrough();
+  mockChild.killed = false;
+  mockChild.exitCode = null;
+  mockChild.kill = () => { mockChild.killed = true; };
+
+  mockChild.stdin.on('data', (chunk) => {
+    receivedCommand += chunk.toString();
+    mockChild.stdout.write(JSON.stringify({
+      active: true,
+      id: '42',
+      title: 'Persistent Window',
+      ownerName: 'Worker',
+      bounds: { x: 10, y: 20, width: 800, height: 600 },
+    }) + '\n');
+  });
+
+  const provider = createWindowsActiveWindowProvider({
+    spawn: (_file, _args, _options) => {
+      spawnCalls++;
+      return mockChild;
+    },
+  });
+
+  const info1 = await provider.getActiveWindowInfo();
+  const info2 = await provider.getActiveWindowInfo();
+
+  assert.equal(spawnCalls, 1, 'powershell should only be spawned once');
+  assert.equal(info1.active, true);
+  assert.equal(info1.window.title, 'Persistent Window');
+  assert.equal(info2.active, true);
+  assert.equal(info2.window.id, '42');
+  assert.match(receivedCommand, /sample/);
+
+  provider.dispose();
+  assert.equal(mockChild.killed, true, 'provider.dispose() should kill child process');
+});
+
+test('Windows persistent provider auto-restarts child process after exit', async () => {
+  const { EventEmitter } = require('events');
+  const { PassThrough } = require('stream');
+
+  let spawnCalls = 0;
+  function createChild() {
+    const child = new EventEmitter();
+    child.stdin = new PassThrough();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    child.killed = false;
+    child.exitCode = null;
+    child.kill = () => { child.killed = true; };
+    child.stdin.on('data', () => {
+      child.stdout.write(JSON.stringify({
+        active: true,
+        id: '100',
+        title: 'App',
+        ownerName: 'app',
+        bounds: { x: 0, y: 0, width: 500, height: 400 },
+      }) + '\n');
+    });
+    return child;
+  }
+
+  let currentChild = createChild();
+  const provider = createWindowsActiveWindowProvider({
+    spawn: () => {
+      spawnCalls++;
+      return currentChild;
+    },
+  });
+
+  const first = await provider.getActiveWindowInfo();
+  assert.equal(first.active, true);
+  assert.equal(spawnCalls, 1);
+
+  currentChild.emit('exit', 1, null);
+
+  currentChild = createChild();
+  const second = await provider.getActiveWindowInfo();
+  assert.equal(second.active, true);
+  assert.equal(spawnCalls, 2);
+
+  provider.dispose();
+});
+
+test('Windows persistent provider times out if child does not respond', async () => {
+  const { EventEmitter } = require('events');
+  const { PassThrough } = require('stream');
+
+  const mockChild = new EventEmitter();
+  mockChild.stdin = new PassThrough();
+  mockChild.stdout = new PassThrough();
+  mockChild.stderr = new PassThrough();
+  mockChild.killed = false;
+  mockChild.exitCode = null;
+  mockChild.kill = () => { mockChild.killed = true; };
+
+  const provider = createWindowsActiveWindowProvider({
+    timeoutMs: 50,
+    spawn: () => mockChild,
+  });
+
+  const info = await provider.getActiveWindowInfo();
+  assert.equal(info.active, false);
+  assert.equal(info.reason, 'timeout');
+  assert.equal(mockChild.killed, true);
+
+  provider.dispose();
+});
+
+test('Windows persistent provider handles parse error gracefully', async () => {
+  const { EventEmitter } = require('events');
+  const { PassThrough } = require('stream');
+
+  const mockChild = new EventEmitter();
+  mockChild.stdin = new PassThrough();
+  mockChild.stdout = new PassThrough();
+  mockChild.stderr = new PassThrough();
+  mockChild.killed = false;
+  mockChild.exitCode = null;
+  mockChild.kill = () => { mockChild.killed = true; };
+
+  mockChild.stdin.on('data', () => {
+    mockChild.stdout.write('not-json\n');
+  });
+
+  const provider = createWindowsActiveWindowProvider({
+    spawn: () => mockChild,
+  });
+
+  const info = await provider.getActiveWindowInfo();
+  assert.equal(info.active, false);
+  assert.equal(info.reason, 'parse-failed');
+  assert.equal(mockChild.killed, true, 'child should be killed on parse error to avoid desync');
+
+  provider.dispose();
+});
+
 test('Windows provider can skip the app window and continue down z-order', async () => {
   let script = '';
   const provider = createWindowsActiveWindowProvider({

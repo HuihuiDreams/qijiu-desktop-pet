@@ -121,6 +121,11 @@ function createActiveWindowSampler(options) {
     if (!timer) return;
     clearIntervalImpl(timer);
     timer = null;
+    if (typeof provider.dispose === 'function') {
+      provider.dispose();
+    } else if (typeof provider.stop === 'function') {
+      provider.stop();
+    }
   }
 
   function getLastPayload() {

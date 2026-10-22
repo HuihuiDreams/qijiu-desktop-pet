@@ -10,6 +10,9 @@
 
 - 将刮风效果调整为按平均风速触发的轻风、普通风、强风三档，起点分别为 3.4、5.5、8 米/秒；继续忽略阵风，并在雷暴时隐藏风粒子。
 
+### Fixed
+- **Windows 活动窗口感知常驻进程优化与挂起休眠调度 (`Windows Active Window Awareness Persistent Process`)**：修复 Windows 平台下 `activeWindowProvider` 每 2 秒通过 `execFile` 冷启动一次 `powershell.exe` 并重新编译 C# P/Invoke 代码（`Add-Type`）造成的 200ms~500ms 瞬时 CPU 脉冲与磁盘 I/O 开销。现在改用单例常驻的 PowerShell 子进程与标准输入输出循环采样，C# 类型仅在启动时编译一次，单次采样耗时降至 1ms 以内；同时在 `WindowAwarenessService` 中联动系统 `powerMonitor` 的 `suspend` 与 `resume` 事件，在系统睡眠挂起时主动停止采样并回收子进程，系统唤醒后自动恢复采样（详见 [ADR-030](./docs/decisions/ADR-030-window-awareness.md)）。
+
 ### Removed
 - 移除无调用方的 `WindowManager.getAllWindows()`。
 
