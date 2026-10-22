@@ -58,3 +58,4 @@
 | ADR-045 | Keep AI diary provider credentials outside distributed clients | Proposed | 2026-08-12 | [ADR-045-ai-diary-credential-boundary.md](./ADR-045-ai-diary-credential-boundary.md) |
 | ADR-046 | 主进程测试的 Electron Mock 拦截策略 | Accepted | 2026-08-27 | [ADR-046-electron-mock-testing-strategy.md](./ADR-046-electron-mock-testing-strategy.md) |
 | ADR-047 | 桌宠体型大小缩放与渲染架构方案 | Accepted | 2026-10-14 | [ADR-047-pet-scale-setting.md](./ADR-047-pet-scale-setting.md) |
+| ADR-048 | 桌面渲染层现代 Web 标准采纳 (Modern Web Standards Adoption in Desktop Renderer) | Accepted | 2026-10-22 | [ADR-048-modern-web-standards-adoption.md](./ADR-048-modern-web-standards-adoption.md) |

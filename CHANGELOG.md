@@ -4,10 +4,18 @@
 
 ## [Unreleased]
 
+### Added
+- **架构决策记录 ADR-048 归档与现代 Web 标准基线**：新增 [ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)《桌面渲染层现代 Web 标准采纳》，正式归档在 Electron 42+（现代 Chromium 运行时基线）环境下采纳 Popover API、CSS Anchor Positioning、Relative Color Syntax、`content-visibility` 及 `@starting-style` 的架构依据、零外部 Polyfill 策略与 Node 假 DOM 渐进回退规范；并在 `AGENTS.md` 与 `docs/structure.md` 中补齐浏览器支持与现代 Web 标准策略。
+
 ### Changed
+- **番茄钟悬浮提示现代化升级**：将“苍穹静修”番茄钟窗口的按钮 Tooltip 从老旧的 JS 几何回流测量重构为原生 Popover Top Layer 与 CSS Anchor Positioning（锚点定位），消除 `getBoundingClientRect()` 与 `offsetHeight` 强制同步回流，实现水墨提示框出入场 `@starting-style` 离散过渡及无障碍 `Escape` 键一键收起（WCAG 1.4.13 合规）。
+- **优化皮肤选择器画廊渲染性能**：仅对首屏视口下方（第 7 张及之后）的卡片应用 `content-visibility: auto` 与 `contain-intrinsic-size: auto none auto 182px` 延迟离屏渲染，防止首屏加载回流及列表滚动跳变，并将卡片悬浮样式收窄为 `.skin-card:hover:not(:disabled)` 防止加载锁定期误触发浮动动效。
+- **全局色彩体系现代化**：采用 CSS 相对颜色语法（Relative Color Syntax `rgb(from var(...) r g b / alpha)`）由基准玉色、仙金、丹砂与墨色变量自动派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。
+- **对话气泡现代化动效与退场协调 (`Dialog Bubble Transitions & Starting-Style`)**：使用现代 CSS `@starting-style` 规范实现对话气泡挂载时的原生声明式入场动效，通过 `.dialog-bubble--fade-out` 过渡与 `getAnimations()` Web Animations 承诺协调退场时机；在 Node 桩测试环境中保留兜底定时器兼容性；对话气泡与双宠互动覆盖层气泡在销毁时同步清理定时器并取消运行中动效，彻底杜绝幽灵定时器泄露与快速连续触发冲突；全面支持 `@media (prefers-reduced-motion: reduce)` 减弱动态效果无障碍降级。
+- **宠物右键互动菜单升级原生 Top Layer Popover**：将宠物右键互动菜单升级为原生 Top Layer Popover（`popover="manual"`）与语义化 `<button type="button">` 按钮组，移除 `z-index: 9999`，引入 `@starting-style` 与离散过渡动效；忙碌状态采用 `aria-disabled="true"` 标记并拦截点击，支持键盘 `Escape` 键关闭与减弱动效偏好，保持主窗口透明点击穿透协调。
+- **状态面板度量条无障碍语义与动效偏好合规升级**：为 `src/statusWindow.js` 中的 `.stat-bar` 容器赋予标准 `role="meter"`、`aria-valuemin="0"`、`aria-valuemax="100"`、`aria-valuenow` 属性，并分配唯一 ID 通过 `aria-labelledby` 与同行标签精准关联；在 `src/stat-bar.css` 中补充 `@media (prefers-reduced-motion: reduce)` 规则关闭宽度过渡，同时 100% 保持水墨流光高光（`.stat-bar-fill::after`）与弹簧物理回弹动效。
 - 精简屏保测试：删除与 `screensaverController.test.js`、`screensaverOverlay.test.js` 大量重复的 `challengeStep1`、`challengerStep3_1`、`screensaverEmpiricalVerification` 三个验收历史测试文件，仅将独有用例（锁屏/挂起风暴、设置禁用回退轮询间隔、主窗口销毁、未激活时 `screensaver-ready` 空操作、重复 start/stop、延迟帧推进、`reset(true)` 保留抓包气泡）并入上述两个文件；同时去除不测试真实代码的游戏循环模拟用例。
 - 天气缓存改为按经纬度校验命中，并移除 `processSettingsChange` 中无生产调用方的 `_oldLat/_oldLon` 判断：此前每次设置变更都会无条件清空缓存，现在仅坐标变化或地理编码成功时才会重新请求。
-
 - 将刮风效果调整为按平均风速触发的轻风、普通风、强风三档，起点分别为 3.4、5.5、8 米/秒；继续忽略阵风，并在雷暴时隐藏风粒子。
 
 ### Fixed

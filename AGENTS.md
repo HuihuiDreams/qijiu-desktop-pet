@@ -62,6 +62,19 @@ in this project.
 2. Multi-Language & Manifest Synchronization: Any addition or modification of skins must be synchronized across `skinGallery.js`, `protectedAssetLoader.js`, and updated in all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`). When using `pet-asset://` protocols, ensure all sub-window HTML CSPs allow `pet-asset:`.
 3. Skin Selector State Machine: The skin selector UI (`skinSelectorPreload.js` / `skinGallery.js`) must support a preview-confirm workflow (`isPreview`). Selecting a skin previews it on the active pet without committing; clicking cancel safely restores the previous skin.
 
+## Browser Support & Web Standards Policy
+
+1. Runtime Baseline: Electron 42+ (Chromium 134+ runtime baseline). All renderer code targets modern Chromium web standards directly.
+2. Zero External Polyfills / CDNs: Never introduce polyfills, external component libraries, or CDN scripts/styles. Maintain a strict Content Security Policy (CSP) and zero-dependency renderer footprint.
+3. Native Modern Web Standards:
+   - Popover API (`popover="manual"`, `showPopover()`, `hidePopover()`) for top layer elevation without `z-index` competition.
+   - CSS Anchor Positioning (`position-anchor`, `position-area`, `position-try-fallbacks`) for interest-triggered tooltips.
+   - CSS Relative Color Syntax (`rgb(from var(...) r g b / <alpha>)`) for derived alpha colors and glow shadows.
+   - CSS `@starting-style`, `overlay`, and `transition-behavior: allow-discrete` for top layer entry and exit transitions.
+   - `content-visibility: auto` paired with `contain-intrinsic-size` for heavy below-the-fold list rendering (e.g., skin gallery).
+   - Standard ARIA semantics (e.g., `role="meter"` with `aria-labelledby`, `aria-disabled="true"`) and `@media (prefers-reduced-motion: reduce)`.
+4. Test Environment Graceful Degradation: Unit tests run in Node.js test runner using lightweight fake-DOM mock objects. All modern web API calls in renderer JavaScript (e.g. `showPopover`, `hidePopover`, `getAnimations`) MUST use feature detection or optional chaining (`typeof el.showPopover === 'function'`, `el.showPopover?.()`, fallback timers) so fake-DOM tests run seamlessly without error.
+
 ## Documentation And Versioning
 
 Before commit or push:

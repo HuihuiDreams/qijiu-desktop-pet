@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-08
+最后更新：2026-10-22
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -486,6 +486,25 @@ src/assets/{skinId}/
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
 
+### 3.16 现代 Web 标准与渲染层技术规范
+
+DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
+
+- **Popover API 与 Top Layer 原生顶层提升**：
+  番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
+- **CSS 锚点定位 (Anchor Positioning)**：
+  番茄钟静修窗口基于 CSS Anchor Positioning（`position-anchor: --pomodoro-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准。
+- **CSS 相对颜色语法 (Relative Color Syntax)**：
+  `src/index.css` 设计令牌采用 `rgb(from var(--color-*) r g b / <alpha>)` 规范，从基准玉色、仙金、丹砂与墨色动态派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。
+- **`content-visibility: auto` 与占位尺寸保护**：
+  皮肤画廊（`src/skin-selector.css`）严格遵循 `defer-rendering-heavy-content` 指南，仅对首屏视口（前 6 张卡片）以外的离屏卡片应用 `.skin-card:nth-child(n + 7) { content-visibility: auto; contain-intrinsic-size: auto none auto 182px; }`，保障首屏 FCP/LCP 不劣化并杜绝列表滚动跳变（CLS）；悬浮样式限定为 `:not(:disabled)` 避免加载锁定时卡片浮动。
+- **`@starting-style` 与动画退场协调**：
+  对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。
+- **无障碍语义化 (ARIA) 与按钮语义**：
+  状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。
+- **零外部 Polyfill 与 Node 桩测试兼容**：
+  严格维持免 Polyfill / 免外部依赖架构，所有现代浏览器特有 API 调用均配合可选链（`?.`）或类型守卫（`typeof ... === 'function'`）及兜底逻辑，保证 Node.js fake-DOM 单测套件极速、稳定运行。详见 [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)。
+
 ## 4. 测试与验证
 
 项目使用 Node.js 内置 test runner：
@@ -609,6 +628,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-045](./decisions/ADR-045-ai-diary-credential-boundary.md)：AI 日记的第三方凭据仅保存在已认证的服务端代理，Hub IPC 保持主进程授权与输入校验边界。
 - [ADR-046](./decisions/ADR-046-electron-mock-testing-strategy.md)：主进程测试的 Electron Mock 拦截策略。
 - [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定、拖动实时预览与独立设置子窗口）。
+- [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
 
 
 ## 6. 维护提示
