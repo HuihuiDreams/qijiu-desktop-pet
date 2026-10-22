@@ -42,23 +42,23 @@
   /* Jade / Shenjiu — 灵玉 / 沈九专属 */
   --color-jade: #6ec6a0;
   --color-jade-deep: #3d8b6b;
-  --color-jade-glow: rgba(110, 198, 160, 0.45);
-  --color-jade-mist: rgba(110, 198, 160, 0.12);
+  --color-jade-glow: rgb(from var(--color-jade) r g b / 0.45);
+  --color-jade-mist: rgb(from var(--color-jade) r g b / 0.15);
   --color-shenjiu-light: #b8e4d0;
   --color-shenjiu-dark: #4a9e7a;
   
   /* Gold — 仙金 */
   --color-gold: #c9a24d;
-  --color-gold-glow: rgba(201, 162, 77, 0.5);
+  --color-gold-glow: rgb(from var(--color-gold) r g b / 0.45);
   
   /* Crimson — 丹砂 */
   --color-crimson: #b5342a;
-  --color-crimson-soft: rgba(181, 52, 42, 0.15);
+  --color-crimson-soft: rgb(from var(--color-crimson) r g b / 0.2);
   
   /* Ink — 墨韵 */
   --color-ink: #1e2a36;
   --color-ink-light: #546a7b;
-  --color-ink-faint: rgba(30, 42, 54, 0.06);
+  --color-ink-faint: rgb(from var(--color-ink) r g b / 0.08);
   
   /* Cloud / Glass — 云烟 */
   --color-cloud: rgba(252, 252, 255, 0.96);
@@ -70,8 +70,8 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-glow-jade: 0 0 24px rgba(110, 198, 160, 0.3);
-  --shadow-glow-gold: 0 0 20px rgba(201, 162, 77, 0.25);
+  --shadow-glow-jade: 0 0 12px rgb(from var(--color-jade) r g b / 0.45);
+  --shadow-glow-gold: 0 0 12px rgb(from var(--color-gold) r g b / 0.45);
 
   /* Stat bar colors — refined gradients */
   --color-affection: #d94a72;
