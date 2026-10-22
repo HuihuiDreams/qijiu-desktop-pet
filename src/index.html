@@ -21,14 +21,14 @@
   <div id="pet-stage"></div>
 
   <!-- Context menu (hidden by default) -->
-  <div id="context-menu" class="context-menu hidden">
+  <div id="context-menu" class="context-menu hidden" popover="manual">
     <div class="menu-header" id="menu-header">角色名</div>
-    <div class="menu-item" data-action="feed"   data-i18n="feed">🍎 喂食</div>
-    <div class="menu-item" data-action="meditate" data-i18n="meditate">🧘🏻‍♂️ 打坐修炼</div>
-    <div class="menu-item" data-action="pet"   data-i18n-pet>🤚 摸头</div>
-    <div class="menu-item" data-action="rest"   data-i18n="rest">💤 休息</div>
+    <button type="button" class="menu-item" data-action="feed"   data-i18n="feed">🍎 喂食</button>
+    <button type="button" class="menu-item" data-action="meditate" data-i18n="meditate">🧘🏻‍♂️ 打坐修炼</button>
+    <button type="button" class="menu-item" data-action="pet"   data-i18n-pet>🤚 摸头</button>
+    <button type="button" class="menu-item" data-action="rest"   data-i18n="rest">💤 休息</button>
     <div class="menu-separator"></div>
-    <div class="menu-item" data-action="status" data-i18n="status">📊 查看状态</div>
+    <button type="button" class="menu-item" data-action="status" data-i18n="status">📊 查看状态</button>
   </div>
 
   <!-- Status panel (hidden by default) -->

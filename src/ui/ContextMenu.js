@@ -88,55 +88,90 @@ class ContextMenu {
     };
   }
 
+  isOpen() {
+    if (!this.menuEl) return false;
+    return !this.menuEl.classList.contains('hidden');
+  }
+
   measureMenuSize(visualScale) {
-    const wasHidden = this.menuEl.classList.contains('hidden');
-    const previousVisibility = this.menuEl.style.visibility;
-    const previousLeft = this.menuEl.style.left;
-    const previousTop = this.menuEl.style.top;
-
-    if (wasHidden) {
-      this.menuEl.style.visibility = 'hidden';
-      this.menuEl.style.left = '0px';
-      this.menuEl.style.top = '0px';
-      this.menuEl.classList.remove('hidden');
-    }
-
-    const rect = this.menuEl.getBoundingClientRect();
-
-    if (wasHidden) {
-      this.menuEl.classList.add('hidden');
-      this.menuEl.style.visibility = previousVisibility;
-      this.menuEl.style.left = previousLeft;
-      this.menuEl.style.top = previousTop;
-    }
-
     const fallbackWidth = 170 * visualScale;
     const fallbackHeight = 220 * visualScale;
+    if (!this.menuEl || typeof this.menuEl.getBoundingClientRect !== 'function') {
+      return { width: fallbackWidth, height: fallbackHeight };
+    }
+    const rect = this.menuEl.getBoundingClientRect();
     return {
-      width: rect.width > 0 ? rect.width : fallbackWidth,
-      height: rect.height > 0 ? rect.height : fallbackHeight,
+      width: rect && rect.width > 0 ? rect.width : fallbackWidth,
+      height: rect && rect.height > 0 ? rect.height : fallbackHeight,
     };
   }
 
   setupEvents() {
+    const isItemDisabled = (item) => {
+      if (!item) return false;
+      const ariaDisabled = typeof item.getAttribute === 'function' ? item.getAttribute('aria-disabled') : null;
+      return ariaDisabled === 'true' || Boolean(item.classList?.contains?.('disabled'));
+    };
+
+    const triggerAction = (item, e) => {
+      if (isItemDisabled(item)) {
+        if (typeof e?.preventDefault === 'function') e.preventDefault();
+        if (typeof e?.stopPropagation === 'function') e.stopPropagation();
+        return;
+      }
+      const action = item.dataset?.action;
+      if (action) {
+        this.handleAction(action);
+        this.hide();
+      }
+    };
+
     // 点击菜单项（使用 pointerdown 提升数位笔和触摸的响应速度，避免微小抖动丢失事件）
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
       item.addEventListener('pointerdown', (e) => {
-        // 使用 e.currentTarget 确保无论点击到哪个子元素，都能正确获取 dataset
-        const action = e.currentTarget.dataset.action;
+        const currentItem = e.currentTarget || item;
+        if (isItemDisabled(currentItem)) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          return;
+        }
         if (e.button === 0 || e.pointerType === 'pen' || e.pointerType === 'touch') {
-          this.handleAction(action);
-          this.hide();
+          triggerAction(currentItem, e);
+        }
+      });
+
+      // 原生 <button> 元素支持键盘 Enter/Space 或辅助技术触发 click
+      item.addEventListener('click', (e) => {
+        const currentItem = e.currentTarget || item;
+        if (isItemDisabled(currentItem)) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          return;
+        }
+        if (this.currentPet) {
+          triggerAction(currentItem, e);
         }
       });
     });
 
-    // 点击其他地方时关闭菜单
-    document.addEventListener('mousedown', (e) => {
-      if (!this.menuEl.contains(e.target)) {
+    // 点击其他地方时关闭菜单（支持 pointerdown 与 mousedown）
+    const handleOutsideDismiss = (e) => {
+      if (this.isOpen() && !this.menuEl.contains(e.target)) {
         this.hide();
       }
-    });
+    };
+    document.addEventListener('pointerdown', handleOutsideDismiss);
+    document.addEventListener('mousedown', handleOutsideDismiss);
+
+    // 键盘 Escape 键关闭菜单
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen()) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          this.hide();
+        }
+      });
+    }
   }
 
   /**
@@ -196,9 +231,12 @@ class ContextMenu {
       if (window.t) el.textContent = window.t(el.dataset.i18n);
     });
 
-    // 更新禁用状态
+    // 更新禁用状态与 ARIA 状态
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
       item.classList.remove('disabled');
+      if (typeof item.removeAttribute === 'function') {
+        item.removeAttribute('aria-disabled');
+      }
     });
 
     if (pet.isBusy()) {
@@ -206,6 +244,9 @@ class ContextMenu {
       this.menuEl.querySelectorAll('.menu-item[data-action]').forEach(item => {
         if (item.dataset.action !== 'status') {
           item.classList.add('disabled');
+          if (typeof item.setAttribute === 'function') {
+            item.setAttribute('aria-disabled', 'true');
+          }
         }
       });
     }
@@ -213,6 +254,13 @@ class ContextMenu {
     // 调整菜单位置 (确保它不会超出屏幕边界)
     const visualScale = this.getVisualScaleForPoint ? this.getVisualScaleForPoint(x, y) : 1;
     this.menuEl.style.setProperty('--display-scale', visualScale);
+
+    // 显式调用 showPopover() 并同步移除 hidden 类
+    try {
+      this.menuEl.showPopover?.();
+    } catch (_) {}
+    this.menuEl.classList.remove('hidden');
+
     const { width: menuWidth, height: menuHeight } = this.measureMenuSize(visualScale);
     const position = ContextMenu.resolvePosition({
       pet,
@@ -231,10 +279,15 @@ class ContextMenu {
     this.menuEl.style.transformOrigin = position.opensAbove ? 'bottom left' : 'top left';
     this.menuEl.style.left = `${posX}px`;
     this.menuEl.style.top = `${posY}px`;
-    this.menuEl.classList.remove('hidden');
+
+    // 确保窗口进入交互模式（保持租期）
+    window.electronAPI?.setIgnoreMouseEvents?.(false, { leaseMs: 10000 });
   }
 
   hide() {
+    try {
+      this.menuEl.hidePopover?.();
+    } catch (_) {}
     this.menuEl.classList.add('hidden');
     if (this.currentPet?.id) {
       this.menuEl.classList.remove(`context-menu--${this.currentPet.id}`);

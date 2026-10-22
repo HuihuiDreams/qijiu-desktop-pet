@@ -22,9 +22,20 @@ function createClassList(initial = []) {
 }
 
 function createElement({ id = '', classNames = [], dataset = {} } = {}) {
+  const attributes = new Map();
   return {
     id,
     dataset,
+    attributes,
+    setAttribute(name, value) {
+      attributes.set(name, String(value));
+    },
+    getAttribute(name) {
+      return attributes.has(name) ? attributes.get(name) : null;
+    },
+    removeAttribute(name) {
+      attributes.delete(name);
+    },
     style: {
       values: {},
       setProperty(name, value) {
@@ -66,6 +77,15 @@ function createMenuDom() {
   const menu = createElement({ id: 'context-menu', classNames: ['hidden'] });
   const header = createElement({ id: 'menu-header' });
   const statusPanel = createElement({ id: 'status-panel', classNames: ['hidden'] });
+
+  const popoverLog = { show: 0, hide: 0 };
+  menu.showPopover = () => {
+    popoverLog.show += 1;
+  };
+  menu.hidePopover = () => {
+    popoverLog.hide += 1;
+  };
+
   menu.querySelector = (selector) => {
     const actionMatch = selector.match(/\.menu-item\[data-action="([^"]+)"\]/);
     if (actionMatch) {
@@ -79,7 +99,7 @@ function createMenuDom() {
     if (selector === '[data-i18n]') return [i18nItem];
     return [];
   };
-  return { menu, header, statusPanel, items, i18nItem };
+  return { menu, header, statusPanel, items, i18nItem, popoverLog };
 }
 
 function withContextMenuHarness(callback) {
@@ -88,6 +108,7 @@ function withContextMenuHarness(callback) {
   const dom = createMenuDom();
   const mouseCalls = [];
   const bodyClassList = createClassList();
+  const windowListeners = {};
 
   global.document = {
     body: { classList: bodyClassList },
@@ -111,6 +132,10 @@ function withContextMenuHarness(callback) {
   global.window = {
     innerWidth: 800,
     innerHeight: 600,
+    listeners: windowListeners,
+    addEventListener(type, callback) {
+      windowListeners[type] = callback;
+    },
     t(key) {
       const translations = {
         nameYueqi: 'Yue Qingyuan',
@@ -130,7 +155,7 @@ function withContextMenuHarness(callback) {
   };
 
   try {
-    return callback({ ...dom, mouseCalls, bodyClassList });
+    return callback({ ...dom, mouseCalls, bodyClassList, windowListeners });
   } finally {
     global.document = originalDocument;
     global.window = originalWindow;
@@ -177,7 +202,14 @@ test('ContextMenu.show renders a localized pet header and enables busy-state dis
   assert.equal(i18nItem.textContent, 'Feed');
   assert.equal(items.find((item) => item.dataset.action === 'pet').textContent, 'Pat Yue Qi');
   assert.equal(items.find((item) => item.dataset.action === 'feed').classList.contains('disabled'), true);
+  assert.equal(items.find((item) => item.dataset.action === 'feed').getAttribute('aria-disabled'), 'true');
   assert.equal(items.find((item) => item.dataset.action === 'status').classList.contains('disabled'), false);
+  assert.equal(items.find((item) => item.dataset.action === 'status').getAttribute('aria-disabled'), null);
+
+  const nonBusyPet = createPet({ isBusy: () => false });
+  contextMenu.show(nonBusyPet, 120, 180);
+  assert.equal(items.find((item) => item.dataset.action === 'feed').classList.contains('disabled'), false);
+  assert.equal(items.find((item) => item.dataset.action === 'feed').getAttribute('aria-disabled'), null);
 }));
 
 test('ContextMenu.hide restores click-through only when the status panel is closed', () => withContextMenuHarness(({ menu, statusPanel, mouseCalls, bodyClassList }) => {
@@ -352,3 +384,112 @@ test('ContextMenu.handleAction runs meditate, pet, and successful rest effects',
     ['effect', '💤', 'rest'],
   ]);
 }));
+
+test('ContextMenu.show and hide invoke showPopover and hidePopover while coordinating hidden class', () => withContextMenuHarness(({ menu, popoverLog }) => {
+  const contextMenu = new ContextMenu({}, () => 1, () => ({ x: 0, y: 0, width: 800, height: 600 }));
+  const pet = createPet();
+
+  assert.equal(popoverLog.show, 0);
+  assert.equal(popoverLog.hide, 0);
+  assert.equal(menu.classList.contains('hidden'), true);
+
+  contextMenu.show(pet, 100, 100);
+  assert.equal(popoverLog.show, 1);
+  assert.equal(menu.classList.contains('hidden'), false);
+
+  contextMenu.hide();
+  assert.equal(popoverLog.hide, 1);
+  assert.equal(menu.classList.contains('hidden'), true);
+}));
+
+test('ContextMenu items with aria-disabled="true" intercept pointerdown and click without triggering actions', () => withContextMenuHarness(({ menu, items }) => {
+  const nurtureCalls = [];
+  const contextMenu = new ContextMenu({
+    feed(pet) {
+      nurtureCalls.push(['feed', pet.id]);
+      return true;
+    },
+  });
+  const pet = createPet({ isBusy: () => true });
+  contextMenu.show(pet, 100, 100);
+
+  const feedItem = items.find((item) => item.dataset.action === 'feed');
+  assert.equal(feedItem.getAttribute('aria-disabled'), 'true');
+
+  let preventedPointer = false;
+  let stoppedPointer = false;
+  feedItem.listeners.pointerdown({
+    button: 0,
+    pointerType: 'mouse',
+    currentTarget: feedItem,
+    preventDefault() { preventedPointer = true; },
+    stopPropagation() { stoppedPointer = true; },
+  });
+
+  assert.equal(preventedPointer, true);
+  assert.equal(stoppedPointer, true);
+  assert.equal(nurtureCalls.length, 0);
+  assert.equal(menu.classList.contains('hidden'), false);
+
+  let preventedClick = false;
+  let stoppedClick = false;
+  feedItem.listeners.click({
+    currentTarget: feedItem,
+    preventDefault() { preventedClick = true; },
+    stopPropagation() { stoppedClick = true; },
+  });
+
+  assert.equal(preventedClick, true);
+  assert.equal(stoppedClick, true);
+  assert.equal(nurtureCalls.length, 0);
+  assert.equal(menu.classList.contains('hidden'), false);
+}));
+
+test('ContextMenu Escape key listener dismisses the open menu and restores mouse passthrough', () => withContextMenuHarness(({ menu, mouseCalls, windowListeners }) => {
+  const contextMenu = new ContextMenu({});
+  const pet = createPet();
+  contextMenu.show(pet, 100, 100);
+
+  assert.equal(contextMenu.isOpen(), true);
+  assert.equal(menu.classList.contains('hidden'), false);
+
+  let prevented = false;
+  windowListeners.keydown({
+    key: 'Escape',
+    preventDefault() { prevented = true; },
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(contextMenu.isOpen(), false);
+  assert.equal(menu.classList.contains('hidden'), true);
+  assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
+}));
+
+test('ContextMenu outside pointerdown dismisses the menu', () => withContextMenuHarness(({ menu }) => {
+  const contextMenu = new ContextMenu({});
+  const pet = createPet();
+  contextMenu.show(pet, 100, 100);
+
+  assert.equal(contextMenu.isOpen(), true);
+
+  global.document.listeners.pointerdown({ target: createElement() });
+
+  assert.equal(contextMenu.isOpen(), false);
+  assert.equal(menu.classList.contains('hidden'), true);
+}));
+
+test('src/index.html context menu uses popover="manual" and semantic button items without role="menu"', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
+
+  assert.match(html, /<div[^>]*id="context-menu"[^>]*popover="manual"/);
+  assert.doesNotMatch(html, /id="context-menu"[^>]*role="menu"/);
+
+  const buttonItems = html.match(/<button[^>]*class="menu-item"[^>]*>/g) || [];
+  assert.equal(buttonItems.length, 5);
+  for (const item of buttonItems) {
+    assert.match(item, /type="button"/);
+    assert.doesNotMatch(item, /role="menuitem"/);
+  }
+});

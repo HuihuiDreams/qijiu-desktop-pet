@@ -26,3 +26,33 @@ test('menu items include transform transition for active scaling', () => {
   const menuItemRule = contextMenuCss.match(/\.menu-item\s*\{[^}]+\}/s)?.[0] || '';
   assert.match(menuItemRule, /transform\s+0\.1s\s+ease/);
 });
+
+test('context menu resets popover defaults and eliminates z-index 9999 and touch-action', () => {
+  const menuRule = contextMenuCss.match(/\.context-menu\s*\{[^}]+\}/s)?.[0] || '';
+  assert.doesNotMatch(menuRule, /z-index:\s*9999/);
+  assert.doesNotMatch(menuRule, /touch-action:\s*none/);
+  assert.match(menuRule, /inset:\s*auto/);
+  assert.match(menuRule, /margin:\s*0/);
+});
+
+test('context menu configures discrete transitions with :popover-open and @starting-style', () => {
+  const menuRule = contextMenuCss.match(/\.context-menu\s*\{[^}]+\}/s)?.[0] || '';
+  assert.match(menuRule, /transition-property:[^;]*opacity[^;]*transform[^;]*display[^;]*overlay/);
+  assert.match(menuRule, /transition-behavior:\s*allow-discrete/);
+
+  assert.match(contextMenuCss, /\.context-menu:popover-open\s*\{[^}]*opacity:\s*1/s);
+  assert.match(contextMenuCss, /@starting-style\s*\{\s*\.context-menu:popover-open\s*\{[^}]*opacity:\s*0/s);
+});
+
+test('button.menu-item has resets, focus-visible outlines, and aria-disabled support', () => {
+  assert.match(contextMenuCss, /button\.menu-item/);
+  assert.match(contextMenuCss, /button\.menu-item:focus-visible/);
+
+  const ariaDisabledRule = contextMenuCss.match(/\.menu-item\[aria-disabled="true"\]\s*\{[^}]+\}/s)?.[0] || '';
+  assert.match(ariaDisabledRule, /color:\s*var\(--menu-disabled-text\)/);
+  assert.match(ariaDisabledRule, /background:\s*repeating-linear-gradient\(/);
+});
+
+test('context menu includes prefers-reduced-motion media query', () => {
+  assert.match(contextMenuCss, /@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)/);
+});
