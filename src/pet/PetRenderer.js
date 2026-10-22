@@ -497,17 +497,49 @@ class PetRenderer {
       el.style.position = 'absolute';
       el.dataset.headXRatio = String(headXRatio);
       this.positionOverlayBubble(el, overlayPos, headXRatio);
-      el.style.transform = 'translateX(-50%)';
       el.style.top = 'auto'; // 移除 top 定位
       el.style.zIndex = '101';
       el.style.pointerEvents = 'none';
       this.stage.appendChild(el);
 
-      // 淡出动画（定时器被追踪，以便 hideOverlay 时清理）
-      this._overlayBubbleTimers.push(
-        setTimeout(() => el.classList.add('dialog-bubble--fade-out'), duration - 500),
-        setTimeout(() => el.remove(), duration),
-      );
+      // 淡出动画（定时器被追踪，以便 hideOverlay 时清理；支持 getAnimations 协调与兜底定时器）
+      const fadeDelay = Math.max(0, duration - 500);
+      let removeTimer = null;
+
+      const fadeTimer = setTimeout(() => {
+        el.classList.add('dialog-bubble--fade-out');
+        if (typeof el.getAnimations === 'function') {
+          try {
+            const animations = el.getAnimations();
+            if (animations && animations.length > 0) {
+              Promise.allSettled(animations.map((a) => Promise.resolve(a.finished))).then(() => {
+                if (typeof el.remove === 'function') {
+                  el.remove();
+                }
+                if (removeTimer !== null) {
+                  clearTimeout(removeTimer);
+                  const idx = this._overlayBubbleTimers.indexOf(removeTimer);
+                  if (idx !== -1) {
+                    this._overlayBubbleTimers.splice(idx, 1);
+                  }
+                }
+              });
+            }
+          } catch (_) {}
+        }
+      }, fadeDelay);
+
+      removeTimer = setTimeout(() => {
+        if (typeof el.remove === 'function') {
+          el.remove();
+        }
+        const idx = this._overlayBubbleTimers.indexOf(removeTimer);
+        if (idx !== -1) {
+          this._overlayBubbleTimers.splice(idx, 1);
+        }
+      }, duration);
+
+      this._overlayBubbleTimers.push(fadeTimer, removeTimer);
     };
 
     if (shenjuText) makeOverlayBubble(shenjuText, INTERACTION_BUBBLE_HEAD_X.shenjiu);
@@ -537,10 +569,19 @@ class PetRenderer {
    * 清除所有活跃的覆盖层气泡及其定时器。
    */
   _clearOverlayBubbles() {
-    this._overlayBubbleTimers.forEach(id => clearTimeout(id));
+    this._overlayBubbleTimers.forEach((id) => clearTimeout(id));
     this._overlayBubbleTimers = [];
     if (this.stage && typeof this.stage.querySelectorAll === 'function') {
-      this.stage.querySelectorAll('.overlay-bubble').forEach(el => el.remove());
+      this.stage.querySelectorAll('.overlay-bubble').forEach((el) => {
+        if (typeof el.getAnimations === 'function') {
+          try {
+            el.getAnimations().forEach((a) => a.cancel?.());
+          } catch (_) {}
+        }
+        if (typeof el.remove === 'function') {
+          el.remove();
+        }
+      });
     }
   }
 }

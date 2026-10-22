@@ -41,10 +41,24 @@ class DialogBubble {
     const fadeTimer = setTimeout(() => {
       if (this.activeBubbles.get(pet.id) === bubble) {
         bubble.classList.add('dialog-bubble--fade-out');
+
+        // 使用 getAnimations() 协调退出动效，支持 Promise.allSettled 等待动画完成
+        if (typeof bubble.getAnimations === 'function') {
+          try {
+            const animations = bubble.getAnimations();
+            if (animations && animations.length > 0) {
+              Promise.allSettled(animations.map((a) => Promise.resolve(a.finished))).then(() => {
+                if (this.activeBubbles.get(pet.id) === bubble) {
+                  this.remove(pet.id);
+                }
+              });
+            }
+          } catch (_) {}
+        }
       }
     }, fadeDelay);
 
-    // 显示时间结束后移除气泡
+    // 显示时间结束后移除气泡（作为 Node fake-DOM 或动画挂起时的兜底定时器）
     const removeTimer = setTimeout(() => {
       if (this.activeBubbles.get(pet.id) === bubble) {
         this.remove(pet.id);
@@ -67,6 +81,11 @@ class DialogBubble {
 
     const bubble = this.activeBubbles.get(petId);
     if (bubble) {
+      if (typeof bubble.getAnimations === 'function') {
+        try {
+          bubble.getAnimations().forEach((a) => a.cancel?.());
+        } catch (_) {}
+      }
       bubble.remove();
       this.activeBubbles.delete(petId);
     }

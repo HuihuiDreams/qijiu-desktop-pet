@@ -1122,3 +1122,127 @@ test('PetRenderer dirty checks transform and imageScale on update', () => {
   renderer.update(pet);
   assert.equal(setProperties.filter(p => p.name === '--pet-image-scale').length, 1, '--pet-image-scale should not update again');
 });
+
+test('showOverlayBubbles coordinates exit with getAnimations() and cleans up timer', async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  let animationFinishedResolve;
+  const finishedPromise = new Promise((resolve) => {
+    animationFinishedResolve = resolve;
+  });
+
+  const fakeAnimation = {
+    finished: finishedPromise,
+    cancel() {},
+  };
+
+  const appended = [];
+  const stage = {
+    appendChild(el) {
+      appended.push(el);
+    },
+    querySelectorAll(selector) {
+      return selector === '.overlay-bubble' ? [...appended] : [];
+    },
+  };
+  const renderer = new PetRenderer(stage);
+
+  const originalDocument = global.document;
+  global.document = {
+    createElement() {
+      const style = {};
+      style.setProperty = (name, value) => { style[name] = value; };
+      const classes = new Set();
+      const el = {
+        className: '',
+        dataset: {},
+        textContent: '',
+        style,
+        classList: {
+          add(c) { classes.add(c); },
+          contains(c) { return classes.has(c); },
+        },
+        remove() {
+          el.removed = true;
+        },
+        getAnimations() {
+          return [fakeAnimation];
+        },
+      };
+      return el;
+    },
+    getElementById() { return null; },
+  };
+
+  try {
+    renderer.showOverlayBubbles('left text', 'right text', { x: 0, y: 0, width: 100, scale: 1 }, 600);
+    assert.equal(appended.length, 2);
+    assert.equal(renderer._overlayBubbleTimers.length, 4);
+
+    // Wait for fadeTimer (600 - 500 = 100ms) to fire
+    await wait(150);
+    assert.equal(appended[0].classList.contains('dialog-bubble--fade-out'), true);
+    assert.equal(appended[0].removed, undefined);
+
+    // Resolve animation
+    animationFinishedResolve();
+    await wait(20);
+
+    assert.equal(appended[0].removed, true);
+    assert.equal(appended[1].removed, true);
+    // removeTimer was cleared and spliced out of _overlayBubbleTimers
+    assert.equal(renderer._overlayBubbleTimers.length, 2);
+  } finally {
+    renderer._clearOverlayBubbles();
+    global.document = originalDocument;
+  }
+});
+
+test('hideOverlay cancels active getAnimations on overlay bubbles', () => {
+  let cancelCount = 0;
+  const fakeAnimation = {
+    cancel() {
+      cancelCount++;
+    },
+  };
+
+  const activeBubbles = [];
+  const stage = {
+    appendChild(el) {
+      activeBubbles.push(el);
+    },
+    querySelectorAll(selector) {
+      return selector === '.overlay-bubble' ? [...activeBubbles] : [];
+    },
+  };
+  const renderer = new PetRenderer(stage);
+
+  const originalDocument = global.document;
+  global.document = {
+    createElement() {
+      return {
+        className: 'dialog-bubble overlay-bubble',
+        dataset: {},
+        style: { setProperty() {} },
+        classList: { add() {} },
+        remove() { this.removed = true; },
+        getAnimations() { return [fakeAnimation]; },
+      };
+    },
+    getElementById() { return null; },
+  };
+
+  try {
+    renderer.showOverlayBubbles('left', 'right', { x: 0, y: 0, width: 100, scale: 1 }, 1000);
+    assert.equal(activeBubbles.length, 2);
+
+    renderer.hideOverlay({ element: null }, { element: null });
+
+    assert.equal(cancelCount, 2, 'cancel() should be called on animations for both bubbles');
+    assert.equal(activeBubbles[0].removed, true);
+    assert.equal(activeBubbles[1].removed, true);
+    assert.equal(renderer._overlayBubbleTimers.length, 0);
+  } finally {
+    global.document = originalDocument;
+  }
+});
+

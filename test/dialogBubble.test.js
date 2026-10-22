@@ -322,3 +322,113 @@ test('showInteraction centers close interaction bubbles around the shared overla
     }
   });
 });
+
+test('dialog-bubble.css defines @starting-style, fade-out state, and prefers-reduced-motion', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'dialog-bubble.css'), 'utf8');
+
+  // Verify @starting-style block
+  assert.match(css, /@starting-style\s*\{[^}]*\.dialog-bubble\s*\{[^}]*opacity:\s*0/s);
+  assert.match(css, /@starting-style\s*\{[^}]*\.dialog-bubble\s*\{[^}]*transform:\s*translateX\(-50%\)\s*translateY\(8px\)\s*scale\(0\.9\)/s);
+
+  // Verify .dialog-bubble--fade-out exit state
+  const fadeOutRule = css.match(/\.dialog-bubble--fade-out\s*\{[^}]+\}/s)?.[0] || '';
+  assert.match(fadeOutRule, /opacity:\s*0/);
+  assert.match(fadeOutRule, /transform:\s*translateX\(-50%\)\s*translateY\(-10px\)\s*scale\(0\.9\)/);
+  assert.match(fadeOutRule, /transition:\s*opacity\s+0\.5s/);
+
+  // Verify prefers-reduced-motion media query
+  const reducedMotionRule = css.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\n\}/)?.[0] || '';
+  assert.ok(reducedMotionRule.length > 0, 'reduced motion rule should exist');
+  assert.match(reducedMotionRule, /transform:\s*translateX\(-50%\);/);
+});
+
+test('dialog bubble coordinates exit with getAnimations() finished promise', async () => {
+  await withFakeDocument(async () => {
+    let animationFinishedResolve;
+    const finishedPromise = new Promise((resolve) => {
+      animationFinishedResolve = resolve;
+    });
+
+    const fakeAnimation = {
+      finished: finishedPromise,
+      cancelCalled: false,
+      cancel() {
+        this.cancelCalled = true;
+      },
+    };
+
+    const dialogBubble = new DialogBubble();
+    const pet = { id: 'yueqi', element: createFakeElement() };
+
+    dialogBubble.show(pet, 'animated exit bubble', 600);
+    const bubble = dialogBubble.activeBubbles.get(pet.id);
+    bubble.getAnimations = () => [fakeAnimation];
+
+    // Wait for fadeTimer (600 - 500 = 100ms) to fire
+    await wait(150);
+
+    assert.equal(bubble.classList.contains('dialog-bubble--fade-out'), true);
+    assert.equal(bubble.removed, undefined, 'bubble should still be mounted while animation is running');
+
+    // Finish animation
+    animationFinishedResolve();
+    await wait(20);
+
+    assert.equal(bubble.removed, true, 'bubble should be removed upon animation finished');
+    assert.equal(dialogBubble.activeBubbles.has(pet.id), false);
+    assert.equal(dialogBubble.activeBubbleTimers.has(pet.id), false);
+  });
+});
+
+test('remove(petId) cancels running animations and cleans up synchronously', () => {
+  withFakeDocument(() => {
+    let cancelCalled = false;
+    const fakeAnimation = {
+      finished: new Promise(() => {}),
+      cancel() {
+        cancelCalled = true;
+      },
+    };
+
+    const dialogBubble = new DialogBubble();
+    const pet = { id: 'yueqi', element: createFakeElement() };
+
+    dialogBubble.show(pet, 'cancel test bubble', 1000);
+    const bubble = dialogBubble.activeBubbles.get(pet.id);
+    bubble.getAnimations = () => [fakeAnimation];
+
+    dialogBubble.remove(pet.id);
+
+    assert.equal(cancelCalled, true, 'active animations should be cancelled');
+    assert.equal(bubble.removed, true, 'bubble should be removed synchronously');
+    assert.equal(dialogBubble.activeBubbles.has(pet.id), false);
+    assert.equal(dialogBubble.activeBubbleTimers.has(pet.id), false);
+  });
+});
+
+test('rapid re-triggering cleans up previous bubble and timers cleanly', async () => {
+  await withFakeDocument(async () => {
+    const dialogBubble = new DialogBubble();
+    const pet = { id: 'yueqi', element: createFakeElement() };
+
+    dialogBubble.show(pet, 'bubble 1', 1000);
+    const bubble1 = dialogBubble.activeBubbles.get(pet.id);
+
+    dialogBubble.show(pet, 'bubble 2', 1000);
+    const bubble2 = dialogBubble.activeBubbles.get(pet.id);
+
+    dialogBubble.show(pet, 'bubble 3', 1000);
+    const bubble3 = dialogBubble.activeBubbles.get(pet.id);
+
+    assert.equal(bubble1.removed, true);
+    assert.equal(bubble2.removed, true);
+    assert.equal(bubble3.removed, undefined);
+    assert.equal(dialogBubble.activeBubbles.get(pet.id), bubble3);
+
+    dialogBubble.remove(pet.id);
+    assert.equal(bubble3.removed, true);
+    assert.equal(dialogBubble.activeBubbles.has(pet.id), false);
+    assert.equal(dialogBubble.activeBubbleTimers.has(pet.id), false);
+  });
+});
+
