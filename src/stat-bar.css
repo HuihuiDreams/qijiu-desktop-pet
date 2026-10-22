@@ -39,3 +39,10 @@
   font-weight: 600;
   font-family: 'JetBrains Mono', 'Geist Mono', monospace;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-bar-fill {
+    transition: none;
+  }
+}
+

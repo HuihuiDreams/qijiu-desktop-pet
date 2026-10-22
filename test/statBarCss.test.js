@@ -22,3 +22,10 @@ test('status.css and index.css do not duplicate .stat-bar container styling', ()
   assert.doesNotMatch(statusCss, /\.stat-bar\s*\{[^}]*background:/);
   assert.doesNotMatch(indexCss, /\.stat-bar\s*\{[^}]*background:/);
 });
+
+test('stat-bar.css preserves spring transition and ink shimmer while adding reduced-motion query', () => {
+  assert.match(statBarCss, /transition:\s*width\s+0\.6s\s+cubic-bezier\(0\.34,\s*1\.56,\s*0\.64,\s*1\);/);
+  assert.match(statBarCss, /\.stat-bar-fill::after\s*\{[^}]*linear-gradient/);
+  assert.match(statBarCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.stat-bar-fill\s*\{[\s\S]*?transition:\s*none;?[\s\S]*?\}/);
+});
+

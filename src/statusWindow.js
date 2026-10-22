@@ -64,12 +64,24 @@ function renderPetStats(pet) {
     const row = document.createElement('div');
     row.className = 'stat-row';
 
+    const labelId = `stat-label-${pet.id}-${key}`;
     const labelEl = document.createElement('span');
     labelEl.className = 'stat-label';
+    labelEl.id = labelId;
+    if (typeof labelEl.setAttribute === 'function') {
+      labelEl.setAttribute('id', labelId);
+    }
     labelEl.textContent = label;
 
     const bar = document.createElement('div');
     bar.className = 'stat-bar';
+    if (typeof bar.setAttribute === 'function') {
+      bar.setAttribute('role', 'meter');
+      bar.setAttribute('aria-valuemin', '0');
+      bar.setAttribute('aria-valuemax', '100');
+      bar.setAttribute('aria-valuenow', `${value}`);
+      bar.setAttribute('aria-labelledby', `stat-label-${pet.id}-${key}`);
+    }
 
     const fill = document.createElement('div');
     fill.className = `stat-bar-fill stat-bar-fill--${key}`;
