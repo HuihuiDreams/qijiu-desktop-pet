@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-23
+
 ### Added
 - **架构决策记录 ADR-048 归档与现代 Web 标准基线**：新增 [ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)《桌面渲染层现代 Web 标准采纳》，正式归档在 Electron 42+（现代 Chromium 运行时基线）环境下采纳 Popover API、CSS Anchor Positioning、Relative Color Syntax、`content-visibility` 及 `@starting-style` 的架构依据、零外部 Polyfill 策略与 Node 假 DOM 渐进回退规范；并在 `AGENTS.md` 与 `docs/structure.md` 中补齐浏览器支持与现代 Web 标准策略。
 
@@ -27,6 +29,11 @@
 
 ### Removed
 - 移除无调用方的 `WindowManager.getAllWindows()`。
+
+### Security
+- **加固 GitHub Actions 发布工作流环境变量与输入校验**：在 `.github/workflows/build-installer.yml` 与 `release-preflight.yml` 中，将所有 `inputs.version`、`github.ref_name` 与 `github.repository` 通过步骤级 `env` 环境变量传递，杜绝在 Bash 与 PowerShell 脚本内直接内联 `${{ ... }}` 表达式引发的脚本注入风险；对传入的版本号与 Tag 进行严格 SemVer 格式正则校验。
+- **打包配置排除本地开发配置目录**：在 `package.json` 的 `build.files` 中将 `!.claude/**` 显式列入打包排除项，并在 `scripts/verify-package-contents.js` 的 `FORBIDDEN_TOP_LEVEL_PATHS` 中加入 `.claude` 检查，防止本地打包时将本地开发者配置（如 `.claude/settings.local.json`）误打入分发安装包中。
+- **防范性能基线工具原型污染**：在 `tools/performance/metrics.js` 的 `summarizeProcessSamples` 中，将样本分类聚合字典初始化为无原型的 `Object.create(null)`，并跳过 `__proto__`、`constructor`、`prototype` 等特殊属性键，防止解析外部基线 JSON 样本时污染 Node.js 进程的 `Object.prototype`。
 
 ## [0.11.1] - 2026-10-21
 

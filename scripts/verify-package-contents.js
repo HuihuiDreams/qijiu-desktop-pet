@@ -5,6 +5,7 @@ const { globSync } = require('glob');
 const FORBIDDEN_TOP_LEVEL_PATHS = [
   '.codex',
   '.agents',
+  '.claude',
   '.geminirules',
   'agents.md',
   'claude.md',

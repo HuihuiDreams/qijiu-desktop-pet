@@ -100,11 +100,18 @@ function summarizeProcessSamples(samples) {
   };
 
   for (const samplePoint of Array.isArray(samples) ? samples : []) {
-    const totalsByType = {};
+    const totalsByType = Object.create(null);
     const total = createMetricTotals();
 
     for (const sample of Array.isArray(samplePoint) ? samplePoint : []) {
-      if (!sample || typeof sample.type !== 'string' || sample.type.length === 0) {
+      if (
+        !sample ||
+        typeof sample.type !== 'string' ||
+        sample.type.length === 0 ||
+        sample.type === '__proto__' ||
+        sample.type === 'constructor' ||
+        sample.type === 'prototype'
+      ) {
         continue;
       }
 

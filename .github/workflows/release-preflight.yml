@@ -58,8 +58,10 @@ jobs:
       - name: Validate release metadata
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $inputVersion = '${{ inputs.version }}'
+          $inputVersion = if ($null -ne $env:INPUT_VERSION) { $env:INPUT_VERSION } else { '' }
           $version = $inputVersion.Trim()
           if ($version.StartsWith('v')) {
             $version = $version.Substring(1)

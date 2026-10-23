@@ -12,6 +12,7 @@ const {
 const REQUIRED_PACKAGE_EXCLUSIONS = [
   '!.codex/**',
   '!.agents/**',
+  '!.claude/**',
   '!.geminirules',
   '!AGENTS.md',
   '!CLAUDE.md',
@@ -31,6 +32,7 @@ test('package content verifier recognizes internal paths on every platform', () 
     findForbiddenEntries([
       '\\.codex\\tmp-worktree\\notes.md',
       '/.agents/skills/private.md',
+      '/.claude/settings.local.json',
       '/.geminirules',
       '/AGENTS.md',
       '/CLAUDE.md',
@@ -39,6 +41,7 @@ test('package content verifier recognizes internal paths on every platform', () 
     [
       '.codex/tmp-worktree/notes.md',
       '.agents/skills/private.md',
+      '.claude/settings.local.json',
       '.geminirules',
       'AGENTS.md',
       'CLAUDE.md',

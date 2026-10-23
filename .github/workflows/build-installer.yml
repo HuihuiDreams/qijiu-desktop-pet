@@ -28,8 +28,14 @@ jobs:
 
       - name: Create and push tag
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${INPUT_VERSION}"
+          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: ${VERSION}"
+            exit 1
+          fi
           TAG="${VERSION#v}"
           TAG="v${TAG}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
@@ -70,8 +76,13 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $version = '${{ inputs.version }}'
+          $version = $env:INPUT_VERSION
+          if ($version -notmatch '^v?\d+\.\d+\.\d+$') {
+            throw "Invalid version format: $version"
+          }
           $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
           git fetch origin "refs/tags/$tag:refs/tags/$tag"
           git checkout $tag
@@ -136,14 +147,22 @@ jobs:
 
       - name: Upload Windows release assets
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = '${{ inputs.version }}'
+          $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = '${{ github.ref_name }}'
+            $tag = $env:REF_NAME
           } else {
             $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
           }
-          $repo = '${{ github.repository }}'
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Tag must match v* semver format, got '$tag'."
+          }
+          $repo = $env:REPO_NAME
 
           $viewResult = gh release view $tag --repo $repo 2>&1
           if ($LASTEXITCODE -ne 0) {
@@ -157,33 +176,44 @@ jobs:
           }
 
           gh release upload $tag @assets --repo $repo --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload readme files to GitHub Release
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = '${{ inputs.version }}'
+          $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = '${{ github.ref_name }}'
+            $tag = $env:REF_NAME
           } else {
             $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
+          }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Tag must match v* semver format, got '$tag'."
           }
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
           gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove auto-generated source code archives
         shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = '${{ inputs.version }}'
+          $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = '${{ github.ref_name }}'
+            $tag = $env:REF_NAME
           } else {
             $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
           }
-          $repo = '${{ github.repository }}'
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Tag must match v* semver format, got '$tag'."
+          }
+          $repo = $env:REPO_NAME
           $assets = gh release view $tag --repo $repo --json assets --jq '.assets[].name'
           foreach ($asset in $assets -split "`n") {
             $asset = $asset.Trim()
@@ -192,8 +222,6 @@ jobs:
               gh release delete-asset $tag $asset --repo $repo --yes
             }
           }
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
@@ -225,8 +253,14 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${INPUT_VERSION}"
+          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: ${VERSION}"
+            exit 1
+          fi
           TAG="${VERSION#v}"
           TAG="v${TAG}"
           git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
@@ -297,18 +331,27 @@ jobs:
 
       - name: Upload validated macOS release assets
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           shopt -s nullglob
 
-          VERSION="${{ inputs.version }}"
+          VERSION="${INPUT_VERSION}"
           if [ -z "$VERSION" ]; then
-            TAG="${{ github.ref_name }}"
+            TAG="${REF_NAME}"
           else
             TAG="${VERSION#v}"
             TAG="v${TAG}"
           fi
-          REPO="${{ github.repository }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must match v* semver format, got '$TAG'."
+            exit 1
+          fi
+          REPO="${REPO_NAME}"
 
           if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             gh release create "$TAG" --draft --repo "$REPO" --title "$TAG" --notes "Release $TAG" \
@@ -326,28 +369,33 @@ jobs:
           fi
 
           gh release upload "$TAG" "${assets[@]}" --repo "$REPO" --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove auto-generated source code archives
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${{ inputs.version }}"
+          VERSION="${INPUT_VERSION}"
           if [ -z "$VERSION" ]; then
-            TAG="${{ github.ref_name }}"
+            TAG="${REF_NAME}"
           else
             TAG="${VERSION#v}"
             TAG="v${TAG}"
           fi
-          REPO="${{ github.repository }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must match v* semver format, got '$TAG'."
+            exit 1
+          fi
+          REPO="${REPO_NAME}"
           for asset in $(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name'); do
             if echo "$asset" | grep -iqE '^.*source.*code.*\.(zip|tar\.gz)$'; then
               echo "Removing source code archive: $asset"
               gh release delete-asset "$TAG" "$asset" --repo "$REPO" --yes
             fi
           done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6

@@ -83,3 +83,21 @@ test('summarizeProcessSamples aggregates each type within a sampling point', () 
     },
   });
 });
+
+test('summarizeProcessSamples guards against prototype pollution', () => {
+  const result = summarizeProcessSamples([
+    [
+      { type: '__proto__', cpuPercent: 12, privateKiB: 34, workingSetKiB: 56 },
+      { type: 'constructor', cpuPercent: 78, privateKiB: 90, workingSetKiB: 12 },
+      { type: 'prototype', cpuPercent: 34, privateKiB: 56, workingSetKiB: 78 },
+    ],
+  ]);
+
+  assert.equal(Object.prototype.cpuPercent, undefined);
+  assert.equal(Object.prototype.privateKiB, undefined);
+  assert.equal(Object.prototype.workingSetKiB, undefined);
+  assert.equal(Object.hasOwn(result.byType, '__proto__'), false);
+  assert.equal(Object.hasOwn(result.byType, 'constructor'), false);
+  assert.equal(Object.hasOwn(result.byType, 'prototype'), false);
+  assert.deepEqual(result.byType, {});
+});
