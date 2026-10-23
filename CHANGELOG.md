@@ -21,6 +21,10 @@
 ### Fixed
 - **Windows 活动窗口感知常驻进程优化与挂起休眠调度 (`Windows Active Window Awareness Persistent Process`)**：修复 Windows 平台下 `activeWindowProvider` 每 2 秒通过 `execFile` 冷启动一次 `powershell.exe` 并重新编译 C# P/Invoke 代码（`Add-Type`）造成的 200ms~500ms 瞬时 CPU 脉冲与磁盘 I/O 开销。现在改用单例常驻的 PowerShell 子进程与标准输入输出循环采样，C# 类型仅在启动时编译一次，单次采样耗时降至 1ms 以内；同时在 `WindowAwarenessService` 中联动系统 `powerMonitor` 的 `suspend` 与 `resume` 事件，在系统睡眠挂起时主动停止采样并回收子进程，系统唤醒后自动恢复采样（详见 [ADR-030](./docs/decisions/ADR-030-window-awareness.md)）。
 
+- 修复 Windows 活动窗口采样在 PowerShell 输入管道异步触发 `EPIPE` 等错误时产生主进程未捕获异常的问题；流错误统一返回不可用状态并清理进程，下次采样可重新启动。
+- 修复 Windows 活动窗口采样超时重启后，旧 PowerShell 的延迟退出或流错误误清理新进程的问题；所有进程及流回调均核对所属进程，旧输出不再污染新采样与错误信息。
+- 修复番茄钟按钮提示框退场时因过早移除定位锚点而跳至窗口左上角的问题；退场动画结束后再清理锚点，快速重显或切换按钮时忽略过期清理与失焦事件（[ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)）。
+
 ### Removed
 - 移除无调用方的 `WindowManager.getAllWindows()`。
 

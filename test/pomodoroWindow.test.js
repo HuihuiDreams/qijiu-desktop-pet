@@ -322,5 +322,45 @@ test('pomodoro tooltip interactions: anchorName, Popover API show/hide, and Esca
   tooltip.listeners.mouseleave();
   await new Promise((resolve) => setTimeout(resolve, 150));
   assert.equal(tooltip.popoverOpen, false);
+
+  // Preserve positioning until the exit transition has actually finished.
+  let finishExit;
+  tooltip.getAnimations = () => [{ finished: new Promise((resolve) => { finishExit = resolve; }) }];
+  pin.listeners.mouseenter();
+  keydownListener({ key: 'Escape' });
+  assert.equal(tooltip.popoverOpen, false);
+  assert.equal(pin.style.anchorName, '--pomodoro-tooltip-anchor', 'fading tooltip must retain its anchor');
+  finishExit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(pin.style.anchorName, '');
+
+  // An old exit completion must not clear a later exit's anchor, even for the same button.
+  pin.listeners.mouseenter();
+  pin.listeners.focusout();
+  const finishOldExit = finishExit;
+  pin.listeners.mouseenter();
+  pin.listeners.focusout();
+  const finishNewExit = finishExit;
+  finishOldExit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(pin.style.anchorName, '--pomodoro-tooltip-anchor');
+  finishNewExit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(pin.style.anchorName, '');
+
+  // Switching buttons invalidates the old cleanup and ignores stale focusout events.
+  pin.listeners.mouseenter();
+  pin.listeners.focusout();
+  const finishPinExit = finishExit;
+  dec.listeners.mouseenter();
+  pin.listeners.focusout();
+  finishPinExit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(tooltip.popoverOpen, true);
+  assert.equal(dec.style.anchorName, '--pomodoro-tooltip-anchor');
+  dec.listeners.focusout();
+  finishExit();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(dec.style.anchorName, '');
 });
 

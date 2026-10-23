@@ -257,9 +257,11 @@ while ($true) {
       }
     );
 
-    rl = readline.createInterface({ input: child.stdout, terminal: false });
+    const proc = child;
+    rl = readline.createInterface({ input: proc.stdout, terminal: false });
 
     rl.on('line', (line) => {
+      if (child !== proc) return;
       const text = line.trim();
       if (!text) return;
       const item = pendingQueue.shift();
@@ -273,24 +275,28 @@ while ($true) {
       }
     });
 
-    if (child.stderr) {
-      child.stderr.on('data', (chunk) => {
+    if (proc.stderr) {
+      proc.stderr.on('data', (chunk) => {
+        if (child !== proc) return;
         stderrBuffer = (stderrBuffer + chunk.toString()).slice(-4096);
       });
     }
 
-    child.on('error', (err) => {
+    const handleProcessError = (err) => {
+      if (child !== proc) return;
       if (err && !stderrBuffer) {
         stderrBuffer = err.message || String(err);
       }
       cleanupChild('provider-failed');
+    };
+    proc.on('error', handleProcessError);
+    proc.stdin.on('error', handleProcessError);
+
+    proc.on('exit', () => {
+      if (child === proc) cleanupChild('provider-failed');
     });
 
-    child.on('exit', () => {
-      cleanupChild('provider-failed');
-    });
-
-    return child;
+    return proc;
   }
 
   async function samplePersistent() {

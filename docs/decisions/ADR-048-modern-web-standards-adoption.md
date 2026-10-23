@@ -28,6 +28,7 @@ DeskPet 运行在 Electron 42+（内置 Chromium 134+ 运行时）之上，原�
 1. **Popover API 与 CSS Anchor Positioning 锚点定位**：
    - 番茄钟窗口的 Tooltip（`#pomodoro-tooltip`）声明 `popover="manual"` 与 `role="tooltip"`，通过原生 Top Layer 提升层级，彻底移除 `getBoundingClientRect()` 与 `offsetHeight`。
    - 样式层采用 CSS 锚点定位规范：`position-anchor: --pomodoro-tooltip-anchor; position-area: block-end; position-try-fallbacks: flip-block;`，由浏览器排版引擎原生接管空间感知与边界翻转。
+   - 提示框退场时保持按钮锚点直到 `getAnimations()` 的动画完成，避免 Top Layer 退场期间定位丢失；显示/收起版本校验阻止过期清理影响快速重显，缺少动画 API 或无活跃动画时立即清理。
    - 移除 HTML 原生 `title` 属性，在 `windowI18n.js` 中将翻译文本同步到 `data-tooltip` 与 `aria-label`，避免系统双重提示冲突。
    - 补充 `Escape` 键监听、Tooltip 悬停保持（Hoverable）与焦点触发（Persistent），全面满足 WCAG 1.4.13 标准。
 2. **`content-visibility: auto` 与占位尺寸保护**：

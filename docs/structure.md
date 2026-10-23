@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-22
+最后更新：2026-10-23
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -149,7 +149,7 @@ qijiu-desktop-pet/
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
-├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，避免重复 Add-Type 编译开销）
+├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，避免重复 Add-Type 编译开销；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
 ├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
@@ -493,6 +493,7 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
 - **Popover API 与 Top Layer 原生顶层提升**：
   番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
 - **CSS 锚点定位 (Anchor Positioning)**：
+  提示框收起时保留当前按钮锚点，等待 `getAnimations()` 返回的退场动画结束后再清理，避免仍在 Top Layer 的提示框跳至窗口左上角；每次显示或收起递增版本，过期动画完成回调不能移除新提示框的锚点。无动画 API 或无活跃动画时立即清理，旧按钮的失焦事件不关闭新按钮的提示框。
   番茄钟静修窗口基于 CSS Anchor Positioning（`position-anchor: --pomodoro-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准。
 - **CSS 相对颜色语法 (Relative Color Syntax)**：
   `src/index.css` 设计令牌采用 `rgb(from var(--color-*) r g b / <alpha>)` 规范，从基准玉色、仙金、丹砂与墨色动态派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。

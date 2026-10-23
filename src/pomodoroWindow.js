@@ -261,6 +261,7 @@ window.electronAPI.onPomodoroState((state) => {
 const tooltipEl = document.getElementById('pomodoro-tooltip');
 let activeTooltipTarget = null;
 let hideTooltipTimeout = null;
+let tooltipVersion = 0;
 
 function isPopoverOpen(el) {
   if (!el) return false;
@@ -281,6 +282,7 @@ function showTooltip(target) {
   const tooltipText = target.dataset.tooltip || target.getAttribute('data-tooltip') || target.getAttribute('aria-label');
   if (!tooltipText) return;
 
+  tooltipVersion++;
   if (activeTooltipTarget && activeTooltipTarget !== target) {
     activeTooltipTarget.style.anchorName = '';
   }
@@ -299,20 +301,14 @@ function showTooltip(target) {
 
 function hideTooltip(target) {
   if (!tooltipEl) return;
+  if (target && target !== activeTooltipTarget) return;
   if (hideTooltipTimeout) {
     clearTimeout(hideTooltipTimeout);
     hideTooltipTimeout = null;
   }
 
-  if (target) {
-    if (activeTooltipTarget === target) {
-      target.style.anchorName = '';
-      activeTooltipTarget = null;
-    }
-  } else if (activeTooltipTarget) {
-    activeTooltipTarget.style.anchorName = '';
-    activeTooltipTarget = null;
-  }
+  const closingTarget = activeTooltipTarget;
+  const closingVersion = ++tooltipVersion;
 
   if (typeof tooltipEl.hidePopover === 'function') {
     try {
@@ -321,6 +317,24 @@ function hideTooltip(target) {
       }
     } catch (_) {}
   }
+
+  const clearAnchor = () => {
+    if (closingVersion !== tooltipVersion) return;
+    if (closingTarget) closingTarget.style.anchorName = '';
+    activeTooltipTarget = null;
+  };
+  // The popover remains in the top layer during its exit transition.
+  // Keep its anchor until then, and ignore completions from an earlier show/hide.
+  if (typeof tooltipEl.getAnimations === 'function') {
+    try {
+      const animations = tooltipEl.getAnimations();
+      if (animations?.length) {
+        Promise.allSettled(animations.map((animation) => animation.finished)).then(clearAnchor);
+        return;
+      }
+    } catch (_) {}
+  }
+  clearAnchor();
 }
 
 function scheduleHideTooltip(target, delay = 100) {

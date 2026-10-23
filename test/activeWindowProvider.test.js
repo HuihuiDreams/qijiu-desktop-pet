@@ -242,6 +242,105 @@ test('Windows persistent provider handles parse error gracefully', async () => {
   provider.dispose();
 });
 
+test('Windows persistent provider handles asynchronous stdin errors and recovers', () => {
+  const { spawnSync } = require('node:child_process');
+  // Isolate the process so an unhandled stream error proves the crash regression.
+  const result = spawnSync(process.execPath, ['-e', `
+    const assert = require('node:assert/strict');
+    const { EventEmitter } = require('node:events');
+    const { PassThrough, Writable } = require('node:stream');
+    const { createWindowsActiveWindowProvider } = require(${JSON.stringify(require.resolve('../activeWindowProvider'))});
+    let spawnCalls = 0;
+    const provider = createWindowsActiveWindowProvider({
+      timeoutMs: 100,
+      spawn() {
+        const child = new EventEmitter();
+        child.stdout = new PassThrough();
+        child.stderr = new PassThrough();
+        child.killed = false;
+        child.exitCode = null;
+        child.kill = () => { child.killed = true; };
+        if (++spawnCalls === 1) {
+          child.stdin = new Writable({
+            write(_chunk, _encoding, callback) {
+              queueMicrotask(() => callback(Object.assign(new Error('pipe closed'), { code: 'EPIPE' })));
+            },
+          });
+        } else {
+          child.stdin = new PassThrough();
+          child.stdin.on('data', () => {
+            child.stdout.write(JSON.stringify({
+              active: true, id: '42', bounds: { x: 0, y: 0, width: 800, height: 600 },
+            }) + '\\n');
+          });
+        }
+        return child;
+      },
+    });
+    (async () => {
+      try {
+        const failed = await provider.getActiveWindowInfo();
+        assert.equal(failed.reason, 'provider-failed');
+        assert.equal(failed.details.stderr, 'pipe closed');
+        assert.equal((await provider.getActiveWindowInfo()).active, true);
+        assert.equal(spawnCalls, 2);
+      } finally {
+        provider.dispose();
+      }
+    })().catch(error => { console.error(error); process.exitCode = 1; });
+  `], { encoding: 'utf8', timeout: 5000 });
+
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+});
+
+test('Windows persistent provider ignores old process events after a timeout restart', async (t) => {
+  const { EventEmitter } = require('node:events');
+  const { PassThrough } = require('node:stream');
+
+  for (const event of ['exit', 'error', 'stdin-error', 'stderr']) {
+    await t.test(event, async () => {
+      const children = [];
+      const provider = createWindowsActiveWindowProvider({
+        timeoutMs: 30,
+        spawn() {
+          const child = new EventEmitter();
+          child.stdin = new PassThrough();
+          child.stdout = new PassThrough();
+          child.stderr = new PassThrough();
+          child.exitCode = null;
+          child.killed = false;
+          child.kill = () => { child.killed = true; };
+          children.push(child);
+          return child;
+        },
+      });
+
+      try {
+        assert.equal((await provider.getActiveWindowInfo()).reason, 'timeout');
+        const pending = provider.getActiveWindowInfo();
+        const [oldChild, currentChild] = children;
+        if (event === 'exit') oldChild.emit('exit', 1);
+        if (event === 'error') oldChild.emit('error', new Error('old process failed'));
+        if (event === 'stdin-error') oldChild.stdin.emit('error', new Error('old pipe failed'));
+        if (event === 'stderr') oldChild.stderr.write('old process stderr');
+
+        assert.equal(currentChild.killed, false, 'old events must not kill the replacement');
+        if (event === 'stderr') {
+          currentChild.emit('error', new Error('current process failed'));
+          assert.equal((await pending).details.stderr, 'current process failed');
+        } else {
+          currentChild.stdout.write(JSON.stringify({
+            active: true, id: 'new', bounds: { x: 0, y: 0, width: 800, height: 600 },
+          }) + '\n');
+          assert.equal((await pending).window.id, 'new');
+        }
+      } finally {
+        provider.dispose();
+      }
+    });
+  }
+});
+
 test('Windows provider can skip the app window and continue down z-order', async () => {
   let script = '';
   const provider = createWindowsActiveWindowProvider({
