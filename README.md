@@ -248,6 +248,7 @@ Windows 11 默认接电后约 5 分钟关屏/睡眠；如果想观看 5 分钟�
 ## 🏗️ 架构 (Architecture)
 
 整个应用基于 Electron 构建，分为主进程（Main Process）和渲染进程（Renderer Process）。核心逻辑（宠物移动、数值养成、状态机）在前端渲染进程中以 Game Loop 的方式驱动。
+- 领域概念与统一词汇见：[docs/GLOSSARY.md](./docs/GLOSSARY.md)
 - 详细架构说明见：[docs/structure.md](./docs/structure.md)
 - 重大架构决策见：[docs/decisions/](./docs/decisions/) 目录下的 ADRs。
 

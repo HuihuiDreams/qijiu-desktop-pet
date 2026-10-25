@@ -1,8 +1,8 @@
 # DeskPet 项目结构与架构说明
 
-本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
+本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-23
+最后更新：2026-10-25
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -265,6 +265,7 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
+   ├─ GLOSSARY.md                       # 领域词汇表：统一修仙养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
    ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
