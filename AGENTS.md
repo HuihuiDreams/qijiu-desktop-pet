@@ -26,7 +26,10 @@ in this project.
 5. Goal-Driven Execution & Chain Verification: When executing multi-step tasks or `/goal` requests:
    - Solve exactly ONE issue or task at a time.
    - After each atomic fix, proactively verify and update corresponding unit tests (`test/`). Run `npm test` or focused checks.
-   - **Proactive Documentation**: YOU MUST automatically update related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs) in the same step. Do not wait for the user to ask for documentation updates.
+   - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
+     1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, so cross-platform agents (e.g. macOS / Windows) maintain exact progress visibility.
+     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`). Do not wait for user prompting.
+   - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs. Never batch multiple phases into a mega-commit; this maintains clean bisectability and rollback checkpoints.
    - **Regression Prevention**: For security changes or complex refactors, always explicitly provide the user with manual verification steps to ensure no behavior degradation.
    - Never batch multiple tasks without completing the test and documentation verification loop for each step.
 
@@ -79,9 +82,10 @@ in this project.
 
 Before commit or push:
 
-1. Update `CHANGELOG.md`: Group changes under exact English headings `Added`, `Changed`, `Fixed`, `Removed`, or `Security`. 
-   - **CRITICAL**: Ensure headings are NOT duplicated under the same version (e.g., do not create two `Fixed` sections; merge them).
-   - All entries under `Unreleased` MUST be written in clear Chinese (except code terms/proper nouns) and strictly separated from published version headers. Link ADRs when relevant.
+1. Update `CHANGELOG.md`: Group changes strictly under exact English headings `Added`, `Changed`, `Fixed`, `Removed`, or `Security`. 
+   - **CRITICAL**: Ensure headings are NEVER duplicated under the same version header (e.g., do not create two `Fixed` sections; merge them into one).
+   - All entries under `Unreleased` MUST be placed directly beneath `## [Unreleased]` in clear Chinese (except code terms/proper nouns) and strictly separated from published release headers. Link ADRs when relevant (e.g. `[ADR-048](docs/decisions/ADR-048-modern-web-standards-adoption.md)`).
+   - Run `./push.sh` (or `.\push.ps1`) early to catch CHANGELOG format errors during preflight validation before attempting push.
 2. Update docs when behavior changes: Keep `docs/structure.md` and relevant ADRs synchronized with architecture or runtime behavior changes.
 3. Use atomic commits with this message shape:
 

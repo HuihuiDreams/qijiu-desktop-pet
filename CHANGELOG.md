@@ -7,6 +7,9 @@
 ### Added
 - **领域词汇表建立 (`Domain Glossary`)**：新增 [docs/GLOSSARY.md](./docs/GLOSSARY.md)，系统化审查并沉淀了 DeskPet 的核心领域模型。包含角色与实体、修仙养成与状态、养成互动与行为、双人情景与互动、空间感知与桌面物理、专注与伴工情境、时空感知与天候、换装与资产表现共 8 大核心聚类的权威术语定义与防混淆规范（`_Avoid_` 规则），为后续功能演进与跨角色迁移建立无二义性的领域通用语言（Ubiquitous Language）。
 
+### Changed
+- **Agent 协作与文档同步纪律加固 (`Agent Workflow & Plan Sync Rules`)**：基于 Microsoft SkillOpt 挖掘 Antigravity 历史会话经验，在 `AGENTS.md` 与 `.geminirules` 中固化四项执行规则：实施计划时必须实时勾选 `docs/plan/*.md`、架构及配置变更全量同步至 `docs/structure.md` 与 ADR、规避 CHANGELOG 重复标题以保通过 `./push.sh` 预检、多阶段任务严格推行“一阶段一验证一原子 Commit”以保可回滚性。
+
 ### Fixed
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 

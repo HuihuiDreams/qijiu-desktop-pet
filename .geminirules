@@ -10,7 +10,11 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 4. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
 5. **Goal-Driven & Chain Verification**: When executing multi-step tasks (`/goal` or multi-bug fixes):
    - Solve exactly ONE problem at a time.
-   - After each atomic fix, verify and update corresponding unit tests (`tests/`), run `npm test` or focused `node --test ...` checks, and synchronize related documentation (`CHANGELOG.md`, `docs/structure.md`, ADRs).
+   - After each atomic fix, verify and update corresponding unit tests (`test/`), run `npm test` or focused checks.
+   - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
+     1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, ensuring cross-platform agents (macOS / Windows) stay in sync.
+     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`).
+   - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs to maintain clean bisectability and rollback checkpoints.
    - Never batch changes without running intermediate verification and updating docs for each step.
 
 ## Technical Constraints
@@ -44,7 +48,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Git Workflow & Versioning
 
 Before commit/push:
-1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`). Entries under `Unreleased` must be written in clear Chinese (except code terms/proper nouns) and separated from released tags.
+1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) without duplicate headings under the same version. Entries under `Unreleased` must be written in clear Chinese (except code terms/proper nouns), strictly placed beneath `## [Unreleased]`, and link ADRs when relevant.
 2. **Update docs when behavior changes**: Keep `docs/structure.md` and relevant ADRs in sync.
 3. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
-4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to run safety checks.
+4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) early to catch preflight format validation issues.
