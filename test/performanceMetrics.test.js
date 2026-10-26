@@ -101,3 +101,24 @@ test('summarizeProcessSamples guards against prototype pollution', () => {
   assert.equal(Object.hasOwn(result.byType, 'prototype'), false);
   assert.deepEqual(result.byType, {});
 });
+
+test('summarizeProcessSamples aggregates inherited property names as independent types', () => {
+  const types = Object.getOwnPropertyNames(Object.prototype)
+    .filter((type) => type !== '__proto__' && type !== 'constructor');
+  const result = summarizeProcessSamples([
+    types.map((type) => ({ type, cpuPercent: 2, privateKiB: 10, workingSetKiB: 20 })),
+    types.map((type) => ({ type, cpuPercent: 3, privateKiB: 15, workingSetKiB: 30 })),
+  ]);
+
+  assert.deepEqual(Object.keys(result.byType), types);
+  for (const type of types) {
+    assert.deepEqual(result.byType[type], {
+      cpuPercent: { count: 2, p50: 2, p95: 3, max: 3 },
+      privateKiB: { count: 2, p50: 10, p95: 15, max: 15 },
+      workingSetKiB: { count: 2, p50: 20, p95: 30, max: 30 },
+    });
+  }
+  assert.equal(result.total.cpuPercent.p50, types.length * 2);
+  assert.equal(result.total.privateKiB.p95, types.length * 15);
+  assert.equal(result.total.workingSetKiB.max, types.length * 30);
+});

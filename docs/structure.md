@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-25
+最后更新：2026-10-26
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -578,6 +578,8 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 测试 profile，且工具不会自动删除显式目录。使用 `--executable <path>` 可采集 packaged
 应用，`--disable-gpu` 数据必须与真实 GPU 数据分开报告。完整参数、输出结构和测量纪律
 见 `docs/performance/README.md`。
+
+`tools/performance/metrics.js` 的进程类型聚合在单个采样点与跨采样点两层均使用无原型字典，避免 `toString` 等继承属性名导致统计崩溃；继续跳过 `__proto__`、`constructor`、`prototype`，返回的 `byType` 保持普通对象格式。
 
 ## 5. 架构决策索引
 

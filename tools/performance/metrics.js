@@ -92,7 +92,7 @@ function summarizeMetrics(metricSeries) {
 }
 
 function summarizeProcessSamples(samples) {
-  const byTypeSeries = {};
+  const byTypeSeries = Object.create(null);
   const totalSeries = {
     cpuPercent: [],
     privateKiB: [],
