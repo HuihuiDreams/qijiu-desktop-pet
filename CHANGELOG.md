@@ -15,6 +15,9 @@
 ### Fixed
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 
+### Security
+- **移除 `disable-site-isolation-trials` 恢复 Chromium 站点隔离基线 (`SBP-001`)**：从 `src/main/AppLifecycle.js` 的 `configureChromiumMemoryBudget()` 中移除 `app.commandLine.appendSwitch('disable-site-isolation-trials')`，恢复 Chromium 默认站点隔离（Site Isolation）跨源进程安全边界，并在 `test/mainMemoryBudget.test.js` 中增加防回退断言。
+
 ## [0.11.2] - 2026-10-23
 
 ### Added
