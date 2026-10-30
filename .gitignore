@@ -24,6 +24,8 @@ security-scans/
 !.agents/skills/**
 docs/source-assets/
 .claude/
+CLAUDE.md
+claude.md
 docs/performance/raw/
 docs/performance/*.json
 !docs/performance/README.md
