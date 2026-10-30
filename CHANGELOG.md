@@ -6,6 +6,8 @@
 
 ### Added
 - **领域词汇表建立 (`Domain Glossary`)**：新增 [docs/GLOSSARY.md](./docs/GLOSSARY.md)，系统化审查并沉淀了 DeskPet 的核心领域模型。包含角色与实体、修仙养成与状态、养成互动与行为、双人情景与互动、空间感知与桌面物理、专注与伴工情境、时空感知与天候、换装与资产表现共 8 大核心聚类的权威术语定义与防混淆规范（`_Avoid_` 规则），为后续功能演进与跨角色迁移建立无二义性的领域通用语言（Ubiquitous Language）。
+- **专属技能：皮肤素材流水线 (`skin-asset-pipeline`)**：在 `.agents/skills/skin-asset-pipeline/` 中沉淀项目专有的皮肤素材与图片处理技能，规范化 PNG 原图至 256x256 WebP 的裁剪归一化、Alpha 通道保护、脚部基准对齐、资源加密与多语言同步 SOP；升级 `scripts/convert_images.js` 与 `tools/run_trim.py` 支持指定目标皮肤目录参数，并补充对应自动化验证测试。
+- **专属技能：跨平台发布打包与签名合规流水线 (`release-and-packaging`)**：在 `.agents/skills/release-and-packaging/` 中沉淀发布打包技能，系统固化本地环境校验（`verify:installer`）、受保护皮肤预加密（`protect:assets`）、本地快速冒烟打包、ASAR 解包安全审计（`verify:package`）、macOS `DeskPet` ASCII 执行名规范化与 ad-hoc 签名、Windows 签名核验（`verify:signatures`）及云端 GitHub Actions（`release-preflight` 与 `build-installer`）的完整协同 SOP 与排错指南；补充自动化测试套件。
 
 ### Changed
 - **Agent 协作与文档同步纪律加固 (`Agent Workflow & Plan Sync Rules`)**：基于 Microsoft SkillOpt 挖掘 Antigravity 历史会话经验，在 `AGENTS.md` 与 `.geminirules` 中固化四项执行规则：实施计划时必须实时勾选 `docs/plan/*.md`、架构及配置变更全量同步至 `docs/structure.md` 与 ADR、规避 CHANGELOG 重复标题以保通过 `./push.sh` 预检、多阶段任务严格推行“一阶段一验证一原子 Commit”以保可回滚性。

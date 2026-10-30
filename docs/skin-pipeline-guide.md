@@ -29,33 +29,21 @@
 ### 1. 对原图进行分组裁切与画幅归一化
 
 项目提供了专用脚本 `tools/run_trim.py`（依赖 `tools/trim_sprites.py`）。
-你需要根据图片命名和动画关系，修改 `run_trim.py` 中的 `groups` 数组，将同属于一组动画的图片通过 Glob 模式分为一组。例如：
+可直接传入目标皮肤目录（脚本会自动按 `left*.png`、`right*.png`、`shenjiu/walk_left*.png`、`shenjiu/walk_right*.png`、`yueqi/walk_left*.png`、`yueqi/walk_right*.png` 分组归一化）：
 
-```python
-# tools/run_trim.py 示例
-groups = [
-    "src/assets/animal_ears/left*.png",
-    "src/assets/animal_ears/right*.png",
-    "src/assets/animal_ears/shenjiu/walk_left*.png",
-    "src/assets/animal_ears/shenjiu/walk_right*.png",
-    # ...
-]
-```
-
-执行该脚本：
 ```powershell
 $env:PYTHONIOENCODING="utf8"
-python tools/run_trim.py
+python tools/run_trim.py src/assets/<YOUR_SKIN_NAME>
 ```
-**脚本的作用**：它会自动遍历每组内的所有图片，找出组内并集的最大边界（Bounding Box），将多余透明边距切除，并为这组图片加上极小的安全边距（`PADDING=6`），使得它们拥有完全一致的新画布尺寸，同时保留完美的动画对齐效果。对于没有落入任何分组的独立图片（如 `hug.png`），脚本会将其单独切边，确保它能被放到最大。
+**脚本的作用**：它会自动遍历每组内的所有图片，找出组内并集的最大边界（Bounding Box），将多余透明边距切除，并为这组图片加上安全边距（`PADDING=12`），使得它们拥有完全一致的新画布尺寸，同时保留水平居中与底部对齐效果。对于没有落入任何分组的独立图片（如 `hug.png`），脚本会将其单独切边，确保它能被放到最大。
 
 *(注：执行此脚本会直接覆盖修改对应路径下的 `.png` 原图文件)*
 
 ### 2. 将优化后的 PNG 转换为 WebP (256x256)
 
-执行 Node.js 转换脚本：
+执行 Node.js 转换脚本（可指定目标皮肤目录）：
 ```powershell
-node scripts/convert_images.js
+node scripts/convert_images.js src/assets/<YOUR_SKIN_NAME>
 ```
 **脚本的作用**：调用 `ffmpeg` 递归遍历对应文件夹，将所有 `*.png` 按比例缩放并居中放置到严格的 `256x256` 黑色透明画布中（`color=black@0`），输出最终运行时使用的 `*.webp` 渲染资产。
 

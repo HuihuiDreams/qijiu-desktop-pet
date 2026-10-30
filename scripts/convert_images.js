@@ -43,8 +43,14 @@ with Image.open(${JSON.stringify(fullPath)}) as img:
     }
 }
 
-const skinDirs = ['src/assets/animal_ears', 'src/assets/school_au'];
+const cliArgs = process.argv.slice(2);
+const skinDirs = cliArgs.length > 0 ? cliArgs : ['src/assets/animal_ears', 'src/assets/school_au'];
 for (const dir of skinDirs) {
     const absDir = path.resolve(dir);
-    if (fs.existsSync(absDir)) processDir(absDir);
+    if (fs.existsSync(absDir) && fs.statSync(absDir).isDirectory()) {
+        processDir(absDir);
+    } else if (cliArgs.length > 0) {
+        console.error(`Target skin directory does not exist: ${dir}`);
+        process.exitCode = 1;
+    }
 }

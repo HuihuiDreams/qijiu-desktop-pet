@@ -107,6 +107,8 @@ graph TB
 ```text
 qijiu-desktop-pet/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
+|-- .agents/skills/skin-asset-pipeline/SKILL.md      # 皮肤素材处理与图片转换流水线技能
+|-- .agents/skills/release-and-packaging/SKILL.md    # 发布打包与签名合规流水线技能
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）

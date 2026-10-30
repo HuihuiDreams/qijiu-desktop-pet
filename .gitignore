@@ -21,8 +21,7 @@ security-scans/
 *.pem
 .agents/*
 !.agents/skills/
-!.agents/skills/desktop-pet-maintenance/
-!.agents/skills/desktop-pet-maintenance/**
+!.agents/skills/**
 docs/source-assets/
 .claude/
 docs/performance/raw/
