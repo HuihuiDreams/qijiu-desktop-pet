@@ -246,3 +246,9 @@ html:not([data-locale="en"]) .pet-status-block--shenjiu .pet-status-calligraphy 
 html[data-locale="en"] .status-seal-qijiu {
   opacity: 0.70;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .status-panel {
+    animation: none;
+  }
+}

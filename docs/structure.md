@@ -502,8 +502,8 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
   `src/index.css` 设计令牌采用 `rgb(from var(--color-*) r g b / <alpha>)` 规范，从基准玉色、仙金、丹砂与墨色动态派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。
 - **`content-visibility: auto` 与占位尺寸保护**：
   皮肤画廊（`src/skin-selector.css`）严格遵循 `defer-rendering-heavy-content` 指南，仅对首屏视口（前 6 张卡片）以外的离屏卡片应用 `.skin-card:nth-child(n + 7) { content-visibility: auto; contain-intrinsic-size: auto none auto 182px; }`，保障首屏 FCP/LCP 不劣化并杜绝列表滚动跳变（CLS）；悬浮样式限定为 `:not(:disabled)` 避免加载锁定时卡片浮动。
-- **`@starting-style` 与动画退场协调**：
-  对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。
+- **`@starting-style` 与动画退场协调及减动效覆盖 (Prefers-Reduced-Motion)**：
+  对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（城市设置、体型调节、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
 - **无障碍语义化 (ARIA) 与按钮语义**：
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。
 - **零外部 Polyfill 与 Node 桩测试兼容**：

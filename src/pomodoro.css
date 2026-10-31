@@ -366,6 +366,10 @@ html[lang="en"] .pomodoro-titlebar>span {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pomodoro-panel {
+    animation: none;
+  }
+
   .pomodoro-dial-emblem {
     animation: none !important;
   }

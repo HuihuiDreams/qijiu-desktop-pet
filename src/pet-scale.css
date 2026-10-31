@@ -271,3 +271,9 @@ input {
   outline: 2px solid rgba(110, 198, 160, 0.7);
   outline-offset: 2px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .scale-panel {
+    animation: none;
+  }
+}
