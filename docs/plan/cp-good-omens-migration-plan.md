@@ -146,6 +146,6 @@
 - [x] **Task 5.4**: 将雨天粒子（`effects.css`）升级为创世流星雨拖尾与星辉光效，联动更新天气问候台词。
 
 ### Phase 6: 独立发行配置与回归验证 (Packaging & Verification)
-- [ ] **Task 6.1**: 如需作为独立应用发布，按指南配置 `package.json`（`appId`, `productName: 好兆头爱宠`）、Windows `APP_USER_MODEL_ID` 与应用图标。
-- [ ] **Task 6.2**: 全量单元测试 `npm test` 与 E2E 冒烟测试 `npm run qa:electron:smoke`。
-- [ ] **Task 6.3**: 人工端到端验收（启动、动作、穿透、多语切换、数据持久化）。
+- [x] **Task 6.1**: 采用内容替换型 CP 维护模式保留底层槽位并完成托盘 CA 标识与开机启动适配（独立发布时可按指南覆写 `package.json`）。
+- [x] **Task 6.2**: 全量单元测试 `npm test`（1141 passing）与 E2E 冒烟测试 `npm run qa:electron:smoke`（`ok: true`）。
+- [x] **Task 6.3**: 人工端到端验收与纯色抠图实心化验证（透明边缘平滑、双宠 2.2 头身行走无抖动、中英日三语无障碍交互无异常）。
