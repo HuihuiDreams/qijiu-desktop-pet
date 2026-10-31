@@ -34,6 +34,14 @@ const KEY_UI_TEXT_KEYS = [
   'contextMenuCultivate',
   'contextMenuRest',
   'contextMenuStatus',
+  'nameYueqi',
+  'nicknameYueqi',
+  'nameShenjiu',
+  'nicknameShenjiu',
+  'meditateYueqi',
+  'meditateShenjiu',
+  'petYueqi',
+  'petShenjiu',
 ];
 
 const LOCALES = ['zh', 'en', 'ja'];

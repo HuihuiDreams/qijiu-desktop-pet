@@ -21,25 +21,27 @@ const I18N = {
   zh: {
     ui: {
       // 右键菜单
-      feed: '🍎 喂食',
-      meditate: '🧘🏻‍♂️ 打坐修炼',
-      petYueqi: '🤚 小九撒娇',
-      petShenjiu: '🤚 七哥关怀',
-      rest: '💤 休息',
+      feed: '🥐 投喂美食',
+      meditate: '✨ 施展奇迹',
+      meditateYueqi: '🪴 照料植物',
+      meditateShenjiu: '📖 静心研读',
+      petYueqi: '🤚 天使关怀',
+      petShenjiu: '🤚 恶魔偏宠',
+      rest: '💤 闭目小憩',
       status: '📊 查看状态',
 
       // 状态面板
-      statusTitle: '修仙状态',
-      statAffection: '好感',
+      statusTitle: '爱宠状态',
+      statAffection: '默契',
       statHunger: '饱腹',
-      statQi: '灵力',
-      statMood: '心境',
+      statQi: '奇迹能量',
+      statMood: '心情',
 
       // 宠物名
-      nameYueqi: '岳清源',
-      nicknameYueqi: '岳七',
-      nameShenjiu: '沈清秋',
-      nicknameShenjiu: '沈九',
+      nameYueqi: '克劳利',
+      nicknameYueqi: 'Crowley',
+      nameShenjiu: '亚茨拉斐尔',
+      nicknameShenjiu: 'Aziraphale',
 
       // 皮肤名
       skinDefault: '默认皮肤·凉拌仓鼠',
@@ -58,7 +60,7 @@ const I18N = {
       skinSchoolAuArtist: '幕汤汤',
 
       // 托盘菜单
-      trayTitle: '岳清源x沈清秋 桌面爱宠',
+      trayTitle: '克劳利 ✖️ 亚茨拉斐尔 桌面爱宠',
       trayShowStatusPanel: '📊 显示状态面板',
       trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',
@@ -87,9 +89,9 @@ const I18N = {
       trayWindowAwarenessOn: '🪟 启用界面感知',
       trayWindowAwarenessOff: '🪟 禁用界面感知',
       trayWindowAwarenessUnavailable: '🪟 界面感知暂不可用',
-      trayPomodoroOpen: '🧘🏻‍♂️ 苍穹静修',
-      trayPomodoroRunning: '🧘🏻‍♂️ 闭关中',
-      trayPomodoroCompleted: '🧘🏻‍♂️ 静修圆满',
+      trayPomodoroOpen: '📖 旧书店伴读',
+      trayPomodoroRunning: '📖 伴读中',
+      trayPomodoroCompleted: '📖 伴读完成',
       trayDevTools: '🛠️ 开发者工具',
       trayQuit: '❌ 退出',
       trayLanguage: '🌐 语言',
@@ -117,18 +119,18 @@ const I18N = {
       citySettingError: '未找到该城市，请检查名称',
       citySettingSearching: '查找中…',
       trayMinuteUnit: '分钟',
-      pomodoroTitle: '苍穹静修',
+      pomodoroTitle: '旧书店伴读',
       pomodoroPin: '置顶',
       pomodoroUnpin: '取消置顶',
       pomodoroClose: '关闭',
-      pomodoroPrompt: '本次闭关多久？',
+      pomodoroPrompt: '本次专注多久？',
       pomodoroDecrease: '减少',
       pomodoroIncrease: '增加',
-      pomodoroStart: '开始静修',
-      pomodoroStop: '提前出关',
-      pomodoroCompleted: '静修圆满',
-      pomodoroCompleteMessage: '闭关结束，修为又大有精进。',
-      pomodoroFinish: '出关',
+      pomodoroStart: '开始专注',
+      pomodoroStop: '结束专注',
+      pomodoroCompleted: '专注完成',
+      pomodoroCompleteMessage: '伴读结束，喝杯大吉岭红茶休息一下吧。',
+      pomodoroFinish: '完成',
 
       // 更新提示框
       updateErrTitle: '更新失败',
@@ -175,31 +177,31 @@ const I18N = {
       langJa: '日本語',
 
       // 动态气泡（Context Menu 触发）
-      bubbleFeedYueqi: '（享用中…）',
-      bubbleFeedShenjiu: '…还行吧。',
-      bubbleMeditateYueqi: '入定…',
-      bubbleMeditateShenjiu: '（闭目凝神）',
-      bubblePetYueqi: '（宠溺地笑）',
-      bubblePetShenjiu: '…谁要你管。',
-      bubbleRestYueqi: '稍作休整。',
-      bubbleRestShenjiu: '（假寐）',
+      bubbleFeedYueqi: '（大口咀嚼中…）',
+      bubbleFeedShenjiu: '（优雅品尝）…美味至极。',
+      bubbleMeditateYueqi: '（拿着喷水壶严肃巡视）长快点！听到没有！',
+      bubbleMeditateShenjiu: '（翻开泛黄的初版本）…真是无可替代的文字。',
+      bubblePetYueqi: '（故作冷哼，却悄悄把头蹭过来）',
+      bubblePetShenjiu: '哦，你真是太体贴了，亲爱的。',
+      bubbleRestYueqi: '（窝在沙发里补眠…）',
+      bubbleRestShenjiu: '（靠在扶手椅上假寐）',
       bubbleRestTooHungry: '太饿了，无法休息…',
 
       // 回归欢迎
-      returnYueqi: (n) => `你走了${n}个时辰…`,
-      returnShenjiu: '…哼，终于回来了。',
+      returnYueqi: (n) => `你离开了${n}个小时，天使还在等你呢。`,
+      returnShenjiu: '…哦，谢天谢地，你终于回来了。',
 
       // 时段闲聊
-      morningYueqi: '早安。',
-      morningShenjiu: '哼，起得倒早。',
-      dayYueqi: '白日漫长，莫要太过劳累。',
-      dayShenjiu: '…大白天的，别到处乱晃。',
-      duskYueqi: '黄昏了，一日又要结束了。',
-      duskShenjiu: '天色暗了。',
-      eveningYueqi: '夜幕已降，早点歇息吧。',
-      eveningShenjiu: '…少烦我，滚去睡觉。',
-      nightYueqi: '夜深了，早些休息吧。',
-      nightShenjiu: '…还不睡？想猝死吗。',
+      morningYueqi: '早啊。今天又有什么不可告人的诱惑任务？',
+      morningShenjiu: '早上好！今天也是适宜品茶读书的一天。',
+      dayYueqi: '大白天的，开着宾利在伦敦兜风才叫惬意。',
+      dayShenjiu: '下午阳光正好，来一杯红茶再配块可丽饼吧。',
+      duskYueqi: '黄昏了，丽兹酒店的预订准备好了吗？',
+      duskShenjiu: '夕阳西下，是时候挑一本好书与一瓶老陈年红酒了。',
+      eveningYueqi: '夜深了，街上的凡人都睡了。',
+      eveningShenjiu: '晚风微凉，书店的壁炉该生火了。',
+      nightYueqi: '还不睡？当心被噩梦抓去地狱加班。',
+      nightShenjiu: '夜深了，亲爱的，别太勉强自己。',
     },
     dialogues: {
       greet: {
@@ -410,25 +412,27 @@ const I18N = {
   en: {
     ui: {
       // Context menu
-      feed: '🍎 Feed',
-      meditate: '🧘🏻‍♂️ Cultivate', // 修正了拼写
-      petYueqi: '🤚 XiaoJiu Clings',
-      petShenjiu: '🤚 QiGe Spoils',
+      feed: '🥐 Feed Delicacies',
+      meditate: '✨ Perform Miracle',
+      meditateYueqi: '🪴 Tending Plants',
+      meditateShenjiu: '📖 Reading',
+      petYueqi: '🤚 Angel\'s Fondness',
+      petShenjiu: '🤚 Crowley\'s Care',
       rest: '💤 Rest',
       status: '📊 Status',
 
       // Status panel
-      statusTitle: 'Cultivation Status',
-      statAffection: 'Affection',
+      statusTitle: 'Pet Status',
+      statAffection: 'Bond',
       statHunger: 'Satiety',
-      statQi: 'Qi',
+      statQi: 'Miracle Energy',
       statMood: 'Mood',
 
       // Pet names
-      nameYueqi: 'Yue Qingyuan',
-      nicknameYueqi: 'Yue Qi',
-      nameShenjiu: 'Shen Qingqiu',
-      nicknameShenjiu: 'Shen Jiu',
+      nameYueqi: 'Crowley',
+      nicknameYueqi: 'Crowley',
+      nameShenjiu: 'Aziraphale',
+      nicknameShenjiu: 'Aziraphale',
 
       // Skin names
       skinDefault: 'Default Skin - (Artist) Hamster Salad',
@@ -447,7 +451,7 @@ const I18N = {
       skinSchoolAuArtist: 'M_Shang',
 
       // Tray menu
-      trayTitle: 'YueQi & ShenJiu Desktop Pet',
+      trayTitle: 'Crowley ✖️ Aziraphale Desktop Pet',
       trayShowStatusPanel: '📊 Show Status Panel',
       trayHideStatusPanel: '📊 Hide Status Panel',
       traySwitchSkin: '🎨 Switch Skin',
@@ -476,9 +480,9 @@ const I18N = {
       trayWindowAwarenessOn: '🪟 Enable Realm Awareness',
       trayWindowAwarenessOff: '🪟 Disable Realm Awareness',
       trayWindowAwarenessUnavailable: '🪟 Realm Awareness Unavailable',
-      trayPomodoroOpen: '🧘🏻‍♂️ Cang Qiong Seclusion',
-      trayPomodoroRunning: '🧘🏻‍♂️ In Seclusion',
-      trayPomodoroCompleted: '🧘🏻‍♂️ Seclusion Complete',
+      trayPomodoroOpen: '📖 Bookshop Study',
+      trayPomodoroRunning: '📖 Studying',
+      trayPomodoroCompleted: '📖 Study Complete',
       trayDevTools: '🛠️ Developer Tools',
       trayQuit: '❌ Quit',
       trayLanguage: '🌐 Language',
@@ -506,18 +510,18 @@ const I18N = {
       citySettingError: 'City not found, please check the name',
       citySettingSearching: 'Searching…',
       trayMinuteUnit: 'min',
-      pomodoroTitle: 'Cang Qiong Seclusion',
+      pomodoroTitle: 'A.Z. Fell & Co. Bookshop Study',
       pomodoroPin: 'Pin on top',
       pomodoroUnpin: 'Unpin',
       pomodoroClose: 'Close',
-      pomodoroPrompt: 'Seclusion Duration',
+      pomodoroPrompt: 'How long shall we focus, my dear?',
       pomodoroDecrease: 'Decrease',
       pomodoroIncrease: 'Increase',
-      pomodoroStart: 'Enter Seclusion',
-      pomodoroStop: 'Exit Early',
-      pomodoroCompleted: 'Seclusion Complete',
-      pomodoroCompleteMessage: 'Seclusion complete. Your cultivation has advanced significantly.',
-      pomodoroFinish: 'Exit Seclusion',
+      pomodoroStart: 'Begin Study',
+      pomodoroStop: 'End Early',
+      pomodoroCompleted: 'Focus Complete',
+      pomodoroCompleteMessage: 'Time flies when engrossed in a good book. Care for a cup of tea?',
+      pomodoroFinish: 'Done',
 
       // Update Dialogs
       updateErrTitle: 'Update Failed',
@@ -564,31 +568,31 @@ const I18N = {
       langJa: '日本語',
 
       // Dynamic bubbles (Context Menu actions)
-      bubbleFeedYueqi: '(Savoring…)',
-      bubbleFeedShenjiu: '…Acceptable.',
-      bubbleMeditateYueqi: 'Entering stillness…',
-      bubbleMeditateShenjiu: '(eyes closed, gathering Qi)',
-      bubblePetYueqi: '(smiles indulgently)',
-      bubblePetShenjiu: '…Mind your own business.',
-      bubbleRestYueqi: 'Taking a short break.',
-      bubbleRestShenjiu: '(feigns sleep)',
+      bubbleFeedYueqi: '(Munching away…)',
+      bubbleFeedShenjiu: '(Savors gracefully) ...Positively exquisite.',
+      bubbleMeditateYueqi: '(Glares with spray bottle) GROW BETTER! Hear me?!',
+      bubbleMeditateShenjiu: '(Opens a rare first edition) ...Irreplaceable prose.',
+      bubblePetYueqi: '(Scoffs, but secretly leans into the touch)',
+      bubblePetShenjiu: 'Oh, you are too kind, my dear.',
+      bubbleRestYueqi: '(Curled up on the sofa napping...)',
+      bubbleRestShenjiu: '(Dozing peacefully in the armchair)',
       bubbleRestTooHungry: 'Too hungry to rest…',
 
       // Return welcome
-      returnYueqi: (n) => `You were gone for ${n} shi-chen…`,
-      returnShenjiu: '...hmph, you\'re finally back.',
+      returnYueqi: (n) => `You were gone for ${n} hours. Angel was getting restless.`,
+      returnShenjiu: '...Oh, thank heavens, you\'re back!',
 
       // Time phase chatter
-      morningYueqi: 'Good morning.',
-      morningShenjiu: 'Hmph, you\'re up early.',
-      dayYueqi: 'The day is long. Do not overexert yourself.',
-      dayShenjiu: '...It is broad daylight. Stop wandering around.',
-      duskYueqi: 'It is dusk. Another day is ending.',
-      duskShenjiu: 'It\'s getting dark.',
-      eveningYueqi: 'Night has fallen, aren\'t you going to rest?',
-      eveningShenjiu: '...Don\'t bother me, go to sleep.',
-      nightYueqi: 'It is late. You should rest.',
-      nightShenjiu: '...Still awake? Do you want to drop dead?',
+      morningYueqi: 'Morning. Another splendid day for subtle temptations.',
+      morningShenjiu: 'Good morning! A lovely day for tea and a first edition.',
+      dayYueqi: 'Broad daylight. Nothing beats a blast in the Bentley.',
+      dayShenjiu: 'Afternoon light is perfect. A pot of Earl Grey and a crepe, perhaps?',
+      duskYueqi: 'Dusk already. Table for two at The Ritz?',
+      duskShenjiu: 'Sunset at last. Time for an aged Châteauneuf-du-Pape.',
+      eveningYueqi: 'Night falls over London. Humans are packing it in.',
+      eveningShenjiu: 'Evening chill. I should tend to the bookshop hearth.',
+      nightYueqi: 'Still awake? Don\'t tempt me to drag you to sleep.',
+      nightShenjiu: 'It is very late, my dear. Do take some rest.',
     },
     dialogues: {
       // 🚧 Placeholder — will be replaced after official translation wordlist
@@ -800,25 +804,27 @@ const I18N = {
   ja: {
     ui: {
       // 右クリックメニュー (右键菜单)
-      feed: '🍎 食事',    // 避开宠物感的“食べさせる”和祭祀感的“供物”，赠送灵果最符合修仙日常
-      meditate: '🧘🏻‍♂️ 打坐修行',    // 日文官方译本标准词汇，完美保留原汁原味
-      petYueqi: '🤚 小九の甘え',    // “甘え（Amaeru）”是日文同人圈表达受向攻撒娇、傲娇依赖的灵魂词
-      petShenjiu: '🤚 七哥の労わり',  // “労わり（Itawari）”指代带着怜惜与包容的安抚、顺毛，极度贴合七哥的性格
-      rest: '💤 休息',          // 仙侠文中最常用的休息表达
-      status: '📊 状態確認',      // 修仙者不看“状态”，看“修为（しゅうい）”
+      feed: '🥐 美味しい食事',
+      meditate: '✨ 奇跡を行う',
+      meditateYueqi: '🪴 観葉植物の世話',
+      meditateShenjiu: '📖 古書を読む',
+      petYueqi: '🤚 天使の微笑み',
+      petShenjiu: '🤚 悪魔の気遣い',
+      rest: '💤 休息',
+      status: '📊 状態確認',
 
       // 状態パネル
-      statusTitle: '状態',
-      statAffection: '好感度',
+      statusTitle: 'ステータス',
+      statAffection: '親愛度',
       statHunger: '満腹度',
-      statQi: '霊力',
-      statMood: '道心',
+      statQi: '奇跡の力',
+      statMood: '気分',
 
       // ペット名
-      nameYueqi: '岳清源',
-      nicknameYueqi: '岳七',
-      nameShenjiu: '沈清秋',
-      nicknameShenjiu: '沈九',
+      nameYueqi: 'クロウリー',
+      nicknameYueqi: 'クロウリー',
+      nameShenjiu: 'アジラフェル',
+      nicknameShenjiu: 'アジラフェル',
 
       // 装束名
       skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
@@ -837,7 +843,7 @@ const I18N = {
       skinSchoolAuArtist: 'M_Shang',
 
       // トレイメニュー
-      trayTitle: '岳清源×沈清秋 デスクペット',
+      trayTitle: 'クロウリー ✖️ アジラフェル デスクトップペット',
       trayShowStatusPanel: '📊 状態表示',
       trayHideStatusPanel: '📊 状態非表示',
       traySwitchSkin: '🎨 装束変更',      // “装束（しょうぞく）”完美平替现代外来语“スキン（Skin）皮肤”
@@ -866,9 +872,9 @@ const I18N = {
       trayWindowAwarenessOn: '🪟 境界に乗る（有効化）',
       trayWindowAwarenessOff: '🪟 境界に乗る（無効化）',
       trayWindowAwarenessUnavailable: '🪟 境界に乗る（未対応）',
-      trayPomodoroOpen: '🧘🏻‍♂️ 蒼穹静修',
-      trayPomodoroRunning: '🧘🏻‍♂️ 閉関中',
-      trayPomodoroCompleted: '🧘🏻‍♂️ 静修円満',
+      trayPomodoroOpen: '📖 古書店での読書',
+      trayPomodoroRunning: '📖 読書中',
+      trayPomodoroCompleted: '📖 読書完了',
       trayDevTools: '🛠️ 開発者ツール',
       trayQuit: '❌ 終了',          // “退室”比冷冰冰的“終了（结束）”更具角色互动的沉浸感
       trayLanguage: '🌐 言語設定',
@@ -896,18 +902,18 @@ const I18N = {
       citySettingError: '都市が見つかりません。名前を確認してください',
       citySettingSearching: '検索中…',
       trayMinuteUnit: '分',
-      pomodoroTitle: '蒼穹静修',
+      pomodoroTitle: 'A.Z.フェル古書店 読書タイム',
       pomodoroPin: '最前面に固定',
       pomodoroUnpin: '固定を解除',
       pomodoroClose: '閉じる',
-      pomodoroPrompt: '閉関期間',
+      pomodoroPrompt: 'どのくらい集中するかい、親愛なる友よ？',
       pomodoroDecrease: '減らす',
       pomodoroIncrease: '増やす',
-      pomodoroStart: '静修開始',
-      pomodoroStop: '早期出関',
-      pomodoroCompleted: '静修円満',
-      pomodoroCompleteMessage: '閉関終了。修行がまた一段と進みました。',
-      pomodoroFinish: '出関',
+      pomodoroStart: '集中を始める',
+      pomodoroStop: '途中で終える',
+      pomodoroCompleted: '集中完了',
+      pomodoroCompleteMessage: '読書に夢中になっていると時間はあっという間だね。紅茶でもいかが？',
+      pomodoroFinish: '完了',
 
       // 更新ダイアログ
       updateErrTitle: '更新失敗',
@@ -954,31 +960,31 @@ const I18N = {
       langJa: '日本語',
 
       // 動的気泡（右クリックアクション）
-      bubbleFeedYueqi: '（静かに味わう…）',
-      bubbleFeedShenjiu: '…まあ、悪くはない。',
-      bubbleMeditateYueqi: '入定…',
-      bubbleMeditateShenjiu: '（目を閉じ、気を凝らす）',
-      bubblePetYueqi: '（愛おしそうに微笑む）',
-      bubblePetShenjiu: '…余計なお世話だ。',
-      bubbleRestYueqi: 'しばし息を整える。',
-      bubbleRestShenjiu: '（まどろむふり）',
+      bubbleFeedYueqi: '（無造作に頬張る…）',
+      bubbleFeedShenjiu: '（優雅に味わう）…実に見事な味だ。',
+      bubbleMeditateYueqi: '（霧吹きを構えて威嚇する）もっと立派に育て！いいか！',
+      bubbleMeditateShenjiu: '（貴重な初版本を開く）…かけがえのない一節だ。',
+      bubblePetYueqi: '（フンと鼻を鳴らしつつ、密かに寄り添う）',
+      bubblePetShenjiu: 'おや、君は本当に優しいね、親愛なる友よ。',
+      bubbleRestYueqi: '（ソファで丸くなって眠る…）',
+      bubbleRestShenjiu: '（肘掛け椅子で安らかにまどろむ）',
       bubbleRestTooHungry: '空腹で休むに休めぬ…',
 
       // 帰還の挨拶
-      returnYueqi: (n) => `此処を離れてより、${n}時辰が経ったよ…`,
-      returnShenjiu: '…ふん、ようやく戻ってきたか。',
+      returnYueqi: (n) => `${n}時間も留守にするとはな。天使が待ちくたびれていたぞ。`,
+      returnShenjiu: '…ああ、神よ感謝します、戻ってきてくれたんだね！',
 
       // 時段の雑談
-      morningYueqi: 'おはようございます。',
-      morningShenjiu: 'ふん、起きるのが早いな。',
-      dayYueqi: 'まだ日は高い。あまり無理をしないように。',
-      dayShenjiu: '…真昼間から、うろちょろするな。',
-      duskYueqi: '夕暮れだ。また一日が終わるね。',
-      duskShenjiu: '日が暮れたな。',
-      eveningYueqi: '夜が更けた。まだ休まないのか。',
-      eveningShenjiu: '…煩わしい、さっさと寝ろ。',
-      nightYueqi: 'もうこんな時間だ。早く休むといい。',
-      nightShenjiu: '…まだ起きているのか？死ぬ気か。',
+      morningYueqi: 'おい、朝だぞ。今日も些細な悪事日和だな。',
+      morningShenjiu: 'おはよう！紅茶と古書を楽しむのに最高の朝だね。',
+      dayYueqi: '真っ昼間だな。ベントレーで飛ばすには悪くない。',
+      dayShenjiu: '午後の光が心地よいね。クレープとダージリンはいかが？',
+      duskYueqi: 'もう夕暮れか。リッツの予約はどうなってる？',
+      duskShenjiu: '日が暮れてきたね。上等なシャトーヌフ＝デュ＝パプを開けよう。',
+      eveningYueqi: 'ロンドンに夜が来たな。人間どもは引き上げる時間だ。',
+      eveningShenjiu: '夜風が冷えてきた。書店の暖炉に火を入れないとね。',
+      nightYueqi: 'まだ起きてるのか？寝かしつけてやろうか。',
+      nightShenjiu: 'もうこんな時間だ、親愛なる友よ。ゆっくりお休み。',
     },
     dialogues: {
       greet: {

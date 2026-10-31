@@ -25,7 +25,7 @@ test('dialogues init falls back without throwing when I18N is absent', () => {
   vm.runInContext(readSource('src/data/dialogues.js'), context);
   assert.doesNotThrow(() => vm.runInContext("initDialogues('en')", context));
   assert.ok(Array.isArray(context.window.DIALOGUES.greet.yueqi));
-  assert.equal(context.window.DIALOGUES.greet.yueqi[0], '小九，你也在这里。');
+  assert.equal(context.window.DIALOGUES.greet.yueqi[0], '天使，你也在这儿。');
   assert.ok(Array.isArray(context.window.DIALOGUES.weather_windy.yueqi));
   assert.ok(Array.isArray(context.window.DIALOGUES.weather_thunderstorm.shenjiu));
 });

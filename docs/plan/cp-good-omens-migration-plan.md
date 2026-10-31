@@ -121,10 +121,10 @@
 - [x] **Task 1.5**: 同步更新 `CHANGELOG.md` 并提交阶段原子 Commit。
 
 ### Phase 2: 角色基础配置与名称映射 (Role Identity & Config)
-- [ ] **Task 2.1**: 更新 `src/data/config.js` 中的 `PET_A` 与 `PET_B` 角色名、昵称与 Emoji。
-- [ ] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（以英文为基准编写，如克劳利「🪴 Tending Plants / 养植物」、亚茨拉斐尔「📖 Reading / 静心研读」、双人互动「✨ Miracle / 施展奇迹」并同步日文）。
-- [ ] **Task 2.3**: 更新 `src/data/dialogues.js` 中文基础兜底对白。
-- [ ] **Task 2.4**: 运行并更新 `test/config.test.js`、`test/i18n.test.js`、`test/i18nKeyCompleteness.test.js`。
+- [x] **Task 2.1**: 更新 `src/data/config.js` 中的 `PET_A` 与 `PET_B` 角色名、昵称与 Emoji。
+- [x] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（以英文为基准编写，如克劳利「🪴 Tending Plants / 养植物」、亚茨拉斐尔「📖 Reading / 静心研读」、双人互动「✨ Miracle / 施展奇迹」并同步日文）。
+- [x] **Task 2.3**: 更新 `src/data/dialogues.js` 中文基础兜底对白。
+- [x] **Task 2.4**: 运行并更新 `test/config.test.js`、`test/i18n.test.js`、`test/i18nKeyCompleteness.test.js`。
 
 ### Phase 3: 专属素材与皮肤管线接入 (Sprite Assets & Pipeline)
 - [ ] **Task 3.1**: 准备 Crowley 与 Aziraphale 的默认 256x256 WebP 单人立绘（`left.webp`, `right.webp`）。

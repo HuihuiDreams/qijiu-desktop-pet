@@ -223,13 +223,22 @@ class ContextMenu {
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
     if (petActionEl) {
       const key = pet.id === 'shenjiu' ? 'petShenjiu' : 'petYueqi';
-      petActionEl.textContent = window.t ? window.t(key) : (pet.id === 'shenjiu' ? '🤚 七哥关怀' : '🤚 小九撒娇');
+      petActionEl.textContent = window.t ? window.t(key) : (pet.id === 'shenjiu' ? '🤚 恶魔偏宠' : '🤚 天使关怀');
     }
 
     // 刷新其他带 data-i18n 属性的菜单项
     this.menuEl.querySelectorAll('[data-i18n]').forEach(el => {
       if (window.t) el.textContent = window.t(el.dataset.i18n);
     });
+
+    const meditateActionEl = this.menuEl.querySelector('.menu-item[data-action="meditate"]');
+    if (meditateActionEl) {
+      const key = pet.id === 'shenjiu' ? 'meditateShenjiu' : 'meditateYueqi';
+      const text = window.t ? window.t(key) : null;
+      if (text && text !== key) {
+        meditateActionEl.textContent = text;
+      }
+    }
 
     // 更新禁用状态与 ARIA 状态
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
@@ -316,8 +325,8 @@ class ContextMenu {
       case 'feed':
         if (this.nurtureSystem.feed(pet)) {
           const feedBubble = pet.id === 'yueqi'
-            ? t('bubbleFeedYueqi', '（享用中…）')
-            : t('bubbleFeedShenjiu', '…还行吧。');
+            ? t('bubbleFeedYueqi', '（大口咀嚼中…）')
+            : t('bubbleFeedShenjiu', '（优雅品尝）…美味至极。');
           if (pet._showBubble) pet._showBubble(feedBubble);
           if (pet._spawnEffect) pet._spawnEffect('🍎', 'feed');
         }
@@ -325,8 +334,8 @@ class ContextMenu {
       case 'meditate':
         if (this.nurtureSystem.meditate(pet)) {
           const meditateBubble = pet.id === 'yueqi'
-            ? t('bubbleMeditateYueqi', '入定…')
-            : t('bubbleMeditateShenjiu', '（闭目凝神）');
+            ? t('bubbleMeditateYueqi', '（拿着喷水壶严肃巡视）长快点！听到没有！')
+            : t('bubbleMeditateShenjiu', '（翻开泛黄的初版本）…真是无可替代的文字。');
           if (pet._showBubble) pet._showBubble(meditateBubble);
           if (pet._spawnEffect) pet._spawnEffect('✨', 'meditate');
         }
@@ -334,8 +343,8 @@ class ContextMenu {
       case 'pet':
         if (this.nurtureSystem.headPat(pet)) {
           const patBubble = pet.id === 'yueqi'
-            ? t('bubblePetYueqi', '（宠溺地笑）')
-            : t('bubblePetShenjiu', '…谁要你管。');
+            ? t('bubblePetYueqi', '（故作冷哼，却悄悄把头蹭过来）')
+            : t('bubblePetShenjiu', '哦，你真是太体贴了，亲爱的。');
           if (pet._showBubble) pet._showBubble(patBubble);
           if (pet._spawnEffect) pet._spawnEffect('💕', 'pet');
         }
@@ -343,8 +352,8 @@ class ContextMenu {
       case 'rest':
         if (this.nurtureSystem.rest(pet)) {
           const restBubble = pet.id === 'yueqi'
-            ? t('bubbleRestYueqi', '稍作休整。')
-            : t('bubbleRestShenjiu', '（假寐）');
+            ? t('bubbleRestYueqi', '（窝在沙发里补眠…）')
+            : t('bubbleRestShenjiu', '（靠在扶手椅上假寐）');
           if (pet._showBubble) pet._showBubble(restBubble);
           if (pet._spawnEffect) pet._spawnEffect('💤', 'rest');
         } else {

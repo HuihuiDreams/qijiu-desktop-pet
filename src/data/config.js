@@ -67,16 +67,16 @@ const CONFIG = {
     greet: { weight: 30, moodA: 1, moodB: 1, affection: 1, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 0 },
     shareFood: { weight: 20, moodA: 3, moodB: 3, affection: 2, hungerA: -5, hungerB: 10, qiA: 0, qiB: 0, minAffection: 0 },
     cultivate: { weight: 25, moodA: 5, moodB: 5, affection: 3, hungerA: 15, hungerB: 0, qiA: CULTIVATE_QI_GAIN, qiB: CULTIVATE_QI_GAIN, minAffection: 20 },
-    kiss: { weight: 15, moodA: 10, moodB: 10, affection: 4, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 70 },
+    kiss: { weight: 15, moodA: 10, moodB: 10, affection: 4, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 75 },
     hug: { weight: 10, moodA: 8, moodB: 8, affection: 5, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 50 },
   },
 
   // === 角色定义 (Pet Definitions) ===
   PET_A: {
     id: 'yueqi',
-    name: '岳清源',
-    nickname: '岳七',
-    emoji: '🗡️',
+    name: '克劳利',
+    nickname: 'Crowley',
+    emoji: '🕶️',
     image: 'pet-asset://skin/default/left.webp',
     defaultDirection: 'left',
     sprites: {
@@ -103,9 +103,9 @@ const CONFIG = {
   },
   PET_B: {
     id: 'shenjiu',
-    name: '沈清秋',
-    nickname: '沈九',
-    emoji: '🪭',
+    name: '亚茨拉斐尔',
+    nickname: 'Aziraphale',
+    emoji: '🪽',
     image: 'pet-asset://skin/default/right.webp',
     defaultDirection: 'right',
     sprites: {
