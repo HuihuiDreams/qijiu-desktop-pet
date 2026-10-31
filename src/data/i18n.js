@@ -44,17 +44,17 @@ const I18N = {
       nicknameShenjiu: 'Aziraphale',
 
       // 皮肤名
-      skinDefault: '默认皮肤·凉拌仓鼠',
+      skinDefault: '默认形象·Nano Banana',
       skinBirds: '鸟塑七九·凉拌仓鼠',
       skinAnimalEars: '猫兔七九·紫萤',
       skinSchoolAu: '校园七九·幕汤汤',
 
       // 皮肤选择器用（拆分）
-      skinDefaultLabel: '默认皮肤',
+      skinDefaultLabel: '经典英伦原皮',
       skinBirdsLabel: '鸟塑七九',
       skinAnimalEarsLabel: '猫兔七九',
       skinSchoolAuLabel: '校园七九',
-      skinDefaultArtist: '凉拌仓鼠',
+      skinDefaultArtist: 'Nano Banana',
       skinBirdsArtist: '凉拌仓鼠',
       skinAnimalEarsArtist: '紫萤',
       skinSchoolAuArtist: '幕汤汤',
@@ -435,17 +435,17 @@ const I18N = {
       nicknameShenjiu: 'Aziraphale',
 
       // Skin names
-      skinDefault: 'Default Skin - (Artist) Hamster Salad',
+      skinDefault: 'Default Outfit - (Artist) Nano Banana',
       skinBirds: 'Cute Birds - (Artist) Hamster Salad',
       skinAnimalEars: 'Cat & Bunny - (Artist) Violetfirefly',
       skinSchoolAu: 'School AU - (Artist) M_Shang',
 
       // Skin selector (split)
-      skinDefaultLabel: 'Default Skin',
+      skinDefaultLabel: 'Classic Ineffable Outfit',
       skinBirdsLabel: 'Cute Birds',
       skinAnimalEarsLabel: 'Cat & Bunny',
       skinSchoolAuLabel: 'School AU',
-      skinDefaultArtist: 'Hamster Salad',
+      skinDefaultArtist: 'Nano Banana',
       skinBirdsArtist: 'Hamster Salad',
       skinAnimalEarsArtist: 'Violetfirefly',
       skinSchoolAuArtist: 'M_Shang',
@@ -827,7 +827,7 @@ const I18N = {
       nicknameShenjiu: 'アジラフェル',
 
       // 装束名
-      skinDefault: '既定装束・(絵師) Hamster Salad',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
+      skinDefault: '既定装束・(絵師) Nano Banana',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
       skinBirds: '小鳥七九・(絵師) Hamster Salad',
       skinAnimalEars: '猫兎七九・(絵師) Violetfirefly',
       skinSchoolAu: '学園七九・(絵師) M_Shang',
@@ -837,7 +837,7 @@ const I18N = {
       skinBirdsLabel: '小鳥七九',
       skinAnimalEarsLabel: '猫兎七九',
       skinSchoolAuLabel: '学園七九',
-      skinDefaultArtist: 'Hamster Salad',
+      skinDefaultArtist: 'Nano Banana',
       skinBirdsArtist: 'Hamster Salad',
       skinAnimalEarsArtist: 'Violetfirefly',
       skinSchoolAuArtist: 'M_Shang',

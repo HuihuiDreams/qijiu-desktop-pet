@@ -127,11 +127,11 @@
 - [x] **Task 2.4**: 运行并更新 `test/config.test.js`、`test/i18n.test.js`、`test/i18nKeyCompleteness.test.js`。
 
 ### Phase 3: 专属素材与皮肤管线接入 (Sprite Assets & Pipeline)
-- [ ] **Task 3.1**: 准备 Crowley 与 Aziraphale 的默认 256x256 WebP 单人立绘（`left.webp`, `right.webp`）。
-- [ ] **Task 3.2**: 准备双方各 4 帧走动循环图（`yueqi/walk_left*.webp`, `shenjiu/walk_right*.webp`）。
-- [ ] **Task 3.3**: 准备单人状态图（饥饿、睡眠、进食、被摸、克劳利养植物 `left_cultivate.webp`、亚茨拉斐尔研读 `right_cultivate.webp`）与双人互动图（分食甜品、拥抱、亲吻、施展奇迹 `cultivate.webp`、过饱）。
-- [ ] **Task 3.4**: 运行 `npm run protect:assets` 生成受保护资源，更新 `skinGallery.js` 预览候选及画师署名。
-- [ ] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
+- [x] **Task 3.1**: 准备 Crowley 与 Aziraphale 的默认 256x256 WebP 单人立绘（`left.webp`, `right.webp`）。
+- [x] **Task 3.2**: 准备双方各 4 帧走动循环图（`yueqi/walk_left*.webp`, `shenjiu/walk_right*.webp`）。
+- [x] **Task 3.3**: 准备单人状态图（饥饿、睡眠、进食、被摸、克劳利养植物 `left_cultivate.webp`、亚茨拉斐尔研读 `right_cultivate.webp`）与双人互动图（分食甜品、拥抱、亲吻、施展奇迹 `cultivate.webp`、过饱）。
+- [x] **Task 3.4**: 运行 `npm run protect:assets` 生成受保护资源，更新 `skinGallery.js` 预览候选及画师署名。
+- [x] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
 
 ### Phase 4: 专属对白与互动逻辑适配 (Dialogues & Interactions)
 - [ ] **Task 4.1**: 以原著小说及影视剧纯正英式台词为基准（English Ground Truth），撰写专属时段问候、发呆、低状态、久坐提醒，并精准本地化为中文与日文。

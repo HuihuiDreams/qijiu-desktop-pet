@@ -84,7 +84,7 @@ Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 
 ========================================
 
 The app currently includes four built-in skins:
-- Default Skin - (Artist) Hamster Salad
+- Default Outfit - (Artist) Nano Banana
 - Cute Birds - (Artist) Hamster Salad
 - Cat & Bunny - (Artist) Violetfirefly
 - School AU - (Artist) M_Shang
