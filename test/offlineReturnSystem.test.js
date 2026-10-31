@@ -101,7 +101,7 @@ test('handleOfflineReturn shows return dialogues once at least one shichen (2h) 
     scheduled.forEach((s) => s.cb());
 
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了2个小时…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
   });
@@ -123,7 +123,7 @@ test('handleOfflineReturn uses I18N_UI return messages when available, including
     scheduled.forEach((s) => s.cb());
 
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: 'custom-3-shichens', duration: 4000 },
+      { pet: 'yueqi', text: 'custom-6-shichens', duration: 4000 },
       { pet: 'shenjiu', text: 'custom-shenjiu-line', duration: 4000 },
     ]);
   });
@@ -144,7 +144,7 @@ test('handleOfflineReturn buffers bubbles when screensaver is active', () => {
     assert.equal(scheduled.length, 0); // No timeouts scheduled
     assert.deepEqual(dialogBubbleCalls, []); // No bubbles shown immediately
     assert.ok(system.pendingReturnBubble); // Bubble buffered
-    assert.equal(system.pendingReturnBubble.returnMsgYueqi, '你走了1个时辰…');
+    assert.equal(system.pendingReturnBubble.returnMsgYueqi, '你走了2个小时…');
     assert.equal(system.pendingReturnBubble.returnMsgShenjiu, '…哼，终于回来了。');
   });
 });
@@ -175,7 +175,7 @@ test('flushPendingReturnBubble shows buffered bubbles', () => {
     scheduled.forEach((s) => s.cb());
 
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了2个小时…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
     assert.equal(system.pendingReturnBubble, null); // 两条气泡都触发后释放
@@ -231,7 +231,7 @@ test('handleOfflineReturn re-buffers when the screensaver becomes active before 
     reScheduled[1].cb();
 
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了2个小时…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
     assert.equal(system.pendingReturnBubble, null);
@@ -260,7 +260,7 @@ test('flushPendingReturnBubble ignores the original callbacks after a short scre
     scheduled.slice(2).forEach((timer) => timer.cb());
 
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了2个小时…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
   });
@@ -434,7 +434,7 @@ test('flushPendingReturnBubble clears residual caught bubbles before scheduling 
     assert.equal(scheduled.length, 2);
     scheduled.forEach((s) => s.cb());
     assert.deepEqual(dialogBubbleCalls, [
-      { pet: 'yueqi', text: '你走了1个时辰…', duration: 4000 },
+      { pet: 'yueqi', text: '你走了2个小时…', duration: 4000 },
       { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
     ]);
   });

@@ -3,7 +3,7 @@ const { getStore } = require('./StoreManager');
 
 const AUTO_LAUNCH_KEY = 'autoLaunch';
 const DEFAULT_AUTO_LAUNCH = true;
-const LOGIN_ITEM_NAME = '七九爱宠';
+const LOGIN_ITEM_NAME = 'CA爱宠';
 
 let autoLaunchEnabled = false;
 

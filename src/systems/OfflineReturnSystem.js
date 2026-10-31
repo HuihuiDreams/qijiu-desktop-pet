@@ -69,19 +69,20 @@ class OfflineReturnSystem {
     this.nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
     this.nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
 
-    // 用“距离用户上次可见”的真实时长计算时辰，而不是本次碎片化的 offlineMs。
+    // 用“距离用户上次可见”的真实时长计算小时，而不是本次碎片化的 offlineMs。
     // 这避免了 macOS Dark Wake 将完整睡眠切割成碎片导致对白少报。
     const realAwayMs = this.now() - this.lastVisibleTime;
     const shichensAway = Math.floor(realAwayMs / 7200000); // 7200000ms = 2小时 = 1时辰
+    const hoursAway = shichensAway * 2; // 改为小时后按 2n 计算
     const isUserPresent = this.isDocumentVisible();
 
     if (shichensAway >= 1 && isUserPresent) {
       const i18nUi = this.getI18nUi();
       const returnMsgYueqi = i18nUi?.returnYueqi
         ? (typeof i18nUi.returnYueqi === 'function'
-          ? i18nUi.returnYueqi(shichensAway)
+          ? i18nUi.returnYueqi(hoursAway)
           : i18nUi.returnYueqi)
-        : `你走了${shichensAway}个时辰…`;
+        : `你走了${hoursAway}个小时…`;
       const returnMsgShenjiu = i18nUi?.returnShenjiu ?? '…哼，终于回来了。';
 
       const pending = {

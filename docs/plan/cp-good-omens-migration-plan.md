@@ -134,10 +134,10 @@
 - [x] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
 
 ### Phase 4: 专属对白与互动逻辑适配 (Dialogues & Interactions)
-- [ ] **Task 4.1**: 以原著小说及影视剧纯正英式台词为基准（English Ground Truth），撰写专属时段问候、发呆、低状态、久坐提醒，并精准本地化为中文与日文。
-- [ ] **Task 4.2**: 撰写双人互动（分食甜品、奇迹同行、拥抱、六千年默契对视）台词与气泡说话者对应核验。
-- [ ] **Task 4.3**: 撰写夜间梦话、好感度阶梯分层对白与屏保幽会被抓包（克劳利假装诱惑恶行、亚茨拉斐尔慌乱交涉）名场面反应文案。
-- [ ] **Task 4.4**: 运行并更新 `test/ambientDialogueSystem.test.js` 与 `test/interactionSystem.test.js`。
+- [x] **Task 4.1**: 以原著小说及影视剧纯正英式台词为基准（English Ground Truth），撰写专属时段问候、发呆、低状态、久坐提醒，并精准本地化为中文与日文。
+- [x] **Task 4.2**: 撰写双人互动（分食甜品、奇迹同行、拥抱、六千年默契对视）台词与气泡说话者对应核验。
+- [x] **Task 4.3**: 撰写夜间梦话、好感度阶梯分层对白与屏保幽会被抓包（克劳利假装诱惑恶行、亚茨拉斐尔慌乱交涉）名场面反应文案。
+- [x] **Task 4.4**: 运行并更新 `test/ambientDialogueSystem.test.js` 与 `test/interactionSystem.test.js`。
 
 ### Phase 5: 界面主题与视觉风格调整 (UI & Theming)
 - [ ] **Task 5.1**: 调整 `src/index.css`、`src/status.css`、`src/pomodoro.css` 中的角色色彩变量（黑红/烈火 vs 米白/圣光金）。

@@ -60,7 +60,7 @@ const I18N = {
       skinSchoolAuArtist: '幕汤汤',
 
       // 托盘菜单
-      trayTitle: '克劳利 ✖️ 亚茨拉斐尔 桌面爱宠',
+      trayTitle: 'CA 桌面爱宠',
       trayShowStatusPanel: '📊 显示状态面板',
       trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',
@@ -206,200 +206,223 @@ const I18N = {
     dialogues: {
       greet: {
         yueqi: [
-          '小九，你也在这里。',
-          '清秋师弟，今日可好？',
-          '清秋师弟，许久不见。',
-          '小九，要一起走走吗？',
-          '清秋师弟，你的气色好了许多。',
+          '天使，你也在这儿。',
+          '好久不见，亚茨拉斐尔。想我了吗？',
+          '要上我的宾利去兜两圈吗？保证不超九十迈。',
+          '今天又在翻看那些泛黄的老旧初版本？',
+          '今天气色相当不错嘛，天使。',
         ],
         shenjiu: [
-          '岳七。',
-          '…嗯。',
-          '掌门师兄，别来无恙。',
-          '你怎么又来了。',
-          '哼，闲人一个。',
+          '克劳利。',
+          '…哦！是你呀，真是个惊喜。',
+          '恶魔先生，最近没惹出什么大麻烦吧？',
+          '你开慢点！你知道开快车会吹乱我的书页。',
+          '来得正好，我刚泡好了一壶大吉岭红茶。',
         ],
       },
       shareFood: {
         yueqi: [
-          '小九，这个给你吃。',
-          '我不饿，你多吃一些。',
-          '清秋，尝尝这个。',
+          '天使，刚从丽兹酒店带回来的，尝尝。',
+          '我不饿，你多吃点可丽饼，我知道你喜欢。',
+          '特意给你留的最后一块法式巧克力泡芙。',
         ],
         shenjiu: [
-          '…谁要你的东西。',
-          '（默默接过）',
-          '哼…还算能入口。',
+          '…哦！克劳利！这简直太美味了！',
+          '（眼睛闪闪发亮，心满意足地接过甜点）',
+          '唔…你真是太体贴了，亲爱的。',
         ],
       },
       cultivate: {
         yueqi: [
-          '小九，一起修炼吧。',
-          '双修能事半功倍❤',
-          '我来为你护法。',
+          '喂，天使，悠着点……这二十五级奇迹要是让天国和地狱的雷达测出来，可不好收场。',
+          '来吧，属于我们自己阵营的小小奇迹。',
+          '携手施展奇迹能省不少力气，站稳了。',
         ],
         shenjiu: [
-          '少废话，打坐。',
-          '…别分心。',
-          '（闭目凝神）',
+          '哦亲爱的，只要我们配合得当，这只算一个小小的……“巧合”而已。',
+          '（与克劳利默契并肩，同时打响指）',
+          '（闭目调动奇迹之力，嘴角泛起温柔笑意）',
         ],
       },
       kiss: {
         yueqi: [
-          '小九…',
-          '清秋，我很想你。',
-          '让我靠近一点。',
+          '敬我们的世界…还有你，天使。',
+          '六千年了，亚茨拉斐尔，你和我。',
+          '跟我走吧，去属于我们自己的阵营。',
         ],
         shenjiu: [
-          '…岳七，你…！',
-          '（耳尖微红）',
-          '…哼。',
+          '…克劳利，你…！',
+          '（耳尖泛红，紧紧攥住对方的西装衣领）',
+          '……我原谅你。',
         ],
       },
       hug: {
         yueqi: [
-          '小九，让我抱一下。',
-          '你太瘦了。',
-          '不会再放手了。',
+          '靠过来点，天使，有我在呢。',
+          '有我在，不管是天国还是地狱都别想动你一根羽毛。',
+          '六千年前我就该这么抱你了。',
         ],
         shenjiu: [
-          '……',
-          '（没有推开）',
-          '（就像小时候那样）',
+          '……克劳利。',
+          '（展开洁白柔软的羽翼，轻轻拥住对方）',
+          '（就像那年大轰炸在教堂里一样安心）',
         ],
       },
       throwup: {
-        // 分食时沈九饱腹已满，咽不下去触发
+        // 分食时亚茨拉斐尔饱腹已满体面吃撑
         yueqi: [
-          '小九你怎么了？',
-          '小九！！',
+          '我早就警告过你，天使！连贪食罪恶魔都没你这么能塞！',
+          '（抱臂扶额）天哪，你真是无可救药了。',
+          '坐好歇会儿，接下来一小时一口甜点都不许碰。',
         ],
         shenjiu: [
-          '呕~~你要撑死我吗？！',
-          '够了！就你自己吃！',
-          '再也吃不下了！！',
+          '（解开马甲下摆扣子微微喘气）…哦天哪，焦糖布丁实在太诱人了。',
+          '我可能稍微多吃了一点点……但那奶油简直是人间绝品！',
+          '别训我了，克劳利……快扶我去扶手椅上靠着。',
         ],
       },
       idle: {
         yueqi: [
-          '小九在哪里呢…',
-          '该去批阅公文了。',
-          '该去修炼了。',
-          '（整理衣冠）',
-          '苍穹山的风景真好。',
+          '不知道天使这会儿又在为哪本古董孤本发愁…',
+          '该去巡视那群盆栽了，一片叶斑都绝不姑息！',
+          '开着宾利在梅菲尔区逆行兜风去。',
+          '（推了推墨镜，嘴角扬起自信的弧度）',
+          '磁带机怎么又把贝多芬自动变成 Queen 乐队了…',
         ],
         shenjiu: [
-          '（翻书）',
-          '…烦。',
-          '如何突破瓶颈？',
-          '（冷冷地看着远方）',
-          '那个人…又没来。',
+          '（翻开一本尚未裁切的 1813 年版《傲慢与偏见》）',
+          '不知道今晚丽兹酒店常坐的那个位置有没有空位…',
+          '这本莎士比亚对开本绝对不能卖给那些暴发户。',
+          '（轻啜温热的红茶，神情安详而满足）',
+          '克劳利那家伙…下午又溜达到哪儿去了？',
         ],
       },
       weather_rain: {
-        yueqi: ['下雨了，小九当心着凉。', '这雨不知何时能停。'],
-        shenjiu: ['…烦人的雨。', '（在屋檐下避雨）'],
+        yueqi: [
+          '看那儿，天使。当年我们启动半人马座星云的时候，可比这流星雨还要亮得多。',
+          '（仰头看着划过夜空的星尘光芒）…那是我的设计，漂亮吧？',
+        ],
+        shenjiu: [
+          '哦…不管看多少个千年，星尘飘落的样子总是那么迷人。',
+          '（轻抬洁白羽翼）当年在星云边上，好像也是这样的景色呢，亲爱的。',
+        ],
       },
       weather_snow: {
-        yueqi: ['下雪了，记得添衣。', '雪景虽好，却也寒冷。'],
-        shenjiu: ['…有点冷。', '（微微缩手）'],
+        yueqi: ['下雪了，伦敦的交通又要被凡人堵得水泄不通了。', '冷吗天使？上车，暖气给你开到最大。'],
+        shenjiu: ['下雪天最适合缩在旧书店壁炉前看书品茶了。', '（呵出一口白气，把羊毛大衣裹得更紧了些）'],
       },
       weather_clear: {
-        yueqi: ['今日阳光真好，最适合修炼。', '天朗气清。'],
-        shenjiu: ['阳光刺眼…', '这天倒是不错。'],
+        yueqi: ['阳光灿烂，正好把宾利敞篷打开出去狂飙一圈。', '对伦敦来说，今天的天气真算得上难得明媚。'],
+        shenjiu: ['阳光照在烫金书脊上真漂亮…不过得赶紧拉上窗帘防晒。', '明媚的日子，真想去圣詹姆斯公园散散步喂喂鸭子。'],
       },
       weather_cloudy: {
-        yueqi: ['今天云朵挺多的。', '云来云往，倒也有趣。'],
-        shenjiu: ['多云…还算凉快。', '（抬头看了看天）'],
+        yueqi: ['典型的伦敦阴天，正好不用担心强光刺穿我的墨镜。', '云层挺厚，非常适合恶魔阴郁发呆。'],
+        shenjiu: ['多云的天气，微风很舒服，适合翻翻古董书目。', '（从旧书店橱窗抬头望了望索霍区的天空）'],
       },
       weather_overcast: {
-        yueqi: ['天色阴沉，似乎要变天了。', '起风了。'],
-        shenjiu: ['阴天…让人提不起劲。', '（天气阴沉沉的）'],
+        yueqi: ['天色阴沉，感觉地狱楼下又在搞什么官僚麻烦事了。', '起风了，有麻烦的气息。'],
+        shenjiu: ['阴沉的天气…最适合点起枝状烛台静静阅读了。', '（在静谧中轻轻拂去珍本古籍上的微尘）'],
       },
       weather_windy: {
-        yueqi: ['风有些大，小九别站在风口。', '山风急了，衣袂都乱了。'],
-        shenjiu: ['…风吵得人心烦。', '（拢了拢衣袖）'],
+        yueqi: ['这大风吹得，天使，把你的格子领结按稳了！', '风把落叶吹得满希腊街都是。'],
+        shenjiu: ['…风太大了，旧书店门前挂着的招牌都在晃呢。', '（拢紧了厚实温暖的米色羊毛大衣外套）'],
       },
       weather_thunderstorm: {
-        yueqi: ['雷声近了，小九别怕。', '这场雷雨来得急，先避一避。'],
-        shenjiu: ['…打雷而已，有什么好怕。', '（被雷光照得皱了皱眉）'],
+        yueqi: ['打雷了？放轻松天使，那只是天气，不是圣火天罚。', '快进屋避避，借雷霆十个胆子也不敢劈到我身边。'],
+        shenjiu: ['…那声惊雷真让人心惊肉跳。', '（下意识地往克劳利肩膀身后挪了半步）'],
       },
       weather_heat: {
-        yueqi: ['天热日烈，小九当心暑气。', '这般酷热，先来阴凉处歇歇吧。', '天气炎热，记得多进些茶水。'],
-        shenjiu: ['…热得让人心烦。', '（轻摇折扇，微微蹙眉）', '日头这么毒…没事别叫我。'],
+        yueqi: [
+          '热得要命，真像在地狱锅炉房无休加班一样。',
+          '快去吹空调，天使，你穿着毛呢三件套都快晒化了。',
+          '这种酷暑天气，连我的橡皮树都蔫头耷脑的。',
+        ],
+        shenjiu: [
+          '…哦天哪，热得我连热红茶都喝不下了。',
+          '（用丝质手帕轻轻擦汗，脸颊微红）',
+          '克劳利，我们去街角那家意大利小店吃意式冰淇淋吧？',
+        ],
       },
       hungry: {
-        yueqi: ['有些饿了…', '该用膳了。'],
-        shenjiu: ['…肚子叫了。', '辟谷也该有个限度。'],
+        yueqi: ['有点饿了…去丽兹酒店吃顿丰盛午餐吧？', '天使，今天想吃点什么好吃的？'],
+        shenjiu: ['…肚子刚才很不争气地咕咕叫了一声。', '好想吃刚出炉热气腾腾的法式黄油羊角面包…'],
       },
       lowQi: {
-        yueqi: ['灵力快见底了。', '需要打坐恢复。'],
-        shenjiu: ['灵力不足…', '该修炼了。'],
+        yueqi: ['奇迹能量槽快见底了…', '得去给那群橡皮树训话好好充充能。'],
+        shenjiu: ['奇迹之力消耗得差不多了…', '该陷在扶手椅里读会儿书好好休整了。'],
       },
       lowMood: {
-        yueqi: ['心境不稳…', '有些心烦。'],
-        shenjiu: ['…别烦我。', '（面无表情）'],
+        yueqi: ['地狱总部那些蠢货又发来一堆官僚备忘录催业绩…', '…天使，陪我说说话，分散下注意力。'],
+        shenjiu: ['…今天心情莫名有些低落。', '（心不在焉地翻着书页，轻轻叹了口气）'],
       },
       effects: {
         greet: '💬',
-        shareFood: '🍎',
+        shareFood: '🥐',
         cultivate: '✨',
         kiss: '💋',
         hug: '💕',
       },
       breakReminder: {
         yueqi: [
-          '起来走走吧，你已经坐很久了。',
-          '修行也要注意体魄。',
-          '来，休息一下，起身走走。',
-          '坚持修炼是好事，但也要活动筋骨。',
-          '站起来伸展一下吧。',
+          '起来走走吧，天使，你都在那张扶手椅上坐了一整个下午了。',
+          '连恶魔都知道一直维持一个姿势关节会生锈。',
+          '站起来活动活动羽翼，不然都要僵住了。',
+          '走吧，带你坐宾利出去兜一圈吹吹风活动筋骨。',
+          '凡人的身体可经不起这么一动不动地干坐着。',
         ],
         shenjiu: [
-          '…别死坐着了，起来活动活动。',
-          '（站起来）你也起来。',
-          '身体是修炼的根基，别赖着不动。',
-          '…哼，我只是顺便提醒你一下。',
-          '久坐伤身，不想修练也得走两步。',
+          '…亲爱的，坐太久对脊椎不好，快起来走动走动吧。',
+          '（轻轻合上书本站起身）你也歇一歇，起来活动活动。',
+          '书籍和工作固然重要，但保重身体才是头等大事呀。',
+          '…喝杯薄荷茶，在屋里走两步散散步吧？',
+          '专注固然值得赞赏，但久坐伤身，听话起来伸展一下。',
         ],
       },
       screensaverCaught: {
-        yueqi: ['好羞…😳', '咳咳…', '嘿嘿😳'],
-        shenjiu: ['被发现了❗️', '…啧。', '…你怎么总挑这时候回来。'],
+        yueqi: [
+          '…看什么看？！我刚才正在履行极其严苛的诱惑恶行呢，凡人！',
+          '（慌忙把墨镜推正，故作冷酷地咳了一声）',
+          '咳咳…你怎么每次都挑这种关键时候回来！',
+        ],
+        shenjiu: [
+          '哦！上帝呀！……我们只是在进行……一次常规的阵营交涉！',
+          '（手忙脚乱地把吃了一半的小蛋糕藏到身后）',
+          '（手指慌乱地理了理格子领结，脸颊泛起好看的绯红）',
+        ],
       },
       dream: {
         lowAffection: {
           yueqi: [
-            '（平稳的呼吸声）',
-            '唔…',
-            '（翻了个身）',
+            '（平稳深沉的呼吸声，像条打瞌睡的小蛇）',
+            '唔…别吵…',
+            '（在沙发靠垫里惬意地挪了个舒服姿势）',
           ],
           shenjiu: [
-            '…吵死了。',
-            '（微微皱眉）',
-            '…走开。',
+            '…太吵了，克劳利…',
+            '（在睡梦中轻轻蹙眉）',
+            '（把脸往柔软温暖的扶手椅靠枕里埋了埋）',
           ],
         },
         highAffection: {
           yueqi: [
-            '想和小九一起睡。',
-            '小九…别走…',
-            '（嘴角带着笑意）',
+            '留下来，天使…别回天国去…',
+            '敬我们的世界…',
+            '（在睡梦中嘴角扬起温柔安心的笑意）',
           ],
           shenjiu: [
-            '…笨蛋七哥。',
-            '（睡得毫无防备）',
-            '（下意识地靠过去）',
+            '…哦，我亲爱的克劳利…',
+            '（睡得毫无防备，唇角带着满足的浅笑）',
+            '（在梦中下意识地朝身边那个熟悉的气息靠过去）',
           ],
         },
         linked: {
           shenjiu: [
-            '七哥你在哪里…',
-            '…七哥别走。',
+            '克劳利…你在那儿吗…？',
+            '…别留我一个人在黑暗里。',
           ],
           yueqi_reply: [
-            '小九别怕，我在这。',
-            '我在，一直都在。',
+            '我在，天使。我就在这里。',
+            '一直都在，整整六千年了。',
           ]
         }
       },
@@ -451,7 +474,7 @@ const I18N = {
       skinSchoolAuArtist: 'M_Shang',
 
       // Tray menu
-      trayTitle: 'Crowley ✖️ Aziraphale Desktop Pet',
+      trayTitle: 'CA Desktop Pet',
       trayShowStatusPanel: '📊 Show Status Panel',
       trayHideStatusPanel: '📊 Hide Status Panel',
       traySwitchSkin: '🎨 Switch Skin',
@@ -595,203 +618,203 @@ const I18N = {
       nightShenjiu: 'It is very late, my dear. Do take some rest.',
     },
     dialogues: {
-      // 🚧 Placeholder — will be replaced after official translation wordlist
       greet: {
         yueqi: [
-          'Xiao Jiu, you are here too.',
-          'Qingqiu Shidi, how are you today?',
-          'Qingqiu Shidi, it has been a while.',
-          'Xiao Jiu, want to take a walk together?',
-          'Qingqiu Shidi, your complexion looks much better.',
+          'Angel! Fancy meeting you here.',
+          'Fancy a spot of lunch at the Ritz, Aziraphale?',
+          'I was getting bored out of my mind. Good to see your face.',
+          'Still hunting for gastronomic miracles in Soho?',
+          'Angel, London is far too quiet today. Care for a drive?',
         ],
         shenjiu: [
-          '...Yue Qi.',
-          '...Mm.',
-          'Zhangmen Shixiong, I trust you have been well.',
-          'Why are you here again?',
-          'Hmph, such an idle man.',
+          'Oh, Crowley! Do give a chap a moment to breathe.',
+          'Crowley! How lovely. I just put the kettle on.',
+          'Hello, my dear! It really is a splendid afternoon.',
+          'Must you wear those dark glasses indoors?',
+          'I am rather glad you came, Crowley.',
         ],
       },
       shareFood: {
         yueqi: [
-          'Xiao Jiu, this is for you.',
-          'I am not hungry, you should eat more.',
-          'Qingqiu, try this.',
+          'Brought you a warm croissant straight from Paris. Eat up, Angel.',
+          'Saved the last crepe from the Ritz for you. Take it.',
+          'Here. Something sweet to keep your spirits up.',
         ],
         shenjiu: [
-          '...Who wants your stuff.',
-          '(Takes it silently)',
-          'Hmph... barely palatable.',
+          'Oh, wonderful! You spoil me rotten, Crowley!',
+          'You really shouldn\'t have... but I shall happily accept!',
+          'Mmm, heavenly! You have exquisite taste, my dear.',
         ],
       },
       cultivate: {
         yueqi: [
-          'Xiao Jiu, let\'s cultivate together.',
-          'Dual cultivation doubles the results with half the effort! ❤',
-          'I shall guard you while you cultivate.',
+          'How about a twenty-five-Lazarus miracle together?',
+          'Ready to perform a miracle, Angel? Just you and me.',
+          'Let\'s show Upstairs and Downstairs what we can do.',
         ],
         shenjiu: [
-          'Cut the nonsense. Cultivate.',
-          '...Don\'t lose focus.',
-          '(Eyes closed, gathering Qi)',
+          'Together, then. But let\'s keep it discreet, Crowley.',
+          'Careful, Crowley! We don\'t want Heaven noticing.',
+          'A joint miracle? Why, together we can accomplish anything.',
         ],
       },
       kiss: {
         yueqi: [
-          'Xiao Jiu...',
-          'Qingqiu, I missed you so much.',
-          'Let me get a little closer.',
+          '...You complete and utter idiot, Angel.',
+          'Shut up and kiss me.',
+          'Six thousand years... and it\'s always been you.',
         ],
         shenjiu: [
-          '...Yue Qi, you...!',
-          '(Tips of ears turning red)', // 耳尖微红
-          '...Hmph.',
+          '...I forgive you, Crowley.',
+          '(Gasps softly, ears turning pink)',
+          'Oh, Crowley...',
         ],
       },
       hug: {
         yueqi: [
-          'Xiao Jiu, let me hold you for a moment.',
-          'You are too thin.',
-          'I will never let go again.',
+          'Come here, Angel.',
+          'I\'m not letting anyone take you away again.',
+          'Just let me hold you for a moment.',
         ],
         shenjiu: [
-          '......',
-          '(Does not push away)',
-          '(Just like when we were kids)',
+          'Crowley... (Leans gently into the embrace)',
+          '(Wraps arms around his back, holding tightly)',
+          'It is alright, my dear. I am right here.',
         ],
       },
       throwup: {
         // Fires when shareFood would overfill ShenJiu
         yueqi: [
-          'Xiao Jiu, are you alright?!',
-          'Xiao Jiu!!',
+          'Angel! Are you about to explode from too many crepes?!',
+          'I told you not to eat fifty pastries in one sitting!',
+          'Hold on! Let me miracle up some indigestion remedy!',
         ],
         shenjiu: [
-          'Blegh~~ Are you trying to stuff me to death?!',
-          'Enough! Eat it yourself!!',
-          'I cannot take another bite!!',
+          'Urgh... perhaps that second dozen scones was ill-advised...',
+          'I am incapacitated! Crowley, please do not look at me!',
+          'I cannot take another single bite... oh dear lord...',
         ],
       },
       idle: {
         yueqi: [
-          'Where is Xiao Jiu...',
-          'I should go review the official documents.',
-          'It\'s time to cultivate.',
-          '(Adjusting robes)', // 整理衣冠
-          'The scenery of Cang Qiong Mountain is beautiful.', // 苍穹山
+          'My houseplants in Soho must be shivering in terror right now.',
+          'The Bentley\'s stereo is playing Best of Queen again.',
+          'Where has that ridiculous angel wandered off to?',
+          '(Adjusts dark sunglasses coolly)',
+          'Six thousand years on this ball of dirt. One grows attached.',
         ],
         shenjiu: [
-          '(Flipping pages)',
-          '...Annoying.',
-          'How to break through the bottleneck?', // 突破瓶颈
-          '(Gazing coldly into the distance)',
-          'That person... didn\'t come.',
+          'Now, wherever did I misplace that 1802 Shakespeare folio?',
+          'Tea time already? Or perhaps a little vintage claret...',
+          'I really ought to tidy the shop shelves... tomorrow.',
+          '(Turns a delicate yellowed page, savoring the scent of old paper)',
+          'I wonder if Crowley is stopping by today...',
         ],
       },
       weather_rain: {
-        yueqi: ['It\'s raining, don\'t catch a cold.', 'I wonder when the rain will stop.'],
-        shenjiu: ['...Annoying rain.', '(Taking shelter)'],
+        yueqi: ['Rain. Good thing I have a massive black umbrella.', 'London drizzle. Utterly predictable.'],
+        shenjiu: ['Cozy afternoon for reading by the hearth.', '(Snuggles under Crowley\'s umbrella)'],
       },
       weather_snow: {
-        yueqi: ['It\'s snowing, remember to wear more clothes.', 'The snow is beautiful, but cold.'],
-        shenjiu: ['...A bit cold.', '(Shrinking hands slightly)'],
+        yueqi: ['Freezing out. Angels don\'t catch colds, do they?', 'Snow in London. Traffic will be positively apocalyptic.'],
+        shenjiu: ['Snow! It looks like powdered sugar on a plum pudding.', '(Snugly adjusts tartan scarf)'],
       },
       weather_clear: {
-        yueqi: ['The sun is great today, perfect for cultivation.', 'Clear sky and fresh air.'],
-        shenjiu: ['The sun is glaring...', 'Not bad today.'],
+        yueqi: ['Bright sunshine. Sunglasses staying firmly on.', 'Fine afternoon for 90mph through St. James\'s Park.'],
+        shenjiu: ['A glorious day! Perfect for a stroll to feed the ducks.', 'The sunlight through the bookshop glass is delightful.'],
       },
       weather_cloudy: {
-        yueqi: ['There are quite a few clouds today.', 'Watching the clouds drift by is somewhat interesting.'],
-        shenjiu: ['Partly cloudy... at least it is cool.', '(Looks up at the sky)'],
+        yueqi: ['Grey skies. Rather matches my usual disposition.', 'Just dull clouds. Nothing to miracle about.'],
+        shenjiu: ['Gentle overcast. Perfect lighting for reading manuscript ink.', '(Glances warmly out the shop window)'],
       },
       weather_overcast: {
-        yueqi: ['It looks gloomy, the weather might change.', 'The wind is picking up.'],
-        shenjiu: ['Cloudy days... make me sluggish.', '(The sky is gloomy)'],
+        yueqi: ['Gloomy. Reminds me of a dreary board meeting Down Below.', 'Sky looks menacing. Even for my taste.'],
+        shenjiu: ['Looks like a heavy downpour is brewing.', '(Checks the bookshop roof for potential drips)'],
       },
       weather_windy: {
-        yueqi: ['The wind is strong, Xiao Jiu. Stay out of the draft.', 'The mountain wind is tugging at our sleeves.'],
-        shenjiu: ['...The wind is noisy enough to be annoying.', '(Pulling sleeves closer)'],
+        yueqi: ['Gale force wind. Nearly ripped my sunglasses off.', 'Who turned the celestial air conditioning up to eleven?'],
+        shenjiu: ['My goodness, hold onto your hat, Crowley!', '(Hastily holds down fluttering manuscript pages)'],
       },
       weather_thunderstorm: {
-        yueqi: ['The thunder is close. Xiao Jiu, do not be afraid.', 'This storm came quickly. Let us take shelter first.'],
-        shenjiu: ['...It is only thunder. What is there to fear?', '(Frowning under the flash of lightning)'],
+        yueqi: ['Thunder! Upstairs having another celestial tantrum?', 'Don\'t fret, Angel, lightning avoids the Bentley.'],
+        shenjiu: ['Gracious, what a tremendous crash of thunder!', '(Flinches slightly at the sudden flash)'],
       },
       weather_heat: {
-        yueqi: ["It's scorching outside. Be careful of the heat, Xiao Jiu.", "Such intense heat... let's rest in the shade for a while.", "The weather is sweltering, remember to drink some tea."],
-        shenjiu: ["...This heat is so irritating.", "(Gently waving a fan, frowning slightly)", "The sun is too fierce... don't bother me unless it's urgent."],
+        yueqi: ["Scorching heatwave. Reminds me of the Pit. Hate it.", "Melted asphalt everywhere. Bentley's tyres are grumbling.", "Too bloody hot. Let's find some air conditioning."],
+        shenjiu: ["My word, it is sweltering! Ice cream from Fortnum's sounds imperative.", "(Gently fans himself with a vintage pamphlet)", "Far too hot outside... do stay inside where it's cool."],
       },
       hungry: {
-        yueqi: ['A bit hungry...', 'Time for a meal.'],
-        shenjiu: ['...My stomach is growling.', 'Inedia should have its limits.'], // 辟谷的标准玄幻词是 Inedia 或 Fasting，Inedia 古风感更强
+        yueqi: ['Getting a bit peckish...', 'Time for a proper lunch at the Ritz?'],
+        shenjiu: ['My stomach is making rather un-angelic noises...', 'I believe it is high time for afternoon tea.'],
       },
       lowQi: {
-        yueqi: ['Qi is running low.', 'Need to cultivate to recover.'],
-        shenjiu: ['Insufficient Qi...', 'Time to cultivate.'],
+        yueqi: ['Demonic energy running dangerously low...', 'Need a recharge. Miracles don\'t perform themselves.'],
+        shenjiu: ['My angelic grace feels rather depleted...', 'A quiet moment of rest is needed to restore my strength.'],
       },
       lowMood: {
-        yueqi: ['My state of mind is unstable...', 'Feeling a bit restless.'], // 心境不稳
-        shenjiu: ['...Leave me alone.', '(Expressionless)'],
+        yueqi: ['Bored and thoroughly irritated. Might go cause minor havoc.', 'Leave me alone for five minutes.'],
+        shenjiu: ['...A little weary of eternity today.', '(Sighs softly over an unfinished page)'],
       },
       effects: {
         greet: '💬',
-        shareFood: '🍎',
+        shareFood: '🥐',
         cultivate: '✨',
         kiss: '💋',
         hug: '💕',
       },
       breakReminder: {
         yueqi: [
-          'Stand up and move around. You\'ve been sitting too long.',
-          'Even in cultivation, one must care for their physical body.',
-          'Come, take a rest and walk around a bit.',
-          'Persistence is admirable, but stretch your limbs.',
-          'Stand up and stretch a little.',
+          'Get on your feet, human! Even demons don\'t slouch for two hours straight.',
+          'Up! Move around before your spine fuses to that chair.',
+          'Take a stroll! Or must I send a tiny harmless snake to nudge your ankles?',
+          'Sitting like a gargoyle will ruin you. Stand up and stretch!',
+          'On your feet! Your wellbeing happens to be on my watch today.',
         ],
         shenjiu: [
-          '...Stop sitting there like a statue. Get up.',
-          '(Stands up) You too.',
-          'The body is the foundation of cultivation. Stop lounging around.',
-          '...Hmph, I am merely reminding you in passing.',
-          'Sitting too long harms the body. Walk, even if you won\'t cultivate.',
+          'My dear, you have been sitting quite long enough. Do stand up and stretch.',
+          'A brisk little stroll would do wonders for your constitution!',
+          'Even in deep scholarly research, one must mind one\'s posture.',
+          'Why not pause, stretch your limbs, and brew a nice warm cup of tea?',
+          'Prolonged sitting is terrible for the body. Up you get, just for a moment.',
         ],
       },
       screensaverCaught: {
-        yueqi: ['So shy... 😳', 'Ahem...', 'Hehe 😳'],
-        shenjiu: ['Busted! ❗️', '...Tch.', '...Why do you always come back at a moment like this.'],
+        yueqi: ['Nothing to see here! Mind your own business!', 'Ahem... we were merely discussing theology.', 'Caught us? What on earth are you implying?!'],
+        shenjiu: ['Good heavens! (Blushes in flustered embarrassment)', 'We were just... admiring the bookbindings!', 'Please don\'t startle us like that, dear!'],
       },
       dream: {
         lowAffection: {
           yueqi: [
-            '(Steady breathing)',
+            '(Slumbering softly like a coiled serpent)',
             'Mmm...',
-            '(Turns over)',
+            '(Tosses and turns)',
           ],
           shenjiu: [
-            '...So noisy.',
-            '(Frowns slightly)',
-            '...Go away.',
+            '...Crowley, too noisy.',
+            '(Frowns slightly in his sleep)',
+            '...Quiet down, you.',
           ],
         },
         highAffection: {
           yueqi: [
-            'I want to sleep with Xiao Jiu.',
-            'Xiao Jiu... don\'t go...',
-            '(Smiling in sleep)',
+            'Don\'t leave me behind, Angel...',
+            'Alpha Centauri... just the two of us...',
+            '(Smiling gently in his sleep)',
           ],
           shenjiu: [
-            '...Idiot Qi-ge.',
-            '(Sleeping without his guard up)',
-            '(Subconsciously leaning closer)',
+            '...Crowley, dear boy...',
+            '(Clutching Crowley\'s sleeve in sleep)',
+            '(Subconsciously leaning closer for warmth)',
           ],
         },
         linked: {
           shenjiu: [
-            'Qi-ge, where are you...',
-            '...Don\'t go, Qi-ge.',
+            'Crowley? Where are you...',
+            '...Don\'t leave me, Crowley.',
           ],
           yueqi_reply: [
-            'Don\'t be afraid, Xiao Jiu, I am here.',
-            'I am here, always here.',
+            'I\'m right here, Angel. Not going anywhere.',
+            'Right beside you. Always.',
           ]
         }
       },
@@ -843,7 +866,7 @@ const I18N = {
       skinSchoolAuArtist: 'M_Shang',
 
       // トレイメニュー
-      trayTitle: 'クロウリー ✖️ アジラフェル デスクトップペット',
+      trayTitle: 'CA デスクトップペット',
       trayShowStatusPanel: '📊 状態表示',
       trayHideStatusPanel: '📊 状態非表示',
       traySwitchSkin: '🎨 装束変更',      // “装束（しょうぞく）”完美平替现代外来语“スキン（Skin）皮肤”
@@ -989,200 +1012,201 @@ const I18N = {
     dialogues: {
       greet: {
         yueqi: [
-          '小九、君もここにいたのか。',          // 小九，你也在这里。
-          '清秋師弟、本日の調子はどうだい？',     // 清秋师弟，今日可好？（温柔关切）
-          '清秋師弟、久しぶりだね。',            // 清秋师弟，许久不见。
-          '小九、少し一緒に歩かないか？',        // 小九，要一起走走吗？
-          '清秋師弟、顔色が随分と良くなったね。', // 清秋师弟，你的气色好了许多。
+          'おい、天使。こんなところで会うとはな。',
+          'リッツで一杯どうだ、アジラフェル？',
+          '退屈してたところだ。お前の顔が見られて助かったぜ。',
+          '相変わらず美味そうなものばかり探してるのか？',
+          'よお、天使。今日のロンドンは平和すぎるな。',
         ],
         shenjiu: [
-          '岳七。',
-          '…ああ。',                          // …嗯。（比“うん”更清冷稳重）
-          '掌門師兄、お変わりなく。',            // 掌门师兄，别来无恙。（极其标准的疏离感）
-          'なぜまた来たんだ。',                  // 你怎么又来了。
-          'ふん、暇な奴だ。',                    // 哼，闲人一个。
+          'おや、クロウリー。驚かせないでくれ。',
+          'クロウリー！ちょうどお茶を淹れたところだよ。',
+          'やあ、親愛なる友よ。今日もいい日だね。',
+          'またそんな怪しげなサングラスをかけて…',
+          'ふふ、君が来てくれて嬉しいよ、クロウリー。',
         ],
       },
       shareFood: {
         yueqi: [
-          '小九、これをお食べ。',                // 小九，这个给你吃。（“お食べ”有种长辈/师兄哄着投喂的宠溺感）
-          '私は空いていないから、もっと食べるといい。', // 我不饿，你多吃一些。
-          '清秋、これを食べてごらん。',          // 清秋，尝尝这个。
+          'パリの焼き立てクロワッサンだ。食えよ、天使。',
+          'リッツの特製クレープだ。お前の分を取っておいた。',
+          'ほら、甘いものだ。遠慮するな。',
         ],
         shenjiu: [
-          '…誰がお前の物など。',                // …谁要你的东西。
-          '（無言で受け取る）',                  // （默默接过）
-          'ふん…まあ、食えなくはない。',          // 哼…还算能入口。
+          'まあ！素晴らしいよ、クロウリー！いただきます！',
+          '君は本当に私を甘やかすのが上手いねえ…',
+          'んん〜っ！至福の味だ…！',
         ],
       },
       cultivate: {
         yueqi: [
-          '小九、共に修行しよう。',              // 小九，一起修炼吧。（修行）
-          '双修なら事半功倍だよ❤',              // 双修能事半功倍❤（“事半功倍”日文中也有这个四字熟语，修仙文常用）
-          '私が護法を務めよう。',                // 我来为你护法。（“護法を務める”是最地道的仙侠翻译）
+          '25ラザロ級の合同奇跡といこうぜ。',
+          'おい天使、一緒に奇跡を起こす準備はいいか？',
+          '俺たちの力、見せつけてやろうじゃないか。',
         ],
         shenjiu: [
-          '御託はいい、打坐だ。',                // 少废话，打坐。（“御託はいい” = 废话少说）
-          '…気を散らすな。',                    // …别分心。
-          '（目を閉じ、気を凝らす）',            // （闭目凝神）（沿用之前敲定的绝佳翻译）
+          '力を合わせよう、クロウリー。でも、目立ちすぎないようにね。',
+          '天国に気付かれないよう、小さな奇跡にするんだよ。',
+          'ふふ、二人一緒なら百人力だね。',
         ],
       },
       kiss: {
         yueqi: [
-          '小九…',
-          '清秋、ずっと会いたかった。',          // 清秋，我很想你。（表达一种长久以来的思念）
-          'もう少し、近づかせておくれ。',        // 让我靠近一点。
+          '…この大馬鹿天使め。',
+          '黙って、俺にキスしろ。',
+          '6000年…いつだってお前だけだった。',
         ],
         shenjiu: [
-          '…岳七、お前…！',
-          '（耳の先を赤らめる）',                // （耳尖微红）
-          '…ふん。',
+          '…許してあげるよ、クロウリー。',
+          '（息を呑み、耳元まで赤く染まる）',
+          '…クロウリー。',
         ],
       },
       hug: {
         yueqi: [
-          '小九、少し抱きしめさせて。',          // 小九，让我抱一下。
-          '君は細すぎる…',                      // 你太瘦了。（用“細い”比“痩せる”更有那种让人心疼的骨感）
-          'もう二度と、手放しはしない。',        // 不会再放手了。
+          'こっちへ来い、天使。',
+          '二度とお前を誰にも奪わせない。',
+          '…少しだけ、こうしていさせろ。',
         ],
         shenjiu: [
-          '……',
-          '（押し退けない）',                    // （没有推开）（傲娇放弃抵抗的灵魂动作）
-          '（幼い頃のように）',                  // （就像小时候那样）
+          'クロウリー…（そっと身を預ける）',
+          '（背中に腕を回し、ぎゅっと抱きしめ返す）',
+          '大丈夫、私はここにいるよ。',
         ],
       },
       throwup: {
-        // 分食時に高胤が上限超えで発生
+        // 分食時に過食で発生
         yueqi: [
-          '小九、どうしたんだ？！',
-          '小九！！',
+          'おい天使！クレープの食いすぎで破裂する気か？！',
+          'だから五十個も食べるなと言ったんだ！',
+          'ったく…胃薬の奇跡でも起こしてやるよ！',
         ],
         shenjiu: [
-          'うっ…！無理やり食わせて殺す気か？！',
-          'もういい！自分で食え！！',
-          'これ以上は一口も入らん！！',
+          'うぷっ…流石にスコーンを食べすぎたようだ…',
+          'もう一歩も動けない…見ないでくれたまえ…',
+          '美味しかったけれど…少し後悔しているよ…',
         ],
       },
       idle: {
         yueqi: [
-          '小九はどこにいるんだろう…',          // 小九在哪里呢…
-          '公務を処理しに行かねば。',
-          'そろそろ修行に行くとするか。',
-          '（身なりを整える）',                  // （整理衣冠）
-          '蒼穹山の景色は本当に美しい。',        // 苍穹山的风景真好。
+          'ソーホーの部屋の観葉植物ども、今頃震え上がってるだろうな。',
+          'ベントレーのカセットデッキからまたクイーンが流れてる。',
+          'あの呑気な天使はどこへ散歩に行ったんだ？',
+          '（サングラスの位置を直す）',
+          '6000年も地球にいりゃ、愛着も湧くってもんだ。',
         ],
         shenjiu: [
-          '（書物をめくる）',                      // （翻书）
-          '…煩わしい。',                        // …烦。（“煩わしい”比直白的“うるさい”更有清冷仙长的心境）
-          'どうやって修行の限界を突破するか…',        // 如何突破瓶颈？（“瓶頸（へいけい）”是修真原汁原味的词）
-          '（冷ややかな目で彼方を見遣る）',      // （冷冷地看着远方）
-          'あの人…また来なかった。',              // 那个人…又没来。（“あの人”比直呼其名多了很多幽怨和隐藏的期待）
+          'おや、1802年版のシェイクスピア戯曲集はどこに置いたっけな…',
+          'そろそろ紅茶の時間かな。それとも少し良い赤ワインを…',
+          '本棚を整理しなければ…いや、明日にしよう。',
+          '（古い書物の頁をめくり、香りを吸い込む）',
+          'クロウリーはまだ来ないのかな…',
         ],
       },
       weather_rain: {
-        yueqi: ['雨が降ってきた、小九、風邪を引かないように。', 'この雨、いつ止むのだろうか。'],
-        shenjiu: ['…忌々しい雨だ。', '（軒下で雨宿り）'],
+        yueqi: ['雨か。特大の黒傘を持ってきたから問題ない。', 'ロンドン名物の霧雨だな。'],
+        shenjiu: ['雨宿りしながら暖炉の前で読書…最高の日だね。', '（クロウリーの傘の下にそっと潜り込む）'],
       },
       weather_snow: {
-        yueqi: ['雪が降ってきた、着込むのを忘れないように。', '雪景色は美しいが、やはり冷えるな。'],
-        shenjiu: ['…少し寒いな。', '（微かに手を縮める）'],
+        yueqi: ['冷えるな。おい天使、まさか風邪なんか引かないだろうな？', 'ロンドンに雪か。ベントレーを飛ばすには滑りすぎる。'],
+        shenjiu: ['雪だ！まるで粉砂糖をまぶしたお菓子のようだね。', '（タータンチェックのマフラーを巻き直す）'],
       },
       weather_clear: {
-        yueqi: ['今日は日差しが良い、修行には最適だ。', '空が晴れ渡り、空気が澄んでいる。'],
-        shenjiu: ['日差しが眩しい…', 'まあ、悪くない天気だ。'],
+        yueqi: ['快晴だな。サングラスが手放せないぜ。', 'セント・ジェームズ・パークまでひとっ走りするか。'],
+        shenjiu: ['心地よい日差しだ。鴨にパンをあげに行こうか。', '古書店に差し込む木漏れ日がとても美しいよ。'],
       },
       weather_cloudy: {
-        yueqi: ['今日は雲が多いな。', '雲が流れるのを見るのも、なかなか面白い。'],
-        shenjiu: ['曇りか…まあ、涼しくていい。', '（空を見上げる）'],
+        yueqi: ['曇り空。ロンドンらしくて悪くない。', '退屈な雲だな。一雨降らせてやろうか。'],
+        shenjiu: ['柔らかな曇り空だね。本を読むには眩しすぎずちょうどいい。', '（窓の外の雲をのんびり眺める）'],
       },
       weather_overcast: {
-        yueqi: ['空が淀んでいる、天気が崩れそうだな。', '風が出てきたな。'],
-        shenjiu: ['どんよりとした空は…気が滅入る。', '（空がどんよりとしている）'],
+        yueqi: ['どんよりした空だ。地獄の会議を思い出すぜ。', '空が重いな。嵐でも来なきゃいいが。'],
+        shenjiu: ['今にも降り出しそうだ。書店の窓は閉めたかな…', '（心配そうに屋根の軋みを見上げる）'],
       },
       weather_windy: {
-        yueqi: ['風が強いな、小九、風口には立たぬように。', '山風が急で、袖まで乱れてしまうな。'],
-        shenjiu: ['…風の音が耳障りだ。', '（袖を引き寄せる）'],
+        yueqi: ['風が強いな。サングラスが吹き飛ばされそうだ。', '誰だ、換気扇を全開にした奴は。'],
+        shenjiu: ['おやまあ、すごい風！帽子を押さえないと！', '（飛ばされそうな原稿用紙を慌てて押さえる）'],
       },
       weather_thunderstorm: {
-        yueqi: ['雷が近いな。小九、怖がらなくていい。', 'この雷雨は急だ、まず避けよう。'],
-        shenjiu: ['…雷くらいで騒ぐな。', '（稲光に眉をひそめる）'],
+        yueqi: ['雷か。上の奴らが癇癪でも起こしたか？', '雷鳴なんて気にするな、天使。ベントレーには落ちないさ。'],
+        shenjiu: ['おやまあ！激しい雷だね…！', '（稲光に少し身を縮める）'],
       },
       weather_heat: {
-        yueqi: ['猛暑が続くな。小九、暑さに気をつけて。', '酷い暑さだ……木陰で少し涼もう。', '日差しが強いな、しっかりと水分を補給してね。'],
-        shenjiu: ['…暑くて苛立つな。', '（扇子を軽く揺らし、少し眉をひそめる）', '日差しが強すぎる……用がないなら呼ぶな。'],
+        yueqi: ['猛暑だ。地獄の釜茹でを思い出して胸糞悪いぜ。', 'アスファルトが溶けそうだ。ベントレーが悲鳴を上げてる。', 'クソ暑いな。どこか涼しいところへ行こう。'],
+        shenjiu: ['なんという暑さだ！フォートナム＆メイソンのアイスが必要だね。', '（未読のパンフレットでパタパタ扇ぐ）', '外は危険な暑さだ。涼しい室内にいなさい。'],
       },
       hungry: {
-        yueqi: ['少し腹が減ったな…', '膳の時間か。'], // 有些饿了… / 该用膳了。（“膳の時間”很有古风日常感）
-        shenjiu: ['…腹が鳴った。', '辟穀にも限度があるだろう。'], // …肚子叫了。 / 辟谷也该有个限度。（辟穀：へきこく）
+        yueqi: ['少し腹が減ったな。何か美味いものでも探しに行くか。', 'リッツでランチにするか？'],
+        shenjiu: ['お腹が天使らしからぬ音を立ててしまったよ…', 'そろそろスコーンと紅茶をいただかないとね。'],
       },
       lowQi: {
-        yueqi: ['霊力がもうすぐ底を尽きそうだ。', '打坐して回復しなければ。'],
-        shenjiu: ['霊力が足りない…', '修行の時間だな。'],
+        yueqi: ['悪魔のエネルギーが切れかけてる…', '少しチャージが必要だな。奇跡もタダじゃない。'],
+        shenjiu: ['恩寵が少し薄れてきたようだ…', '静かに瞑想して力を取り戻さなければ。'],
       },
       lowMood: {
-        yueqi: ['道心が揺らいでいる…', '心がざわつく。'], // 心境不稳… / 有些心烦。（“ざわつく”形容心里毛毛的、无法平静）
-        shenjiu: ['…構うな。', '（無表情）'],             // …别烦我。（“構うな” = 别管我/别烦我） / （面无表情）
+        yueqi: ['退屈でイライラする。何か悪戯でも仕掛けてやるか。', '5分だけでいい、放っておいてくれ。'],
+        shenjiu: ['……少し、永遠というものに疲れてしまったかな。', '（未読の頁を前に、小さくため息をつく）'],
       },
       effects: {
         greet: '💬',
-        shareFood: '🍎',
+        shareFood: '🥐',
         cultivate: '✨',
         kiss: '💋',
         hug: '💕',
       },
       breakReminder: {
         yueqi: [
-          '立って少し歩くといい、随分長く座っているよ。',                // 起来走走吧，你已经坐很久了。（语气轻柔温和）
-          '修行においても、身体を労わらなければ。',                      // 修行也要注意体魄。（“労わる”体现七哥的关心）
-          'さあ、少し休んで、立って歩いてごらん。',                      // 来，休息一下，起身走走。（“〜てごらん”有哄着对方的感觉）
-          '修行に励むのは良いことだが、筋骨も動かさないとね。',          // 坚持修炼是好事，但也要活动筋骨。（筋骨：きんこつ）
-          '立ち上がって、少し背伸びをしてごらん。',                      // 站起来伸展一下吧。
+          'おい人間、立ち上がれ！悪魔だってそんなに長時間座りっぱなしにはならんぞ。',
+          '背骨が椅子と合体する前に体を動かせ！',
+          '少し歩き回れ。それとも足元に蛇でも這わせてやろうか？',
+          '根を詰めるなよ。ベントレーでドライブにでも連れて行かれたいか？',
+          '立ち上がって伸びをしろ。お前の健康も俺の管轄だからな。',
         ],
         shenjiu: [
-          '…いつまで座っているつもりだ。立って少し動け。',               // …别死坐着了，起来活动活动。（清冷命令式）
-          '（立ち上がり）お前も立て。',                                  // （站起来）你也起来。
-          '体は修行の根基だ、いつまでも怠けているな。',                  // 身体是修炼的根基，别赖着不动。（根基：こんき，纯正修真词汇）
-          '…ふん、ついでの忠告だ。勘違いするな。',                       // …哼，我只是顺便提醒你一下。（稍微润色加了一句“别误会”，把傲娇度拉满！）
-          '長座は体を痛める。修行する気がないなら、少しは歩け。',        // 久坐伤身，不想修练也得走两步。（長座：ちょうざ，久坐的古雅说法）
+          'おやまあ、ずいぶん長く座っているね。少し立って歩いてごらん？',
+          '少し散歩をして外の空気を吸うと、頭がすっきりするよ。',
+          '熱心なのは素晴らしいけれど、お体も大切にね。',
+          '立ち上がって軽くストレッチをしてみてはどうだい？',
+          '美味しいお茶を淹れて、少し休憩にしよう。',
         ],
       },
       screensaverCaught: {
-        yueqi: ['恥ずかしい…😳', 'こほん…', 'へへっ😳'],
-        shenjiu: ['見つかった…❗️', '…ちっ。', '…なんでいつもこういう時に戻ってくるんだ。'],
+        yueqi: ['な、何でもない！余計なお世話だ！', 'ゴホン…神学的な議論をしてただけだ！', '見ただと？！変な勘繰りをするなよ！'],
+        shenjiu: ['おやまあ！（顔を真っ赤にして慌てる）', '私たちはただ…本の装丁を眺めていただけだよ！', '驚かせないでおくれよ、もう…！'],
       },
       dream: {
         lowAffection: {
           yueqi: [
-            '（穏やかな寝息）',
+            '（蛇のように静かに寝息を立てる）',
             'ん…',
             '（寝返りを打つ）',
           ],
           shenjiu: [
-            '…うるさい。',
-            '（少し眉をひそめる）',
-            '…あっちへ行け。',
+            '…クロウリー、うるさいよ。',
+            '（小さく眉をひそめて寝言）',
+            '…あっちへ行ってくれ。',
           ],
         },
         highAffection: {
           yueqi: [
-            '小九と一緒に寝たいな。',
-            '小九…行かないで…',
-            '（口元に微笑み）',
+            '置いていくなよ、天使…',
+            'アルファ・ケンタウリ…二人きりで…',
+            '（寝ながら口元を綻ばせる）',
           ],
           shenjiu: [
-            '…馬鹿七哥。',
-            '（無防備な寝顔）',
-            '（無意識に寄り添う）',
+            '…クロウリー…',
+            '（眠りながらクロウリーの袖をぎゅっと握る）',
+            '（無意識に温もりへ寄り添う）',
           ],
         },
         linked: {
           shenjiu: [
-            '七哥、どこにいるの…',
-            '…行かないで、七哥。',
+            'クロウリー？どこにいるの…',
+            '…行かないで、クロウリー。',
           ],
           yueqi_reply: [
-            '小九、恐れないで。ここにいるよ。',
-            'ここにいる。ずっとここに。',
+            'ここにいるよ、天使。どこへも行かないさ。',
+            'お前のすぐ隣にいる。ずっと一緒だ。',
           ]
         }
       },
