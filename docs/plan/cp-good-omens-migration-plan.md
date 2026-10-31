@@ -140,10 +140,10 @@
 - [x] **Task 4.4**: 运行并更新 `test/ambientDialogueSystem.test.js` 与 `test/interactionSystem.test.js`。
 
 ### Phase 5: 界面主题与视觉风格调整 (UI & Theming)
-- [ ] **Task 5.1**: 调整 `src/index.css`、`src/status.css`、`src/pomodoro.css` 中的角色色彩变量（黑红/烈火 vs 米白/圣光金）。
-- [ ] **Task 5.2**: 将番茄钟标题与书卷水墨文案调整为伦敦旧书店（A.Z. Fell and Co.）风格，融入留声机黑胶唱片与壁炉余烬微光氛围。
-- [ ] **Task 5.3**: 检查 `SpriteView.js` 中的降级 emoji 与占位图。
-- [ ] **Task 5.4**: 将雨天粒子（`effects.css`）升级为创世流星雨拖尾与星辉光效，联动更新天气问候台词。
+- [x] **Task 5.1**: 调整 `src/index.css`、`src/status.css`、`src/pomodoro.css` 中的角色色彩变量（黑红/烈火 vs 米白/圣光金）。
+- [x] **Task 5.2**: 将番茄钟标题与书卷水墨文案调整为伦敦旧书店（A.Z. Fell and Co.）风格，融入留声机黑胶唱片与壁炉余烬微光氛围。
+- [x] **Task 5.3**: 检查 `SpriteView.js` 中的降级 emoji 与占位图。
+- [x] **Task 5.4**: 将雨天粒子（`effects.css`）升级为创世流星雨拖尾与星辉光效，联动更新天气问候台词。
 
 ### Phase 6: 独立发行配置与回归验证 (Packaging & Verification)
 - [ ] **Task 6.1**: 如需作为独立应用发布，按指南配置 `package.json`（`appId`, `productName: 好兆头爱宠`）、Windows `APP_USER_MODEL_ID` 与应用图标。

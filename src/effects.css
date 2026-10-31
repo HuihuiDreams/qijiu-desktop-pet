@@ -151,8 +151,8 @@ body.weather-interaction-muted .weather-particle-layer {
   width: calc(2px * var(--weather-effect-scale, 1));
   height: calc(30px * var(--weather-effect-scale, 1));
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(221, 242, 252, 0), rgba(166, 215, 238, 0.92));
-  box-shadow: 0 0 5px rgba(166, 215, 238, 0.36);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(200, 230, 255, 0.95));
+  box-shadow: 0 0 6px rgba(180, 220, 255, 0.5);
   transform: rotate(10deg);
   animation-name: weatherRainFall;
 }
