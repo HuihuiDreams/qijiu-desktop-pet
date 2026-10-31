@@ -170,6 +170,68 @@ test('pet hover keeps mouse events enabled until the cursor leaves', () => {
   }
 });
 
+test('PetRenderer mouseleave does not throw and restores mouse passthrough when status-panel DOM does not exist', () => {
+  const calls = [];
+  const bodyClassList = createFakeClassList();
+  const listeners = {};
+  const appended = [];
+  const renderer = new PetRenderer({
+    appendChild(element) {
+      appended.push(element);
+    },
+  });
+  const pet = {
+    id: 'shenjiu',
+    name: '沈九',
+    x: 100,
+    y: 100,
+    scale: 1,
+    isDragging: false,
+    state: 'idle',
+    direction: 1,
+  };
+
+  global.window = {
+    electronAPI: {
+      setIgnoreMouseEvents(...args) {
+        calls.push(args);
+      },
+    },
+    addEventListener(type, callback) {
+      listeners[type] = callback;
+    },
+  };
+  global.document = {
+    body: {
+      classList: bodyClassList,
+    },
+    createElement() {
+      return createFakeDomElement();
+    },
+    addEventListener(type, callback) {
+      listeners[type] = callback;
+    },
+    getElementById(id) {
+      if (id === 'context-menu') {
+        return createFakeElement(['hidden']);
+      }
+      return null;
+    },
+  };
+
+  try {
+    renderer.createPetElement(pet);
+    assert.doesNotThrow(() => {
+      appended[0].listeners.mouseleave();
+    });
+    assert.deepEqual(calls.at(-1), [true, { forward: true }]);
+    assert.equal(bodyClassList.contains('weather-interaction-muted'), false);
+  } finally {
+    delete global.window;
+    delete global.document;
+  }
+});
+
 test('pet image scale is exposed as a CSS variable', () => {
   const appended = [];
   const renderer = new PetRenderer({

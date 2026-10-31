@@ -144,24 +144,24 @@ flowchart TD
 
 ### Phase 3: Legacy DOM & Style Cleanup
 
-- [ ] **Task 5: 清理主窗口废弃的内嵌 `#status-panel` 孤儿 DOM 与重复样式**
+- [x] **Task 5: 清理主窗口废弃的内嵌 `#status-panel` 孤儿 DOM 与重复样式**
   - **Description**: 状态面板早已独立为 `StatusWindow`（`src/status.html` + `src/statusWindow.js`）。移除 `src/index.html` 中未使用的 `<div id="status-panel">` 节点，同步移除所有对它的查询：`src/ui/ContextMenu.js` `hide()` 中的判空分支，以及 `src/pet/PetRenderer.js` `mouseleave` 中**未判空**的 `document.getElementById('status-panel').classList` 调用（不处理会在删除 DOM 后抛 TypeError）。
     `index.css` 中的 `.status-panel` 等规则**并非孤儿**：`status.html` 同样加载 `index.css`，以下声明目前在独立状态窗中生效，需先迁移到 `status.css` 再从 `index.css` 删除：
     - `.status-panel` 的 `top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index`、`animation: panelSlideIn ...` 及 `@keyframes panelSlideIn`（`min-width: 360px` 已被 `status.css` 的 `320px` 覆盖，`position: fixed` 已被 `relative` 覆盖，均不迁移）。
     - `.status-close:hover` / `:active` / `:focus-visible`（Task 4 完成后 `status.css` 已自带，直接删除 `index.css` 中的副本）。
     - `.pet-status-block:hover`、`.status-pet-icon` 等同名选择器中 `status.css` 未声明的属性。
   - **Acceptance criteria**:
-    - [ ] `src/index.html` 不再包含 `<div id="status-panel">` DOM 树。
-    - [ ] `src/ui/ContextMenu.js` 的 `hide()` 直接恢复 `setIgnoreMouseEvents(true, { forward: true })`；`src/pet/PetRenderer.js` 的 `mouseleave` 只检查拖拽与菜单状态；全仓库 `grep "getElementById('status-panel')"` 无结果。
-    - [ ] 迁移前后，状态窗 `.status-panel` 的计算样式（`top`、`left`、`transform`、`z-index`、`animation-name`、`min-width`）保持一致。
-    - [ ] `index.css` 不再包含 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*`、`.status-pet-icon`、`panelSlideIn` 相关规则。
-    - [ ] `test/indexCss.test.js` 中 `.status-close:focus-visible` 断言随规则迁移改为读取 `status.css`（测试跟随规则移动，断言内容不变）。
-    - [ ] IPC 通道 `toggle-status-panel` 名称不变。
+    - [x] `src/index.html` 不再包含 `<div id="status-panel">` DOM 树。
+    - [x] `src/ui/ContextMenu.js` 的 `hide()` 直接恢复 `setIgnoreMouseEvents(true, { forward: true })`；`src/pet/PetRenderer.js` 的 `mouseleave` 只检查拖拽与菜单状态；全仓库 `grep "getElementById('status-panel')"` 无结果。
+    - [x] 迁移前后，状态窗 `.status-panel` 的计算样式（`top`、`left`、`transform`、`z-index`、`animation-name`、`min-width`）保持一致。
+    - [x] `index.css` 不再包含 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*`、`.status-pet-icon`、`panelSlideIn` 相关规则。
+    - [x] `test/indexCss.test.js` 中 `.status-close:focus-visible` 断言随规则迁移改为读取 `status.css`（测试跟随规则移动，断言内容不变）。
+    - [x] IPC 通道 `toggle-status-panel` 名称不变。
   - **Verification**:
-    - [ ] 运行测试通过：`node --test test/contextMenuBehavior.test.js test/indexCss.test.js test/statusWindowRegression.test.js test/petRenderer.test.js test/mainMousePassthrough.test.js`
-    - [ ] 新增断言：`PetRenderer` 在不存在 `#status-panel` 的 Fake DOM 中触发 `mouseleave` 不抛错并恢复穿透。
-    - [ ] 全量测试套件与预检通过：`npm test && npm run test:integration`
-    - [ ] 手动检查：迁移前后各截图一次状态窗（中/英/日三语），位置、尺寸、入场动画一致；主窗口鼠标移入/移出宠物后点击穿透正常恢复；右键菜单关闭后点击穿透正常。
+    - [x] 运行测试通过：`node --test test/contextMenuBehavior.test.js test/indexCss.test.js test/statusWindowRegression.test.js test/petRenderer.test.js test/mainMousePassthrough.test.js`
+    - [x] 新增断言：`PetRenderer` 在不存在 `#status-panel` 的 Fake DOM 中触发 `mouseleave` 不抛错并恢复穿透。
+    - [x] 全量测试套件与预检通过：`npm test && npm run test:integration`
+    - [x] 手动检查：迁移前后各截图一次状态窗（中/英/日三语），位置、尺寸、入场动画一致；主窗口鼠标移入/移出宠物后点击穿透正常恢复；右键菜单关闭后点击穿透正常。
   - **Dependencies**: Task 4
   - **Files likely touched**:
     - `src/index.html`
@@ -175,9 +175,9 @@ flowchart TD
   - **Estimated scope**: Medium (8 files)
 
 ### Checkpoint: Complete
-- [ ] 所有验收条件全部达成，`npm test` 与 `npm run test:integration` 100% 通过。
-- [ ] `docs/plan/frontend-ui-engineering-plan.md` 所有复选框均已勾选（`- [x]`）。
-- [ ] `CHANGELOG.md`（`## [Unreleased]` 下的 `Changed` / `Fixed` / `Removed`）与 `docs/structure.md` 已同步更新。
+- [x] 所有验收条件全部达成，`npm test` 与 `npm run test:integration` 100% 通过。
+- [x] `docs/plan/frontend-ui-engineering-plan.md` 所有复选框均已勾选（`- [x]`）。
+- [x] `CHANGELOG.md`（`## [Unreleased]` 下的 `Changed` / `Fixed` / `Removed`）与 `docs/structure.md` 已同步更新。
 
 ---
 

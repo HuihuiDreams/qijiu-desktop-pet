@@ -4,12 +4,22 @@ const path = require('node:path');
 const test = require('node:test');
 
 const indexCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.css'), 'utf8');
+const statusCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'status.css'), 'utf8');
 
-test('index.css includes focus-visible styling for .status-close button', () => {
-  const statusCloseFocusRule = indexCss.match(/\.status-close:focus-visible\s*\{[^}]+\}/s)?.[0] || '';
+test('status.css includes focus-visible styling for .status-close button', () => {
+  const statusCloseFocusRule = statusCss.match(/\.status-close:focus-visible\s*\{[^}]+\}/s)?.[0] || '';
   
-  assert.match(statusCloseFocusRule, /outline:\s*2px\s+solid/);
+  assert.match(statusCloseFocusRule, /outline:\s*2px solid/);
   assert.match(statusCloseFocusRule, /outline-offset:\s*2px/);
+});
+
+test('index.css does not include legacy status-panel rules', () => {
+  assert.doesNotMatch(indexCss, /\.status-panel\b/);
+  assert.doesNotMatch(indexCss, /\.status-panel-header\b/);
+  assert.doesNotMatch(indexCss, /\.status-close\b/);
+  assert.doesNotMatch(indexCss, /\.pet-status-/);
+  assert.doesNotMatch(indexCss, /\.status-pet-icon\b/);
+  assert.doesNotMatch(indexCss, /panelSlideIn/);
 });
 
 
@@ -19,7 +29,6 @@ test('xianxia-panel centralizes panel decoration across windows', () => {
   assert.match(indexCss, /\.xianxia-panel::before\s*\{/);
   assert.match(indexCss, /\.xianxia-panel::after\s*\{/);
 
-  const statusCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'status.css'), 'utf8');
   const pomodoroCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'pomodoro.css'), 'utf8');
   const cityCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'city-setting.css'), 'utf8');
 

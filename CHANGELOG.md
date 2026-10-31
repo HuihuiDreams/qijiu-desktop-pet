@@ -19,6 +19,9 @@
 ### Fixed
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 
+### Removed
+- **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。
+
 ### Security
 - **移除 `disable-site-isolation-trials` 恢复 Chromium 站点隔离基线 (`SBP-001`)**：从 `src/main/AppLifecycle.js` 的 `configureChromiumMemoryBudget()` 中移除 `app.commandLine.appendSwitch('disable-site-isolation-trials')`，恢复 Chromium 默认站点隔离（Site Isolation）跨源进程安全边界，并在 `test/mainMemoryBudget.test.js` 中增加防回退断言。
 

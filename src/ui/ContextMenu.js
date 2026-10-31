@@ -297,13 +297,7 @@ class ContextMenu {
     document.body?.classList?.remove('weather-interaction-muted');
     this.currentPet = null;
 
-    // 菜单关闭后，检查是否有其他交互面板开着（如状态面板）
-    // 如果状态面板是开着的，则不要重新启用点击穿透，否则状态面板会无法点击
-    const statusPanel = document.getElementById('status-panel');
-    const panelOpen = Boolean(statusPanel && !statusPanel.classList.contains('hidden'));
-    if (!panelOpen) {
-      window.electronAPI?.setIgnoreMouseEvents?.(true, { forward: true });
-    }
+    window.electronAPI?.setIgnoreMouseEvents?.(true, { forward: true });
   }
 
   handleAction(action, targetPet = null) {

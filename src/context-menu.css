@@ -98,6 +98,16 @@ html[data-locale="en"] .context-menu::before {
   background: linear-gradient(90deg, var(--color-jade-mist) 0%, transparent 80%);
 }
 
+.menu-header .status-pet-icon,
+.menu-header img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--color-glass-border);
+  box-shadow: var(--shadow-sm);
+}
+
 .menu-header-text {
   display: inline;
 }

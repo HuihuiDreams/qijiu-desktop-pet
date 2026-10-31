@@ -185,7 +185,7 @@ qijiu-desktop-pet/
 │  ├─ i18nHelpers.js                    # 渲染进程 i18n 纯函数辅助：getI18nDictionaries/translateUi/getI18nUi/applyI18n，locale → zh → key 回退链，无可变状态
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
 │  ├─ status.html                       # 独立状态窗口 HTML
-│  ├─ status.css                        # 独立状态窗口差异样式，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
+│  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
@@ -508,6 +508,8 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。城市设置、体型调节与状态窗口标题采用语义化 `<h1>`，城市输入框接入 `aria-describedby="city-status"` 与动态 `aria-invalid` 反馈；体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`，初始挂载通过安全守卫自动聚焦以支持方向键无障碍调节；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
 - **子窗口关闭按钮与操作按钮视觉设计系统规范**：
   各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
+- **主窗口与独立状态窗口 DOM 及样式解耦**：
+  主窗口（`src/index.html`）彻底移除废弃的内嵌 `#status-panel` 孤儿 DOM 节点与查询依赖（`ContextMenu.js`、`PetRenderer.js` 直接恢复鼠标点击穿透而不再轮询该面板）；原滞留在 `src/index.css` 的面板定位、动画及状态条辅助样式完整内聚至 `src/status.css`，保持主窗口轻量渲染与状态窗口样式自治。
 - **零外部 Polyfill 与 Node 桩测试兼容**：
   严格维持免 Polyfill / 免外部依赖架构，所有现代浏览器特有 API 调用均配合可选链（`?.`）或类型守卫（`typeof ... === 'function'`）及兜底逻辑，保证 Node.js fake-DOM 单测套件极速、稳定运行。详见 [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)。
 

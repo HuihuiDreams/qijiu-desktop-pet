@@ -166,10 +166,9 @@ class PetRenderer {
     });
 
     el.addEventListener('mouseleave', () => {
-      // 拖拽中，或有菜单/面板打开时，不要恢复点击穿透
-      const menuOpen = !document.getElementById('context-menu').classList.contains('hidden');
-      const panelOpen = !document.getElementById('status-panel').classList.contains('hidden');
-      if (!pet.isDragging && !menuOpen && !panelOpen) {
+      // 拖拽中，或有菜单打开时，不要恢复点击穿透
+      const menuOpen = !document.getElementById('context-menu')?.classList?.contains('hidden');
+      if (!pet.isDragging && !menuOpen) {
         setWeatherInteractionMuted(false);
         window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
       }

@@ -76,7 +76,6 @@ function createMenuDom() {
   const i18nItem = createElement({ dataset: { i18n: 'contextMenuFeed' } });
   const menu = createElement({ id: 'context-menu', classNames: ['hidden'] });
   const header = createElement({ id: 'menu-header' });
-  const statusPanel = createElement({ id: 'status-panel', classNames: ['hidden'] });
 
   const popoverLog = { show: 0, hide: 0 };
   menu.showPopover = () => {
@@ -99,7 +98,7 @@ function createMenuDom() {
     if (selector === '[data-i18n]') return [i18nItem];
     return [];
   };
-  return { menu, header, statusPanel, items, i18nItem, popoverLog };
+  return { menu, header, items, i18nItem, popoverLog };
 }
 
 function withContextMenuHarness(callback) {
@@ -116,7 +115,6 @@ function withContextMenuHarness(callback) {
     getElementById(id) {
       if (id === 'context-menu') return dom.menu;
       if (id === 'menu-header') return dom.header;
-      if (id === 'status-panel') return dom.statusPanel;
       return null;
     },
     createElement(tag) {
@@ -212,7 +210,7 @@ test('ContextMenu.show renders a localized pet header and enables busy-state dis
   assert.equal(items.find((item) => item.dataset.action === 'feed').getAttribute('aria-disabled'), null);
 }));
 
-test('ContextMenu.hide restores click-through only when the status panel is closed', () => withContextMenuHarness(({ menu, statusPanel, mouseCalls, bodyClassList }) => {
+test('ContextMenu.hide restores click-through directly', () => withContextMenuHarness(({ menu, mouseCalls, bodyClassList }) => {
   const contextMenu = new ContextMenu({});
   contextMenu.currentPet = createPet();
   menu.classList.remove('hidden');
@@ -223,12 +221,6 @@ test('ContextMenu.hide restores click-through only when the status panel is clos
   assert.equal(contextMenu.currentPet, null);
   assert.equal(bodyClassList.contains('weather-interaction-muted'), false);
   assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
-
-  statusPanel.classList.remove('hidden');
-  mouseCalls.length = 0;
-  contextMenu.hide();
-
-  assert.equal(mouseCalls.length, 0);
 }));
 
 test('ContextMenu.handleAction runs nurture actions and status callbacks', () => withContextMenuHarness(() => {

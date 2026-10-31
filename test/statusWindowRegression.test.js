@@ -256,3 +256,18 @@ test('status.html and status.css provide unified SVG close button and jade-mist 
   assert.match(css, /\.status-close:focus-visible\s*\{[\s\S]*?outline:\s*2px solid rgba\(110, 198, 160, 0\.7\);/);
 });
 
+test('status.css contains migrated status-panel layout, animation, and keyframes', () => {
+  const css = readSource('src/status.css');
+
+  const panelRule = css.match(/\.status-panel\s*\{[^}]+\}/s)?.[0] || '';
+  assert.match(panelRule, /top:\s*50%;/);
+  assert.match(panelRule, /left:\s*50%;/);
+  assert.match(panelRule, /transform:\s*translate\(-50%,\s*-50%\);/);
+  assert.match(panelRule, /z-index:\s*10000;/);
+  assert.match(panelRule, /animation:\s*panelSlideIn\s+0\.4s/);
+  assert.match(panelRule, /min-width:\s*320px;/);
+
+  assert.match(css, /@keyframes panelSlideIn\s*\{/);
+  assert.match(css, /\.pet-status-block:hover\s*\{[\s\S]*?border-color:\s*var\(--color-glass-border\);/);
+});
+
