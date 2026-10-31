@@ -65,9 +65,9 @@ button {
 }
 
 .skin-selector-close:hover {
-  border-color: rgba(181, 52, 42, 0.2);
-  background: var(--color-crimson-soft);
-  color: var(--color-crimson);
+  background: var(--color-jade-mist);
+  border-color: rgba(110, 198, 160, 0.22);
+  color: var(--color-jade-deep);
 }
 
 .skin-selector-close:active {
@@ -239,25 +239,38 @@ button {
 }
 
 .skin-selector-btn-cancel {
-  border-color: rgba(61, 139, 107, 0.2);
+  border: 1px solid rgba(84, 106, 123, 0.3);
   background: rgba(255, 255, 255, 0.6);
   color: var(--color-ink-light);
 }
 
 .skin-selector-btn-cancel:hover {
-  border-color: rgba(61, 139, 107, 0.35);
-  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(84, 106, 123, 0.5);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--color-ink);
 }
 
 .skin-selector-btn-confirm {
-  border-color: rgba(201, 162, 77, 0.4);
-  background: linear-gradient(135deg, rgba(201, 162, 77, 0.15), rgba(61, 139, 107, 0.12));
-  color: var(--color-jade-deep);
-  font-weight: bold;
+  border: 1px solid rgba(61, 139, 107, 0.34);
+  background: linear-gradient(135deg, rgba(110, 198, 160, 0.92), rgba(201, 162, 77, 0.62));
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(61, 139, 107, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-.skin-selector-btn-confirm:hover {
-  border-color: var(--color-gold);
-  background: linear-gradient(135deg, rgba(201, 162, 77, 0.25), rgba(61, 139, 107, 0.18));
+.skin-selector-btn-confirm:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(61, 139, 107, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.skin-selector-btn-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.skin-selector-btn:focus-visible,
+.skin-selector-close:focus-visible {
+  outline: 2px solid rgba(110, 198, 160, 0.7);
+  outline-offset: 2px;
 }

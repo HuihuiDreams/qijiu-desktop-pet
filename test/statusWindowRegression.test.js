@@ -246,3 +246,13 @@ test('status.html uses semantic h1 and statusWindow.js handles Escape to close',
   assert.equal(closed, true);
 });
 
+test('status.html and status.css provide unified SVG close button and jade-mist styling', () => {
+  const html = readSource('src/status.html');
+  const css = readSource('src/status.css');
+
+  assert.match(html, /<button id="status-close"[^>]*>[\s\S]*?<svg viewBox="0 0 24 24" aria-hidden="true">[\s\S]*?<path d="M6 6l12 12M18 6L6 18"><\/path>[\s\S]*?<\/svg>[\s\S]*?<\/button>/);
+  assert.match(css, /\.status-close:hover\s*\{[\s\S]*?background:\s*var\(--color-jade-mist\);/);
+  assert.match(css, /\.status-close:hover\s*\{[\s\S]*?color:\s*var\(--color-jade-deep\);/);
+  assert.match(css, /\.status-close:focus-visible\s*\{[\s\S]*?outline:\s*2px solid rgba\(110, 198, 160, 0\.7\);/);
+});
+

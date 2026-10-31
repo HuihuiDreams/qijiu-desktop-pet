@@ -506,6 +506,8 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
   对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（城市设置、体型调节、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
 - **无障碍语义化 (ARIA) 与按钮语义**：
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。城市设置、体型调节与状态窗口标题采用语义化 `<h1>`，城市输入框接入 `aria-describedby="city-status"` 与动态 `aria-invalid` 反馈；体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`，初始挂载通过安全守卫自动聚焦以支持方向键无障碍调节；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
+- **子窗口关闭按钮与操作按钮视觉设计系统规范**：
+  各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **零外部 Polyfill 与 Node 桩测试兼容**：
   严格维持免 Polyfill / 免外部依赖架构，所有现代浏览器特有 API 调用均配合可选链（`?.`）或类型守卫（`typeof ... === 'function'`）及兜底逻辑，保证 Node.js fake-DOM 单测套件极速、稳定运行。详见 [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)。
 

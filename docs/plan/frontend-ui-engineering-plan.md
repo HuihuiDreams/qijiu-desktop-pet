@@ -117,16 +117,16 @@ flowchart TD
 
 ### Phase 2: Design System & Visual Polish
 
-- [ ] **Task 4: 子窗口关闭按钮 SVG 与主/次操作按钮视觉规范统一**
+- [x] **Task 4: 子窗口关闭按钮 SVG 与主/次操作按钮视觉规范统一**
   - **Description**: 统一 `status.html` 的关闭按钮为与其余子窗口一致的 SVG 线条图标；将 `status.css` 与 `skin-selector.css` 的关闭按钮悬停反馈由朱砂红改为灵玉绿（与 `pomodoro` / `city-setting` / `pet-scale` 一致）；将 `skin-selector.css` 的「确定」（`.skin-selector-btn-confirm`）与「取消」（`.skin-selector-btn-cancel`）对齐至其他设置窗口的玉金渐变主按钮与半透明次按钮视觉层级；为 `status.css` 与 `skin-selector.css` 中缺失的按钮补齐 `:focus-visible` 焦点环。
   - **Acceptance criteria**:
-    - [ ] `src/status.html` 的 `#status-close` 使用统一的 `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>` 关闭图标，保留 `aria-label`。
-    - [ ] `status.css` 与 `skin-selector.css` 的关闭按钮悬停态为 `background: var(--color-jade-mist)`、`border-color: rgba(110, 198, 160, 0.22)`、`color: var(--color-jade-deep)`。
-    - [ ] `.skin-selector-btn-confirm` 采用灵玉-仙金渐变主按钮视觉，具备清晰的 `:disabled` 样式（配合 Task 3 的加载禁用）。
-    - [ ] `status.css` 自身声明 `.status-close:focus-visible`，`skin-selector.css` 为关闭、取消、确定按钮声明 `:focus-visible`，统一为 `outline: 2px solid rgba(110, 198, 160, 0.7); outline-offset: 2px;`。
+    - [x] `src/status.html` 的 `#status-close` 使用统一的 `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>` 关闭图标，保留 `aria-label`。
+    - [x] `status.css` 与 `skin-selector.css` 的关闭按钮悬停态为 `background: var(--color-jade-mist)`、`border-color: rgba(110, 198, 160, 0.22)`、`color: var(--color-jade-deep)`。
+    - [x] `.skin-selector-btn-confirm` 采用灵玉-仙金渐变主按钮视觉，具备清晰的 `:disabled` 样式（配合 Task 3 的加载禁用）。
+    - [x] `status.css` 自身声明 `.status-close:focus-visible`，`skin-selector.css` 为关闭、取消、确定按钮声明 `:focus-visible`，统一为 `outline: 2px solid rgba(110, 198, 160, 0.7); outline-offset: 2px;`。
   - **Verification**:
-    - [ ] 运行测试通过：`node --test test/statusWindowRegression.test.js test/skinSelectorWindow.behavior.test.js test/indexCss.test.js`
-    - [ ] 手动检查：5 个子窗口的关闭按钮悬停色与焦点环一致；状态窗关闭按钮图标与其他窗口一致，状态窗尺寸自适应无回流。
+    - [x] 运行测试通过：`node --test test/statusWindowRegression.test.js test/skinSelectorWindow.behavior.test.js test/indexCss.test.js`
+    - [x] 手动检查：5 个子窗口的关闭按钮悬停色与焦点环一致；状态窗关闭按钮图标与其他窗口一致，状态窗尺寸自适应无回流。
   - **Dependencies**: Task 2, Task 3
   - **Files likely touched**:
     - `src/status.html`
@@ -137,8 +137,8 @@ flowchart TD
   - **Estimated scope**: Small (5 files)
 
 ### Checkpoint: Phase 2 (Design System Unification)
-- [ ] 全量单元测试与集成测试通过：`npm test && npm run test:integration`
-- [ ] 更新 `docs/plan/frontend-ui-engineering-plan.md`、`CHANGELOG.md` 与 `docs/structure.md`，创建 Phase 2 原子提交。
+- [x] 全量单元测试与集成测试通过：`npm test && npm run test:integration`
+- [x] 更新 `docs/plan/frontend-ui-engineering-plan.md`、`CHANGELOG.md` 与 `docs/structure.md`，创建 Phase 2 原子提交。
 
 ---
 

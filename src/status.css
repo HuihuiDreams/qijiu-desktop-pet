@@ -49,6 +49,9 @@ body {
 }
 
 .status-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
   z-index: 10;
   width: 30px;
@@ -58,9 +61,7 @@ body {
   background: transparent;
   color: var(--color-ink-light);
   cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s;
   -webkit-app-region: no-drag;
   app-region: no-drag;
   -webkit-user-select: none;
@@ -68,13 +69,28 @@ body {
 }
 
 .status-close:hover {
-  background: var(--color-crimson-soft);
-  border-color: rgba(181, 52, 42, 0.2);
-  color: var(--color-crimson);
+  background: var(--color-jade-mist);
+  border-color: rgba(110, 198, 160, 0.22);
+  color: var(--color-jade-deep);
 }
 
 .status-close:active {
   transform: scale(0.92);
+}
+
+.status-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.status-close:focus-visible {
+  outline: 2px solid rgba(110, 198, 160, 0.7);
+  outline-offset: 2px;
 }
 
 .pet-status-block {
