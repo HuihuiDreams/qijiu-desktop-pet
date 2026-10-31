@@ -152,3 +152,10 @@
 - [x] **Task 6.4**: 清理展示层残留旧角色名称与台词（`src/index.html` 标题、`src/app.js` 启动提示、`src/systems/InteractionSystem.js` 与 `src/debug.js` 兜底对白），同步更新 `tools/playwright-electron-smoke.js` 与相关测试断言。
 - [x] **Task 6.5**: 完整重写三语发行说明（`README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`）以及 CI 打包流水线（`.github/workflows/`、`test/macosPackaging.test.js`）。
 - [x] **Task 6.6**: 全量单元测试 `npm test`（1141 passing）、环境预检 `npm run verify:installer` 与 E2E 冒烟测试 `npm run qa:electron:smoke`（`ok: true`）。
+
+### Phase 7: UI 界面风格与排版彻底重构 (Good Omens Aesthetic Overhaul & Clean Typography)
+- [x] **Task 7.1**: 全量剔除翠绿修仙水墨配色，全面升级为 A.Z. Fell and Co. 索霍区古籍书店（古典黄铜、羊皮纸暖白、星芒金）与克劳利宾利曜黑、深红血浆暗火色系；采用现代 CSS 相对颜色语法自动派生次级色彩与微光阴影（`index.css`、`status.css`、`pomodoro.css`、`city-setting.css`、`pet-scale.css`、`skin-selector.css`、`context-menu.css`）。
+- [x] **Task 7.2**: 彻底剥离与剔除旧七九专属书法字（Calligraphy）：全量移除 `calligraphy-*.webp` 遮罩与背景水印、移除设置窗口与状态窗口泥金印章（`status-seal-qijiu`）、移除右键菜单与状态卡片上的 `clip-path: inset(50%)` 隐藏文本黑客手法，恢复所有语言（中、英、日）下原生的现代优雅字形与无障碍可读性。
+- [x] **Task 7.3**: 彻底解决番茄钟长对白导致按钮被挤出视口的布局问题：扩大番茄钟窗口默认尺寸（由 336×360 扩展为 360×440），改用弹性列布局（`flex-direction: column`）、内容滚动自适应及底部主按钮吸底固定（`margin-top: auto; flex-shrink: 0`），确保「开始静修/专注」、「提前出关」与「出关」按钮永远清晰完整可见。
+- [x] **Task 7.4**: 现代化重构番茄钟表盘与圆满仪式：表盘中心移除旧书法遮罩改用双层细圈与星芒呼吸光效，圆满仪式保留金色圣光涟漪与磬钟音效，圆印升级为双圈天使之印。
+- [x] **Task 7.5**: 全量自动化测试（1140 passed）与 Playwright 隔离冒烟测试（`qa:electron:smoke`）验证通过。

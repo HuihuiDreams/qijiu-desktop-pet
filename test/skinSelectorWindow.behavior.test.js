@@ -344,9 +344,9 @@ test('skin-selector.css aligns close and action button visual styles and focus-v
 
   assert.match(css, /\.skin-selector-close:hover:not\(:disabled\)\s*\{[\s\S]*?background:\s*var\(--color-jade-mist\);/);
   assert.match(css, /\.skin-selector-close:hover:not\(:disabled\)\s*\{[\s\S]*?color:\s*var\(--color-jade-deep\);/);
-  assert.match(css, /\.skin-selector-btn-confirm\s*\{[\s\S]*?linear-gradient\(135deg,\s*rgba\(110,\s*198,\s*160,\s*0\.92\),\s*rgba\(201,\s*162,\s*77,\s*0\.62\)\)/);
+  assert.match(css, /\.skin-selector-btn-confirm\s*\{[\s\S]*?linear-gradient\(135deg,\s*rgba\(197,\s*155,\s*39,\s*0\.95\),\s*rgba\(143,\s*29,\s*36,\s*0\.85\)\)/);
   assert.match(css, /\.skin-selector-btn-confirm:disabled\s*\{[\s\S]*?opacity:\s*0\.55;[\s\S]*?cursor:\s*not-allowed;/);
-  assert.match(css, /\.skin-selector-btn:focus-visible,\s*\.skin-selector-close:focus-visible\s*\{[\s\S]*?outline:\s*2px solid rgba\(110, 198, 160, 0\.7\);/);
+  assert.match(css, /\.skin-selector-btn:focus-visible,\s*\.skin-selector-close:focus-visible\s*\{[\s\S]*?outline:\s*2px solid rgba\(179,\s*135,\s*67,\s*0\.8\);/);
 });
 
 test('skin-selector.css applies disabled styles to close and action buttons', () => {

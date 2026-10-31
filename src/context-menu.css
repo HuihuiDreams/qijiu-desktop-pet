@@ -1,19 +1,19 @@
 /* ============================================
-   Context Menu — Glassmorphism with Ink-Wash
+   Context Menu — London Soho Antiquarian Bookshop Aesthetic
    ============================================ */
 .context-menu {
   position: fixed;
   inset: auto;
   margin: 0;
   --display-scale: 1;
-  --menu-surface: rgba(246, 251, 248, 0.96);
-  --menu-border: rgba(61, 139, 107, 0.38);
-  --menu-text: rgba(27, 42, 36, 0.96);
-  --menu-disabled-text: rgba(72, 82, 78, 0.68);
-  --menu-disabled-bg: rgba(234, 239, 236, 0.64);
-  --menu-disabled-stripe: rgba(210, 219, 215, 0.48);
-  --menu-disabled-marker: rgba(93, 107, 101, 0.45);
-  --menu-hover-bg: rgba(218, 241, 231, 0.9);
+  --menu-surface: rgba(253, 251, 247, 0.96);
+  --menu-border: rgba(179, 135, 67, 0.35);
+  --menu-text: rgba(26, 24, 30, 0.96);
+  --menu-disabled-text: rgba(92, 86, 100, 0.65);
+  --menu-disabled-bg: rgba(240, 236, 228, 0.64);
+  --menu-disabled-stripe: rgba(224, 218, 208, 0.48);
+  --menu-disabled-marker: rgba(140, 109, 25, 0.35);
+  --menu-hover-bg: rgba(245, 238, 224, 0.95);
   background: var(--menu-surface);
   -webkit-backdrop-filter: blur(14px) saturate(1.15);
   backdrop-filter: blur(14px) saturate(1.15);
@@ -52,50 +52,20 @@
   display: none;
 }
 
-/* Background ink watermark spine (Vertical names: 岳清源 / 沈清秋) */
-.context-menu::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  pointer-events: none;
-  opacity: 0.08;
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  background-size: auto 70%;
-  z-index: 0;
-}
-
-.context-menu--yueqi::before {
-  background-image: url('./assets/calligraphy-yqy.webp');
-}
-
-.context-menu--shenjiu::before {
-  background-image: url('./assets/calligraphy-sqq.webp');
-}
-
-/* In English mode: keep the vertical watermark spine extremely faint */
-html[data-locale="en"] .context-menu::before {
-  opacity: 0.045;
-}
-
 .menu-header {
   position: relative;
   z-index: 1;
   padding: 10px 16px 8px;
   font-family: var(--font-display);
   font-size: 15px;
-  color: var(--color-jade-deep);
-  border-bottom: 1px solid rgba(110, 198, 160, 0.15);
+  color: var(--color-aziraphale-deep);
+  border-bottom: 1px solid rgba(179, 135, 67, 0.2);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: 0;
-  /* Subtle ink-wash decoration */
-  background: linear-gradient(90deg, var(--color-jade-mist) 0%, transparent 80%);
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, rgba(179, 135, 67, 0.12) 0%, transparent 80%);
 }
 
 .menu-header .status-pet-icon,
@@ -109,48 +79,8 @@ html[data-locale="en"] .context-menu::before {
 }
 
 .menu-header-text {
-  display: inline;
-}
-
-.menu-header-calligraphy {
-  display: none;
-}
-
-/* In zh and ja: show calligraphy for the character's horizontal name */
-html:not([data-locale="en"]) .menu-header-text {
-  /* Keep the full localized name available to screen readers. */
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
-
-html:not([data-locale="en"]) .menu-header-calligraphy {
   display: inline-block;
-  height: 22px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: left center;
-  vertical-align: middle;
-}
-
-html:not([data-locale="en"]) .context-menu--yueqi .menu-header-calligraphy {
-  background-image: url('./assets/calligraphy-yq.webp');
-  width: 48px;
-}
-
-html:not([data-locale="en"]) .context-menu--shenjiu .menu-header-calligraphy {
-  background-image: url('./assets/calligraphy-sj.webp');
-  width: 38px;
-}
-
-html[data-locale="en"] .menu-header-calligraphy {
-  display: none !important;
+  font-weight: 600;
 }
 
 .menu-item {
@@ -185,7 +115,7 @@ button.menu-item {
 
 button.menu-item:focus-visible,
 .menu-item:focus-visible {
-  outline: 2px solid var(--color-jade, #3d8b6b);
+  outline: 2px solid var(--color-brass, #b38743);
   outline-offset: -2px;
 }
 
@@ -197,24 +127,24 @@ button.menu-item:focus-visible,
   transform: translateY(-50%);
   width: 3px;
   height: 0;
-  background: var(--color-jade);
+  background: var(--color-gold);
   border-radius: 0 2px 2px 0;
   transition: height 0.2s ease;
 }
 
 .menu-item:hover {
-  background: linear-gradient(90deg, var(--menu-hover-bg) 0%, rgba(110, 198, 160, 0.08) 100%);
-  color: var(--color-jade-deep);
+  background: linear-gradient(90deg, var(--menu-hover-bg) 0%, rgba(179, 135, 67, 0.08) 100%);
+  color: var(--color-aziraphale-deep);
   transform: translate3d(4px, 0, 0);
 }
 
 .menu-item:hover::before {
   height: 60%;
-  box-shadow: 0 0 8px rgba(110, 198, 160, 0.5);
+  box-shadow: 0 0 8px rgba(197, 155, 39, 0.5);
 }
 
 .menu-item:active {
-  background: rgba(110, 198, 160, 0.2);
+  background: rgba(179, 135, 67, 0.18);
   transform: translate3d(2px, 0, 0) scale(0.97);
 }
 
@@ -272,7 +202,7 @@ button.menu-item:focus-visible,
   position: relative;
   z-index: 1;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(110, 198, 160, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(179, 135, 67, 0.25), transparent);
   margin: 4px 12px;
 }
 

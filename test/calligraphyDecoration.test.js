@@ -5,7 +5,7 @@ const test = require('node:test');
 
 const ROOT = path.join(__dirname, '..');
 
-test('settings windows keep only the Qijiu seal alongside localized titles', () => {
+test('settings windows display clean localized titles without Qijiu calligraphy seals', () => {
   for (const [file, titleKey] of [
     ['skin-selector.html', 'skinSelectorTitle'],
     ['city-setting.html', 'citySettingTitle'],
@@ -18,79 +18,46 @@ test('settings windows keep only the Qijiu seal alongside localized titles', () 
   }
 
   const css = fs.readFileSync(path.join(ROOT, 'src', 'settings-calligraphy.css'), 'utf8');
-  assert.doesNotMatch(css, /calligraphy-(?:yqy|sqq)\.webp/);
-  assert.match(css, /mask:\s*url\('\.\/assets\/calligraphy-qj\.webp'\)/);
-  assert.match(css, /pointer-events:\s*none/);
+  assert.doesNotMatch(css, /calligraphy-(?:yqy|sqq|qj)\.webp/);
+  assert.doesNotMatch(css, /mask:\s*url/);
 });
 
-test('all required calligraphy webp assets exist in src/assets', () => {
-  const assets = [
-    'calligraphy-yqy.webp',
-    'calligraphy-sqq.webp',
-    'calligraphy-yq.webp',
-    'calligraphy-sj.webp',
-    'calligraphy-qj.webp',
-  ];
-
-  for (const file of assets) {
-    const fullPath = path.join(ROOT, 'src', 'assets', file);
-    assert.ok(fs.existsSync(fullPath), `Asset ${file} should exist`);
-    const stat = fs.statSync(fullPath);
-    assert.ok(stat.size > 0, `Asset ${file} should not be empty`);
-  }
-});
-
-test('context-menu.css isolates calligraphy decorations and keeps english watermark faint', () => {
+test('context-menu.css renders clean typography without calligraphy watermarks or clip-path hiding names', () => {
   const css = fs.readFileSync(path.join(ROOT, 'src', 'context-menu.css'), 'utf8');
 
-  // Watermark rules
-  assert.match(css, /\.context-menu--yueqi::before/);
-  assert.match(css, /\.context-menu--shenjiu::before/);
-  assert.match(css, /html\[data-locale="en"\]\s+\.context-menu::before\s*\{[^}]*opacity:\s*0\.045/);
+  // No calligraphy webp references
+  assert.doesNotMatch(css, /calligraphy-(?:yqy|sqq|yq|sj|qj)\.webp/);
 
-  // Header horizontal calligraphy rules (text shown in en, calligraphy in zh/ja)
-  const nameRule = css.match(/html:not\(\[data-locale="en"\]\)\s+\.menu-header-text\s*\{([^}]*)\}/)?.[1] || '';
-  assert.doesNotMatch(nameRule, /display:\s*none|visibility:\s*hidden/);
-  assert.match(nameRule, /position:\s*absolute/);
-  assert.match(nameRule, /clip-path:\s*inset\(50%\)/);
-  assert.match(css, /html\[data-locale="en"\]\s+\.menu-header-calligraphy\s*\{[^}]*display:\s*none\s*!important/);
+  // Real localized text is visible in all locales (no clip-path hiding)
+  assert.doesNotMatch(css, /clip-path:\s*inset\(50%\)/);
 });
 
-test('status.css isolates calligraphy card names and keeps background watermark and seal across locales', () => {
+test('status.css renders clean card names without calligraphy watermarks or seals', () => {
   const css = fs.readFileSync(path.join(ROOT, 'src', 'status.css'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'src', 'status.html'), 'utf8');
 
-  // Card watermark rules
-  assert.match(css, /\.pet-status-block--yueqi::before/);
-  assert.match(css, /\.pet-status-block--shenjiu::before/);
-  assert.match(css, /html\[data-locale="en"\]\s+\.pet-status-block::before\s*\{[^}]*opacity:\s*0\.045/);
+  // No calligraphy webp references in css
+  assert.doesNotMatch(css, /calligraphy-(?:yqy|sqq|yq|sj|qj)\.webp/);
 
-  // Horizontal card name calligraphy
-  const nameRule = css.match(/html:not\(\[data-locale="en"\]\)\s+\.pet-status-name-text\s*\{([^}]*)\}/)?.[1] || '';
-  assert.doesNotMatch(nameRule, /display:\s*none|visibility:\s*hidden/);
-  assert.match(nameRule, /position:\s*absolute/);
-  assert.match(nameRule, /clip-path:\s*inset\(50%\)/);
-  assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.pet-status-block--yueqi\s+\.pet-status-calligraphy/);
-  assert.match(css, /html:not\(\[data-locale="en"\]\)\s+\.pet-status-block--shenjiu\s+\.pet-status-calligraphy/);
+  // Real localized name is visible without clip-path hiding
+  assert.doesNotMatch(css, /clip-path:\s*inset\(50%\)/);
 
-  // Gilded seal for 七九
-  assert.match(css, /\.status-seal-qijiu/);
-  assert.match(css, /calligraphy-qj\.webp/);
+  // Status HTML does not include legacy seal
+  assert.doesNotMatch(html, /class="status-seal-qijiu"/);
 });
 
-test('pomodoro.css uses the same dial emblem opacity across locales', () => {
+test('pomodoro.css renders clean dial and completion ceremony without Qijiu calligraphy masks', () => {
   const css = fs.readFileSync(path.join(ROOT, 'src', 'pomodoro.css'), 'utf8');
 
+  assert.doesNotMatch(css, /calligraphy-qj\.webp/);
   assert.match(css, /\.pomodoro-dial-emblem\s*\{[^}]*display:\s*block/);
-  assert.match(css, /calligraphy-qj\.webp/);
-  assert.doesNotMatch(css, /html\[data-locale="en"\]\s+\.pomodoro-dial-emblem\s*\{/);
 });
 
-test('statusWindow.js attaches pet modifier class and calligraphy container', () => {
+test('statusWindow.js attaches clean pet name text without calligraphy containers', () => {
   const source = fs.readFileSync(path.join(ROOT, 'src', 'statusWindow.js'), 'utf8');
 
-  assert.ok(source.includes('pet-status-block--${pet.id}'));
-  assert.ok(source.includes('pet-status-calligraphy'));
   assert.ok(source.includes('pet-status-name-text'));
+  assert.ok(!source.includes('pet-status-calligraphy'));
 });
 
 test('ContextMenu header text does not duplicate displayName in real DOM', () => {

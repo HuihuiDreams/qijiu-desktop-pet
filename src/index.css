@@ -1,20 +1,11 @@
 /* ============================================
-   DeskPet — 岳七 & 沈九 修仙桌面宠物
-   Global Styles — Xianxia Ink-Wash Aesthetic
+   DeskPet — Good Omens (Crowley & Aziraphale)
+   London Soho Antiquarian Bookshop & Celestial Aesthetic
    ============================================ */
 
-/* === Typography: Calligraphic display + refined serif body === 
-   Uses local system fonts only — respects CSP (no external font-src)
-   Fallback chain: Ma Shan Zheng → ZCOOL KuaiLe → KaiTi → cursive
+/* === Typography: Refined literary serif display + elegant body === 
+   Uses local system fonts and local subset fonts for JA — respects CSP (no external font-src)
    ================================================================ */
-
-@font-face {
-  font-family: 'Ma Shan Zheng';
-  src: url('./assets/fonts/MaShanZheng-Subset.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
 
 @font-face {
   font-family: 'Shippori Mincho';
@@ -33,89 +24,102 @@
 }
 
 :root {
-  --font-display: 'Ma Shan Zheng', 'ZCOOL KuaiLe', 'KaiTi', cursive;
-  --font-body: 'Noto Serif SC', 'Noto Sans SC', 'Microsoft YaHei', serif;
+  --font-display: 'Georgia', 'Songti SC', 'Noto Serif SC', 'Times New Roman', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 
+  /* === Good Omens Color Palette === */
+  /* Crowley (Demon) — 恶魔克劳利专属 */
+  --color-crowley: #8f1d24;
+  --color-crowley-deep: #590f14;
+  --color-crowley-dark: #141218;
+  --color-crowley-glow: rgb(from var(--color-crowley) r g b / 0.45);
 
+  /* Aziraphale (Angel) — 天使亚茨拉斐尔专属 */
+  --color-aziraphale: #c59b27;
+  --color-aziraphale-deep: #8c6d19;
+  --color-aziraphale-light: #faf7f0;
+  --color-aziraphale-glow: rgb(from var(--color-aziraphale) r g b / 0.45);
 
-  /* === Xianxia Ink-Wash Color Palette === */
-  /* Jade / Shenjiu — 灵玉 / 沈九专属 */
-  --color-jade: #6ec6a0;
-  --color-jade-deep: #3d8b6b;
+  /* Slot compatibility aliases */
+  --color-yueqi: var(--color-crowley);
+  --color-yueqi-deep: var(--color-crowley-deep);
+  --color-yueqi-dark: var(--color-crowley-dark);
+  --color-yueqi-glow: var(--color-crowley-glow);
+  --color-yueqi-light: #b33939;
+
+  --color-shenjiu: var(--color-aziraphale);
+  --color-shenjiu-deep: var(--color-aziraphale-deep);
+  --color-shenjiu-dark: #6e5512;
+  --color-shenjiu-light: #faf7f0;
+
+  --color-jade: var(--color-aziraphale);
+  --color-jade-deep: #8c6d19;
   --color-jade-glow: rgb(from var(--color-jade) r g b / 0.45);
   --color-jade-mist: rgb(from var(--color-jade) r g b / 0.15);
-  --color-shenjiu-light: #b8e4d0;
-  --color-shenjiu-dark: #4a9e7a;
-  
-  /* Gold — 仙金 */
-  --color-gold: #c9a24d;
+
+  /* Accents — 典雅古董金与火红 */
+  --color-gold: #c59b27;
   --color-gold-glow: rgb(from var(--color-gold) r g b / 0.45);
-  
-  /* Crimson — 丹砂 */
-  --color-crimson: #b5342a;
+  --color-brass: #b38743;
+  --color-crimson: #8f1d24;
   --color-crimson-soft: rgb(from var(--color-crimson) r g b / 0.2);
-  
-  /* Ink — 墨韵 */
-  --color-ink: #1e2a36;
-  --color-ink-light: #546a7b;
+
+  /* Ink & Paper — 羊皮纸与古籍书墨 */
+  --color-ink: #1a181e;
+  --color-ink-light: #5c5664;
   --color-ink-faint: rgb(from var(--color-ink) r g b / 0.08);
-  
-  /* Cloud / Glass — 云烟 */
-  --color-cloud: rgba(252, 252, 255, 0.96);
-  --color-mist: rgba(240, 245, 252, 0.88);
-  --color-glass: rgba(255, 255, 255, 0.72);
-  --color-glass-border: rgba(126, 200, 169, 0.25);
-  
+
+  /* Atmosphere / Glass — 伦敦旧书店暖光微雾 */
+  --color-cloud: rgba(253, 251, 247, 0.96);
+  --color-mist: rgba(247, 244, 238, 0.90);
+  --color-glass: rgba(255, 255, 255, 0.82);
+  --color-glass-border: rgba(179, 135, 67, 0.28);
+
   /* Shadows — 影 */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(20, 18, 24, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 16px 48px rgba(20, 18, 24, 0.16), 0 4px 12px rgba(0, 0, 0, 0.06);
   --shadow-glow-jade: 0 0 12px rgb(from var(--color-jade) r g b / 0.45);
   --shadow-glow-gold: 0 0 12px rgb(from var(--color-gold) r g b / 0.45);
 
-  /* Stat bar colors — refined gradients */
-  --color-affection: #d94a72;
-  --color-hunger: #d4782a;
-  --color-qi: #7c3aad;
-  --color-mood: #28b463;
+  /* Stat bar colors */
+  --color-affection: #c0392b;
+  --color-hunger: #d35400;
+  --color-qi: #c59b27;
+  --color-mood: #27ae60;
 
-  /* Spacing — 间距 */
+  /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 14px;
   --space-lg: 18px;
   --space-xl: 24px;
 
-  /* Radius — 圆角 */
-  --radius-sm: 5px;
+  /* Radius */
+  --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
-  /* === Shared Panel Styles === */
-  --panel-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(232, 244, 239, 0.93)),
-    radial-gradient(circle at 12% 15%, rgba(110, 198, 160, 0.20), transparent 45%),
-    radial-gradient(circle at 88% 85%, rgba(201, 162, 77, 0.10), transparent 50%),
+  /* === Shared Panel Styles (A.Z. Fell & Co. Vintage Bookshop) === */
+  --panel-bg: linear-gradient(135deg, rgba(255, 254, 250, 0.94), rgba(246, 241, 230, 0.96)),
+    radial-gradient(circle at 10% 12%, rgba(197, 155, 39, 0.14), transparent 45%),
+    radial-gradient(circle at 90% 88%, rgba(143, 29, 36, 0.08), transparent 50%),
     var(--color-mist);
-  --panel-border: 1px solid rgba(61, 139, 107, 0.32);
+  --panel-border: 1px solid rgba(179, 135, 67, 0.35);
   --panel-shadow:
-    0 14px 36px rgba(30, 42, 54, 0.15),
-    0 2px 6px rgba(30, 42, 54, 0.04),
+    0 14px 36px rgba(20, 18, 24, 0.16),
+    0 2px 6px rgba(20, 18, 24, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(61, 139, 107, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    inset 0 0 18px rgba(110, 198, 160, 0.06);
-  --panel-deco-bg: radial-gradient(circle at 0 0, transparent 0 12px, rgba(61, 139, 107, 0.22) 13px 14px, transparent 15px), radial-gradient(circle at 100% 0, transparent 0 12px, rgba(61, 139, 107, 0.20) 13px 14px, transparent 15px), radial-gradient(circle at 0 100%, transparent 0 12px, rgba(201, 162, 77, 0.18) 13px 14px, transparent 15px), radial-gradient(circle at 100% 100%, transparent 0 12px, rgba(201, 162, 77, 0.16) 13px 14px, transparent 15px);
-  --panel-deco-border: 1px solid rgba(61, 139, 107, 0.18);
-  --panel-deco-lines: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.48), transparent) 0 0 / 100% 1px no-repeat, linear-gradient(90deg, transparent, rgba(61, 139, 107, 0.18), transparent) 0 100% / 100% 1px no-repeat;
-  /* Simple light text shadow (gold removed per request) */
+    inset 0 -1px 0 rgba(179, 135, 67, 0.20),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.30);
+  --panel-deco-bg: radial-gradient(circle at 0 0, transparent 0 10px, rgba(179, 135, 67, 0.18) 11px 12px, transparent 13px),
+    radial-gradient(circle at 100% 0, transparent 0 10px, rgba(179, 135, 67, 0.18) 11px 12px, transparent 13px),
+    radial-gradient(circle at 0 100%, transparent 0 10px, rgba(179, 135, 67, 0.18) 11px 12px, transparent 13px),
+    radial-gradient(circle at 100% 100%, transparent 0 10px, rgba(179, 135, 67, 0.18) 11px 12px, transparent 13px);
+  --panel-deco-border: 1px solid rgba(179, 135, 67, 0.22);
+  --panel-deco-lines: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent) 0 0 / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(179, 135, 67, 0.22), transparent) 0 100% / 100% 1px no-repeat;
   --title-text-shadow: 0 1px 1px rgba(255, 255, 255, 0.9);
-
-  /* Purple / Yueqi — 紫玉 / 岳七专属 */
-  --color-yueqi: #9b59b6;
-  --color-yueqi-deep: #5b2c70;
-  --color-yueqi-glow: rgba(155, 89, 182, 0.3);
-  --color-yueqi-light: #d8b0ec;
-  --color-yueqi-dark: #6c3483;
 }
 
 /* === Japanese Font Override === */
@@ -191,19 +195,19 @@ html, body {
 }
 
 .pet--yueqi .pet-body:not(:has(.pet-image)) {
-  background: linear-gradient(145deg, var(--color-yueqi-light) 0%, var(--color-yueqi) 60%, var(--color-yueqi-dark) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(145deg, #2b1f24 0%, var(--color-crowley) 60%, var(--color-crowley-dark) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 
-    inset 0 4px 10px rgba(255, 255, 255, 0.5), 
-    inset 0 -4px 12px rgba(0, 0, 0, 0.15),
-    0 8px 24px rgba(0, 0, 0, 0.08);
+    inset 0 4px 10px rgba(255, 255, 255, 0.4), 
+    inset 0 -4px 12px rgba(0, 0, 0, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .pet--shenjiu .pet-body:not(:has(.pet-image)) {
-  background: linear-gradient(145deg, var(--color-shenjiu-light) 0%, var(--color-jade) 60%, var(--color-shenjiu-dark) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(145deg, var(--color-aziraphale-light) 0%, var(--color-aziraphale) 60%, var(--color-aziraphale-deep) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 
-    inset 0 4px 10px rgba(255, 255, 255, 0.5), 
+    inset 0 4px 10px rgba(255, 255, 255, 0.6), 
     inset 0 -4px 12px rgba(0, 0, 0, 0.15),
     0 8px 24px rgba(0, 0, 0, 0.08);
 }
@@ -261,12 +265,12 @@ html, body {
   }
 }
 
-/* === Meditating — edge glow === */
+/* === Meditating (Tending Plants / Reading) — edge glow === */
 .pet--meditating.pet--yueqi .pet-image {
-  filter: drop-shadow(0 0 5px var(--color-yueqi-glow));
+  filter: drop-shadow(0 0 6px var(--color-crowley-glow));
 }
 .pet--meditating.pet--shenjiu .pet-image {
-  filter: drop-shadow(0 0 5px var(--color-jade-glow));
+  filter: drop-shadow(0 0 6px var(--color-aziraphale-glow));
 }
 
 /* === Working — focused sway === */

@@ -50,13 +50,6 @@ function renderPetStats(pet) {
   nameText.textContent = ` ${displayName}`;
   nameEl.appendChild(nameText);
 
-  const calligraphyEl = document.createElement('span');
-  calligraphyEl.className = 'pet-status-calligraphy';
-  if (typeof calligraphyEl.setAttribute === 'function') {
-    calligraphyEl.setAttribute('aria-hidden', 'true');
-  }
-  nameEl.appendChild(calligraphyEl);
-
   block.appendChild(nameEl);
 
   Object.entries(STAT_LABELS).forEach(([key, label]) => {

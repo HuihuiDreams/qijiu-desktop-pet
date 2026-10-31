@@ -1,4 +1,4 @@
-/* Shared Qijiu seal for the three standalone settings windows. */
+/* Settings window clean header title styling */
 .settings-calligraphy-title {
   display: flex;
   align-items: center;
@@ -6,12 +6,5 @@
 }
 
 .settings-calligraphy-title::before {
-  content: '';
-  flex: 0 0 22px;
-  width: 22px;
-  height: 24px;
-  background: var(--color-gold);
-  mask: url('./assets/calligraphy-qj.webp') center / contain no-repeat;
-  opacity: 0.85;
-  pointer-events: none;
+  display: none;
 }

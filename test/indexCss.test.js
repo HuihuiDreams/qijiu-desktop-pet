@@ -63,11 +63,11 @@ test('index.css modernizes alpha color tokens using CSS Relative Color syntax', 
   assert.match(indexCss, /--shadow-glow-jade:\s*0\s+0\s+12px\s+rgb\(from\s+var\(--color-jade\)\s+r\s+g\s+b\s*\/\s*0\.45\);/);
   assert.match(indexCss, /--shadow-glow-gold:\s*0\s+0\s+12px\s+rgb\(from\s+var\(--color-gold\)\s+r\s+g\s+b\s*\/\s*0\.45\);/);
 
-  // Solid tokens remain untouched
-  assert.match(indexCss, /--color-jade-deep:\s*#3d8b6b;/);
-  assert.match(indexCss, /--color-shenjiu-light:\s*#b8e4d0;/);
-  assert.match(indexCss, /--color-shenjiu-dark:\s*#4a9e7a;/);
-  assert.match(indexCss, /--color-ink-light:\s*#546a7b;/);
+  // Solid tokens match Good Omens palette
+  assert.match(indexCss, /--color-jade-deep:\s*#8c6d19;/);
+  assert.match(indexCss, /--color-shenjiu-light:\s*#faf7f0;/);
+  assert.match(indexCss, /--color-shenjiu-dark:\s*#6e5512;/);
+  assert.match(indexCss, /--color-ink-light:\s*#5c5664;/);
 });
 
 

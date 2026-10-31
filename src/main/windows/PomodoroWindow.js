@@ -91,8 +91,8 @@ function init(dependencies) {
 }
 
 function getInitialPomodoroWindowBounds() {
-  const width = 336;
-  const height = 360;
+  const width = 360;
+  const height = 440;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;

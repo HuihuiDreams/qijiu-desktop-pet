@@ -212,13 +212,6 @@ class ContextMenu {
     textSpan.textContent = ` ${displayName}`;
     this.headerEl.appendChild(textSpan);
 
-    const calligraphyEl = document.createElement('span');
-    calligraphyEl.className = 'menu-header-calligraphy';
-    if (typeof calligraphyEl.setAttribute === 'function') {
-      calligraphyEl.setAttribute('aria-hidden', 'true');
-    }
-    this.headerEl.appendChild(calligraphyEl);
-
     // 动态更新抚摸/关怀动作的菜单文本（语言敏感）
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
     if (petActionEl) {
