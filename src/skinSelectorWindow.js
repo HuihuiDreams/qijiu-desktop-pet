@@ -9,6 +9,7 @@ let previewedSkinId = null;
 let previewInFlight = false;
 let loadingSkinId = null;
 let isFirstDataReceived = true;
+let hasReceivedData = false;
 
 function setStatus(message = '') {
   statusEl.textContent = message;
@@ -18,6 +19,8 @@ function setLoading(loading, targetSkinId = null) {
   previewInFlight = loading;
   loadingSkinId = loading ? targetSkinId : null;
   if (confirmBtn) confirmBtn.disabled = loading;
+  if (cancelBtn) cancelBtn.disabled = loading;
+  if (closeBtn) closeBtn.disabled = loading;
 
   const targetCard = targetSkinId
     ? galleryEl.querySelector(`.skin-card[data-skin-id="${targetSkinId}"]`)
@@ -89,6 +92,12 @@ async function cancelSelection() {
 }
 
 function renderGallery(items, { resetSelection = true } = {}) {
+  if (!hasReceivedData) {
+    if (!resetSelection && (items === lastItems || items == null)) {
+      return;
+    }
+    hasReceivedData = true;
+  }
   if (resetSelection) previewInFlight = false;
   lastItems = Array.isArray(items) ? items : [];
 

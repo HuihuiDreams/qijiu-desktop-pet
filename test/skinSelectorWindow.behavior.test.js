@@ -342,10 +342,30 @@ test('skin-selector.css aligns close and action button visual styles and focus-v
   const cssPath = path.join(__dirname, '../src/skin-selector.css');
   const css = fs.readFileSync(cssPath, 'utf8');
 
-  assert.match(css, /\.skin-selector-close:hover\s*\{[\s\S]*?background:\s*var\(--color-jade-mist\);/);
-  assert.match(css, /\.skin-selector-close:hover\s*\{[\s\S]*?color:\s*var\(--color-jade-deep\);/);
+  assert.match(css, /\.skin-selector-close:hover:not\(:disabled\)\s*\{[\s\S]*?background:\s*var\(--color-jade-mist\);/);
+  assert.match(css, /\.skin-selector-close:hover:not\(:disabled\)\s*\{[\s\S]*?color:\s*var\(--color-jade-deep\);/);
   assert.match(css, /\.skin-selector-btn-confirm\s*\{[\s\S]*?linear-gradient\(135deg,\s*rgba\(110,\s*198,\s*160,\s*0\.92\),\s*rgba\(201,\s*162,\s*77,\s*0\.62\)\)/);
   assert.match(css, /\.skin-selector-btn-confirm:disabled\s*\{[\s\S]*?opacity:\s*0\.55;[\s\S]*?cursor:\s*not-allowed;/);
   assert.match(css, /\.skin-selector-btn:focus-visible,\s*\.skin-selector-close:focus-visible\s*\{[\s\S]*?outline:\s*2px solid rgba\(110, 198, 160, 0\.7\);/);
+});
+
+test('skin-selector.css applies disabled styles to close and action buttons', () => {
+  const cssPath = path.join(__dirname, '../src/skin-selector.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  assert.match(css, /\.skin-selector-close:disabled\s*\{[\s\S]*?opacity:\s*0\.45;[\s\S]*?cursor:\s*not-allowed;/);
+  assert.match(css, /\.skin-selector-btn:disabled,\s*\.skin-selector-btn-confirm:disabled\s*\{[\s\S]*?opacity:\s*0\.55;[\s\S]*?cursor:\s*not-allowed;/);
+  assert.match(css, /\.skin-selector-btn-cancel:hover:not\(:disabled\)/);
+  assert.match(css, /\.skin-selector-close:active:not\(:disabled\)/);
+  assert.match(css, /\.skin-selector-btn:active:not\(:disabled\)/);
+});
+
+test('skinSelectorWindow.js setLoading disables cancelBtn and closeBtn during loading', () => {
+  const rendererPath = path.join(__dirname, '../src/skinSelectorWindow.js');
+  const rendererCode = fs.readFileSync(rendererPath, 'utf8');
+
+  assert.match(rendererCode, /if\s*\(confirmBtn\)\s*confirmBtn\.disabled\s*=\s*loading;/);
+  assert.match(rendererCode, /if\s*\(cancelBtn\)\s*cancelBtn\.disabled\s*=\s*loading;/);
+  assert.match(rendererCode, /if\s*\(closeBtn\)\s*closeBtn\.disabled\s*=\s*loading;/);
 });
 

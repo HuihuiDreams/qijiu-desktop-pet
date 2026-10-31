@@ -105,6 +105,8 @@ function createMockSkinSelectorEnvironment({ api = {}, deferRaf = false } = {}) 
   elements.set('skin-selector-cancel', cancelBtn);
   elements.set('skin-selector-status', statusEl);
 
+  let localeChangeHandler = null;
+
   const context = vm.createContext({
     document: {
       get activeElement() { return activeElement; },
@@ -123,7 +125,9 @@ function createMockSkinSelectorEnvironment({ api = {}, deferRaf = false } = {}) 
         if (type === 'keydown') keydownHandler = fn;
       },
     },
-    WindowI18n: { init() {} },
+    WindowI18n: {
+      init: (cb) => { localeChangeHandler = cb; },
+    },
     requestAnimationFrame: (cb) => {
       if (deferRaf) {
         queuedRaf.push(cb);
@@ -141,6 +145,7 @@ function createMockSkinSelectorEnvironment({ api = {}, deferRaf = false } = {}) 
     elements,
     galleryEl,
     confirmBtn,
+    cancelBtn,
     closeBtn,
     getActiveElement: () => activeElement,
     setActiveElement: (el) => { activeElement = el; },
@@ -149,6 +154,7 @@ function createMockSkinSelectorEnvironment({ api = {}, deferRaf = false } = {}) 
         queuedRaf.shift()();
       }
     },
+    triggerLocaleChange: (locale) => localeChangeHandler?.(locale),
     sendData: (items, options) => onDataHandler?.(items, options),
     pressKey: (key) => {
       let prevented = false;
@@ -240,7 +246,7 @@ test('skin selector arrow keys and Home/End navigate cards circularly only when 
   assert.equal(env.getActiveElement(), env.confirmBtn);
 });
 
-test('setLoading toggles .skin-card--loading, disables confirmBtn, and restores focus to target card', async () => {
+test('setLoading toggles .skin-card--loading, disables confirmBtn, cancelBtn, and closeBtn, and restores focus to target card', async () => {
   let resolvePreview;
   const env = createMockSkinSelectorEnvironment({
     api: {
@@ -261,6 +267,8 @@ test('setLoading toggles .skin-card--loading, disables confirmBtn, and restores 
 
   // During loading
   assert.equal(env.confirmBtn.disabled, true);
+  assert.equal(env.cancelBtn.disabled, true);
+  assert.equal(env.closeBtn.disabled, true);
   assert.equal(cards[0].disabled, true);
   assert.equal(cards[1].disabled, true);
   assert.equal(cards[1].classList.contains('skin-card--loading'), true);
@@ -272,10 +280,34 @@ test('setLoading toggles .skin-card--loading, disables confirmBtn, and restores 
 
   // After loading
   assert.equal(env.confirmBtn.disabled, false);
+  assert.equal(env.cancelBtn.disabled, false);
+  assert.equal(env.closeBtn.disabled, false);
   assert.equal(cards[0].disabled, false);
   assert.equal(cards[1].disabled, false);
   assert.equal(cards[1].classList.contains('skin-card--loading'), false);
   assert.equal(env.getActiveElement(), cards[1], 'Focus must return to target card after loading settles');
+});
+
+test('WindowI18n locale change firing before initial onData does not consume isFirstDataReceived and focuses current skin when onData arrives', () => {
+  const env = createMockSkinSelectorEnvironment();
+  const items = [
+    { id: 'skin-1', skinLabel: 'Skin One', isCurrent: false, previewUrl: '' },
+    { id: 'skin-2', skinLabel: 'Skin Two', isCurrent: true, previewUrl: '' },
+    { id: 'skin-3', skinLabel: 'Skin Three', isCurrent: false, previewUrl: '' },
+  ];
+
+  // WindowI18n locale callback fires before onData arrives from the main process
+  env.triggerLocaleChange('en');
+
+  // The empty placeholder should NOT be rendered yet because onData hasn't arrived
+  assert.equal(env.galleryEl.querySelector('.skin-gallery-empty'), null);
+
+  // When real data subsequently arrives
+  env.sendData(items);
+
+  const activeEl = env.getActiveElement();
+  assert.ok(activeEl, 'An element should be focused after initial data arrives');
+  assert.equal(activeEl.dataset.skinId, 'skin-2', 'Initial focus should land on skin-2 (isCurrent: true / aria-pressed="true")');
 });
 
 test('subsequent requestAnimationFrame does not steal focus when card is already focused', () => {
@@ -326,6 +358,13 @@ test('arrow keys and Escape are guarded during preview loading', async () => {
   const cards = env.galleryEl.querySelectorAll('.skin-card');
   cards[1].click();
 
+  // cancelBtn and closeBtn are disabled and ignore clicks while preview is loading
+  assert.equal(env.cancelBtn.disabled, true);
+  assert.equal(env.closeBtn.disabled, true);
+  env.cancelBtn.click();
+  env.closeBtn.click();
+  assert.equal(cancelCalled, 0);
+
   // Pressing ArrowRight while preview is loading is ignored
   const arrowRes = env.pressKey('ArrowRight');
   assert.equal(arrowRes.prevented, false);
@@ -338,10 +377,115 @@ test('arrow keys and Escape are guarded during preview loading', async () => {
   resolvePreview({ success: true });
   await new Promise((resolve) => setImmediate(resolve));
 
+  // Buttons are re-enabled after loading settles
+  assert.equal(env.cancelBtn.disabled, false);
+  assert.equal(env.closeBtn.disabled, false);
+
   // Escape after loading calls cancelSkin with preventDefault
   const settleEscRes = env.pressKey('Escape');
   assert.equal(settleEscRes.prevented, true);
   assert.equal(cancelCalled, 1);
+
+  // cancelBtn click after loading calls cancelSkin
+  env.cancelBtn.click();
+  assert.equal(cancelCalled, 2);
+});
+
+test('previewSkin rejection safely re-enables action buttons, displays error, and restores focus', async () => {
+  let rejectPreview;
+  const env = createMockSkinSelectorEnvironment({
+    api: {
+      previewSkin: () => new Promise((_resolve, reject) => { rejectPreview = reject; }),
+    },
+  });
+
+  const items = [
+    { id: 'skin-1', skinLabel: 'Skin One', isCurrent: true, previewUrl: '' },
+    { id: 'skin-2', skinLabel: 'Skin Two', isCurrent: false, previewUrl: '' },
+  ];
+  env.sendData(items);
+
+  const cards = env.galleryEl.querySelectorAll('.skin-card');
+  cards[1].click();
+
+  // During loading
+  assert.equal(env.confirmBtn.disabled, true);
+  assert.equal(env.cancelBtn.disabled, true);
+  assert.equal(env.closeBtn.disabled, true);
+  assert.equal(cards[1].classList.contains('skin-card--loading'), true);
+
+  // Rejection occurs (silence expected error log)
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    rejectPreview(new Error('Network IPC timeout'));
+    await new Promise((resolve) => setImmediate(resolve));
+  } finally {
+    console.error = origError;
+  }
+
+  // Finally block re-enables all controls and restores focus
+  assert.equal(env.confirmBtn.disabled, false);
+  assert.equal(env.cancelBtn.disabled, false);
+  assert.equal(env.closeBtn.disabled, false);
+  assert.equal(cards[0].disabled, false);
+  assert.equal(cards[1].disabled, false);
+  assert.equal(cards[1].classList.contains('skin-card--loading'), false);
+  assert.equal(env.elements.get('skin-selector-status').textContent, 'skinSelectorError');
+  assert.equal(env.getActiveElement(), cards[1], 'Focus must return to target card after preview failure');
+});
+
+test('previewSkin returning success false safely re-enables action buttons and displays error', async () => {
+  const env = createMockSkinSelectorEnvironment({
+    api: {
+      previewSkin: async () => ({ success: false, error: 'FILE_NOT_FOUND' }),
+    },
+  });
+
+  const items = [
+    { id: 'skin-1', skinLabel: 'Skin One', isCurrent: true, previewUrl: '' },
+    { id: 'skin-2', skinLabel: 'Skin Two', isCurrent: false, previewUrl: '' },
+  ];
+  env.sendData(items);
+
+  const cards = env.galleryEl.querySelectorAll('.skin-card');
+  cards[1].click();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(env.confirmBtn.disabled, false);
+  assert.equal(env.cancelBtn.disabled, false);
+  assert.equal(env.closeBtn.disabled, false);
+  assert.equal(cards[0].disabled, false);
+  assert.equal(cards[1].disabled, false);
+  assert.equal(cards[1].classList.contains('skin-card--loading'), false);
+  assert.equal(env.elements.get('skin-selector-status').textContent, 'skinSelectorError');
+  assert.equal(env.getActiveElement(), cards[1]);
+});
+
+test('WindowI18n locale change before onData preserves isFirstDataReceived for subsequent empty skin list', () => {
+  const env = createMockSkinSelectorEnvironment();
+
+  // Locale change fires before initial onData
+  env.triggerLocaleChange('en');
+  assert.equal(env.galleryEl.querySelector('.skin-gallery-empty'), null);
+
+  // onData subsequently arrives with empty skin list
+  env.sendData([]);
+  assert.notEqual(env.galleryEl.querySelector('.skin-gallery-empty'), null);
+  assert.equal(env.getActiveElement(), env.closeBtn, 'Empty skin list after early locale callback must focus closeBtn');
+
+  // Subsequent locale change translates without throwing or moving focus
+  env.triggerLocaleChange('ja');
+  assert.notEqual(env.galleryEl.querySelector('.skin-gallery-empty'), null);
+});
+
+test('onData delivering empty array with resetSelection false as initial payload renders empty state', () => {
+  const env = createMockSkinSelectorEnvironment();
+
+  // Even if initial onData arrives with resetSelection: false, real data delivery should be honored
+  env.sendData([], { resetSelection: false });
+  assert.notEqual(env.galleryEl.querySelector('.skin-gallery-empty'), null);
+  assert.equal(env.getActiveElement(), env.closeBtn);
 });
 
 test('renderGallery preserves disabled and loading state when rebuilt during an in-flight preview', async () => {

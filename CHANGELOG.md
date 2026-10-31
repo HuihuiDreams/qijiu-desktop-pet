@@ -19,6 +19,7 @@
 ### Fixed
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 - **子窗口焦点管理时序与键盘事件健壮性加固 (`Sub-window Focus Lifecycle & Keyboard Guards`)**：修复换肤画廊中当数据提前到达并聚焦卡片时 `requestAnimationFrame` 误将焦点抢占至关闭按钮的时序竞争；补齐画廊列表为空或未命中选中项时兜底将焦点导向关闭按钮的逻辑；在卡片预览加载期间严格拦截方向键与 `Escape` 防止卡片禁用时产生失焦与状态紊乱；通过 `loadingSkinId` 保持预览期间多语言切换时的加载态与禁用态延续；为体型调节与状态窗补充事件可选链保护，并为状态窗关闭按钮补齐多语言提示。
+- **换肤画廊多语言初始化与加载期按钮状态修复 (`Skin Selector Locale Initialization & Loading Button State Guards`)**：修复 `WindowI18n.init` 异步获取语言回调在 IPC 画廊数据到达前执行导致误消耗首屏焦点标记（`isFirstDataReceived`）的问题，确保真实数据到达后焦点正确定位至当前皮肤卡片；修复卡片预览加载期间取消与关闭按钮仍保持启用导致无响应点击的问题，在 `setLoading` 中联动禁用 `cancelBtn` 与 `closeBtn`，并在 `skin-selector.css` 中补全 `:disabled` 禁用样式与 `:hover:not(:disabled)` 伪类防护。
 
 ### Removed
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。
