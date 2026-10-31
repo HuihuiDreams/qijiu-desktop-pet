@@ -59,18 +59,18 @@ flowchart TD
     - `test/reducedMotionCss.test.js`（新增）
   - **Estimated scope**: Small (5 files)
 
-- [ ] **Task 2: 城市设置与体型调节窗口无障碍语义及键盘交互升级**
+- [x] **Task 2: 城市设置与体型调节窗口无障碍语义及键盘交互升级**
   - **Description**: 将 `src/city-setting.html` 与 `src/pet-scale.html` 的标题栏 `<span class="settings-calligraphy-title">` 升级为语义化 `<h1>`；为 `#city-input` 补充多语言 `data-i18n-aria-label="citySettingPlaceholder"` 与 `aria-describedby="city-status"`，并在 `src/citySettingWindow.js` 中同步 `aria-invalid` 状态与 `Escape` 键关闭窗口（加载中除外）；为 `#scale-slider` 移除硬编码中文 `aria-label`，改用 `aria-labelledby` 仅指向「当前体型：」标签，并由 `src/petScaleWindow.js` 同步 `aria-valuetext`（如 `"100%"`），初始化后自动聚焦滑块以支持方向键直接微调。
   - **Acceptance criteria**:
-    - [ ] `city-setting.html` 与 `pet-scale.html` 标题栏使用 `<h1 class="settings-calligraphy-title" data-i18n="...">`，对应 CSS 增加 `.city-titlebar h1, .scale-titlebar h1 { font: inherit; }`，视觉无偏移。
-    - [ ] `#city-input` 具备多语言 `aria-label` 与 `aria-describedby="city-status"`；查询失败时设置 `aria-invalid="true"`，开始新查询或输入时重置为 `"false"`。
-    - [ ] `citySettingWindow.js` 在非加载状态下按 `Escape` 调用 `closeCitySettingWindow()`；加载中按 `Escape` 不生效。
-    - [ ] `.scale-label` 增加 `id`，`#scale-slider` 使用 `aria-labelledby` 指向它（不包含 `#scale-current-value`，避免拖动时重复朗读）；`updateDisplay` / `handlePreview` 同步设置 `aria-valuetext="<n>%"`。
-    - [ ] 打开体型窗口时焦点自动落在 `#scale-slider`（`requestAnimationFrame` + `typeof focus === 'function'` 守卫）。
+    - [x] `city-setting.html` 与 `pet-scale.html` 标题栏使用 `<h1 class="settings-calligraphy-title" data-i18n="...">`，对应 CSS 增加 `.city-titlebar h1, .scale-titlebar h1 { font: inherit; }`，视觉无偏移。
+    - [x] `#city-input` 具备多语言 `aria-label` 与 `aria-describedby="city-status"`；查询失败时设置 `aria-invalid="true"`，开始新查询或输入时重置为 `"false"`。
+    - [x] `citySettingWindow.js` 在非加载状态下按 `Escape` 调用 `closeCitySettingWindow()`；加载中按 `Escape` 不生效。
+    - [x] `.scale-label` 增加 `id`，`#scale-slider` 使用 `aria-labelledby` 指向它（不包含 `#scale-current-value`，避免拖动时重复朗读）；`updateDisplay` / `handlePreview` 同步设置 `aria-valuetext="<n>%"`。
+    - [x] 打开体型窗口时焦点自动落在 `#scale-slider`（`requestAnimationFrame` + `typeof focus === 'function'` 守卫）。
   - **Verification**:
-    - [ ] 运行测试通过：`node --test test/citySettingWindow.test.js test/citySettingI18n.test.js test/petScaleWindow.test.js test/petScaleWindowRenderer.behavior.test.js test/calligraphyDecoration.test.js`
-    - [ ] 新增断言：`Escape` 在加载中/非加载中的行为、`aria-invalid` 切换、`aria-valuetext` 同步、滑块初始聚焦。
-    - [ ] 手动检查：打开体型窗口，直接按方向键可调节滑块；打开城市设置，按 `Escape` 可关闭；VoiceOver 朗读滑块为「当前体型：100%」。
+    - [x] 运行测试通过：`node --test test/citySettingWindow.test.js test/citySettingI18n.test.js test/petScaleWindow.test.js test/petScaleWindowRenderer.behavior.test.js test/calligraphyDecoration.test.js`
+    - [x] 新增断言：`Escape` 在加载中/非加载中的行为、`aria-invalid` 切换、`aria-valuetext` 同步、滑块初始聚焦。
+    - [x] 手动检查：打开体型窗口，直接按方向键可调节滑块；打开城市设置，按 `Escape` 可关闭；VoiceOver 朗读滑块为「当前体型：100%」。
   - **Dependencies**: Task 1
   - **Files likely touched**:
     - `src/city-setting.html`

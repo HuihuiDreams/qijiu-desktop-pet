@@ -14,7 +14,7 @@
 <body>
   <main id="city-panel" class="city-panel xianxia-panel" aria-live="polite">
     <header class="city-titlebar">
-      <span class="settings-calligraphy-title" data-i18n="citySettingTitle">城市设置</span>
+      <h1 class="settings-calligraphy-title" data-i18n="citySettingTitle">城市设置</h1>
       <button id="city-close" class="city-close-button" type="button" aria-label="关闭" data-i18n-title="pomodoroClose" title="关闭">
         <svg class="city-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 6l12 12M18 6L6 18"></path>
@@ -38,6 +38,9 @@
           spellcheck="false"
           data-i18n-placeholder="citySettingPlaceholder"
           placeholder="请输入城市名"
+          data-i18n-aria-label="citySettingPlaceholder"
+          aria-label="请输入城市名"
+          aria-describedby="city-status"
         >
         <button id="city-confirm" class="city-confirm-button" type="button" data-i18n="citySettingConfirm">确认</button>
       </div>

@@ -117,3 +117,83 @@ test('city setting input enforces maxlength in HTML', () => {
 
   assert.match(html, /maxlength="100"/);
 });
+
+test('city setting window uses semantic h1 and input accessibility attributes', () => {
+  const html = readSource('src/city-setting.html');
+  const css = readSource('src/city-setting.css');
+
+  assert.match(html, /<h1 class="settings-calligraphy-title" data-i18n="citySettingTitle">/);
+  assert.match(html, /data-i18n-aria-label="citySettingPlaceholder"/);
+  assert.match(html, /aria-describedby="city-status"/);
+  assert.match(css, /\.city-titlebar h1\s*\{[\s\S]*?font:\s*inherit;/);
+});
+
+test('city setting renderer toggles aria-invalid and respects loading state on Escape', async () => {
+  const vm = require('node:vm');
+  let closeCalled = 0;
+  let keydownHandler;
+  let resolveSetCity;
+  const elements = {
+    'city-input': {
+      value: 'Beijing',
+      attributes: {},
+      listeners: {},
+      setAttribute(k, v) { this.attributes[k] = String(v); },
+      removeAttribute(k) { delete this.attributes[k]; },
+      addEventListener(type, fn) { this.listeners[type] = fn; },
+      focus() { this.focused = true; },
+    },
+    'city-confirm': { listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; } },
+    'city-close': { listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; } },
+    'city-current-value': { textContent: '', removeAttribute() {}, setAttribute() {} },
+    'city-status': { textContent: '', className: '', classList: { add() {} } },
+  };
+
+  const sandbox = {
+    document: {
+      getElementById(id) { return elements[id] || null; },
+    },
+    window: {
+      electronAPI: {
+        getCitySettings: async () => ({ city: '' }),
+        setCityName: () => new Promise((resolve) => { resolveSetCity = resolve; }),
+        closeCitySettingWindow: () => { closeCalled++; },
+      },
+      addEventListener: (type, fn) => { if (type === 'keydown') keydownHandler = fn; },
+    },
+    t: (key) => key,
+    requestAnimationFrame: (cb) => cb(),
+    setTimeout: (cb) => cb(),
+    console,
+  };
+
+  vm.runInNewContext(readSource('src/citySettingWindow.js'), sandbox);
+
+  assert.equal(keydownHandler != null, true);
+
+  // Pressing Escape when not loading closes window
+  keydownHandler({ key: 'Escape' });
+  assert.equal(closeCalled, 1);
+
+  // Trigger confirm to enter loading state
+  elements['city-confirm'].listeners.click();
+  assert.equal(elements['city-input'].attributes['aria-invalid'], 'false');
+
+  // Pressing Escape while loading does NOT close window
+  keydownHandler({ key: 'Escape' });
+  assert.equal(closeCalled, 1, 'closeCitySettingWindow should not be called while loading');
+
+  // Fail the geocoding request
+  resolveSetCity({ success: false });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(elements['city-input'].attributes['aria-invalid'], 'true');
+
+  // Input event resets aria-invalid to false
+  elements['city-input'].listeners.input();
+  assert.equal(elements['city-input'].attributes['aria-invalid'], 'false');
+
+  // Now that loading is complete, Escape closes window again
+  keydownHandler({ key: 'Escape' });
+  assert.equal(closeCalled, 2);
+});

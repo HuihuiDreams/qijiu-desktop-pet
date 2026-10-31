@@ -59,6 +59,12 @@ input {
   app-region: drag;
 }
 
+.scale-titlebar h1 {
+  margin: 0;
+  font: inherit;
+}
+
+.scale-titlebar > h1,
 .scale-titlebar > span {
   padding-left: 12px;
 }

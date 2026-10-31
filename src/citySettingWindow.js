@@ -24,9 +24,12 @@ function clearStatus() {
   statusEl.className = 'city-status';
 }
 
+let isLoading = false;
+
 function setLoading(loading) {
-  confirmBtn.disabled = loading;
-  inputEl.disabled = loading;
+  isLoading = loading;
+  if (confirmBtn) confirmBtn.disabled = loading;
+  if (inputEl) inputEl.disabled = loading;
 }
 
 async function loadCurrentCity() {
@@ -46,13 +49,14 @@ async function loadCurrentCity() {
 }
 
 async function handleConfirm() {
-  const cityName = inputEl.value.trim();
+  const cityName = inputEl?.value?.trim() || '';
   if (!cityName) {
-    inputEl.focus();
+    if (typeof inputEl?.focus === 'function') inputEl.focus();
     return;
   }
 
   setLoading(true);
+  inputEl?.setAttribute?.('aria-invalid', 'false');
   setStatus(t('citySettingSearching'), 'city-status--searching');
 
   try {
@@ -68,38 +72,66 @@ async function handleConfirm() {
 
       currentValueEl.textContent = displayCity;
       currentValueEl.removeAttribute('data-i18n');
-      inputEl.value = '';
+      if (inputEl) inputEl.value = '';
 
       // Auto-close after a short delay
       setTimeout(() => {
         window.electronAPI.closeCitySettingWindow();
       }, 1200);
     } else {
+      inputEl?.setAttribute?.('aria-invalid', 'true');
       setStatus(t('citySettingError'), 'city-status--error');
       setLoading(false);
-      inputEl.focus();
+      if (typeof inputEl?.focus === 'function') inputEl.focus();
     }
   } catch (err) {
     console.error('Failed to set city:', err);
+    inputEl?.setAttribute?.('aria-invalid', 'true');
     setStatus(t('citySettingError'), 'city-status--error');
     setLoading(false);
-    inputEl.focus();
+    if (typeof inputEl?.focus === 'function') inputEl.focus();
   }
 }
 
 // Event listeners
-confirmBtn.addEventListener('click', handleConfirm);
+if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
 
-inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    handleConfirm();
+if (inputEl) {
+  inputEl.addEventListener('input', () => {
+    inputEl.setAttribute?.('aria-invalid', 'false');
+  });
+
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault?.();
+      handleConfirm();
+    }
+  });
+}
+
+if (closeBtn) {
+  closeBtn.addEventListener('click', () => {
+    window.electronAPI.closeCitySettingWindow();
+  });
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (isLoading) return;
+    e.preventDefault?.();
+    window.electronAPI.closeCitySettingWindow();
   }
 });
 
-closeBtn.addEventListener('click', () => {
-  window.electronAPI.closeCitySettingWindow();
-});
 // Init
-requestAnimationFrame(() => inputEl.focus());
-WindowI18n.init(loadCurrentCity);
+if (typeof requestAnimationFrame === 'function') {
+  requestAnimationFrame(() => {
+    if (typeof inputEl?.focus === 'function') inputEl.focus();
+  });
+} else if (typeof inputEl?.focus === 'function') {
+  inputEl.focus();
+}
+
+if (typeof WindowI18n !== 'undefined' && WindowI18n.init) {
+  WindowI18n.init(loadCurrentCity);
+}

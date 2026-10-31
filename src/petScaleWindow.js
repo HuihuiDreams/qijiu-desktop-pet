@@ -10,7 +10,10 @@
 
   function updateDisplay(percent) {
     if (valueEl) valueEl.textContent = `${percent}%`;
-    if (sliderEl) sliderEl.value = percent;
+    if (sliderEl) {
+      sliderEl.value = percent;
+      sliderEl.setAttribute?.('aria-valuetext', `${percent}%`);
+    }
   }
 
   async function loadSettings() {
@@ -34,6 +37,7 @@
 
   function handlePreview(percent) {
     if (valueEl) valueEl.textContent = `${percent}%`;
+    sliderEl?.setAttribute?.('aria-valuetext', `${percent}%`);
     window.electronAPI?.previewPetScale?.(percent);
   }
 
@@ -87,4 +91,14 @@
   }
 
   loadSettings();
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      if (typeof sliderEl?.focus === 'function') {
+        sliderEl.focus();
+      }
+    });
+  } else if (typeof sliderEl?.focus === 'function') {
+    sliderEl.focus();
+  }
 })();

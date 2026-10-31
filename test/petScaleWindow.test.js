@@ -114,3 +114,14 @@ test('pet scale main process window module configuration and ordinary window sta
   assert.match(source, /cancelPetScale\(\)/);
   assert.match(source, /if \(!scaleConfirmed\) \{\s*PetScaleService\.cancel\(\);\s*\}/);
 });
+
+test('pet scale window uses semantic h1 and slider aria-labelledby/valuetext attributes', () => {
+  const html = readSource('src/pet-scale.html');
+  const css = readSource('src/pet-scale.css');
+
+  assert.match(html, /<h1 class="settings-calligraphy-title" data-i18n="petScaleTitle">/);
+  assert.match(html, /id="scale-label"/);
+  assert.match(html, /aria-labelledby="scale-label"/);
+  assert.doesNotMatch(html, /id="scale-slider"[^>]*aria-label=/);
+  assert.match(css, /\.scale-titlebar h1\s*\{[\s\S]*?font:\s*inherit;/);
+});

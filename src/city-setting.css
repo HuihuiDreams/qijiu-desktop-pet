@@ -55,6 +55,12 @@ input {
   app-region: drag;
 }
 
+.city-titlebar h1 {
+  margin: 0;
+  font: inherit;
+}
+
+.city-titlebar > h1,
 .city-titlebar > span {
   padding-left: 12px;
 }

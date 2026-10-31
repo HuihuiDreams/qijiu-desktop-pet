@@ -9,9 +9,18 @@ function loadScaleWindow(settings = null) {
   const elements = new Map();
   let keydown;
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'src', 'petScaleWindow.js'), 'utf8'), {
+    requestAnimationFrame: (cb) => cb(),
     document: {
       getElementById(id) {
-        const element = { listeners: {}, addEventListener(type, handler) { this.listeners[type] = handler; } };
+        const element = {
+          listeners: {},
+          attributes: {},
+          focused: false,
+          addEventListener(type, handler) { this.listeners[type] = handler; },
+          setAttribute(k, v) { this.attributes[k] = String(v); },
+          getAttribute(k) { return this.attributes[k]; },
+          focus() { this.focused = true; },
+        };
         elements.set(id, element);
         return element;
       },
@@ -75,4 +84,26 @@ test('scale-reset uses defaultPercent returned from getPetScaleSettings', async 
   window.elements.get('scale-reset').listeners.click();
   assert.deepEqual(window.calls, [['preview', 95]]);
   assert.equal(window.elements.get('scale-current-value').textContent, '95%');
+});
+
+test('scale slider receives initial focus and synchronizes aria-valuetext', async () => {
+  const window = loadScaleWindow({
+    currentPercent: 120,
+    defaultPercent: 100,
+    minPercent: 50,
+    maxPercent: 150,
+    stepPercent: 5,
+  });
+
+  const slider = window.elements.get('scale-slider');
+  assert.equal(slider.focused, true, 'slider should receive initial focus');
+
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(slider.attributes['aria-valuetext'], '120%');
+
+  // Preview via slider input
+  slider.listeners.input({ target: { value: '80' } });
+  assert.deepEqual(window.calls, [['preview', 80]]);
+  assert.equal(slider.attributes['aria-valuetext'], '80%');
+  assert.equal(window.elements.get('scale-current-value').textContent, '80%');
 });

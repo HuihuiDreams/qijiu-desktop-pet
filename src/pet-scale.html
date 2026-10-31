@@ -14,7 +14,7 @@
 <body>
   <main id="scale-panel" class="scale-panel xianxia-panel" aria-live="polite">
     <header class="scale-titlebar">
-      <span class="settings-calligraphy-title" data-i18n="petScaleTitle">调整桌宠大小</span>
+      <h1 class="settings-calligraphy-title" data-i18n="petScaleTitle">调整桌宠大小</h1>
       <button id="scale-close" class="scale-close-button" type="button" aria-label="关闭" data-i18n-title="petScaleCancel" title="关闭">
         <svg class="scale-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 6l12 12M18 6L6 18"></path>
@@ -25,7 +25,7 @@
     <div class="scale-content">
       <div class="scale-current-row">
         <div class="scale-current-info">
-          <span class="scale-label" data-i18n="petScaleCurrent">当前体型：</span>
+          <span id="scale-label" class="scale-label" data-i18n="petScaleCurrent">当前体型：</span>
           <span id="scale-current-value" class="scale-current-value">100%</span>
         </div>
         <button id="scale-reset" class="scale-reset-button" type="button" data-i18n="petScaleReset">恢复默认</button>
@@ -40,7 +40,8 @@
           max="150"
           step="5"
           value="100"
-          aria-label="体型缩放滑动条"
+          aria-labelledby="scale-label"
+          aria-valuetext="100%"
         >
         <div class="scale-slider-labels">
           <span>50%</span>
