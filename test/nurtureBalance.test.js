@@ -260,8 +260,8 @@ test('share food switches to throwup presentation only when Shen Jiu would excee
   assert.equal(interaction.key, 'shareFood');
   assert.equal(interaction.overlayKey, 'throwup');
   assert.deepEqual(interaction.dialogue, {
-    yueqi: '小九你怎么了？',
-    shenjiu: '呕~~你要撑死我吗？！',
+    yueqi: '天使你怎么了？',
+    shenjiu: '（解开扣子微喘）……克劳利，你要撑死我吗？！',
   });
   assert.equal(shenjiu.stats.hunger, 100);
 });

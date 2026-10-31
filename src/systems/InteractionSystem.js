@@ -107,8 +107,8 @@ class InteractionSystem {
       return {
         overlayKey: 'throwup',
         dialogue: {
-          yueqi:   pool ? pick(pool.yueqi)   : '小九你怎么了？',
-          shenjiu: pool ? pick(pool.shenjiu) : '呕~~你要撑死我吗？！',
+          yueqi:   pool ? pick(pool.yueqi)   : '天使你怎么了？',
+          shenjiu: pool ? pick(pool.shenjiu) : '（解开扣子微喘）……克劳利，你要撑死我吗？！',
         },
       };
     }

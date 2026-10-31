@@ -34,7 +34,7 @@ const { createPresentationGuard } = require('./services/PresentationGuard');
 const { createScreensaverController } = require('./services/ScreensaverController');
 const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
-const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
+const APP_USER_MODEL_ID = 'com.deskpet.good-omens';
 let screensaverController = null;
 let interruptionCoordinator = null;
 

@@ -175,9 +175,9 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          expected_app_name="七九爱宠.app"
+          expected_app_name="好兆头爱宠.app"
           expected_executable="DeskPet"
-          legacy_executable_name="七九爱宠"
+          legacy_executable_name="好兆头爱宠"
 
           apps=(dist/mac*/"$expected_app_name")
           if [ "${#apps[@]}" -eq 0 ]; then

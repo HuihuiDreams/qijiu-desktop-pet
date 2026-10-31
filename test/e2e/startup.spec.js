@@ -22,7 +22,7 @@ test.describe('startup', () => {
     const appWindow = await electronApp.firstWindow({ timeout: 20000 });
     await appWindow.waitForLoadState('domcontentloaded', { timeout: 20000 });
     const title = await appWindow.title();
-    expect(title).toBe('岳七 & 沈九 桌面宠物');
+    expect(title).toBe('好兆头 (克劳利 & 亚茨拉斐尔) 桌面宠物');
   });
 
   test('renderer reaches ready state', async () => {

@@ -30,8 +30,8 @@ window.testInteraction = function (type = 'kiss') {
     const throwupPool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES.throwup : null;
     const pick = (arr) => (Array.isArray(arr) && arr.length > 0) ? arr[Math.floor(Math.random() * arr.length)] : null;
     debugDialogue = {
-      yueqi: throwupPool ? pick(throwupPool.yueqi) : '小九你怎么了？',
-      shenjiu: throwupPool ? pick(throwupPool.shenjiu) : '呕~~你要撑死我吗？！',
+      yueqi: throwupPool ? pick(throwupPool.yueqi) : '天使你怎么了？',
+      shenjiu: throwupPool ? pick(throwupPool.shenjiu) : '（解开扣子微喘）……克劳利，你要撑死我吗？！',
     };
   }
 
@@ -369,12 +369,12 @@ window.testHungry = function() {
   shenjiu.setState('idle');
   shenjiu.idleTimer = 5000; 
   
-  console.log('[debug] 已将沈九的饱腹度设置为 10，他现在应该会显示肚子饿的图片了。5秒后自动恢复。');
+  console.log('[debug] 已将亚茨拉斐尔的饱腹度设置为 10，他现在应该会显示肚子饿的图片了。5秒后自动恢复。');
   
   // 5秒后恢复
   setTimeout(() => {
     shenjiu.stats.hunger = originalHunger;
-    console.log(`[debug] 5秒已过，沈九的饱腹度已恢复为 ${originalHunger}。`);
+    console.log(`[debug] 5秒已过，亚茨拉斐尔的饱腹度已恢复为 ${originalHunger}。`);
   }, 5000);
 };
 

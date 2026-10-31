@@ -55,7 +55,7 @@ test('Playwright Electron smoke script uses an isolated profile and cleans it up
   assert.match(smokeSource, /app\.getPath\('userData'\)/);
   assert.match(smokeSource, /Electron userData was not isolated/);
   assert.match(smokeSource, /await electronApp\.firstWindow/);
-  assert.match(smokeSource, /岳七 & 沈九 桌面宠物/);
+  assert.match(smokeSource, /好兆头 \(克劳利 & 亚茨拉斐尔\) 桌面宠物/);
   assert.match(smokeSource, /fs\.rmSync\(userDataDir, \{ recursive: true, force: true \}\)/);
 });
 

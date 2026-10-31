@@ -226,7 +226,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:
-          name: qijiu-desktop-pet-windows-installer
+          name: good-omens-desktop-pet-windows-installer
           path: |
             dist/*.exe
             dist/*.blockmap
@@ -292,9 +292,9 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
 
-          expected_app_name="七九爱宠.app"
+          expected_app_name="好兆头爱宠.app"
           expected_executable="DeskPet"
-          legacy_executable_name="七九爱宠"
+          legacy_executable_name="好兆头爱宠"
 
           apps=(dist/mac*/"$expected_app_name")
           if [ "${#apps[@]}" -eq 0 ]; then
@@ -400,7 +400,7 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:
-          name: qijiu-desktop-pet-macos-installer
+          name: good-omens-desktop-pet-macos-installer
           path: |
             dist/*.dmg
             dist/*.zip

@@ -1,7 +1,7 @@
 {
-  "name": "desktop-pet",
+  "name": "good-omens-desktop-pet",
   "version": "0.11.2",
-  "description": "岳清源 & 沈清秋 桌面爱宠",
+  "description": "Good Omens (Crowley & Aziraphale) Desktop Pet / 好兆头桌面爱宠",
   "main": "main.js",
   "scripts": {
     "dev": "electron .",
@@ -35,9 +35,9 @@
     "electron-updater": "^6.8.3"
   },
   "build": {
-    "appId": "com.deskpet.yueqi-shenjiu",
-    "productName": "七九爱宠",
-    "artifactName": "desktop-pet-setup-${version}.${ext}",
+    "appId": "com.deskpet.good-omens",
+    "productName": "好兆头爱宠",
+    "artifactName": "good-omens-pet-setup-${version}.${ext}",
     "files": [
       "**/*",
       "!docs/**",
@@ -63,7 +63,7 @@
       "signAndEditExecutable": false
     },
     "mac": {
-      "artifactName": "desktop-pet-setup-${version}-${arch}.${ext}",
+      "artifactName": "good-omens-pet-setup-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",
@@ -91,8 +91,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "七九爱宠",
-      "uninstallDisplayName": "七九爱宠",
+      "shortcutName": "好兆头爱宠",
+      "uninstallDisplayName": "好兆头爱宠",
       "include": "build/installer.nsh"
     },
     "publish": [

@@ -60,7 +60,7 @@ async function main() {
       visibility: window.__DEBUG_VISIBILITY || null,
     }));
 
-    if (diagnostics.title !== '岳七 & 沈九 桌面宠物') {
+    if (diagnostics.title !== '好兆头 (克劳利 & 亚茨拉斐尔) 桌面宠物') {
       throw new Error(`Unexpected main window title: ${diagnostics.title}`);
     }
     if (diagnostics.readyState !== 'complete' && diagnostics.readyState !== 'interactive') {

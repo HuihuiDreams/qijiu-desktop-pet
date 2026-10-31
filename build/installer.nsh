@@ -3,7 +3,7 @@
 RequestExecutionLevel admin
 
 !macro customInstall
-  DetailPrint "正在配置七九爱宠安装环境..."
+  DetailPrint "正在配置好兆头爱宠安装环境..."
 
   ; 确保临时目录可访问 (修复"Can't initialize plug-ins directory"错误)
   ; 该错误常见于中文应用名或权限受限的安装环境
@@ -18,7 +18,7 @@ RequestExecutionLevel admin
 !macroend
 
 !macro customUnInstall
-  DetailPrint "正在清理七九爱宠数据..."
+  DetailPrint "正在清理好兆头爱宠数据..."
   ; 清理历史快捷方式（兜底，防止旧名称残留）
   Delete "$DESKTOP\DeskPet.lnk"
   Delete "$SMPROGRAMS\DeskPet.lnk"

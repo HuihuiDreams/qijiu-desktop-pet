@@ -25,9 +25,9 @@ test('macOS release workflows enforce Chinese wrapper app and ASCII executable n
   for (const workflowFile of workflowFiles) {
     const workflowSource = fs.readFileSync(path.join(ROOT, workflowFile), 'utf8');
 
-    assert.ok(workflowSource.includes('expected_app_name="七九爱宠.app"'), workflowFile);
+    assert.ok(workflowSource.includes('expected_app_name="好兆头爱宠.app"'), workflowFile);
     assert.ok(workflowSource.includes('expected_executable="DeskPet"'), workflowFile);
-    assert.ok(workflowSource.includes('legacy_executable_name="七九爱宠"'), workflowFile);
+    assert.ok(workflowSource.includes('legacy_executable_name="好兆头爱宠"'), workflowFile);
   }
 });
 

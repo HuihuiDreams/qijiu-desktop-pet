@@ -145,7 +145,10 @@
 - [x] **Task 5.3**: 检查 `SpriteView.js` 中的降级 emoji 与占位图。
 - [x] **Task 5.4**: 将雨天粒子（`effects.css`）升级为创世流星雨拖尾与星辉光效，联动更新天气问候台词。
 
-### Phase 6: 独立发行配置与回归验证 (Packaging & Verification)
-- [x] **Task 6.1**: 采用内容替换型 CP 维护模式保留底层槽位并完成托盘 CA 标识与开机启动适配（独立发布时可按指南覆写 `package.json`）。
-- [x] **Task 6.2**: 全量单元测试 `npm test`（1141 passing）与 E2E 冒烟测试 `npm run qa:electron:smoke`（`ok: true`）。
-- [x] **Task 6.3**: 人工端到端验收与纯色抠图实心化验证（透明边缘平滑、双宠 2.2 头身行走无抖动、中英日三语无障碍交互无异常）。
+### Phase 6: 独立发行配置与品牌身份隔离 (Independent Release Identity & Packaging)
+- [x] **Task 6.1**: 完成独立应用身份与安装配置（`package.json` 改为 `good-omens-desktop-pet` / `好兆头爱宠` / `com.deskpet.good-omens`，同步 `package-lock.json` 与 NSIS 安装包命名）。
+- [x] **Task 6.2**: 配置 Windows 身份标识（`src/main/AppLifecycle.js` 中的 `APP_USER_MODEL_ID`）与 NSIS 安装卸载文案（`build/installer.nsh`）。
+- [x] **Task 6.3**: 重新生成全套好兆头专属应用图标（`icon.png`, `icon.ico`, `icon.icns`, `iconTemplate.png`, `iconTemplate@2x.png`）与托盘 CA 点阵位图（`TrayManager.js`）。
+- [x] **Task 6.4**: 清理展示层残留旧角色名称与台词（`src/index.html` 标题、`src/app.js` 启动提示、`src/systems/InteractionSystem.js` 与 `src/debug.js` 兜底对白），同步更新 `tools/playwright-electron-smoke.js` 与相关测试断言。
+- [x] **Task 6.5**: 完整重写三语发行说明（`README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`）以及 CI 打包流水线（`.github/workflows/`、`test/macosPackaging.test.js`）。
+- [x] **Task 6.6**: 全量单元测试 `npm test`（1141 passing）、环境预检 `npm run verify:installer` 与 E2E 冒烟测试 `npm run qa:electron:smoke`（`ok: true`）。
