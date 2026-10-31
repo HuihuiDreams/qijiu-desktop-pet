@@ -38,6 +38,7 @@ function loadScaleWindow(settings = null) {
   return {
     calls,
     elements,
+    keydown,
     press(key, buttonId = null) {
       const button = elements.get(buttonId);
       const event = {
@@ -106,4 +107,17 @@ test('scale slider receives initial focus and synchronizes aria-valuetext', asyn
   assert.deepEqual(window.calls, [['preview', 80]]);
   assert.equal(slider.attributes['aria-valuetext'], '80%');
   assert.equal(window.elements.get('scale-current-value').textContent, '80%');
+});
+
+test('petScaleWindow handles keydown gracefully when event lacks preventDefault', () => {
+  const window = loadScaleWindow();
+  assert.doesNotThrow(() => {
+    window.keydown({ key: 'Escape' });
+  });
+  assert.deepEqual(window.calls, [['cancel']]);
+
+  assert.doesNotThrow(() => {
+    window.keydown({ key: 'Enter' });
+  });
+  assert.deepEqual(window.calls, [['cancel'], ['confirm']]);
 });

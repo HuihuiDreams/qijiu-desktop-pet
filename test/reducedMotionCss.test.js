@@ -47,6 +47,14 @@ test('status.css provides reduced-motion coverage for status panel entrance', ()
   );
 });
 
+test('skin-selector.css provides reduced-motion coverage for card loading feedback', () => {
+  const css = readSource('src/skin-selector.css');
+  assert.match(
+    css,
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.skin-card--loading\s*\{[\s\S]*?animation:\s*none;?[\s\S]*?\}/
+  );
+});
+
 test('index.css preserves pet resident animations under reduced motion (locks intentional decision)', () => {
   const css = readSource('src/index.css');
   assert.doesNotMatch(

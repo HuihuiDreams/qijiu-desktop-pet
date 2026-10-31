@@ -99,6 +99,7 @@ if (confirmBtn) confirmBtn.addEventListener('click', handleConfirm);
 if (inputEl) {
   inputEl.addEventListener('input', () => {
     inputEl.setAttribute?.('aria-invalid', 'false');
+    clearStatus();
   });
 
   inputEl.addEventListener('keydown', (e) => {

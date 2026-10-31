@@ -78,10 +78,10 @@
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      e.preventDefault();
+      e.preventDefault?.();
       handleCancel();
     } else if (e.key === 'Enter' && !e.target?.closest?.('button')) {
-      e.preventDefault();
+      e.preventDefault?.();
       handleConfirm();
     }
   });

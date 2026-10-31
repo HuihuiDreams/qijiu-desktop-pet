@@ -129,9 +129,11 @@ function renderStatus(data) {
   });
 }
 
-closeBtn.addEventListener('click', () => {
-  window.electronAPI.closeStatusWindow();
-});
+if (closeBtn) {
+  closeBtn.addEventListener('click', () => {
+    window.electronAPI?.closeStatusWindow?.();
+  });
+}
 
 if (typeof window?.addEventListener === 'function') {
   window.addEventListener('keydown', (e) => {

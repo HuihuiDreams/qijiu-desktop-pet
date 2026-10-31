@@ -188,10 +188,12 @@ test('city setting renderer toggles aria-invalid and respects loading state on E
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(elements['city-input'].attributes['aria-invalid'], 'true');
+  assert.equal(elements['city-status'].textContent, 'citySettingError');
 
-  // Input event resets aria-invalid to false
+  // Input event resets aria-invalid to false and clears stale status text
   elements['city-input'].listeners.input();
   assert.equal(elements['city-input'].attributes['aria-invalid'], 'false');
+  assert.equal(elements['city-status'].textContent, '');
 
   // Now that loading is complete, Escape closes window again
   keydownHandler({ key: 'Escape' });

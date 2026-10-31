@@ -7,6 +7,7 @@ const statusEl = document.getElementById('skin-selector-status');
 let lastItems = [];
 let previewedSkinId = null;
 let previewInFlight = false;
+let loadingSkinId = null;
 let isFirstDataReceived = true;
 
 function setStatus(message = '') {
@@ -15,6 +16,7 @@ function setStatus(message = '') {
 
 function setLoading(loading, targetSkinId = null) {
   previewInFlight = loading;
+  loadingSkinId = loading ? targetSkinId : null;
   if (confirmBtn) confirmBtn.disabled = loading;
 
   const targetCard = targetSkinId
@@ -104,6 +106,12 @@ function renderGallery(items, { resetSelection = true } = {}) {
     empty.className = 'skin-gallery-empty';
     empty.textContent = t('skinSelectorEmpty');
     galleryEl.appendChild(empty);
+    if (isFirstDataReceived) {
+      isFirstDataReceived = false;
+      if (typeof closeBtn?.focus === 'function') {
+        closeBtn.focus();
+      }
+    }
     return;
   }
 
@@ -118,6 +126,12 @@ function renderGallery(items, { resetSelection = true } = {}) {
     card.className = 'skin-card';
     card.type = 'button';
     card.dataset.skinId = item.id;
+    if (previewInFlight) {
+      card.disabled = true;
+      if (item.id === loadingSkinId) {
+        card.classList.add('skin-card--loading');
+      }
+    }
     const isSelected = item.id === previewedSkinId;
     card.setAttribute('aria-pressed', String(isSelected));
     card.setAttribute('aria-label', item.isCurrent
@@ -159,6 +173,8 @@ function renderGallery(items, { resetSelection = true } = {}) {
     const pressedCard = galleryEl.querySelector('.skin-card[aria-pressed="true"]');
     if (typeof pressedCard?.focus === 'function') {
       pressedCard.focus();
+    } else if (typeof closeBtn?.focus === 'function') {
+      closeBtn.focus();
     }
   } else if (focusedSkinId) {
     const restoredCard = galleryEl.querySelector(`.skin-card[data-skin-id="${focusedSkinId}"]`);
@@ -174,12 +190,17 @@ cancelBtn.addEventListener('click', cancelSelection);
 closeBtn.addEventListener('click', cancelSelection);
 
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !previewInFlight) {
+  if (event.key === 'Escape') {
+    if (previewInFlight) return;
+    if (typeof event.preventDefault === 'function') {
+      event.preventDefault();
+    }
     cancelSelection();
     return;
   }
 
   if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+    if (previewInFlight) return;
     const currentCard = document.activeElement?.closest?.('.skin-card');
     if (!currentCard) return;
 
@@ -207,6 +228,12 @@ window.addEventListener('keydown', (event) => {
 
 window.skinSelectorAPI.onData((items, options) => renderGallery(items, options));
 
-requestAnimationFrame(() => closeBtn.focus());
+requestAnimationFrame(() => {
+  if (!document.activeElement?.closest?.('.skin-card')) {
+    if (typeof closeBtn?.focus === 'function') {
+      closeBtn.focus();
+    }
+  }
+});
 
 WindowI18n.init((locale) => { renderGallery(lastItems, { resetSelection: false }); });
