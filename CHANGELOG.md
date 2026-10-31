@@ -13,6 +13,7 @@
 ### Changed
 - **Agent 协作与文档同步纪律加固 (`Agent Workflow & Plan Sync Rules`)**：基于 Microsoft SkillOpt 挖掘 Antigravity 历史会话经验，在 `AGENTS.md` 与 `.geminirules` 中固化四项执行规则：实施计划时必须实时勾选 `docs/plan/*.md`、架构及配置变更全量同步至 `docs/structure.md` 与 ADR、规避 CHANGELOG 重复标题以保通过 `./push.sh` 预检、多阶段任务严格推行“一阶段一验证一原子 Commit”以保可回滚性。
 - **城市设置与体型调节窗口无障碍语义与键盘交互升级 (`A11y & Keyboard Navigation for City & Scale Windows`)**：将城市设置与体型调节标题升级为语义化 `<h1>`，CSS 配置 `font: inherit` 保持水墨字号不变；城市输入框补齐多语言 `aria-label` 与 `aria-describedby="city-status"`，并通过 `src/citySettingWindow.js` 联动 `aria-invalid` 状态与非加载态 `Escape` 键快速退出；体型滑块移除硬编码中文 `aria-label` 改用 `aria-labelledby` 关联「当前体型：」标签，动态同步 `aria-valuetext` 并于窗口就绪后自动聚焦滑块，支持方向键微调（详见 [ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)）。
+- **状态面板与换肤画廊无障碍键盘漫游与焦点管理升级 (`Status Window & Skin Gallery Keyboard Roaming & Focus Recovery`)**：状态窗口标题升级为语义化 `<h1>` 并接入 `Escape` 键快速关闭；换肤画廊实现智能焦点策略（首次接收画廊数据自动聚焦当前选中卡片，多语言重建时精确恢复至原卡片），支持 `ArrowLeft` / `ArrowRight`（首尾循环）与 `Home` / `End` 键盘漫游；预览加载锁定期为目标卡片动态挂载 `.skin-card--loading` 水墨呼吸反馈（含减动效降级）并禁用确认操作，加载完成后原子恢复按钮并把焦点平滑还给目标卡片（详见 [ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)）。
 
 ### Fixed
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。

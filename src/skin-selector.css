@@ -147,6 +147,23 @@ button {
   opacity: 0.65;
 }
 
+.skin-card--loading {
+  position: relative;
+  opacity: 0.85;
+  animation: skinCardPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes skinCardPulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skin-card--loading {
+    animation: none;
+  }
+}
+
 .skin-card-preview {
   display: block;
   width: 100%;

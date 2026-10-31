@@ -133,6 +133,15 @@ closeBtn.addEventListener('click', () => {
   window.electronAPI.closeStatusWindow();
 });
 
+if (typeof window?.addEventListener === 'function') {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault?.();
+      window.electronAPI?.closeStatusWindow?.();
+    }
+  });
+}
+
 window.electronAPI.onStatusWindowData(renderStatus);
 
 WindowI18n.init(() => { if (lastRenderData) { renderStatus(lastRenderData); } });

@@ -214,3 +214,35 @@ test('statusWindow.js renderPetStats builds accessible meter elements with uniqu
   assert.deepEqual(Array.from(allLabelIds).sort(), Array.from(allLabelledByRefs).sort());
 });
 
+test('status.html uses semantic h1 and statusWindow.js handles Escape to close', () => {
+  const html = readSource('src/status.html');
+  const css = readSource('src/status.css');
+  const js = readSource('src/statusWindow.js');
+
+  assert.match(html, /<h1 data-i18n="statusTitle">/);
+  assert.match(css, /\.status-titlebar h1\s*\{[\s\S]*?font:\s*inherit;/);
+  assert.match(js, /e\.key === 'Escape'/);
+  assert.match(js, /closeStatusWindow/);
+
+  let closed = false;
+  let keydownHandler;
+  const context = {
+    document: {
+      getElementById: () => ({ addEventListener() {} }),
+      querySelector: () => null,
+    },
+    window: {
+      electronAPI: {
+        onStatusWindowData() {},
+        closeStatusWindow() { closed = true; },
+      },
+      addEventListener(type, fn) { if (type === 'keydown') keydownHandler = fn; },
+    },
+    WindowI18n: { init() {} },
+  };
+  vm.runInNewContext(js, context);
+  assert.equal(typeof keydownHandler, 'function');
+  keydownHandler({ key: 'Escape' });
+  assert.equal(closed, true);
+});
+

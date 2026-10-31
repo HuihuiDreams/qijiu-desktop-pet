@@ -83,21 +83,21 @@ flowchart TD
     - `test/petScaleWindowRenderer.behavior.test.js`
   - **Estimated scope**: Medium (6-8 files)
 
-- [ ] **Task 3: 状态窗口与换肤画廊键盘漫游、焦点管理及加载态反馈**
+- [x] **Task 3: 状态窗口与换肤画廊键盘漫游、焦点管理及加载态反馈**
   - **Description**: 将 `src/status.html` 标题升级为 `<h1>` 并在 `src/statusWindow.js` 中增加 `Escape` 键关闭支持。在 `src/skinSelectorWindow.js` 中：
     1. 改进初始焦点策略：仅在**首次**收到画廊数据时聚焦当前选中卡片 `.skin-card[aria-pressed="true"]`（无则保持 `closeBtn`）；语言切换触发的 `renderGallery(..., { resetSelection: false })` 重建后，恢复到重建前获得焦点的同一 `skinId` 卡片。
     2. 支持 `ArrowLeft` / `ArrowRight` 在卡片间线性移动焦点（首尾循环），`Home` / `End` 跳到首/末张。不实现 `ArrowUp` / `ArrowDown`（`auto-fill` 网格列数需运行时布局计算，Fake DOM 无法验证）；不引入 roving tabindex，所有卡片保持可 Tab 访问。
     3. 将 `setLoading(loading)` 签名改为 `setLoading(loading, targetSkinId = null)`：加载期间为目标卡片添加 `.skin-card--loading`，同步禁用 `#skin-selector-confirm`；加载结束后移除类名、恢复按钮，并把焦点还给目标卡片（卡片被 `disabled` 时焦点会掉到 `body`）。
   - **Acceptance criteria**:
-    - [ ] `status.html` 使用 `<h1>` 标题（`status.css` 增加 `.status-titlebar h1 { font: inherit; }`），`statusWindow.js` 按 `Escape` 调用 `window.electronAPI.closeStatusWindow()`。
-    - [ ] `skinSelectorWindow.js` 首次渲染后焦点在当前选中卡片；语言切换重建后焦点不丢失。
-    - [ ] `ArrowLeft` / `ArrowRight` / `Home` / `End` 在卡片间移动焦点，仅当焦点位于 `.skin-card` 上时生效，不干扰底部按钮。
-    - [ ] 预览加载期间（`previewInFlight === true`），目标卡片带 `.skin-card--loading` 样式，`#skin-selector-confirm` 处于 `disabled`；加载结束（成功或失败）后恢复，且焦点回到目标卡片。
-    - [ ] `.skin-card--loading` 若含动画，在 `skin-selector.css` 中提供 `prefers-reduced-motion` 降级。
+    - [x] `status.html` 使用 `<h1>` 标题（`status.css` 增加 `.status-titlebar h1 { font: inherit; }`），`statusWindow.js` 按 `Escape` 调用 `window.electronAPI.closeStatusWindow()`。
+    - [x] `skinSelectorWindow.js` 首次渲染后焦点在当前选中卡片；语言切换重建后焦点不丢失。
+    - [x] `ArrowLeft` / `ArrowRight` / `Home` / `End` 在卡片间移动焦点，仅当焦点位于 `.skin-card` 上时生效，不干扰底部按钮。
+    - [x] 预览加载期间（`previewInFlight === true`），目标卡片带 `.skin-card--loading` 样式，`#skin-selector-confirm` 处于 `disabled`；加载结束（成功或失败）后恢复，且焦点回到目标卡片。
+    - [x] `.skin-card--loading` 若含动画，在 `skin-selector.css` 中提供 `prefers-reduced-motion` 降级。
   - **Verification**:
-    - [ ] 运行测试通过：`node --test test/statusWindowRegression.test.js test/skinSelectorRenderer.behavior.test.js test/skinSelectorWindow.behavior.test.js test/skinSelectorIntegration.test.js`
-    - [ ] 新增断言：首次/重建焦点、方向键与 Home/End 移动、加载期间确认按钮禁用与焦点恢复、状态窗 `Escape`。
-    - [ ] 手动检查：打开换肤窗口，←/→ 可切换卡片焦点；按 Enter 预览时确认按钮禁用，预览结束后焦点仍在该卡片上；切换语言后焦点位置不变。
+    - [x] 运行测试通过：`node --test test/statusWindowRegression.test.js test/skinSelectorRenderer.behavior.test.js test/skinSelectorWindow.behavior.test.js test/skinSelectorIntegration.test.js`
+    - [x] 新增断言：首次/重建焦点、方向键与 Home/End 移动、加载期间确认按钮禁用与焦点恢复、状态窗 `Escape`。
+    - [x] 手动检查：打开换肤窗口，←/→ 可切换卡片焦点；按 Enter 预览时确认按钮禁用，预览结束后焦点仍在该卡片上；切换语言后焦点位置不变。
   - **Dependencies**: Task 1
   - **Files likely touched**:
     - `src/status.html`
@@ -110,8 +110,8 @@ flowchart TD
   - **Estimated scope**: Medium (7 files)
 
 ### Checkpoint: Phase 1 (Accessibility & Interaction)
-- [ ] 全量单元测试与集成测试通过：`npm test && npm run test:integration`
-- [ ] 更新 `docs/plan/frontend-ui-engineering-plan.md`、`CHANGELOG.md` 与 `docs/structure.md`，每个 Task 完成后各自创建原子提交。
+- [x] 全量单元测试与集成测试通过：`npm test && npm run test:integration`
+- [x] 更新 `docs/plan/frontend-ui-engineering-plan.md`、`CHANGELOG.md` 与 `docs/structure.md`，每个 Task 完成后各自创建原子提交。
 
 ---
 
