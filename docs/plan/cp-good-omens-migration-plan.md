@@ -31,9 +31,23 @@
 1. **喂食与分食 (`shareFood`)**：
    - 恶魔 Crowley 为天使 Aziraphale 带来丽兹酒店的美食、可丽饼、热红酒或新鲜烘焙甜点。
    - 规则沿用偏心机制：Crowley 消耗饱腹度，Aziraphale 增加饱腹度；Aziraphale 过饱时触发吃撑表情与对白。
-2. **打坐 / 修炼 (`cultivate` / `meditate`) 适配**：
-   - 将原修仙语境的“灵力 (`qi`)”在展示层适配为“奇迹之力 (Miracle) / 能量”。
-   - 单人“打坐”适配为“休整 / 冥想 / 听古典乐”；双人“一起修炼”适配为“施展奇迹 (Miracles) / 雅致下午茶”。
+2. **打坐 / 修炼 (`cultivate` / `meditate`) 专属设定方案**：
+   - **双人互动【施展奇迹 (Miracle)】（原双修/一起修炼 `cultivate`）**：
+     - **原作典故**：致敬《好兆头》第二季名场面——恶魔与天使携手施展联合奇迹，引发了天国与地狱雷达蜂鸣警报的“25 级拉撒路奇迹（25-Lazarus Miracle）”。
+     - **视觉与粒子**：保留原系统粒子光环（`qiAuraGather`），呈现左侧金白天色圣光与右侧暗红/深黑暗火交融的奇迹光效；两人并肩打响指或手心汇聚能量。
+     - **数值与属性**：将“灵力 (`qi`)”语境替换为“奇迹之力 (Miracle) / 能量”，恢复双方能量并大幅提升好感。
+     - **台词对白设计**：
+       - 克劳利：“喂，天使，悠着点……这动静要是让天国和地狱的雷达测出来，可不好收场。”
+       - 亚茨拉斐尔：“哦亲爱的，只要我们配合得当，这只算一个小小的……‘巧合’而已。”
+   - **单人充能动作定制（原单人打坐 `meditate`）**：
+     - **克劳利 (Crowley) ->「养植物 (Tending Plants)」**：
+       - **原作典故**：克劳利在伦敦公寓里用喷水壶训诫盆栽（“GROW BETTER!”），植物因极度敬畏而长得全伦敦最繁茂翠绿；这是恶魔标志性的解压与充能日常。
+       - **视觉素材**：`left_cultivate.webp` 呈现克劳利手持喷水壶巡视/指着植物的傲娇姿势。
+       - **对白气泡**：`bubbleMeditateYueqi` -> “（拿着喷水壶严肃巡视）长快点！听到没有！” / “最好别让我发现一片斑点……”
+     - **亚茨拉斐尔 (Aziraphale) ->「静心研读 (Reading)」**：
+       - **原作典故**：在索霍区旧书店后室的扶手椅上戴上老花镜，就着热茶或甜点慢慢翻阅珍稀初版书。
+       - **视觉素材**：`right_cultivate.webp` 呈现亚茨拉斐尔戴眼镜阅读精装古籍、轻啜红茶的安详姿态。
+       - **对白气泡**：`bubbleMeditateShenjiu` -> “（翻开泛黄的初版本）……真是无可替代的文字。” / “唔，再来一杯大吉岭红茶就更完美了。”
 3. **番茄钟与专注窗口**：
    - 将原“苍穹静修”番茄钟适配为“旧书店研读”或“天使书店 (A.Z. Fell and Co. Antiquarian Books)”。
 4. **夜间梦话与自发互动**：
@@ -56,14 +70,14 @@
 
 ### Phase 2: 角色基础配置与名称映射 (Role Identity & Config)
 - [ ] **Task 2.1**: 更新 `src/data/config.js` 中的 `PET_A` 与 `PET_B` 角色名、昵称与 Emoji。
-- [ ] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（如“恶魔关怀”、“天使撒娇/回应”）。
+- [ ] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（如克劳利「🪴 养植物」、亚茨拉斐尔「📖 静心研读」、双人互动「✨ 施展奇迹」）。
 - [ ] **Task 2.3**: 更新 `src/data/dialogues.js` 中文基础兜底对白。
 - [ ] **Task 2.4**: 运行并更新 `test/config.test.js`、`test/i18n.test.js`、`test/i18nKeyCompleteness.test.js`。
 
 ### Phase 3: 专属素材与皮肤管线接入 (Sprite Assets & Pipeline)
 - [ ] **Task 3.1**: 准备 Crowley 与 Aziraphale 的默认 256x256 WebP 单人立绘（`left.webp`, `right.webp`）。
 - [ ] **Task 3.2**: 准备双方各 4 帧走动循环图（`yueqi/walk_left*.webp`, `shenjiu/walk_right*.webp`）。
-- [ ] **Task 3.3**: 准备单人状态图（饥饿、睡眠、进食、被摸、休整）与双人互动图（分食、拥抱、亲吻、奇迹、过饱）。
+- [ ] **Task 3.3**: 准备单人状态图（饥饿、睡眠、进食、被摸、克劳利养植物 `left_cultivate.webp`、亚茨拉斐尔研读 `right_cultivate.webp`）与双人互动图（分食甜品、拥抱、亲吻、施展奇迹 `cultivate.webp`、过饱）。
 - [ ] **Task 3.4**: 运行 `npm run protect:assets` 生成受保护资源，更新 `skinGallery.js` 预览候选及画师署名。
 - [ ] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
 
