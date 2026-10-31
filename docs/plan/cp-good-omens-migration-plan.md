@@ -26,6 +26,24 @@
 
 ---
 
+## 语言与本地化准则 (Language & Localization Policy)
+
+本项目以 **英文（English）为绝对基准与单一事实来源（Single Source of Truth）**，源于《好兆头》原版小说（Neil Gaiman & Terry Pratchett 著）及 BBC/Amazon Prime 影视剧剧本（David Tennant & Michael Sheen 演绎的标准英式对白与语气）。
+
+1. **英文（EN）基准源（Ground Truth）**：
+   - 所有的台词、菜单、气泡与系统提示优先使用纯正英式英语（British English）撰写，深度取材并致敬原著小说与影视剧的标志性金句（如 *"To the world."*、*"Angel"*、*"GROW BETTER!"*、*"Tickety-boo"*、*"Our own side"*、*"A Nightingale Sang in Berkeley Square"* 等）。
+   - 保留克劳利略带嘲弄却极其宠溺的恶魔语调（Sarcastic, slithering, fiercely protective），以及亚茨拉斐尔讲究优雅却容易慌乱的吃货天使语调（Fussy, polite, gentle, enthusiastic about food and books）。
+2. **中文（ZH）本地化**：
+   - 基于权威中译本小说（江苏凤凰文艺出版社版）与主流精翻字幕（影视官方中字/经典英剧字幕），在英文基准上做严谨的信达雅翻译。
+   - 杜绝生硬机翻，保留英式幽默、俏皮话及专属人设称谓（如「天使」、「亲爱的」、「恶魔先生」等）。
+3. **日文（JA）本地化**：
+   - 严格对照 Amazon Prime Video Japan 官方吹替与日文字幕规范：
+     - 克劳利：クロウリー
+     - 亚茨拉斐尔：アジラフェル
+     - 称谓与人称：アジラフェル称克劳利为「クロウリー」/「親愛なる友よ」，克劳利用「天使 (エンジェル)」/「お前」。
+
+---
+
 ## 游戏机制与世界观适配要点
 
 1. **喂食与分食 (`shareFood`)**：
@@ -78,7 +96,7 @@
 
 ### Phase 2: 角色基础配置与名称映射 (Role Identity & Config)
 - [ ] **Task 2.1**: 更新 `src/data/config.js` 中的 `PET_A` 与 `PET_B` 角色名、昵称与 Emoji。
-- [ ] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（如克劳利「🪴 养植物」、亚茨拉斐尔「📖 静心研读」、双人互动「✨ 施展奇迹」）。
+- [ ] **Task 2.2**: 更新 `src/data/i18n.js` 中的三语角色名称与右键互动菜单文案（以英文为基准编写，如克劳利「🪴 Tending Plants / 养植物」、亚茨拉斐尔「📖 Reading / 静心研读」、双人互动「✨ Miracle / 施展奇迹」并同步日文）。
 - [ ] **Task 2.3**: 更新 `src/data/dialogues.js` 中文基础兜底对白。
 - [ ] **Task 2.4**: 运行并更新 `test/config.test.js`、`test/i18n.test.js`、`test/i18nKeyCompleteness.test.js`。
 
@@ -90,7 +108,7 @@
 - [ ] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
 
 ### Phase 4: 专属对白与互动逻辑适配 (Dialogues & Interactions)
-- [ ] **Task 4.1**: 撰写 Crowley ✖️ Aziraphale 专属时段问候、发呆、低状态、久坐提醒三语台词。
+- [ ] **Task 4.1**: 以原著小说及影视剧纯正英式台词为基准（English Ground Truth），撰写专属时段问候、发呆、低状态、久坐提醒，并精准本地化为中文与日文。
 - [ ] **Task 4.2**: 撰写双人互动（分食甜品、奇迹同行、拥抱、六千年默契对视）台词与气泡说话者对应核验。
 - [ ] **Task 4.3**: 撰写夜间梦话与屏保被发现时的反应文案。
 - [ ] **Task 4.4**: 运行并更新 `test/ambientDialogueSystem.test.js` 与 `test/interactionSystem.test.js`。
