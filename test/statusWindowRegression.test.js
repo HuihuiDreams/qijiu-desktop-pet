@@ -171,6 +171,11 @@ test('statusWindow.js renderPetStats builds accessible meter elements with uniqu
     const petId = block.dataset.petId;
     assert.ok(petId === 'yueqi' || petId === 'shenjiu');
 
+    const nameText = block.children.find(c => c.className === 'pet-status-name')?.children?.find(c => c.className === 'pet-status-name-text');
+    assert.ok(nameText, 'nameText element should exist');
+    assert.doesNotMatch(nameText.textContent, /[（）()]/, 'Status window pet name should not contain parentheses');
+    assert.equal(nameText.textContent, petId === 'yueqi' ? ' 岳清源' : ' 沈九');
+
     // Find all stat-row children
     const statRows = block.children.filter(c => c.className === 'stat-row');
     assert.equal(statRows.length, 4, `Pet ${petId} should have 4 stat rows`);

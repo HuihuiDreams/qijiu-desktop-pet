@@ -10,7 +10,7 @@ function renderPetStats(pet) {
   const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
   const name = t(nameKey) !== nameKey ? t(nameKey) : pet.name;
   const nickname = t(nicknameKey) !== nicknameKey ? t(nicknameKey) : pet.nickname;
-  const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
+  const displayName = name || nickname || '';
 
   const STAT_LABELS = {
     affection: '❤️ ' + t('statAffection'),

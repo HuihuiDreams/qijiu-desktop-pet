@@ -191,7 +191,7 @@ class ContextMenu {
     const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
     const name = window.t && window.t(nameKey) !== nameKey ? window.t(nameKey) : pet.name;
     const nickname = window.t && window.t(nicknameKey) !== nicknameKey ? window.t(nicknameKey) : pet.nickname;
-    const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
+    const displayName = name || nickname || '';
 
     this.headerEl.textContent = '';
 

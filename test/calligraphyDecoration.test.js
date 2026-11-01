@@ -124,6 +124,21 @@ test('ContextMenu header text does not duplicate displayName in real DOM', () =>
     assert.ok(textSpan, 'textSpan should exist');
     const matches = textSpan.textContent.match(/Yue Qingyuan/g) || [];
     assert.equal(matches.length, 1, `Expected "Yue Qingyuan" to appear exactly once, got: "${textSpan.textContent}"`);
+    assert.doesNotMatch(textSpan.textContent, /[（）()]/, 'Header text must not contain parentheses');
+
+    // Test Good Omens trilingual single names without parentheses
+    const { I18N } = require('../src/data/i18n.js');
+    for (const locale of ['zh', 'en', 'ja']) {
+      global.window.t = (key) => I18N[locale].ui[key] || key;
+      for (const petId of ['yueqi', 'shenjiu']) {
+        const expectedName = I18N[locale].ui['name' + petId.charAt(0).toUpperCase() + petId.slice(1)];
+        contextMenu.show({ id: petId, name: expectedName, nickname: 'Fallback', isBusy: () => false }, 10, 10);
+        const span = headerEl.children.find(c => c.className === 'menu-header-text');
+        assert.ok(span, `Span should exist for ${locale} ${petId}`);
+        assert.equal(span.textContent.trim(), expectedName);
+        assert.doesNotMatch(span.textContent, /[（）()]/, `No parentheses allowed for ${locale} ${petId}`);
+      }
+    }
 
     // Verify dynamic custom pet class cleanup on show / hide
     contextMenu.show({ id: 'custompet', name: 'Custom Pet', nickname: 'Custom', isBusy: () => false }, 10, 10);

@@ -196,7 +196,7 @@ test('ContextMenu.show renders a localized pet header and enables busy-state dis
   assert.equal(menu.style.top, '180px');
   assert.equal(bodyClassList.contains('weather-interaction-muted'), true);
   assert.equal(header.children[0].src, 'pet.webp');
-  assert.equal(header.children[1].textContent, ' Yue Qingyuan（Yue Qi）');
+  assert.equal(header.children[1].textContent, ' Yue Qingyuan');
   assert.equal(i18nItem.textContent, 'Feed');
   assert.equal(items.find((item) => item.dataset.action === 'pet').textContent, 'Pat Yue Qi');
   assert.equal(items.find((item) => item.dataset.action === 'feed').classList.contains('disabled'), true);
@@ -343,8 +343,8 @@ test('ContextMenu.show falls back to emoji and pet names when image and translat
   }
 
   assert.equal(header.children[0].textContent, '*');
-  assert.match(header.children[1].textContent, /Fallback Name/);
-  assert.match(header.children[1].textContent, /Fallback Nick/);
+  assert.equal(header.children[1].textContent, ' Fallback Name');
+  assert.doesNotMatch(header.children[1].textContent, /[（）()]/);
 }));
 
 test('ContextMenu.handleAction runs meditate, pet, and successful rest effects', () => withContextMenuHarness(() => {
