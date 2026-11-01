@@ -1,6 +1,6 @@
 # 更换 CP 的迁移指南
 
-本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。按 2026-10-08 的仓库实现整理；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
+本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。结合 2026-10《好兆头》（克劳利 × 亚茨拉斐尔，`cp/crowley-aziraphale`）完整迁移实战经验修订；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
 
 当前程序不是可直接导入任意 CP 的通用模板：角色 ID、素材路径和部分角色行为仍写在代码里。第一次迁移建议保留双人桌宠结构，先替换内容；需要完整重命名时，再单独完成 ID 迁移。
 
@@ -93,11 +93,15 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 | [`src/ui/ContextMenu.js`](../src/ui/ContextMenu.js) | 角色菜单及喂食、打坐、关怀、休息的硬编码兜底文案 |
 | [`src/systems/AmbientDialogueSystem.js`](../src/systems/AmbientDialogueSystem.js) | 时段问候、低状态提醒、夜间梦话、角色联动及兜底文案 |
 | [`src/systems/InteractionSystem.js`](../src/systems/InteractionSystem.js)、[`src/debug.js`](../src/debug.js) | 吃撑互动与调试工具里的旧角色台词 |
-| [`src/index.html`](../src/index.html) 及其他子窗口 HTML | 页面标题、静态初始文字和 `data-i18n` 对应文案 |
-| [`src/index.css`](../src/index.css)、[`src/status.css`](../src/status.css)、[`src/stat-bar.css`](../src/stat-bar.css)、[`src/pomodoro.css`](../src/pomodoro.css)、[`src/effects.css`](../src/effects.css) | 角色配色、占位图、光晕、修仙装饰；按新主题需要调整 |
+| [`src/systems/OfflineReturnSystem.js`](../src/systems/OfflineReturnSystem.js) | 离线时长换算与归来问候（原修仙设定按“时辰 = 2 小时”折算；若新世界观改用“小时”，需同步修改换算公式与 `i18n.js` 单位） |
+| [`src/main/TrayManager.js`](../src/main/TrayManager.js)、[`src/main/services/SystemIntegrationService.js`](../src/main/services/SystemIntegrationService.js) | 托盘 16×16 兜底点阵位图（原版硬编码 `7 9` 像素点阵，需改为新 CP 首字母如 `C A`）、托盘首行默认标题、开机自启动项名称 |
+| [`src/index.html`](../src/index.html)、[`src/pomodoro.html`](../src/pomodoro.html)、[`src/status.html`](../src/status.html) 等子窗口 HTML | 页面 `<title>`、静态初始兜底文案（IPC 翻译注入前可见，且会被静态测试断言检查）和 `data-i18n` 对应文案 |
+| [`src/index.css`](../src/index.css)、[`src/status.css`](../src/status.css)、[`src/stat-bar.css`](../src/stat-bar.css)、[`src/pomodoro.css`](../src/pomodoro.css)、[`src/effects.css`](../src/effects.css)、[`src/context-menu.css`](../src/context-menu.css) | 角色主题配色、光晕、天气粒子（如雨天改流星雨/星辉）、番茄钟印章装饰；移除旧角色专属书法遮罩（`calligraphy-*.webp` 与 `clip-path: inset(50%)`） |
 | [`src/pet/SpriteView.js`](../src/pet/SpriteView.js) | 两名角色的状态图片和 `emojiMap`，避免缺图时出现原角色的标志性 emoji |
 
-**只改 config 里的名字不够。** 独立状态窗口 [`src/statusWindow.js`](../src/statusWindow.js) 会按角色 ID 拼出 `nameYueqi` / `nicknameYueqi` 等翻译键，优先使用字典的姓名。保留 ID 时，要把这些旧键的值改成新角色姓名；完整重命名时，要同步提供新 ID 对应的键。
+**只改 config 里的名字不够。**
+- 独立状态窗口 [`src/statusWindow.js`](../src/statusWindow.js) 会按角色 ID 拼出 `nameYueqi` / `nicknameYueqi` 等翻译键，优先使用字典的姓名。保留 ID 时，要把这些旧键的值改成新角色姓名；完整重命名时，要同步提供新 ID 对应的键。
+- 右键菜单 [`src/ui/ContextMenu.js`](../src/ui/ContextMenu.js) 与状态窗口默认是否拼接 `name（nickname）` 取决于角色设定：若新 CP 不区分“名/字”而只展示单一角色名，应移除括号拼接逻辑并同步更新单测，避免出现 `Crowley (Crowley)` 之类的重复显示。
 
 ### 3.2 对白应按人物重写
 
@@ -132,23 +136,29 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 素材必须保留透明通道、按指南归一为 `256×256`，同组动画统一裁切边界并水平居中。原始素材另行备份，裁切脚本会覆盖 PNG。
 
-**默认皮肤也必须替换。** 多处代码及画廊、番茄钟存在 `default` 路径或回退；只新增一套新 CP 皮肤会让首次启动、缺图或预览时仍可能显示七九。原有 `birds`、`animal_ears`、`school_au` 也应替换为新 CP 的版本，或从发行资源和映射中移除。
+**抠图与裁切实战防坑：**
+- **禁止简单高亮度阈值或无固定色差锁的漫水抠图**：若原画带纯色背景，严禁使用 `RGB > 240` 硬阈值或未加 `cv2.FLOODFILL_FIXED_RANGE` 的 `floodFill`，否则浅色头发、白衬衫、书页高光会被连带镂空成半透明残影。应从画布四角向内做带固定种子色差锁（`FLOODFILL_FIXED_RANGE`）的连通背景剔除，并校验每张 `256×256` 成品的不透明像素数（正常立绘应在 10,000 像素以上）。
+- **清理孤立裁切碎块与废弃帧文件**：从大图裁切单人动作（如 `eat`、`hungry`）后，用连通域（connected components）检查画布边缘是否残留邻近角色的衣角或道具碎块；同时清理 `yueqi/`、`shenjiu/` 下未被 `SkinManager.js` 引用的旧命名文件（如无方向前缀的 `walk01..04.webp`），避免无用文件被加密打入 `protected-assets/`。
 
-### 4.2 当前素材脚本的限制
+**默认皮肤必须替换，未迁移的旧皮肤应彻底下线。** 多处代码及画廊、番茄钟存在 `default` 路径或回退；只新增一套新 CP 皮肤会让首次启动、缺图或预览时仍可能显示七九。原有 `birds`、`animal_ears`、`school_au` 若不提供新 CP 版本，必须按 4.3 节从源码目录、受保护资源清单、皮肤白名单、三语说明文档和冒烟测试断言中一并移除。
 
-- [`tools/run_trim.py`](../tools/run_trim.py) 默认处理 `src/assets/default`，若转换其他皮肤目录可通过 CLI 参数传入（`python tools/run_trim.py src/assets/<skin_id>`）。
+### 4.2 素材脚本与测试同步
+
+- [`tools/run_trim.py`](../tools/run_trim.py) 默认处理 `src/assets/default`，若转换其他皮肤目录可通过 CLI 参数传入（`python tools/run_trim.py src/assets/<skin_id>`）。增删默认皮肤目录时，同步更新脚本无参数默认路径与 [`tools/trim_sprites.py`](../tools/trim_sprites.py) 的 `INPUT_GLOB`。
 - [`scripts/convert_images.js`](../scripts/convert_images.js) 默认 `skinDirs` 为 `src/assets/default`。转换其他皮肤目录可通过 CLI 参数传入（`node scripts/convert_images.js src/assets/<skin_id>`）。脚本优先用 `ffmpeg`，失败后尝试 `python3` + Pillow；确认本机命令可用，并检查每张输出，不能只看脚本是否退出。
-- [`test/assetDimensions.test.js`](../test/assetDimensions.test.js) 有固定皮肤列表和特定皮肤断言。更换皮肤目录时同步更新覆盖范围，避免新目录没有被检查。
+- [`test/assetDimensions.test.js`](../test/assetDimensions.test.js) 有固定皮肤列表和目录断言。增删皮肤目录时同步更新 `skinDirs`，并移除已下线皮肤的源码目录检查。
 
 ### 4.3 同步皮肤映射和受保护资源
 
 1. 修改 [`src/systems/SkinManager.js`](../src/systems/SkinManager.js) 的 `buildPaths()`；保留现有命名则不用改目录映射。必要时调整 `SKIN_IMAGE_SCALES`，并检查 [`src/pet/SpriteView.js`](../src/pet/SpriteView.js) 和 config 的默认路径。
-2. 新增/删除皮肤 ID 时，在 [`src/main/services/SkinService.js`](../src/main/services/SkinService.js) 同步 `SKIN_NAME_KEYS`、`SKIN_LABEL_KEYS`、`SKIN_ARTIST_KEYS`，并补齐三语字典。无受保护清单时，开发目录扫描只接受已知映射中的皮肤。
+2. 新增/删除皮肤 ID 时，在 [`src/main/services/SkinService.js`](../src/main/services/SkinService.js) 同步 `SKIN_NAME_KEYS`、`SKIN_LABEL_KEYS`、`SKIN_ARTIST_KEYS`，并同步删改 [`src/data/i18n.js`](../src/data/i18n.js) 三语字典中的皮肤名称、标签与画师键。注意：`SkinService.scanAvailableSkins()` 无论从 `protected-assets/manifest.json` 还是 `src/assets/` 读取，都必须经过 `SKIN_NAME_KEYS` 白名单过滤。
 3. 核对 [`skinGallery.js`](../skinGallery.js) 的预览文件候选和 `default/kiss.webp` 兜底；若命名约定未变，可保留代码。画师署名应与新素材匹配。
 4. 核对 [`protectedAssetLoader.js`](../protectedAssetLoader.js) 的 asset ID 校验、加载与回退。现有字母、数字、下划线和连字符命名通常无需改加载器；不要为了新路径放宽目录穿越防护。素材清单由 [`scripts/protect-assets.js`](../scripts/protect-assets.js) 生成，不手工修改。
-5. 执行 `npm run protect:assets` 并重启开发应用，检查清单只包含准备发行的皮肤。旧清单优先于明文扫描，改图或加皮肤后不刷新会看到旧内容。
-6. 该生成脚本不会清除以前生成但已经无引用的 `.dat`。独立发行前，在确认备份并核对目录后清理旧生成输出，再重新生成；同时移除不再发行的旧素材目录，否则会再次被收集。
-7. 同步 [`readme_zh.txt`](../readme_zh.txt)、[`readme_en.txt`](../readme_en.txt)、[`readme_ja.txt`](../readme_ja.txt) 的皮肤说明与署名。所有加载图片的子窗口 CSP 继续允许 `pet-asset:`。
+5. **先清空旧 `protected-assets/` 再重新生成**：`scripts/protect-assets.js` 不会自动删除已下线皮肤或废弃帧遗留的 `.dat` 密文。增删皮肤或立绘文件后，务必执行 `rm -rf protected-assets && npm run protect:assets`，确认 `protected-assets/manifest.json` 的资产条目数与预期严格一致（例如单套标准皮肤为 33 项 `skin/default/...`）。
+6. **单套内置皮肤下的测试与冒烟适配**：若新 CP 仅内置 `default` 一套皮肤：
+   - 更新 [`tools/playwright-electron-smoke.js`](../tools/playwright-electron-smoke.js) 中的 `selectorDiagnostics.cardCount` 断言（由 `>= 4` 改为 `=== 1`）及 [`test/skinTray.test.js`](../test/skinTray.test.js)、[`test/e2e/skinSelector.spec.js`](../test/e2e/skinSelector.spec.js)；
+   - 在 `SkinService.init(deps)` 中保留可选 `deps.availableSkins` 测试注入，供 `test/skinService.test.js`、`test/skinPreviewRequest.behavior.test.js`、`test/skinLoadFailure.behavior.test.js` 与 `test/integration/skinLifecycle.integration.test.js` 继续验证多皮肤“预览 → 确认 / 取消回滚”状态机，避免因内置皮肤减少而丢失状态机回归覆盖。
+7. 同步 [`readme_zh.txt`](../readme_zh.txt)、[`readme_en.txt`](../readme_en.txt)、[`readme_ja.txt`](../readme_ja.txt) 及 [`docs/structure.md`](./structure.md) 的内置皮肤数量、名称与画师署名。所有加载图片的子窗口 CSP 继续允许 `pet-asset:`。
 
 `npm run build` 会通过 npm 的 `prebuild` 生成受保护资源；直接运行 `npx electron-builder` 时，应先显式运行 `npm run protect:assets`。
 
@@ -168,7 +178,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 | --- | --- | --- |
 | 分食偏心 | A 减少 5 点饱腹，B 增加 10 点；B 过饱可能展示 `throwup` | `CONFIG.INTERACTIONS.shareFood`、`InteractionSystem` 的资格与表现逻辑 |
 | 一起修炼 | A 额外恢复 15 点饱腹，双方获得灵力等奖励 | `CONFIG.INTERACTIONS.cultivate` 及养成相关测试 |
-| 梦话联动 | B 发起，A 延迟回应；当前概率为 30% | `AmbientDialogueSystem.showNightDream()`、`dream.linked.shenjiu` / `yueqi_reply` |
+| 梦话联动 | 仅在高好感度（`affection >= 80`）且双方均在夜间时，B 有 30% 概率发起，A 延迟 2.5 秒回应 | `AmbientDialogueSystem.showNightDream()`（需同时校验 `isHighAffection`）、`dream.linked.shenjiu` / `yueqi_reply` |
 | 亲密动作 | 权重、好感阈值、奖励决定动作能否触发 | `CONFIG.INTERACTIONS`、`InteractionSystem` |
 | CP 屏保 | 有独立动作编排，不能只通过自发互动权重控制 | [`src/systems/ScreensaverSystem.js`](../src/systems/ScreensaverSystem.js)、[`src/main/services/ScreensaverController.js`](../src/main/services/ScreensaverController.js) |
 
@@ -198,9 +208,9 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 | 范围 | 必须核对的文件与设置 |
 | --- | --- |
-| 应用身份 | [`package.json`](../package.json) 的 `name`、`description`、`build.appId`、`productName`、NSIS 名称及安装包名；对应更新 `package-lock.json` 元数据 |
+| 应用身份 | [`package.json`](../package.json) 的 `name`、`description`、`build.appId`、`productName`、NSIS 名称及安装包名；对应更新 `package-lock.json` 元数据。**建议 `productName` 采用无空格 ASCII 驼峰名**（如 `GoodOmensDeskPet`），避免 macOS 终端命令（`xattr -cr`）与 CI 脚本转义问题；中文品牌名通过窗口标题、托盘提示与 NSIS 快捷方式名称呈现 |
 | Windows 身份 | [`src/main/AppLifecycle.js`](../src/main/AppLifecycle.js) 的 `APP_USER_MODEL_ID` 与新的 `build.appId` 一致；核对安装位置、卸载身份、开机启动项与快捷方式 |
-| 图标与包装 | `src/assets/icon.png`、`icon.ico`、`icon.icns`、`iconTemplate.png`、`iconTemplate@2x.png`；所有用户可见标题、README 与三语发行说明 |
+| 图标与包装 | `src/assets/icon.png`、`icon.ico`、`icon.icns`、`iconTemplate.png`、`iconTemplate@2x.png`；所有用户可见标题、README 与三语发行说明。应用主图标建议直接基于双人高清互动原画（如 `hug.webp`）裁切留白后合成到圆章底盘（占画布高度约 85%~90%）；**生成 `iconTemplate@2x.png`（44×44）时，绘制坐标与线宽必须按 `size / 22.0` 等比例放大**，切勿复用 22×22 绝对坐标导致 Retina 托盘图标缩在左上角 |
 | Windows 安装器 | [`build/installer.nsh`](../build/installer.nsh) 的旧品牌文案及 `DeskPet.lnk` 历史清理；新应用不应删除另一应用的快捷方式 |
 | 存档隔离 | [`StoreManager.js`](../src/main/services/StoreManager.js) 使用 `new Store()`，当前没有 CP 命名空间；核对运行时 `app.getPath('userData')`，保证新旧应用不同。仅更改 `appId` 不能作为隔离验证 |
 | 更新源 | `package.json` 的 `build.publish.owner/repo`；[`updateManager.js`](../updateManager.js) 的 GitHub Releases 页面 URL 与 macOS API URL，都改到新应用仓库 |
@@ -252,8 +262,12 @@ npm run verify:package
 迁移前后可用以下命令盘点残留。命中结果要人工分类：选择保留内部 ID 时，旧 ID 属于预期；用户可见旧姓名、旧默认素材和错误更新源仍须处理。
 
 ```powershell
+# 使用 ripgrep (rg)
 rg -n -i '岳七|岳清源|沈九|沈清秋|小九|七哥|七九|苍穹|清秋|QiJiu|Yue.?Qi|Shen.?Jiu|qijiu-desktop-pet' src main.js skinGallery.js protectedAssetLoader.js updateManager.js package.json build scripts tools test .github README.md readme_zh.txt readme_en.txt readme_ja.txt
 rg -n -i 'yueqi|shenjiu' src skinGallery.js protectedAssetLoader.js scripts tools test
+
+# 若本机未安装 rg（macOS / Linux），可使用 grep -rnEi：
+grep -rnEi '岳七|岳清源|沈九|沈清秋|小九|七哥|七九|苍穹|清秋|QiJiu|Yue.?Qi|Shen.?Jiu|qijiu-desktop-pet' src main.js skinGallery.js protectedAssetLoader.js updateManager.js package.json build scripts tools test .github README.md readme_zh.txt readme_en.txt readme_ja.txt
 ```
 
 回滚时恢复迁移前的代码与素材，重新生成受保护资源并重启；数据只从事先备份恢复。若已经改变存档结构，不让旧版本直接写入新存档。独立发行版撤回时保留原应用和原更新源，避免把两个 CP 当作同一升级链处理。
