@@ -29,3 +29,11 @@ test('heat glow percentage widths inherit the scaled group width without another
     assert.match(width, /^\d+(?:\.\d+)?%$/, `${selector} width must scale only through its container`);
   }
 });
+
+test('starmaker meteor shower particles include celestial gradient, core flares, and variation', () => {
+  assert.match(effectsCss, /\.weather-particle--rain\s*\{[^}]*linear-gradient/);
+  assert.match(effectsCss, /\.weather-particle--rain::after\s*\{[^}]*content:\s*''/);
+  assert.match(effectsCss, /\.weather-particle--rain:nth-child\(3n\)/);
+  assert.match(effectsCss, /\.weather-particle--rain:nth-child\(4n\)/);
+  assert.match(effectsCss, /weatherRainFall/);
+});
