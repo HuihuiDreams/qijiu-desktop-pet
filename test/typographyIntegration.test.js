@@ -14,7 +14,7 @@ test('Multi-language typography bundles all required fonts and licenses for EN, 
     { name: 'Cormorant Garamond', file: 'CormorantGaramond-Subset.woff2', license: 'CormorantGaramond-OFL.txt' },
     { name: 'EB Garamond', file: 'EBGaramond-Subset.woff2', license: 'EBGaramond-OFL.txt' },
     { name: 'Ma Shan Zheng', file: 'MaShanZheng-Subset.woff2', license: 'MaShanZheng-OFL.txt' },
-    { name: 'Shippori Mincho', file: 'ShipporiMincho-Subset.woff2', license: null },
+    { name: 'Shippori Mincho', file: 'ShipporiMincho-Subset.woff2', license: 'ShipporiMincho-OFL.txt' },
     { name: 'Yuji Syuku', file: 'YujiSyuku-Subset.woff2', license: 'YujiSyuku-OFL.txt' },
   ];
 

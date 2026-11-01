@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- **补充 Shippori Mincho 字体许可声明 (`Shippori Mincho OFL Notice`)**：新增 `src/assets/fonts/ShipporiMincho-OFL.txt`（上游 SIL OFL 1.1 原文），并将 `test/typographyIntegration.test.js` 中该字体的 `license: null` 改为实际文件，补齐字体再分发合规。
 - **好兆头经典台词「要有光！」双场景接入 (`"Let there be light!" Classic Line Integration`)**：将《好兆头》第二季开篇克劳利创世造星名台词「Let there be light!（要有光！）」深度整合至桌宠双人互动与时段问候系统。在双人自主奇迹（`cultivate`）中作为克劳利施展奇迹的随机高光台词（`就如创世之初那样——“Let there be light!” 瞧好了，天使！`），并在清晨闲聊（`morningYueqi`）中作为克劳利的晨间破晓问候；中、英、日三语同步更新并补充自动化回归测试。
 - **中英文专属排版与本地开源 WebFont 切片内嵌 (`Multi-Language Typography & Bespoke WebFont Embedding`)**：依据 `frontend-design` 原则重塑中英双语排版系统，打破仅日文拥有定制字体的局限，全量引入本地按需切片的开源 WebFont（OFL 1.1，满足 CSP `font-src 'self'` 安全策略）：
   - **英文 (EN)**：展示使用古罗马铭文/伦敦古董书店质感的 `Cinzel` 与 `Cormorant Garamond`，正文使用 19 世纪古典文学书籍衬线 `EB Garamond`，让对白气泡与面板呈现英式古典书籍质感。
@@ -27,6 +28,7 @@
 - **Good Omens 单人全状态动作独立定制立绘升级 (`Good Omens Bespoke Single Action Artwork`)**：彻底剔除此前单人动作中 Python PIL 绘制几何图形（圆圈植物、红心、简单弧线）的临时逻辑，全量采用 Nano Banana / Imagen 3 生成高规格 2.2 头身 Q 版独立插画重构。包含：克劳利手持绿色喷壶严厉训话龟背竹盆栽（`left_cultivate`）、墨镜滑落露出金色蛇瞳满脸绯红傲娇（`left_pat`）、像蛇般蜷缩在天鹅绒抱枕安眠（`left_sleep`）、双手持法式甜点（`left_eat`）与扶额抓狂（`left_hungry`）；亚茨拉斐尔扶手椅戴镜持书伴读（`right_cultivate`）、双手抚脸月牙眼陶醉微笑（`right_pat`）、身披苏格兰格子毯抱古籍甜笑入睡（`right_sleep`）、大口咬下金黄可丽饼（`right_eat`）与揉圆滚滚肚子打饱嗝（`right_hungry`）；所有素材经绝对色差固定范围抠图实心化加固并重新加密，全量通过单元测试与冒烟测试。
 
 ### Changed
+- **好兆头发布产物改发到独立 Release 仓库 (`Release To Dedicated Repository`)**：`build-installer.yml` 通过 `RELEASE_REPO`（`HuihuiDreams/good-omens-desktop-pet`）与 `secrets.RELEASES_TOKEN` 上传安装包与 `latest*.yml`，使本分支继续作为 `qijiu-desktop-pet` 分支维护的同时，自动更新源与七九爱宠互不干扰；同步修正 `release-preflight.yml` 中过时的可执行文件报错文案。
 - **番茄钟英文标题排版自适应微调 (`Pomodoro English Heading Sizing Adjustment`)**：为 `src/pomodoro.css` 中的 `html[lang="en"]` 与 `html[data-locale="en"]` 补齐双重选择器覆盖，并将英文专注提问标题字号微调至 14.5px（字距 0.4px），彻底解决全大写罗马铭文字体在紧凑书店面板下的边缘换行与微小溢出问题。
 - **创世流星雨粒子视觉与动态重构 (`Starmaker Meteor Shower Visual Redesign & Dynamics Tuning`)**：依据《好兆头》第二季开篇名场面（克劳利点亮半人马座星云，漫天繁星与流星雨划过夜空），重构雨天粒子系统（`.weather-particle--rain`）。将原本单一的 2px 细线雨滴全面升级为自深空斜向（26deg）划过的星轨流星雨（晨星纯白核心 + 浅金炽热光冕 + 半人马座星云幽蓝晕染）；通过 `::after` 伪元素为星芒前端构建高光炽热星核（`box-shadow` 双层辉光）；基于 `:nth-child` 派生大尺寸火流星（48px 壮丽星轨）与细腻微星尘（26px 微光星芒）；在 `WeatherParticleLayer.js` 中将流星下落周期调整至更舒缓从容的 `1.85s ~ 2.85s`（减速约 2.3 倍），并同步优化 `weatherRainFall` 26° 航向轴对齐与进出场平滑过渡；新增 `test/weatherVisualScope.test.js` 自动化回归断言。
 - **CP 迁移指南结合《好兆头》实战经验优化 (`CP Migration Guide Refinement from Good Omens Lessons`)**：结合 `cp/crowley-aziraphale` 分支完整迁移与审查经验，全面更新 [docs/cp-migration-guide.md](./docs/cp-migration-guide.md)。补充子窗口 HTML 静态兜底文本、托盘 16×16 兜底点阵位图（`C A`）、离线时长单位换算、单角色名展示去重等易漏入口；新增固定色差范围（`FLOODFILL_FIXED_RANGE`）防浅色主体镂空、孤立裁切噪点清理、旧皮肤下线与 `protected-assets/` 重建、单套内置皮肤测试与冒烟适配规范；明确联动梦话的高好感度门槛（`affection >= 80`）、双人互动原画合成圆章图标与 `iconTemplate@2x.png` 等比缩放防坑，以及无 `rg` 环境的 `grep` 残留扫描命令。

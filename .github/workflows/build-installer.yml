@@ -11,6 +11,10 @@ on:
     tags:
       - 'v*'
 
+env:
+  # Release-only repo that hosts installers and latest*.yml for auto-update (see package.json build.publish).
+  RELEASE_REPO: HuihuiDreams/good-omens-desktop-pet
+
 permissions:
   contents: write
 
@@ -150,8 +154,8 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ env.RELEASE_REPO }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
@@ -182,7 +186,7 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
@@ -194,15 +198,15 @@ jobs:
             throw "Tag must match v* semver format, got '$tag'."
           }
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
-          gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --clobber
+          gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --repo "$env:RELEASE_REPO" --clobber
 
       - name: Remove auto-generated source code archives
         shell: pwsh
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ env.RELEASE_REPO }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           $version = $env:INPUT_VERSION
           if ([string]::IsNullOrWhiteSpace($version)) {
@@ -334,8 +338,8 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ env.RELEASE_REPO }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -375,8 +379,8 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ env.RELEASE_REPO }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           VERSION="${INPUT_VERSION}"
           if [ -z "$VERSION" ]; then

@@ -205,7 +205,7 @@ jobs:
             fi
 
             if [ -e "$app/Contents/MacOS/$legacy_executable_name" ]; then
-              echo "Unexpected non-ASCII macOS executable remains in package."
+              echo "Unexpected product-named executable remains in package."
               exit 1
             fi
 
