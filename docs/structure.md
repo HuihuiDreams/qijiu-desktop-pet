@@ -264,7 +264,7 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
-   ├─ GLOSSARY.md                       # 领域词汇表：统一修仙养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
+   ├─ GLOSSARY.md                       # 领域词汇表：统一好兆头角色养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
    ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
