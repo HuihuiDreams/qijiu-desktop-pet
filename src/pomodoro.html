@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: pet-asset:; font-src 'self';">
-  <title data-i18n="pomodoroTitle">苍穹静修</title>
+  <title data-i18n="pomodoroTitle">旧书店伴读</title>
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="pomodoro.css">
 </head>
@@ -13,7 +13,7 @@
 <body>
   <main id="pomodoro-panel" class="pomodoro-panel xianxia-panel" aria-live="polite">
     <header class="pomodoro-titlebar">
-      <span data-i18n="pomodoroTitle">苍穹静修</span>
+      <span data-i18n="pomodoroTitle">旧书店伴读</span>
       <div class="pomodoro-window-actions">
         <button id="pomodoro-pin" class="pomodoro-icon-button" type="button" aria-pressed="true" data-i18n-title="pomodoroUnpin" data-custom-tooltip data-tooltip="取消置顶">
           <svg class="pomodoro-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,7 +34,7 @@
           <img id="pomodoro-setup-yueqi" class="pomodoro-pet pomodoro-pet--yueqi" alt="">
           <img id="pomodoro-setup-shenjiu" class="pomodoro-pet pomodoro-pet--shenjiu" alt="">
         </div>
-        <h1 class="pomodoro-heading" data-i18n="pomodoroPrompt">本次闭关多久？</h1>
+        <h1 class="pomodoro-heading" data-i18n="pomodoroPrompt">本次专注多久？</h1>
         <div class="pomodoro-duration-stepper">
           <button id="pomodoro-decrease" class="pomodoro-step-button" type="button" data-i18n-title="pomodoroDecrease" data-custom-tooltip data-tooltip="减少">-</button>
           <label class="pomodoro-minutes-label" for="pomodoro-minutes">
@@ -43,7 +43,7 @@
           </label>
           <button id="pomodoro-increase" class="pomodoro-step-button" type="button" data-i18n-title="pomodoroIncrease" data-custom-tooltip data-tooltip="增加">+</button>
         </div>
-        <button id="pomodoro-start" class="pomodoro-primary-button" type="button" data-i18n="pomodoroStart">开始静修</button>
+        <button id="pomodoro-start" class="pomodoro-primary-button" type="button" data-i18n="pomodoroStart">开始专注</button>
       </div>
 
       <div id="pomodoro-running" class="pomodoro-state pomodoro-state--hidden">
@@ -58,7 +58,7 @@
         <div class="pomodoro-pets pomodoro-pets--running" aria-hidden="true">
           <img id="pomodoro-running-cultivate" class="pomodoro-pet pomodoro-pet--scene" alt="">
         </div>
-        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">提前出关</button>
+        <button id="pomodoro-stop" class="pomodoro-ghost-button" type="button" data-i18n="pomodoroStop">结束专注</button>
       </div>
 
       <div id="pomodoro-completed" class="pomodoro-state pomodoro-state--hidden">
@@ -67,12 +67,12 @@
           <div class="pomodoro-stamp-ripple pomodoro-stamp-ripple--2"></div>
           <div class="pomodoro-stamp-seal"></div>
         </div>
-        <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">静修圆满</h1>
+        <h1 class="pomodoro-complete-title" data-i18n="pomodoroCompleted">专注完成</h1>
         <div class="pomodoro-pets pomodoro-pets--complete" aria-hidden="true">
           <img id="pomodoro-complete-kiss" class="pomodoro-pet pomodoro-pet--scene" alt="">
         </div>
-        <p id="pomodoro-message" class="pomodoro-message" data-i18n="pomodoroCompleteMessage">闭关结束，修为又大有精进。</p>
-        <button id="pomodoro-finish" class="pomodoro-primary-button" type="button" data-i18n="pomodoroFinish">出关</button>
+        <p id="pomodoro-message" class="pomodoro-message" data-i18n="pomodoroCompleteMessage">伴读结束，喝杯大吉岭红茶休息一下吧。</p>
+        <button id="pomodoro-finish" class="pomodoro-primary-button" type="button" data-i18n="pomodoroFinish">完成</button>
       </div>
     </section>
 

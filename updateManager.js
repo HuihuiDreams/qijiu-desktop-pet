@@ -15,7 +15,7 @@ const DEFAULT_MAC_CHECK_TIMEOUT_MS = 15_000;
 
 
 // GitHub Releases 页面地址（手动更新时在浏览器打开）
-const GITHUB_RELEASES_URL = 'https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest';
+const GITHUB_RELEASES_URL = 'https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest';
 
 function loadDefaultAutoUpdater() {
   return require('electron-updater').autoUpdater;
@@ -521,7 +521,7 @@ function createUpdateManager(options = {}) {
       let data;
       try {
         const response = await fetchImpl(
-          'https://api.github.com/repos/HuihuiDreams/qijiu-desktop-pet/releases/latest',
+          'https://api.github.com/repos/HuihuiDreams/good-omens-desktop-pet/releases/latest',
           { signal: abortController.signal },
         );
         if (!response.ok) {

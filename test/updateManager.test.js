@@ -611,7 +611,7 @@ test('mac manual update opens the release page when a newer version is accepted'
     assert.equal(messages[0].title, 'Manual update');
     assert.match(messages[0].message, /0\.1\.0/);
     assert.match(messages[0].message, /0\.2\.0/);
-    assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest']);
+    assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest']);
     assert.deepEqual(progressEvents.map(([name]) => name), ['checking', 'close']);
   } finally {
     global.fetch = originalFetch;
@@ -835,6 +835,6 @@ test('mac manual update supports injected getShell option', async () => {
   });
 
   await manager.checkForUpdatesFromTray();
-  assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest']);
+  assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest']);
 });
 

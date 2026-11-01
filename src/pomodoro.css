@@ -525,27 +525,6 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
     transform: translate(-50%, -50%) scale(1) rotate(-3deg);
     filter: drop-shadow(0 0 6px rgba(197, 155, 39, 0.25));
   }
-  24% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(0.92) rotate(-4deg);
-    filter: drop-shadow(0 0 22px rgba(201, 162, 77, 0.95));
-  }
-  38% {
-    transform: translate(-50%, -50%) scale(1.05) rotate(-3deg);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
-    opacity: 0.90;
-    filter: drop-shadow(0 0 16px rgba(201, 162, 77, 0.7));
-  }
-  75% {
-    opacity: 0.70;
-  }
-  100% {
-    opacity: 0.20;
-    transform: translate(-50%, -50%) scale(1) rotate(-3deg);
-    filter: drop-shadow(0 0 6px rgba(201, 162, 77, 0.25));
-  }
 }
 
 .pomodoro-stamp-ripple {
