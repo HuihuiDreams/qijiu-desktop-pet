@@ -531,7 +531,7 @@ function createUpdateManager(options = {}) {
       } finally {
         clearTimeout(timeoutId);
       }
-      const latestVersion = data.tag_name ? data.tag_name.replace(/^v/, '') : null;
+      const latestVersion = data.tag_name ? data.tag_name.replace(/^(?:go-)?v/, '') : null;
       const currentVersion = getCurrentVersion();
 
       if (latestVersion && isNewerVersion(latestVersion, currentVersion)) {

@@ -838,3 +838,33 @@ test('mac manual update supports injected getShell option', async () => {
   assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest']);
 });
 
+test('mac manual update recognizes go-v prefixed release tags', async () => {
+  const openedUrls = [];
+  const manager = createUpdateManager({
+    isMac: true,
+    getShell: () => ({
+      openExternal: (url) => openedUrls.push(url),
+    }),
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return { tag_name: 'go-v2.0.0' };
+      },
+    }),
+  });
+
+  manager.initUpdateManager({
+    app: {
+      isPackaged: true,
+      getVersion: () => '1.0.0',
+    },
+    dialog: {
+      showMessageBox: async () => ({ response: 0 }),
+    },
+    t: (k) => k,
+  });
+
+  await manager.checkForUpdatesFromTray();
+  assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest']);
+});
+
