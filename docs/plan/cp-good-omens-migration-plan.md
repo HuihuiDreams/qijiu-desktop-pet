@@ -156,7 +156,7 @@
 ### Phase 7: UI 界面风格与排版彻底重构 (Good Omens Aesthetic Overhaul & Clean Typography)
 - [x] **Task 7.1**: 全量剔除翠绿修仙水墨配色，全面升级为 A.Z. Fell and Co. 索霍区古籍书店（古典黄铜、羊皮纸暖白、星芒金）与克劳利宾利曜黑、深红血浆暗火色系；采用现代 CSS 相对颜色语法自动派生次级色彩与微光阴影（`index.css`、`status.css`、`pomodoro.css`、`city-setting.css`、`pet-scale.css`、`skin-selector.css`、`context-menu.css`）。
 - [x] **Task 7.2**: 彻底剥离与剔除旧七九专属书法字（Calligraphy）：全量移除 `calligraphy-*.webp` 遮罩与背景水印、移除设置窗口与状态窗口泥金印章（`status-seal-qijiu`）、移除右键菜单与状态卡片上的 `clip-path: inset(50%)` 隐藏文本黑客手法，恢复所有语言（中、英、日）下原生的现代优雅字形与无障碍可读性。
-- [x] **Task 7.3**: 彻底解决番茄钟长对白导致按钮被挤出视口的布局问题：扩大番茄钟窗口默认尺寸（由 336×360 扩展为 360×440），改用弹性列布局（`flex-direction: column`）、内容滚动自适应及底部主按钮吸底固定（`margin-top: auto; flex-shrink: 0`），确保「开始静修/专注」、「提前出关」与「出关」按钮永远清晰完整可见。
+- [x] **Task 7.3**: 彻底解决番茄钟长对白导致按钮被挤出视口与留白不均的布局问题：番茄钟窗口默认尺寸设为 360×440，改用弹性列居中布局（`justify-content: safe center`）、内容滚动自适应及按钮与步进器保持 20px 舒适间距，优化英日多语言标题单行排版与防折行截断，确保在所有语言下文案典雅、层次平衡且操作按钮清晰可见。
 - [x] **Task 7.4**: 现代化重构番茄钟表盘与圆满仪式：表盘中心移除旧书法遮罩改用双层细圈与星芒呼吸光效，圆满仪式保留金色圣光涟漪与磬钟音效，圆印升级为双圈天使之印。
 - [x] **Task 7.5**: 全量自动化测试（1140 passed）与 Playwright 隔离冒烟测试（`qa:electron:smoke`）验证通过。
 - [x] **Task 7.6**: 右键菜单与状态面板角色名纯净展示（Clean Single Name Display）：解耦旧版名+字号括号拼接（`name（nickname）`），三语统一展示单一角色名（克劳利 / Crowley / クロウリー，亚茨拉斐尔 / Aziraphale / アジラフェル），彻底移除括号与冗余外语标注。

@@ -64,17 +64,26 @@ input {
 }
 
 .pomodoro-titlebar>span {
-  padding-left: 12px;
+  padding-left: 4px;
   text-shadow: var(--title-text-shadow);
+  max-width: calc(100% - 66px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 html[lang="en"] .pomodoro-titlebar>span {
-  max-width: calc(100% - 76px);
+  max-width: calc(100% - 66px);
   overflow: hidden;
-  font-size: 15px;
-  letter-spacing: 1px;
+  font-size: 13.5px;
+  letter-spacing: 0.2px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+html[lang="ja"] .pomodoro-titlebar>span {
+  font-size: 16px;
+  letter-spacing: 1px;
 }
 
 .pomodoro-icon-button,
@@ -143,11 +152,11 @@ html[lang="en"] .pomodoro-titlebar>span {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: safe center;
   flex: 1 0 auto;
   min-height: 100%;
-  gap: 10px;
-  padding: 4px 0 2px;
+  gap: 14px;
+  padding: 6px 0;
   box-sizing: border-box;
 }
 
@@ -207,6 +216,17 @@ html[lang="en"] .pomodoro-titlebar>span {
   text-align: center;
 }
 
+html[lang="en"] .pomodoro-heading {
+  font-size: 18px;
+  letter-spacing: 0.6px;
+  line-height: 1.25;
+}
+
+html[lang="ja"] .pomodoro-heading {
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
 .pomodoro-duration-stepper {
   display: flex;
   align-items: center;
@@ -260,7 +280,7 @@ html[lang="en"] .pomodoro-titlebar>span {
   cursor: pointer;
   letter-spacing: 0.8px;
   flex-shrink: 0;
-  margin-top: auto;
+  margin-top: 6px;
   transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
