@@ -25,7 +25,7 @@ test('dialogues init falls back without throwing when I18N is absent', () => {
   vm.runInContext(readSource('src/data/dialogues.js'), context);
   assert.doesNotThrow(() => vm.runInContext("initDialogues('en')", context));
   assert.ok(Array.isArray(context.window.DIALOGUES.greet.yueqi));
-  assert.equal(context.window.DIALOGUES.greet.yueqi[0], '天使，你也在这儿。');
+  assert.equal(context.window.DIALOGUES.greet.yueqi[0], '天使！真巧在这儿碰见你。');
   assert.ok(Array.isArray(context.window.DIALOGUES.weather_windy.yueqi));
   assert.ok(Array.isArray(context.window.DIALOGUES.weather_thunderstorm.shenjiu));
 });
@@ -74,11 +74,11 @@ test("applyI18n returns immediately without error when window.t is falsy", () =>
 test("applyI18n updates DOM elements with [data-i18n], sets html lang and data-locale", () => {
   delete require.cache[require.resolve('../src/i18nHelpers')];
   const { I18nHelpers } = require('../src/i18nHelpers');
-  
+
   const fakeElement = { dataset: { i18n: 'greet' }, textContent: '' };
   const fakeHtmlElement = { setAttribute(k, v) { this[k] = v; } };
-  
-  global.window = { 
+
+  global.window = {
     t: (key) => key === 'greet' ? 'Hello' : key,
     __currentLocale: 'en'
   };
@@ -103,9 +103,9 @@ test("applyI18n updates DOM elements with [data-i18n], sets html lang and data-l
 test("applyI18n falls back to 'zh' as locale when window.__currentLocale is undefined", () => {
   delete require.cache[require.resolve('../src/i18nHelpers')];
   const { I18nHelpers } = require('../src/i18nHelpers');
-  
+
   const fakeHtmlElement = { setAttribute(k, v) { this[k] = v; } };
-  
+
   global.window = { t: () => '' }; // window.__currentLocale is undefined
   global.document = {
     querySelectorAll: () => [],
@@ -124,7 +124,7 @@ test("applyI18n falls back to 'zh' as locale when window.__currentLocale is unde
 test("translateUi uses window.__currentLocale as default when locale parameter is omitted", () => {
   delete require.cache[require.resolve('../src/i18nHelpers')];
   const { I18nHelpers } = require('../src/i18nHelpers');
-  
+
   global.window = { __currentLocale: 'en' };
   global.I18N = {
     en: { ui: { greet: 'Hello Default' } },
@@ -140,7 +140,7 @@ test("translateUi uses window.__currentLocale as default when locale parameter i
 test("getI18nUi returns {} when I18N exists but contains neither the requested locale nor zh", () => {
   delete require.cache[require.resolve('../src/i18nHelpers')];
   const { I18nHelpers } = require('../src/i18nHelpers');
-  
+
   global.I18N = { ja: { ui: { hello: 'こんにちは' } } };
 
   assert.deepEqual(I18nHelpers.getI18nUi('en'), {});
