@@ -9,7 +9,7 @@ description: >-
 
 # DeskPet 皮肤素材处理流水线 (Skin Asset Pipeline)
 
-本技能定义了为《DeskPet 岳清&沈九修仙桌宠》添加、修改或转换皮肤素材的标准作业流程（SOP）。
+本技能定义了为《DeskPet 好兆头桌宠》（GoodOmensDeskPet）添加、修改或转换皮肤素材的标准作业流程（SOP）。
 在执行切图、画布归一化、WebP 转换与加密同步时，必须严格遵守以下规范以保障桌宠在运行时的清晰度与动画稳定性。
 
 ---
@@ -37,29 +37,29 @@ description: >-
 
 ```text
 src/assets/<skin_id>/
-├── left.webp                     # 岳七静止待机 (256x256)
-├── right.webp                    # 沈九静止待机 (256x256)
-├── left_cultivate.webp           # 岳七打坐
-├── left_hungry.webp              # 岳七饥饿
-├── left_sleep.webp               # 岳七睡眠
-├── left_eat.webp                 # 岳七进食
-├── left_pat.webp                 # 岳七摸头
-├── right_cultivate.webp          # 沈九打坐
-├── right_hungry.webp             # 沈九饥饿
-├── right_sleep.webp              # 沈九睡眠
-├── right_eat.webp                # 沈九进食
-├── right_pat.webp                # 沈九摸头
+├── left.webp                     # 克劳利静止待机 (256x256)
+├── right.webp                    # 亚茨拉斐尔静止待机 (256x256)
+├── left_cultivate.webp           # 克劳利养植物
+├── left_hungry.webp              # 克劳利饥饿
+├── left_sleep.webp               # 克劳利睡眠
+├── left_eat.webp                 # 克劳利进食
+├── left_pat.webp                 # 克劳利被天使关怀
+├── right_cultivate.webp          # 亚茨拉斐尔静心研读
+├── right_hungry.webp             # 亚茨拉斐尔饥饿
+├── right_sleep.webp              # 亚茨拉斐尔睡眠
+├── right_eat.webp                # 亚茨拉斐尔进食
+├── right_pat.webp                # 亚茨拉斐尔被恶魔偏宠
 ├── hug.webp                      # 双人拥抱
-├── kiss.webp                     # 双人亲亲（默认画廊预览图）
-├── shareFood.webp                # 分享食物
-├── throwup.webp                  # 吐口水/炸毛
-├── cultivate.webp                # 双修打坐
+├── kiss.webp                     # 双人亲吻（默认画廊预览图）
+├── shareFood.webp                # 分享食物（丽兹投喂）
+├── throwup.webp                  # 体面吃撑（揉肚子）
+├── cultivate.webp                # 施展奇迹（25级联合奇迹）
 ├── yueqi/
-│   ├── walk_left01.webp .. 04.webp   # 岳七向左行走 (4帧)
-│   └── walk_right01.webp .. 04.webp  # 岳七向右行走 (4帧)
+│   ├── walk_left01.webp .. 04.webp   # 克劳利向左行走 (4帧)
+│   └── walk_right01.webp .. 04.webp  # 克劳利向右行走 (4帧)
 └── shenjiu/
-    ├── walk_left01.webp .. 04.webp   # 沈九向左行走 (4帧)
-    └── walk_right01.webp .. 04.webp  # 沈九向右行走 (4帧)
+    ├── walk_left01.webp .. 04.webp   # 亚茨拉斐尔向左行走 (4帧)
+    └── walk_right01.webp .. 04.webp  # 亚茨拉斐尔向右行走 (4帧)
 ```
 
 ---

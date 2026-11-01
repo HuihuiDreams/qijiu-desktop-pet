@@ -8,7 +8,7 @@ description: >-
 
 # DeskPet 发布打包与签名合规流水线 (Release and Packaging Pipeline)
 
-本技能定义了《DeskPet 岳清&沈九修仙桌宠》从本地预检、安装包构建、ASAR 内容安全审计，到云端 GitHub Actions 双平台交叉验证与正式发布的完整端到端标准作业流程（SOP）。
+本技能定义了《DeskPet 好兆头桌宠》（GoodOmensDeskPet）从本地预检、安装包构建、ASAR 内容安全审计，到云端 GitHub Actions 双平台交叉验证与正式发布的完整端到端标准作业流程（SOP）。
 
 ---
 
@@ -20,7 +20,7 @@ description: >-
 2. **受保护皮肤资产机制**
    - 打包前必须运行 `npm run protect:assets` 生成 `protected-assets/` 密文；`package.json` 中的 `build.files` 会主动排除 `src/assets/*/*.webp` 明文图片（详见 [ADR-040](docs/decisions/ADR-040-encrypted-skin-assets.md)）。
 3. **macOS 二进制执行文件名 ASCII 规范化**
-   - 在 [`scripts/afterPack.js`](scripts/afterPack.js) 中，打包后自动将 `Contents/MacOS/七九爱宠` 重命名为 `Contents/MacOS/DeskPet`，更新 `Info.plist` 的 `CFBundleExecutable` 并执行 ad-hoc 重新签名（`codesign --force --deep --sign -`），杜绝中文执行文件名引发的更新异常及 ARM64 启动崩溃（详见 [ADR-026](docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
+   - 在 [`scripts/afterPack.js`](scripts/afterPack.js) 中，打包后自动将 `Contents/MacOS/GoodOmensDeskPet` 重命名为 `Contents/MacOS/DeskPet`，更新 `Info.plist` 的 `CFBundleExecutable` 并执行 ad-hoc 重新签名（`codesign --force --deep --sign -`），杜绝中文执行文件名引发的更新异常及 ARM64 启动崩溃（详见 [ADR-026](docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
 4. **Windows 代码签名与 PowerShell 安全边界**
    - 打包脚本调用 PowerShell（如 `scripts/set-win-icon.ps1`）必须通过 `resolveWindowsPowerShellPath` 从 `SystemRoot` 解析绝对路径，杜绝路径劫持（详见 [ADR-020](docs/decisions/ADR-020-windows-release-and-code-signing.md) 与 [ADR-029](docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
 5. **本地预检 vs 云端 CI 的互补防线**
@@ -120,7 +120,7 @@ npm run verify:signatures
 1. **版本与元数据**：验证 SemVer 格式；检查 `CHANGELOG.md` 是否存在 `## [0.11.3]`；若 `package.json` 版本不一致，自动提交并推回仓库。
 2. **签名机密探测**：检测 `WIN_CSC_LINK` 与 `WIN_CSC_KEY_PASSWORD`，确认是否具备已签名构建条件。
 3. **Windows 虚拟机 (`windows-latest`)**：执行 `npm ci`、`npm test`、`npm audit`、`npm run protect:assets`、构建 Windows smoke package 并运行 `npm run verify:package`。
-4. **macOS 虚拟机 (`macos-latest`)**：执行 `npm ci`、`npm test`、`npm audit`、`npm run protect:assets`、构建 macOS smoke package、运行 `npm run verify:package`，并通过 `plutil` 严格核验 `七九爱宠.app` 内的 `DeskPet` 可执行文件名与 plist 元数据。
+4. **macOS 虚拟机 (`macos-latest`)**：执行 `npm ci`、`npm test`、`npm audit`、`npm run protect:assets`、构建 macOS smoke package、运行 `npm run verify:package`，并通过 `plutil` 严格核验 `GoodOmensDeskPet.app` 内的 `DeskPet` 可执行文件名与 plist 元数据。
 
 ---
 
@@ -141,11 +141,11 @@ npm run verify:signatures
 ### 产物与交付
 1. **自动打 Tag**：工作流会自动创建并推送 `v0.11.3` Git Tag。
 2. **Windows 交付物**：
-   - `desktop-pet-setup-0.11.3.exe` (NSIS 安装程序)
+   - `good-omens-pet-setup-0.11.3.exe` (NSIS 安装程序)
    - `latest.yml` (自动更新元数据)
 3. **macOS 交付物**：
-   - `desktop-pet-setup-0.11.3-x64.dmg` / `.zip`
-   - `desktop-pet-setup-0.11.3-arm64.dmg` / `.zip`
+   - `good-omens-pet-setup-0.11.3-x64.dmg` / `.zip`
+   - `good-omens-pet-setup-0.11.3-arm64.dmg` / `.zip`
    - `latest-mac.yml` (自动更新元数据)
 4. **GitHub Release**：产物将自动上传至对应的 GitHub Release 草稿或公开发布页。
 
@@ -156,7 +156,7 @@ npm run verify:signatures
 | 现象 / 报错 | 原因分析 | 解决措施 |
 | :--- | :--- | :--- |
 | `Forbidden internal files found in packaged app` | 打包产物中混入了 `.agents`、`.claude`、`.codex` 等本地配置 | 检查 `package.json` 的 `build.files` 排除项，并运行 `npm run verify:package` 定位具体违规文件 |
-| `Expected CFBundleExecutable to be DeskPet, got: 七九爱宠` | macOS 打包后未完成可执行文件重命名 | 检查 `scripts/afterPack.js` 是否被 `package.json` 的 `afterPack` 正确挂载，并确认 `plutil` 执行权限 |
+| `Expected CFBundleExecutable to be DeskPet, got: GoodOmensDeskPet` | macOS 打包后未完成可执行文件重命名 | 检查 `scripts/afterPack.js` 是否被 `package.json` 的 `afterPack` 正确挂载，并确认 `plutil` 执行权限 |
 | macOS 启动闪退 `Permission Denied (1100)` | 修改 `Info.plist` 后未重新进行 ad-hoc 签名 | 确保 `scripts/afterPack.js` 中包含 `codesign --force --deep --sign -` 逻辑 |
 | `CHANGELOG.md is missing a '## [x.y.z]' release section` | Preflight 无法在更新日志中找到对应版本段落 | 检查 `CHANGELOG.md` 标题格式，必须为 `## [0.11.3]`，且不要有多余的前缀或空格 |
 | `Cannot resolve trusted Windows PowerShell path` | Windows 宿主环境缺失 `SystemRoot` 环境变量 | 确保运行环境为合法的 Windows 宿主，检查系统环境变量 `SystemRoot` 是否指向 `C:\Windows` |
