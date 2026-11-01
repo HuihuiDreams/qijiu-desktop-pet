@@ -160,3 +160,9 @@
 - [x] **Task 7.4**: 现代化重构番茄钟表盘与圆满仪式：表盘中心移除旧书法遮罩改用双层细圈与星芒呼吸光效，圆满仪式保留金色圣光涟漪与磬钟音效，圆印升级为双圈天使之印。
 - [x] **Task 7.5**: 全量自动化测试（1140 passed）与 Playwright 隔离冒烟测试（`qa:electron:smoke`）验证通过。
 - [x] **Task 7.6**: 右键菜单与状态面板角色名纯净展示（Clean Single Name Display）：解耦旧版名+字号括号拼接（`name（nickname）`），三语统一展示单一角色名（克劳利 / Crowley / クロウリー，亚茨拉斐尔 / Aziraphale / アジラフェル），彻底移除括号与冗余外语标注。
+
+### Phase 8: 迁移审查修复与资产图标收口 (Migration Audit Fixes & Icon Regeneration)
+- [x] **Task 8.1**: 基于双人拥抱图（`hug.webp`）重新生成好兆头圆形徽章全套高分辨率应用图标（`icon.png`, `icon.ico`, `icon.icns`），修复 macOS `@2x` 托盘模板图标（`iconTemplate@2x.png`）等比缩放。
+- [x] **Task 8.2**: 独立隔离 `package.json` 中的仓库 Git URL 与 issues 追踪地址至 `good-omens-desktop-pet`，清理默认皮肤目录下未被引用的孤儿素材（`walk01..04.webp`）。
+- [x] **Task 8.3**: 修复单人进食（`eat`）与饥饿（`hungry`）动作素材边缘残留的抠图噪点碎片，完整恢复克劳利进食（`left_eat`）立绘中遗失的餐叉细节；修复子窗口 HTML 静态兜底文本并清理 `pomodoro.css` 重复 keyframe 规则。
+- [x] **Task 8.4**: 全量重构多语言说明文件（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`）以及换肤画廊 AU 皮肤显示标签（`鸟塑克亚` / `猫兔克亚` / `校园克亚`），彻底消除旧七九修仙术语与陈旧设定残留。

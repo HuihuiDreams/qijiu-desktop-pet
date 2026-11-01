@@ -32,31 +32,31 @@ This app supports both Windows and macOS:
 After launch, both characters will appear on your desktop.
 
 - Drag a character: hold the left mouse button and drag them to your preferred position.
-- Open a character menu: right-click a character to use actions such as "🍎 Feed", "💤 Rest", "🧘🏻‍♂️ Cultivate", "🤚 QiGe Spoils", or "🤚 XiaoJiu Clings".
+- Open a character menu: right-click a character to use actions such as "🥐 Treat", "💤 Nap", "🪴 Tending Plants" (Crowley) / "📖 Reading" (Aziraphale), "🤚 Angel's Care" (right-click Crowley) / "🤚 Demon's Favor" (right-click Aziraphale).
 - Open the tray menu: right-click the green tray icon in the lower-right system tray for more settings.
 
 The tray menu lets you:
-- "📊 Show Status Panel"
-- "📏 Resize Pet…": resize both pets together with a live preview; confirm to save.
-- "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
-- "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
-- "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking"
-- "👻 Hide Pets" or "👻 Show Pets": temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
-- "🔄 Reset Position"
-- "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
-- "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder"
-- "⏰ Reminder Interval": choose 30, 45, 60, 90, or 120 minutes (selectable only when break reminder is enabled; disabled when off)
-- "💕 Enable Sweat Screensaver" or "💕 Disable Sweat Screensaver"
-- "💕 Screensaver Wait Time": choose 1, 3, 5, 10, 15, or 30 min (default: 3 min; selectable only when screensaver is enabled; disabled when off)
-- "🌤️ Enable Weather Sync" or "🌤️ Disable Weather Sync"
-- "🌤️ Set City"
-- "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness"
-- "🌐 Language": choose "中文", "English", or "日本語"
-- "🚀 Launch at Login" or "🚀 Disable Auto-launch"
-- "📦 Check for Updates": packaged Windows builds show download progress and support automatic upgrade; macOS guides you to download and replace the DMG manually.
-- "🛠️ Developer Tools": shown only in development mode.
-- "❌ Quit"
-- "🏷️ Version": shows the current app version at the bottom of the tray menu.
+- **📊 Show Status Panel**
+- **📏 Resize Pet…**: resize both pets together with a live preview; confirm to save.
+- **📖 Bookshop Study / 📖 Studying N min / 📖 Study Complete**: open the Pomodoro countdown window; the tray label reflects the current study state.
+- **🎨 Choose Skin…**: opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Outfit - (Artist) Nano Banana, Cute Birds - (Artist) Hamster Salad, Cat & Bunny - (Artist) Violetfirefly, and School AU - (Artist) M_Shang). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
+- **⏸️ Pause Walking** or **🚶🏻‍♂️ Resume Walking**
+- **👻 Hide Pets** or **👻 Show Pets**: temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
+- **🔄 Reset Position**
+- **🖥️ Switch Screen**: move pets between displays (macOS multi-display only)
+- **⏰ Enable Break Reminder** or **⏰ Disable Break Reminder**
+- **⏰ Reminder Interval**: choose 30, 45, 60, 90, or 120 minutes (selectable only when break reminder is enabled; disabled when off)
+- **💕 Enable Sweet Screensaver** or **💕 Disable Sweet Screensaver**
+- **💕 Screensaver Wait Time**: choose 1, 3, 5, 10, 15, or 30 min (default: 3 min; selectable only when screensaver is enabled; disabled when off)
+- **🌤️ Enable Weather Sync** or **🌤️ Disable Weather Sync**
+- **🌤️ Set City**
+- **🪟 Enable Window Sensing** or **🪟 Disable Window Sensing**: shows "🪟 Window Sensing Unavailable" if unsupported.
+- **🌐 Language**: choose "中文", "English", or "日本語"
+- **🚀 Launch at Login** or **🚀 Disable Auto-launch**
+- **📦 Check for Updates**: packaged Windows builds show download progress and support automatic upgrade; macOS guides you to download and replace the DMG manually.
+- **🛠️ Developer Tools**: shown only in development mode.
+- **❌ Quit**
+- **🏷️ Version**: shows the current app version at the bottom of the tray menu.
 
 If you use multiple monitors, you can drag characters or the status panel to a secondary display.
 When you switch language from the tray menu, the main window, right-click menus, status panel, and update prompts refresh together.
@@ -66,12 +66,12 @@ When you switch language from the tray menu, the main window, right-click menus,
 ========================================
 
 After the system has been idle longer than the configured wait time, the screensaver starts:
-- Yueqi and Shenjiu play a CP combo at the center of the screen: share food -> hug -> kiss.
+- Crowley and Aziraphale play a CP combo at the center of the screen: share food -> hug -> kiss.
 - The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
-- When they detect that you are back, each pet shows a dialogue bubble above its head (Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
+- When they detect that you are back, the two pets hurriedly cover up their secret rendezvous (Crowley pretends he is carrying out corrupting demon work, while Aziraphale nervously hides his pastry, claiming it was just standard faction diplomacy), before running back to their spots.
 
 In the tray menu, you can:
-- Toggle the screensaver with "💕 Enable Sweat Screensaver" / "💕 Disable Sweat Screensaver".
+- Toggle the screensaver with "💕 Enable Sweet Screensaver" / "💕 Disable Sweet Screensaver".
 - Choose 1 / 3 / 5 / 10 / 15 / 30 min under "💕 Screensaver Wait Time" (default: 3 min).
 
 Note:
@@ -95,17 +95,17 @@ Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin ga
 - Confirm & Cancel: Previews do not change your saved skin. When you are satisfied, click "Confirm" to save. Clicking "Cancel", pressing ESC, or closing the window restores your original skin. Switching to another window or minimizing keeps the preview; open the gallery again from the tray to continue choosing.
 
 Skin Actions & Fallback:
-Skins replace standing, walking, hungry, sleeping, feeding, cultivating, care, kiss, hug, and share-food visuals together.
+Skins replace standing, walking, hungry, sleeping, feeding, tending plants / reading, care / favor, kiss, hug, and share-food visuals together.
 Missing optional action assets use default assets where possible. If a required standing image or walking frame fails to load during a switch, the app restores the last successfully loaded skin. "Confirm" then shows an error and refuses to save; you can choose another skin or cancel.
 
-When pets move between displays with different scale factors, the character sprites, right-click menu, and Qi effects scale with the current display to keep their visual size consistent.
+When pets move between displays with different scale factors, the character sprites, right-click menu, and miracle effects scale with the current display to keep their visual size consistent.
 
 Pet Size:
-Open "📏 Resize Pet…" from the tray and drag the slider to preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, Qi auras, the local screensaver scene, and weather effects scale with them.
+Open "📏 Resize Pet…" from the tray and drag the slider to preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
 Click "Confirm" to save. "Cancel", Esc, or closing the window restores the previous size. "Reset" previews 100%; confirm to save it. Switching to another window or minimizing keeps the preview.
 
-Calligraphy Details:
-Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold “七九” seal. Skin, city, and size settings show the same gold ornament beside their localized titles.
+Bookshop Typography:
+Character menus, the status panel, and settings windows feature warm parchment and antique gold styling inspired by A.Z. Fell & Co. Antiquarian Booksellers, with crisp native typography across Chinese, English, and Japanese.
 
 ========================================
 📦 Updates
@@ -116,14 +116,14 @@ Character menus and the status panel use calligraphic character names in Chinese
 - Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
 
 ========================================
-🪟 Realm Awareness
+🪟 Window Sensing
 ========================================
 
-When Realm Awareness is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
+When Window Sensing is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
 During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
 
-You can toggle this from the tray menu with "🪟 Enable Realm Awareness" or "🪟 Disable Realm Awareness".
-If the current system does not support it, the tray menu shows "🪟 Realm Awareness Unavailable".
+You can toggle this from the tray menu with "🪟 Enable Window Sensing" or "🪟 Disable Window Sensing".
+If the current system does not support it, the tray menu shows "🪟 Window Sensing Unavailable".
 
 ========================================
 🌤️ Weather Awareness & Time Sync
@@ -137,17 +137,17 @@ When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweig
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
-🧘🏻‍♂️ Cang Qiong Seclusion
+📖 Bookshop Study
 ========================================
 
-Cang Qiong Seclusion is the lightweight Pomodoro feature.
-Open it from the tray menu with "🧘🏻‍♂️ Cang Qiong Seclusion"; while running, the tray menu shows "🧘🏻‍♂️ In Seclusion N min", and after completion it shows "🧘🏻‍♂️ Seclusion Complete".
+Bookshop Study is the lightweight Pomodoro feature.
+Open it from the tray menu with "📖 Bookshop Study"; while running, the tray menu shows "📖 Studying N min", and after completion it shows "📖 Study Complete".
 
 Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
-After you start, Yue Qi and Shen Jiu leave the desktop and appear together in a cultivation illustration, alongside the timer and progress bar. A faint gold “七九” calligraphy emblem gently pulses at the center of the dial.
+After you start, Crowley and Aziraphale enter the countdown window, which displays the timer, progress bar, and a joint miracle illustration. Concentric rings with an angelic golden starburst gently pulse at the center of the dial.
 The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the countdown ends, a resonant singing-bowl chime plays as a gold “七九” seal lands with expanding ripples. The seal then fades into an ink watermark behind a kissing illustration and an encouragement message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
-Click "Exit Seclusion", stop early, or close the window to return the pets to their previous visibility and walking state.
+When the countdown ends, a resonant bookshop wind-chime and bell chime plays as a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+The window supports "Begin Study", "End Early", and "Done" actions. Click "Done", stop early, or close the window to return the pets to their previous visibility and walking state.
 
 ========================================
 📹 Meeting Auto-Hide
@@ -166,34 +166,34 @@ Meeting Auto-Hide automatically hides the pets when meeting activity is detected
 ========================================
 
 When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
-When it triggers, Yue Qi and Shen Jiu move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
+When it triggers, Crowley and Aziraphale move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
 
 You can toggle it from the tray menu with "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", and use "⏰ Reminder Interval" to choose 30, 45, 60, 90, or 120 minutes.
 Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
 
 ========================================
-📊 Cultivation Status
+📊 Pet Status
 ========================================
 
-The status panel shows four main stats: Affection, Satiety, Qi, and Mood.
+The status panel shows four main stats: ❤️ Bond, 🍖 Satiety, ✨ Miracle, and ☕ Mood.
 These stats change slowly over time: natural consumption is calculated every 5 minutes.
 Even if you close the app, some consumption will be calculated from offline time the next time you open it.
 
-1. ❤️ Affection
+1. ❤️ Bond
 
-Affection represents the bond between the two characters.
+Bond represents the connection between the two characters.
 Natural consumption:
 - Decreases by 1 every 2 hours.
 
 Ways to increase it:
-- Right-click Shen Jiu and choose "🤚 QiGe Spoils".
-- Right-click Yue Qi and choose "🤚 XiaoJiu Clings".
+- Right-click Crowley and choose "🤚 Angel's Care".
+- Right-click Aziraphale and choose "🤚 Demon's Favor".
 - It may also increase when the two walk close enough to trigger an interaction.
 
-Higher affection unlocks closer interactions:
-- Average Affection of both pets reaches 20: they may cultivate together.
-- Average Affection of both pets reaches 50: they may hug.
-- Average Affection of both pets reaches 70: they may kiss.
+Higher bond unlocks closer interactions:
+- Average Bond of both pets reaches 20: they may perform a miracle together.
+- Average Bond of both pets reaches 50: they may hug.
+- Average Bond of both pets reaches 75: they may kiss.
 
 2. 🍖 Satiety
 
@@ -204,39 +204,39 @@ Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 How to restore:
-- Right-click a character and choose "🍎 Feed" to restore 25 Satiety.
+- Right-click a character and choose "🥐 Treat" to restore 25 Satiety.
 
 Notes:
-- Choosing "💤 Rest" consumes 10 Satiety.
+- Choosing "💤 Nap" consumes 10 Satiety, and restores 15 Mood and 10 Miracle.
 - Below 30 Satiety, the character enters a hungry state and Mood drops faster.
 - Below 25 Satiety, an orange warning glow appears around the character.
 
 Small hidden interaction:
-When the two are close and trigger "Share Food", Yue Qi may give his food to Shen Jiu.
-Yue Qi loses 5 Satiety, and Shen Jiu restores 10 Satiety.
-Share Food only triggers when Yue Qi has at least 5 Satiety, so he will not keep feeding Shen Jiu after his Satiety has bottomed out.
-If they spend a lot of time together, Yue Qi may get hungry faster.
+When the two are close and trigger "Share Food", Crowley may share treats with Aziraphale.
+Crowley loses 5 Satiety, and Aziraphale restores 10 Satiety.
+Share Food only triggers when Crowley has at least 5 Satiety, so he will not keep feeding Aziraphale after his Satiety has bottomed out.
+If they spend a lot of time together, Crowley may get hungry faster.
 
-Cultivation benefit:
-When they trigger "Cultivate Together", Yue Qi also restores 15 Satiety. The existing Qi and Affection rewards for both characters are unchanged.
+Miracle benefit:
+When they trigger "Miracle Together", Crowley also restores 15 Satiety. The existing Miracle and Bond rewards for both characters are unchanged.
 
-3. 🧘🏻‍♂️ Qi
+3. ✨ Miracle
 
-Qi represents a character's energy.
-When Qi is too low, Mood becomes easier to lose.
+Miracle represents a character's energy and miracle power.
+When Miracle is too low, Mood becomes easier to lose.
 
 Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 How to restore:
-- Right-click a character and choose "🧘🏻‍♂️ Cultivate": they meditate for 30 seconds and restore 1 Qi per second.
-- Right-click a character and choose "💤 Rest": restores 10 Qi and 15 Mood, and consumes 10 Satiety.
-- When the two interact, they may cultivate together and restore Qi at 1.5x the single-character meditation amount.
+- Right-click Crowley and choose "🪴 Tending Plants", or right-click Aziraphale and choose "📖 Reading": they focus for 30 seconds and restore 1 Miracle per second.
+- Right-click a character and choose "💤 Nap": restores 10 Miracle and 15 Mood, and consumes 10 Satiety.
+- When the two interact, they may perform a miracle together and restore Miracle at 1.5x the single-character amount.
 
 Note:
-- Below 20 Qi, Mood drops faster.
+- Below 20 Miracle, Mood drops faster.
 
-4. ✨ Mood
+4. ☕ Mood
 
 Mood represents a character's emotional and mental state.
 Being too hungry or too tired affects Mood.
@@ -245,11 +245,11 @@ Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 Extra consumption:
-- Mood drops faster when Satiety is below 30 or Qi is below 20.
+- Mood drops faster when Satiety is below 30 or Miracle is below 20.
 
 Ways to improve it:
-- "🍎 Feed"
-- "🤚 QiGe Spoils" or "🤚 XiaoJiu Clings"
+- "🥐 Treat"
+- "🤚 Angel's Care" or "🤚 Demon's Favor"
 - Let the two characters interact naturally.
 
 ========================================
@@ -258,7 +258,7 @@ Ways to improve it:
 
 You can also judge their status visually without keeping the status panel open:
 
-- Green glow: cultivating, Qi will recover.
+- Golden / green glow: tending plants or reading, Miracle will recover.
 - Orange glow: Satiety is below 25, feed them soon.
 - Semi-transparent body: Mood is below 25, they need company, food, or care.
 
@@ -266,7 +266,7 @@ You can also judge their status visually without keeping the status panel open:
 💡 Tips
 ========================================
 
-1. Remember to use "🍎 Feed": being too hungry affects Rest and Mood.
+1. Remember to offer "🥐 Treat": being too hungry affects Nap and Mood.
 2. Try dragging them closer: interactions are easier within 180 pixels.
 3. Interactions have a 1-minute cooldown: they will not trigger again immediately.
 4. Interaction poses separate automatically: even if you drag them onto the same spot, the app nudges them apart when an interaction starts so kiss, hug, greet, and other animations do not overlap badly.
