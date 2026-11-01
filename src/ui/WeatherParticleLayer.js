@@ -378,6 +378,7 @@ class WeatherParticleLayer {
     if (weatherKind === 'wind') return (1.85 + (index % 6) * 0.2).toFixed(2);
     if (weatherKind === 'snow') return (4.8 + (index % 6) * 0.45).toFixed(2);
     if (weatherKind === 'heat') return (1.6 + (index % 6) * 0.28).toFixed(2);
+    if (weatherKind === 'rain') return (1.85 + (index % 5) * 0.25).toFixed(2);
     return (0.85 + (index % 5) * 0.12).toFixed(2);
   }
 
@@ -385,6 +386,7 @@ class WeatherParticleLayer {
     const direction = index % 2 === 0 ? 1 : -1;
     if (weatherKind === 'wind') return 92 + (index % 5) * 13;
     if (weatherKind === 'heat') return direction * (8 + (index % 5) * 4);
+    if (weatherKind === 'rain') return (index % 5) * 3;
     const distance = weatherKind === 'snow' ? 16 + (index % 5) * 7 : 6 + (index % 4) * 3;
     return direction * distance;
   }
