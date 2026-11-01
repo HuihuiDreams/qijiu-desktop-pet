@@ -89,9 +89,10 @@ jobs:
           }
 
           $changelog = Get-Content -LiteralPath CHANGELOG.md -Raw -Encoding UTF8
-          $expectedHeading = "## [$version]"
-          if (-not $changelog.Contains($expectedHeading)) {
-            throw "CHANGELOG.md is missing a '## [$version]' release section."
+          $expectedHeading = "## [go-v$version]"
+          $legacyHeading = "## [$version]"
+          if (-not ($changelog.Contains($expectedHeading) -or $changelog.Contains($legacyHeading))) {
+            throw "CHANGELOG.md is missing a '$expectedHeading' or '$legacyHeading' release section."
           }
 
           $tag = "go-v$version"

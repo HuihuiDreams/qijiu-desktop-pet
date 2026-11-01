@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [go-v1.0.0] - 2026-11-01
+
 ### Added
 - **补充 Shippori Mincho 字体许可声明 (`Shippori Mincho OFL Notice`)**：新增 `src/assets/fonts/ShipporiMincho-OFL.txt`（上游 SIL OFL 1.1 原文），并将 `test/typographyIntegration.test.js` 中该字体的 `license: null` 改为实际文件，补齐字体再分发合规。
 - **好兆头经典台词「要有光！」双场景接入 (`"Let there be light!" Classic Line Integration`)**：将《好兆头》第二季开篇克劳利创世造星名台词「Let there be light!（要有光！）」深度整合至桌宠双人互动与时段问候系统。在双人自主奇迹（`cultivate`）中作为克劳利施展奇迹的随机高光台词（`就如创世之初那样——“Let there be light!” 瞧好了，天使！`），并在清晨闲聊（`morningYueqi`）中作为克劳利的晨间破晓问候；中、英、日三语同步更新并补充自动化回归测试。
