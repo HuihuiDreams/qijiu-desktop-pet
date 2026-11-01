@@ -149,14 +149,14 @@ test('statusWindow.js renderPetStats builds accessible meter elements with uniqu
     pets: [
       {
         id: 'yueqi',
-        name: '岳清源',
-        nickname: '掌门',
+        name: '克劳利',
+        nickname: 'Crowley',
         stats: { affection: 85, hunger: 40, qi: 95, mood: 100 },
       },
       {
         id: 'shenjiu',
-        name: '沈九',
-        nickname: '九哥',
+        name: '亚茨拉斐尔',
+        nickname: 'Aziraphale',
         stats: { affection: 60, hunger: -15, qi: 150, mood: 0 },
       },
     ],
@@ -174,7 +174,7 @@ test('statusWindow.js renderPetStats builds accessible meter elements with uniqu
     const nameText = block.children.find(c => c.className === 'pet-status-name')?.children?.find(c => c.className === 'pet-status-name-text');
     assert.ok(nameText, 'nameText element should exist');
     assert.doesNotMatch(nameText.textContent, /[（）()]/, 'Status window pet name should not contain parentheses');
-    assert.equal(nameText.textContent, petId === 'yueqi' ? ' 岳清源' : ' 沈九');
+    assert.equal(nameText.textContent, petId === 'yueqi' ? ' 克劳利' : ' 亚茨拉斐尔');
 
     // Find all stat-row children
     const statRows = block.children.filter(c => c.className === 'stat-row');

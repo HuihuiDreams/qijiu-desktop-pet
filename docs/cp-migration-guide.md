@@ -212,7 +212,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 | --- | --- |
 | 应用身份 | [`package.json`](../package.json) 的 `name`、`description`、`build.appId`、`productName`、NSIS 名称及安装包名；对应更新 `package-lock.json` 元数据。**建议 `productName` 采用无空格 ASCII 驼峰名**（如 `GoodOmensDeskPet`），避免 macOS 终端命令（`xattr -cr`）与 CI 脚本转义问题；中文品牌名通过窗口标题、托盘提示与 NSIS 快捷方式名称呈现 |
 | Windows 身份 | [`src/main/AppLifecycle.js`](../src/main/AppLifecycle.js) 的 `APP_USER_MODEL_ID` 与新的 `build.appId` 一致；核对安装位置、卸载身份、开机启动项与快捷方式 |
-| 图标与包装 | `src/assets/icon.png`、`icon.ico`、`icon.icns`、`iconTemplate.png`、`iconTemplate@2x.png`；所有用户可见标题、README 与三语发行说明。应用主图标建议直接基于双人高清互动原画（如 `hug.webp`）裁切留白后合成到圆章底盘（占画布高度约 85%~90%）；**生成 `iconTemplate@2x.png`（44×44）时，绘制坐标与线宽必须按 `size / 22.0` 等比例放大**，切勿复用 22×22 绝对坐标导致 Retina 托盘图标缩在左上角 |
+| 图标与包装 | `src/assets/icon.png`、`icon.ico`、`icon.icns`；所有用户可见标题、README 与三语发行说明。应用主图标建议直接基于双人高清互动原画（如 `hug.webp`）裁切留白后合成到圆章底盘（占画布高度约 85%~90%）；macOS 托盘使用 `src/main/TrayManager.js` 中绘制的 16×16 点阵位图，无需外置 template 图片文件 |
 | Windows 安装器 | [`build/installer.nsh`](../build/installer.nsh) 的旧品牌文案及 `DeskPet.lnk` 历史清理；新应用**绝对不可**反向清理原主线应用的快捷方式（详见 7.2 节） |
 | 存档隔离 | [`StoreManager.js`](../src/main/services/StoreManager.js) 使用 `new Store()`，数据按 Electron `userData`（绑定应用名）自动隔离，新应用从 0 好感度起步（详见 7.2 节） |
 | 更新源 | `package.json` 的 `build.publish.owner/repo`；[`updateManager.js`](../updateManager.js) 的 GitHub Releases 页面 URL 与 macOS API URL，都改到专用 Release 仓库 |

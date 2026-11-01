@@ -1,4 +1,4 @@
-﻿# Git 提交与发布流程 (Git & Release Workflow)
+# Git 提交与发布流程 (Git & Release Workflow)
 
 基于 `git-workflow-and-versioning` 技能规范，本项目采用严格但高效的 Trunk-Based Development（主干开发）模式。
 
@@ -74,7 +74,7 @@ git diff --cached
 
 行为变更先更新 `test/` 中的对应测试，运行聚焦检查和 `npm test`；真实 Electron 集成检查按需使用 `npm run test:e2e`。同步相关结构文档或 ADR。纯文档修改核对路径、命令及说明即可。
 
-完成检查后使用下文的项目推送脚本。两个脚本都会执行 `git add .` 并推送本地 `main` 到 `origin main`，因此运行前须确认当前在 `main`，且工作区全部改动属于本次原子提交；脚本不会替你拆分无关改动，也不会自动运行测试。
+完成检查后使用下文的项目推送脚本。两个脚本都会执行 `git add .` 并推送当前分支到 `origin HEAD`，因此运行前须确认当前分支及工作区全部改动属于本次原子提交；脚本不会替你拆分无关改动，也不会自动运行测试。
 
 ---
 
@@ -105,7 +105,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 1. 拦截检查：自动检测 `git status` 中是否包含 `CHANGELOG.md`。
 2. 如果未包含，脚本会拦截提交，并自动用系统默认编辑器打开 `CHANGELOG.md`，强制要求你填写更新记录。
 3. 填写保存后重新运行，脚本执行 `git add .`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
-4. 检查通过后执行 `git commit -m "你的信息"`，成功后执行 `git push origin main`。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
+4. 检查通过后执行 `git commit -m "你的信息"`，成功后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
 
 脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。脚本打印的 `[WIP]` 模板是旧提示，实际应按 `[Unreleased]` 规范填写。
 

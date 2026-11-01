@@ -109,12 +109,23 @@ test('SkinManager builds custom WebP skin paths', () => {
   assert.equal(paths.imageMap.shenjiu.hungry, 'pet-asset://skin/qban/right_hungry.webp');
 });
 
-test('SkinManager gives animal ears skin a larger image scale', () => {
+test('SkinManager defaults SKIN_IMAGE_SCALES to empty object and respects custom scale config', () => {
   const sm = new SkinManager();
-  const paths = sm.buildPaths('animal_ears');
+  assert.deepEqual(SkinManager.SKIN_IMAGE_SCALES, {});
 
-  assert.equal(paths.petA.imageScale, 1.08);
-  assert.equal(paths.petB.imageScale, 1.08);
+  const defaultPaths = sm.buildPaths('default');
+  assert.equal(defaultPaths.petA.imageScale, 1);
+  assert.equal(defaultPaths.petB.imageScale, 1);
+
+  const prevScales = { ...SkinManager.SKIN_IMAGE_SCALES };
+  try {
+    SkinManager.SKIN_IMAGE_SCALES = { custom_skin: 1.08 };
+    const customPaths = sm.buildPaths('custom_skin');
+    assert.equal(customPaths.petA.imageScale, 1.08);
+    assert.equal(customPaths.petB.imageScale, 1.08);
+  } finally {
+    SkinManager.SKIN_IMAGE_SCALES = prevScales;
+  }
 });
 
 test('SkinManager.applySkin updates current skin and pets', async () => {

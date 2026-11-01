@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+### Added
+- **好兆头经典夜莺羁绊台词接入 (`Nightingale Dialogue Integration`)**：将《好兆头》象征二人羁绊与“属于我们的阵营”的经典夜莺典故（*“No nightingales”* 与 *“A Nightingale Sang in Berkeley Square”*）作为概率对白深度植入双人拥抱（`hug`）与深夜高好感联动梦境（`dream.linked`）。双人拥抱时克劳利与亚茨拉斐尔互诉夜莺守候；深夜梦话时亚茨拉斐尔呓语寻觅夜莺，克劳利温柔回应承诺伯克利广场的夜莺永远为他歌唱。中、英、日三语纯正原生撰写并全量通过自动化单元测试。
+
+### Changed
+- 统一托盘菜单三语标题（`trayTitle`）与开机自启动标识为「好兆头桌宠」（`Good Omens Desktop Pet` / `グッド・オーメンズ デスクトップペット`），更新 `src/data/i18n.js` 头部翻译完成状态注释与 `test/statusWindowRegression.test.js` 角色名测试固件。
+- 清理 `src/systems/SkinManager.js` 中已下线旧皮肤（`animal_ears`、`school_au`）的残留缩放配置，移除未被 `TrayManager` 点阵托盘引用的 `src/assets/iconTemplate.png` 与 `iconTemplate@2x.png` 及其生成逻辑；将 `.github/workflows/release-preflight.yml` 默认权限收紧为 `contents: read`。
+- 为换肤画廊 E2E 测试接入 QA 专用虚拟第二皮肤（`setQaExtraSkinIdForQA`），恢复单内置皮肤仓库下的预览、确认、加载失败回退与取消全链路 E2E 自动化验证，并补齐 `SkinService` 真实目录与白名单扫描单元测试。
+
+### Fixed
+- 修复日文版右键菜单交互文案与中英文不对齐的问题：将克劳利交互调整为「🤚 天使の慈愛」，亚茨拉斐尔交互调整为「🤚 悪魔の寵愛」；剔除日文版晨间问候与联合奇迹台词中「光あれ」后多余的英文字样与括号。
+- 修复 `src/systems/OfflineReturnSystem.js` 离线回归小时数按时辰向下取整再乘 2 导致最多少报近 2 小时（如 3 小时 59 分钟仅报 2 小时）的问题，改为满 1 时辰（2 小时）门槛后按实际整小时计算。
+- 修复 `push.sh` 与 `push.ps1` 硬编码推送到 `origin main` 的问题，统一改为推送当前分支（`git push origin HEAD`）。
+
 ## [go-v1.0.0] - 2026-11-01
 
 ### Added
@@ -24,9 +37,9 @@
 - **Good Omens 迁移全量验收与端到端冒烟验证 (`Good Omens E2E Verification & Smoke Baseline`)**：完成全量 1141 项自动化单元测试与 Playwright 隔离环境桌面端冒烟检验（`qa:electron:smoke`），验证两角色 2.2 头身对偶行走、鼠标穿透交互、右键菜单、中英日三语动态切换与数据隔离持久化均保持稳定无回归。
 - **Good Omens 视觉特效与天候氛围调整 (`Good Omens Visual Effects & Theming`)**：微调 `src/effects.css` 雨景粒子渲染梯度与微光光晕（`box-shadow`），营造兼具伦敦阴雨与创世星辉尾迹的氛围感；同步确认降级 Emoji 与番茄钟旧书店主题契合，全量通过视觉与作用域回归测试。
 - **Good Omens 专属三语对白系统与名场面互动叙事 (`Good Omens Trilingual Dialogue System & Interaction Narratives`)**：基于原著小说与影视剧纯正英式台词（English Ground Truth），在 `src/data/i18n.js` 中完整实现克劳利（Crowley）与亚茨拉斐尔（Aziraphale）的三语（中、英、日）对白体系。涵盖日常时段问候、多维发呆念头（植物、旧书店孤本与皇后乐队）、天气反应、低状态关怀、久坐提醒、以及好感度阶梯分层梦境（含高好感度亚茨拉斐尔夜间呓语与克劳利“我在，天使”联动梦话回应）；实现屏保秘密幽会被玩家唤醒打断时的专属抓包名场面（克劳利假装履行诱惑恶行、亚茨拉斐尔心虚藏起小蛋糕）；全量单元测试与跨语言键值完整性检验通过。
-- **离线回归时长计算与托盘菜单标识适配 (`Offline Return Duration & Tray Title Adaptation`)**：将 `OfflineReturnSystem.js` 中的离线时长从时辰换算为小时（按 $2n$ 小时计算），并保持与多语言回归对白单位一致；将系统托盘菜单首行标题明确更新为 `CA 桌面爱宠`（`CA Desktop Pet` / `CA デスクトップペット`），并同步更新开机自启动服务标识为 `CA爱宠`。
+- **离线回归时长计算与托盘菜单标识适配 (`Offline Return Duration & Tray Title Adaptation`)**：将 `OfflineReturnSystem.js` 中的离线时长从时辰换算为小时（满 1 时辰即 2 小时起算，按实际整小时计），并保持与多语言回归对白单位一致；将系统托盘菜单首行标题与开机自启动服务标识统一更新为「好兆头桌宠」（Good Omens Desktop Pet / グッド・オーメンズ デスクトップペット）。
 - **纯色背景抠图修复与立绘资产实心化加固 (`Solid Sprite Assets & Matting Pipeline Hardening`)**：修复 `cv2.floodFill` 缺失 `FLOODFILL_FIXED_RANGE` 种子点色差锁导致的浅色渐变主体被误剔除为空心透明的缺陷；重新处理全量 256×256 WebP 立绘与互动图，100% 完整保留亚茨拉斐尔浅色发丝、面部肤色、白衬衫米色外套及双人动作细节，实心不透明像素由不足 1,000 大幅提升至 12,000~32,000+ 像素，并通过 `protect:assets` 完成重新加密保护。
-- **Good Omens 独立发布应用身份与配置隔离 (`Good Omens Independent Release Packaging & Identity`)**：基于 [docs/cp-migration-guide.md](./docs/cp-migration-guide.md) 第 7 节完成好兆头专属桌面爱宠的独立发行配置。更新 `package.json` 与 `package-lock.json` 元数据为 `good-omens-desktop-pet`、产品名称为「好兆头爱宠」、应用 ID 为 `com.deskpet.good-omens`；配置 Windows `APP_USER_MODEL_ID` 与 NSIS 安装包专属快捷方式及清理脚本；生成好兆头定制应用图标与 macOS ICNS/Windows ICO 资产（`icon.png`, `icon.ico`, `icon.icns`, `iconTemplate.png`）；完成三语说明文件与 `README.md` 的独立版本重构；自动化全量回归测试与安装环境校验通过。
+- **Good Omens 独立发布应用身份与配置隔离 (`Good Omens Independent Release Packaging & Identity`)**：基于 [docs/cp-migration-guide.md](./docs/cp-migration-guide.md) 第 7 节完成好兆头专属桌面爱宠的独立发行配置。更新 `package.json` 与 `package-lock.json` 元数据为 `good-omens-desktop-pet`、产品名称为「好兆头爱宠」、应用 ID 为 `com.deskpet.good-omens`；配置 Windows `APP_USER_MODEL_ID` 与 NSIS 安装包专属快捷方式及清理脚本；生成好兆头定制应用图标与 macOS ICNS/Windows ICO 资产（`icon.png`, `icon.ico`, `icon.icns`）；完成三语说明文件与 `README.md` 的独立版本重构；自动化全量回归测试与安装环境校验通过。
 - **Good Omens 单人全状态动作独立定制立绘升级 (`Good Omens Bespoke Single Action Artwork`)**：彻底剔除此前单人动作中 Python PIL 绘制几何图形（圆圈植物、红心、简单弧线）的临时逻辑，全量采用 Nano Banana / Imagen 3 生成高规格 2.2 头身 Q 版独立插画重构。包含：克劳利手持绿色喷壶严厉训话龟背竹盆栽（`left_cultivate`）、墨镜滑落露出金色蛇瞳满脸绯红傲娇（`left_pat`）、像蛇般蜷缩在天鹅绒抱枕安眠（`left_sleep`）、双手持法式甜点（`left_eat`）与扶额抓狂（`left_hungry`）；亚茨拉斐尔扶手椅戴镜持书伴读（`right_cultivate`）、双手抚脸月牙眼陶醉微笑（`right_pat`）、身披苏格兰格子毯抱古籍甜笑入睡（`right_sleep`）、大口咬下金黄可丽饼（`right_eat`）与揉圆滚滚肚子打饱嗝（`right_hungry`）；所有素材经绝对色差固定范围抠图实心化加固并重新加密，全量通过单元测试与冒烟测试。
 
 ### Changed
@@ -36,7 +49,7 @@
 - **好兆头发布产物改发到独立 Release 仓库 (`Release To Dedicated Repository`)**：`build-installer.yml` 通过 `RELEASE_REPO`（`HuihuiDreams/good-omens-desktop-pet`）与 `secrets.RELEASES_TOKEN` 上传安装包与 `latest*.yml`，使本分支继续作为 `qijiu-desktop-pet` 分支维护的同时，自动更新源与七九爱宠互不干扰；同步修正 `release-preflight.yml` 中过时的可执行文件报错文案。
 - **番茄钟英文标题排版自适应微调 (`Pomodoro English Heading Sizing Adjustment`)**：为 `src/pomodoro.css` 中的 `html[lang="en"]` 与 `html[data-locale="en"]` 补齐双重选择器覆盖，并将英文专注提问标题字号微调至 14.5px（字距 0.4px），彻底解决全大写罗马铭文字体在紧凑书店面板下的边缘换行与微小溢出问题。
 - **创世流星雨粒子视觉与动态重构 (`Starmaker Meteor Shower Visual Redesign & Dynamics Tuning`)**：依据《好兆头》第二季开篇名场面（克劳利点亮半人马座星云，漫天繁星与流星雨划过夜空），重构雨天粒子系统（`.weather-particle--rain`）。将原本单一的 2px 细线雨滴全面升级为自深空斜向（26deg）划过的星轨流星雨（晨星纯白核心 + 浅金炽热光冕 + 半人马座星云幽蓝晕染）；通过 `::after` 伪元素为星芒前端构建高光炽热星核（`box-shadow` 双层辉光）；基于 `:nth-child` 派生大尺寸火流星（48px 壮丽星轨）与细腻微星尘（26px 微光星芒）；在 `WeatherParticleLayer.js` 中将流星下落周期调整至更舒缓从容的 `1.85s ~ 2.85s`（减速约 2.3 倍），并同步优化 `weatherRainFall` 26° 航向轴对齐与进出场平滑过渡；新增 `test/weatherVisualScope.test.js` 自动化回归断言。
-- **CP 迁移指南结合《好兆头》实战经验优化 (`CP Migration Guide Refinement from Good Omens Lessons`)**：结合 `cp/crowley-aziraphale` 分支完整迁移与审查经验，全面更新 [docs/cp-migration-guide.md](./docs/cp-migration-guide.md)。补充子窗口 HTML 静态兜底文本、托盘 16×16 兜底点阵位图（`C A`）、离线时长单位换算、单角色名展示去重等易漏入口；新增固定色差范围（`FLOODFILL_FIXED_RANGE`）防浅色主体镂空、孤立裁切噪点清理、旧皮肤下线与 `protected-assets/` 重建、单套内置皮肤测试与冒烟适配规范；明确联动梦话的高好感度门槛（`affection >= 80`）、双人互动原画合成圆章图标与 `iconTemplate@2x.png` 等比缩放防坑，以及无 `rg` 环境的 `grep` 残留扫描命令。
+- **CP 迁移指南结合《好兆头》实战经验优化 (`CP Migration Guide Refinement from Good Omens Lessons`)**：结合 `cp/crowley-aziraphale` 分支完整迁移与审查经验，全面更新 [docs/cp-migration-guide.md](./docs/cp-migration-guide.md)。补充子窗口 HTML 静态兜底文本、托盘 16×16 兜底点阵位图（`C A`）、离线时长单位换算、单角色名展示去重等易漏入口；新增固定色差范围（`FLOODFILL_FIXED_RANGE`）防浅色主体镂空、孤立裁切噪点清理、旧皮肤下线与 `protected-assets/` 重建、单套内置皮肤测试与冒烟适配规范；明确联动梦话的高好感度门槛（`affection >= 80`）、双人互动原画合成圆章图标与 16×16 点阵托盘适配，以及无 `rg` 环境的 `grep` 残留扫描命令。
 - **好兆头专属维护技能与皮肤处理指南全面对齐 (`Good Omens Maintenance Skills & Skin Pipeline Alignment`)**：全面同步 `.agents/skills/skin-asset-pipeline/SKILL.md`、`.agents/skills/release-and-packaging/SKILL.md`、`docs/skin-pipeline-guide.md` 与 `docs/skin_assets_requirements.csv`。将技能骨架与构建包名规范为克劳利（Crowley）与亚茨拉斐尔（Aziraphale）及 `GoodOmensDeskPet`，清理遗留的修仙术语与旧角色名，保持流水线与最新好兆头设计规范高度统一。
 - **好兆头领域词汇表全面重构 (`Good Omens Domain Glossary Synchronization`)**：将 [docs/GLOSSARY.md](./docs/GLOSSARY.md) 全量更新为《好兆头》（*Good Omens*）世界观。重构 8 大核心聚类，将角色实体明确为克劳利（Anthony J. Crowley）与亚茨拉斐尔（Aziraphale）；将修仙养成术语替换为奇迹能量（Miracle Energy / Qi）、照料植物与静心研读、天使关怀与恶魔偏宠、25 级拉撒路联合奇迹与体面吃撑；将苍穹静修更新为旧书店伴读（A.Z. Fell & Co. Bookshop Companion）；规范创世流星雨天候与时段划分，并同步更新 [docs/structure.md](./docs/structure.md) 中的词汇表索引描述。
 - **好兆头专属皮肤素材需求文档同步 (`Good Omens Skin Assets Requirements Synchronization`)**：将 [docs/skin_assets_requirements.csv](./docs/skin_assets_requirements.csv) 全量更新为《好兆头》（*Good Omens*）版本。同步克劳利（Crowley）与亚茨拉斐尔（Aziraphale）的角色名映射、专属单人状态动作（养植物/静心研读、天使关怀/恶魔偏宠、蛇形扭胯步伐/老派绅士小步）、双人合体交互（丽兹分食可丽饼、联合奇迹同行、体面吃撑揉肚子）以及双人气泡锚定站位规范（亚茨拉斐尔居左、克劳利居右），保留 UTF-8 BOM 兼容性。
@@ -54,8 +67,8 @@
 ### Fixed
 - **日文右键菜单互动文案对齐修复 (`Japanese Context Menu Pet Action Alignment`)**：修复日文版右键菜单中克劳利交互文案「天使の微笑み」与中文「天使关怀」及英文「Angel's Fondness」在语义和典雅语感上不对齐的问题；依据《好兆头》天使与恶魔原作人设反差语感，将日文交互文案规范对齐为「🤚 天使の慈愛」（对应克劳利被亚茨拉斐尔关怀）与「🤚 悪魔の寵愛」（对应亚茨拉斐尔被克劳利偏宠），同步补充三语互动文案跨语言对齐自动化单元测试。
 - **番茄钟窗口多语言排版、标题防截断与按钮留白居中优化 (`Pomodoro Window Typography & Centered Spacing Refinement`)**：修复中英文番茄钟窗口下按钮上方空白过多（原 `margin-top: auto` 导致底部按钮孤立留白达 130px）的问题，在 `src/pomodoro.css` 中重构状态容器垂直居中布局为 `justify-content: safe center`，并将操作按钮与步进器调整为 `20px` 典雅舒适间距；修复英文标题被截断省略（`A.Z. Fell & Co. Bookshop St...`）的问题，优化标题栏左侧避让与字号字距，确保完整呈现；修复日文标题过长断词折行（`読書タ/イム`）与提示文案断句截断问题，将日文标题精简为贴合店名的「フェル古書店 読書」，将提示句精简为纯正英伦天使口吻的「どのくらい集中するかい？」，并在标题栏全量统一单行防折行规范。
-- **好兆头三语对话深度对齐与雨天流星雨致敬同步 (`Good Omens Trilingual Dialogue Alignment & Nebula Homage Sync`)**：全面审查并深度对齐 `src/data/i18n.js` 与 `src/data/dialogues.js` 中的中、英、日三语对话系统。修复拥抱互动中文台词语病并与英日原版对齐（`没事的，亲爱的，我一直在这里。`）；将雨天天气台词保留为致敬原剧半人马座创世星云与流星雨的名场面，并将英日两语雨天台词同步对齐至中文星云致敬文案；将日常问候（`greet`）、分食点心（`shareFood`）、协同奇迹（`cultivate`）、深情吻别（`kiss`）、过饱吃撑（`throwup`）、日常闲置（`idle`）、久坐提醒（`breakReminder`）、防抓包（`screensaverCaught`）及梦境呓语（`dream`）等互动台词全量与英文标准版对齐，同步更新托盘菜单标题为「CA 桌面爱宠」并更新自动化单元测试。
-- **macOS 高清托盘模板图标与立绘素材细节修复 (`macOS Tray Template @2x & Sprite Art Refinement`)**：修复 `@2x` macOS 托盘模板图标（`iconTemplate@2x.png`）比例拉伸问题，保持与 16×16 点阵等比例对齐；修复单人 `eat` 与 `hungry` 立绘边角残留的裁剪噪点碎片，并完整补回克劳利进食（`left_eat`）立绘中遗失的餐叉细节；清理 `src/assets/default/` 中未被引用的冗余 `walk01..04.webp` 图片；同步修正子窗口 HTML 中的静态默认兜底文案，并移除 `pomodoro.css` 中的重复 keyframe 动画声明。
+- **好兆头三语对话深度对齐与雨天流星雨致敬同步 (`Good Omens Trilingual Dialogue Alignment & Nebula Homage Sync`)**：全面审查并深度对齐 `src/data/i18n.js` 与 `src/data/dialogues.js` 中的中、英、日三语对话系统。修复拥抱互动中文台词语病并与英日原版对齐（`没事的，亲爱的，我一直在这里。`）；将雨天天气台词保留为致敬原剧半人马座创世星云与流星雨的名场面，并将英日两语雨天台词同步对齐至中文星云致敬文案；将日常问候（`greet`）、分食点心（`shareFood`）、协同奇迹（`cultivate`）、深情吻别（`kiss`）、过饱吃撑（`throwup`）、日常闲置（`idle`）、久坐提醒（`breakReminder`）、防抓包（`screensaverCaught`）及梦境呓语（`dream`）等互动台词全量与英文标准版对齐，同步更新托盘菜单标题为「好兆头桌宠」并更新自动化单元测试。
+- **单人立绘素材细节与子窗口兜底文案修复 (`Single Sprite Art & Sub-window Fallback Refinement`)**：修复单人 `eat` 与 `hungry` 立绘边角残留的裁剪噪点碎片，并完整补回克劳利进食（`left_eat`）立绘中遗失的餐叉细节；清理 `src/assets/default/` 中未被引用的冗余 `walk01..04.webp` 图片；同步修正子窗口 HTML 中的静态默认兜底文案，并移除 `pomodoro.css` 中的重复 keyframe 动画声明。
 - **番茄钟窗口长台词布局挤压与操作按钮防截断修复 (`Pomodoro Window Layout & Button Overflow Guard`)**：修复番茄钟窗口在展示多语言较长台词时，内容高度溢出导致开始/退出操作按钮被挤出可视区域的问题；将窗口默认尺寸由 `336×360` 适度扩充至 `360×440`，并在 `src/pomodoro.css` 中重构为主副面板弹性列布局（`display: flex; flex-direction: column`），主体文字区域自适应滚动（`flex: 1 1 auto; min-height: 0; overflow-y: auto`），底部操作按钮强制固定吸底（`flex-shrink: 0; margin-top: auto`），确保「开始专注」、「提前出关」与「出关」按钮在任何语言与长文案下始终完整展示且可交互。
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 - **子窗口焦点管理时序与键盘事件健壮性加固 (`Sub-window Focus Lifecycle & Keyboard Guards`)**：修复换肤画廊中当数据提前到达并聚焦卡片时 `requestAnimationFrame` 误将焦点抢占至关闭按钮的时序竞争；补齐画廊列表为空或未命中选中项时兜底将焦点导向关闭按钮的逻辑；在卡片预览加载期间严格拦截方向键与 `Escape` 防止卡片禁用时产生失焦与状态紊乱；通过 `loadingSkinId` 保持预览期间多语言切换时的加载态与禁用态延续；为体型调节与状态窗补充事件可选链保护，并为状态窗关闭按钮补齐多语言提示。

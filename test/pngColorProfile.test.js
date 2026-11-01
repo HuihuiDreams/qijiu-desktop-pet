@@ -26,8 +26,6 @@ function listPngChunks(filePath) {
 test('runtime PNG assets do not include iCCP chunks that trigger libpng warnings', () => {
   const files = [
     'src/assets/icon.png',
-    'src/assets/iconTemplate.png',
-    'src/assets/iconTemplate@2x.png',
   ];
 
   for (const file of files) {

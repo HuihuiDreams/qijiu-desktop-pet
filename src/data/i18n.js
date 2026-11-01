@@ -9,8 +9,8 @@
  *
  * 气泡翻译状态：
  *   zh  — 完整 ✅
- *   en  — UI 完整 ✅ / 气泡 🚧 占位符（待原著词表校正）
- *   ja  — UI 完整 ✅ / 气泡 🚧 占位符（待原著词表校正）
+ *   en  — 完整 ✅
+ *   ja  — 完整 ✅
  */
 
 const I18N = {
@@ -51,7 +51,7 @@ const I18N = {
       skinDefaultArtist: 'Nano Banana',
 
       // 托盘菜单
-      trayTitle: 'CA 桌面爱宠',
+      trayTitle: '好兆头桌宠',
       trayShowStatusPanel: '📊 显示状态面板',
       trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',
@@ -253,11 +253,13 @@ const I18N = {
           '过来，天使。',
           '我不会再让任何人把你带走了。',
           '……就让我这样抱你一会儿。',
+          '……谁说没有夜莺了？听，它们一直在为我们歌唱。',
         ],
         shenjiu: [
           '克劳利…（轻轻依偎进怀抱）',
           '（伸手环抱住他的后背，紧紧相拥）',
           '没事的，亲爱的，我一直在这里。',
+          '（眼眶微红，依偎在他怀里）嗯，一直都在……无论过多少个千年。',
         ],
       },
       throwup: {
@@ -403,10 +405,12 @@ const I18N = {
           shenjiu: [
             '克劳利？你在哪儿……',
             '……别离开我，克劳利。',
+            '克劳利？……没有夜莺了吗……？',
           ],
           yueqi_reply: [
             '我就在这儿，天使。哪儿也不去。',
             '就在你身边。一直都在。',
+            '我在呢，天使。伯克利广场的夜莺永远都会为你歌唱。',
           ]
         }
       },
@@ -449,7 +453,7 @@ const I18N = {
       skinDefaultArtist: 'Nano Banana',
 
       // Tray menu
-      trayTitle: 'CA Desktop Pet',
+      trayTitle: 'Good Omens Desktop Pet',
       trayShowStatusPanel: '📊 Show Status Panel',
       trayHideStatusPanel: '📊 Hide Status Panel',
       traySwitchSkin: '🎨 Switch Skin',
@@ -651,11 +655,13 @@ const I18N = {
           'Come here, Angel.',
           'I\'m not letting anyone take you away again.',
           'Just let me hold you for a moment.',
+          '...Who said there are no nightingales? Listen, they are singing for us.',
         ],
         shenjiu: [
           'Crowley... (Leans gently into the embrace)',
           '(Wraps arms around his back, holding tightly)',
           'It is alright, my dear. I am right here.',
+          '(Eyes glistening softly, nestling closer) Yes, always... no matter how many millennia pass.',
         ],
       },
       throwup: {
@@ -793,10 +799,12 @@ const I18N = {
           shenjiu: [
             'Crowley? Where are you...',
             '...Don\'t leave me, Crowley.',
+            'Crowley?... No nightingales...?',
           ],
           yueqi_reply: [
             'I\'m right here, Angel. Not going anywhere.',
             'Right beside you. Always.',
+            'I\'m right here, Angel. The nightingales in Berkeley Square will always sing for you.',
           ]
         }
       },
@@ -839,7 +847,7 @@ const I18N = {
       skinDefaultArtist: 'Nano Banana',
 
       // トレイメニュー
-      trayTitle: 'CA デスクトップペット',
+      trayTitle: 'グッド・オーメンズ デスクトップペット',
       trayShowStatusPanel: '📊 状態表示',
       trayHideStatusPanel: '📊 状態非表示',
       traySwitchSkin: '🎨 装束変更',      // “装束（しょうぞく）”完美平替现代外来语“スキン（Skin）皮肤”
@@ -971,7 +979,7 @@ const I18N = {
       returnShenjiu: '…ああ、神よ感謝します、戻ってきてくれたんだね！',
 
       // 時段の雑談
-      morningYueqi: '「光あれ（Let there be light!）」……おい天使、朝だぞ。今日も些細な悪事日和だな。',
+      morningYueqi: '「光あれ」……おい天使、朝だぞ。今日も些細な悪事日和だな。',
       morningShenjiu: 'おはよう！紅茶と古書を楽しむのに最高の朝だね。',
       dayYueqi: '真っ昼間だな。ベントレーで飛ばすには悪くない。',
       dayShenjiu: '午後の光が心地よいね。クレープとダージリンはいかが？',
@@ -1016,7 +1024,7 @@ const I18N = {
           '25ラザロ級の合同奇跡といこうぜ。',
           'おい天使、一緒に奇跡を起こす準備はいいか？',
           '俺たちの力、見せつけてやろうじゃないか。',
-          '創世のあの時と同じだ――「光あれ（Let there be light!）」！見ろよ、天使！',
+          '創世のあの時と同じだ――「光あれ」！見ろよ、天使！',
         ],
         shenjiu: [
           '力を合わせよう、クロウリー。でも、目立ちすぎないようにね。',
@@ -1041,11 +1049,13 @@ const I18N = {
           'こっちへ来い、天使。',
           '二度とお前を誰にも奪わせない。',
           '…少しだけ、こうしていさせろ。',
+          '……誰が夜鶯はいないなんて言った？ほら、俺たちのために歌ってるぜ。',
         ],
         shenjiu: [
           'クロウリー…（そっと身を預ける）',
           '（背中に腕を回し、ぎゅっと抱きしめ返す）',
           '大丈夫、私はここにいるよ。',
+          '（目頭を熱くしてその胸に寄り添う）ええ、ずっといるよ……何千年の時が経とうと。',
         ],
       },
       throwup: {
@@ -1183,10 +1193,12 @@ const I18N = {
           shenjiu: [
             'クロウリー？どこにいるの…',
             '…行かないで、クロウリー。',
+            'クロウリー？……もう、夜鶯は歌わないの……？',
           ],
           yueqi_reply: [
             'ここにいるよ、天使。どこへも行かないさ。',
             'お前のすぐ隣にいる。ずっと一緒だ。',
+            'ここにいるぜ、天使。バークレー広場の夜鶯は、いつだってお前のために歌ってるさ。',
           ]
         }
       },

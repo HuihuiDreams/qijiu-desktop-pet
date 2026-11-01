@@ -9,10 +9,7 @@
  */
 class SkinManager {
 
-  static SKIN_IMAGE_SCALES = {
-    animal_ears: 1.08,
-    school_au: 1.08,
-  };
+  static SKIN_IMAGE_SCALES = {};
 
   // Mirrors CANDIDATE_KEYS in src/main/services/SkinService.js — keep in sync.
   static OVERLAY_CANDIDATE_KEYS = ['hug', 'shareFood', 'kiss', 'throwup', 'cultivate'];

@@ -1,3 +1,5 @@
+"""Generate Good Omens desktop pet application icons (icon.png, icon.ico, icon.icns)."""
+
 import os
 import subprocess
 import tempfile
@@ -141,40 +143,6 @@ def create_good_omens_icon(size=512, hug_path=None):
     return img
 
 
-def create_template_icon(size=22):
-    # Minimalist monochrome template icon for macOS menu bar
-    scale = size / 22.0
-    stroke_w = max(1, int(round(2 * scale)))
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    # Left C
-    draw.arc(
-        [1 * scale, 4 * scale, 10 * scale, 18 * scale],
-        start=45,
-        end=315,
-        fill=(0, 0, 0, 255),
-        width=stroke_w,
-    )
-    # Right A
-    draw.line(
-        [(12 * scale, 18 * scale), (16 * scale, 4 * scale)],
-        fill=(0, 0, 0, 255),
-        width=stroke_w,
-    )
-    draw.line(
-        [(16 * scale, 4 * scale), (20 * scale, 18 * scale)],
-        fill=(0, 0, 0, 255),
-        width=stroke_w,
-    )
-    draw.line(
-        [(14 * scale, 13 * scale), (18 * scale, 13 * scale)],
-        fill=(0, 0, 0, 255),
-        width=stroke_w,
-    )
-    return img
-
-
 def main():
     assets_dir = os.path.join(os.path.dirname(__file__), "..", "src", "assets")
 
@@ -219,16 +187,6 @@ def main():
         cmd = ["/usr/bin/iconutil", "-c", "icns", iconset_dir, "-o", icns_path]
         subprocess.run(cmd, check=True)
         print(f"[OK] Compiled {icns_path}")
-
-    # 4. iconTemplate.png (22x22) & iconTemplate@2x.png (44x44)
-    tmpl_path = os.path.join(assets_dir, "iconTemplate.png")
-    tmpl2x_path = os.path.join(assets_dir, "iconTemplate@2x.png")
-
-    tmpl_22 = create_template_icon(22)
-    tmpl_44 = create_template_icon(44)
-    tmpl_22.save(tmpl_path, "PNG")
-    tmpl_44.save(tmpl2x_path, "PNG")
-    print(f"[OK] Saved {tmpl_path} and {tmpl2x_path}")
 
 
 if __name__ == "__main__":

@@ -208,3 +208,24 @@ test('loadDevelopmentSourceAssetAsync throws for invalid paths', async () => {
   await assert.rejects(() => loadDevelopmentSourceAssetAsync('invalid', {}), /Invalid source asset id/);
   await assert.rejects(() => loadDevelopmentSourceAssetAsync('skin/../../escaping', {}), /Invalid source asset id/);
 });
+
+test('resolveQaSkinAssetAlias rewrites qa skin asset id to default when env is set', () => {
+  const { resolveQaSkinAssetAlias } = require('../protectedAssetProtocol');
+  const oldEnv = process.env.DESKPET_QA_EXTRA_SKIN_ID;
+  try {
+    process.env.DESKPET_QA_EXTRA_SKIN_ID = 'qa_alt';
+    assert.equal(resolveQaSkinAssetAlias('skin/qa_alt/kiss.webp'), 'skin/default/kiss.webp');
+    assert.equal(resolveQaSkinAssetAlias('skin/qa_alt/yueqi/walk_left01.webp'), 'skin/default/yueqi/walk_left01.webp');
+    assert.equal(resolveQaSkinAssetAlias('skin/default/kiss.webp'), 'skin/default/kiss.webp');
+    assert.equal(resolveQaSkinAssetAlias('other/path.webp'), 'other/path.webp');
+
+    delete process.env.DESKPET_QA_EXTRA_SKIN_ID;
+    assert.equal(resolveQaSkinAssetAlias('skin/qa_alt/kiss.webp'), 'skin/qa_alt/kiss.webp');
+  } finally {
+    if (oldEnv !== undefined) {
+      process.env.DESKPET_QA_EXTRA_SKIN_ID = oldEnv;
+    } else {
+      delete process.env.DESKPET_QA_EXTRA_SKIN_ID;
+    }
+  }
+});

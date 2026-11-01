@@ -11,8 +11,8 @@ is_wsl() {
     grep -qi "microsoft\|wsl" /proc/version 2>/dev/null
 }
 
-push_origin_main() {
-    git push origin main
+push_origin_head() {
+    git push origin HEAD
     local status=$?
 
     if [ $status -eq 0 ]; then
@@ -21,7 +21,7 @@ push_origin_main() {
 
     if is_wsl && command -v git.exe >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️ WSL Git 推送失败，正在尝试使用 Windows Git 凭据重试...${NC}"
-        git.exe push origin main
+        git.exe push origin HEAD
         return $?
     fi
 
@@ -83,8 +83,8 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
-echo -e "${CYAN}⬆️ 正在推送到远程仓库 origin main...${NC}"
-push_origin_main
+echo -e "${CYAN}⬆️ 正在推送到远程仓库 origin HEAD...${NC}"
+push_origin_head
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}🎉 Push 成功完成！${NC}"

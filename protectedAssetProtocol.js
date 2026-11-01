@@ -21,6 +21,18 @@ function assetIdFromUrl(rawUrl) {
   }
 }
 
+function resolveQaSkinAssetAlias(assetId) {
+  const qaSkinId = (process.env.DESKPET_QA_EXTRA_SKIN_ID || '').trim();
+  if (!qaSkinId || typeof assetId !== 'string') {
+    return assetId;
+  }
+  const prefix = `skin/${qaSkinId}/`;
+  if (assetId.startsWith(prefix)) {
+    return `skin/default/${assetId.slice(prefix.length)}`;
+  }
+  return assetId;
+}
+
 function createProtocolResponse(status, body, headers = {}) {
   return new Response(body, { status, headers });
 }
@@ -86,11 +98,12 @@ function registerProtectedAssetProtocol({ protocol, app, protectedAssetsDir } = 
   }
 
   protocol.handle(PROTOCOL_SCHEME, async (request) => {
-    const assetId = assetIdFromUrl(request.url);
-    if (!assetId) {
+    const rawAssetId = assetIdFromUrl(request.url);
+    if (!rawAssetId) {
       return createProtocolResponse(400, 'Invalid pet asset URL');
     }
 
+    const assetId = resolveQaSkinAssetAlias(rawAssetId);
     const appPath = typeof app?.getAppPath === 'function' ? app.getAppPath() : null;
     try {
       const asset = await loadProtectedAsset(assetId, {
@@ -110,7 +123,7 @@ function registerProtectedAssetProtocol({ protocol, app, protectedAssetsDir } = 
         }
       }
 
-      console.error(`Failed to load protected asset ${assetId}:`, error);
+      console.error(`Failed to load protected asset ${rawAssetId}:`, error);
       return createProtocolResponse(404, 'Pet asset not found');
     }
   });
@@ -119,6 +132,7 @@ function registerProtectedAssetProtocol({ protocol, app, protectedAssetsDir } = 
 module.exports = {
   PROTOCOL_SCHEME,
   assetIdFromUrl,
+  resolveQaSkinAssetAlias,
   loadDevelopmentSourceAsset,
   loadDevelopmentSourceAssetAsync,
   registerProtectedAssetProtocol,

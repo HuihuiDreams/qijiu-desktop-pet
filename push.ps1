@@ -53,8 +53,8 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "Pushing to origin main..." -ForegroundColor Cyan
-git push origin main
+Write-Host "Pushing to origin HEAD..." -ForegroundColor Cyan
+git push origin HEAD
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Push completed." -ForegroundColor Green

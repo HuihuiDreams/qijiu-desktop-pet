@@ -34,7 +34,7 @@ class SkinSwitchController {
   async refreshAvailableSkins() {
     try {
       const skinIds = await this.electronAPI.getAvailableSkins();
-      if (Array.isArray(skinIds) && skinIds.length > 0) {
+      if (Array.isArray(skinIds) && skinIds.length > 0 && typeof this.skinManager?.setAvailableSkins === 'function') {
         this.skinManager.setAvailableSkins(skinIds);
       }
     } catch (err) {
@@ -69,7 +69,11 @@ class SkinSwitchController {
         const reportOptions = currentOptions.requestId === undefined ? {} : { requestId: currentOptions.requestId };
 
         try {
-          const availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
+          let availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
+          if (!availableSkinIds.includes(currentSkinId) && this.electronAPI && typeof this.electronAPI.getAvailableSkins === 'function') {
+            await this.refreshAvailableSkins();
+            availableSkinIds = this.skinManager.getAvailableSkins().map(skin => skin.id);
+          }
           const nextSkinId = availableSkinIds.includes(currentSkinId) ? currentSkinId : 'default';
 
           this.clearInteractionOverlay();

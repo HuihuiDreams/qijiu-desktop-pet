@@ -289,6 +289,51 @@ test('handleOfflineReturn does not show return dialogues when less than one shic
   });
 });
 
+test('handleOfflineReturn does not trigger return bubbles when away for 1h59m (< 2h shichen threshold)', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const awayMs = (1 * 60 + 59) * 60 * 1000;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - awayMs,
+      isDocumentVisible: () => true,
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000);
+    assert.equal(scheduled.length, 0);
+    assert.deepEqual(dialogBubbleCalls, []);
+  });
+});
+
+test('handleOfflineReturn accurately reports 3 hours for 3h59m away duration', () => {
+  withStubbedSetTimeout((scheduled) => {
+    const awayMs = (3 * 60 + 59) * 60 * 1000;
+    let yueqiParam = null;
+    const { deps, dialogBubbleCalls } = makeDeps({
+      now: () => 10_000_000,
+      initialLastVisibleTime: 10_000_000 - awayMs,
+      isDocumentVisible: () => true,
+      getI18nUi: () => ({
+        returnYueqi: (hours) => {
+          yueqiParam = hours;
+          return `你走了${hours}个小时…`;
+        },
+        returnShenjiu: '…哼，终于回来了。',
+      }),
+    });
+    const system = new OfflineReturnSystem(deps);
+    system.handleOfflineReturn(1000);
+
+    assert.equal(scheduled.length, 2);
+    scheduled.forEach((s) => s.cb());
+
+    assert.equal(yueqiParam, 3);
+    assert.deepEqual(dialogBubbleCalls, [
+      { pet: 'yueqi', text: '你走了3个小时…', duration: 4000 },
+      { pet: 'shenjiu', text: '…哼，终于回来了。', duration: 4000 },
+    ]);
+  });
+});
+
 test('handleOfflineReturn does not show return dialogues or refresh lastVisibleTime when the user is not present', () => {
   withStubbedSetTimeout((scheduled) => {
     const twoHoursMs = 7200000;

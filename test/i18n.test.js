@@ -80,7 +80,7 @@ test('classic "Let there be light!" dialogue is integrated in cultivate and morn
   const { I18N } = require('../src/data/i18n.js');
   const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
 
-  for (const locale of ['zh', 'en', 'ja']) {
+  for (const locale of ['zh', 'en']) {
     const cultivatePool = I18N[locale].dialogues.cultivate.yueqi;
     assert.ok(
       cultivatePool.some(line => line.includes('Let there be light!')),
@@ -94,9 +94,57 @@ test('classic "Let there be light!" dialogue is integrated in cultivate and morn
     );
   }
 
+  // ja uses pure Japanese "光あれ" without English in parentheses
+  const jaCultivatePool = I18N.ja.dialogues.cultivate.yueqi;
+  assert.ok(
+    jaCultivatePool.some(line => line.includes('「光あれ」')),
+    'I18N.ja.dialogues.cultivate.yueqi should include pure "「光あれ」"',
+  );
+  assert.ok(
+    !jaCultivatePool.some(line => line.includes('（Let there be light!）')),
+    'I18N.ja.dialogues.cultivate.yueqi should not contain English in parentheses',
+  );
+
+  const jaMorningLine = I18N.ja.ui.morningYueqi;
+  assert.ok(
+    jaMorningLine.includes('「光あれ」'),
+    'I18N.ja.ui.morningYueqi should include pure "「光あれ」"',
+  );
+  assert.ok(
+    !jaMorningLine.includes('（Let there be light!）'),
+    'I18N.ja.ui.morningYueqi should not contain English in parentheses',
+  );
+
   assert.ok(
     dialoguesSource.includes('Let there be light!'),
     'dialogues.js fallback should include "Let there be light!"',
   );
 });
+
+test('classic nightingale dialogues are integrated into hug and linked dream across locales', () => {
+  const { I18N } = require('../src/data/i18n.js');
+  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
+
+  // zh
+  assert.ok(I18N.zh.dialogues.hug.yueqi.some(l => l.includes('夜莺')));
+  assert.ok(I18N.zh.dialogues.hug.shenjiu.some(l => l.includes('无论过多少个千年')));
+  assert.ok(I18N.zh.dialogues.dream.linked.shenjiu.some(l => l.includes('夜莺')));
+  assert.ok(I18N.zh.dialogues.dream.linked.yueqi_reply.some(l => l.includes('伯克利广场的夜莺')));
+
+  // en
+  assert.ok(I18N.en.dialogues.hug.yueqi.some(l => l.includes('nightingales')));
+  assert.ok(I18N.en.dialogues.hug.shenjiu.some(l => l.includes('millennia pass')));
+  assert.ok(I18N.en.dialogues.dream.linked.shenjiu.some(l => l.includes('nightingales')));
+  assert.ok(I18N.en.dialogues.dream.linked.yueqi_reply.some(l => l.includes('Berkeley Square')));
+
+  // ja
+  assert.ok(I18N.ja.dialogues.hug.yueqi.some(l => l.includes('夜鶯')));
+  assert.ok(I18N.ja.dialogues.hug.shenjiu.some(l => l.includes('何千年の時')));
+  assert.ok(I18N.ja.dialogues.dream.linked.shenjiu.some(l => l.includes('夜鶯')));
+  assert.ok(I18N.ja.dialogues.dream.linked.yueqi_reply.some(l => l.includes('バークレー広場の夜鶯')));
+
+  // fallback in dialogues.js
+  assert.ok(dialoguesSource.includes('谁说没有夜莺了'));
+});
+
 

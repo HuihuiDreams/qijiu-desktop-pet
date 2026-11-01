@@ -139,13 +139,30 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.ok(Array.isArray(result));
   });
 
-  await t.test('scanAvailableSkins returns default and known skins', () => {
-    const deps = { ...createMockDeps(), availableSkins: undefined };
+  await t.test('scanAvailableSkins scans real assets directory and filters by whitelist when deps.availableSkins is omitted', () => {
+    const deps = createMockDeps();
+    delete deps.availableSkins;
     SkinService.init(deps);
     
-    const skins = SkinService.scanAvailableSkins(true); // force refresh
+    const skins = SkinService.scanAvailableSkins(true); // force refresh real scan
     assert.ok(Array.isArray(skins));
-    assert.ok(skins.includes('default'));
+    assert.deepEqual(skins, ['default'], 'must return only whitelisted skins, excluding non-skin directories like fonts');
+  });
+
+  await t.test('get-available-skins and get-skin-gallery-items IPC handlers work when deps.availableSkins is omitted', async () => {
+    const deps = createMockDeps();
+    delete deps.availableSkins;
+    SkinService.init(deps);
+
+    const availableSkins = await mockIpcHandlers['get-available-skins']({ sender: mockMainWindow.webContents });
+    assert.deepEqual(availableSkins, ['default'], 'get-available-skins should return [default]');
+
+    const validEvent = { sender: { id: 999 } };
+    const galleryItems = await mockIpcHandlers['get-skin-gallery-items'](validEvent);
+    assert.ok(Array.isArray(galleryItems));
+    assert.equal(galleryItems.length, 1, 'should return exactly 1 gallery item for default');
+    assert.equal(galleryItems[0].id, 'default');
+    assert.equal(galleryItems[0].isCurrent, true);
   });
 
   await t.test('set-current-skin success', async () => {
@@ -346,5 +363,27 @@ test('SkinService - Utility Functions', async (t) => {
   await t.test('getAvailableOverlayKeys returns array', () => {
     const keys = SkinService.getAvailableOverlayKeys('default');
     assert.ok(Array.isArray(keys));
+  });
+
+  await t.test('setQaExtraSkinId injects extra skin and delegates asset checks', () => {
+    try {
+      SkinService.setQaExtraSkinId('qa_alt');
+      assert.equal(process.env.DESKPET_QA_EXTRA_SKIN_ID, 'qa_alt');
+
+      const deps = createMockDeps();
+      delete deps.availableSkins;
+      SkinService.init(deps);
+
+      const skins = SkinService.scanAvailableSkins(true);
+      assert.ok(skins.includes('qa_alt'), 'scanned skins must include qa_alt');
+      assert.deepEqual(skins, ['default', 'qa_alt']);
+
+      assert.equal(SkinService.hasSkinAsset('qa_alt', 'walk_left.webp'), SkinService.hasSkinAsset('default', 'walk_left.webp'));
+    } finally {
+      SkinService.setQaExtraSkinId(null);
+      assert.equal(process.env.DESKPET_QA_EXTRA_SKIN_ID, undefined);
+      const resetSkins = SkinService.scanAvailableSkins(true);
+      assert.deepEqual(resetSkins, ['default']);
+    }
   });
 });

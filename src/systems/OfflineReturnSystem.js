@@ -73,7 +73,7 @@ class OfflineReturnSystem {
     // 这避免了 macOS Dark Wake 将完整睡眠切割成碎片导致对白少报。
     const realAwayMs = this.now() - this.lastVisibleTime;
     const shichensAway = Math.floor(realAwayMs / 7200000); // 7200000ms = 2小时 = 1时辰
-    const hoursAway = shichensAway * 2; // 改为小时后按 2n 计算
+    const hoursAway = Math.floor(realAwayMs / 3600000);
     const isUserPresent = this.isDocumentVisible();
 
     if (shichensAway >= 1 && isUserPresent) {

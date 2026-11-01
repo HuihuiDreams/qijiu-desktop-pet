@@ -74,6 +74,7 @@ test.describe('skin selector', () => {
   });
 
   test('clicking a different skin card previews it (aria-pressed moves)', async () => {
+    await electronApp.evaluate(({ app }) => app.setQaExtraSkinIdForQA('qa_alt'));
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(async ({ app }) => {
@@ -100,18 +101,14 @@ test.describe('skin selector', () => {
       return null;
     }, currentSkinId);
 
-    // If there's only one skin (unlikely), skip the interaction assertion
-    if (targetSkinId === null) {
-      test.skip();
-      return;
-    }
+    expect(targetSkinId).toBe('qa_alt');
 
     await selectorWindow.waitForTimeout(300);
 
     const pressedId = await selectorWindow.evaluate(
       () => document.querySelector('.skin-card[aria-pressed="true"]')?.dataset.skinId ?? null,
     );
-    expect(pressedId).toBe(targetSkinId);
+    expect(pressedId).toBe('qa_alt');
   });
 
   test('clicking cancel closes the selector window', async () => {
@@ -138,42 +135,42 @@ test.describe('skin selector', () => {
 
   test('reopening an active preview keeps the highlighted card and confirms that skin', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    await electronApp.evaluate(({ app }) => app.setQaExtraSkinIdForQA('qa_alt'));
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
-    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
-    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
-    await birdsCard.click();
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('birds');
+    const qaCard = selectorWindow.locator('.skin-card[data-skin-id="qa_alt"]');
+    await qaCard.click();
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => appWindow.evaluate(() => window.__DEBUG_SKIN_MANAGER.getCurrentSkin())).toBe('qa_alt');
     const savedBefore = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
     expect(savedBefore?.skinId ?? 'default').toBe('default');
 
     await electronApp.evaluate(({ app }) => app.openSkinSelectorForQA());
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
     const closed = selectorWindow.waitForEvent('close');
     await selectorWindow.locator('#skin-selector-confirm').click();
     await closed;
-    await expect.poll(() => appWindow.evaluate(async () => (await window.electronAPI.loadData('petState'))?.skinId)).toBe('birds');
+    await expect.poll(() => appWindow.evaluate(async () => (await window.electronAPI.loadData('petState'))?.skinId)).toBe('qa_alt');
   });
 
   test('required image failure shows a confirmation error and keeps the original saved skin', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    await electronApp.evaluate(({ app }) => app.setQaExtraSkinIdForQA('qa_alt'));
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
-    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
     await appWindow.evaluate(() => {
       window.__qaOriginalImage = window.Image;
       window.Image = class {
         set src(value) { queueMicrotask(() => this.onerror?.(new Event('error'))); }
       };
     });
-    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
-    await birdsCard.click();
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    const qaCard = selectorWindow.locator('.skin-card[data-skin-id="qa_alt"]');
+    await qaCard.click();
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
     await selectorWindow.locator('#skin-selector-confirm').click();
     await expect(selectorWindow.locator('#skin-selector-status')).not.toHaveText('');
     expect(selectorWindow.isClosed()).toBe(false);
@@ -192,14 +189,14 @@ test.describe('skin selector', () => {
 
   test('another working window and the native tray popup keep the preview session open', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    await electronApp.evaluate(({ app }) => app.setQaExtraSkinIdForQA('qa_alt'));
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window'),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
-    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
-    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
-    await birdsCard.click();
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    const qaCard = selectorWindow.locator('.skin-card[data-skin-id="qa_alt"]');
+    await qaCard.click();
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
 
     await electronApp.evaluate(async ({ app, BrowserWindow }) => {
       const workingWindow = new BrowserWindow({
@@ -213,7 +210,7 @@ test.describe('skin selector', () => {
     await expect.poll(() => electronApp.evaluate(({ app }) => app.__qaWorkingWindow.isFocused())).toBe(true);
     await new Promise(resolve => setTimeout(resolve, 1300));
     expect(selectorWindow.isClosed()).toBe(false);
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
 
     await electronApp.evaluate(({ app }) => {
       // The overflow panel also removes focus without a DeskPet tray event.
@@ -234,7 +231,7 @@ test.describe('skin selector', () => {
     expect(selectorWindow.isClosed()).toBe(false);
     await electronApp.evaluate(({ app }) => app.openSkinSelectorForQA());
     await expect.poll(() => electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.isMinimized())).toBe(false);
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
 
     const closed = selectorWindow.waitForEvent('close');
     await selectorWindow.locator('#skin-selector-cancel').click();
@@ -246,14 +243,14 @@ test.describe('skin selector', () => {
 
   test('closing the native selector window cancels its preview', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
+    await electronApp.evaluate(({ app }) => app.setQaExtraSkinIdForQA('qa_alt'));
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window'),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
-    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
-    const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
-    await birdsCard.click();
-    await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
+    const qaCard = selectorWindow.locator('.skin-card[data-skin-id="qa_alt"]');
+    await qaCard.click();
+    await expect(qaCard).toHaveAttribute('aria-pressed', 'true');
 
     const closed = selectorWindow.waitForEvent('close');
     await electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.close());

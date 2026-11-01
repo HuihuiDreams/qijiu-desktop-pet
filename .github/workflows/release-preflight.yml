@@ -23,7 +23,7 @@ on:
       - 'test/**'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   preflight:
@@ -75,17 +75,7 @@ jobs:
 
           $packageVersion = node -p "require('./package.json').version"
           if ($packageVersion -ne $version) {
-            Write-Host "Updating package versions to $version..."
-            npm version $version --no-git-tag-version --allow-same-version
-            
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add package.json package-lock.json
-            git commit -m "chore: sync package versions to $version"
-            git push
-            Write-Host "Successfully bumped versions and pushed to repository."
-          } else {
-            Write-Host "Package versions already match $version."
+            throw "package.json version '$packageVersion' does not match input version '$version'."
           }
 
           $changelog = Get-Content -LiteralPath CHANGELOG.md -Raw -Encoding UTF8

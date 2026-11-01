@@ -267,6 +267,18 @@ function waitForSkinLoad(targetSkinId, requestId, timeoutMs = 2500) {
 let cachedAvailableSkins = null;
 let cachedAvailableSkinsTimestamp = 0;
 const SKINS_CACHE_TTL_MS = 2000;
+let qaExtraSkinId = null;
+
+function setQaExtraSkinId(skinId) {
+  qaExtraSkinId = skinId || null;
+  cachedAvailableSkins = null;
+  cachedAvailableSkinsTimestamp = 0;
+  if (skinId) {
+    process.env.DESKPET_QA_EXTRA_SKIN_ID = skinId;
+  } else {
+    delete process.env.DESKPET_QA_EXTRA_SKIN_ID;
+  }
+}
 
 function scanAvailableSkins(forceRefresh = false) {
   if (Array.isArray(deps.availableSkins) && deps.availableSkins.length > 0) {
@@ -284,6 +296,9 @@ function scanAvailableSkins(forceRefresh = false) {
     }).filter(id => knownSkinIds.has(id));
     if (protectedSkinIds.length > 0) {
       cachedAvailableSkins = protectedSkinIds.sort(sortSkinIds);
+      if (qaExtraSkinId && !cachedAvailableSkins.includes(qaExtraSkinId)) {
+        cachedAvailableSkins = [...cachedAvailableSkins, qaExtraSkinId];
+      }
       cachedAvailableSkinsTimestamp = Date.now();
       return cachedAvailableSkins;
     }
@@ -302,11 +317,18 @@ function scanAvailableSkins(forceRefresh = false) {
         return false;
       }
     }).map(dirent => dirent.name).sort(sortSkinIds);
+    if (qaExtraSkinId && !cachedAvailableSkins.includes(qaExtraSkinId)) {
+      cachedAvailableSkins = [...cachedAvailableSkins, qaExtraSkinId];
+    }
     cachedAvailableSkinsTimestamp = Date.now();
     return cachedAvailableSkins;
   } catch (error) {
     console.error('Failed to scan skins:', error);
-    return ['default'];
+    const fallback = ['default'];
+    if (qaExtraSkinId && !fallback.includes(qaExtraSkinId)) {
+      fallback.push(qaExtraSkinId);
+    }
+    return fallback;
   }
 }
 
@@ -321,6 +343,9 @@ function sortSkinIds(a, b) {
 }
 
 function hasSkinAsset(skinId, filename) {
+  if (qaExtraSkinId && skinId === qaExtraSkinId) {
+    return hasSkinAsset('default', filename);
+  }
   const assetId = `skin/${skinId}/${filename}`;
   try {
     if (hasProtectedAsset(assetId, { appRoot: __dirname, resourcesPath: process.resourcesPath })) {
@@ -458,6 +483,8 @@ module.exports = {
   hideSkinSelector,
   resolvePomodoroAsset,
   getAvailableOverlayKeys,
+  setQaExtraSkinId,
+  hasSkinAsset,
   getCurrentSkinId: () => confirmedSkinId,
   getConfirmedSkinId: () => confirmedSkinId,
   getPreviewSkinId: () => previewTargetSkinId,
