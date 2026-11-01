@@ -1,6 +1,6 @@
 # 更换 CP 的迁移指南
 
-本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。结合 2026-10《好兆头》（克劳利 × 亚茨拉斐尔，`cp/crowley-aziraphale`）完整迁移实战经验修订；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
+本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。结合 2026-10 ~ 2026-11《好兆头》（克劳利 × 亚茨拉斐尔，`cp/crowley-aziraphale`）完整迁移与首发独立发布（`go-v1.0.0`）实战经验修订；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
 
 当前程序不是可直接导入任意 CP 的通用模板：角色 ID、素材路径和部分角色行为仍写在代码里。第一次迁移建议保留双人桌宠结构，先替换内容；需要完整重命名时，再单独完成 ID 迁移。
 
@@ -206,16 +206,71 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 独立发行时建议从新数据开始；若继承旧数据，先备份并明确 A/B、皮肤 ID、数值字段的映射，按 [状态持久化 ADR](./decisions/ADR-006-state-persistence-and-offline-decay.md) 补充迁移与回滚设计。
 
+### 7.1 应用身份与必须核对的配置清单
+
 | 范围 | 必须核对的文件与设置 |
 | --- | --- |
 | 应用身份 | [`package.json`](../package.json) 的 `name`、`description`、`build.appId`、`productName`、NSIS 名称及安装包名；对应更新 `package-lock.json` 元数据。**建议 `productName` 采用无空格 ASCII 驼峰名**（如 `GoodOmensDeskPet`），避免 macOS 终端命令（`xattr -cr`）与 CI 脚本转义问题；中文品牌名通过窗口标题、托盘提示与 NSIS 快捷方式名称呈现 |
 | Windows 身份 | [`src/main/AppLifecycle.js`](../src/main/AppLifecycle.js) 的 `APP_USER_MODEL_ID` 与新的 `build.appId` 一致；核对安装位置、卸载身份、开机启动项与快捷方式 |
 | 图标与包装 | `src/assets/icon.png`、`icon.ico`、`icon.icns`、`iconTemplate.png`、`iconTemplate@2x.png`；所有用户可见标题、README 与三语发行说明。应用主图标建议直接基于双人高清互动原画（如 `hug.webp`）裁切留白后合成到圆章底盘（占画布高度约 85%~90%）；**生成 `iconTemplate@2x.png`（44×44）时，绘制坐标与线宽必须按 `size / 22.0` 等比例放大**，切勿复用 22×22 绝对坐标导致 Retina 托盘图标缩在左上角 |
-| Windows 安装器 | [`build/installer.nsh`](../build/installer.nsh) 的旧品牌文案及 `DeskPet.lnk` 历史清理；新应用不应删除另一应用的快捷方式 |
-| 存档隔离 | [`StoreManager.js`](../src/main/services/StoreManager.js) 使用 `new Store()`，当前没有 CP 命名空间；核对运行时 `app.getPath('userData')`，保证新旧应用不同。仅更改 `appId` 不能作为隔离验证 |
-| 更新源 | `package.json` 的 `build.publish.owner/repo`；[`updateManager.js`](../updateManager.js) 的 GitHub Releases 页面 URL 与 macOS API URL，都改到新应用仓库 |
-| 发布流水线 | [预检 workflow](../.github/workflows/release-preflight.yml) 和 [构建 workflow](../.github/workflows/build-installer.yml) 中的 `七九爱宠.app`、旧可执行名称检查、产物名称、仓库权限及签名 secrets |
+| Windows 安装器 | [`build/installer.nsh`](../build/installer.nsh) 的旧品牌文案及 `DeskPet.lnk` 历史清理；新应用**绝对不可**反向清理原主线应用的快捷方式（详见 7.2 节） |
+| 存档隔离 | [`StoreManager.js`](../src/main/services/StoreManager.js) 使用 `new Store()`，数据按 Electron `userData`（绑定应用名）自动隔离，新应用从 0 好感度起步（详见 7.2 节） |
+| 更新源 | `package.json` 的 `build.publish.owner/repo`；[`updateManager.js`](../updateManager.js) 的 GitHub Releases 页面 URL 与 macOS API URL，都改到专用 Release 仓库 |
+| 发布流水线 | [预检 workflow](../.github/workflows/release-preflight.yml) 和 [构建 workflow](../.github/workflows/build-installer.yml) 中的专用 Release 仓库、`RELEASES_TOKEN`、`go-v` 前缀适配及签名 secrets（详见 7.3 节） |
 | 打包钩子 | [`scripts/afterPack.js`](../scripts/afterPack.js) 当前保持 macOS 内部可执行名 `DeskPet`，可沿用；若改名，要同步 plist、更新管理器、CI 检查和 macOS 打包测试 |
+
+### 7.2 独立共存设计原则：严禁误伤主线应用与快捷方式
+
+若两款 CP 是面向不同 IP 与粉丝圈层的独立产品（如《七九爱宠》与《好兆头爱宠》），产品定位是**在用户的操作系统中完全独立、和平共存**，绝非版本替代关系：
+
+1. **安装器严禁反向清理旧应用快捷方式**：
+   - 在 `build/installer.nsh` 中，只能清理新应用自己内部测试期产生过的临时废弃名（如内部曾用过的 `DeskPet.lnk` 或开发临时名），**绝对不能**添加 `Delete "$DESKTOP\七九爱宠.lnk"` 等清理主线应用的指令。
+   - 否则会导致装了新 CP 的用户发现原版桌宠的桌面入口被强行破坏，造成恶性体验。
+2. **macOS 应用并存说明**：
+   - 因为应用名不同（如 `七九爱宠.app` 与 `GoodOmensDeskPet.app`），用户拖入 `/Applications` 时 macOS 会自然共存，不会触发“替换旧版本”。说明文档（如 `readme_zh.txt`）应清晰提示这是独立新应用；若用户需要卸载旧版则自行手动移除，避免将“独立应用安装”误写为“替换旧版本”。
+3. **数据物理隔离与从零起步**：
+   - Electron 默认将 `userData` 存储在与 `productName` 挂钩的独立子目录（如 Windows 下 `%APPDATA%\GoodOmensDeskPet`，macOS 下 `~/Library/Application Support/GoodOmensDeskPet`），天然实现数据物理隔离。
+   - 新 CP 具有独立的世界观设定（如神魔奇迹 vs 仙侠灵力），好感度、饱腹度及养成数值从零起步是完全符合预期的设计。**不要在启动时编写自动迁移老应用存档的代码**，否则会导致两款游戏数值污染、槽位混乱甚至反向破坏老用户进度。
+
+### 7.3 单源码仓库 + 独立 Release 仓库发布与 Tag 防撞策略
+
+当为了持续合并通用功能而在同一源码仓库中维护分支（如 `main` 与 `cp/crowley-aziraphale`）时，发布环节必须采取**源码同仓、发布独立、Tag 前缀隔离**的策略：
+
+1. **为什么必须使用独立的 Release 仓库**：
+   - GitHub Releases 在每个仓库中只有唯一的 `releases/latest` 标识。
+   - 如果两个应用发在同一个仓库，新 CP 发版会顶掉原主线的最新版本，导致 Windows 的 `latest.yml` 串包，旧应用检查更新时误下载新应用安装包。
+   - **做法**：在 GitHub 创建仅存放发布产物的公开独立仓库（如 `HuihuiDreams/good-omens-desktop-pet`），源码分支的 `build-installer.yml` 中配置环境变量 `RELEASE_REPO: HuihuiDreams/good-omens-desktop-pet`。
+2. **跨仓库发布凭证 (`RELEASES_TOKEN`)**：
+   - GitHub Actions 自带的 `GITHUB_TOKEN` 仅对当前代码库有写权限，无法向另一个仓库上传 Release 资产。
+   - **操作步骤**：
+     - 在 GitHub 账号的 `Developer settings -> Personal access tokens -> Fine-grained tokens` 中生成 Token；
+     - 范围选择 `Only select repositories`，只勾选 Release 专用仓库；
+     - `Permissions -> Repository permissions -> Contents` 赋予 `Read and write`（`Metadata` 自动保留 Read-only）；
+     - 在源码仓库的 `Settings -> Secrets and variables -> Actions` 中添加密钥 `RELEASES_TOKEN`；
+     - 在 `build-installer.yml` 中把上传 Release 的 `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` 统一改为 `GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}`。
+3. **全链路专用 Tag 前缀规避碰撞（如 `go-v1.0.0`）**：
+   - 若双方都使用标准的 `v1.0.0`，在共享源码仓库中必定发生 Git Tag 冲突或 Actions 误复用旧 tag。
+   - 新 CP 必须采用专属 Tag 前缀（如 `go-v*`），并联动适配全链路：
+     - **构建工作流 (`build-installer.yml`)**：`push.tags` 改为 `'go-v*'`，输入版本解析 `$tag = "go-v" + ...`，Tag 校验正则改为 `^go-v\d+\.\d+\.\d+$`；
+     - **预检工作流 (`release-preflight.yml`)**：输入版本支持剥离 `go-v` 前缀，CHANGELOG 标题检测支持 `## [go-v$version]`，远端 tag 检测检查 `go-v$version`；
+     - **客户端手动检查更新 (`updateManager.js`)**：macOS 手动更新检测版本解析需同时兼容带前缀的 tag，将 `data.tag_name.replace(/^v/, '')` 升级为 `data.tag_name.replace(/^(?:go-)?v/, '')`；
+     - **测试套件 (`test/updateManager.test.js`)**：补充带前缀 tag（如 `go-v2.0.0`）的解析回归断言。
+
+### 7.4 资产与开源字体再分发合规
+
+新 CP 通常引入了专属排版与艺术字体（例如 Good Omens 引入了英式古典衬线 `Cinzel`、`EB Garamond`，日文书法明朝体 `Shippori Mincho` 等）：
+
+1. **必须随附完整的上游许可证声明**：
+   - SIL Open Font License (OFL 1.1) 明确要求在再分发字体软件或子集切片时，必须完整随附原始版权声明与授权条款。
+   - 必须在字体目录（`src/assets/fonts/`）中为每一款字体提供对应的 `*-OFL.txt`（如 `ShipporiMincho-OFL.txt`），且版权归属和年份必须从上游官方仓库准确核验，严禁主观编造年份。
+2. **单元测试杜绝空许可盲区**：
+   - 在排版测试（如 `test/typographyIntegration.test.js`）中，必须将字体元数据中的 `license` 字段断言具体文件，**绝对禁止写成 `license: null`**；测试需校验对应 OFL 文件真实存在且包含完整的 OFL 1.1 规范全文。
+
+### 7.5 CHANGELOG 封版归档纪律
+
+在准备正式发布首发版本或里程碑版本时，严禁让大量已完成的迁移功能无限期堆积在 `## [Unreleased]` 下：
+1. **正式封版**：将 `## [Unreleased]` 下的功能块按对应带前缀版本号（如 `## [go-v1.0.0] - 2026-11-01`）归档固化，并保留空 `## [Unreleased]` 供后续迭代；
+2. **CI 校验一致性**：确保 `release-preflight.yml` 的 CHANGELOG 正则检测能正确识别带前缀的版本标题（如 `## [go-v$version]`），形成从文档、代码、Git Tag 到发布 CI 的严格闭环。
 
 两个 CP 应用需要共存时，在真实安装版中验证它们能同时运行、存档互不覆盖、开机启动与卸载互不影响。开发模式还要使用不同 QA 数据目录。
 
@@ -257,7 +312,9 @@ npm run verify:package
 - [ ] 皮肤试穿不保存；确认后重启保持选择；取消、ESC 和主动关窗恢复原皮肤；加载失败不能提交。
 - [ ] 退出/重启后数值和皮肤正确恢复；继承存档时 A/B 没有串位，移除的皮肤不会导致异常。
 - [ ] 拖拽、鼠标穿透、多屏与 DPI 缩放正常；Windows 和 macOS 的窗口、托盘及安装包分别验证。
-- [ ] 独立发布时，新旧应用的数据、更新源、快捷方式、开机启动和卸载相互独立。
+- [ ] 独立发布时，新旧应用的数据、更新源、快捷方式、开机启动和卸载相互独立；安装器未包含反向删除原主线应用桌面快捷方式的代码。
+- [ ] 随附的所有第三方开源字体均配有合规的 `*-OFL.txt` 授权文本，且排版单元测试中无 `license: null`。
+- [ ] `CHANGELOG.md` 中首发版本已归档至带专用前缀的版本号（如 `## [go-v1.0.0]`），CI 流水线版本检测能成功命中。
 
 迁移前后可用以下命令盘点残留。命中结果要人工分类：选择保留内部 ID 时，旧 ID 属于预期；用户可见旧姓名、旧默认素材和错误更新源仍须处理。
 
