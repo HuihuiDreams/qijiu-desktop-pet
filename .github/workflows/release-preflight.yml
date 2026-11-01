@@ -63,7 +63,9 @@ jobs:
         run: |
           $inputVersion = if ($null -ne $env:INPUT_VERSION) { $env:INPUT_VERSION } else { '' }
           $version = $inputVersion.Trim()
-          if ($version.StartsWith('v')) {
+          if ($version.StartsWith('go-v')) {
+            $version = $version.Substring(4)
+          } elseif ($version.StartsWith('v')) {
             $version = $version.Substring(1)
           }
 
@@ -92,7 +94,7 @@ jobs:
             throw "CHANGELOG.md is missing a '## [$version]' release section."
           }
 
-          $tag = "v$version"
+          $tag = "go-v$version"
           $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
           if ([string]::IsNullOrWhiteSpace($remoteTag)) {
             Write-Host "Tag $tag does not exist yet. Build Windows Installer will create it."

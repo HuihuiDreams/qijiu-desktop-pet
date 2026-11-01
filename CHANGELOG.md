@@ -28,6 +28,7 @@
 - **Good Omens 单人全状态动作独立定制立绘升级 (`Good Omens Bespoke Single Action Artwork`)**：彻底剔除此前单人动作中 Python PIL 绘制几何图形（圆圈植物、红心、简单弧线）的临时逻辑，全量采用 Nano Banana / Imagen 3 生成高规格 2.2 头身 Q 版独立插画重构。包含：克劳利手持绿色喷壶严厉训话龟背竹盆栽（`left_cultivate`）、墨镜滑落露出金色蛇瞳满脸绯红傲娇（`left_pat`）、像蛇般蜷缩在天鹅绒抱枕安眠（`left_sleep`）、双手持法式甜点（`left_eat`）与扶额抓狂（`left_hungry`）；亚茨拉斐尔扶手椅戴镜持书伴读（`right_cultivate`）、双手抚脸月牙眼陶醉微笑（`right_pat`）、身披苏格兰格子毯抱古籍甜笑入睡（`right_sleep`）、大口咬下金黄可丽饼（`right_eat`）与揉圆滚滚肚子打饱嗝（`right_hungry`）；所有素材经绝对色差固定范围抠图实心化加固并重新加密，全量通过单元测试与冒烟测试。
 
 ### Changed
+- **发布预检与打包流水线全面支持 `go-v` 前缀 (`Release Preflight & Packaging go-v Tag Support`)**：更新 `.github/workflows/release-preflight.yml` 与 `build-installer.yml`，使 tag 校验、输入版本解析及远程检测全面支持 `go-v` 前缀，与好兆头专用 tag 规范保持一致；同步修正 macOS 可执行文件报错文案。
 - **好兆头发布 tag 改用 `go-v` 前缀 (`go-v Release Tag Prefix`)**：`build-installer.yml` 的触发、校验与上传全部改用 `go-vX.Y.Z`，`updateManager.js` 解析 `tag_name` 时兼容 `go-v` 前缀，避免与 `qijiu-desktop-pet` 主线的 `vX.Y.Z` tag 在共用源码仓库中冲突；补充 `test/updateManager.test.js` 回归用例。
 - **好兆头发布产物改发到独立 Release 仓库 (`Release To Dedicated Repository`)**：`build-installer.yml` 通过 `RELEASE_REPO`（`HuihuiDreams/good-omens-desktop-pet`）与 `secrets.RELEASES_TOKEN` 上传安装包与 `latest*.yml`，使本分支继续作为 `qijiu-desktop-pet` 分支维护的同时，自动更新源与七九爱宠互不干扰；同步修正 `release-preflight.yml` 中过时的可执行文件报错文案。
 - **番茄钟英文标题排版自适应微调 (`Pomodoro English Heading Sizing Adjustment`)**：为 `src/pomodoro.css` 中的 `html[lang="en"]` 与 `html[data-locale="en"]` 补齐双重选择器覆盖，并将英文专注提问标题字号微调至 14.5px（字距 0.4px），彻底解决全大写罗马铭文字体在紧凑书店面板下的边缘换行与微小溢出问题。
