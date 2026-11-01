@@ -146,7 +146,7 @@
 - [x] **Task 5.4**: 将雨天粒子（`effects.css`）升级为创世流星雨拖尾与星辉光效，联动更新天气问候台词。
 
 ### Phase 6: 独立发行配置与品牌身份隔离 (Independent Release Identity & Packaging)
-- [x] **Task 6.1**: 完成独立应用身份与安装配置（`package.json` 改为 `good-omens-desktop-pet` / `好兆头爱宠` / `com.deskpet.good-omens`，同步 `package-lock.json` 与 NSIS 安装包命名）。
+- [x] **Task 6.1**: 完成独立应用身份与安装配置（`package.json` 改为 `good-omens-desktop-pet` / `好兆头桌宠` / `GoodOmensDeskPet` / `com.deskpet.good-omens`，同步 `package-lock.json` 与 NSIS 安装包命名）。
 - [x] **Task 6.2**: 配置 Windows 身份标识（`src/main/AppLifecycle.js` 中的 `APP_USER_MODEL_ID`）与 NSIS 安装卸载文案（`build/installer.nsh`）。
 - [x] **Task 6.3**: 重新生成全套好兆头专属应用图标（`icon.png`, `icon.ico`, `icon.icns`, `iconTemplate.png`, `iconTemplate@2x.png`）与托盘 CA 点阵位图（`TrayManager.js`）。
 - [x] **Task 6.4**: 清理展示层残留旧角色名称与台词（`src/index.html` 标题、`src/app.js` 启动提示、`src/systems/InteractionSystem.js` 与 `src/debug.js` 兜底对白），同步更新 `tools/playwright-electron-smoke.js` 与相关测试断言。

@@ -3,7 +3,7 @@
 RequestExecutionLevel admin
 
 !macro customInstall
-  DetailPrint "正在配置好兆头爱宠安装环境..."
+  DetailPrint "正在配置好兆头桌宠安装环境..."
 
   ; 确保临时目录可访问 (修复"Can't initialize plug-ins directory"错误)
   ; 该错误常见于中文应用名或权限受限的安装环境
@@ -11,15 +11,19 @@ RequestExecutionLevel admin
 
   ; 清理历史快捷方式（保守兜底，防止旧名称残留）
   ; 注：用户反馈通过安装包升级后桌面出现两个快捷方式，根因尚在排查中。
-  ; 此处保守清理曾在内部开发期间出现过的旧名称 DeskPet，
+  ; 此处保守清理曾在内部开发期间出现过的旧名称 DeskPet 与历史名称 好兆头爱宠，
   ; 对不存在该文件的用户无副作用（NSIS Delete 对不存在的文件静默跳过）。
+  Delete "$DESKTOP\好兆头爱宠.lnk"
+  Delete "$SMPROGRAMS\好兆头爱宠.lnk"
   Delete "$DESKTOP\DeskPet.lnk"
   Delete "$SMPROGRAMS\DeskPet.lnk"
 !macroend
 
 !macro customUnInstall
-  DetailPrint "正在清理好兆头爱宠数据..."
+  DetailPrint "正在清理好兆头桌宠数据..."
   ; 清理历史快捷方式（兜底，防止旧名称残留）
+  Delete "$DESKTOP\好兆头爱宠.lnk"
+  Delete "$SMPROGRAMS\好兆头爱宠.lnk"
   Delete "$DESKTOP\DeskPet.lnk"
   Delete "$SMPROGRAMS\DeskPet.lnk"
 !macroend

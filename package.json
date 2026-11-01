@@ -1,7 +1,7 @@
 {
   "name": "good-omens-desktop-pet",
   "version": "0.11.2",
-  "description": "Good Omens (Crowley & Aziraphale) Desktop Pet / 好兆头桌面爱宠",
+  "description": "Good Omens (Crowley & Aziraphale) Desktop Pet / 好兆头桌宠",
   "main": "main.js",
   "scripts": {
     "dev": "electron .",
@@ -36,7 +36,7 @@
   },
   "build": {
     "appId": "com.deskpet.good-omens",
-    "productName": "好兆头爱宠",
+    "productName": "GoodOmensDeskPet",
     "artifactName": "good-omens-pet-setup-${version}.${ext}",
     "files": [
       "**/*",
@@ -91,8 +91,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "好兆头爱宠",
-      "uninstallDisplayName": "好兆头爱宠",
+      "shortcutName": "好兆头桌宠",
+      "uninstallDisplayName": "好兆头桌宠",
       "include": "build/installer.nsh"
     },
     "publish": [

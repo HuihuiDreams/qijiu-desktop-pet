@@ -16,7 +16,7 @@ test('macOS packaging rewrites the internal executable to an ASCII name', () => 
     'codesign must use --deep flag to sign nested unsigned frameworks in cross-arch builds');
 });
 
-test('macOS release workflows enforce Chinese wrapper app and ASCII executable names', () => {
+test('macOS release workflows enforce English wrapper app and ASCII executable names', () => {
   const workflowFiles = [
     '.github/workflows/build-installer.yml',
     '.github/workflows/release-preflight.yml',
@@ -25,9 +25,9 @@ test('macOS release workflows enforce Chinese wrapper app and ASCII executable n
   for (const workflowFile of workflowFiles) {
     const workflowSource = fs.readFileSync(path.join(ROOT, workflowFile), 'utf8');
 
-    assert.ok(workflowSource.includes('expected_app_name="好兆头爱宠.app"'), workflowFile);
+    assert.ok(workflowSource.includes('expected_app_name="GoodOmensDeskPet.app"'), workflowFile);
     assert.ok(workflowSource.includes('expected_executable="DeskPet"'), workflowFile);
-    assert.ok(workflowSource.includes('legacy_executable_name="好兆头爱宠"'), workflowFile);
+    assert.ok(workflowSource.includes('legacy_executable_name="GoodOmensDeskPet"'), workflowFile);
   }
 });
 

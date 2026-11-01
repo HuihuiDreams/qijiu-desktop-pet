@@ -31,7 +31,7 @@ const I18N = {
       status: '📊 查看状态',
 
       // 状态面板
-      statusTitle: '爱宠状态',
+      statusTitle: '桌宠状态',
       statAffection: '默契',
       statHunger: '饱腹',
       statQi: '奇迹能量',
@@ -60,7 +60,7 @@ const I18N = {
       skinSchoolAuArtist: '幕汤汤',
 
       // 托盘菜单
-      trayTitle: 'CA 桌面爱宠',
+      trayTitle: '好兆头桌宠',
       trayShowStatusPanel: '📊 显示状态面板',
       trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',

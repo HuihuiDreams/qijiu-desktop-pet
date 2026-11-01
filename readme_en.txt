@@ -1,4 +1,4 @@
-DeskPet: Good Omens (Crowley & Aziraphale) Desktop Pet 🕶️🪽
+GoodOmensDeskPet: Good Omens (Crowley & Aziraphale) Desktop Pet 🕶️🪽
 
 This is a desktop pet app themed around Good Omens.
 Anthony J. Crowley and Aziraphale can walk, rest, tend plants, read antiquarian books, and occasionally interact on your desktop.
@@ -16,14 +16,14 @@ This app supports both Windows and macOS:
   - Architecture:
     - Apple Silicon (M1/M2/M3, etc.): Download `*-arm64.dmg`.
     - Intel: Download `*-x64.dmg`.
-  - Installation: Double-click the `.dmg` file, drag the "好兆头爱宠" (DeskPet) icon to your Applications folder.
+  - Installation: Double-click the `.dmg` file, drag the "GoodOmensDeskPet" icon to your Applications folder.
   - Manual update:
     - Quit the current app from the tray menu first.
-    - Open the new `.dmg`, drag "好兆头爱宠" into Applications, and choose to replace the old version.
-    - If macOS blocks the updated app on first launch, allow it again in Privacy & Security or rerun `xattr -cr /Applications/好兆头爱宠.app`.
+    - Open the new `.dmg`, drag "GoodOmensDeskPet" into Applications, and choose to replace the old version.
+    - If macOS blocks the updated app on first launch, allow it again in Privacy & Security or rerun `xattr -cr /Applications/GoodOmensDeskPet.app`.
   - Bypass "Unidentified Developer / Damaged" Warning (Note: As an independent developer distributing this program on a small scale, I cannot afford Apple's annual $99 developer certificate fee, so users need to manually bypass security settings. Please rest assured that this program is open-source and contains absolutely no malicious code):
-    - Method 1: Go to "System Settings -> Privacy & Security", scroll down to find the blocked "好兆头爱宠", click "Open Anyway", and enter your password.
-    - Method 2: Open Terminal and run: `xattr -cr /Applications/好兆头爱宠.app`
+    - Method 1: Go to "System Settings -> Privacy & Security", scroll down to find the blocked "GoodOmensDeskPet", click "Open Anyway", and enter your password.
+    - Method 2: Open Terminal and run: `xattr -cr /Applications/GoodOmensDeskPet.app`
 
 ========================================
 🚀 Basic Controls
