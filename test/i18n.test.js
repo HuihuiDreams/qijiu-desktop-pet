@@ -64,3 +64,39 @@ test('Key UI text should exist and be a non-empty string for all locales', () =>
     }
   }
 });
+
+test('pet interaction menu text aligns across locales for yueqi and shenjiu', () => {
+  assert.equal(DICTIONARY.zh.petYueqi, '🤚 天使关怀');
+  assert.equal(DICTIONARY.zh.petShenjiu, '🤚 恶魔偏宠');
+
+  assert.equal(DICTIONARY.en.petYueqi, '🤚 Angel\'s Fondness');
+  assert.equal(DICTIONARY.en.petShenjiu, '🤚 Crowley\'s Care');
+
+  assert.equal(DICTIONARY.ja.petYueqi, '🤚 天使の慈愛');
+  assert.equal(DICTIONARY.ja.petShenjiu, '🤚 悪魔の寵愛');
+});
+
+test('classic "Let there be light!" dialogue is integrated in cultivate and morning across locales', () => {
+  const { I18N } = require('../src/data/i18n.js');
+  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
+
+  for (const locale of ['zh', 'en', 'ja']) {
+    const cultivatePool = I18N[locale].dialogues.cultivate.yueqi;
+    assert.ok(
+      cultivatePool.some(line => line.includes('Let there be light!')),
+      `I18N.${locale}.dialogues.cultivate.yueqi should include "Let there be light!"`,
+    );
+
+    const morningLine = I18N[locale].ui.morningYueqi;
+    assert.ok(
+      morningLine.includes('Let there be light!'),
+      `I18N.${locale}.ui.morningYueqi should include "Let there be light!"`,
+    );
+  }
+
+  assert.ok(
+    dialoguesSource.includes('Let there be light!'),
+    'dialogues.js fallback should include "Let there be light!"',
+  );
+});
+

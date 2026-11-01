@@ -216,13 +216,15 @@ html[lang="ja"] .pomodoro-titlebar>span {
   text-align: center;
 }
 
-html[lang="en"] .pomodoro-heading {
-  font-size: 18px;
-  letter-spacing: 0.6px;
+html[lang="en"] .pomodoro-heading,
+html[data-locale="en"] .pomodoro-heading {
+  font-size: 14.5px;
+  letter-spacing: 0.4px;
   line-height: 1.25;
 }
 
-html[lang="ja"] .pomodoro-heading {
+html[lang="ja"] .pomodoro-heading,
+html[data-locale="ja"] .pomodoro-heading {
   font-size: 20px;
   letter-spacing: 1px;
 }

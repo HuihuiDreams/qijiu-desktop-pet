@@ -27,7 +27,7 @@ class AmbientDialogueSystem {
 
   /**
    * 深夜梦话：读取 dream 词库，好感度达标时触发更亲昵的专属梦话；
-   * 沈九有概率触发联动梦话，延迟触发岳七的梦中回应。
+   * 亚茨拉斐尔有概率触发联动梦话，延迟触发克劳利的梦中回应。
    */
   showNightDream(pet) {
     const [yueqi] = this.getPets();
@@ -38,17 +38,17 @@ class AmbientDialogueSystem {
       const affection = pet.stats.affection || 0;
       const isHighAffection = affection >= 80;
 
-      // 尝试联动梦话 (目前以沈九发起，岳七回应为例)
+      // 尝试联动梦话 (目前以亚茨拉斐尔发起，克劳利回应为例)
       let isLinked = false;
       if (isHighAffection && pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
-        // 沈九有概率触发联动梦话
+        // 亚茨拉斐尔有概率触发联动梦话
         if (Math.random() < 0.3 && dreamPool.linked?.shenjiu) {
           isLinked = true;
           const pool = dreamPool.linked.shenjiu;
           text = pool[Math.floor(Math.random() * pool.length)];
-          // 触发岳七的回应 (延迟几秒)
+          // 触发克劳利的回应 (延迟几秒)
           setTimeout(() => {
-            // 确保岳七依然处于合适状态
+            // 确保克劳利依然处于合适状态
             if (!yueqi.isBusy() && yueqi.timePhase === 'night' && yueqi.element.style.display !== 'none') {
               const replyPool = dreamPool.linked.yueqi_reply;
               if (replyPool) {

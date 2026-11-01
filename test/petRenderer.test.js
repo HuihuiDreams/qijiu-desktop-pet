@@ -852,7 +852,7 @@ test('showOverlayBubbles lifts right bubble when interaction bubbles overlap hor
   };
 
   try {
-    renderer.showOverlayBubbles('…幼稚。', '小九，尝尝这个。', overlayPos, 1000);
+    renderer.showOverlayBubbles('…幼稚。', '天使，尝尝这个。', overlayPos, 1000);
     assert.equal(appended.length, 2);
 
     const [leftBubble, rightBubble] = appended;

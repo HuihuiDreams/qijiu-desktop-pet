@@ -230,6 +230,12 @@ How to restore:
 - Right-click a character and choose "💤 Nap": restores 10 Miracle and 15 Mood, and consumes 10 Satiety.
 - When the two interact, they may perform a miracle together and restore Miracle at 1.5x the single-character amount.
 
+Why tending plants or reading restores Miracle:
+- 🪴 Crowley (Demon) · Tending Plants:
+  In Good Omens lore, Crowley terrorizes his houseplants with a spray bottle ("GROW BETTER!"), leaving them the greenest and most terrified in London. This is the demon's signature decompression ritual. Venting frustration and asserting evil authority calms his turbulent demonic energy, refocusing his mind to rapidly gather miracle power.
+- 📖 Aziraphale (Angel) · Reading:
+  Aziraphale runs an antiquarian bookshop in Soho (A.Z. Fell and Co.) and treasures centuries of human literature. Sitting in his armchair with spectacles, sipping tea while absorbed in rare first editions, grants him absolute peace and detachment from worldly noise. This pure, tranquil focus harmonizes with heavenly grace to restore divine miracle energy.
+
 Note:
 - Below 20 Miracle, Mood drops faster.
 

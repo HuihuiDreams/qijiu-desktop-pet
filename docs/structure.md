@@ -406,7 +406,11 @@ src/assets/{skinId}/
 - 独立状态窗口保存 `lastRenderData`，语言变化时可用当前状态重新渲染。
 - 独立番茄钟窗口使用 `data-i18n` 和 `data-i18n-title` 刷新标题、按钮、完成台词和置顶按钮说明。
 - `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange` 等 IPC API。
-- 日语排版在 `src/index.css` 中区分展示与正文：本地切片的 `Yuji Syuku` 用于 `--font-display`，保留 `Shippori Mincho` 用于 `--font-body`，使仙侠题字有行书笔势而不牺牲小字号可读性。`src/assets/fonts/YujiSyuku-OFL.txt` 随字体资源保存 SIL Open Font License 1.1 及版权声明。
+- 多语言排版在 `src/index.css` 中区分展示（`--font-display`）与正文（`--font-body`），全套采用本地按需切片的开源 WebFont（OFL 1.1，遵守 CSP `font-src 'self'`）：
+  - **英文 (EN)**：展示使用古罗马铭文/伦敦古董书店质感的 `Cinzel` 与 `Cormorant Garamond`，正文使用古典文学书籍衬线 `EB Garamond`。
+  - **中文 (ZH)**：展示使用行云流水的毛笔书法体 `Ma Shan Zheng`（全量覆盖 Good Omens 角色与 UI 词汇），正文使用典雅古典宋体与 `EB Garamond` 混排。
+  - **日文 (JA)**：展示使用笔势苍劲的毛笔行楷 `Yuji Syuku`，正文使用古典文库本明朝体 `Shippori Mincho`。
+  - 各字体切片 `.woff2` 及版权许可声明文件（`*-OFL.txt`）均归档于 `src/assets/fonts/`。
 
 ### 3.10 更新系统
 

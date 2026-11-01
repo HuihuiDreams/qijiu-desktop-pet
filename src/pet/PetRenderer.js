@@ -481,9 +481,9 @@ class PetRenderer {
 
   /**
    * 在覆盖层图片中两个人物头顶显示对话气泡。
-   * 图片布局固定：沈九（绿）在左侧 ~28%，岳七（黑）在右侧 ~72%。
-   * @param {string} shenjuText - 沈九的台词
-   * @param {string} yueqiText  - 岳七的台词
+   * 图片布局固定：亚茨拉斐尔在左侧 ~28%，克劳利在右侧 ~72%。
+   * @param {string} shenjuText - 亚茨拉斐尔的台词
+   * @param {string} yueqiText  - 克劳利的台词
    * @param {Object} overlayPos - showOverlay 返回的 {x, y, width}
    * @param {number} duration   - 气泡显示时长（毫秒）
    */

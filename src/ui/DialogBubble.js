@@ -178,7 +178,7 @@ class DialogBubble {
     const dialoguesA = DIALOGUES[interactionKey]?.yueqi;
     const dialoguesB = DIALOGUES[interactionKey]?.shenjiu;
 
-    // 确定哪个是岳七，哪个是沈九
+    // 确定哪个是克劳利（yueqi），哪个是亚茨拉斐尔（shenjiu）
     const yueqi = petA.id === 'yueqi' ? petA : petB;
     const shenjiu = petA.id === 'shenjiu' ? petA : petB;
 
@@ -218,7 +218,7 @@ class DialogBubble {
       this.show(yueqi, text, CONFIG.INTERACTION_DURATION - 500, offsetA);
     }
 
-    // 同时显示沈九的回应
+    // 同时显示亚茨拉斐尔的回应
     if (dialoguesB && dialoguesB.length > 0) {
       const text = dialoguesB[Math.floor(Math.random() * dialoguesB.length)];
       this.show(shenjiu, text, CONFIG.INTERACTION_DURATION - 500, offsetB);

@@ -183,7 +183,7 @@ const I18N = {
       returnShenjiu: '…哦，谢天谢地，你终于回来了。',
 
       // 时段闲聊
-      morningYueqi: '早啊。今天又有什么不可告人的诱惑任务？',
+      morningYueqi: '“Let there be light!”……早啊天使，今天也是适合干点恶行的一天。',
       morningShenjiu: '早上好！今天也是适宜品茶读书的一天。',
       dayYueqi: '大白天的，开着宾利在伦敦兜风才叫惬意。',
       dayShenjiu: '下午阳光正好，来一杯红茶再配块可丽饼吧。',
@@ -228,6 +228,7 @@ const I18N = {
           '一起来施展个二十五拉撒路级的奇迹怎么样？',
           '准备好一起施展奇迹了吗，天使？就你和我。',
           '让楼上天国和楼下地狱瞧瞧我们的本事。',
+          '就如创世之初那样——“Let there be light!” 瞧好了，天使！',
         ],
         shenjiu: [
           '那就一起吧。不过低调点，克劳利。',
@@ -580,7 +581,7 @@ const I18N = {
       returnShenjiu: '...Oh, thank heavens, you\'re back!',
 
       // Time phase chatter
-      morningYueqi: 'Morning. Another splendid day for subtle temptations.',
+      morningYueqi: '"Let there be light!" ...Morning, Angel. Another splendid day for subtle temptations.',
       morningShenjiu: 'Good morning! A lovely day for tea and a first edition.',
       dayYueqi: 'Broad daylight. Nothing beats a blast in the Bentley.',
       dayShenjiu: 'Afternoon light is perfect. A pot of Earl Grey and a crepe, perhaps?',
@@ -625,6 +626,7 @@ const I18N = {
           'How about a twenty-five-Lazarus miracle together?',
           'Ready to perform a miracle, Angel? Just you and me.',
           'Let\'s show Upstairs and Downstairs what we can do.',
+          'Just like Before the Beginning — "Let there be light!" Watch this, Angel!',
         ],
         shenjiu: [
           'Together, then. But let\'s keep it discreet, Crowley.',
@@ -811,8 +813,8 @@ const I18N = {
       meditate: '✨ 奇跡を行う',
       meditateYueqi: '🪴 観葉植物の世話',
       meditateShenjiu: '📖 古書を読む',
-      petYueqi: '🤚 天使の微笑み',
-      petShenjiu: '🤚 悪魔の気遣い',
+      petYueqi: '🤚 天使の慈愛',
+      petShenjiu: '🤚 悪魔の寵愛',
       rest: '💤 休息',
       status: '📊 状態確認',
 
@@ -969,7 +971,7 @@ const I18N = {
       returnShenjiu: '…ああ、神よ感謝します、戻ってきてくれたんだね！',
 
       // 時段の雑談
-      morningYueqi: 'おい、朝だぞ。今日も些細な悪事日和だな。',
+      morningYueqi: '「光あれ（Let there be light!）」……おい天使、朝だぞ。今日も些細な悪事日和だな。',
       morningShenjiu: 'おはよう！紅茶と古書を楽しむのに最高の朝だね。',
       dayYueqi: '真っ昼間だな。ベントレーで飛ばすには悪くない。',
       dayShenjiu: '午後の光が心地よいね。クレープとダージリンはいかが？',
@@ -1014,6 +1016,7 @@ const I18N = {
           '25ラザロ級の合同奇跡といこうぜ。',
           'おい天使、一緒に奇跡を起こす準備はいいか？',
           '俺たちの力、見せつけてやろうじゃないか。',
+          '創世のあの時と同じだ――「光あれ（Let there be light!）」！見ろよ、天使！',
         ],
         shenjiu: [
           '力を合わせよう、クロウリー。でも、目立ちすぎないようにね。',
