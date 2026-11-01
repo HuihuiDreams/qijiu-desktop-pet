@@ -45,15 +45,15 @@ const I18N = {
 
       // 皮肤名
       skinDefault: '默认形象·Nano Banana',
-      skinBirds: '鸟塑七九·凉拌仓鼠',
-      skinAnimalEars: '猫兔七九·紫萤',
-      skinSchoolAu: '校园七九·幕汤汤',
+      skinBirds: '鸟塑克亚·凉拌仓鼠',
+      skinAnimalEars: '猫兔克亚·紫萤',
+      skinSchoolAu: '校园克亚·幕汤汤',
 
       // 皮肤选择器用（拆分）
       skinDefaultLabel: '经典英伦原皮',
-      skinBirdsLabel: '鸟塑七九',
-      skinAnimalEarsLabel: '猫兔七九',
-      skinSchoolAuLabel: '校园七九',
+      skinBirdsLabel: '鸟塑克亚',
+      skinAnimalEarsLabel: '猫兔克亚',
+      skinSchoolAuLabel: '校园克亚',
       skinDefaultArtist: 'Nano Banana',
       skinBirdsArtist: '凉拌仓鼠',
       skinAnimalEarsArtist: '紫萤',
@@ -851,15 +851,15 @@ const I18N = {
 
       // 装束名
       skinDefault: '既定装束・(絵師) Nano Banana',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
-      skinBirds: '小鳥七九・(絵師) Hamster Salad',
-      skinAnimalEars: '猫兎七九・(絵師) Violetfirefly',
-      skinSchoolAu: '学園七九・(絵師) M_Shang',
+      skinBirds: '小鳥クロアジ・(絵師) Hamster Salad',
+      skinAnimalEars: '猫兎クロアジ・(絵師) Violetfirefly',
+      skinSchoolAu: '学園クロアジ・(絵師) M_Shang',
 
       // 装束選択（分割）
       skinDefaultLabel: '既定装束',
-      skinBirdsLabel: '小鳥七九',
-      skinAnimalEarsLabel: '猫兎七九',
-      skinSchoolAuLabel: '学園七九',
+      skinBirdsLabel: '小鳥クロアジ',
+      skinAnimalEarsLabel: '猫兎クロアジ',
+      skinSchoolAuLabel: '学園クロアジ',
       skinDefaultArtist: 'Nano Banana',
       skinBirdsArtist: 'Hamster Salad',
       skinAnimalEarsArtist: 'Violetfirefly',
