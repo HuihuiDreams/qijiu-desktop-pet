@@ -40,7 +40,7 @@ class AmbientDialogueSystem {
 
       // 尝试联动梦话 (目前以沈九发起，岳七回应为例)
       let isLinked = false;
-      if (pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
+      if (isHighAffection && pet.id === 'shenjiu' && yueqi && yueqi.element && yueqi.timePhase === 'night') {
         // 沈九有概率触发联动梦话
         if (Math.random() < 0.3 && dreamPool.linked?.shenjiu) {
           isLinked = true;

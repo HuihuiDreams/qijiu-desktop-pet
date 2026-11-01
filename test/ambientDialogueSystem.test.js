@@ -161,6 +161,7 @@ test('showNightDream triggers a linked reply from yueqi when shenjiu dreams and 
         }),
       });
       yueqi.timePhase = 'night';
+      shenjiu.stats.affection = 80;
       const system = new AmbientDialogueSystem(deps);
 
       system.showNightDream(shenjiu);
@@ -177,6 +178,27 @@ test('showNightDream triggers a linked reply from yueqi when shenjiu dreams and 
     } finally {
       global.setTimeout = originalSetTimeout;
     }
+  });
+});
+
+test('showNightDream does not trigger a linked dream when affection < 80 and falls back to lowAffection pool', () => {
+  withRandomSequence([0], () => {
+    const { deps, calls, yueqi, shenjiu } = makeDeps({
+      getDialogues: () => ({
+        dream: {
+          lowAffection: { shenjiu: ['low-affection-dream'] },
+          highAffection: { shenjiu: ['high-affection-dream'] },
+          linked: { shenjiu: ['linked-shenjiu-line'], yueqi_reply: ['linked-yueqi-reply'] },
+        },
+      }),
+    });
+    yueqi.timePhase = 'night';
+    shenjiu.stats.affection = 50;
+    const system = new AmbientDialogueSystem(deps);
+
+    system.showNightDream(shenjiu);
+
+    assert.deepEqual(calls.show, [{ pet: 'shenjiu', text: 'low-affection-dream', duration: 5000 }]);
   });
 });
 

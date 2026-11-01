@@ -50,23 +50,4 @@ if target_dirs:
     for d in target_dirs:
         process_skin_directory(d)
 else:
-    # Group by character/direction to unify canvases for animations, but separate them so they maximize screen space
-    groups = [
-        "src/assets/animal_ears/left*.png",
-        "src/assets/animal_ears/right*.png",
-        "src/assets/animal_ears/shenjiu/walk_left*.png",
-        "src/assets/animal_ears/shenjiu/walk_right*.png",
-        "src/assets/animal_ears/yueqi/walk_left*.png",
-        "src/assets/animal_ears/yueqi/walk_right*.png",
-        "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/walk_left*.png",
-        "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/walk_right*.png",
-        "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/left*.png",
-        "src/assets/animal_ears/QiJiu Desktop (updated)/SQQ/right*.png",
-        "src/assets/school_au/left*.png",
-        "src/assets/school_au/right*.png",
-        "src/assets/school_au/shenjiu/walk_left*.png",
-        "src/assets/school_au/shenjiu/walk_right*.png",
-        "src/assets/school_au/yueqi/walk_left*.png",
-        "src/assets/school_au/yueqi/walk_right*.png",
-    ]
-    run_groups_and_remaining(groups, ["src/assets/animal_ears", "src/assets/school_au"])
+    process_skin_directory("src/assets/default")

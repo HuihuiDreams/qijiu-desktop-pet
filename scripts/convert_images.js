@@ -44,7 +44,7 @@ with Image.open(${JSON.stringify(fullPath)}) as img:
 }
 
 const cliArgs = process.argv.slice(2);
-const skinDirs = cliArgs.length > 0 ? cliArgs : ['src/assets/animal_ears', 'src/assets/school_au'];
+const skinDirs = cliArgs.length > 0 ? cliArgs : ['src/assets/default'];
 for (const dir of skinDirs) {
     const absDir = path.resolve(dir);
     if (fs.existsSync(absDir) && fs.statSync(absDir).isDirectory()) {

@@ -136,8 +136,8 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 ### 4.2 当前素材脚本的限制
 
-- [`tools/run_trim.py`](../tools/run_trim.py) 的 `groups` 需要加入新素材的动画分组，再执行 `python tools/run_trim.py`。
-- [`scripts/convert_images.js`](../scripts/convert_images.js) 当前 `skinDirs` 只包含 `animal_ears` 和 `school_au`。转换新目录或 `default` 前必须修改处理范围，否则执行脚本不会处理它们。脚本优先用 `ffmpeg`，失败后尝试 `python3` + Pillow；确认本机命令可用，并检查每张输出，不能只看脚本是否退出。
+- [`tools/run_trim.py`](../tools/run_trim.py) 默认处理 `src/assets/default`，若转换其他皮肤目录可通过 CLI 参数传入（`python tools/run_trim.py src/assets/<skin_id>`）。
+- [`scripts/convert_images.js`](../scripts/convert_images.js) 默认 `skinDirs` 为 `src/assets/default`。转换其他皮肤目录可通过 CLI 参数传入（`node scripts/convert_images.js src/assets/<skin_id>`）。脚本优先用 `ffmpeg`，失败后尝试 `python3` + Pillow；确认本机命令可用，并检查每张输出，不能只看脚本是否退出。
 - [`test/assetDimensions.test.js`](../test/assetDimensions.test.js) 有固定皮肤列表和特定皮肤断言。更换皮肤目录时同步更新覆盖范围，避免新目录没有被检查。
 
 ### 4.3 同步皮肤映射和受保护资源
