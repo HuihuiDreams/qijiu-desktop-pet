@@ -81,6 +81,7 @@ function createSkinLoadHarness(t, shouldFail) {
 
   SkinService.setCurrentSkinId('default');
   SkinService.init({
+    availableSkins: ['default', 'birds', 'animal_ears', 'school_au'],
     windowManager: { mainWindow, skinSelectorWindow: selectorWindow },
     skinSelectorWindowModule: {
       setSkinSelectorSelectionInProgress: () => {},

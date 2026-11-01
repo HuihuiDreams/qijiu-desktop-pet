@@ -89,8 +89,8 @@ async function main() {
     if (!selectorDiagnostics.hasSelectorApi) {
       throw new Error('Skin selector preload bridge is unavailable');
     }
-    if (selectorDiagnostics.cardCount < 4) {
-      throw new Error(`Skin selector did not render the built-in skins: ${selectorDiagnostics.cardCount}`);
+    if (selectorDiagnostics.cardCount !== 1) {
+      throw new Error(`Skin selector did not render the single built-in skin: ${selectorDiagnostics.cardCount}`);
     }
     if (selectorDiagnostics.currentCardCount !== 1) {
       throw new Error(`Skin selector should mark exactly one current skin: ${selectorDiagnostics.currentCardCount}`);

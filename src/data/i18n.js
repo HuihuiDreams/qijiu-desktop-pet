@@ -45,22 +45,13 @@ const I18N = {
 
       // 皮肤名
       skinDefault: '默认形象·Nano Banana',
-      skinBirds: '鸟塑克亚·凉拌仓鼠',
-      skinAnimalEars: '猫兔克亚·紫萤',
-      skinSchoolAu: '校园克亚·幕汤汤',
 
       // 皮肤选择器用（拆分）
       skinDefaultLabel: '经典英伦原皮',
-      skinBirdsLabel: '鸟塑克亚',
-      skinAnimalEarsLabel: '猫兔克亚',
-      skinSchoolAuLabel: '校园克亚',
       skinDefaultArtist: 'Nano Banana',
-      skinBirdsArtist: '凉拌仓鼠',
-      skinAnimalEarsArtist: '紫萤',
-      skinSchoolAuArtist: '幕汤汤',
 
       // 托盘菜单
-      trayTitle: '好兆头桌宠',
+      trayTitle: 'CA 桌面爱宠',
       trayShowStatusPanel: '📊 显示状态面板',
       trayHideStatusPanel: '📊 隐藏状态面板',
       traySwitchSkin: '🎨 切换皮肤',
@@ -208,7 +199,7 @@ const I18N = {
         yueqi: [
           '天使，你也在这儿。',
           '好久不见，亚茨拉斐尔。想我了吗？',
-          '要上我的宾利去兜两圈吗？保证不超九十迈。',
+          '要上我的宾利去兜两圈吗？保证不超九十英里。',
           '今天又在翻看那些泛黄的老旧初版本？',
           '今天气色相当不错嘛，天使。',
         ],
@@ -265,7 +256,7 @@ const I18N = {
         shenjiu: [
           '……克劳利。',
           '（展开洁白柔软的羽翼，轻轻拥住对方）',
-          '（就像那年大轰炸在教堂里一样安心）',
+          '没事的，亲爱的，我一直在这里。',
         ],
       },
       throwup: {
@@ -284,10 +275,10 @@ const I18N = {
       idle: {
         yueqi: [
           '不知道天使这会儿又在为哪本古董孤本发愁…',
-          '该去巡视那群盆栽了，一片叶斑都绝不姑息！',
+          '该去巡视那群盆栽了，一处叶斑都绝不姑息！',
           '开着宾利在梅菲尔区逆行兜风去。',
           '（推了推墨镜，嘴角扬起自信的弧度）',
-          '磁带机怎么又把贝多芬自动变成 Queen 乐队了…',
+          '磁带机怎么又把贝多芬自动变成皇后乐队了…',
         ],
         shenjiu: [
           '（翻开一本尚未裁切的 1813 年版《傲慢与偏见》）',
@@ -459,19 +450,10 @@ const I18N = {
 
       // Skin names
       skinDefault: 'Default Outfit - (Artist) Nano Banana',
-      skinBirds: 'Cute Birds - (Artist) Hamster Salad',
-      skinAnimalEars: 'Cat & Bunny - (Artist) Violetfirefly',
-      skinSchoolAu: 'School AU - (Artist) M_Shang',
 
       // Skin selector (split)
       skinDefaultLabel: 'Classic Ineffable Outfit',
-      skinBirdsLabel: 'Cute Birds',
-      skinAnimalEarsLabel: 'Cat & Bunny',
-      skinSchoolAuLabel: 'School AU',
       skinDefaultArtist: 'Nano Banana',
-      skinBirdsArtist: 'Hamster Salad',
-      skinAnimalEarsArtist: 'Violetfirefly',
-      skinSchoolAuArtist: 'M_Shang',
 
       // Tray menu
       trayTitle: 'CA Desktop Pet',
@@ -712,8 +694,14 @@ const I18N = {
         ],
       },
       weather_rain: {
-        yueqi: ['Rain. Good thing I have a massive black umbrella.', 'London drizzle. Utterly predictable.'],
-        shenjiu: ['Cozy afternoon for reading by the hearth.', '(Snuggles under Crowley\'s umbrella)'],
+        yueqi: [
+          'Look at that, Angel. When we started up the Alpha Centauri nebula, it was far brighter than this meteor shower.',
+          '(Gazes up at stardust streaking across the sky) ...That was my design, gorgeous, isn\'t it?',
+        ],
+        shenjiu: [
+          'Oh... no matter how many millennia pass, the falling stardust is always utterly enchanting.',
+          '(Gently lifts a white wing) It looked much like this beside the nebula all those years ago, my dear.',
+        ],
       },
       weather_snow: {
         yueqi: ['Freezing out. Angels don\'t catch colds, do they?', 'Snow in London. Traffic will be positively apocalyptic.'],
@@ -851,19 +839,10 @@ const I18N = {
 
       // 装束名
       skinDefault: '既定装束・(絵師) Nano Banana',  // “装束”比“スキン（Skin）”更有古风雅致的感觉，括号内保留英文艺术家署名以示尊重
-      skinBirds: '小鳥クロアジ・(絵師) Hamster Salad',
-      skinAnimalEars: '猫兎クロアジ・(絵師) Violetfirefly',
-      skinSchoolAu: '学園クロアジ・(絵師) M_Shang',
 
       // 装束選択（分割）
       skinDefaultLabel: '既定装束',
-      skinBirdsLabel: '小鳥クロアジ',
-      skinAnimalEarsLabel: '猫兎クロアジ',
-      skinSchoolAuLabel: '学園クロアジ',
       skinDefaultArtist: 'Nano Banana',
-      skinBirdsArtist: 'Hamster Salad',
-      skinAnimalEarsArtist: 'Violetfirefly',
-      skinSchoolAuArtist: 'M_Shang',
 
       // トレイメニュー
       trayTitle: 'CA デスクトップペット',
@@ -1104,8 +1083,14 @@ const I18N = {
         ],
       },
       weather_rain: {
-        yueqi: ['雨か。特大の黒傘を持ってきたから問題ない。', 'ロンドン名物の霧雨だな。'],
-        shenjiu: ['雨宿りしながら暖炉の前で読書…最高の日だね。', '（クロウリーの傘の下にそっと潜り込む）'],
+        yueqi: [
+          '見ろよ、天使。昔俺たちがアルファ・ケンタウリ星雲を起動した時は、この流星群よりもずっと眩しかったぜ。',
+          '（夜空を流れる星屑の光を見上げる）…あれは俺の設計だ。見事なもんだろ？',
+        ],
+        shenjiu: [
+          'ああ…何千年経っても、星屑が降り注ぐ光景はいつでも心を奪われるね。',
+          '（白い翼をそっと広げる）昔、星雲のほとりで見た景色も、こんなふうだったね、親愛なる友よ。',
+        ],
       },
       weather_snow: {
         yueqi: ['冷えるな。おい天使、まさか風邪なんか引かないだろうな？', 'ロンドンに雪か。ベントレーを飛ばすには滑りすぎる。'],

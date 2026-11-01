@@ -22,7 +22,7 @@ test.describe('skin selector', () => {
     appWindow = null;
   });
 
-  test('skin selector window opens with at least 4 skin cards', async () => {
+  test('skin selector window opens with 1 built-in skin card', async () => {
     const [selectorWindow] = await Promise.all([
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(async ({ app }) => {
@@ -36,7 +36,7 @@ test.describe('skin selector', () => {
     const cardCount = await selectorWindow.evaluate(
       () => document.querySelectorAll('.skin-card').length,
     );
-    expect(cardCount).toBeGreaterThanOrEqual(4);
+    expect(cardCount).toBe(1);
   });
 
   test('skin selector preload API is available', async () => {
@@ -142,6 +142,7 @@ test.describe('skin selector', () => {
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
+    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
@@ -163,6 +164,7 @@ test.describe('skin selector', () => {
       electronApp.waitForEvent('window', { timeout: 15000 }),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
+    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
     await appWindow.evaluate(() => {
       window.__qaOriginalImage = window.Image;
       window.Image = class {
@@ -194,6 +196,7 @@ test.describe('skin selector', () => {
       electronApp.waitForEvent('window'),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
+    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
@@ -247,6 +250,7 @@ test.describe('skin selector', () => {
       electronApp.waitForEvent('window'),
       electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
     ]);
+    if ((await selectorWindow.locator('.skin-card').count()) < 2) { test.skip(); return; }
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');

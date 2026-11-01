@@ -14,6 +14,8 @@ let deps = {};
 
 function init(dependencies) {
   deps = dependencies;
+  cachedAvailableSkins = null;
+  cachedAvailableSkinsTimestamp = 0;
 
   ipcMain.handle('get-available-skins', (event) => {
     if (!isSenderMainWindow(event, deps.windowManager.mainWindow)) return [];
@@ -177,25 +179,16 @@ function init(dependencies) {
 // 皮肤显示名多语言 key 映射表（文件夹名 → I18N.ui key）
 const SKIN_NAME_KEYS = {
   'default': 'skinDefault',
-  'birds': 'skinBirds',
-  'animal_ears': 'skinAnimalEars',
-  'school_au': 'skinSchoolAu',
 };
 
 // 皮肤选择器用：皮肤名（不含画师）
 const SKIN_LABEL_KEYS = {
   'default': 'skinDefaultLabel',
-  'birds': 'skinBirdsLabel',
-  'animal_ears': 'skinAnimalEarsLabel',
-  'school_au': 'skinSchoolAuLabel',
 };
 
 // 皮肤选择器用：画师名
 const SKIN_ARTIST_KEYS = {
   'default': 'skinDefaultArtist',
-  'birds': 'skinBirdsArtist',
-  'animal_ears': 'skinAnimalEarsArtist',
-  'school_au': 'skinSchoolAuArtist',
 };
 
 function getSkinGalleryDisplayName(skinId) {
@@ -276,22 +269,25 @@ let cachedAvailableSkinsTimestamp = 0;
 const SKINS_CACHE_TTL_MS = 2000;
 
 function scanAvailableSkins(forceRefresh = false) {
+  if (Array.isArray(deps.availableSkins) && deps.availableSkins.length > 0) {
+    return [...deps.availableSkins];
+  }
   if (!forceRefresh && cachedAvailableSkins && Date.now() - cachedAvailableSkinsTimestamp < SKINS_CACHE_TTL_MS) {
     return cachedAvailableSkins;
   }
   try {
+    const knownSkinIds = new Set(Object.keys(SKIN_NAME_KEYS));
     const protectedSkinIds = listAvailableSkinIds({
       appRoot: __dirname,
       resourcesPath: process.resourcesPath,
       appPath: typeof app?.getAppPath === 'function' ? app.getAppPath() : null,
-    });
+    }).filter(id => knownSkinIds.has(id));
     if (protectedSkinIds.length > 0) {
       cachedAvailableSkins = protectedSkinIds.sort(sortSkinIds);
       cachedAvailableSkinsTimestamp = Date.now();
       return cachedAvailableSkins;
     }
 
-    const knownSkinIds = new Set(Object.keys(SKIN_NAME_KEYS));
     const assetsDir = path.join(__dirname, '..', '..', '..', 'src', 'assets');
     const entries = fs.readdirSync(assetsDir, { withFileTypes: true });
     cachedAvailableSkins = entries.filter(dirent => {

@@ -29,6 +29,7 @@ function createHarness() {
   const mainEvent = { sender: mainWindow.webContents };
   SkinService.setCurrentSkinId('default');
   SkinService.init({
+    availableSkins: ['default', 'birds', 'animal_ears', 'school_au'],
     windowManager: { mainWindow, skinSelectorWindow: selectorWindow },
     skinSelectorWindowModule: {
       getSkinSelectorOriginalSkinId: () => originalSkinId,

@@ -234,10 +234,8 @@ qijiu-desktop-pet/
 │  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（每次 mount 清除并重建节点，最多 12 个爱心粒子，跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
-│     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
-│     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
-│     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
-│     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
+│     ├─ fonts/                         # 内置多语言字体资源
+│     └─ default/                       # 默认皮肤（经典英伦原皮）：基础动作、互动动作、双角色行走帧
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner：单元与行为测试 (npm test)
 │  ├─ integration/                      # 跨模块/IPC 轻量级集成测试套件 (npm run test:integration)；通过模拟 IPC 调度、窗口事件记录与 StoreManager 内存存储，验证多窗口状态机、安全拦截与持久化闭环

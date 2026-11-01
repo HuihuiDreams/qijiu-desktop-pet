@@ -39,7 +39,7 @@ The tray menu lets you:
 - **📊 Show Status Panel**
 - **📏 Resize Pet…**: resize both pets together with a live preview; confirm to save.
 - **📖 Bookshop Study / 📖 Studying N min / 📖 Study Complete**: open the Pomodoro countdown window; the tray label reflects the current study state.
-- **🎨 Choose Skin…**: opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Outfit - (Artist) Nano Banana, Cute Birds - (Artist) Hamster Salad, Cat & Bunny - (Artist) Violetfirefly, and School AU - (Artist) M_Shang). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
+- **🎨 Choose Skin…**: opens the visual skin selector gallery window where you can browse and switch built-in skins (currently built-in: Default Outfit - (Artist) Nano Banana). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
 - **⏸️ Pause Walking** or **🚶🏻‍♂️ Resume Walking**
 - **👻 Hide Pets** or **👻 Show Pets**: temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
 - **🔄 Reset Position**
@@ -83,11 +83,8 @@ Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 
 🎨 Skins & Display
 ========================================
 
-The app currently includes four built-in skins:
+The app currently includes one built-in skin:
 - Default Outfit - (Artist) Nano Banana
-- Cute Birds - (Artist) Hamster Salad
-- Cat & Bunny - (Artist) Violetfirefly
-- School AU - (Artist) M_Shang
 
 Visual Skin Gallery:
 Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin gallery window. Each skin card displays the exclusive preview image (kiss sprite), skin name, and artist signature ("🎨 Artist") across separate lines.

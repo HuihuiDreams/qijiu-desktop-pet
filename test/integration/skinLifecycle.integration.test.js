@@ -52,6 +52,7 @@ function loadSkinLifecycleIntegration(harness) {
     const SkinSelectorWindow = require('../../src/main/windows/SkinSelectorWindow');
 
     SkinService.init({
+      availableSkins: ['default', 'birds', 'animal_ears', 'school_au'],
       windowManager: harness.windowManager,
       skinSelectorWindowModule: SkinSelectorWindow,
       trayManager: {

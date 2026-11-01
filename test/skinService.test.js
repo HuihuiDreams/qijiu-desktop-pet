@@ -54,6 +54,7 @@ const mockMainWindow = {
 
 function createMockDeps() {
   return {
+    availableSkins: ['default', 'birds', 'animal_ears', 'school_au'],
     trayManager: {
       refreshTrayMenu: () => { mockTrayRefreshed = true; },
       trayT: (key) => mockTrayTranslations[key] || key
@@ -139,7 +140,7 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
   });
 
   await t.test('scanAvailableSkins returns default and known skins', () => {
-    const deps = createMockDeps();
+    const deps = { ...createMockDeps(), availableSkins: undefined };
     SkinService.init(deps);
     
     const skins = SkinService.scanAvailableSkins(true); // force refresh

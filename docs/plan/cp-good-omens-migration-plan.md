@@ -130,7 +130,7 @@
 - [x] **Task 3.1**: 准备 Crowley 与 Aziraphale 的默认 256x256 WebP 单人立绘（`left.webp`, `right.webp`）。
 - [x] **Task 3.2**: 准备双方各 4 帧走动循环图（`yueqi/walk_left*.webp`, `shenjiu/walk_right*.webp`）。
 - [x] **Task 3.3**: 准备单人状态图（饥饿、睡眠、进食、被摸、克劳利养植物 `left_cultivate.webp`、亚茨拉斐尔研读 `right_cultivate.webp`）与双人互动图（分食甜品、拥抱、亲吻、施展奇迹 `cultivate.webp`、过饱）。
-- [x] **Task 3.4**: 运行 `npm run protect:assets` 生成受保护资源，更新 `skinGallery.js` 预览候选及画师署名。
+- [x] **Task 3.4**: 运行 `npm run protect:assets` 生成受保护资源，更新 `skinGallery.js` 预览候选及画师署名（已下线旧平行世界 AU 皮肤 `birds`、`animal_ears`、`school_au`，仅保留好兆头专属 `default` 默认皮肤）。
 - [x] **Task 3.5**: 运行 `test/assetDimensions.test.js` 与 `test/skinManager.test.js`。
 
 ### Phase 4: 专属对白与互动逻辑适配 (Dialogues & Interactions)
@@ -165,4 +165,9 @@
 - [x] **Task 8.1**: 基于双人拥抱图（`hug.webp`）重新生成好兆头圆形徽章全套高分辨率应用图标（`icon.png`, `icon.ico`, `icon.icns`），修复 macOS `@2x` 托盘模板图标（`iconTemplate@2x.png`）等比缩放。
 - [x] **Task 8.2**: 独立隔离 `package.json` 中的仓库 Git URL 与 issues 追踪地址至 `good-omens-desktop-pet`，清理默认皮肤目录下未被引用的孤儿素材（`walk01..04.webp`）。
 - [x] **Task 8.3**: 修复单人进食（`eat`）与饥饿（`hungry`）动作素材边缘残留的抠图噪点碎片，完整恢复克劳利进食（`left_eat`）立绘中遗失的餐叉细节；修复子窗口 HTML 静态兜底文本并清理 `pomodoro.css` 重复 keyframe 规则。
-- [x] **Task 8.4**: 全量重构多语言说明文件（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`）以及换肤画廊 AU 皮肤显示标签（`鸟塑克亚` / `猫兔克亚` / `校园克亚`），彻底消除旧七九修仙术语与陈旧设定残留。
+- [x] **Task 8.4**: 全量重构多语言说明文件（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`），彻底消除旧七九修仙术语与陈旧设定残留。
+
+### Phase 9: 单内置皮肤资产收敛与旧 AU 皮肤下线 (Single Built-in Good Omens Skin Consolidation)
+- [x] **Task 9.1**: 彻底下线旧平行世界 AU 皮肤资产（`birds` 鸟塑克亚、`animal_ears` 猫兔克亚、`school_au` 校园克亚）及其源码明文素材与加密密文资源（`protectedAssets/`），收敛为仅内置唯一的好兆头专属正作 Q 版皮肤（`default` / `默认形象·Nano Banana`）。
+- [x] **Task 9.2**: 同步更新 `skinGallery.js`、`protectedAssetLoader.js` 与三语发行说明（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`），明确应用当前仅内置一套好兆头专属皮肤（`default`）。
+- [x] **Task 9.3**: 更新 `CHANGELOG.md`、单元测试套件（`test/skinManager.test.js` 等）与相关文档，确保包体精简、无非好兆头素材残留且全量自动化回归测试通过。
