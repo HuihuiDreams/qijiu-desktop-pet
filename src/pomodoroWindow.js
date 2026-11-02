@@ -112,10 +112,6 @@ function playAntiqueShopBellChime() {
   }
 }
 
-function playMeditationChime() {
-  return playAntiqueShopBellChime();
-}
-
 function triggerCompletionCeremony() {
   const ceremonyEl = document.getElementById('pomodoro-stamp-ceremony');
   if (ceremonyEl) {
@@ -125,7 +121,7 @@ function triggerCompletionCeremony() {
   }
   // Synchronize antique shop bell chime with the door opening / feather drift ceremony (~120ms)
   setTimeout(() => {
-    playMeditationChime();
+    playAntiqueShopBellChime();
   }, 120);
 }
 

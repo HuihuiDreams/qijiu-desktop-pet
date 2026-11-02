@@ -178,7 +178,6 @@ test('pomodoro completion ceremony renders stamp, golden ripples, and audio chim
 
   // JS chime synthesizer & triggers
   assert.match(js, /function playAntiqueShopBellChime\(\)/);
-  assert.match(js, /function playMeditationChime\(\)/);
   assert.match(js, /function triggerCompletionCeremony\(\)/);
   assert.match(js, /AudioContext || window\.webkitAudioContext/);
   assert.match(js, /currentState\.status === 'completed' && !hasCompletedCeremonyPlayed/);
