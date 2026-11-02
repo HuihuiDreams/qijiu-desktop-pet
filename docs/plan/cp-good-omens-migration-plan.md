@@ -171,3 +171,7 @@
 - [x] **Task 9.1**: 彻底下线旧平行世界 AU 皮肤资产（`birds` 鸟塑克亚、`animal_ears` 猫兔克亚、`school_au` 校园克亚）及其源码明文素材与加密密文资源（`protectedAssets/`），收敛为仅内置唯一的好兆头专属正作 Q 版皮肤（`default` / `默认形象·Nano Banana`）。
 - [x] **Task 9.2**: 同步更新 `skinGallery.js`、`protectedAssetLoader.js` 与三语发行说明（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`），明确应用当前仅内置一套好兆头专属皮肤（`default`）。
 - [x] **Task 9.3**: 更新 `CHANGELOG.md`、单元测试套件（`test/skinManager.test.js` 等）与相关文档，确保包体精简、无非好兆头素材残留且全量自动化回归测试通过。
+
+### Phase 10: 发布流水线竞态清理与皮肤测试固件收口 (CI Release Workflow Hardening & Skin Test Fixture Polish)
+- [x] **Task 10.1**: 移除 `.github/workflows/build-installer.yml` 中无效的 `Remove auto-generated source code archives` 死步骤，将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` job 消除双端并发竞态，在 `docs/cp-migration-guide.md` 与 `CHANGELOG.md` 明确说明预检前须先手动同步 `package.json` 版本号，并补充 `test/macosPackaging.test.js` 断言。
+- [ ] **Task 10.2**: 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 测试注入分支短路 `qaExtraSkinId` 追加的问题并补充单测；为 `test/skinService.test.js`、`test/skinLoadFailure.behavior.test.js`、`test/skinPreviewRequest.behavior.test.js` 与 `test/integration/skinLifecycle.integration.test.js` 的多皮肤测试固件补充注释说明，并更新 `CHANGELOG.md`。

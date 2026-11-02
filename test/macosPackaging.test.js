@@ -38,3 +38,13 @@ test('macOS manual update text tells users to quit before replacing the app', ()
   assert.match(i18nSource, /Quit the current app/);
   assert.match(i18nSource, /現在のアプリを完全に終了/);
 });
+
+test('build-installer workflow creates draft release once upstream and omits dead source archive deletion', () => {
+  const workflowPath = path.join(ROOT, '.github', 'workflows', 'build-installer.yml');
+  const workflowSource = fs.readFileSync(workflowPath, 'utf8');
+
+  assert.ok(!workflowSource.includes('Remove auto-generated source code archives'));
+  assert.ok(!workflowSource.includes('delete-asset'));
+  assert.equal((workflowSource.match(/gh release create/g) || []).length, 1);
+  assert.ok(workflowSource.includes('Ensure draft GitHub Release exists'));
+});

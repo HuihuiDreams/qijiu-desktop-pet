@@ -10,6 +10,7 @@
 ### Changed
 - 统一托盘菜单三语标题（`trayTitle`）与开机自启动标识为「好兆头桌宠」（`Good Omens Desktop Pet` / `グッド・オーメンズ デスクトップペット`），更新 `src/data/i18n.js` 头部翻译完成状态注释与 `test/statusWindowRegression.test.js` 角色名测试固件。
 - 清理 `src/systems/SkinManager.js` 中已下线旧皮肤（`animal_ears`、`school_au`）的残留缩放配置，移除未被 `TrayManager` 点阵托盘引用的 `src/assets/iconTemplate.png` 与 `iconTemplate@2x.png` 及其生成逻辑；将 `.github/workflows/release-preflight.yml` 默认权限收紧为 `contents: read`。
+- 明确说明 `.github/workflows/release-preflight.yml` 触发前须手动同步 `package.json` 版本号（在 `contents: read` 权限下检测不一致将阻断报错而非自动提交），并在 `.github/workflows/build-installer.yml` 中将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` Job 消除 Windows/macOS 并行构建竞态，同时移除无效的 `Remove auto-generated source code archives` 死步骤。
 - 为换肤画廊 E2E 测试接入 QA 专用虚拟第二皮肤（`setQaExtraSkinIdForQA`），恢复单内置皮肤仓库下的预览、确认、加载失败回退与取消全链路 E2E 自动化验证，并补齐 `SkinService` 真实目录与白名单扫描单元测试。
 
 ### Fixed

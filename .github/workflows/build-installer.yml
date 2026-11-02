@@ -21,16 +21,17 @@ permissions:
 jobs:
   create-release-tag:
     name: Create release tag
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Create and push tag
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           INPUT_VERSION: ${{ inputs.version }}
@@ -63,10 +64,35 @@ jobs:
           git tag "${TAG}"
           git push origin "${TAG}"
 
+      - name: Ensure draft GitHub Release exists
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_NAME: ${{ env.RELEASE_REPO }}
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${INPUT_VERSION}"
+          if [ -z "$VERSION" ]; then
+            TAG="${REF_NAME}"
+          else
+            TAG="${VERSION#v}"
+            TAG="go-v${TAG}"
+          fi
+          if [[ ! "$TAG" =~ ^go-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must match go-v* semver format, got '$TAG'."
+            exit 1
+          fi
+          REPO="${REPO_NAME}"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --draft --repo "$REPO" --title "$TAG" --notes "Release $TAG"
+          fi
+
   build-windows-installer:
     name: Build NSIS installer
     needs: create-release-tag
-    if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/go-v')) || (github.event_name == 'workflow_dispatch' && needs.create-release-tag.result == 'success'))
+    if: needs.create-release-tag.result == 'success'
     runs-on: windows-latest
     env:
       SIGNING_ENABLED: 'false'
@@ -168,11 +194,6 @@ jobs:
           }
           $repo = $env:REPO_NAME
 
-          $viewResult = gh release view $tag --repo $repo 2>&1
-          if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --draft --repo $repo --title $tag --notes "Release $tag"
-          }
-
           $assets = Get-ChildItem -Path dist -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.blockmap' -or $_.Name -eq 'latest.yml' -or $_.Name -eq 'UNSIGNED-RELEASE.txt' } | Select-Object -ExpandProperty FullName
           if (-not $assets) {
             Write-Error "No Windows release assets found under dist/."
@@ -200,33 +221,6 @@ jobs:
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
           gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --repo "$env:RELEASE_REPO" --clobber
 
-      - name: Remove auto-generated source code archives
-        shell: pwsh
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ env.RELEASE_REPO }}
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-        run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = "go-v" + ($version -replace '^v', '')
-          }
-          if ($tag -notmatch '^go-v\d+\.\d+\.\d+$') {
-            throw "Tag must match go-v* semver format, got '$tag'."
-          }
-          $repo = $env:REPO_NAME
-          $assets = gh release view $tag --repo $repo --json assets --jq '.assets[].name'
-          foreach ($asset in $assets -split "`n") {
-            $asset = $asset.Trim()
-            if ($asset -match '(?i)^.*source.*code.*\.(zip|tar\.gz)$') {
-              Write-Host "Removing source code archive: $asset"
-              gh release delete-asset $tag $asset --repo $repo --yes
-            }
-          }
-
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6
         with:
@@ -245,7 +239,7 @@ jobs:
   build-macos-installer:
     name: Build macOS installer
     needs: create-release-tag
-    if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/go-v')) || (github.event_name == 'workflow_dispatch' && needs.create-release-tag.result == 'success'))
+    if: needs.create-release-tag.result == 'success'
     runs-on: macos-latest
 
     steps:
@@ -357,11 +351,6 @@ jobs:
           fi
           REPO="${REPO_NAME}"
 
-          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release create "$TAG" --draft --repo "$REPO" --title "$TAG" --notes "Release $TAG" \
-              || gh release view "$TAG" --repo "$REPO" >/dev/null
-          fi
-
           assets=(dist/*.dmg dist/*.zip dist/*.blockmap)
           if [ -f dist/latest-mac.yml ]; then
             assets+=(dist/latest-mac.yml)
@@ -373,33 +362,6 @@ jobs:
           fi
 
           gh release upload "$TAG" "${assets[@]}" --repo "$REPO" --clobber
-
-      - name: Remove auto-generated source code archives
-        shell: bash
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
-          REPO_NAME: ${{ env.RELEASE_REPO }}
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-        run: |
-          VERSION="${INPUT_VERSION}"
-          if [ -z "$VERSION" ]; then
-            TAG="${REF_NAME}"
-          else
-            TAG="${VERSION#v}"
-            TAG="go-v${TAG}"
-          fi
-          if [[ ! "$TAG" =~ ^go-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match go-v* semver format, got '$TAG'."
-            exit 1
-          fi
-          REPO="${REPO_NAME}"
-          for asset in $(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name'); do
-            if echo "$asset" | grep -iqE '^.*source.*code.*\.(zip|tar\.gz)$'; then
-              echo "Removing source code archive: $asset"
-              gh release delete-asset "$TAG" "$asset" --repo "$REPO" --yes
-            fi
-          done
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6

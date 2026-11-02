@@ -251,8 +251,8 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 3. **全链路专用 Tag 前缀规避碰撞（如 `go-v1.0.0`）**：
    - 若双方都使用标准的 `v1.0.0`，在共享源码仓库中必定发生 Git Tag 冲突或 Actions 误复用旧 tag。
    - 新 CP 必须采用专属 Tag 前缀（如 `go-v*`），并联动适配全链路：
-     - **构建工作流 (`build-installer.yml`)**：`push.tags` 改为 `'go-v*'`，输入版本解析 `$tag = "go-v" + ...`，Tag 校验正则改为 `^go-v\d+\.\d+\.\d+$`；
-     - **预检工作流 (`release-preflight.yml`)**：输入版本支持剥离 `go-v` 前缀，CHANGELOG 标题检测支持 `## [go-v$version]`，远端 tag 检测检查 `go-v$version`；
+     - **构建工作流 (`build-installer.yml`)**：`push.tags` 改为 `'go-v*'`，输入版本解析 `$tag = "go-v" + ...`，Tag 校验正则改为 `^go-v\d+\.\d+\.\d+$`；草稿 Release（`gh release create --draft`）统一在上游 `create-release-tag` Job 中预先创建一次，避免 Windows/macOS 并行构建任务上传资产时发生并发创建竞态；
+     - **预检工作流 (`release-preflight.yml`)**：输入版本支持剥离 `go-v` 前缀，CHANGELOG 标题检测支持 `## [go-v$version]`，远端 tag 检测检查 `go-v$version`；注意触发预检前必须手动同步 `package.json` 的版本号（预检采用 `contents: read` 最小权限，版本不一致时会阻断报错而非自动提交修改）；
      - **客户端手动检查更新 (`updateManager.js`)**：macOS 手动更新检测版本解析需同时兼容带前缀的 tag，将 `data.tag_name.replace(/^v/, '')` 升级为 `data.tag_name.replace(/^(?:go-)?v/, '')`；
      - **测试套件 (`test/updateManager.test.js`)**：补充带前缀 tag（如 `go-v2.0.0`）的解析回归断言。
 
