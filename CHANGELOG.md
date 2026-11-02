@@ -17,6 +17,7 @@
 - 修复日文版右键菜单交互文案与中英文不对齐的问题：将克劳利交互调整为「🤚 天使の慈愛」，亚茨拉斐尔交互调整为「🤚 悪魔の寵愛」；剔除日文版晨间问候与联合奇迹台词中「光あれ」后多余的英文字样与括号。
 - 修复 `src/systems/OfflineReturnSystem.js` 离线回归小时数按时辰向下取整再乘 2 导致最多少报近 2 小时（如 3 小时 59 分钟仅报 2 小时）的问题，改为满 1 时辰（2 小时）门槛后按实际整小时计算。
 - 修复 `push.sh` 与 `push.ps1` 硬编码推送到 `origin main` 的问题，统一改为推送当前分支（`git push origin HEAD`）。
+- 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 在测试注入 `deps.availableSkins` 时短路跳过 `qaExtraSkinId` 的缺陷，确保测试注入场景下亦可追加 QA 虚拟皮肤，并在各皮肤测试中补充保留多皮肤测试固件的注释说明。
 
 ## [go-v1.0.0] - 2026-11-01
 

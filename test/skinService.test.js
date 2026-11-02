@@ -54,6 +54,7 @@ const mockMainWindow = {
 
 function createMockDeps() {
   return {
+    // Synthetic multi-skin fixture IDs retained to cover preview/confirm/rollback state machine
     availableSkins: ['default', 'birds', 'animal_ears', 'school_au'],
     trayManager: {
       refreshTrayMenu: () => { mockTrayRefreshed = true; },
@@ -384,6 +385,19 @@ test('SkinService - Utility Functions', async (t) => {
       assert.equal(process.env.DESKPET_QA_EXTRA_SKIN_ID, undefined);
       const resetSkins = SkinService.scanAvailableSkins(true);
       assert.deepEqual(resetSkins, ['default']);
+    }
+  });
+
+  await t.test('setQaExtraSkinId appends qa skin when availableSkins is injected via deps', async () => {
+    try {
+      SkinService.setQaExtraSkinId('qa_test_skin');
+      SkinService.init(createMockDeps());
+
+      const skins = await mockIpcHandlers['get-available-skins']({ sender: mockMainWindow.webContents });
+      assert.ok(skins.includes('qa_test_skin'), 'get-available-skins must include qa_test_skin');
+      assert.deepEqual(skins, ['default', 'birds', 'animal_ears', 'school_au', 'qa_test_skin']);
+    } finally {
+      SkinService.setQaExtraSkinId(null);
     }
   });
 });

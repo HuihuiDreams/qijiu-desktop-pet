@@ -174,4 +174,4 @@
 
 ### Phase 10: 发布流水线竞态清理与皮肤测试固件收口 (CI Release Workflow Hardening & Skin Test Fixture Polish)
 - [x] **Task 10.1**: 移除 `.github/workflows/build-installer.yml` 中无效的 `Remove auto-generated source code archives` 死步骤，将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` job 消除双端并发竞态，在 `docs/cp-migration-guide.md` 与 `CHANGELOG.md` 明确说明预检前须先手动同步 `package.json` 版本号，并补充 `test/macosPackaging.test.js` 断言。
-- [ ] **Task 10.2**: 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 测试注入分支短路 `qaExtraSkinId` 追加的问题并补充单测；为 `test/skinService.test.js`、`test/skinLoadFailure.behavior.test.js`、`test/skinPreviewRequest.behavior.test.js` 与 `test/integration/skinLifecycle.integration.test.js` 的多皮肤测试固件补充注释说明，并更新 `CHANGELOG.md`。
+- [x] **Task 10.2**: 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 测试注入分支短路 `qaExtraSkinId` 追加的问题并补充单测；为 `test/skinService.test.js`、`test/skinLoadFailure.behavior.test.js`、`test/skinPreviewRequest.behavior.test.js` 与 `test/integration/skinLifecycle.integration.test.js` 的多皮肤测试固件补充注释说明，并更新 `CHANGELOG.md`。

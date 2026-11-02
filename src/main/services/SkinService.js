@@ -282,7 +282,11 @@ function setQaExtraSkinId(skinId) {
 
 function scanAvailableSkins(forceRefresh = false) {
   if (Array.isArray(deps.availableSkins) && deps.availableSkins.length > 0) {
-    return [...deps.availableSkins];
+    const injected = [...deps.availableSkins];
+    if (qaExtraSkinId && !injected.includes(qaExtraSkinId)) {
+      injected.push(qaExtraSkinId);
+    }
+    return injected;
   }
   if (!forceRefresh && cachedAvailableSkins && Date.now() - cachedAvailableSkinsTimestamp < SKINS_CACHE_TTL_MS) {
     return cachedAvailableSkins;
