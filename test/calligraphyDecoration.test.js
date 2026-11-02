@@ -162,17 +162,22 @@ test('pomodoro completion ceremony renders stamp, golden ripples, and audio chim
   assert.match(html, /class="[^"]*pomodoro-stamp-seal[^"]*"/);
   assert.match(html, /class="[^"]*pomodoro-stamp-ripple--1[^"]*"/);
   assert.match(html, /class="[^"]*pomodoro-stamp-ripple--2[^"]*"/);
+  assert.match(html, /class="[^"]*pomodoro-feather--angel[^"]*"/);
+  assert.match(html, /class="[^"]*pomodoro-feather--demon[^"]*"/);
 
   // CSS animations & reduced motion
   assert.match(css, /@keyframes pomodoroStampDrop\s*\{/);
   assert.match(css, /@keyframes pomodoroStampDropEn\s*\{/);
   assert.match(css, /@keyframes pomodoroRippleExpand\s*\{/);
   assert.match(css, /@keyframes pomodoroStampFadeReduced\s*\{/);
+  assert.match(css, /@keyframes pomodoroFeatherAngelDrift\s*\{/);
+  assert.match(css, /@keyframes pomodoroFeatherDemonDrift\s*\{/);
   assert.match(css, /\.pomodoro-stamp-ceremony--active \.pomodoro-stamp-seal/);
   assert.match(css, /\.pomodoro-dial-emblem\s*\{[^}]*animation:\s*none\s*!important/);
   assert.match(css, /html\[data-locale="en"\]\s+\.pomodoro-stamp-ceremony--active\s+\.pomodoro-stamp-seal\s*\{[^}]*animation:\s*pomodoroStampFadeReduced[^}]*!important/);
 
   // JS chime synthesizer & triggers
+  assert.match(js, /function playAntiqueShopBellChime\(\)/);
   assert.match(js, /function playMeditationChime\(\)/);
   assert.match(js, /function triggerCompletionCeremony\(\)/);
   assert.match(js, /AudioContext || window\.webkitAudioContext/);

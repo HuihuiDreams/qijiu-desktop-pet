@@ -596,8 +596,180 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
   html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
     animation: pomodoroStampFadeReduced 0.6s ease-out forwards !important;
   }
-  .pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple {
+  .pomodoro-stamp-ceremony--active .pomodoro-stamp-ripple,
+  .pomodoro-stamp-ceremony--active .pomodoro-feather {
     display: none;
+  }
+}
+
+/* Miracle Ceremony — Ineffable Angel & Demon Feathers */
+.pomodoro-feather {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 6;
+  transform-origin: center center;
+}
+
+.pomodoro-feather svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pomodoro-feather--angel .pomodoro-feather-vane {
+  fill: #ffffff;
+  fill-opacity: 0.94;
+  filter: drop-shadow(0 2px 6px rgba(255, 250, 235, 0.95)) drop-shadow(0 0 10px rgba(197, 155, 39, 0.45));
+}
+
+.pomodoro-feather--angel .pomodoro-feather-quill {
+  stroke: #e6dac3;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.pomodoro-feather--demon .pomodoro-feather-vane {
+  fill: #141418;
+  fill-opacity: 0.92;
+  filter: drop-shadow(0 2px 6px rgba(20, 20, 24, 0.6)) drop-shadow(0 0 8px rgba(180, 30, 45, 0.35));
+}
+
+.pomodoro-feather--demon .pomodoro-feather-quill {
+  stroke: #484852;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-feather--1 {
+  width: 28px;
+  height: 56px;
+  top: -10%;
+  left: 18%;
+  animation: pomodoroFeatherAngelDrift 2.8s cubic-bezier(0.25, 1, 0.5, 1) 0.1s forwards;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-feather--2 {
+  width: 28px;
+  height: 56px;
+  top: -12%;
+  left: 72%;
+  animation: pomodoroFeatherDemonDrift 3.0s cubic-bezier(0.25, 1, 0.5, 1) 0.25s forwards;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-feather--3 {
+  width: 18px;
+  height: 36px;
+  top: -8%;
+  left: 36%;
+  animation: pomodoroFeatherSmallAngel 2.5s cubic-bezier(0.25, 1, 0.5, 1) 0.4s forwards;
+}
+
+.pomodoro-stamp-ceremony--active .pomodoro-feather--4 {
+  width: 18px;
+  height: 36px;
+  top: -10%;
+  left: 60%;
+  animation: pomodoroFeatherSmallDemon 2.6s cubic-bezier(0.25, 1, 0.5, 1) 0.48s forwards;
+}
+
+@keyframes pomodoroFeatherAngelDrift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-22deg) scale(0.7);
+  }
+  15% {
+    opacity: 0.95;
+    transform: translate(12px, 35px) rotate(10deg) scale(1);
+  }
+  40% {
+    opacity: 0.92;
+    transform: translate(-10px, 90px) rotate(-14deg) scale(1.02);
+  }
+  65% {
+    opacity: 0.85;
+    transform: translate(16px, 150px) rotate(16deg) scale(0.98);
+  }
+  85% {
+    opacity: 0.65;
+    transform: translate(4px, 195px) rotate(-4deg) scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, 230px) rotate(8deg) scale(0.9);
+  }
+}
+
+@keyframes pomodoroFeatherDemonDrift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(26deg) scale(0.7);
+  }
+  15% {
+    opacity: 0.92;
+    transform: translate(-15px, 38px) rotate(-12deg) scale(1);
+  }
+  42% {
+    opacity: 0.90;
+    transform: translate(12px, 95px) rotate(18deg) scale(1.02);
+  }
+  68% {
+    opacity: 0.82;
+    transform: translate(-18px, 155px) rotate(-10deg) scale(0.98);
+  }
+  88% {
+    opacity: 0.58;
+    transform: translate(-6px, 200px) rotate(6deg) scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-12px, 235px) rotate(-4deg) scale(0.9);
+  }
+}
+
+@keyframes pomodoroFeatherSmallAngel {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(14deg) scale(0.6);
+  }
+  20% {
+    opacity: 0.85;
+    transform: translate(-8px, 30px) rotate(-8deg) scale(0.9);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(10px, 85px) rotate(12deg) scale(0.9);
+  }
+  80% {
+    opacity: 0.45;
+    transform: translate(-4px, 140px) rotate(-6deg) scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(2px, 175px) rotate(4deg) scale(0.8);
+  }
+}
+
+@keyframes pomodoroFeatherSmallDemon {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-16deg) scale(0.6);
+  }
+  20% {
+    opacity: 0.85;
+    transform: translate(10px, 32px) rotate(10deg) scale(0.9);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-8px, 90px) rotate(-14deg) scale(0.9);
+  }
+  80% {
+    opacity: 0.45;
+    transform: translate(6px, 145px) rotate(8deg) scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-3px, 180px) rotate(-2deg) scale(0.8);
   }
 }
 

@@ -188,8 +188,8 @@ qijiu-desktop-pet/
 │  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
-│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用设计令牌与羊皮纸旧书店面板，包含星芒表盘底心、奇迹白黑双色羽毛飘落与光环波纹动效（支持减弱动态模式）
+│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio Soho 古董书店黄铜门铃敲钟仪式
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈

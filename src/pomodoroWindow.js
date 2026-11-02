@@ -34,7 +34,9 @@ const progressFillEl = document.getElementById('pomodoro-progress-fill');
 let currentState = { ...DEFAULT_POMODORO_STATE };
 let hasCompletedCeremonyPlayed = false;
 
-function playMeditationChime() {
+// Antique brass shop door bell strikes (A.Z. Fell & Co. Soho Bookshop chime)
+// Two sequential bell strikes ("Ding-ling~") with inharmonic brass partials
+function playAntiqueShopBellChime() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -49,39 +51,69 @@ function playMeditationChime() {
       ctx.resume().catch(() => {});
     }
 
+    if (typeof ctx.createGain !== 'function' || typeof ctx.createOscillator !== 'function') {
+      return;
+    }
+
     const now = ctx.currentTime;
     const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.22, now);
+    masterGain.gain.setValueAtTime(0.24, now);
     masterGain.connect(ctx.destination);
 
-    // Meditative singing bowl / chime partials (fundamental + harmonic overtones)
-    const partials = [
-      { freq: 528, gain: 0.6, decay: 3.2 },
-      { freq: 530.5, gain: 0.35, decay: 2.8 }, // acoustic shimmer / subtle beating
-      { freq: 1457, gain: 0.22, decay: 2.0 },  // ~2.76x overtone
-      { freq: 2851, gain: 0.10, decay: 1.2 },  // ~5.4x shimmer
+    const strikes = [
+      {
+        offset: 0.0,
+        baseFreq: 2093, // C7
+        strikeGain: 0.55,
+        partials: [
+          { mult: 1.0, gain: 0.60, decay: 1.8 },
+          { mult: 1.002, gain: 0.35, decay: 1.6 }, // Acoustic beating / brass shimmer
+          { mult: 1.503, gain: 0.26, decay: 1.1 }, // Quint overtone
+          { mult: 2.00, gain: 0.16, decay: 0.7 },  // Octave ring
+          { mult: 3.16, gain: 0.09, decay: 0.32 }, // Metallic attack sparkle
+        ],
+      },
+      {
+        offset: 0.11, // Bounced strike as door moves
+        baseFreq: 2637, // E7 (welcoming major third)
+        strikeGain: 0.65,
+        partials: [
+          { mult: 1.0, gain: 0.65, decay: 2.2 },
+          { mult: 1.0025, gain: 0.38, decay: 2.0 }, // Brass ring shimmer
+          { mult: 1.498, gain: 0.28, decay: 1.3 }, // Crisp overtone
+          { mult: 2.00, gain: 0.18, decay: 0.8 },  // Octave ring
+          { mult: 3.22, gain: 0.11, decay: 0.38 }, // High metallic sparkle
+        ],
+      },
     ];
 
-    partials.forEach(({ freq, gain, decay }) => {
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+    strikes.forEach(({ offset, baseFreq, strikeGain, partials }) => {
+      const strikeTime = now + offset;
+      partials.forEach(({ mult, gain, decay }) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq * mult, strikeTime);
 
-      gainNode.gain.setValueAtTime(0.0001, now);
-      gainNode.gain.exponentialRampToValueAtTime(gain, now + 0.006);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+        gainNode.gain.setValueAtTime(0.0001, strikeTime);
+        gainNode.gain.exponentialRampToValueAtTime(gain * strikeGain, strikeTime + 0.004);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, strikeTime + decay);
 
-      osc.connect(gainNode);
-      gainNode.connect(masterGain);
+        osc.connect(gainNode);
+        gainNode.connect(masterGain);
 
-      osc.start(now);
-      osc.stop(now + decay);
+        osc.start(strikeTime);
+        osc.stop(strikeTime + decay);
+      });
     });
   } catch (err) {
     console.warn('[Pomodoro] Chime playback skipped:', err);
   }
+}
+
+function playMeditationChime() {
+  return playAntiqueShopBellChime();
 }
 
 function triggerCompletionCeremony() {
@@ -91,10 +123,10 @@ function triggerCompletionCeremony() {
     void ceremonyEl.offsetWidth; // Force CSS reflow to re-trigger animations
     ceremonyEl.classList.add('pomodoro-stamp-ceremony--active');
   }
-  // Synchronize singing bowl chime strike with the stamp impact moment (~220ms)
+  // Synchronize antique shop bell chime with the door opening / feather drift ceremony (~120ms)
   setTimeout(() => {
     playMeditationChime();
-  }, 220);
+  }, 120);
 }
 
 
