@@ -15,15 +15,32 @@ function readSource(relativePath) {
 function createMockElement(tagName) {
   const attributes = {};
   const classNames = new Set();
-  const children = [];
+  const childNodes = [];
   const style = {};
   return {
     tagName,
     id: '',
     className: '',
+    src: '',
+    alt: '',
     style,
     dataset: {},
-    children,
+    get children() {
+      // Emulate HTMLCollection: iterable with length and indexed access, but NO Array methods like .filter
+      const col = {
+        length: childNodes.length,
+        item(i) {
+          return childNodes[i] || null;
+        },
+        [Symbol.iterator]() {
+          return childNodes[Symbol.iterator]();
+        },
+      };
+      for (let i = 0; i < childNodes.length; i++) {
+        col[i] = childNodes[i];
+      }
+      return col;
+    },
     attributes,
     textContent: '',
     classList: {
@@ -38,21 +55,21 @@ function createMockElement(tagName) {
       return attributes[name];
     },
     appendChild(child) {
-      children.push(child);
+      childNodes.push(child);
       return child;
     },
     append(...items) {
-      children.push(...items);
+      childNodes.push(...items);
     },
     replaceChildren(...items) {
-      children.length = 0;
-      children.push(...items);
+      childNodes.length = 0;
+      childNodes.push(...items);
     },
     querySelector(selector) {
       if (selector.startsWith('.')) {
         const cls = selector.slice(1);
-        if (classNames.has(cls) || this.className.includes(cls)) return this;
-        for (const child of children) {
+        if (classNames.has(cls) || String(this.className || '').split(/\s+/).includes(cls)) return this;
+        for (const child of childNodes) {
           const res = child.querySelector(selector);
           if (res) return res;
         }
@@ -127,6 +144,30 @@ test('StatusBar.update skips IPC updateStatusWindow when snapshot is unchanged',
     petA.stats.hunger = 80;
     statusBar.update(petA, petB);
     assert.equal(updateCallCount, 1, 'hidden status bar must not send IPC updates');
+
+    // 6. Re-open and simulate external window close via IPC callback
+    statusBar.show(petA, petB);
+    assert.equal(showCallCount, 2);
+    assert.equal(statusBar.visible, true);
+
+    assert.equal(typeof closedCallback, 'function', 'closedCallback must be registered');
+    closedCallback();
+    assert.equal(statusBar.visible, false, 'closedCallback must mark statusBar hidden');
+    assert.equal(statusBar._lastSnapshotJson, null, 'closedCallback must reset cached snapshot');
+
+    // Updates while closed must be skipped
+    petA.stats.hunger = 85;
+    statusBar.update(petA, petB);
+    assert.equal(updateCallCount, 1, 'updates while closed must not send IPC calls');
+
+    // Subsequent show and update after re-showing work properly
+    statusBar.show(petA, petB);
+    assert.equal(showCallCount, 3);
+    assert.equal(statusBar.visible, true);
+
+    petA.stats.hunger = 90;
+    statusBar.update(petA, petB);
+    assert.equal(updateCallCount, 2, 'subsequent update after re-showing must send IPC update');
   } finally {
     delete global.window;
   }
@@ -191,11 +232,23 @@ test('statusWindow.js updates existing DOM blocks in-place without replaceChildr
   const script = readSource('src/statusWindow.js');
   vm.runInNewContext(script, context);
 
-  // 1. Initial data -> creates blocks and calls resizeStatusWindow
+  // 1. Initial data -> creates blocks with images and calls resizeStatusWindow
   onDataCallback({
     pets: [
-      { id: 'yueqi', name: '岳清源', nickname: '掌门', stats: { affection: 80, hunger: 70, qi: 60, mood: 90 } },
-      { id: 'shenjiu', name: '沈九', nickname: '九哥', stats: { affection: 75, hunger: 50, qi: 80, mood: 65 } },
+      {
+        id: 'yueqi',
+        name: '岳清源',
+        nickname: '掌门',
+        image: 'pet-asset://skin/default/left.webp',
+        stats: { affection: 80, hunger: 70, qi: 60, mood: 90 },
+      },
+      {
+        id: 'shenjiu',
+        name: '沈九',
+        nickname: '九哥',
+        image: 'pet-asset://skin/default/left.webp',
+        stats: { affection: 75, hunger: 50, qi: 80, mood: 65 },
+      },
     ],
   });
 
@@ -206,11 +259,34 @@ test('statusWindow.js updates existing DOM blocks in-place without replaceChildr
   const initialBlockYueqi = contentEl.children[0];
   const initialBlockShenjiu = contentEl.children[1];
 
+  // Verify that block.children is HTMLCollection-like (no .filter method)
+  assert.equal(
+    typeof initialBlockYueqi.children.filter,
+    'undefined',
+    'block.children must be HTMLCollection-like without .filter()'
+  );
+
+  const yueqiIcon = initialBlockYueqi.querySelector('.status-pet-icon');
+  assert.ok(yueqiIcon, 'status-pet-icon img element must exist');
+  assert.equal(yueqiIcon.src, 'pet-asset://skin/default/left.webp');
+
   // 2. Incremental stat update -> in-place update!
   onDataCallback({
     pets: [
-      { id: 'yueqi', name: '岳清源', nickname: '掌门', stats: { affection: 85, hunger: 70, qi: 60, mood: 90 } },
-      { id: 'shenjiu', name: '沈九', nickname: '九哥', stats: { affection: 75, hunger: 45, qi: 80, mood: 65 } },
+      {
+        id: 'yueqi',
+        name: '岳清源',
+        nickname: '掌门',
+        image: 'pet-asset://skin/default/left.webp',
+        stats: { affection: 85, hunger: 70, qi: 60, mood: 90 },
+      },
+      {
+        id: 'shenjiu',
+        name: '沈九',
+        nickname: '九哥',
+        image: 'pet-asset://skin/default/left.webp',
+        stats: { affection: 75, hunger: 45, qi: 80, mood: 65 },
+      },
     ],
   });
 
@@ -222,4 +298,54 @@ test('statusWindow.js updates existing DOM blocks in-place without replaceChildr
   // Verify in-place values were updated
   const yueqiFill = initialBlockYueqi.querySelector('.stat-bar-fill--affection');
   assert.equal(yueqiFill.style.width, '85%');
+
+  // 3. Skin switch -> updates icon.src in-place without replaceChildren or resize
+  onDataCallback({
+    pets: [
+      {
+        id: 'yueqi',
+        name: '岳清源',
+        nickname: '掌门',
+        image: 'pet-asset://skin/qban/left.webp',
+        stats: { affection: 85, hunger: 70, qi: 60, mood: 90 },
+      },
+      {
+        id: 'shenjiu',
+        name: '沈九',
+        nickname: '九哥',
+        image: 'pet-asset://skin/qban/left.webp',
+        stats: { affection: 75, hunger: 45, qi: 80, mood: 65 },
+      },
+    ],
+  });
+
+  assert.equal(replaceChildrenCount, 1, 'Skin switch must NOT call replaceChildren');
+  assert.equal(resizeCount, 1, 'Skin switch must NOT call resizeStatusWindow');
+  assert.strictEqual(contentEl.children[0], initialBlockYueqi);
+  assert.strictEqual(contentEl.children[1], initialBlockShenjiu);
+  assert.equal(yueqiIcon.src, 'pet-asset://skin/qban/left.webp', 'pet icon src must update to new skin in-place');
+
+  // 4. Avatar mode change (image to null) -> structure change triggers clean rebuild
+  onDataCallback({
+    pets: [
+      {
+        id: 'yueqi',
+        name: '岳清源',
+        nickname: '掌门',
+        image: null,
+        emoji: '🌸',
+        stats: { affection: 85, hunger: 70, qi: 60, mood: 90 },
+      },
+      {
+        id: 'shenjiu',
+        name: '沈九',
+        nickname: '九哥',
+        image: 'pet-asset://skin/qban/left.webp',
+        stats: { affection: 75, hunger: 45, qi: 80, mood: 65 },
+      },
+    ],
+  });
+
+  assert.equal(replaceChildrenCount, 2, 'Switching between image and emoji avatar mode must rebuild DOM');
+  assert.equal(resizeCount, 2, 'Full rebuild must re-measure and resize window');
 });

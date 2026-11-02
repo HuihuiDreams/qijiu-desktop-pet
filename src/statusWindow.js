@@ -4,13 +4,24 @@ const closeBtn = document.getElementById('status-close');
 
 let lastRenderData = null;
 
-
-function renderPetStats(pet) {
+function getPetDisplayName(pet) {
   const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
   const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-  const name = t(nameKey) !== nameKey ? t(nameKey) : pet.name;
-  const nickname = t(nicknameKey) !== nicknameKey ? t(nicknameKey) : pet.nickname;
-  const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
+  const name = typeof t === 'function' && t(nameKey) !== nameKey ? t(nameKey) : pet.name;
+  const nickname = typeof t === 'function' && t(nicknameKey) !== nicknameKey ? t(nicknameKey) : pet.nickname;
+  return name && nickname ? `${name}（${nickname}）` : nickname || name || '';
+}
+
+function hasClass(el, className) {
+  if (!el || !className) return false;
+  if (typeof el.classList?.contains === 'function' && el.classList.contains(className)) {
+    return true;
+  }
+  return String(el.className || '').split(/\s+/).includes(className);
+}
+
+function renderPetStats(pet) {
+  const displayName = getPetDisplayName(pet);
 
   const STAT_LABELS = {
     affection: '❤️ ' + t('statAffection'),
@@ -103,37 +114,41 @@ function renderPetStats(pet) {
 const BODY_PADDING = 20;
 
 function findByClass(root, className) {
-  if (!root) return null;
+  if (!root || !className) return null;
   if (typeof root.querySelector === 'function') {
-    const el = root.querySelector(`.${className}`);
-    if (el) return el;
-  }
-  if (Array.isArray(root.children)) {
-    for (const child of root.children) {
-      if (child.className?.includes?.(className) || child.classList?.contains?.(className)) {
-        return child;
-      }
-      const nested = findByClass(child, className);
-      if (nested) return nested;
+    try {
+      const el = root.querySelector(`.${className}`);
+      if (el) return el;
+    } catch {
+      // Fall through to manual traversal if querySelector fails
     }
+  }
+  const children = Array.from(root.children || []);
+  for (const child of children) {
+    if (hasClass(child, className)) {
+      return child;
+    }
+    const nested = findByClass(child, className);
+    if (nested) return nested;
   }
   return null;
 }
 
 function updatePetStatsBlock(block, pet) {
-  const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-  const nicknameKey = 'nickname' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
-  const name = typeof t === 'function' && t(nameKey) !== nameKey ? t(nameKey) : pet.name;
-  const nickname = typeof t === 'function' && t(nicknameKey) !== nicknameKey ? t(nicknameKey) : pet.nickname;
-  const displayName = name && nickname ? `${name}（${nickname}）` : nickname || name || '';
+  const displayName = getPetDisplayName(pet);
 
   const nameText = findByClass(block, 'pet-status-name-text');
   if (nameText && nameText.textContent !== ` ${displayName}`) {
     nameText.textContent = ` ${displayName}`;
   }
 
+  const iconEl = findByClass(block, 'status-pet-icon');
+  if (iconEl && pet.image && iconEl.src !== pet.image) {
+    iconEl.src = pet.image;
+  }
+
   const STAT_KEYS = ['affection', 'hunger', 'qi', 'mood'];
-  const rows = (block.children || []).filter((c) => c.className?.includes?.('stat-row'));
+  const rows = Array.from(block.children || []).filter((c) => hasClass(c, 'stat-row'));
 
   STAT_KEYS.forEach((key) => {
     const value = Math.max(0, Math.min(100, Number(pet.stats?.[key]) || 0));
@@ -171,7 +186,8 @@ function renderStatus(data, options = {}) {
   const structureMatches = !forceRebuild
     && existingBlocks.length === pets.length
     && existingIds.length === newIds.length
-    && existingIds.every((id, idx) => id === newIds[idx]);
+    && existingIds.every((id, idx) => id === newIds[idx])
+    && pets.every((pet, idx) => Boolean(findByClass(existingBlocks[idx], 'status-pet-icon')) === Boolean(pet.image));
 
   if (structureMatches) {
     // 结构相同时进行轻量就地更新，避免 DOM 销毁重排与重复 resize 窗口

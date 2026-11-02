@@ -484,4 +484,26 @@ test('DialogBubble.show flips bubble downwards and avoids overlap downwards when
   });
 });
 
+test('avoidPersonalBubbleOverlap flips second bubble downwards when upward lift would clip top edge', () => {
+  const rects = [
+    { left: 100, right: 220, top: 20, bottom: 60 },
+    { left: 120, right: 240, top: 20, bottom: 60 },
+  ];
+
+  withFakeDocument(() => {
+    const dialogBubble = new DialogBubble();
+    const petA = { id: 'yueqi', y: 75, element: createFakeElement() };
+    const petB = { id: 'shenjiu', y: 75, element: createFakeElement() };
+
+    dialogBubble.show(petA, 'First bubble');
+    const bubbleA = dialogBubble.activeBubbles.get('yueqi');
+    assert.equal(bubbleA.classList.contains('dialog-bubble--flipped'), false);
+
+    dialogBubble.show(petB, 'Second bubble');
+    const bubbleB = dialogBubble.activeBubbles.get('shenjiu');
+    assert.equal(bubbleB.classList.contains('dialog-bubble--flipped'), true);
+    assert.equal(bubbleB.style['--bubble-stack-offset'], undefined);
+  }, () => createFakeElement(rects.shift()));
+});
+
 

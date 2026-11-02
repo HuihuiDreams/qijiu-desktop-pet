@@ -103,20 +103,53 @@ class DialogBubble {
     if (!bubble || typeof bubble.getBoundingClientRect !== 'function') return;
 
     let rect = bubble.getBoundingClientRect();
-    const isFlipped = typeof bubble.classList?.contains === 'function'
+    let isFlipped = typeof bubble.classList?.contains === 'function'
       ? bubble.classList.contains('dialog-bubble--flipped')
       : false;
     let stackOffset = 0;
 
-    for (const [otherPetId, otherBubble] of this.activeBubbles.entries()) {
-      if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
-        continue;
+    if (!isFlipped) {
+      for (const [otherPetId, otherBubble] of this.activeBubbles.entries()) {
+        if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
+          continue;
+        }
+        const otherRect = otherBubble.getBoundingClientRect();
+        if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
+
+        const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
+        if (lift <= 0) continue;
+
+        if (rect.top - lift < 8) {
+          bubble.classList?.add?.('dialog-bubble--flipped');
+          isFlipped = true;
+          stackOffset = 0;
+          rect = bubble.getBoundingClientRect();
+          break;
+        }
+
+        stackOffset += lift;
+        rect = {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top - lift,
+          bottom: rect.bottom - lift,
+        };
       }
+    }
 
-      const otherRect = otherBubble.getBoundingClientRect();
-      if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
+    if (isFlipped) {
+      for (const [otherPetId, otherBubble] of this.activeBubbles.entries()) {
+        if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
+          continue;
+        }
+        const otherIsFlipped = typeof otherBubble.classList?.contains === 'function'
+          ? otherBubble.classList.contains('dialog-bubble--flipped')
+          : true;
+        if (!otherIsFlipped) continue;
 
-      if (isFlipped) {
+        const otherRect = otherBubble.getBoundingClientRect();
+        if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
+
         // 当气泡朝下翻转时，沿下方继续堆叠以避开重叠
         const drop = otherRect.bottom - rect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
         if (drop <= 0) continue;
@@ -127,18 +160,6 @@ class DialogBubble {
           right: rect.right,
           top: rect.top + drop,
           bottom: rect.bottom + drop,
-        };
-      } else {
-        // 常规朝上气泡，沿上方提升堆叠高度
-        const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
-        if (lift <= 0) continue;
-
-        stackOffset += lift;
-        rect = {
-          left: rect.left,
-          right: rect.right,
-          top: rect.top - lift,
-          bottom: rect.bottom - lift,
         };
       }
     }
