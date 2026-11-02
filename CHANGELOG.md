@@ -11,6 +11,7 @@
 - **状态面板事件驱动就地更新与 IPC 降频 (`Event-Driven Status Window & In-Place DOM Updates`)**：`src/ui/StatusBar.js` 引入快照哈希缓存，仅在角色数值实际变化时发送 IPC 更新，消除空闲状态下的每秒轮询开销；`src/statusWindow.js` 新增差量就地更新机制（`updatePetStatsBlock`），在角色列表结构稳定时直接更新进度条宽度、数值与无障碍属性，避免每秒全量重建 DOM 引发的布局重排与闪烁，仅在首次加载、结构变化或语言切换时才触发窗口尺寸自适应测量。
 
 ### Changed
+- 重构番茄钟完成音频接口与关键帧 3D 透视景深：彻底移除 `src/pomodoroWindow.js` 中名不副实的旧方法兼容壳 `playMeditationChime()`，将触发调用点与单测断言全量统一为 `playAntiqueShopBellChime()`；移除 `.pomodoro-feather` 上对自身无景深效果的 `perspective: 600px` 属性，改为在羽毛漂浮关键帧（`pomodoroFeatherAngelDrift` 与 `pomodoroFeatherDemonDrift`）的 `transform` 序列头部直接声明 `perspective(600px)`，确保羽毛沿 Y 轴摆动翻转时具备近大远小的真实 3D 视锥景深。
 - 统一托盘菜单三语标题（`trayTitle`）与开机自启动标识为「好兆头桌宠」（`Good Omens Desktop Pet` / `グッド・オーメンズ デスクトップペット`），更新 `src/data/i18n.js` 头部翻译完成状态注释与 `test/statusWindowRegression.test.js` 角色名测试固件。
 - 清理 `src/systems/SkinManager.js` 中已下线旧皮肤（`animal_ears`、`school_au`）的残留缩放配置，移除未被 `TrayManager` 点阵托盘引用的 `src/assets/iconTemplate.png` 与 `iconTemplate@2x.png` 及其生成逻辑；将 `.github/workflows/release-preflight.yml` 默认权限收紧为 `contents: read`。
 - 明确说明 `.github/workflows/release-preflight.yml` 触发前须手动同步 `package.json` 版本号（在 `contents: read` 权限下检测不一致将阻断报错而非自动提交），并在 `.github/workflows/build-installer.yml` 中将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` Job 消除 Windows/macOS 并行构建竞态，同时移除无效的 `Remove auto-generated source code archives` 死步骤。
