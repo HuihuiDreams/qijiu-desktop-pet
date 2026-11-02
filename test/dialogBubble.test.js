@@ -432,3 +432,56 @@ test('rapid re-triggering cleans up previous bubble and timers cleanly', async (
   });
 });
 
+test('dialog-bubble.css defines flipped downwards state, arrow inversion, and motion reduction', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'dialog-bubble.css'), 'utf8');
+
+  assert.match(css, /\.dialog-bubble--flipped\s*\{[^}]*top:\s*calc\(100%\s*\+\s*10px/);
+  assert.match(css, /\.dialog-bubble--flipped::after\s*\{[^}]*bottom:\s*100%/);
+  assert.match(css, /\.dialog-bubble--flipped::after\s*\{[^}]*border-bottom-color:\s*var\(--color-cloud\)/);
+  assert.match(css, /@starting-style\s*\{[\s\S]*\.dialog-bubble\.dialog-bubble--flipped/);
+});
+
+test('DialogBubble.shouldFlipDownwards detects top clipping correctly', () => {
+  // 1. When bubble.getBoundingClientRect().top < minTopGap
+  const bubbleNearTop = { getBoundingClientRect: () => ({ top: 4, height: 40, width: 100 }) };
+  assert.equal(DialogBubble.shouldFlipDownwards(null, bubbleNearTop), true);
+
+  const bubbleSafe = { getBoundingClientRect: () => ({ top: 120, height: 40, width: 100 }) };
+  assert.equal(DialogBubble.shouldFlipDownwards(null, bubbleSafe), false);
+
+  // 2. When pet.element.getBoundingClientRect().top < 65
+  const petElementNearTop = { element: { getBoundingClientRect: () => ({ top: 30, height: 96 }) } };
+  assert.equal(DialogBubble.shouldFlipDownwards(petElementNearTop, null), true);
+
+  // 3. When pet.y < 65
+  assert.equal(DialogBubble.shouldFlipDownwards({ y: 20 }, null), true);
+  assert.equal(DialogBubble.shouldFlipDownwards({ y: 200 }, null), false);
+});
+
+test('DialogBubble.show flips bubble downwards and avoids overlap downwards when near top edge', () => {
+  withFakeDocument(() => {
+    const dialogBubble = new DialogBubble();
+    const petA = { id: 'yueqi', y: 30, element: createFakeElement() };
+    const petB = { id: 'shenjiu', y: 30, element: createFakeElement() };
+
+    dialogBubble.show(petA, 'Yueqi at top');
+    const bubbleA = dialogBubble.activeBubbles.get('yueqi');
+    assert.equal(bubbleA.classList.contains('dialog-bubble--flipped'), true);
+
+    // Provide getBoundingClientRect for both so avoidPersonalBubbleOverlap calculates downward stack offset
+    bubbleA.getBoundingClientRect = () => ({ left: 100, right: 220, top: 126, bottom: 166 });
+
+    dialogBubble.show(petB, 'Shenjiu at top');
+    const bubbleB = dialogBubble.activeBubbles.get('shenjiu');
+    assert.equal(bubbleB.classList.contains('dialog-bubble--flipped'), true);
+
+    bubbleB.getBoundingClientRect = () => ({ left: 140, right: 260, top: 126, bottom: 166 });
+    dialogBubble.avoidPersonalBubbleOverlap('shenjiu', bubbleB);
+
+    assert.ok(bubbleB.style['--bubble-stack-offset']);
+    const offset = parseInt(bubbleB.style['--bubble-stack-offset'], 10);
+    assert.ok(offset > 0, 'overlap should push flipped bubble downwards');
+  });
+});
+
+

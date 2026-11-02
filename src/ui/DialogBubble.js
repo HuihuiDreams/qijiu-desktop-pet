@@ -32,6 +32,10 @@ class DialogBubble {
     
     pet.element.appendChild(bubble);
 
+    if (DialogBubble.shouldFlipDownwards(pet, bubble)) {
+      bubble.classList.add('dialog-bubble--flipped');
+    }
+
     this.activeBubbles.set(pet.id, bubble);
     this.avoidPersonalBubbleOverlap(pet.id, bubble);
 
@@ -99,6 +103,9 @@ class DialogBubble {
     if (!bubble || typeof bubble.getBoundingClientRect !== 'function') return;
 
     let rect = bubble.getBoundingClientRect();
+    const isFlipped = typeof bubble.classList?.contains === 'function'
+      ? bubble.classList.contains('dialog-bubble--flipped')
+      : false;
     let stackOffset = 0;
 
     for (const [otherPetId, otherBubble] of this.activeBubbles.entries()) {
@@ -109,16 +116,31 @@ class DialogBubble {
       const otherRect = otherBubble.getBoundingClientRect();
       if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
 
-      const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
-      if (lift <= 0) continue;
+      if (isFlipped) {
+        // 当气泡朝下翻转时，沿下方继续堆叠以避开重叠
+        const drop = otherRect.bottom - rect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
+        if (drop <= 0) continue;
 
-      stackOffset += lift;
-      rect = {
-        left: rect.left,
-        right: rect.right,
-        top: rect.top - lift,
-        bottom: rect.bottom - lift,
-      };
+        stackOffset += drop;
+        rect = {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top + drop,
+          bottom: rect.bottom + drop,
+        };
+      } else {
+        // 常规朝上气泡，沿上方提升堆叠高度
+        const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
+        if (lift <= 0) continue;
+
+        stackOffset += lift;
+        rect = {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top - lift,
+          bottom: rect.bottom - lift,
+        };
+      }
     }
 
     if (stackOffset > 0) {
@@ -128,6 +150,25 @@ class DialogBubble {
         bubble.style['--bubble-stack-offset'] = `${Math.ceil(stackOffset)}px`;
       }
     }
+  }
+
+  static shouldFlipDownwards(pet, bubble, minTopGap = 8) {
+    if (bubble && typeof bubble.getBoundingClientRect === 'function') {
+      const rect = bubble.getBoundingClientRect();
+      if (rect && Number.isFinite(rect.top) && (rect.height > 0 || rect.width > 0)) {
+        return rect.top < minTopGap;
+      }
+    }
+    if (pet && typeof pet.element?.getBoundingClientRect === 'function') {
+      const petRect = pet.element.getBoundingClientRect();
+      if (petRect && Number.isFinite(petRect.top) && petRect.height > 0) {
+        return petRect.top < 65;
+      }
+    }
+    if (Number.isFinite(pet?.y)) {
+      return pet.y < 65;
+    }
+    return false;
   }
 
   static rectsOverlap(a, b) {

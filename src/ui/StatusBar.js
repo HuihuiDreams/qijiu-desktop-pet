@@ -7,9 +7,11 @@
 class StatusBar {
   constructor() {
     this.visible = false;
+    this._lastSnapshotJson = null;
 
     window.electronAPI.onStatusWindowClosed(() => {
       this.visible = false;
+      this._lastSnapshotJson = null;
     });
   }
 
@@ -33,11 +35,14 @@ class StatusBar {
 
   show(petA, petB) {
     this.visible = true;
-    window.electronAPI.showStatusWindow(this.createSnapshot(petA, petB));
+    const snapshot = this.createSnapshot(petA, petB);
+    this._lastSnapshotJson = JSON.stringify(snapshot);
+    window.electronAPI.showStatusWindow(snapshot);
   }
 
   hide() {
     this.visible = false;
+    this._lastSnapshotJson = null;
     window.electronAPI.hideStatusWindow();
   }
 
@@ -51,6 +56,16 @@ class StatusBar {
 
   update(petA, petB) {
     if (!this.visible) return;
-    window.electronAPI.updateStatusWindow(this.createSnapshot(petA, petB));
+    const snapshot = this.createSnapshot(petA, petB);
+    const json = JSON.stringify(snapshot);
+    if (json === this._lastSnapshotJson) {
+      return;
+    }
+    this._lastSnapshotJson = json;
+    window.electronAPI.updateStatusWindow(snapshot);
   }
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { StatusBar };
 }

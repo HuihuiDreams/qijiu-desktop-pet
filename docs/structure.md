@@ -367,7 +367,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 拖拽中不触发互动，避免误判。
 - 互动动作会锁定双方动作状态，避免移动系统立即覆盖。
 - 互动有全局冷却，防止短时间重复触发。
-- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，并在与现有普通气泡重叠时向上错开，避免 `greet` 等非 overlay 双宠互动重叠。
+- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，具备顶部视口碰撞感知与自动向下翻转（`.dialog-bubble--flipped`），并在与现有普通气泡重叠时向外（朝上时向上，朝下时向下）错开，彻底避免顶部台词裁切与 `greet` 等非 overlay 双宠互动重叠。
 
 ### 3.8 皮肤系统
 
@@ -506,6 +506,8 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
   对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（城市设置、体型调节、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
 - **无障碍语义化 (ARIA) 与按钮语义**：
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。城市设置、体型调节与状态窗口标题采用语义化 `<h1>`，城市输入框接入 `aria-describedby="city-status"` 与动态 `aria-invalid` 反馈；体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`，初始挂载通过安全守卫自动聚焦以支持方向键无障碍调节；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
+- **状态面板事件驱动就地更新与 IPC 降频**：
+  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **子窗口关闭按钮与操作按钮视觉设计系统规范**：
   各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **主窗口与独立状态窗口 DOM 及样式解耦**：
