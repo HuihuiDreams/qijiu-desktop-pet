@@ -14,6 +14,7 @@
 - 清理 `src/systems/SkinManager.js` 中已下线旧皮肤（`animal_ears`、`school_au`）的残留缩放配置，移除未被 `TrayManager` 点阵托盘引用的 `src/assets/iconTemplate.png` 与 `iconTemplate@2x.png` 及其生成逻辑；将 `.github/workflows/release-preflight.yml` 默认权限收紧为 `contents: read`。
 - 明确说明 `.github/workflows/release-preflight.yml` 触发前须手动同步 `package.json` 版本号（在 `contents: read` 权限下检测不一致将阻断报错而非自动提交），并在 `.github/workflows/build-installer.yml` 中将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` Job 消除 Windows/macOS 并行构建竞态，同时移除无效的 `Remove auto-generated source code archives` 死步骤。
 - 为换肤画廊 E2E 测试接入 QA 专用虚拟第二皮肤（`setQaExtraSkinIdForQA`），恢复单内置皮肤仓库下的预览、确认、加载失败回退与取消全链路 E2E 自动化验证，并补齐 `SkinService` 真实目录与白名单扫描单元测试。
+- 重构好兆头双人互动「一起施展奇迹」（`cultivate`）的数值逻辑以贴合原作设定：移除原七九版双修恢复灵力及为角色 A 额外恢复 15 点饱腹的机制，改为双方各消耗 10 点奇迹能量（`qiA: -10, qiB: -10`，且须双方当前奇迹能量均 `>= 10` 方可触发），同时大幅提升双方心境（`+12`）与羁绊（`+6`），同步更新中、英、日三语发行说明、领域词汇表与自动化测试。
 
 ### Fixed
 - 修复日文版右键菜单交互文案与中英文不对齐的问题：将克劳利交互调整为「🤚 天使の慈愛」，亚茨拉斐尔交互调整为「🤚 悪魔の寵愛」；剔除日文版晨间问候与联合奇迹台词中「光あれ」后多余的英文字样与括号。

@@ -173,34 +173,59 @@ test('automatic interactions can happen once per minute', () => {
   assert.equal(CONFIG.INTERACTION_COOLDOWN, 60 * 1000);
 });
 
-test('cultivating together restores more qi than solo meditation', () => {
-  const soloMeditationQi = CONFIG.MEDITATE_QI_RATE * (CONFIG.MEDITATE_DURATION / 1000);
-  const pairedMeditationQi = Math.round(soloMeditationQi * CONFIG.CULTIVATE_QI_MULTIPLIER);
-
-  assert.equal(CONFIG.MEDITATE_QI_RATE, 1);
-  assert.equal(CONFIG.CULTIVATE_QI_MULTIPLIER, 1.5);
-  assert.equal(CONFIG.INTERACTIONS.cultivate.qiA, pairedMeditationQi);
-  assert.equal(CONFIG.INTERACTIONS.cultivate.qiB, pairedMeditationQi);
-  assert.ok(pairedMeditationQi > soloMeditationQi);
+test('cultivating together consumes miracle energy to grant higher affection and mood', () => {
+  assert.equal(CONFIG.CULTIVATE_QI_COST, 10);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.qiA, -10);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.qiB, -10);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.moodA, 12);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.moodB, 12);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.affection, 6);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.hungerA, 0);
+  assert.equal(CONFIG.INTERACTIONS.cultivate.hungerB, 0);
 });
 
-test('cultivating together restores Yue Qingyuan satiety without changing other rewards', () => {
+test('cultivating together deducts qi and boosts affection and mood without changing satiety', () => {
   const yueqi = createPet();
   const shenjiu = createPet();
   const interactionSystem = new InteractionSystem();
-  yueqi.stats = { affection: 20, hunger: 50, qi: 10, mood: 30 };
-  shenjiu.stats = { affection: 20, hunger: 50, qi: 10, mood: 30 };
+  yueqi.stats = { affection: 20, hunger: 50, qi: 30, mood: 30 };
+  shenjiu.stats = { affection: 20, hunger: 50, qi: 30, mood: 30 };
 
   interactionSystem.applyInteraction(yueqi, shenjiu, CONFIG.INTERACTIONS.cultivate);
 
-  assert.equal(yueqi.stats.hunger, 65);
+  assert.equal(yueqi.stats.hunger, 50);
   assert.equal(shenjiu.stats.hunger, 50);
-  assert.equal(yueqi.stats.qi, 55);
-  assert.equal(shenjiu.stats.qi, 55);
-  assert.equal(yueqi.stats.affection, 23);
-  assert.equal(shenjiu.stats.affection, 23);
-  assert.equal(yueqi.stats.mood, 35);
-  assert.equal(shenjiu.stats.mood, 35);
+  assert.equal(yueqi.stats.qi, 20);
+  assert.equal(shenjiu.stats.qi, 20);
+  assert.equal(yueqi.stats.affection, 26);
+  assert.equal(shenjiu.stats.affection, 26);
+  assert.equal(yueqi.stats.mood, 42);
+  assert.equal(shenjiu.stats.mood, 42);
+});
+
+test('cultivate does not trigger when either pet has less than the miracle energy cost', () => {
+  const yueqi = createPet();
+  const shenjiu = createPet();
+  shenjiu.x = 10;
+  yueqi.stats = { affection: 50, hunger: 80, qi: 9, mood: 70 };
+  shenjiu.stats = { affection: 50, hunger: 80, qi: 50, mood: 70 };
+  const interactionSystem = new InteractionSystem();
+  interactionSystem.pickInteraction = () => ({ key: 'cultivate', ...CONFIG.INTERACTIONS.cultivate });
+
+  assert.equal(interactionSystem.canApplyInteraction(yueqi, { key: 'cultivate', ...CONFIG.INTERACTIONS.cultivate }, shenjiu), false);
+  let interaction = interactionSystem.update(yueqi, shenjiu, 16);
+  assert.equal(interaction, null);
+  assert.equal(yueqi.stats.qi, 9);
+  assert.equal(shenjiu.stats.qi, 50);
+
+  // Also blocked when Pet B has insufficient qi
+  yueqi.stats.qi = 50;
+  shenjiu.stats.qi = 9;
+  assert.equal(interactionSystem.canApplyInteraction(yueqi, { key: 'cultivate', ...CONFIG.INTERACTIONS.cultivate }, shenjiu), false);
+  interaction = interactionSystem.update(yueqi, shenjiu, 16);
+  assert.equal(interaction, null);
+  assert.equal(yueqi.stats.qi, 50);
+  assert.equal(shenjiu.stats.qi, 9);
 });
 
 test('share food uses the updated symmetric mood values', () => {

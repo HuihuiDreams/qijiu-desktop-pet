@@ -4,10 +4,7 @@
  */
 const MEDITATE_QI_RATE = 1;
 const MEDITATE_DURATION = 30000;
-const CULTIVATE_QI_MULTIPLIER = 1.5;
-const CULTIVATE_QI_GAIN = Math.round(
-  MEDITATE_QI_RATE * CULTIVATE_QI_MULTIPLIER * (MEDITATE_DURATION / 1000)
-);
+const CULTIVATE_QI_COST = 10;
 
 const CONFIG = {
   // === 移动相关 (Movement) ===
@@ -56,7 +53,7 @@ const CONFIG = {
   PET_MOOD: 5,                        // 【右键关怀/撒娇】增加的心境
   MEDITATE_QI_RATE,                   // 【打坐】每秒恢复的灵力
   MEDITATE_DURATION,                  // 【打坐】持续时间
-  CULTIVATE_QI_MULTIPLIER,            // 【一起修炼】相对单人打坐的灵力倍率
+  CULTIVATE_QI_COST,                  // 【一起施展奇迹】消耗的奇迹能量
   REST_QI: 10,                        // 【休息】瞬间恢复的灵力
   REST_MOOD: 15,                      // 【休息】恢复的心境
   REST_HUNGER_COST: 10,               // 【休息】消耗的饱腹度
@@ -66,7 +63,7 @@ const CONFIG = {
   INTERACTIONS: {
     greet: { weight: 30, moodA: 1, moodB: 1, affection: 1, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 0 },
     shareFood: { weight: 20, moodA: 3, moodB: 3, affection: 2, hungerA: -5, hungerB: 10, qiA: 0, qiB: 0, minAffection: 0 },
-    cultivate: { weight: 25, moodA: 5, moodB: 5, affection: 3, hungerA: 15, hungerB: 0, qiA: CULTIVATE_QI_GAIN, qiB: CULTIVATE_QI_GAIN, minAffection: 20 },
+    cultivate: { weight: 25, moodA: 12, moodB: 12, affection: 6, hungerA: 0, hungerB: 0, qiA: -CULTIVATE_QI_COST, qiB: -CULTIVATE_QI_COST, minAffection: 20 },
     kiss: { weight: 15, moodA: 10, moodB: 10, affection: 4, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 75 },
     hug: { weight: 10, moodA: 8, moodB: 8, affection: 5, hungerA: 0, hungerB: 0, qiA: 0, qiB: 0, minAffection: 50 },
   },

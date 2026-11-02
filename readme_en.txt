@@ -214,9 +214,6 @@ Crowley loses 5 Satiety, and Aziraphale restores 10 Satiety.
 Share Food only triggers when Crowley has at least 5 Satiety, so he will not keep feeding Aziraphale after his Satiety has bottomed out.
 If they spend a lot of time together, Crowley may get hungry faster.
 
-Miracle benefit:
-When they trigger "Miracle Together", Crowley also restores 15 Satiety. The existing Miracle and Bond rewards for both characters are unchanged.
-
 3. ✨ Miracle
 
 Miracle represents a character's energy and miracle power.
@@ -228,7 +225,9 @@ Natural consumption:
 How to restore:
 - Right-click Crowley and choose "🪴 Tending Plants", or right-click Aziraphale and choose "📖 Reading": they focus for 30 seconds and restore 1 Miracle per second.
 - Right-click a character and choose "💤 Nap": restores 10 Miracle and 15 Mood, and consumes 10 Satiety.
-- When the two interact, they may perform a miracle together and restore Miracle at 1.5x the single-character amount.
+
+Miracle Together (consumes Miracle):
+- When the two interact and trigger "Miracle Together", both characters spend 10 Miracle (only triggers when both have at least 10 Miracle) in exchange for a big boost of +12 Mood and +6 Bond.
 
 Why tending plants or reading restores Miracle:
 - 🪴 Crowley (Demon) · Tending Plants:

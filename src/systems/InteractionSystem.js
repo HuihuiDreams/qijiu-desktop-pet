@@ -45,16 +45,23 @@ class InteractionSystem {
   /**
    * 基于当前的好感度等级，根据权重随机挑选一个可用的互动动作。
    */
-  canApplyInteraction(petA, interaction) {
+  canApplyInteraction(petA, interaction, petB = null) {
     if (interaction.key === 'shareFood') {
       const foodCost = Math.abs(interaction.hungerA);
       return petA.stats.hunger >= foodCost;
     }
 
+    if (interaction.key === 'cultivate') {
+      const qiCostA = Math.abs(interaction.qiA);
+      const qiCostB = Math.abs(interaction.qiB);
+      if (petA.stats.qi < qiCostA) return false;
+      if (petB && petB.stats.qi < qiCostB) return false;
+    }
+
     return true;
   }
 
-  pickInteraction(affection, petA = null) {
+  pickInteraction(affection, petA = null, petB = null) {
     const interactions = CONFIG.INTERACTIONS;
     const eligible = [];
     let totalWeight = 0;
@@ -63,7 +70,7 @@ class InteractionSystem {
       const interaction = { key, ...data };
       if (
         affection >= data.minAffection &&
-        (!petA || this.canApplyInteraction(petA, interaction))
+        (!petA || this.canApplyInteraction(petA, interaction, petB))
       ) {
         eligible.push(interaction);
         totalWeight += interaction.weight;
@@ -161,9 +168,9 @@ class InteractionSystem {
     if (distance < CONFIG.INTERACTION_DISTANCE) {
       // 使用两人的平均好感度来挑选互动动作
       const avgAffection = (petA.stats.affection + petB.stats.affection) / 2;
-      const interaction = this.pickInteraction(avgAffection, petA);
+      const interaction = this.pickInteraction(avgAffection, petA, petB);
 
-      if (interaction && this.canApplyInteraction(petA, interaction)) {
+      if (interaction && this.canApplyInteraction(petA, interaction, petB)) {
         // 触发互动
         this.isInteracting = true;
         this.interactionTimer = CONFIG.INTERACTION_DURATION;
