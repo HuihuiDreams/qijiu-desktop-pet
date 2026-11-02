@@ -6,6 +6,8 @@
 
 ### Added
 - **好兆头经典夜莺羁绊台词接入 (`Nightingale Dialogue Integration`)**：将《好兆头》象征二人羁绊与“属于我们的阵营”的经典夜莺典故（*“No nightingales”* 与 *“A Nightingale Sang in Berkeley Square”*）作为概率对白深度植入双人拥抱（`hug`）与深夜高好感联动梦境（`dream.linked`）。双人拥抱时克劳利与亚茨拉斐尔互诉夜莺守候；深夜梦话时亚茨拉斐尔呓语寻觅夜莺，克劳利温柔回应承诺伯克利广场的夜莺永远为他歌唱。中、英、日三语纯正原生撰写并全量通过自动化单元测试。
+- **对话气泡顶部视口感知与自动翻转 (`Dialog Bubble Top-Edge Auto-Flipping`)**：`DialogBubble.js` 与 `src/dialog-bubble.css` 新增顶部视口碰撞检测与 `.dialog-bubble--flipped` 翻转样式。当角色靠近屏幕顶端（`pet.y < 65` 或气泡距顶端小于 8px）时自动向下翻转显示对话气泡，气泡箭头倒置并支持 `@starting-style` 与 `@media (prefers-reduced-motion: reduce)`；双宠普通气泡重叠处理增加朝下翻转兼容与双向错开逻辑，彻底解决靠近屏幕顶端时的台词裁切与遮挡。
+- **状态面板事件驱动就地更新与 IPC 降频 (`Event-Driven Status Window & In-Place DOM Updates`)**：`src/ui/StatusBar.js` 引入快照哈希缓存，仅在角色数值实际变化时发送 IPC 更新，消除空闲状态下的每秒轮询开销；`src/statusWindow.js` 新增差量就地更新机制（`updatePetStatsBlock`），在角色列表结构稳定时直接更新进度条宽度、数值与无障碍属性，避免每秒全量重建 DOM 引发的布局重排与闪烁，仅在首次加载、结构变化或语言切换时才触发窗口尺寸自适应测量。
 
 ### Changed
 - 统一托盘菜单三语标题（`trayTitle`）与开机自启动标识为「好兆头桌宠」（`Good Omens Desktop Pet` / `グッド・オーメンズ デスクトップペット`），更新 `src/data/i18n.js` 头部翻译完成状态注释与 `test/statusWindowRegression.test.js` 角色名测试固件。

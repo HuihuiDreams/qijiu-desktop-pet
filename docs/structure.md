@@ -364,7 +364,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 拖拽中不触发互动，避免误判。
 - 互动动作会锁定双方动作状态，避免移动系统立即覆盖。
 - 互动有全局冷却，防止短时间重复触发。
-- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，并在与现有普通气泡重叠时向上错开，避免 `greet` 等非 overlay 双宠互动重叠。
+- 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，具备顶部视口碰撞感知与自动向下翻转（`.dialog-bubble--flipped`），并在与现有普通气泡重叠时向外（朝上时向上，朝下时向下）错开，彻底避免顶部台词裁切与 `greet` 等非 overlay 双宠互动重叠。
 
 ### 3.8 皮肤系统
 
@@ -511,6 +511,8 @@ DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗
   各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **主窗口与独立状态窗口 DOM 及样式解耦**：
   主窗口（`src/index.html`）彻底移除废弃的内嵌 `#status-panel` 孤儿 DOM 节点与查询依赖（`ContextMenu.js`、`PetRenderer.js` 直接恢复鼠标点击穿透而不再轮询该面板）；原滞留在 `src/index.css` 的面板定位、动画及状态条辅助样式完整内聚至 `src/status.css`，保持主窗口轻量渲染与状态窗口样式自治。
+- **状态面板事件驱动就地更新与 IPC 降频**：
+  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **零外部 Polyfill 与 Node 桩测试兼容**：
   严格维持免 Polyfill / 免外部依赖架构，所有现代浏览器特有 API 调用均配合可选链（`?.`）或类型守卫（`typeof ... === 'function'`）及兜底逻辑，保证 Node.js fake-DOM 单测套件极速、稳定运行。详见 [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)。
 
