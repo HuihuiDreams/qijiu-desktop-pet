@@ -64,7 +64,7 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 
 ### 8. UI 适配
 
-- **单人对话气泡**：使用 `width: max-content` 保持自然内容宽度，再用受控 `max-width` 封顶；较长英文文本通过 `white-space: pre-wrap` 和 `overflow-wrap: break-word` 换行，避免被宠物自身窄容器压成竖条。`DialogBubble` 在插入新气泡后按实际 DOM 矩形检测现有普通气泡，必要时通过 `--bubble-stack-offset` 向上错开，避免 `greet` 等双宠普通互动在高度接近时重叠。
+- **单人对话气泡**：使用 `width: max-content` 保持自然内容宽度，再用受控 `max-width` 封顶；较长英文文本通过 `white-space: pre-wrap` 和 `overflow-wrap: break-word` 换行，避免被宠物自身窄容器压成竖条。`DialogBubble` 在插入新气泡后检测现有普通气泡，必要时通过 `--bubble-stack-offset` 向上错开；若向上会超出顶部视口则翻转向下并向下错开。朝下气泡仍须检查朝上气泡，避免宠物处于不同高度时相反朝向的对白重叠。碰撞使用 `offsetParent` 与布局度量换算最终居中矩形，排除入退场缩放及位移导致的测量误差；视口偏移除以父级纵向缩放再写回 CSS，兼容不同 DPI。假 DOM 缺少布局度量时回退到 `getBoundingClientRect()`（2026-11-05 补充）。
 - **双人互动气泡** (`.overlay-bubble`)：使用 `white-space: pre-wrap`、`max-width: 130px`、`word-wrap: break-word`，英文长文本受限折行后向上增长（`bottom` 定位），避免两人气泡重叠。
 - **状态面板** (`.stat-label`)：宽度从 72px 增至 85px，加 `white-space: nowrap`，确保英文标签（如 "❤️ Affection"）不折行，所有属性名右对齐。
 

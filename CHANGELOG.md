@@ -24,6 +24,7 @@
 - **换肤画廊多语言初始化与加载期按钮状态修复 (`Skin Selector Locale Initialization & Loading Button State Guards`)**：修复 `WindowI18n.init` 异步获取语言回调在 IPC 画廊数据到达前执行导致误消耗首屏焦点标记（`isFirstDataReceived`）的问题，确保真实数据到达后焦点正确定位至当前皮肤卡片；修复卡片预览加载期间取消与关闭按钮仍保持启用导致无响应点击的问题，在 `setLoading` 中联动禁用 `cancelBtn` 与 `closeBtn`，并在 `skin-selector.css` 中补全 `:disabled` 禁用样式与 `:hover:not(:disabled)` 伪类防护。
 
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
+- 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试与手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
 
 ### Removed
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。
