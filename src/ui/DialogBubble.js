@@ -102,7 +102,8 @@ class DialogBubble {
   avoidPersonalBubbleOverlap(petId, bubble) {
     if (!bubble || typeof bubble.getBoundingClientRect !== 'function') return;
 
-    let rect = bubble.getBoundingClientRect();
+    let rect = DialogBubble.getPlacementRect(bubble);
+    const scaleY = rect.scaleY || 1;
     let isFlipped = typeof bubble.classList?.contains === 'function'
       ? bubble.classList.contains('dialog-bubble--flipped')
       : false;
@@ -113,7 +114,7 @@ class DialogBubble {
         if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
           continue;
         }
-        const otherRect = otherBubble.getBoundingClientRect();
+        const otherRect = DialogBubble.getPlacementRect(otherBubble);
         if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
 
         const lift = rect.bottom - otherRect.top + PERSONAL_BUBBLE_OVERLAP_GAP;
@@ -123,7 +124,7 @@ class DialogBubble {
           bubble.classList?.add?.('dialog-bubble--flipped');
           isFlipped = true;
           stackOffset = 0;
-          rect = bubble.getBoundingClientRect();
+          rect = DialogBubble.getPlacementRect(bubble);
           break;
         }
 
@@ -142,12 +143,7 @@ class DialogBubble {
         if (otherPetId === petId || !otherBubble || typeof otherBubble.getBoundingClientRect !== 'function') {
           continue;
         }
-        const otherIsFlipped = typeof otherBubble.classList?.contains === 'function'
-          ? otherBubble.classList.contains('dialog-bubble--flipped')
-          : true;
-        if (!otherIsFlipped) continue;
-
-        const otherRect = otherBubble.getBoundingClientRect();
+        const otherRect = DialogBubble.getPlacementRect(otherBubble);
         if (!DialogBubble.rectsOverlap(rect, otherRect)) continue;
 
         // 当气泡朝下翻转时，沿下方继续堆叠以避开重叠
@@ -166,16 +162,36 @@ class DialogBubble {
 
     if (stackOffset > 0) {
       if (typeof bubble.style?.setProperty === 'function') {
-        bubble.style.setProperty('--bubble-stack-offset', `${Math.ceil(stackOffset)}px`);
+        bubble.style.setProperty('--bubble-stack-offset', `${Math.ceil(stackOffset / scaleY)}px`);
       } else if (bubble.style) {
-        bubble.style['--bubble-stack-offset'] = `${Math.ceil(stackOffset)}px`;
+        bubble.style['--bubble-stack-offset'] = `${Math.ceil(stackOffset / scaleY)}px`;
       }
     }
   }
 
+  static getPlacementRect(bubble) {
+    const parent = bubble.offsetParent;
+    if (typeof parent?.getBoundingClientRect === 'function'
+      && parent.offsetWidth > 0 && parent.offsetHeight > 0
+      && bubble.offsetWidth > 0 && bubble.offsetHeight > 0) {
+      const parentRect = parent.getBoundingClientRect();
+      const scaleX = parentRect.width / parent.offsetWidth;
+      const scaleY = parentRect.height / parent.offsetHeight;
+      if (scaleX > 0 && scaleY > 0) {
+        // Use the final centered layout, excluding entry/exit transforms on the bubble.
+        const left = parentRect.left + (bubble.offsetLeft - bubble.offsetWidth / 2) * scaleX;
+        const top = parentRect.top + bubble.offsetTop * scaleY;
+        const width = bubble.offsetWidth * scaleX;
+        const height = bubble.offsetHeight * scaleY;
+        return { left, right: left + width, top, bottom: top + height, width, height, scaleY };
+      }
+    }
+    return bubble.getBoundingClientRect();
+  }
+
   static shouldFlipDownwards(pet, bubble, minTopGap = 8) {
     if (bubble && typeof bubble.getBoundingClientRect === 'function') {
-      const rect = bubble.getBoundingClientRect();
+      const rect = DialogBubble.getPlacementRect(bubble);
       if (rect && Number.isFinite(rect.top) && (rect.height > 0 || rect.width > 0)) {
         return rect.top < minTopGap;
       }

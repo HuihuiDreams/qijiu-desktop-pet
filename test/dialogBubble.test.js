@@ -503,6 +503,74 @@ test('avoidPersonalBubbleOverlap flips second bubble downwards when upward lift 
     const bubbleB = dialogBubble.activeBubbles.get('shenjiu');
     assert.equal(bubbleB.classList.contains('dialog-bubble--flipped'), true);
     assert.equal(bubbleB.style['--bubble-stack-offset'], undefined);
-  }, () => createFakeElement(rects.shift()));
+  }, () => {
+    const rect = rects.shift();
+    const bubble = createFakeElement(rect);
+    bubble.getBoundingClientRect = () => bubble.classList.contains('dialog-bubble--flipped')
+      ? { ...rect, top: 181, bottom: 221 }
+      : rect;
+    return bubble;
+  });
 });
+
+test('a downward-facing bubble clears an overlapping upward-facing bubble at a different pet height', () => {
+  const rects = [
+    { left: 100, right: 280, top: 130, bottom: 200, height: 70 },
+    { left: 120, right: 300, top: -70, bottom: 0, height: 70 },
+  ];
+
+  withFakeDocument(() => {
+    const dialogBubble = new DialogBubble();
+    const lowerPet = { id: 'yueqi', element: createFakeElement() };
+    const upperPet = { id: 'shenjiu', element: createFakeElement() };
+
+    try {
+      dialogBubble.show(lowerPet, 'Bubble above the lower pet');
+      dialogBubble.show(upperPet, 'Bubble below the upper pet');
+
+      const lowerBubble = dialogBubble.activeBubbles.get(lowerPet.id);
+      const upperBubble = dialogBubble.activeBubbles.get(upperPet.id);
+      assert.equal(lowerBubble.classList.contains('dialog-bubble--flipped'), false);
+      assert.equal(upperBubble.classList.contains('dialog-bubble--flipped'), true);
+      const lowerRect = lowerBubble.getBoundingClientRect();
+      const upperRect = upperBubble.getBoundingClientRect();
+      assert.equal(DialogBubble.rectsOverlap(lowerRect, upperRect), false);
+      assert.ok(upperRect.top >= lowerRect.bottom + 8, 'keep the gap after downward stacking');
+    } finally {
+      dialogBubble.removeForPets([lowerPet, upperPet]);
+    }
+  }, () => {
+    const rect = rects.shift();
+    const bubble = createFakeElement();
+    bubble.getBoundingClientRect = () => {
+      if (!bubble.classList.contains('dialog-bubble--flipped')) return rect;
+      const offset = parseFloat(bubble.style['--bubble-stack-offset']) || 0;
+      return { ...rect, top: 116 + offset, bottom: 186 + offset };
+    };
+    return bubble;
+  });
+});
+
+for (const scale of [1, 2 / 3, 1.5]) {
+  test(`bubble placement remains clear after the entry transform finishes at scale ${scale}`, () => {
+    const system = new DialogBubble();
+    const other = createFakeElement({ left: 100 * scale, right: 280 * scale, top: 130 * scale, bottom: 200 * scale });
+    const bubble = createFakeElement({ left: 167 * scale, right: 329 * scale, top: 127.5 * scale, bottom: 190.5 * scale });
+    bubble.classList.add('dialog-bubble--flipped');
+    bubble.offsetParent = {
+      offsetWidth: 96, offsetHeight: 96,
+      getBoundingClientRect: () => ({ left: 200 * scale, top: 0, width: 96 * scale, height: 96 * scale }),
+    };
+    Object.assign(bubble, { offsetWidth: 180, offsetHeight: 70, offsetLeft: 48, offsetTop: 116 });
+    system.activeBubbles.set('yueqi', other);
+    system.activeBubbles.set('shenjiu', bubble);
+
+    system.avoidPersonalBubbleOverlap('shenjiu', bubble);
+
+    const offset = parseFloat(bubble.style['--bubble-stack-offset']) || 0;
+    const finalRect = { left: 158 * scale, right: 338 * scale, top: (116 + offset) * scale, bottom: (186 + offset) * scale };
+    assert.equal(DialogBubble.rectsOverlap(other.getBoundingClientRect(), finalRect), false);
+    assert.ok(finalRect.top >= other.getBoundingClientRect().bottom + 8);
+  });
+}
 

@@ -175,3 +175,7 @@
 ### Phase 10: 发布流水线竞态清理与皮肤测试固件收口 (CI Release Workflow Hardening & Skin Test Fixture Polish)
 - [x] **Task 10.1**: 移除 `.github/workflows/build-installer.yml` 中无效的 `Remove auto-generated source code archives` 死步骤，将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` job 消除双端并发竞态，在 `docs/cp-migration-guide.md` 与 `CHANGELOG.md` 明确说明预检前须先手动同步 `package.json` 版本号，并补充 `test/macosPackaging.test.js` 断言。
 - [x] **Task 10.2**: 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 测试注入分支短路 `qaExtraSkinId` 追加的问题并补充单测；为 `test/skinService.test.js`、`test/skinLoadFailure.behavior.test.js`、`test/skinPreviewRequest.behavior.test.js` 与 `test/integration/skinLifecycle.integration.test.js` 的多皮肤测试固件补充注释说明，并更新 `CHANGELOG.md`。
+
+### 审查后续验证（2026-11-05）
+- [x] 修复不同高度、相反朝向气泡重叠及入场动画测量误差；气泡单测 23 项通过，覆盖 DPI 1、2/3、1.5，并经 Windows Electron 实际布局验证无重叠；同步 [ADR-024](../decisions/ADR-024-i18n-multilingual-support.md)。
+- [ ] 排查本机 `python3` 启动 `EACCES`，完成 Python 管线测试及全量回归验证。
