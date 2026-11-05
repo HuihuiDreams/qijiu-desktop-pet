@@ -30,7 +30,8 @@ with Image.open(${JSON.stringify(fullPath)}) as img:
     canvas.paste(img, (x, y), img)
     canvas.save(${JSON.stringify(outPath)}, "WEBP")
 `;
-                    const pyResult = spawnSync('python3', ['-c', pyScript], { stdio: 'inherit' });
+                    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+                    const pyResult = spawnSync(pythonCommand, ['-c', pyScript], { stdio: 'inherit' });
                     if (pyResult.error || pyResult.status !== 0) {
                         throw new Error(`Both ffmpeg and python PIL fallback failed`);
                     }

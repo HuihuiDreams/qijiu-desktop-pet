@@ -39,6 +39,8 @@ python tools/run_trim.py src/assets/<YOUR_SKIN_NAME>
 
 *(注：执行此脚本会直接覆盖修改对应路径下的 `.png` 原图文件)*
 
+**Python 命令**：Windows 使用 `python`，macOS/Linux 使用 `python3`；语法检查测试与图片转换的 Pillow 备用路径采用相同约定。Windows 的 `python3.exe` 可能仅是 WindowsApps 下的商店重定向别名，出现 `EACCES` 时先运行 `Get-Command python,python3 -All` 和 `python --version` 核实实际解释器。无需为此重装已能正常启动的 Python；Pillow 备用路径另需该解释器已安装 Pillow。
+
 ### 2. 将优化后的 PNG 转换为 WebP (256x256)
 
 执行 Node.js 转换脚本（可指定目标皮肤目录）：

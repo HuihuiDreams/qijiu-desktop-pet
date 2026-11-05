@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const { spawnSync } = require('node:child_process');
+const vm = require('node:vm');
 
 const repoRoot = path.resolve(__dirname, '..');
 
@@ -44,10 +45,38 @@ test('tools/run_trim.py syntax is valid and rejects non-existent target director
   const trimScriptPath = path.join(repoRoot, 'tools', 'run_trim.py');
   assert.ok(fs.existsSync(trimScriptPath));
 
-  const check = spawnSync('python3', ['-m', 'py_compile', trimScriptPath]);
-  assert.equal(check.status, 0, `Python syntax check failed: ${check.stderr?.toString()}`);
+  const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+  const check = spawnSync(pythonCommand, ['-m', 'py_compile', trimScriptPath]);
+  assert.equal(check.status, 0, `Python syntax check failed (${pythonCommand}): ${check.error?.message || check.stderr?.toString()}`);
 
   const content = fs.readFileSync(trimScriptPath, 'utf8');
   assert.ok(content.includes('sys.argv[1:]'), 'run_trim.py should support target directory arguments');
   assert.ok(content.includes('run_groups_and_remaining'), 'run_trim.py should share group and individual file processing');
+});
+
+test('image conversion falls back to the platform Python command when ffmpeg is unavailable', () => {
+  const source = fs.readFileSync(path.join(repoRoot, 'scripts', 'convert_images.js'), 'utf8');
+  for (const platform of ['win32', 'darwin', 'linux']) {
+    const commands = [];
+    vm.runInNewContext(source, {
+      require(name) {
+        if (name === 'child_process') return {
+          spawnSync(command) {
+            commands.push(command);
+            return command === 'ffmpeg' ? { error: new Error('ffmpeg unavailable') } : { status: 0 };
+          },
+        };
+        if (name === 'fs') return {
+          existsSync: () => true,
+          statSync: (filename) => ({ isDirectory: () => !filename.endsWith('.png') }),
+          readdirSync: () => ['sprite.png'],
+        };
+        if (name === 'path') return path;
+        throw new Error(`Unexpected dependency: ${name}`);
+      },
+      process: { platform, argv: ['node', 'convert_images.js', 'fixture'] },
+      console: { log() {}, error(message) { throw new Error(message); } },
+    });
+    assert.deepEqual(commands, ['ffmpeg', platform === 'win32' ? 'python' : 'python3']);
+  }
 });
