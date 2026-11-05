@@ -21,7 +21,7 @@
 - 修复 `src/systems/OfflineReturnSystem.js` 离线回归小时数按时辰向下取整再乘 2 导致最多少报近 2 小时（如 3 小时 59 分钟仅报 2 小时）的问题，改为满 1 时辰（2 小时）门槛后按实际整小时计算。
 - 修复 `push.sh` 与 `push.ps1` 硬编码推送到 `origin main` 的问题，统一改为推送当前分支（`git push origin HEAD`）。
 - 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 在测试注入 `deps.availableSkins` 时短路跳过 `qaExtraSkinId` 的缺陷，确保测试注入场景下亦可追加 QA 虚拟皮肤，并在各皮肤测试中补充保留多皮肤测试固件的注释说明。
-- 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
+- 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试，并在迁移计划中记录手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
 
 ## [go-v1.0.0] - 2026-11-01
