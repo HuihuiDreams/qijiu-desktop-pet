@@ -258,7 +258,7 @@ qijiu-desktop-pet/
 │  │  ├─ scenarios.js                    # 空闲/行走/天气场景驱动及 renderer rAF/Long Task 采样
 │  │  ├─ startupProbeMain.js             # 在真实 main.js 前安装无侵入启动计时探针
 │  │  └─ validateBaseline.js             # 正式基线协议、组合完整性和进程指标校验
-│  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本
+│  ├─ run_trim.py                       # 批量按动画分组切除透明边距脚本；测试及转换备用路径在 Windows 调用 python，macOS/Linux 调用 python3，避免 WindowsApps 商店别名（见 skin-pipeline-guide.md）
 │  ├─ scratch_check_adrs.js             # ADR 格式批量检查脚本 (Node.js)
 │  ├─ scratch_check_adrs.py             # ADR 格式批量检查脚本 (Python)
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具

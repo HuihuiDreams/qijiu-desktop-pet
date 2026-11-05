@@ -178,4 +178,4 @@
 
 ### 审查后续验证（2026-11-05）
 - [x] 修复不同高度、相反朝向气泡重叠及入场动画测量误差；气泡单测 23 项通过，覆盖 DPI 1、2/3、1.5，并经 Windows Electron 实际布局验证无重叠；同步 [ADR-024](../decisions/ADR-024-i18n-multilingual-support.md)。
-- [ ] 排查本机 `python3` 启动 `EACCES`，完成 Python 管线测试及全量回归验证。
+- [x] 确认本机 `python3` 指向 WindowsApps 商店重定向别名而触发 `EACCES`，实际 `python` 为 Python 3.12.10；修正管线测试与转换备用路径的跨平台命令，皮肤管线 4 项测试通过，最终 `npm.cmd test` 全部 1166 项通过。
