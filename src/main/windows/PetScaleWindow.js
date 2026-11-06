@@ -1,4 +1,4 @@
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 const { isSenderWindow } = require('../services/IpcSenderAuthorization');
@@ -10,6 +10,9 @@ const {
   PET_SCALE_STEP_PERCENT,
 } = require('../../../ipcContracts');
 
+const PET_SCALE_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const PET_SCALE_TOP_PULSE_MS = 180;
+let petScaleTopPulseTimer = null;
 let scaleConfirmed = false;
 let petScaleCloseInProgress = false;
 
@@ -61,6 +64,29 @@ function getInitialPetScaleWindowBounds() {
   };
 }
 
+function pulsePetScaleWindowTop() {
+  if (petScaleTopPulseTimer) {
+    clearTimeout(petScaleTopPulseTimer);
+    petScaleTopPulseTimer = null;
+  }
+  if (!windowManager.petScaleWindow || windowManager.petScaleWindow.isDestroyed()) return;
+
+  if (typeof windowManager.petScaleWindow.setAlwaysOnTop === 'function') {
+    windowManager.petScaleWindow.setAlwaysOnTop(true, PET_SCALE_ALWAYS_ON_TOP_LEVEL);
+  }
+  if (typeof windowManager.petScaleWindow.moveTop === 'function') {
+    windowManager.petScaleWindow.moveTop();
+  }
+  petScaleTopPulseTimer = setTimeout(() => {
+    petScaleTopPulseTimer = null;
+    if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
+      if (typeof windowManager.petScaleWindow.setAlwaysOnTop === 'function') {
+        windowManager.petScaleWindow.setAlwaysOnTop(false);
+      }
+    }
+  }, PET_SCALE_TOP_PULSE_MS);
+}
+
 function cancelPetScale() {
   if (!scaleConfirmed) {
     PetScaleService.cancel();
@@ -91,11 +117,24 @@ function createPetScaleWindow() {
     },
   });
 
+  if (typeof windowManager.petScaleWindow.setVisibleOnAllWorkspaces === 'function') {
+    windowManager.petScaleWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  }
+
   windowManager.petScaleWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'pet-scale.html'));
 
   windowManager.petScaleWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.petScaleWindow.webContents.on('will-navigate', (event) => event.preventDefault());
 
+  windowManager.petScaleWindow.on('focus', () => {
+    pulsePetScaleWindowTop();
+  });
+  windowManager.petScaleWindow.on('show', () => {
+    pulsePetScaleWindowTop();
+  });
+  windowManager.petScaleWindow.on('restore', () => {
+    pulsePetScaleWindowTop();
+  });
   windowManager.petScaleWindow.on('close', () => {
     if (petScaleCloseInProgress) return;
     petScaleCloseInProgress = true;
@@ -103,6 +142,10 @@ function createPetScaleWindow() {
   });
 
   windowManager.petScaleWindow.on('closed', () => {
+    if (petScaleTopPulseTimer) {
+      clearTimeout(petScaleTopPulseTimer);
+      petScaleTopPulseTimer = null;
+    }
     windowManager.petScaleWindow = null;
     scaleConfirmed = false;
     petScaleCloseInProgress = false;
@@ -113,10 +156,14 @@ function createPetScaleWindow() {
 
 function openPetScaleWindow() {
   const win = createPetScaleWindow();
+  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+    app.focus({ steal: true });
+  }
   if (win.isMinimized()) win.restore();
   if (!win.isVisible()) {
     win.show();
   }
+  pulsePetScaleWindowTop();
   win.moveTop();
   win.focus();
   return win;
@@ -139,4 +186,5 @@ module.exports = {
   createPetScaleWindow,
   openPetScaleWindow,
   closePetScaleWindow,
+  pulsePetScaleWindowTop,
 };

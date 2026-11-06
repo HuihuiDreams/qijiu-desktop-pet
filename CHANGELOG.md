@@ -28,6 +28,7 @@
 
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
 - 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试与手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
+- **macOS 托盘菜单独立子窗口唤起与层级穿透修复 (`Sub-window Activation & Stacking Fix on macOS`)**：修复在 Electron 45 / macOS 13+ 严格窗口层级约束下，从托盘菜单打开换肤画廊、体型调节与状态面板时窗口被压在全屏宠物主窗口（`screen-saver` 顶层 1000）下方或无法跨 Space 桌面显示的问题；统一为换肤（`SkinSelectorWindow`）与体型（`PetScaleWindow`）窗口补齐 `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })` 与 180ms `pulseTop` 瞬间置顶提升，将修仙状态窗口（`StatusWindow`）层级提升至 `screen-saver`，并在所有子窗口展示时增加 `app.focus({ steal: true })`，确保常驻托盘模式下由外部第三方前台应用点击时可可靠抢占焦点并置顶弹窗。
 
 ### Removed
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。

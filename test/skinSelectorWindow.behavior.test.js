@@ -51,6 +51,16 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
 
     focus() {}
 
+    setAlwaysOnTop(flag, level) {
+      this.alwaysOnTop = Boolean(flag);
+      this.alwaysOnTopLevel = level || null;
+    }
+
+    setVisibleOnAllWorkspaces(flag, options) {
+      this.visibleOnAllWorkspaces = Boolean(flag);
+      this.visibleOnAllWorkspacesOptions = options;
+    }
+
     close() {
       this.closeCalls += 1;
       this.listeners.close?.();
@@ -64,6 +74,7 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
   Module._load = function loadSkinSelectorDependencies(request, parent, isMain) {
     if (parent?.filename === WINDOW_MODULE_PATH && request === 'electron') {
       return {
+        app: { focus: () => {} },
         BrowserWindow: FakeBrowserWindow,
         screen: {
           getCursorScreenPoint: () => ({ x: 0, y: 0 }),

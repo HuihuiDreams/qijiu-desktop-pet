@@ -1,7 +1,10 @@
-const { BrowserWindow, screen } = require('electron');
+const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 
+const SKIN_SELECTOR_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const SKIN_SELECTOR_TOP_PULSE_MS = 180;
+let skinSelectorTopPulseTimer = null;
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
 let skinSelectorCloseInProgress = false;
@@ -9,6 +12,29 @@ let deps = {};
 
 function init(dependencies) {
   deps = dependencies;
+}
+
+function pulseSkinSelectorWindowTop() {
+  if (skinSelectorTopPulseTimer) {
+    clearTimeout(skinSelectorTopPulseTimer);
+    skinSelectorTopPulseTimer = null;
+  }
+  if (!windowManager.skinSelectorWindow || windowManager.skinSelectorWindow.isDestroyed()) return;
+
+  if (typeof windowManager.skinSelectorWindow.setAlwaysOnTop === 'function') {
+    windowManager.skinSelectorWindow.setAlwaysOnTop(true, SKIN_SELECTOR_ALWAYS_ON_TOP_LEVEL);
+  }
+  if (typeof windowManager.skinSelectorWindow.moveTop === 'function') {
+    windowManager.skinSelectorWindow.moveTop();
+  }
+  skinSelectorTopPulseTimer = setTimeout(() => {
+    skinSelectorTopPulseTimer = null;
+    if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+      if (typeof windowManager.skinSelectorWindow.setAlwaysOnTop === 'function') {
+        windowManager.skinSelectorWindow.setAlwaysOnTop(false);
+      }
+    }
+  }, SKIN_SELECTOR_TOP_PULSE_MS);
 }
 
 function getInitialSkinSelectorWindowBounds() {
@@ -68,11 +94,24 @@ function createSkinSelectorWindow() {
     },
   });
 
+  if (typeof windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces === 'function') {
+    windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  }
+
   windowManager.skinSelectorWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'skin-selector.html'));
 
   windowManager.skinSelectorWindow.webContents.on('did-finish-load', () => sendSkinSelectorData({ isInitialLoad: true }));
   windowManager.skinSelectorWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.skinSelectorWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.skinSelectorWindow.on('focus', () => {
+    pulseSkinSelectorWindowTop();
+  });
+  windowManager.skinSelectorWindow.on('show', () => {
+    pulseSkinSelectorWindowTop();
+  });
+  windowManager.skinSelectorWindow.on('restore', () => {
+    pulseSkinSelectorWindowTop();
+  });
   windowManager.skinSelectorWindow.on('close', () => {
     if (skinSelectorCloseInProgress) return;
     skinSelectorCloseInProgress = true;
@@ -80,6 +119,10 @@ function createSkinSelectorWindow() {
     skinSelectorSelectionInProgress = false;
   });
   windowManager.skinSelectorWindow.on('closed', () => {
+    if (skinSelectorTopPulseTimer) {
+      clearTimeout(skinSelectorTopPulseTimer);
+      skinSelectorTopPulseTimer = null;
+    }
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
@@ -97,10 +140,14 @@ function openSkinSelectorWindow() {
     skinSelectorOriginalSkinId = deps.getCurrentSkinId();
     skinSelectorSelectionInProgress = false;
   }
+  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+    app.focus({ steal: true });
+  }
   if (win.isMinimized()) win.restore();
   if (!win.isVisible()) {
     win.show();
   }
+  pulseSkinSelectorWindowTop();
   win.moveTop();
   win.focus();
   if (wasAlreadyCreated) {
@@ -153,4 +200,5 @@ module.exports = {
   setSkinSelectorOriginalSkinId: (val) => { skinSelectorOriginalSkinId = val; },
   getSkinSelectorOriginalSkinId,
   sendSkinSelectorData,
+  pulseSkinSelectorWindowTop,
 };

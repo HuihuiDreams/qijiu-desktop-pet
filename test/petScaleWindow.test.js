@@ -98,7 +98,7 @@ test('pet scale renderer supports Escape to cancel and Enter to confirm', () => 
   assert.match(source, /e\.key === 'Enter'/);
 });
 
-test('pet scale main process window module configuration and ordinary window stacking', () => {
+test('pet scale main process window module configuration and top-pulse window stacking', () => {
   const source = readSource('src/main/windows/PetScaleWindow.js');
 
   assert.match(source, /const width = 380/);
@@ -109,8 +109,8 @@ test('pet scale main process window module configuration and ordinary window sta
   assert.match(source, /alwaysOnTop:\s*false/);
   assert.match(source, /minimizable:\s*true/);
   assert.match(source, /sandbox:\s*true/);
-  assert.equal(source.includes('pulsePetScaleWindowTop'), false);
-  assert.equal(source.includes('setVisibleOnAllWorkspaces'), false);
+  assert.match(source, /pulsePetScaleWindowTop/);
+  assert.match(source, /setVisibleOnAllWorkspaces/);
   assert.match(source, /cancelPetScale\(\)/);
   assert.match(source, /if \(!scaleConfirmed\) \{\s*PetScaleService\.cancel\(\);\s*\}/);
 });

@@ -1,4 +1,4 @@
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 const { isSenderWindow } = require('../services/IpcSenderAuthorization');
@@ -34,6 +34,9 @@ function pulseCitySettingWindowTop() {
 
 function raiseCitySettingWindow() {
   if (!windowManager.citySettingWindow || windowManager.citySettingWindow.isDestroyed()) return;
+  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+    app.focus({ steal: true });
+  }
   if (windowManager.citySettingWindow.isMinimized()) windowManager.citySettingWindow.restore();
   if (!windowManager.citySettingWindow.isVisible()) windowManager.citySettingWindow.show();
   pulseCitySettingWindowTop();
