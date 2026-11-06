@@ -79,3 +79,4 @@ Accepted
 - 后续若接入 Microsoft Trusted Signing、EV/OV 证书轮换或硬件密钥签名，只需要替换签名 secret / 签名服务配置，发布策略本身不变。
 - **后续更新 (2026-05-11)**: `0.1.8` 起，Windows 代码签名从强制要求调整为可选能力。当前应用只面向小范围分发，因此当仓库未配置 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD` 时，发布 workflow 可以继续构建未签名的 NSIS 安装包。后续如果分发范围扩大，公开发布仍应优先使用 Authenticode 签名。
 - **后续更新 (2026-11-06)**：Electron 45 不再提供 Windows `ia32` 二进制，NSIS 目标通过 `build.win.target: [{ "target": "nsis", "arch": ["x64"] }]` 显式限定 x64。不得使用 `build.win.arch`，因为 electron-builder 会在双平台构建前校验完整配置，未知字段将同时阻断 Windows 与 macOS 打包。`test/platformCompatibility.test.js` 调用 electron-builder 自带验证器执行配置回归校验，避免仅检查字段存在而漏掉 schema 错误；维护说明见 [项目结构](../structure.md#6-维护提示)。
+- **开发环境补充 (2026-11-06)**：Node.js 最低版本为 22.12.0；通过 `npm ci` 同步锁定依赖后，显式执行 `npx --no-install install-electron`，确保测试及 QA 工具使用的二进制已就绪。Windows Electron 45 对二进制目录执行沙盒读取权限检查，遇到对应错误时仅为 `node_modules/electron/dist` 补充 `ALL APPLICATION PACKAGES` 读取和执行权限；受限自动化环境与普通终端应分别复测。具体命令见 [README](../../README.md)。

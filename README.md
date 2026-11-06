@@ -48,9 +48,12 @@
 
 ## 🚀 快速开始 (Quick Start)
 
-1. 确保安装了 [Node.js](https://nodejs.org/)。
-2. 安装依赖：`npm install`
-3. 运行程序：`npm run dev`
+1. 安装 [Node.js](https://nodejs.org/) **22.12.0 或更高版本**，本机已验证 Node.js 24.15.0。
+2. 在项目根目录安装锁定版本的依赖：`npm ci`。
+3. 下载并解压对应版本的 Electron 二进制：`npx --no-install install-electron`。
+4. 运行程序：`npm run dev`。
+
+Electron 42 起不再通过 `postinstall` 自动下载二进制，因此运行 `npm test` 或 Electron QA 工具前也应先完成第 3 步。更新代码后，重复第 2、3 步即可同步本机依赖与运行时。
 
 程序启动后，两个角色会出现在你的桌面上。
 
@@ -246,7 +249,8 @@ Windows 11 默认接电后约 5 分钟关屏/睡眠；如果想观看 5 分钟�
 | Command | Description |
 | --------- | ------------- |
 | `npm run dev` | 启动 Electron 应用进行开发调试 |
-| `npm install` | 安装项目依赖 |
+| `npm ci` | 按 `package-lock.json` 安装锁定版本的项目依赖 |
+| `npx --no-install install-electron` | 下载并解压当前依赖版本对应的 Electron 二进制 |
 | `npm run build` | 使用 electron-builder 进行跨平台构建（Windows 下生成 `.exe`，macOS 下生成 `.dmg` 和 `.zip`） |
 | `npm run verify:installer` | 构建前检查 Windows 安装包所需的配置和脚本文件是否存在 |
 | `npm run verify:package` | 构建后检查 `dist` 中的 `app.asar` 是否误包含内部指引或工作目录 |
@@ -254,6 +258,16 @@ Windows 11 默认接电后约 5 分钟关屏/睡眠；如果想观看 5 分钟�
 | `npm test` | 运行 Node.js 单元与行为测试（包含更新管理器逻辑测试） |
 | `npm run test:e2e` | 使用 Playwright 运行真实 Electron 端到端测试 |
 | `npm run test:font` | 使用 Playwright 启动 Electron，检查日语字体实际渲染 |
+
+### Windows 开发环境排障
+
+如果 Electron 45 启动时出现 `Sandboxed processes cannot read`，并指出 `node_modules/electron/dist` 的权限缺少 `ALL APPLICATION PACKAGES`，可在项目根目录的 PowerShell 中执行：
+
+```powershell
+icacls ".\node_modules\electron\dist" /grant "*S-1-15-2-1:(OI)(CI)(RX)"
+```
+
+该命令仅为 Electron 二进制目录及其子项增加读取和执行权限。重新安装依赖后若再次出现同一错误，可重新检查并修复该目录权限；若在受限自动化沙盒内仍失败，请在普通本地终端复测。PowerShell 若因执行策略拦截 `npm.ps1` 或 `npx.ps1`，可改用 `npm.cmd` 或 `npx.cmd` 执行上述开发命令。
 
 ## 🏗️ 架构 (Architecture)
 

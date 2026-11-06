@@ -20,6 +20,8 @@
 - **子窗口关闭按钮与主次操作按钮视觉规范统一 (`Sub-window Close Button & Action Buttons Design System`)**：统一 `src/status.html` 关闭按钮为与其他子窗口一致的矢量 SVG 线条图标；将状态窗口与皮肤画廊（`status.css`、`skin-selector.css`）关闭按钮悬停态由朱砂红统合为灵玉绿（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；将换肤画廊「确定」与「取消」按钮视觉层级对齐全局设计系统，提供灵玉-仙金渐变主按钮、`:disabled` 清晰禁用反馈与半透明次按钮；为状态窗与换肤窗口各交互按钮补齐全局统一的 `:focus-visible` 焦点环（详见 [ADR-048](./docs/decisions/ADR-048-modern-web-standards-adoption.md)）。
 - **修仙状态面板事件增量就地更新与 IPC 降频优化 (`Status Panel In-place Incremental Updates & IPC Throttling`)**：在 `StatusBar.js` 中增加快照比对缓存，数值未变化时自动跳过向主进程的无意义 IPC 通信；在 `statusWindow.js` 中引入轻量就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表与头像模式结构不变时直接更新头像 `src`、度量条 `.style.width`、`aria-valuenow` 与数值文本，消除每秒 `replaceChildren` 导致的 DOM 重建与文本失焦；仅在首屏加载、宠物列表/头像模式变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 
+- 更新开发者 README：明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装及 Electron 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
+
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
