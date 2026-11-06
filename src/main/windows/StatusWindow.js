@@ -1,8 +1,10 @@
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const { normalizeStatusWindowSize } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
 const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAuthorization');
+
+const STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 
 let deps = {};
 let lastStatusWindowData = null;
@@ -107,8 +109,12 @@ function createStatusWindow() {
     },
   });
 
-  windowManager.statusWindow.setAlwaysOnTop(true, 'floating');
-  windowManager.statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  if (typeof windowManager.statusWindow.setAlwaysOnTop === 'function') {
+    windowManager.statusWindow.setAlwaysOnTop(true, STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL);
+  }
+  if (typeof windowManager.statusWindow.setVisibleOnAllWorkspaces === 'function') {
+    windowManager.statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+  }
   windowManager.statusWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'status.html'));
 
   windowManager.statusWindow.webContents.on('did-finish-load', () => sendStatusWindowData());
@@ -127,11 +133,24 @@ function createStatusWindow() {
 
 function openStatusWindow() {
   const win = createStatusWindow();
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
+    app.focus({ steal: true });
+  }
+  if (typeof win.isMinimized === 'function' && win.isMinimized()) {
+    win.restore();
+  }
   if (!win.isVisible()) {
     win.show();
   }
-  win.moveTop();
-  win.focus();
+  if (typeof win.setAlwaysOnTop === 'function') {
+    win.setAlwaysOnTop(true, STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL);
+  }
+  if (typeof win.moveTop === 'function') {
+    win.moveTop();
+  }
+  if (typeof win.focus === 'function') {
+    win.focus();
+  }
   sendStatusWindowData();
   return win;
 }

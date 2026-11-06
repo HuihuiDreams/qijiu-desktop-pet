@@ -51,6 +51,16 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
 
     focus() {}
 
+    setAlwaysOnTop(flag, level) {
+      this.alwaysOnTop = Boolean(flag);
+      this.alwaysOnTopLevel = level || null;
+    }
+
+    setVisibleOnAllWorkspaces(flag, options) {
+      this.visibleOnAllWorkspaces = Boolean(flag);
+      this.visibleOnAllWorkspacesOptions = options;
+    }
+
     close() {
       this.closeCalls += 1;
       this.listeners.close?.();
@@ -64,6 +74,7 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
   Module._load = function loadSkinSelectorDependencies(request, parent, isMain) {
     if (parent?.filename === WINDOW_MODULE_PATH && request === 'electron') {
       return {
+        app: { focus: () => {} },
         BrowserWindow: FakeBrowserWindow,
         screen: {
           getCursorScreenPoint: () => ({ x: 0, y: 0 }),
@@ -131,6 +142,24 @@ test('the selector uses ordinary window stacking and can be minimized', () => {
   const win = skinSelectorWindow.openSkinSelectorWindow();
   assert.equal(win.options.alwaysOnTop, false);
   assert.equal(win.options.minimizable, true);
+});
+
+test('skin selector pulses to screen-saver on open and reverts to normal after 180ms', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+
+  assert.equal(win.alwaysOnTop, true);
+  assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+  assert.equal(win.visibleOnAllWorkspaces, true);
+  assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
+
+  t.mock.timers.tick(200);
+
+  assert.equal(win.alwaysOnTop, false);
 });
 
 test('closing the skin selector ignores the blur emitted by its own close operation', () => {

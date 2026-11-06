@@ -58,6 +58,16 @@ function loadFreshPetScaleWindow(extraDeps = {}) {
 
     focus() {}
 
+    setAlwaysOnTop(flag, level) {
+      this.alwaysOnTop = Boolean(flag);
+      this.alwaysOnTopLevel = level || null;
+    }
+
+    setVisibleOnAllWorkspaces(flag, options) {
+      this.visibleOnAllWorkspaces = Boolean(flag);
+      this.visibleOnAllWorkspacesOptions = options;
+    }
+
     close() {
       this.closeCalls += 1;
       this.listeners.close?.();
@@ -70,6 +80,7 @@ function loadFreshPetScaleWindow(extraDeps = {}) {
   Module._load = function loadPetScaleWindowDependencies(request, parent, isMain) {
     if (parent?.filename === WINDOW_MODULE_PATH && request === 'electron') {
       return {
+        app: { focus: () => {} },
         BrowserWindow: FakeBrowserWindow,
         screen: {
           getCursorScreenPoint: () => ({ x: 0, y: 0 }),
@@ -156,6 +167,24 @@ test('pet scale window uses ordinary window stacking and can be minimized', () =
   assert.equal(win.options.alwaysOnTop, false);
   assert.equal(win.options.minimizable, true);
   assert.equal(win.options.show, false);
+});
+
+test('pet scale window pulses to screen-saver on open and reverts to normal after 180ms', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { petScaleWindow } = loadFreshPetScaleWindow();
+  const win = petScaleWindow.openPetScaleWindow();
+
+  assert.equal(win.alwaysOnTop, true);
+  assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+  assert.equal(win.visibleOnAllWorkspaces, true);
+  assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
+
+  t.mock.timers.tick(200);
+
+  assert.equal(win.alwaysOnTop, false);
 });
 
 test('openPetScaleWindow restores minimized window on reopen', () => {

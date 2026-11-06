@@ -160,7 +160,7 @@ function createWindow() {
   DisplayService.lockPetWindowToBounds({ x, y, width, height });
 
   // macOS 特有：全工作区可见
-  windowManager.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
 
   // 启动置顶守护
   startKeepOnTopWatcher();

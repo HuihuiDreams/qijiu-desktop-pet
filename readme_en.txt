@@ -12,7 +12,7 @@ This app supports both Windows and macOS:
   - System Requirements: Windows 10 / 11 (64-bit). Legacy versions like Windows 7 / 8 / 8.1 and all 32-bit operating systems are not supported due to modern Electron architecture.
   - Installation: Download the `.exe` installer and run it.
 - macOS:
-  - System Requirements: macOS 12.0 (Monterey) or higher.
+  - System Requirements: macOS 13.0 (Ventura) or higher.
   - Architecture:
     - Apple Silicon (M1/M2/M3, etc.): Download `*-arm64.dmg`.
     - Intel: Download `*-x64.dmg`.

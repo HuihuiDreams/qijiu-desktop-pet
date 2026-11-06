@@ -109,6 +109,8 @@ qijiu-desktop-pet/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 |-- .agents/skills/skin-asset-pipeline/SKILL.md      # 皮肤素材处理与图片转换流水线技能
 |-- .agents/skills/release-and-packaging/SKILL.md    # 发布打包与签名合规流水线技能
+|-- .github/dependabot.yml              # Dependabot 依赖更新配置：每周一定时检测 npm 依赖并提 PR，无自动合并
+|-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建与发布预检）
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
@@ -116,9 +118,9 @@ qijiu-desktop-pet/
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
-├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
+├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
-├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/普通层级与最小化支持/设置读取/预览/确认/取消 + 对应 IPC
+├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/脉冲置顶与跨 Space 支持/设置读取/预览/确认/取消 + 对应 IPC
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
@@ -492,7 +494,7 @@ src/assets/{skinId}/
 
 ### 3.16 现代 Web 标准与渲染层技术规范
 
-DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
+DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
 
 - **Popover API 与 Top Layer 原生顶层提升**：
   番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
@@ -653,6 +655,9 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
+- 开发环境要求 Node.js 22.12.0+；运行 `npm ci` 后执行 `npx --no-install install-electron` 准备二进制，再启动应用或测试。Windows Electron 目录读取权限与 PowerShell 排障见 [README](../README.md)（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
+- `fast-uri` 经 `electron-store → conf → ajv` 进入生产依赖树，并与构建工具共享；锁文件采用 3.1.9 安全补丁，`test/dependencyUriSecurity.test.js` 覆盖 Ajv URI 解析器的主机名规范化、纯路径 suffix 转义及正常 schema 引用兼容性（[ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)）。
+- Windows NSIS 架构配置在 `package.json` 的 `build.win.target` 对象内（`[{ "target": "nsis", "arch": ["x64"] }]`）；`build.win.arch` 不是合法字段，且会阻断双平台构建。`test/platformCompatibility.test.js` 使用 electron-builder 自带验证器检查完整构建配置（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
 - electron-builder 还会排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`；Windows 和 macOS 构建完成后由 `npm run verify:package` 扫描全部 `app.asar`，若内部 Agent 文件残留或没有生成可验证的包则立即失败。
 

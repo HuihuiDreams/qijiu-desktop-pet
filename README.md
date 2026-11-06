@@ -43,7 +43,7 @@
 * **安装步骤**：双击运行安装程序，按照提示完成安装。
 
 ### 🍎 macOS 平台
-* **系统要求**：macOS 12.0 (Monterey) 及更高版本。
+* **系统要求**：macOS 13.0 (Ventura) 及更高版本。
 * **版本选择**：
   * **Apple Silicon 芯片**（M1 / M2 / M3 / M4 等）：下载 `good-omens-pet-setup-x.y.z-arm64.dmg`。
   * **Intel 芯片**：下载 `good-omens-pet-setup-x.y.z-x64.dmg`。
@@ -87,9 +87,13 @@
 
 ## 🛠️ 本地开发与测试 (Development)
 
+> [!NOTE]
+> 开发环境要求 Node.js 22.12.0+。安装依赖建议使用 `npm ci` 锁定版本，随后执行 `npx --no-install install-electron` 确保对应 Electron 二进制就绪。
+
 ```bash
-# 安装依赖
-npm install
+# 安装锁定依赖与准备 Electron 二进制
+npm ci
+npx --no-install install-electron
 
 # 启动开发环境（带独立 QA 数据隔离）
 DESKTOP_PET_USER_DATA_DIR=~/.deskpet-good-omens-dev npm run dev

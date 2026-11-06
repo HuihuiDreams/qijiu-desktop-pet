@@ -5,12 +5,20 @@
 ## [Unreleased]
 
 ### Added
+- **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR）；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
+- **跨平台与底层依赖安全回归测试套件 (`Platform Compatibility & Dependency Security Test Suites`)**：新增 `test/platformCompatibility.test.js`、`test/dependencyUriSecurity.test.js`、`test/dependabotConfig.test.js` 与 `test/subWindowActivation.test.js`，全面覆盖 Node.js 22+ 环境、macOS 13+ 最低系统要求、Windows NSIS x64 架构配置合法性、fast-uri 3.1.9 针对 CVE 补丁的解析规范化、以及子窗口在 Electron 45 运行时的层级提升与防闪烁策略。
 - **旧书店伴读番茄钟黄铜门铃音效与奇迹羽毛飘落仪式 (`Antique Shop Bell & Ineffable Feather Ceremony`)**：替换原修仙禅定颂钵为伦敦 Soho A.Z. Fell & Co. 古董书店复古黄铜迎客门铃声（Web Audio API 双音泛音物理合成），清脆温润且具穿透力；将番茄钟完成仪式升级为好兆头专属奇迹风格，重构天使亚茨拉斐尔白羽与恶魔克劳利黑羽的写实鸟羽矢量形态（45° 自然羽枝开叉裂缝、外露半透明羽茎与非对称羽面阴影，消除树叶感），升级带有 3D 气动翻滚与微光摇曳的飘落动效，支持无障碍减动效降级，补充自动化测试。
 - **好兆头经典夜莺羁绊台词接入 (`Nightingale Dialogue Integration`)**：将《好兆头》象征二人羁绊与“属于我们的阵营”的经典夜莺典故（*“No nightingales”* 与 *“A Nightingale Sang in Berkeley Square”*）作为概率对白深度植入双人拥抱（`hug`）与深夜高好感联动梦境（`dream.linked`）。双人拥抱时克劳利与亚茨拉斐尔互诉夜莺守候；深夜梦话时亚茨拉斐尔呓语寻觅夜莺，克劳利温柔回应承诺伯克利广场的夜莺永远为他歌唱。中、英、日三语纯正原生撰写并全量通过自动化单元测试。
 - **对话气泡顶部视口感知与自动翻转 (`Dialog Bubble Top-Edge Auto-Flipping`)**：`DialogBubble.js` 与 `src/dialog-bubble.css` 新增顶部视口碰撞检测与 `.dialog-bubble--flipped` 翻转样式。当角色靠近屏幕顶端（`pet.y < 65` 或气泡距顶端小于 8px）时自动向下翻转显示对话气泡，气泡箭头倒置并支持 `@starting-style` 与 `@media (prefers-reduced-motion: reduce)`；双宠普通气泡重叠处理增加朝下翻转兼容与双向错开逻辑，彻底解决靠近屏幕顶端时的台词裁切与遮挡。
 - **状态面板事件驱动就地更新与 IPC 降频 (`Event-Driven Status Window & In-Place DOM Updates`)**：`src/ui/StatusBar.js` 引入快照哈希缓存，仅在角色数值实际变化时发送 IPC 更新，消除空闲状态下的每秒轮询开销；`src/statusWindow.js` 新增差量就地更新机制（`updatePetStatsBlock`），在角色列表结构稳定时直接更新进度条宽度、数值与无障碍属性，避免每秒全量重建 DOM 引发的布局重排与闪烁，仅在首次加载、结构变化或语言切换时才触发窗口尺寸自适应测量。
 
 ### Changed
+- **核心运行时与依赖大版本基线升级 (`Runtime & Dependency Major Upgrades: Electron 45, electron-store 12 & asar 4`)**：
+  - **核心引擎升级**：Electron 升级至 45.2.1（内置 Chromium 基线由 134+ 提升至 156+），开发依赖 `@electron/asar` 升级至 4.3.1，`electron-builder` 升级至 26.18.0，`glob` 升级至 14.0.3，`@playwright/test` 升级至 1.64.1，生产依赖 `electron-store` 升级至 12.0.0，`electron-log` 升级至 5.4.4，`electron-updater` 升级至 6.8.11。
+  - **系统要求变更（Breaking Change）**：将 `package.json` 中的 macOS 最低系统要求（`mac.minimumSystemVersion`）提升至 `13.0`（Ventura），全语言 Readme 同步更新；不再支持 macOS 12 Monterey，严格对齐 Electron 44+ 官方运行时要求（详见 [ADR-026](./docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
+  - **Node.js 环境基线**：在 `package.json` 显式声明 `"engines": { "node": ">=22.12.0" }`，以对齐 `@electron/asar@4` 的 ESM `require()` 语法规范与 `conf@16` 运行时约束；GitHub Actions CI 工作流（`build-installer.yml` 与 `release-preflight.yml`）同步指定 Node.js 22。
+  - **架构限定**：在 Windows 构建目标（`win.target`）中显式限定 64 位架构（`"arch": ["x64"]`），规避 Electron 44+ 弃用 32 位（`ia32`）的打包隐患（详见 [ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
+  - **开发环境说明**：更新开发者 README，明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装与 `npx --no-install install-electron` 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（详见 [ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 - 重构番茄钟完成音频接口与关键帧 3D 透视景深：彻底移除 `src/pomodoroWindow.js` 中名不副实的旧方法兼容壳 `playMeditationChime()`，将触发调用点与单测断言全量统一为 `playAntiqueShopBellChime()`；移除 `.pomodoro-feather` 上对自身无景深效果的 `perspective: 600px` 属性，改为在羽毛漂浮关键帧（`pomodoroFeatherAngelDrift` 与 `pomodoroFeatherDemonDrift`）的 `transform` 序列头部直接声明 `perspective(600px)`，确保羽毛沿 Y 轴摆动翻转时具备近大远小的真实 3D 视锥景深。
 - 统一托盘菜单三语标题（`trayTitle`）与开机自启动标识为「好兆头桌宠」（`Good Omens Desktop Pet` / `グッド・オーメンズ デスクトップペット`），更新 `src/data/i18n.js` 头部翻译完成状态注释与 `test/statusWindowRegression.test.js` 角色名测试固件。
 - 清理 `src/systems/SkinManager.js` 中已下线旧皮肤（`animal_ears`、`school_au`）的残留缩放配置，移除未被 `TrayManager` 点阵托盘引用的 `src/assets/iconTemplate.png` 与 `iconTemplate@2x.png` 及其生成逻辑；将 `.github/workflows/release-preflight.yml` 默认权限收紧为 `contents: read`。
@@ -19,12 +27,19 @@
 - 重构好兆头双人互动「一起施展奇迹」（`cultivate`）的数值逻辑以贴合原作设定：移除原七九版双修恢复灵力及为角色 A 额外恢复 15 点饱腹的机制，改为双方各消耗 10 点奇迹能量（`qiA: -10, qiB: -10`，且须双方当前奇迹能量均 `>= 10` 方可触发），同时大幅提升双方心境（`+12`）与羁绊（`+6`），同步更新中、英、日三语发行说明、领域词汇表与自动化测试。
 
 ### Fixed
+- **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
+- **macOS 独立子窗口唤起层级穿透与 Dock 闪烁修复 (`Sub-window Activation & Stacking Fix on macOS`)**：在 Electron 45 / macOS 13+ 严格窗口层级约束下，从托盘菜单打开换肤画廊、体型调节与状态面板时，统一配置 `skipTransformProcessType: true` 避免 Dock 栏和窗口瞬间闪烁；为换肤画廊（`SkinSelectorWindow`）、体型调节（`PetScaleWindow`）与城市设置（`CitySettingWindow`）增加 180ms `pulseTop` 瞬间置顶提升（`screen-saver` 级别），将修仙状态窗口（`StatusWindow`）层级提升至 `screen-saver`，并在所有子窗口展示时增加 `app.focus({ steal: true })` 抢占焦点保护，确保常驻托盘模式下由外部第三方前台应用点击时可可靠置顶弹窗。
+- 修复 Windows 架构误配在 `build.win.arch` 导致 Windows 与 macOS 打包均被 schema 校验阻断的问题；将 `arch` 移入 `win.target` 的 NSIS 目标对象，并补充 electron-builder 完整配置校验回归测试（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
+- 修复图片转换脚本 `scripts/convert_images.js` 在 Windows 环境下因硬编码 `python3` 误调 WindowsApps 商店别名的问题，跨平台动态选用 `python` / `python3`。
 - 修复日文版右键菜单交互文案与中英文不对齐的问题：将克劳利交互调整为「🤚 天使の慈愛」，亚茨拉斐尔交互调整为「🤚 悪魔の寵愛」；剔除日文版晨间问候与联合奇迹台词中「光あれ」后多余的英文字样与括号。
 - 修复 `src/systems/OfflineReturnSystem.js` 离线回归小时数按时辰向下取整再乘 2 导致最多少报近 2 小时（如 3 小时 59 分钟仅报 2 小时）的问题，改为满 1 时辰（2 小时）门槛后按实际整小时计算。
 - 修复 `push.sh` 与 `push.ps1` 硬编码推送到 `origin main` 的问题，统一改为推送当前分支（`git push origin HEAD`）。
 - 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 在测试注入 `deps.availableSkins` 时短路跳过 `qaExtraSkinId` 的缺陷，确保测试注入场景下亦可追加 QA 虚拟皮肤，并在各皮肤测试中补充保留多皮肤测试固件的注释说明。
 - 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试，并在迁移计划中记录手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
+
+### Security
+- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；补充 URI 回归与正常 schema 引用解析测试，不增加直接依赖或 overrides（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
 
 ## [go-v1.0.0] - 2026-11-01
 

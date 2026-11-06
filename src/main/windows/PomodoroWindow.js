@@ -1,4 +1,4 @@
-const { BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAuthorization');
@@ -144,6 +144,10 @@ function createPomodoroWindow() {
 
 function openPomodoroWindow() {
   const win = createPomodoroWindow();
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
+    app.focus({ steal: true });
+  }
+  if (win.isMinimized()) win.restore();
   if (!win.isVisible()) {
     win.show();
   }
@@ -167,7 +171,7 @@ function applyPomodoroWindowPinState(shouldRaise = false) {
   windowManager.pomodoroWindow.setAlwaysOnTop(pomodoroAlwaysOnTop, POMODORO_ALWAYS_ON_TOP_LEVEL);
 
   if (pomodoroAlwaysOnTop) {
-    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   } else {
     windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(false);
   }

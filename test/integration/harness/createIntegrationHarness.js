@@ -97,6 +97,14 @@ function createMockWindow(id = 1, options = {}) {
     },
     focus() {},
     moveTop() {},
+    setAlwaysOnTop(flag, level) {
+      this.alwaysOnTop = Boolean(flag);
+      this.alwaysOnTopLevel = level || null;
+    },
+    setVisibleOnAllWorkspaces(flag, options) {
+      this.visibleOnAllWorkspaces = Boolean(flag);
+      this.visibleOnAllWorkspacesOptions = options;
+    },
     loadFile: () => Promise.resolve(),
     on(event, handler) {
       listeners[event] = listeners[event] || [];

@@ -67,7 +67,7 @@ in this project.
 
 ## Browser Support & Web Standards Policy
 
-1. Runtime Baseline: Electron 42+ (Chromium 134+ runtime baseline). All renderer code targets modern Chromium web standards directly.
+1. Runtime Baseline: Electron 45+ (Chromium 156+ runtime baseline). All renderer code targets modern Chromium web standards directly.
 2. Zero External Polyfills / CDNs: Never introduce polyfills, external component libraries, or CDN scripts/styles. Maintain a strict Content Security Policy (CSP) and zero-dependency renderer footprint.
 3. Native Modern Web Standards:
    - Popover API (`popover="manual"`, `showPopover()`, `hidePopover()`) for top layer elevation without `z-index` competition.
