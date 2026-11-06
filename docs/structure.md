@@ -654,6 +654,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
+- Windows NSIS 架构配置在 `package.json` 的 `build.win.target` 对象内（`[{ "target": "nsis", "arch": ["x64"] }]`）；`build.win.arch` 不是合法字段，且会阻断双平台构建。`test/platformCompatibility.test.js` 使用 electron-builder 自带验证器检查完整构建配置（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
 - electron-builder 还会排除 `.codex/`、`.agents/`、`.geminirules`、`AGENTS.md` 与 `CLAUDE.md`；Windows 和 macOS 构建完成后由 `npm run verify:package` 扫描全部 `app.asar`，若内部 Agent 文件残留或没有生成可验证的包则立即失败。
 

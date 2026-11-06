@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { validateConfiguration } = require('app-builder-lib/out/util/config/config');
 
 const packageJson = require('../package.json');
 
@@ -12,15 +13,15 @@ test('package.json targets modern 64-bit architectures and macOS 13+ (Ventura+)'
     'macOS minimumSystemVersion must be 13.0 to match Electron 44+ / Chromium 152+ upstream drop of macOS 12',
   );
 
-  assert.ok(
-    Array.isArray(packageJson.build.win.arch) && packageJson.build.win.arch.includes('x64'),
-    'Windows build must explicitly target x64',
+  assert.deepEqual(
+    packageJson.build.win.target,
+    [{ target: 'nsis', arch: ['x64'] }],
+    'Windows NSIS target must explicitly select x64 within the target configuration',
   );
+});
 
-  assert.ok(
-    !packageJson.build.win.arch.includes('ia32'),
-    'Windows build must not target ia32 since Electron 44+ dropped 32-bit binaries',
-  );
+test('electron-builder accepts the complete build configuration for both platform workflows', async () => {
+  await validateConfiguration(structuredClone(packageJson.build), { isEnabled: false });
 });
 
 test('GitHub Actions workflows specify node-version 22 to satisfy electron-store and conf engines', () => {
