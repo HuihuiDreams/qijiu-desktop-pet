@@ -416,6 +416,7 @@ src/assets/{skinId}/
 ### 3.10 更新系统
 
 `updateManager.js` 封装更新流程：
+
 - 下载完成后必须同时取得本地安装包路径和 SHA-512 元数据，并在安装确认前完成 Base64 或 Hex 摘要比对；任何缺失、不可读或不匹配情况都按 `integrity-check-failed` 终止，成功下载本身不等于可信更新。
 
 - Windows 主要走 `electron-updater` 和 GitHub Releases。
@@ -643,7 +644,6 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-046](./decisions/ADR-046-electron-mock-testing-strategy.md)：主进程测试的 Electron Mock 拦截策略。
 - [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定、拖动实时预览与独立设置子窗口）。
 - [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
-
 
 ## 6. 维护提示
 

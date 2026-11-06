@@ -1,12 +1,15 @@
 # ADR-026: macOS 手动更新启动兼容性与包内可执行文件命名
 
 ## Status
+
 Accepted
 
 ## Date
+
 2026-05-26
 
 ## Context
+
 macOS 用户反馈：首次安装旧版本并绕过“无法验证开发者”后可以正常运行，但使用 `0.4.1` DMG 覆盖安装更新后，Dock 图标只跳动，应用无法加载。
 
 本项目没有 Apple Developer ID 证书，因此 macOS 自动更新不能依赖 Squirrel.Mac 的签名校验。`0.4.1` 已将 macOS 更新路径改为手动下载 DMG 并拖入 Applications 覆盖安装。
@@ -17,6 +20,7 @@ macOS 用户反馈：首次安装旧版本并绕过“无法验证开发者”�
 2. 打包后的 macOS `.app` 外层名称、`CFBundleExecutable` 和 `Contents/MacOS/` 下真实启动文件都使用了中文 `七九爱宠`。在部分 macOS / LaunchServices 场景中，覆盖安装后可能无法正确解析包内中文可执行文件，表现为 Dock 图标跳动后无法加载。
 
 ## Decision
+
 macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包内真实可执行文件统一改为 ASCII 名称 `DeskPet`。
 
 具体实现：
@@ -37,27 +41,33 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 显式设置 `mac.minimumSystemVersion` 为 `13.0`，并将 README / 发布说明中的 macOS 最低版本同步为 macOS 13.0 (Ventura)。Electron 45 生成的包本身已经声明 `LSMinimumSystemVersion = 13.0`（Electron 44+ 放弃对 macOS 12 Monterey 的支持），文档不能继续写 12.0 或 11.0。
 
 ## Alternatives Considered
+
 ### 要求用户先卸载旧版本
+
 - 优点：表面上能减少覆盖安装时的旧进程干扰。
 - 缺点：容易让用户误以为存档会丢失，也不能解决包内中文可执行文件被 LaunchServices 解析失败的问题。
 - 结论：拒绝。正确动作是关闭旧进程，不是卸载。
 
 ### 将整个 `.app` 改名为 `DeskPet.app`
+
 - 优点：完全 ASCII，系统兼容性最好。
 - 缺点：用户可见品牌名会变化；README、DMG 展示名和 Applications 中的名称都要调整。
 - 结论：拒绝。问题只需要修包内可执行文件名，外层用户可见名称可以保留中文。
 
 ### 购买 Apple Developer ID 并走签名公证
+
 - 优点：长期最标准，Gatekeeper 体验最好，也能恢复更自动化的更新路径。
 - 缺点：需要付费证书和新的发布流程；不能作为当前小范围分发的即时修复。
 - 结论：作为未来改进方向保留，本次不依赖它。
 
 ### 仅更新用户说明，不改打包产物
+
 - 优点：改动最小。
 - 缺点：只能解决“旧版本仍在运行”的误操作，不能解决 `.app` 包内启动文件名兼容性。
 - 结论：拒绝。需要同时修产物和说明。
 
 ## Consequences
+
 - 用户在 Finder / Applications 中看到的仍是 `七九爱宠.app`。
 - 包内启动文件变为 `DeskPet`，降低 LaunchServices 对中文可执行文件名的兼容风险。
 - 覆盖安装流程仍然适用于无证书分发，但用户必须先退出正在运行的旧版本。

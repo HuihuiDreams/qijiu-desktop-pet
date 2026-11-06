@@ -54,6 +54,7 @@ npm run verify:signatures
 ```
 
 预期结果：
+
 - 所有生成的 `dist/*.exe` 文件均报告 `Status: Valid`（状态：有效）。
 - 签名者主题显示预期的发布者身份。
 
@@ -62,7 +63,8 @@ npm run verify:signatures
 代码签名能提升应用可信度，但可能无法立即消除新应用或新文件哈希的 SmartScreen 警告。Microsoft SmartScreen 会评估发布者声誉和文件声誉。在新安装包的警告完全消失之前，可能仍需要积累一定的下载量/历史记录。
 
 参考链接：
-- https://www.electron.build/code-signing.html
-- https://www.electron.build/code-signing-win.html
-- https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation
-- https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options
+
+- <https://www.electron.build/code-signing.html>
+- <https://www.electron.build/code-signing-win.html>
+- <https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/smartscreen-reputation>
+- <https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/code-signing-options>

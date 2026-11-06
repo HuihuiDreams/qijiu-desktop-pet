@@ -35,6 +35,7 @@
 $env:PYTHONIOENCODING="utf8"
 python tools/run_trim.py src/assets/<YOUR_SKIN_NAME>
 ```
+
 **脚本的作用**：它会自动遍历每组内的所有图片，找出组内并集的最大边界（Bounding Box），将多余透明边距切除，并为这组图片加上安全边距（`PADDING=12`），使得它们拥有完全一致的新画布尺寸，同时保留水平居中与底部对齐效果。对于没有落入任何分组的独立图片（如 `hug.png`），脚本会将其单独切边，确保它能被放到最大。
 
 *(注：执行此脚本会直接覆盖修改对应路径下的 `.png` 原图文件)*
@@ -44,14 +45,17 @@ python tools/run_trim.py src/assets/<YOUR_SKIN_NAME>
 ### 2. 将优化后的 PNG 转换为 WebP (256x256)
 
 执行 Node.js 转换脚本（可指定目标皮肤目录）：
+
 ```powershell
 node scripts/convert_images.js src/assets/<YOUR_SKIN_NAME>
 ```
+
 **脚本的作用**：调用 `ffmpeg` 递归遍历对应文件夹，将所有 `*.png` 按比例缩放并居中放置到严格的 `256x256` 黑色透明画布中（`color=black@0`），输出最终运行时使用的 `*.webp` 渲染资产。
 
 ### 3. 清理冗余的 PNG 文件
 
 WebP 转换成功且在本地 `npm run dev` 验证无误后，可以删除 `src/assets/` 目录中冗余的 `.png` 文件（注意保留好你在其他地方的原始备份）。
+
 ```powershell
 Get-ChildItem -Path src/assets/<YOUR_SKIN_NAME> -Filter *.png -Recurse | Remove-Item -Force
 ```
@@ -73,12 +77,13 @@ static SKIN_IMAGE_SCALES = {
 - **开发调试 (`npm run dev`)**：
   - **新增全新皮肤**：如果本地 `protected-assets/` 清单中还不存在你的新皮肤，主进程会自动触发开发环境回退机制，直接读取 `src/assets/<YOUR_SKIN_NAME>/*.webp` 明文图片，可以直接启动调试。
   - **修改已有皮肤（重要防坑）**：如果你是在调优修改**原本就已经存在**的皮肤 WebP（如 `default/left.webp`），并且本地由于之前的构建或生成操作已经存在了 `protected-assets/` 目录，主进程会优先匹配并加载密文缓存，这会导致你在 `npm run dev` 中看到的依然是修改前的旧图。此时只需手动执行一次加密更新命令即可刷新预览：
+
     ```powershell
     npm run protect:assets
     ```
+
     *(或者直接删除 `protected-assets/` 目录，让主进程自动走明文回退加载。)*
 
 - **发版打包 (`npm run build`)**：
   - `package.json` 中已经配置了 `"prebuild": "node scripts/protect-assets.js"` 自动钩子。
   - **无需手动先跑加密**：每次运行构建打包（`npm run build` / `electron-builder`）时，系统会在打包前自动将 `src/assets/` 下的所有最新皮肤 WebP 加密输出到 `protected-assets/` 目录，并从最终生成的安装包产物（asar / 安装目录）中自动剔除明文 `*.webp`，保障安全与包体积瘦身。
-
