@@ -169,6 +169,24 @@ test('pet scale window uses ordinary window stacking and can be minimized', () =
   assert.equal(win.options.show, false);
 });
 
+test('pet scale window pulses to screen-saver on open and reverts to normal after 180ms', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { petScaleWindow } = loadFreshPetScaleWindow();
+  const win = petScaleWindow.openPetScaleWindow();
+
+  assert.equal(win.alwaysOnTop, true);
+  assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+  assert.equal(win.visibleOnAllWorkspaces, true);
+  assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
+
+  t.mock.timers.tick(200);
+
+  assert.equal(win.alwaysOnTop, false);
+});
+
 test('openPetScaleWindow restores minimized window on reopen', () => {
   const { petScaleWindow, windowManager } = loadFreshPetScaleWindow();
   const win = petScaleWindow.openPetScaleWindow();

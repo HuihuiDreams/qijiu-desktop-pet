@@ -77,7 +77,7 @@ test('toggling pomodoro pin state keeps the window reachable', () => {
 test('unpinning pomodoro removes it from macOS fullscreen Spaces', () => {
   assert.match(
     mainSource,
-    /setVisibleOnAllWorkspaces\(true,\s*\{\s*visibleOnFullScreen:\s*true\s*\}\)/,
+    /setVisibleOnAllWorkspaces\(true,\s*\{[^}]*visibleOnFullScreen:\s*true[^}]*\}\)/,
     'pinned state enables visibleOnFullScreen'
   );
   assert.match(

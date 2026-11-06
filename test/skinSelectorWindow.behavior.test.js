@@ -144,6 +144,24 @@ test('the selector uses ordinary window stacking and can be minimized', () => {
   assert.equal(win.options.minimizable, true);
 });
 
+test('skin selector pulses to screen-saver on open and reverts to normal after 180ms', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow();
+  const win = skinSelectorWindow.openSkinSelectorWindow();
+
+  assert.equal(win.alwaysOnTop, true);
+  assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+  assert.equal(win.visibleOnAllWorkspaces, true);
+  assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+    visibleOnFullScreen: true,
+    skipTransformProcessType: true,
+  });
+
+  t.mock.timers.tick(200);
+
+  assert.equal(win.alwaysOnTop, false);
+});
+
 test('closing the skin selector ignores the blur emitted by its own close operation', () => {
   const { skinSelectorWindow, windowManager } = loadFreshSkinSelectorWindow();
   const win = skinSelectorWindow.openSkinSelectorWindow();

@@ -118,7 +118,7 @@ function createPetScaleWindow() {
   });
 
   if (typeof windowManager.petScaleWindow.setVisibleOnAllWorkspaces === 'function') {
-    windowManager.petScaleWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowManager.petScaleWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   }
 
   windowManager.petScaleWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'pet-scale.html'));
@@ -156,7 +156,7 @@ function createPetScaleWindow() {
 
 function openPetScaleWindow() {
   const win = createPetScaleWindow();
-  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
   if (win.isMinimized()) win.restore();

@@ -112,7 +112,7 @@ function createStatusWindow() {
     windowManager.statusWindow.setAlwaysOnTop(true, STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL);
   }
   if (typeof windowManager.statusWindow.setVisibleOnAllWorkspaces === 'function') {
-    windowManager.statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowManager.statusWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   }
   windowManager.statusWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'status.html'));
 
@@ -132,7 +132,7 @@ function createStatusWindow() {
 
 function openStatusWindow() {
   const win = createStatusWindow();
-  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
   if (typeof win.isMinimized === 'function' && win.isMinimized()) {

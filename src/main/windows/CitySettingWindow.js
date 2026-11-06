@@ -34,7 +34,8 @@ function pulseCitySettingWindowTop() {
 
 function raiseCitySettingWindow() {
   if (!windowManager.citySettingWindow || windowManager.citySettingWindow.isDestroyed()) return;
-  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+  const win = windowManager.citySettingWindow;
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
   if (windowManager.citySettingWindow.isMinimized()) windowManager.citySettingWindow.restore();
@@ -74,7 +75,7 @@ function createCitySettingWindow() {
     },
   });
 
-  windowManager.citySettingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  windowManager.citySettingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   windowManager.citySettingWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'city-setting.html'));
 
   windowManager.citySettingWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

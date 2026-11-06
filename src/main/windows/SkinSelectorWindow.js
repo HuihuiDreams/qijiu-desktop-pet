@@ -95,7 +95,7 @@ function createSkinSelectorWindow() {
   });
 
   if (typeof windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces === 'function') {
-    windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    windowManager.skinSelectorWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   }
 
   windowManager.skinSelectorWindow.loadFile(path.join(__dirname, '..', '..', '..', 'src', 'skin-selector.html'));
@@ -140,7 +140,7 @@ function openSkinSelectorWindow() {
     skinSelectorOriginalSkinId = deps.getCurrentSkinId();
     skinSelectorSelectionInProgress = false;
   }
-  if (process.platform === 'darwin' && typeof app?.focus === 'function') {
+  if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
   if (win.isMinimized()) win.restore();
