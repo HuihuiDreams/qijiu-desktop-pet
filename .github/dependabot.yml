@@ -1,0 +1,27 @@
+# GitHub Dependabot 配置文件
+# 文档: https://docs.github.com/zh/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # npm 依赖检测与 Pull Request 开启
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+
+    # 说明：
+    # 1. Dependabot 默认仅创建 Pull Request，绝不会自动通过或自动合并任何 PR。
+    # 2. PR 创建后会触发仓库现有的 Release Preflight CI 流水线（运行 npm test 与 npm audit 安全审计），
+    #    供您直观查看自动化测试结果，但最终必须由人工审查后手动点击 Merge。
+    # 3. 如需在提 PR 时自动指定 Reviewer，可取消下方注释：
+    # reviewers:
+    #   - "HuihuiDreams"
