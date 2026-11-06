@@ -14,7 +14,7 @@
 
 ### Changed
 - **核心运行时与依赖大版本基线升级 (`Runtime & Dependency Major Upgrades: Electron 45, electron-store 12 & asar 4`)**：
-  - **核心引擎升级**：Electron 由 42.2.0 升级至 45.2.1（内置 Chromium 基线由 134 提升至 145），开发依赖 `@electron/asar` 由 3.4.1 升级至 4.3.1，`glob` 由 13.0.6 升级至 14.0.3，生产依赖 `electron-store` 由 10.1.0 升级至 12.0.0。
+  - **核心引擎升级**：Electron 由 42.2.0 升级至 45.2.1（内置 Chromium 基线由 148 提升至 156），开发依赖 `@electron/asar` 由 3.4.1 升级至 4.3.1，`glob` 由 13.0.6 升级至 14.0.3，生产依赖 `electron-store` 由 10.1.0 升级至 12.0.0。
   - **系统要求变更（Breaking Change）**：将 `package.json` 中的 macOS 最低系统要求（`mac.minimumSystemVersion`）提升至 `13.0`（Ventura），全语言 Readme 同步更新；不再支持 macOS 12 Monterey，严格对齐 Electron 44+ 官方运行时要求（详见 [ADR-026](./docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
   - **Node.js 环境基线**：在 `package.json` 显式声明 `"engines": { "node": ">=22.12.0" }`，以对齐 `@electron/asar@4` 的 ESM `require()` 语法规范与 `conf@16` 运行时约束；GitHub Actions CI 同步指定 Node.js 22。
   - **架构限定**：在 Windows 构建目标（`win.target`）中显式限定 64 位架构（`"arch": ["x64"]`），规避 Electron 44+ 弃用 32 位（`ia32`）的打包隐患（详见 [ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。

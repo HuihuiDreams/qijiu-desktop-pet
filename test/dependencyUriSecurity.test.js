@@ -1,5 +1,8 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
+
+// 注意：以下直接引用了传递依赖 ajv 内部的 uri 运行时模块及 Ajv2020 导出。
+// 这是为了直接校验上游传递依赖（electron-store -> conf -> ajv -> fast-uri）针对 CVE 补丁的解析行为，属于有意的深度回归测试耦合。
 const uri = require('ajv/dist/runtime/uri').default;
 const { Ajv2020 } = require('ajv/dist/2020.js');
 

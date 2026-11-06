@@ -48,7 +48,7 @@
 
 ## 🚀 快速开始 (Quick Start)
 
-1. 安装 [Node.js](https://nodejs.org/) **22.12.0 或更高版本**，本机已验证 Node.js 24.15.0。
+1. 安装 [Node.js](https://nodejs.org/) **22.12.0 或更高版本**（推荐 Node.js 22 LTS，本机已验证 Node.js 22.22.3）。
 2. 在项目根目录安装锁定版本的依赖：`npm ci`。
 3. 下载并解压对应版本的 Electron 二进制：`npx --no-install install-electron`。
 4. 运行程序：`npm run dev`。

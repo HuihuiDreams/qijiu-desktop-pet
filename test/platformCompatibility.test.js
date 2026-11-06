@@ -2,6 +2,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+// 注意：app-builder-lib 是 electron-builder 的核心传递依赖。
+// 这里直接引用 validateConfiguration 校验器，以在单测环境中无需完整打包即可校验 electron-builder 配置合法性，属于有意的传递依赖耦合。
 const { validateConfiguration } = require('app-builder-lib/out/util/config/config');
 
 const packageJson = require('../package.json');

@@ -118,7 +118,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
-├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
+├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
 ├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/脉冲置顶与跨 Space 支持/设置读取/预览/确认/取消 + 对应 IPC
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
@@ -486,15 +486,15 @@ src/assets/{skinId}/
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
 - 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟和城市设置窗分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
-- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口采用 `alwaysOnTop: false` 与 `minimizable: true`，被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
-- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口配置 `minimizable: true` 并支持跨 Space 显示（`setVisibleOnAllWorkspaces` 带 `skipTransformProcessType: true`），唤起与聚焦时执行 180ms `screen-saver` 脉冲置顶以可靠浮出，超时后回落到普通层级避免持续遮挡；被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
+- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `screen-saver` 顶层层级并支持跨 Space 展示，确保由托盘唤起时不会被全屏桌面应用与宠物主窗口覆盖。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
 
 ### 3.16 现代 Web 标准与渲染层技术规范
 
-DeskPet 依托 Electron 45+（Chromium 145+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
+DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
 
 - **Popover API 与 Top Layer 原生顶层提升**：
   番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。

@@ -22,8 +22,8 @@
 
 ### 阶段三：架构决策 ADR、结构文档、规则与 CHANGELOG 同步
 - [x] 3.1 更新 `docs/decisions/ADR-026-macos-manual-update-executable-name.md`，校正为 macOS 13.0 / Electron 45
-- [x] 3.2 更新 `docs/structure.md`，修正 `PetScaleWindow.js` 描述（体现脉冲置顶与跨 Space）及第 496 行 Electron 45+ / Chromium 145+ 基线
-- [x] 3.3 更新 `AGENTS.md` 运行时基线为 Electron 45+（Chromium 145+）
+- [x] 3.2 更新 `docs/structure.md`，修正 `PetScaleWindow.js` 描述（体现脉冲置顶与跨 Space）及第 496 行 Electron 45+ / Chromium 156+ 基线
+- [x] 3.3 更新 `AGENTS.md` 运行时基线为 Electron 45+（Chromium 156+）
 - [x] 3.4 完善 `CHANGELOG.md`，记录 Electron 45、`@electron/asar@4`、`electron-store@12`、`glob@14` 等依赖升级，明确标注 macOS 13.0 最低版本对 Monterey 的 Breaking 影响，以及阶段一、二的修复项
 - [x] 3.5 勾选完成本计划全部清单并运行全量验证
 - [x] 3.6 **原子提交 3**：`docs: synchronize architecture docs and changelog for Electron 45 baseline and sub-window behavior`
