@@ -38,6 +38,7 @@
 
 ### Security
 - **移除 `disable-site-isolation-trials` 恢复 Chromium 站点隔离基线 (`SBP-001`)**：从 `src/main/AppLifecycle.js` 的 `configureChromiumMemoryBudget()` 中移除 `app.commandLine.appendSwitch('disable-site-isolation-trials')`，恢复 Chromium 默认站点隔离（Site Isolation）跨源进程安全边界，并在 `test/mainMemoryBudget.test.js` 中增加防回退断言。
+- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；补充 URI 回归与正常 schema 引用解析测试，不增加直接依赖或 overrides（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
 
 ## [0.11.2] - 2026-10-23
 
