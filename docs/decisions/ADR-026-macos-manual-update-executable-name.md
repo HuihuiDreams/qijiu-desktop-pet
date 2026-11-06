@@ -34,7 +34,7 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 3. 选择替换旧版本。
 4. 如果首次打开仍被系统拦截，再在“系统设置 -> 隐私与安全性”中点击“仍要打开”，或运行 `xattr -cr /Applications/七九爱宠.app`。
 
-显式设置 `mac.minimumSystemVersion` 为 `12.0`，并将 README / 发布说明中的 macOS 最低版本同步为 macOS 12.0 (Monterey)。Electron 42 生成的包本身已经声明 `LSMinimumSystemVersion = 12.0`，文档不能继续写 11.0。
+显式设置 `mac.minimumSystemVersion` 为 `13.0`，并将 README / 发布说明中的 macOS 最低版本同步为 macOS 13.0 (Ventura)。Electron 45 生成的包本身已经声明 `LSMinimumSystemVersion = 13.0`（Electron 44+ 放弃对 macOS 12 Monterey 的支持），文档不能继续写 12.0 或 11.0。
 
 ## Alternatives Considered
 ### 要求用户先卸载旧版本
@@ -61,7 +61,7 @@ macOS 包继续保留用户可见的中文应用名 `七九爱宠.app`，但包�
 - 用户在 Finder / Applications 中看到的仍是 `七九爱宠.app`。
 - 包内启动文件变为 `DeskPet`，降低 LaunchServices 对中文可执行文件名的兼容风险。
 - 覆盖安装流程仍然适用于无证书分发，但用户必须先退出正在运行的旧版本。
-- macOS 11 用户不再被文档误导；当前 Electron 42 包最低支持 macOS 12.0。
+- macOS 11/12 用户不再被文档误导；当前 Electron 45+ 包最低支持 macOS 13.0。
 - 如果未来改动打包逻辑导致 `CFBundleExecutable` 回退为中文名，CI 会阻止发布。
 
 ### 验证

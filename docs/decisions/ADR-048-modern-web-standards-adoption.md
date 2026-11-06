@@ -7,7 +7,7 @@ Accepted
 2026-10-22
 
 ## Context
-DeskPet 运行在 Electron 42+（内置 Chromium 134+ 运行时）之上，原生具备最新的 Web 平台特性与现代 CSS 规范支持。在先前的架构演进中，桌面渲染层（Renderer Process）的若干 UI 与动效组件仍沿用了较旧的 Web 开发范式，存在以下维护性与性能瓶颈：
+DeskPet 运行在 Electron 45+（内置 Chromium 145+ 运行时）之上，原生具备最新的 Web 平台特性与现代 CSS 规范支持。在先前的架构演进中，桌面渲染层（Renderer Process）的若干 UI 与动效组件仍沿用了较旧的 Web 开发范式，存在以下维护性与性能瓶颈：
 
 1. **番茄钟窗口 Tooltip 回流与双重提示问题**：
    在番茄钟静修窗口（`src/pomodoroWindow.js`）中，原 Tooltip 依赖 JavaScript 的 `getBoundingClientRect()` 与 `offsetHeight` 进行几何测量与坐标计算，在高频 hover/focus 时引发同步强制布局回流（Layout Thrashing）；同时 HTML 按钮上的静态 `title` 属性导致浏览器黄色原生提示与水墨提示框重叠冲突，且缺乏符合 WCAG 1.4.13 规范的快捷键（`Escape`）关闭机制。
@@ -23,7 +23,7 @@ DeskPet 运行在 Electron 42+（内置 Chromium 134+ 运行时）之上，原�
    状态面板中的度量条（`.stat-bar`）原为纯 `<div>` 容器，屏幕阅读器无法获知进度条语义及当前数值；若直接替换为原生 `<meter>` 标签，Chromium Shadow DOM 会封装并剥离自定义水墨流光高光（`.stat-bar-fill::after`）及弹簧物理回弹过渡。
 
 ## Decision
-我们决定在 DeskPet 渲染层全面采纳现代 Web 原生标准（Modern Web Standards），建立 **Electron 42+ 原生 Chromium 基线**，执行**零外部 Polyfill（Zero External Polyfill）策略**，并在 JavaScript 侧通过可选链与类型守卫实现对 Node.js 桩测试环境（Fake DOM）的**渐进降级兼容器**：
+我们决定在 DeskPet 渲染层全面采纳现代 Web 原生标准（Modern Web Standards），建立 **Electron 45+ 原生 Chromium 基线**，执行**零外部 Polyfill（Zero External Polyfill）策略**，并在 JavaScript 侧通过可选链与类型守卫实现对 Node.js 桩测试环境（Fake DOM）的**渐进降级兼容器**：
 
 1. **Popover API 与 CSS Anchor Positioning 锚点定位**：
    - 番茄钟窗口的 Tooltip（`#pomodoro-tooltip`）声明 `popover="manual"` 与 `role="tooltip"`，通过原生 Top Layer 提升层级，彻底移除 `getBoundingClientRect()` 与 `offsetHeight`。
@@ -57,7 +57,7 @@ DeskPet 运行在 Electron 42+（内置 Chromium 134+ 运行时）之上，原�
 ## Alternatives Considered
 - **引入第三方 UI 库或 Polyfill（如 `@oddbird/css-anchor-positioning`, `popover-polyfill`）**：
   - *优点*：在旧版浏览器或未支持环境中提供垫片。
-  - *缺点*：DeskPet 运行在强版本锁定的 Electron 42+ 环境下，Chromium 134+ 已全量原生支持上述规范；引入 Polyfill 会增加包体积、污染 DOM 原型、破坏 CSP 并增加额外的构建/运行时复杂度。
+  - *缺点*：DeskPet 运行在强版本锁定的 Electron 45+ 环境下，Chromium 145+ 已全量原生支持上述规范；引入 Polyfill 会增加包体积、污染 DOM 原型、破坏 CSP 并增加额外的构建/运行时复杂度。
 - **将度量条重构为原生 HTML `<meter>` 标签**：
   - *优点*：天然具备浏览器标准语义。
   - *缺点*：Chromium 对 `<meter>` 的 Shadow DOM 封装会导致 `.stat-bar-fill::after` 仙侠水墨高光流光与弹簧物理回弹贝塞尔曲线失效，视觉体验严重降级。
@@ -73,4 +73,4 @@ DeskPet 运行在 Electron 42+（内置 Chromium 134+ 运行时）之上，原�
   - **无障碍体验完善**：右键菜单支持键盘 `Tab`、`Escape`、高对比 `:focus-visible` 焦点环与非破坏性 `aria-disabled`；状态条满足标准屏幕阅读器度量规范；全场景覆盖 `prefers-reduced-motion`。
   - **单测无缝兼容**：保持现有测试套件零破坏，Node.js fake-DOM 测试执行速度与通过率不受任何影响。
 - **Negative**:
-  - 依赖 Electron 42+（Chromium 134+）原生环境，旧版 Electron 或传统浏览器内核无法直接运行（符合本项目桌面宿主基线定位）。
+  - 依赖 Electron 45+（Chromium 145+）原生环境，旧版 Electron 或传统浏览器内核无法直接运行（符合本项目桌面宿主基线定位）。

@@ -120,7 +120,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
-├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/普通层级与最小化支持/设置读取/预览/确认/取消 + 对应 IPC
+├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/脉冲置顶与跨 Space 支持/设置读取/预览/确认/取消 + 对应 IPC
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
@@ -493,7 +493,7 @@ src/assets/{skinId}/
 
 ### 3.16 现代 Web 标准与渲染层技术规范
 
-DeskPet 依托 Electron 42+（Chromium 134+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
+DeskPet 依托 Electron 45+（Chromium 145+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
 
 - **Popover API 与 Top Layer 原生顶层提升**：
   番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
