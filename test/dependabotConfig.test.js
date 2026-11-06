@@ -19,7 +19,11 @@ test('Dependabot configuration for npm dependencies', async (t) => {
     assert.match(content, /open-pull-requests-limit:\s*\d+/, 'Must declare open-pull-requests-limit');
   });
 
-  await t.test('no automatic merge or auto-approval workflows exist for Dependabot', () => {
+  // 注意：此测试是针对代码仓库内 GitHub Actions 工作流定义的低成本静态防回归哨兵，
+  // 仅能验证工作流文本中未引入针对 Dependabot 的自动合并（auto-merge）或自动批准步骤。
+  // 它无法校验 GitHub 平台仓库级的 "Allow auto-merge" 设置、Branch Rulesets 或环境审批保护；
+  // 因此该测试作为工作流防回归检查保留，不能视作平台级自动合并禁用的全量安全证明。
+  await t.test('no automatic merge or auto-approval workflow steps exist in repository workflows', () => {
     const workflowsDir = path.join(repoRoot, '.github', 'workflows');
     if (!fs.existsSync(workflowsDir)) return;
 

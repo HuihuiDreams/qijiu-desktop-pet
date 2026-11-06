@@ -15,10 +15,10 @@
 - [x] 1.6 **原子提交 1**：`fix: optimize sub-window activation, prevent macOS dock flicker, and add behavioral tests`
 
 ### 阶段二：Node.js engines 环境声明与 Dependabot 测试边界标注
-- [ ] 2.1 在 `package.json` 中配置 `"engines": { "node": ">=22.12.0" }`（与 `@electron/asar@4.3.1` 和 ESM `require` 基线对齐）
-- [ ] 2.2 完善 `test/dependabotConfig.test.js`，补充注释与测试描述，明确标注其作用域为本地工作流文件防回归哨兵，不能替代 GitHub 仓库级设置
-- [ ] 2.3 运行 `npm test` 验证通过
-- [ ] 2.4 **原子提交 2**：`chore: specify Node engines requirement and clarify dependabot test boundaries`
+- [x] 2.1 在 `package.json` 中配置 `"engines": { "node": ">=22.12.0" }`（与 `@electron/asar@4.3.1` 和 ESM `require` 基线对齐）
+- [x] 2.2 完善 `test/dependabotConfig.test.js`，补充注释与测试描述，明确标注其作用域为本地工作流文件防回归哨兵，不能替代 GitHub 仓库级设置
+- [x] 2.3 运行 `npm test` 验证通过
+- [x] 2.4 **原子提交 2**：`chore: specify Node engines requirement and clarify dependabot test boundaries`
 
 ### 阶段三：架构决策 ADR、结构文档、规则与 CHANGELOG 同步
 - [ ] 3.1 更新 `docs/decisions/ADR-026-macos-manual-update-executable-name.md`，校正为 macOS 13.0 / Electron 45

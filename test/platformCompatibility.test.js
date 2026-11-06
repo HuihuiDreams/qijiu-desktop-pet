@@ -20,6 +20,14 @@ test('package.json targets modern 64-bit architectures and macOS 13+ (Ventura+)'
   );
 });
 
+test('package.json declares node engine requirement >=22.12.0 for @electron/asar and conf', () => {
+  assert.equal(
+    packageJson.engines?.node,
+    '>=22.12.0',
+    'package.json must explicitly require Node >=22.12.0 for ESM require support and conf v16',
+  );
+});
+
 test('electron-builder accepts the complete build configuration for both platform workflows', async () => {
   await validateConfiguration(structuredClone(packageJson.build), { isEnabled: false });
 });
