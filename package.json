@@ -59,6 +59,9 @@
     ],
     "win": {
       "target": "nsis",
+      "arch": [
+        "x64"
+      ],
       "icon": "src/assets/icon.ico",
       "signAndEditExecutable": false
     },
@@ -82,7 +85,7 @@
       ],
       "icon": "src/assets/icon.icns",
       "category": "public.app-category.utilities",
-      "minimumSystemVersion": "12.0",
+      "minimumSystemVersion": "13.0",
       "darkModeSupport": true
     },
     "afterPack": "scripts/afterPack.js",

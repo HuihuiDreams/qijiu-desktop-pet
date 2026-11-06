@@ -12,7 +12,7 @@ DeskPet：岳七 & 沈九 桌面爱宠 🗡️🪭
   - 系统要求：Windows 10 / 11（64 位）。由于底层基于现代 Electron 架构，不支持 Windows 7 / 8 / 8.1 等旧版本操作系统，也不支持 32 位系统。
   - 安装步骤：请下载 `.exe` 安装包并双击运行安装。
 - macOS 平台：
-  - 系统要求：macOS 12.0 (Monterey) 及更高版本。
+  - 系统要求：macOS 13.0 (Ventura) 及更高版本。
   - 版本选择：
     - Apple Silicon (M1/M2/M3等) 芯片请下载 `*-arm64.dmg`；
     - Intel 芯片请下载 `*-x64.dmg`。

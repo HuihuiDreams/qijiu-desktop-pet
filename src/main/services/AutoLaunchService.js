@@ -38,9 +38,9 @@ function applyAutoLaunchSetting(enabled) {
   if (!app.isPackaged) return getLoginItemStatus();
   try {
     if (process.platform === 'darwin') {
+      // macOS 13+ (Ventura+) 与 Electron 44+ 采用 SMAppService 架构，openAsHidden 参数已被官方移除废弃
       app.setLoginItemSettings({
         openAtLogin: enabled,
-        openAsHidden: true,   // 开机后以后台方式启动，不弹到前台
       });
     } else {
       const settings = {

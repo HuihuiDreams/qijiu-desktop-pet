@@ -13,7 +13,7 @@
 * **安装步骤**：双击运行安装程序，按照提示选择安装路径并完成安装即可。
 
 ### 🍎 macOS 平台
-* **系统要求**：macOS 12.0 (Monterey) 及更高版本。
+* **系统要求**：macOS 13.0 (Ventura) 及更高版本。
 * **版本选择**：
   * **Apple Silicon 芯片**（M1 / M2 / M3 等）：下载 `desktop-pet-setup-x.y.z-arm64.dmg`。
   * **Intel 芯片**：下载 `desktop-pet-setup-x.y.z-x64.dmg`。
