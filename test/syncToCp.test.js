@@ -17,6 +17,7 @@ const {
   applyPackageLockIdentity,
   formatSyncSummaryMarkdown,
   resolveCommitsToEvaluate,
+  isCommitAlreadyOnBranch,
   syncCommitsToCp,
 } = require('../scripts/sync-to-cp.js');
 
@@ -748,6 +749,170 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       const oldestFirst = git(repo, ['rev-list', '--reverse', '--no-merges', `${baseSha}..${backlogHead}`]).split('\n');
       assert.equal(list.length, 50);
       assert.deepEqual(list, oldestFirst.slice(0, 50));
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('sync improvements: no duplicate title swallow, visible AI failure, brand filtered changelog, per-commit push', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-sync-improvements-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const repo = path.join(tmpBase, 'local');
+    const cpRef = 'origin/cp/crowley-aziraphale';
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', repo]);
+      git(repo, ['remote', 'add', 'origin', bareRemote]);
+      fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+
+      const basePkg = {
+        name: 'desktop-pet',
+        version: '0.11.2',
+        dependencies: {},
+      };
+      const baseCpPkg = {
+        name: 'good-omens-desktop-pet',
+        version: '1.0.0',
+        dependencies: {},
+      };
+      const baseChangelog = [
+        '# Changelog',
+        '',
+        '## [Unreleased]',
+        '',
+        '### Fixed',
+        '- Base line.',
+        '',
+        '## [0.1.0] - 2026-01-01',
+        '### Added',
+        '- Initial.',
+        '',
+      ].join('\n');
+
+      fs.writeFileSync(path.join(repo, 'package.json'), `${JSON.stringify(basePkg, null, 2)}\n`);
+      fs.writeFileSync(path.join(repo, 'CHANGELOG.md'), baseChangelog);
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'fix: common typo']);
+      git(repo, ['branch', '-M', 'main']);
+      git(repo, ['push', '-u', 'origin', 'main']);
+
+      // Setup CP branch with good-omens identity
+      git(repo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      fs.writeFileSync(path.join(repo, 'package.json'), `${JSON.stringify(baseCpPkg, null, 2)}\n`);
+      git(repo, ['add', 'package.json']);
+      git(repo, ['commit', '-m', 'chore: cp setup']);
+      git(repo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      git(repo, ['checkout', 'main']);
+
+      // 1. Verify isCommitAlreadyOnBranch does NOT treat commits with same subject as already on branch
+      const dummySha = 'abcdef0123456789abcdef0123456789abcdef01';
+      assert.equal(
+        isCommitAlreadyOnBranch(cpRef, dummySha, repo),
+        false,
+        'Different SHA with duplicate title must not be skipped as already on branch'
+      );
+
+      // 2. Verify AI failure transparency in verdictLabel
+      fs.writeFileSync(
+        path.join(repo, 'package.json'),
+        `${JSON.stringify({ ...basePkg, dependencies: { 'new-dep': '1.0.0' } }, null, 2)}\n`
+      );
+      git(repo, ['add', 'package.json']);
+      git(repo, ['commit', '-m', 'feat: update dep requiring AI check']);
+      const sensitiveSha = git(repo, ['rev-parse', 'HEAD']);
+
+      const aiFailureDryRun = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: sensitiveSha,
+        dryRun: true,
+        env: { GITHUB_TOKEN: 'ghs_test' },
+        fetchImpl: async () => ({
+          ok: false,
+          status: 500,
+        }),
+      });
+      assert.equal(aiFailureDryRun.results.length, 1);
+      assert.equal(aiFailureDryRun.results[0].status, '🔍 Dry-Run 通过');
+      assert.match(
+        aiFailureDryRun.results[0].verdict,
+        /适用 \(启发式；AI 复核失败: GitHub Models HTTP 500\)/
+      );
+      assert.match(aiFailureDryRun.summaryMarkdown, /GitHub Models HTTP 500/);
+
+      // 3. Verify CHANGELOG QiJiu branding filtering and per-commit immediate push
+      fs.writeFileSync(path.join(repo, 'src', 'tool1.js'), 'module.exports = 1;\n');
+      fs.writeFileSync(
+        path.join(repo, 'CHANGELOG.md'),
+        [
+          '# Changelog',
+          '',
+          '## [Unreleased]',
+          '',
+          '### Fixed',
+          '- Base line.',
+          '- 修复岳七在沈九附近时的移动卡顿',
+          '- 修复通用窗口几何位置计算错误',
+          '',
+          '## [0.1.0] - 2026-01-01',
+          '### Added',
+          '- Initial.',
+          '',
+        ].join('\n')
+      );
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'fix: common typo']); // Same subject as base commit, must NOT be skipped!
+      const commit1Sha = git(repo, ['rev-parse', 'HEAD']);
+
+      fs.writeFileSync(path.join(repo, 'src', 'tool2.js'), 'module.exports = 2;\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: tool 2 which fails tests']);
+      const commit2Sha = git(repo, ['rev-parse', 'HEAD']);
+
+      const multiSyncRun = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: `${commit1Sha},${commit2Sha}`,
+        dryRun: false,
+        testRunner: (cwd) => {
+          const hasTool2 = fs.existsSync(path.join(cwd, 'src', 'tool2.js'));
+          if (hasTool2) {
+            throw new Error('Test failed on tool 2');
+          }
+        },
+        installRunner: () => {},
+      });
+
+      assert.equal(multiSyncRun.syncedCount, 1);
+      assert.match(multiSyncRun.results[0].status, /✅ 已同步/);
+      assert.equal(multiSyncRun.results[1].status, '❌ 测试未通过已回滚');
+
+      // Fetch remote and verify commit 1 was pushed immediately despite commit 2 failing!
+      git(repo, ['fetch', 'origin']);
+      assert.match(
+        git(repo, ['show', `${cpRef}:src/tool1.js`]),
+        /module\.exports = 1/,
+        'Commit 1 must be pushed to remote immediately'
+      );
+      assert.throws(
+        () => git(repo, ['show', `${cpRef}:src/tool2.js`]),
+        'Commit 2 must not be present on remote'
+      );
+
+      // Verify remote CP CHANGELOG contains the universal fix and excludes QiJiu brand bullet
+      const remoteCpChangelog = git(repo, ['show', `${cpRef}:CHANGELOG.md`]);
+      assert.match(
+        remoteCpChangelog,
+        /修复通用窗口几何位置计算错误/,
+        'Universal bullet must be merged'
+      );
+      assert.doesNotMatch(
+        remoteCpChangelog,
+        /岳七|沈九/,
+        'QiJiu brand names must be filtered out from CP CHANGELOG'
+      );
     } finally {
       fs.rmSync(tmpBase, { recursive: true, force: true });
     }

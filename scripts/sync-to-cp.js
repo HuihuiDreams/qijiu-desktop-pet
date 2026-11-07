@@ -602,28 +602,13 @@ function gitAuthArgs(env = process.env) {
   return ['-c', `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}`];
 }
 
-function isCommitAlreadyOnBranch(targetRef, sha, subject, cwd) {
+function isCommitAlreadyOnBranch(targetRef, sha, cwd) {
   try {
     const byCherryMark = runGit(
       ['log', targetRef, '--grep', `(cherry picked from commit ${sha})`, '--oneline', '-n', '1'],
       { cwd }
     );
     if (byCherryMark) return true;
-
-    if (subject) {
-      const byExactSubject = runGit(
-        ['log', targetRef, '--fixed-strings', '--grep', subject, '--format=%s'],
-        { cwd }
-      );
-      if (
-        byExactSubject
-          .split(/\r?\n/)
-          .map((s) => s.trim())
-          .includes(subject.trim())
-      ) {
-        return true;
-      }
-    }
   } catch {
     // Ignore git log lookup errors
   }
@@ -874,7 +859,7 @@ async function syncCommitsToCp({
       const checkRef = dryRun ? targetRemoteRef : 'HEAD';
       const checkCwd = dryRun ? repoRoot : worktreeDir;
 
-      if (isCommitAlreadyOnBranch(checkRef, sha, subject, checkCwd)) {
+      if (isCommitAlreadyOnBranch(checkRef, sha, checkCwd)) {
         results.push({
           sha,
           subject,
@@ -946,7 +931,13 @@ async function syncCommitsToCp({
 
       const verdictLabel = aiVerdict.evaluated
         ? `适用 (启发式 + ${aiVerdict.model})`
-        : '适用 (启发式规则)';
+        : (heuristic.needsAiReview || alwaysAi)
+          ? `适用 (启发式；AI 复核失败: ${aiVerdict.reason || '未完成'})`
+          : '适用 (启发式规则)';
+
+      const summaryReason = aiVerdict.evaluated
+        ? (aiVerdict.reason || heuristic.reason)
+        : heuristic.reason;
 
       if (dryRun) {
         results.push({
@@ -954,7 +945,7 @@ async function syncCommitsToCp({
           subject,
           verdict: verdictLabel,
           status: '🔍 Dry-Run 通过',
-          reason: aiVerdict.reason || heuristic.reason,
+          reason: summaryReason,
         });
         continue;
       }
@@ -1037,27 +1028,33 @@ async function syncCommitsToCp({
           ['show', '-U100000', '--format=', sha, '--', 'CHANGELOG.md'],
           { cwd: repoRoot }
         );
-        const addedSections = parseAddedChangelogSections(changelogDiff);
+        const rawAddedSections = parseAddedChangelogSections(changelogDiff);
+        // Filter out bullets containing main-edition exclusive branding or lore
+        const addedSections = {};
+        for (const [section, bullets] of Object.entries(rawAddedSections)) {
+          const cleanBullets = bullets.filter(
+            (bullet) => !QIJIU_EXCLUSIVE_CONTENT_PATTERNS.some((pattern) => pattern.test(bullet))
+          );
+          if (cleanBullets.length > 0) {
+            addedSections[section] = cleanBullets;
+          }
+        }
         const hasParsedBullets = Object.keys(addedSections).length > 0;
-        const changelogConflicted = conflictedFiles.includes('CHANGELOG.md');
         // Removed/rewritten bullets (`-- ` lines) are never synced: keep CP's CHANGELOG untouched
         const hasRemovedBullets = /^-- /m.test(changelogDiff);
 
-        if (hasRemovedBullets) {
-          runGit(['checkout', checkpointSha, '--', 'CHANGELOG.md'], { cwd: worktreeDir });
-          runGit(['add', 'CHANGELOG.md'], { cwd: worktreeDir });
-        } else if (hasParsedBullets || changelogConflicted) {
-          runGit(['checkout', checkpointSha, '--', 'CHANGELOG.md'], { cwd: worktreeDir });
+        // Always reset CHANGELOG.md to checkpointSha first to clear raw cherry-pick diff or conflicts
+        runGit(['checkout', checkpointSha, '--', 'CHANGELOG.md'], { cwd: worktreeDir });
+
+        if (!hasRemovedBullets && hasParsedBullets) {
           const changelogPath = path.join(worktreeDir, 'CHANGELOG.md');
           const targetChangelog = fs.readFileSync(changelogPath, 'utf8');
           const merged = mergeChangelogEntries(targetChangelog, addedSections);
           if (merged.modified) {
             fs.writeFileSync(changelogPath, merged.content, 'utf8');
           }
-          runGit(['add', 'CHANGELOG.md'], { cwd: worktreeDir });
-        } else {
-          runGit(['add', 'CHANGELOG.md'], { cwd: worktreeDir });
         }
+        runGit(['add', 'CHANGELOG.md'], { cwd: worktreeDir });
       }
 
       // Restore CP package identity in package.json and package-lock.json
@@ -1157,20 +1154,20 @@ async function syncCommitsToCp({
         continue;
       }
 
+      if (!dryRun) {
+        console.log(`Pushing synced commit ${sha.slice(0, 7)} to ${remoteName}/${targetBranch}...`);
+        runGit([...gitAuthArgs(env), 'push', remoteName, `HEAD:refs/heads/${targetBranch}`], {
+          cwd: worktreeDir,
+        });
+      }
+
       syncedCount += 1;
       results.push({
         sha,
         subject,
         verdict: verdictLabel,
         status: cherryPickClean ? '✅ 已同步' : '✅ 已同步 (智能合并日志)',
-        reason: aiVerdict.reason || heuristic.reason,
-      });
-    }
-
-    if (!dryRun && syncedCount > 0) {
-      console.log(`Pushing ${syncedCount} synced commit(s) to ${remoteName}/${targetBranch}...`);
-      runGit([...gitAuthArgs(env), 'push', remoteName, `HEAD:refs/heads/${targetBranch}`], {
-        cwd: worktreeDir,
+        reason: summaryReason,
       });
     }
   } finally {
@@ -1203,7 +1200,7 @@ async function main() {
   const beforeSha = process.env.BEFORE_SHA || '';
   const afterSha = process.env.AFTER_SHA || 'HEAD';
   const manualCommitsArg = process.env.INPUT_COMMITS || '';
-  const alwaysAi = args.includes('--always-ai') || process.env.SYNC_ALWAYS_AI === 'true';
+  const alwaysAi = process.env.SYNC_ALWAYS_AI === 'true';
 
   const repoRoot = path.resolve(__dirname, '..');
 
@@ -1248,6 +1245,7 @@ module.exports = {
   applyPackageLockIdentity,
   resolveCommitsToEvaluate,
   findLastSyncedMainCommit,
+  isCommitAlreadyOnBranch,
   formatSyncSummaryMarkdown,
   syncCommitsToCp,
 };

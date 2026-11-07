@@ -1,4 +1,4 @@
-﻿# Git 提交与发布流程 (Git & Release Workflow)
+# Git 提交与发布流程 (Git & Release Workflow)
 
 基于 `git-workflow-and-versioning` 技能规范，本项目采用严格但高效的 Trunk-Based Development（主干开发）模式。
 
@@ -127,18 +127,18 @@ macOS / Linux / WSL 在 Bash 中运行：
 
 当 `main` 分支收到新推送（包括本地 `./push.sh` / `.\push.ps1` 推送以及网页端合并 Dependabot / PR）时，GitHub Actions 工作流 [`.github/workflows/sync-to-cp.yml`](../.github/workflows/sync-to-cp.yml) 会自动调用 [`scripts/sync-to-cp.js`](../scripts/sync-to-cp.js) 检测新增的非 Merge 提交是否适用于好兆头分支（`cp/crowley-aziraphale`）：
 
-1. **基线追溯与去重检查**：自动检索 `cp/crowley-aziraphale` 历史中最近一次同步的 `(cherry picked from commit <sha>)` 锚点并结合 `before..after` 区间推导待检查提交列表（防止连续多次推送被并发队列合并时漏检中间提交）；若提交已通过 `cherry-pick`、相同标题（全历史匹配）或相同补丁内容存在于 `cp/crowley-aziraphale`，自动跳过且不生成空提交。
+1. **基线追溯与去重检查**：自动检索 `cp/crowley-aziraphale` 历史中最近一次同步的 `(cherry picked from commit <sha>)` 锚点并结合 `before..after` 区间推导待检查提交列表（防止连续多次推送被并发队列合并时漏检中间提交）；若提交已通过 `(cherry picked from commit <sha>)` 标记或补丁内容（挑拣后 staged diff 为空）存在于 `cp/crowley-aziraphale`，自动跳过且不生成空提交。
    - **已知限制**：锚点只记录已同步的提交，被判定「不适用」的提交不会推进锚点，下次推送会在最多 50 个提交的回看窗口内重新评估（可能重复调用 AI）；积压超过 50 个提交时按**从旧到新**取前 50 个并输出警告，其余留待下次推送（锚点不会越过未评估的提交）。
 2. **启发式 + GitHub Models AI 语义判定**：
    - 自动拦截包含 `[skip-cp]` / `[no-cp-sync]` 标记的提交、修改任意皮肤目录或角色专属素材（`src/assets/<skinId>/`、`calligraphy-*.webp`、`icon.*`）或专属台词（`src/data/dialogues.js`）的提交，修改 `.github/workflows/*`（`GITHUB_TOKEN` 无 `workflows` 推送权限，需手动同步）的提交，以及仅针对共享敏感配置文件（`package.json`、`src/data/{config,i18n}.js`、`readme_*.txt`、`build/installer.nsh`）自身 Diff 中引入七九专属门派/名称文案的提交。
-   - 当触及共享敏感配置文件时，工作流通过 `permissions: models: read` 直接复用 GitHub Actions 随任务自动签发、运行结束即销毁的临时 `GITHUB_TOKEN` 调用官方 GitHub Models 端点（`https://models.github.ai/inference/chat/completions`）做语义适用性复核（仅支持 GitHub Models，无需长期第三方 API Key）。AI 只能否决提交，**不能**推翻启发式规则的拒绝判定。
+   - 当触及共享敏感配置文件时，工作流通过 `permissions: models: read` 直接复用 GitHub Actions 随任务自动签发、运行结束即销毁的临时 `GITHUB_TOKEN` 调用官方 GitHub Models 端点（`https://models.github.ai/inference/chat/completions`）做语义适用性复核（仅支持 GitHub Models，无需长期第三方 API Key）。AI 只能否决提交，**不能**推翻启发式规则的拒绝判定；若 AI 接口调用失败保持放行但在报告中显式留痕。
    - **凭据隔离**：workflow 的 `actions/checkout` 使用 `persist-credentials: false`，Token 不会写入 `.git/config`；脚本仅在 `fetch` / `push` 时通过一次性 `http.extraheader` 注入认证，且在派生 `npm ci`、`npm test` 与其余 `git` 子进程时通过 `createSanitizedChildEnv` 剥离凭据环境变量，杜绝供应链脚本或测试进程读取 Token。
 3. **`CHANGELOG.md` 与包身份智能合并**：
-   - 自动以全文上下文（`-U100000`）提取本次提交在 `CHANGELOG.md` 的 `## [Unreleased]` 下**新增**的日志条目，按分类（`Added` / `Changed` / `Fixed` / `Removed` / `Security`）无冲突并入好兆头分支的 `CHANGELOG.md`（注：仅同步新增 bullet 条目，若提交改写或删除了已有 bullet，则整份 CHANGELOG 变更都不同步、保留好兆头分支原样，以免产生重复条目），且保证不产生重复分类标题。
+   - 自动以全文上下文（`-U100000`）提取本次提交在 `CHANGELOG.md` 的 `## [Unreleased]` 下**新增**的日志条目，过滤含七九专属文案（`岳七` / `沈九` / `苍穹静修` 等）的 bullet，按分类（`Added` / `Changed` / `Fixed` / `Removed` / `Security`）无冲突并入好兆头分支的 `CHANGELOG.md`（注：仅同步新增 bullet 条目，若提交改写或删除了已有 bullet，则整份 CHANGELOG 变更都不同步、保留好兆头分支原样，以免产生重复条目），且保证不产生重复分类标题。
    - 当提交涉及 `package.json` 或 `package-lock.json` 依赖更新时，自动保护并还原好兆头分支专属的应用身份（`good-omens-desktop-pet`、`1.0.0`、`com.deskpet.good-omens` 等）。
 4. **临时 Worktree 隔离、单提交回滚与单元测试门禁**：
    - 全程在临时 `git worktree` 中执行合并与验证，绝不切换或污染当前主工作区分支。
-   - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，自动将该条提交回滚至其合并前检查点（同批次中此前已验证通过的提交仍正常保留并推送），并在 GitHub Actions Summary 输出报告。
+   - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，自动将该条提交回滚至其合并前检查点；每条验证通过后立即向远端推送（即使大 PR 批次在后续提交超时也能断点续传），并在 GitHub Actions Summary 输出报告。
    - Windows 下以 `shell` 方式调用 `npm`（`npm.cmd`），本地 `--push` 可正常运行；`git` 输出缓冲上限为 64 MiB。
    - 本地运行 `npm run sync:cp` 默认采用安全的 `--dry-run` 预览模式（仅当显式传入 `npm run sync:cp -- --push` 时才会执行推送）。
 

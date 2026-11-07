@@ -28,6 +28,11 @@
 - 更新开发者 README：明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装及 Electron 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 
 ### Fixed
+- **主分支向好兆头分支自动同步防超时死锁与去重脱敏修复 (`CP Auto-Sync Deadlock, Deduplication & Sanitization Fixes`)**：
+  - **防止超时丢批次与死循环**：在 `scripts/sync-to-cp.js` 中将推送机制由批次结束总推送重构为单提交验证通过后立即推送（`push per verified commit`）。当大 PR 批量处理耗时触发 GitHub Actions 15 分钟超时时，已验证提交已持久化在远端分支，下一次触发自动断点续传，彻底消除重复挑拣同一批次超时导致的死锁。
+  - **移除标题相同去重逻辑**：删除 `isCommitAlreadyOnBranch` 中对提交标题的粗粒度检索，杜绝因常见标题（如 `fix: typo`）误吞新修复提交；由已有的 `(cherry picked from commit <sha>)` 标记与补丁空 diff 机制完成严谨去重。
+  - **AI 复核失败显式留痕**：当触发 AI 复核且调用失败（如 GitHub Models HTTP 500 或超时）时，在执行摘要报告中明确标记 `适用 (启发式；AI 复核失败: <reason>)`，保留安全审计追溯痕迹。
+  - **CHANGELOG 智能合并品牌脱敏**：在并入好兆头分支日志前，自动应用 `QIJIU_EXCLUSIVE_CONTENT_PATTERNS` 过滤掉提及原版角色设定（岳七、沈九、苍穹静修等）的日志条目，防止原版专属文案泄漏至好兆头分支（详见 [ADR-049](./docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
 - 修复性能基线工具按进程类型汇总时，`toString`、`valueOf`、`hasOwnProperty` 等继承属性名导致统计崩溃的问题；跨采样点聚合字典改为无原型对象，保留特殊键过滤与返回格式。
 - **子窗口焦点管理时序与键盘事件健壮性加固 (`Sub-window Focus Lifecycle & Keyboard Guards`)**：修复换肤画廊中当数据提前到达并聚焦卡片时 `requestAnimationFrame` 误将焦点抢占至关闭按钮的时序竞争；补齐画廊列表为空或未命中选中项时兜底将焦点导向关闭按钮的逻辑；在卡片预览加载期间严格拦截方向键与 `Escape` 防止卡片禁用时产生失焦与状态紊乱；通过 `loadingSkinId` 保持预览期间多语言切换时的加载态与禁用态延续；为体型调节与状态窗补充事件可选链保护，并为状态窗关闭按钮补齐多语言提示。
