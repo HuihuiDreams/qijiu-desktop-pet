@@ -76,4 +76,5 @@ DeskPet 是一个本地 Electron 桌面应用，运行时加载随应用打包�
 - `electron-store 12 → conf 16 → ajv 8` 引入 `fast-uri`，构建工具也共享该依赖。将锁文件中的 3.1.7 更新至 3.1.9，满足 Ajv 的现有 `^3.0.1` 范围，无需增加直接依赖、overrides 或升级主版本。上游修复范围见 [3.1.9 发布说明](https://github.com/fastify/fast-uri/releases/tag/v3.1.9)。
 - 当前 `StoreManager` 使用无 schema 选项的 `new Store()`，Conf 会跳过 Ajv 校验器创建；未发现把外部输入转为 schema URI 或使用 `reference: 'suffix'` 的应用调用路径。本次修复针对已安装的已知易受影响依赖，不将其描述为已证实的 DeskPet XSS 或 SSRF。
 - `test/dependencyUriSecurity.test.js` 直接覆盖 Ajv 使用的 URI 解析器：编码大写主机名应统一为小写，纯路径 suffix 中的首段冒号应转义，正常相对 schema 引用仍可解析并验证数据。另运行存储 IPC、平台配置与全量回归测试，并执行生产依赖审计。
+- `node_modules/undici`（通过 `@electron/get` 引入的开发环境传递依赖）在 `package-lock.json` 中由 `7.29.0` 更新至 `7.30.2`，以修复上游 `undici < 7.30.1` 安全公告（`GHSA-w293-vg96-wgc3` 等漏洞），并通过 `test/dependencyUriSecurity.test.js` 实施版本回归保护。
 - 手动复核：启动应用，更改语言或久坐提醒设置，退出后重新启动，确认设置保留；打开换肤窗口并取消预览，确认常规交互正常。

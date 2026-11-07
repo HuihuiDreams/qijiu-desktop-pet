@@ -1,4 +1,6 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 
 // 注意：以下直接引用了传递依赖 ajv 内部的 uri 运行时模块及 Ajv2020 导出。
@@ -38,4 +40,45 @@ test('Ajv retains ordinary relative schema resolution and validation', () => {
   });
   assert.equal(validate({ name: 'Crowley' }), true);
   assert.equal(validate({ name: 42 }), false);
+});
+
+function parseSemver(v) {
+  return v.replace(/^[^\d]*/, '').split('.').map(Number);
+}
+
+function compareSemver(a, b) {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+test('package-lock.json locks transitive dependencies to patched versions (fast-uri and undici)', () => {
+  const packageLockPath = path.resolve(__dirname, '..', 'package-lock.json');
+  const packageLock = JSON.parse(fs.readFileSync(packageLockPath, 'utf8'));
+
+  const fastUriVersion = packageLock.packages?.['node_modules/fast-uri']?.version;
+  assert.ok(fastUriVersion, 'package-lock.json must contain node_modules/fast-uri');
+  assert.notEqual(fastUriVersion, '3.1.7', 'fast-uri must not be vulnerable version 3.1.7');
+  assert.ok(
+    compareSemver(fastUriVersion, '3.1.9') >= 0,
+    `fast-uri must be >= 3.1.9, got ${fastUriVersion}`
+  );
+
+  const undiciVersion = packageLock.packages?.['node_modules/undici']?.version;
+  assert.ok(undiciVersion, 'package-lock.json must contain node_modules/undici');
+  assert.ok(
+    compareSemver(undiciVersion, '7.30.2') >= 0,
+    `undici must be >= 7.30.2 (outside vulnerable 7.0.0 - 7.30.0 range), got ${undiciVersion}`
+  );
+  assert.equal(
+    compareSemver(undiciVersion, '7.0.0') >= 0 && compareSemver(undiciVersion, '7.30.0') <= 0,
+    false,
+    `undici must not be in vulnerable 7.0.0 - 7.30.0 range, got ${undiciVersion}`
+  );
 });

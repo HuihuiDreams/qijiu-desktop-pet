@@ -5,7 +5,7 @@
 ## [Unreleased]
 
 ### Added
-- **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR）；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
+- **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR），并将 `playwright` 与 `@playwright/*` 纳入同一更新分组（`groups.playwright`）以防版本范围漂移；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
 - **跨平台与底层依赖安全回归测试套件 (`Platform Compatibility & Dependency Security Test Suites`)**：新增 `test/platformCompatibility.test.js`、`test/dependencyUriSecurity.test.js`、`test/dependabotConfig.test.js` 与 `test/subWindowActivation.test.js`，全面覆盖 Node.js 22+ 环境、macOS 13+ 最低系统要求、Windows NSIS x64 架构配置合法性、fast-uri 3.1.9 针对 CVE 补丁的解析规范化、以及子窗口在 Electron 45 运行时的层级提升与防闪烁策略。
 - **旧书店伴读番茄钟黄铜门铃音效与奇迹羽毛飘落仪式 (`Antique Shop Bell & Ineffable Feather Ceremony`)**：替换原修仙禅定颂钵为伦敦 Soho A.Z. Fell & Co. 古董书店复古黄铜迎客门铃声（Web Audio API 双音泛音物理合成），清脆温润且具穿透力；将番茄钟完成仪式升级为好兆头专属奇迹风格，重构天使亚茨拉斐尔白羽与恶魔克劳利黑羽的写实鸟羽矢量形态（45° 自然羽枝开叉裂缝、外露半透明羽茎与非对称羽面阴影，消除树叶感），升级带有 3D 气动翻滚与微光摇曳的飘落动效，支持无障碍减动效降级，补充自动化测试。
 - **好兆头经典夜莺羁绊台词接入 (`Nightingale Dialogue Integration`)**：将《好兆头》象征二人羁绊与“属于我们的阵营”的经典夜莺典故（*“No nightingales”* 与 *“A Nightingale Sang in Berkeley Square”*）作为概率对白深度植入双人拥抱（`hug`）与深夜高好感联动梦境（`dream.linked`）。双人拥抱时克劳利与亚茨拉斐尔互诉夜莺守候；深夜梦话时亚茨拉斐尔呓语寻觅夜莺，克劳利温柔回应承诺伯克利广场的夜莺永远为他歌唱。中、英、日三语纯正原生撰写并全量通过自动化单元测试。
@@ -40,7 +40,7 @@
 - **子窗口置顶守卫协同与番茄钟取消置顶防闪烁加固 (`Sub-window Z-Order Coordination & Unpin Flicker Fix`)**：修复 `PetWindow.keepPetWindowOnTop()` 每 3 秒置顶轮询无条件将 `mainWindow` 提到同级 `screen-saver` 子窗口（如 `StatusWindow`、置顶态 `PomodoroWindow` 及脉冲期的子窗口）之上的覆盖问题，在 `mainWindow.moveTop()` 后顺次重新抬升可见的置顶子窗口；为 `PomodoroWindow.applyPomodoroWindowPinState()` 取消置顶分支补齐 `setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true })`，消除取消置顶时的 macOS Dock 闪烁；为 `PomodoroWindow` 与 `CitySettingWindow` 创建时补齐 `show: false`，将 `CitySettingWindow` 的 `restore` 事件回调统一为 `pulseCitySettingWindowTop()`，并补充跨平台（`darwin` / `win32`）焦点抢占与置顶顺序回归测试。
 
 ### Security
-- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；补充 URI 回归与正常 schema 引用解析测试，不增加直接依赖或 overrides（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
+- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；同时将开发环境传递依赖 `undici`（`@electron/get` 依赖）从 7.29.0 升级至 7.30.2 以消除 `GHSA-w293-vg96-wgc3` 等上游高危安全通告，并在 `test/dependencyUriSecurity.test.js` 中补充 URI 回归、正常 schema 引用解析及锁文件版本防回退测试，同步更新 `docs/security_best_practices_report.md` 状态标记（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
 
 ## [go-v1.0.0] - 2026-11-01
 
