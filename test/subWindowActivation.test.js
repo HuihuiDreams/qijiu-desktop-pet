@@ -103,8 +103,11 @@ function createHarness() {
     }),
   };
 
+  const ipcHandlers = {};
   const fakeIpcMain = {
-    handle: () => {},
+    handle: (channel, handler) => {
+      ipcHandlers[channel] = handler;
+    },
     on: () => {},
   };
 
@@ -114,6 +117,7 @@ function createHarness() {
     FakeBrowserWindow,
     fakeScreen,
     fakeIpcMain,
+    ipcHandlers,
   };
 }
 
@@ -309,6 +313,7 @@ test('CitySettingWindow: activates with screen-saver pulse, skipTransformProcess
 
     const win = mod.openCitySettingWindow();
     assert.equal(windowManager.citySettingWindow, win);
+    assert.equal(win.options.show, false);
 
     assert.equal(win.visibleOnAllWorkspaces, true);
     assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
@@ -332,16 +337,19 @@ test('CitySettingWindow: activates with screen-saver pulse, skipTransformProcess
   });
 });
 
-test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', () => {
-  withMockedModule('../src/main/windows/PomodoroWindow', ({ mod, windowManager, focusCalls }) => {
+test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', async () => {
+  await withMockedModule('../src/main/windows/PomodoroWindow', async ({ mod, windowManager, focusCalls, ipcHandlers }) => {
     mod.init({
       sendPomodoroState: () => {},
       stopPomodoroSession: () => {},
       getPomodoroSnapshot: () => ({}),
+      createIpcSuccess: (data) => ({ success: true, data }),
+      createIpcFailure: (code, message) => ({ success: false, code, message }),
     });
 
     const win = mod.openPomodoroWindow();
     assert.equal(windowManager.pomodoroWindow, win);
+    assert.equal(win.options.show, false);
 
     if (process.platform === 'darwin') {
       assert.equal(focusCalls.length, 1);
@@ -349,7 +357,21 @@ test('PomodoroWindow: activates with skipTransformProcessType and guarded focus 
     }
 
     // Pinned state sets workspace with skipTransformProcessType
-    mod.applyPomodoroWindowPinState(true);
+    assert.equal(win.visibleOnAllWorkspaces, true);
+    assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
+
+    // Unpinned state via IPC sets workspace to false with skipTransformProcessType
+    await ipcHandlers['pomodoro-set-always-on-top']({ sender: win.webContents }, false);
+    assert.equal(win.visibleOnAllWorkspaces, false);
+    assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+      skipTransformProcessType: true,
+    });
+
+    // Re-pin via IPC restores workspace with skipTransformProcessType
+    await ipcHandlers['pomodoro-set-always-on-top']({ sender: win.webContents }, true);
     assert.equal(win.visibleOnAllWorkspaces, true);
     assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
       visibleOnFullScreen: true,
@@ -360,4 +382,36 @@ test('PomodoroWindow: activates with skipTransformProcessType and guarded focus 
     mod.openPomodoroWindow();
     assert.equal(focusCalls.length, previousFocusCallsCount);
   });
+});
+
+test('SubWindow focus theft is platform-gated: darwin steals focus, win32 does not', () => {
+  const origPlatform = process.platform;
+  try {
+    // 1. On darwin
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    withMockedModule('../src/main/windows/PomodoroWindow', ({ mod, focusCalls }) => {
+      mod.init({
+        sendPomodoroState: () => {},
+        stopPomodoroSession: () => {},
+        getPomodoroSnapshot: () => ({}),
+      });
+      mod.openPomodoroWindow();
+      assert.equal(focusCalls.length, 1);
+      assert.deepEqual(focusCalls[0], { steal: true });
+    });
+
+    // 2. On win32
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    withMockedModule('../src/main/windows/PomodoroWindow', ({ mod, focusCalls }) => {
+      mod.init({
+        sendPomodoroState: () => {},
+        stopPomodoroSession: () => {},
+        getPomodoroSnapshot: () => ({}),
+      });
+      mod.openPomodoroWindow();
+      assert.equal(focusCalls.length, 0);
+    });
+  } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+  }
 });

@@ -41,6 +41,26 @@ function keepPetWindowOnTop() {
   // screen-saver 级别确保在全屏应用上方
   windowManager.mainWindow.setAlwaysOnTop(true, 'screen-saver');
   windowManager.mainWindow.moveTop();
+
+  const subWindows = [
+    windowManager.statusWindow,
+    windowManager.pomodoroWindow,
+    windowManager.skinSelectorWindow,
+    windowManager.petScaleWindow,
+    windowManager.citySettingWindow,
+  ];
+  for (const subWin of subWindows) {
+    if (!subWin || (typeof subWin.isDestroyed === 'function' ? subWin.isDestroyed() : false)) {
+      continue;
+    }
+    const isVisible = typeof subWin.isVisible === 'function' && subWin.isVisible();
+    const isAlwaysOnTop = typeof subWin.isAlwaysOnTop === 'function'
+      ? subWin.isAlwaysOnTop()
+      : Boolean(subWin.alwaysOnTop);
+    if (isVisible && isAlwaysOnTop && typeof subWin.moveTop === 'function') {
+      subWin.moveTop();
+    }
+  }
 }
 
 function setPetWindowMousePassthrough(ignore, options = {}) {
