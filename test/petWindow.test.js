@@ -29,6 +29,7 @@ class MockBrowserWindow {
   isDestroyed() { return this.destroyed; }
   isVisible() { return this.visible; }
   isMinimized() { return this.minimized; }
+  isAlwaysOnTop() { return Boolean(this.alwaysOnTop); }
   setAlwaysOnTop(v) { this.alwaysOnTop = v; }
   moveTop() {}
   setIgnoreMouseEvents(ignore) { this.ignoreMouseEvents = ignore; }
@@ -151,6 +152,8 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.statusWindow = null;
     windowManager.pomodoroWindow = null;
     windowManager.skinSelectorWindow = null;
+    windowManager.petScaleWindow = null;
+    windowManager.citySettingWindow = null;
     // VERY IMPORTANT TO PREVENT REAL CitySettingWindow from executing and triggering electron issues
     citySettingWindowModule.closeCitySettingWindow = () => {};
   });
@@ -227,5 +230,46 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     assert.equal(windowManager.mainWindow, null);
     assert.equal(statusClosed, true);
     assert.equal(cityClosed, true);
+  });
+
+  await t.test('keepPetWindowOnTop re-raises visible alwaysOnTop sub-windows and skips hidden/unpinned', () => {
+    windowManager.mainWindow = new MockBrowserWindow({});
+    const moveTopCalls = [];
+    windowManager.mainWindow.moveTop = () => { moveTopCalls.push('mainWindow'); };
+
+    // Visible & always-on-top sub-window (e.g. statusWindow)
+    windowManager.statusWindow = new MockBrowserWindow({});
+    windowManager.statusWindow.visible = true;
+    windowManager.statusWindow.alwaysOnTop = true;
+    windowManager.statusWindow.moveTop = () => { moveTopCalls.push('statusWindow'); };
+
+    // Visible & always-on-top sub-window (e.g. pinned pomodoroWindow)
+    windowManager.pomodoroWindow = new MockBrowserWindow({});
+    windowManager.pomodoroWindow.visible = true;
+    windowManager.pomodoroWindow.alwaysOnTop = true;
+    windowManager.pomodoroWindow.moveTop = () => { moveTopCalls.push('pomodoroWindow'); };
+
+    // Hidden sub-window (visible = false)
+    windowManager.skinSelectorWindow = new MockBrowserWindow({});
+    windowManager.skinSelectorWindow.visible = false;
+    windowManager.skinSelectorWindow.alwaysOnTop = true;
+    windowManager.skinSelectorWindow.moveTop = () => { moveTopCalls.push('skinSelectorWindow'); };
+
+    // Unpinned sub-window (alwaysOnTop = false)
+    windowManager.petScaleWindow = new MockBrowserWindow({});
+    windowManager.petScaleWindow.visible = true;
+    windowManager.petScaleWindow.alwaysOnTop = false;
+    windowManager.petScaleWindow.moveTop = () => { moveTopCalls.push('petScaleWindow'); };
+
+    // Destroyed sub-window
+    windowManager.citySettingWindow = new MockBrowserWindow({});
+    windowManager.citySettingWindow.destroyed = true;
+    windowManager.citySettingWindow.visible = true;
+    windowManager.citySettingWindow.alwaysOnTop = true;
+    windowManager.citySettingWindow.moveTop = () => { moveTopCalls.push('citySettingWindow'); };
+
+    PetWindow.keepPetWindowOnTop();
+
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
   });
 });

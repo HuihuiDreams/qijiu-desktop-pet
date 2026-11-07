@@ -61,6 +61,7 @@ function createCitySettingWindow() {
     y: Math.round(y + (areaHeight - height) / 2),
     transparent: true,
     frame: false,
+    show: false,
     alwaysOnTop: false,
     skipTaskbar: false,
     resizable: false,
@@ -87,7 +88,7 @@ function createCitySettingWindow() {
     pulseCitySettingWindowTop();
   });
   windowManager.citySettingWindow.on('restore', () => {
-    raiseCitySettingWindow();
+    pulseCitySettingWindowTop();
   });
   windowManager.citySettingWindow.on('closed', () => {
     if (citySettingTopPulseTimer) {

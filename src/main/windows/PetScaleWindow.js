@@ -164,7 +164,6 @@ function openPetScaleWindow() {
     win.show();
   }
   pulsePetScaleWindowTop();
-  win.moveTop();
   win.focus();
   return win;
 }

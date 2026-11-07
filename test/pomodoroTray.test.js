@@ -82,7 +82,7 @@ test('unpinning pomodoro removes it from macOS fullscreen Spaces', () => {
   );
   assert.match(
     mainSource,
-    /setVisibleOnAllWorkspaces\(false\)/,
+    /setVisibleOnAllWorkspaces\(false,\s*\{\s*skipTransformProcessType:\s*true\s*\}\)/,
     'unpinned state fully removes window from all-workspaces overlay'
   );
 });

@@ -37,6 +37,7 @@
 - 修复 `src/main/services/SkinService.js` 中 `scanAvailableSkins` 在测试注入 `deps.availableSkins` 时短路跳过 `qaExtraSkinId` 的缺陷，确保测试注入场景下亦可追加 QA 虚拟皮肤，并在各皮肤测试中补充保留多皮肤测试固件的注释说明。
 - 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试，并在迁移计划中记录手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
+- **子窗口置顶守卫协同与番茄钟取消置顶防闪烁加固 (`Sub-window Z-Order Coordination & Unpin Flicker Fix`)**：修复 `PetWindow.keepPetWindowOnTop()` 每 3 秒置顶轮询无条件将 `mainWindow` 提到同级 `screen-saver` 子窗口（如 `StatusWindow`、置顶态 `PomodoroWindow` 及脉冲期的子窗口）之上的覆盖问题，在 `mainWindow.moveTop()` 后顺次重新抬升可见的置顶子窗口；为 `PomodoroWindow.applyPomodoroWindowPinState()` 取消置顶分支补齐 `setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true })`，消除取消置顶时的 macOS Dock 闪烁；为 `PomodoroWindow` 与 `CitySettingWindow` 创建时补齐 `show: false`，将 `CitySettingWindow` 的 `restore` 事件回调统一为 `pulseCitySettingWindowTop()`，并补充跨平台（`darwin` / `win32`）焦点抢占与置顶顺序回归测试。
 
 ### Security
 - 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；补充 URI 回归与正常 schema 引用解析测试，不增加直接依赖或 overrides（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。

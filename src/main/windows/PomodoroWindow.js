@@ -114,6 +114,7 @@ function createPomodoroWindow() {
     ...bounds,
     transparent: true,
     frame: false,
+    show: false,
     alwaysOnTop: pomodoroAlwaysOnTop,
     skipTaskbar: false,
     resizable: false,
@@ -173,7 +174,7 @@ function applyPomodoroWindowPinState(shouldRaise = false) {
   if (pomodoroAlwaysOnTop) {
     windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
   } else {
-    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(false);
+    windowManager.pomodoroWindow.setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true });
   }
 
   if (!shouldRaise) return;

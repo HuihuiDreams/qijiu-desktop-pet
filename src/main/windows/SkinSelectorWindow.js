@@ -148,7 +148,6 @@ function openSkinSelectorWindow() {
     win.show();
   }
   pulseSkinSelectorWindowTop();
-  win.moveTop();
   win.focus();
   if (wasAlreadyCreated) {
     sendSkinSelectorData({ isInitialLoad: false, resetSelection: !preserveSelection });
