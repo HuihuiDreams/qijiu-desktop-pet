@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This security review audited the runtime application code of **DeskPet (`qijiu-desktop-pet`)** across its **Electron `^42.2.0` / Node.js CommonJS** main process, **context-isolated preload scripts**, and **Vanilla Browser JavaScript / HTML / CSS** renderer processes against frontend/JavaScript (`javascript-general-web-frontend-security.md`) and Electron security best practices, aligned with the repository's existing threat model (`security-scans/threat_model.md`) and architectural constraints (`AGENTS.md`).
+This security review audited the runtime application code of **DeskPet (`qijiu-desktop-pet`)** across its **Electron `^45.2.1` / Node.js CommonJS** main process, **context-isolated preload scripts**, and **Vanilla Browser JavaScript / HTML / CSS** renderer processes against frontend/JavaScript (`javascript-general-web-frontend-security.md`) and Electron security best practices, aligned with the repository's existing threat model (`security-scans/threat_model.md`) and architectural constraints (`AGENTS.md`).
 
 ### Existing Security Baseline (Verified Controls)
 
@@ -29,7 +29,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
 
 ## Medium Severity Findings
 
-### SBP-001 — Chromium Site Isolation Disabled Globally via `disable-site-isolation-trials`
+### SBP-001: Chromium Site Isolation Disabled via Command-Line Switch [Resolved]
 
 - **Rule ID**: Electron Security Best Practices — Process Sandboxing & Site Isolation
 - **Severity**: Medium
@@ -56,6 +56,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
   ```
 
 - **False-Positive / Override Notes**: If retained intentionally for memory footprint constraints, document the trade-off in an ADR alongside the invariant that no `<iframe>`, `<webview>`, or remote origins may be loaded in any `BrowserWindow`.
+- **Status / Resolution**: `app.commandLine.appendSwitch('disable-site-isolation-trials')` has been removed from `src/main/AppLifecycle.js` and is guarded against regression by `test/mainMemoryBudget.test.js`.
 
 ---
 

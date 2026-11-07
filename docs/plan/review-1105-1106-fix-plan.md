@@ -12,7 +12,7 @@
 - [x] 1.5 运行聚焦测试与全量 `npm test` 并完成阶段一原子提交
 
 ## 阶段二：Dependabot Playwright 分组、undici 安全补丁与安全报告同步
-- [ ] 2.1 对齐 `package.json` 与 `package-lock.json` 中的 `"playwright": "^1.64.1"`，并在 `.github/dependabot.yml` 中配置 `playwright` 组合更新（`groups.playwright`），在 `test/dependabotConfig.test.js` 中补充断言
-- [ ] 2.2 将 `package-lock.json` 中 `node_modules/undici` 从 `7.29.0` 升级至兼容安全补丁版 `7.30.2`，消除 High 级别安全通告，并在 `test/dependencyUriSecurity.test.js`（或平台/依赖测试）中补充版本防回退断言
-- [ ] 2.3 同步更新 `docs/security_best_practices_report.md`（Electron `^45.2.1` 基线及 `SBP-001` 已解决状态标记）、`docs/structure.md`、`docs/decisions/ADR-029-security-audit-and-local-hardening.md` 与 `CHANGELOG.md`
-- [ ] 2.4 运行 `npm test` 与 `npm audit --omit=dev` 验收并完成阶段二原子提交
+- [x] 2.1 对齐 `package.json` 与 `package-lock.json` 中的 `"playwright": "^1.64.1"`，并在 `.github/dependabot.yml` 中配置 `playwright` 组合更新（`groups.playwright`），在 `test/dependabotConfig.test.js` 中补充断言
+- [x] 2.2 将 `package-lock.json` 中 `node_modules/undici` 从 `7.29.0` 升级至兼容安全补丁版 `7.30.2`，消除 High 级别安全通告，并在 `test/dependencyUriSecurity.test.js`（或平台/依赖测试）中补充版本防回退断言
+- [x] 2.3 同步更新 `docs/security_best_practices_report.md`（Electron `^45.2.1` 基线及 `SBP-001` 已解决状态标记）、`docs/structure.md`、`docs/decisions/ADR-029-security-audit-and-local-hardening.md` 与 `CHANGELOG.md`
+- [x] 2.4 运行 `npm test` 与 `npm audit --omit=dev` 验收并完成阶段二原子提交

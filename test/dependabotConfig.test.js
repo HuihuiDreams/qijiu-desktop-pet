@@ -19,6 +19,25 @@ test('Dependabot configuration for npm dependencies', async (t) => {
     assert.match(content, /open-pull-requests-limit:\s*\d+/, 'Must declare open-pull-requests-limit');
   });
 
+  await t.test('groups playwright and @playwright/* together with matching package.json semver ranges', () => {
+    const dependabotContent = fs.readFileSync(dependabotPath, 'utf8');
+    assert.match(
+      dependabotContent,
+      /groups:\s*[\r\n]+\s*playwright:\s*[\r\n]+\s*patterns:\s*[\r\n]+\s*-\s*["']?playwright["']?\s*[\r\n]+\s*-\s*["']?@playwright\/\*["']?/,
+      '.github/dependabot.yml must define playwright group covering playwright and @playwright/*'
+    );
+
+    const packageJsonPath = path.join(repoRoot, 'package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    assert.ok(packageJson.devDependencies?.playwright, 'package.json must declare devDependencies.playwright');
+    assert.ok(packageJson.devDependencies?.['@playwright/test'], 'package.json must declare devDependencies["@playwright/test"]');
+    assert.equal(
+      packageJson.devDependencies.playwright,
+      packageJson.devDependencies['@playwright/test'],
+      'devDependencies.playwright and devDependencies["@playwright/test"] must declare matching semver ranges'
+    );
+  });
+
   // 注意：此测试是针对代码仓库内 GitHub Actions 工作流定义的低成本静态防回归哨兵，
   // 仅能验证工作流文本中未引入针对 Dependabot 的自动合并（auto-merge）或自动批准步骤。
   // 它无法校验 GitHub 平台仓库级的 "Allow auto-merge" 设置、Branch Rulesets 或环境审批保护；

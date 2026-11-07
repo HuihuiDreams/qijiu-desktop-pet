@@ -5,7 +5,7 @@
 ## [Unreleased]
 
 ### Added
-- **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR）；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
+- **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR），并将 `playwright` 与 `@playwright/*` 纳入同一更新分组（`groups.playwright`）以防版本范围漂移；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
 - **领域词汇表建立 (`Domain Glossary`)**：新增 [docs/GLOSSARY.md](./docs/GLOSSARY.md)，系统化审查并沉淀了 DeskPet 的核心领域模型。包含角色与实体、修仙养成与状态、养成互动与行为、双人情景与互动、空间感知与桌面物理、专注与伴工情境、时空感知与天候、换装与资产表现共 8 大核心聚类的权威术语定义与防混淆规范（`_Avoid_` 规则），为后续功能演进与跨角色迁移建立无二义性的领域通用语言（Ubiquitous Language）。
 - **专属技能：皮肤素材流水线 (`skin-asset-pipeline`)**：在 `.agents/skills/skin-asset-pipeline/` 中沉淀项目专有的皮肤素材与图片处理技能，规范化 PNG 原图至 256x256 WebP 的裁剪归一化、Alpha 通道保护、脚部基准对齐、资源加密与多语言同步 SOP；升级 `scripts/convert_images.js` 与 `tools/run_trim.py` 支持指定目标皮肤目录参数，并补充对应自动化验证测试。
 - **专属技能：跨平台发布打包与签名合规流水线 (`release-and-packaging`)**：在 `.agents/skills/release-and-packaging/` 中沉淀发布打包技能，系统固化本地环境校验（`verify:installer`）、受保护皮肤预加密（`protect:assets`）、本地快速冒烟打包、ASAR 解包安全审计（`verify:package`）、macOS `DeskPet` ASCII 执行名规范化与 ad-hoc 签名、Windows 签名核验（`verify:signatures`）及云端 GitHub Actions（`release-preflight` 与 `build-installer`）的完整协同 SOP 与排错指南；补充自动化测试套件。
@@ -44,7 +44,7 @@
 
 ### Security
 - **移除 `disable-site-isolation-trials` 恢复 Chromium 站点隔离基线 (`SBP-001`)**：从 `src/main/AppLifecycle.js` 的 `configureChromiumMemoryBudget()` 中移除 `app.commandLine.appendSwitch('disable-site-isolation-trials')`，恢复 Chromium 默认站点隔离（Site Isolation）跨源进程安全边界，并在 `test/mainMemoryBudget.test.js` 中增加防回退断言。
-- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；补充 URI 回归与正常 schema 引用解析测试，不增加直接依赖或 overrides（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
+- 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；同时将开发环境传递依赖 `undici`（`@electron/get` 依赖）从 7.29.0 升级至 7.30.2 以消除 `GHSA-w293-vg96-wgc3` 等上游高危安全通告，并在 `test/dependencyUriSecurity.test.js` 中补充 URI 回归、正常 schema 引用解析及锁文件版本防回退测试，同步更新 `docs/security_best_practices_report.md` 状态标记（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
 
 ## [0.11.2] - 2026-10-23
 
