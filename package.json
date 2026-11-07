@@ -17,7 +17,8 @@
     "build": "electron-builder",
     "verify:installer": "node scripts/verify-installer.js",
     "verify:package": "node scripts/verify-package-contents.js",
-    "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1"
+    "verify:signatures": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-signatures.ps1",
+    "sync:cp": "node scripts/sync-to-cp.js"
   },
   "author": "",
   "license": "MIT",

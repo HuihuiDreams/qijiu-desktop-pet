@@ -1,0 +1,58 @@
+name: Sync Main to Good Omens Branch
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      commits:
+        description: 'Optional commit SHA or range (e.g. HEAD~1..HEAD) to evaluate and sync'
+        required: false
+        type: string
+      dry_run:
+        description: 'Run heuristic/AI evaluation without pushing changes'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  models: read
+
+concurrency:
+  group: sync-to-cp-crowley-aziraphale
+  cancel-in-progress: false
+
+jobs:
+  sync-to-cp:
+    name: Evaluate & Sync to cp/crowley-aziraphale
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Evaluate commits, smart-merge CHANGELOG, test, and push to cp/crowley-aziraphale
+        env:
+          TARGET_BRANCH: cp/crowley-aziraphale
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          INPUT_COMMITS: ${{ inputs.commits }}
+          SYNC_PUSH: ${{ !inputs.dry_run }}
+          SYNC_DRY_RUN: ${{ inputs.dry_run }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/sync-to-cp.js
