@@ -7,7 +7,7 @@
  * 的兄弟模块，沿用既有窗口模块（StatusWindow/CitySettingWindow/PomodoroWindow）
  * 直接引入的约定。
  */
-const { BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { normalizeMousePassthroughRequest } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
@@ -24,6 +24,10 @@ let nextSubWindowFocusOrder = 0;
 
 function init(dependencies) {
   deps = dependencies;
+
+  app?.on?.('browser-window-focus', (_event, win) => {
+    if (win) subWindowFocusOrder.set(win, ++nextSubWindowFocusOrder);
+  });
 
   ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
     if (!isSenderMainWindow(event, windowManager.mainWindow)) {

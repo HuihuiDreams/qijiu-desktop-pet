@@ -4,6 +4,7 @@ const Module = require('node:module');
 
 let mockIpcListeners = {};
 let mockScreenListeners = {};
+let mockAppListeners = {};
 
 class MockBrowserWindow {
   constructor(options) {
@@ -48,6 +49,7 @@ class MockBrowserWindow {
 
 const electronMock = {
   BrowserWindow: MockBrowserWindow,
+  app: { on: (event, callback) => { mockAppListeners[event] = callback; } },
   ipcMain: {
     on: (channel, cb) => {
       mockIpcListeners[channel] = cb;
@@ -291,5 +293,24 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.pomodoroWindow.trigger('focus');
     PetWindow.keepPetWindowOnTop();
     assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
+  });
+
+  await t.test('focus before the first watcher tick is retained after leaving the app', () => {
+    windowManager.mainWindow = new MockBrowserWindow({});
+    windowManager.statusWindow = new MockBrowserWindow({});
+    windowManager.pomodoroWindow = new MockBrowserWindow({});
+    windowManager.skinSelectorWindow = null;
+    windowManager.petScaleWindow = null;
+    windowManager.citySettingWindow = null;
+    const calls = [];
+    for (const [name, win] of [['status', windowManager.statusWindow], ['pomodoro', windowManager.pomodoroWindow]]) {
+      win.visible = true;
+      win.alwaysOnTop = true;
+      win.moveTop = () => calls.push(name);
+    }
+    mockAppListeners['browser-window-focus']({}, windowManager.pomodoroWindow);
+    mockAppListeners['browser-window-focus']({}, windowManager.statusWindow);
+    PetWindow.keepPetWindowOnTop();
+    assert.deepEqual(calls, ['pomodoro', 'status']);
   });
 });

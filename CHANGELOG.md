@@ -45,11 +45,12 @@
 - 修复 Windows 架构误配在 `build.win.arch` 导致 Windows 与 macOS 打包均被 schema 校验阻断的问题；将 `arch` 移入 `win.target` 的 NSIS 目标对象，并补充 electron-builder 完整配置校验回归测试（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 - 修复 macOS 下调用 `setVisibleOnAllWorkspaces` 时隐式触发 UIElement 进程类型切换导致 Dock 栏和窗口瞬间闪烁的问题；在各窗口调用处补充 `skipTransformProcessType: true`，为 `app.focus({ steal: true })` 增加窗口未聚焦前置守卫，并重构为包含 180ms 定时器回落与跨桌面选项的真实行为回归测试。
 - **子窗口置顶守卫协同与番茄钟取消置顶防闪烁加固 (`Sub-window Z-Order Coordination & Unpin Flicker Fix`)**：修复 `PetWindow.keepPetWindowOnTop()` 每 3 秒置顶轮询无条件将 `mainWindow` 提到同级 `screen-saver` 子窗口（如 `StatusWindow`、置顶态 `PomodoroWindow` 及脉冲期的子窗口）之上的覆盖问题，在 `mainWindow.moveTop()` 后顺次重新抬升可见的置顶子窗口；为 `PomodoroWindow.applyPomodoroWindowPinState()` 取消置顶分支补齐 `setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true })`，消除取消置顶时的 macOS Dock 闪烁；为 `PomodoroWindow` 与 `CitySettingWindow` 创建时补齐 `show: false`，将 `CitySettingWindow` 的 `restore` 事件回调统一为 `pulseCitySettingWindowTop()`，并补充跨平台（`darwin` / `win32`）焦点抢占与置顶顺序回归测试。
-- ?? CP ????? Git ??????????????????????? Git ??????????[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)??
-- ?? CP ???????????????????????????????????????????????????????[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)??
-- ?? CP ???????? main ???????????????????????????[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)??
-- ?????????????????????????????????????[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)??
-- ?? CP ?????????????????????? main ??????????????????????????????[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)??
+- 修复 CP 自动同步的 Git 失败日志可能包含编码后认证令牌的问题，改为仅向 Git 子进程传递认证配置（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
+- 修复 CP 自动同步在代码冲突或测试失败后仍推进后续提交，导致失败项被同步锚点跨过的问题；失败时停止批次并在下次运行重试（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
+- 修复 CP 自动同步测试复用 main 依赖的问题，改为按目标分支锁文件在临时工作树安装依赖（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
+- 修复多个置顶子窗口被定时守卫按固定顺序重排的问题，保留最近操作窗口的层级（[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)）。
+- 修复 CP 自动同步遗漏合并提交中冲突解决内容的问题，按 main 第一父提交评估并同步完整合并结果，保留被合并提交的跳过指令（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
+- 修复首次置顶检查之前快速切换窗口时焦点顺序可能丢失的问题，通过应用级焦点事件即时记录（[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)）。
 
 ### Removed
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。
