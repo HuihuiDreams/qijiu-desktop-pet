@@ -363,6 +363,22 @@ function classifyCommitHeuristic({
     };
   }
 
+  // Commits modifying only main-to-cp sync infrastructure are main-branch exclusive
+  const isSyncInfraOnly = nonChangelogFiles.every(
+    (file) =>
+      file === 'scripts/sync-to-cp.js' ||
+      file === 'test/syncToCp.test.js' ||
+      file === 'docs/decisions/ADR-049-main-to-cp-auto-sync.md'
+  );
+  if (isSyncInfraOnly) {
+    return {
+      applicable: false,
+      category: 'sync-infrastructure',
+      reason: 'Commit only modifies main-to-cp sync infrastructure.',
+      needsAiReview: false,
+    };
+  }
+
   // 3. Check for CP-exclusive asset / dialogue files
   const exclusiveFiles = nonChangelogFiles.filter((file) =>
     CP_EXCLUSIVE_PATH_PATTERNS.some((pattern) => pattern.test(file))

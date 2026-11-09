@@ -296,6 +296,13 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     });
     assert.equal(workflowChange.applicable, false);
     assert.equal(workflowChange.category, 'workflow-files');
+
+    const syncInfraOnly = classifyCommitHeuristic({
+      subject: 'fix: improve CP branch auto-sync script',
+      files: ['scripts/sync-to-cp.js', 'test/syncToCp.test.js', 'CHANGELOG.md'],
+    });
+    assert.equal(syncInfraOnly.applicable, false);
+    assert.equal(syncInfraOnly.category, 'sync-infrastructure');
   });
 
   await t.test('createSanitizedChildEnv strips sensitive tokens from child process environments', () => {
