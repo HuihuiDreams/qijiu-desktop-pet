@@ -27,6 +27,18 @@ function createSanitizedChildEnv(baseEnv = process.env) {
 }
 
 /**
+ * Main-branch exclusive files dedicated to the auto-sync pipeline itself.
+ * These files do not exist on target CP branches and should never be cherry-picked
+ * or cause conflicts during cross-branch synchronization.
+ */
+const MAIN_ONLY_SYNC_INFRA_FILES = new Set([
+  'scripts/sync-to-cp.js',
+  'test/syncToCp.test.js',
+  'docs/decisions/ADR-049-main-to-cp-auto-sync.md',
+  '.github/workflows/sync-to-cp.yml',
+]);
+
+/**
  * Exclusive file patterns that belong to a specific CP's visual assets, dialogues, or lore.
  * Any skin folder under `src/assets/<skinId>/` (excluding `src/assets/fonts/`) is treated as CP-exclusive
  * so future skin additions are automatically protected without hardcoding skin directory names.
@@ -352,23 +364,22 @@ function classifyCommitHeuristic({
     };
   }
 
-  // Workflow files cannot be pushed with the default GITHUB_TOKEN (no `workflows` permission)
-  const workflowFiles = nonChangelogFiles.filter((file) => file.startsWith('.github/workflows/'));
-  if (workflowFiles.length > 0) {
+  // Workflow files on target branch cannot be pushed with the default GITHUB_TOKEN (no `workflows` permission)
+  const targetWorkflowFiles = nonChangelogFiles.filter(
+    (file) => file.startsWith('.github/workflows/') && !MAIN_ONLY_SYNC_INFRA_FILES.has(file)
+  );
+  if (targetWorkflowFiles.length > 0) {
     return {
       applicable: false,
       category: 'workflow-files',
-      reason: `Touches ${workflowFiles[0]}; GITHUB_TOKEN cannot push workflow changes, sync manually.`,
+      reason: `Touches ${targetWorkflowFiles[0]}; GITHUB_TOKEN cannot push workflow changes, sync manually.`,
       needsAiReview: false,
     };
   }
 
   // Commits modifying only main-to-cp sync infrastructure are main-branch exclusive
-  const isSyncInfraOnly = nonChangelogFiles.every(
-    (file) =>
-      file === 'scripts/sync-to-cp.js' ||
-      file === 'test/syncToCp.test.js' ||
-      file === 'docs/decisions/ADR-049-main-to-cp-auto-sync.md'
+  const isSyncInfraOnly = nonChangelogFiles.every((file) =>
+    MAIN_ONLY_SYNC_INFRA_FILES.has(file)
   );
   if (isSyncInfraOnly) {
     return {
@@ -1003,11 +1014,39 @@ async function syncCommitsToCp({
         cherryPickClean = false;
       }
 
-      // Check for conflicted files
-      const conflictedOutput = runGit(['diff', '--name-only', '--diff-filter=U'], {
+      // Check for initial conflicted files
+      let conflictedOutput = runGit(['diff', '--name-only', '--diff-filter=U'], {
         cwd: worktreeDir,
       });
-      const conflictedFiles = conflictedOutput
+      let conflictedFiles = conflictedOutput
+        ? conflictedOutput.split(/\r?\n/).filter(Boolean)
+        : [];
+      const hadInitialConflicts = conflictedFiles.length > 0;
+
+      // Unstage / discard any main-only sync infrastructure files so they never conflict
+      // or leak into the target CP branch (which does not maintain sync-to-cp infrastructure).
+      for (const syncFile of MAIN_ONLY_SYNC_INFRA_FILES) {
+        if (files.includes(syncFile) || conflictedFiles.includes(syncFile)) {
+          const existsInCheckpoint = Boolean(
+            runGit(['ls-tree', checkpointSha, syncFile], { cwd: worktreeDir }).trim()
+          );
+          if (existsInCheckpoint) {
+            runGit(['checkout', checkpointSha, '--', syncFile], { cwd: worktreeDir });
+          } else {
+            try {
+              runGit(['rm', '-f', syncFile], { cwd: worktreeDir });
+            } catch {
+              // File might not be tracked in index or working tree
+            }
+          }
+        }
+      }
+
+      // Re-evaluate conflicted files after discarding main-only sync infrastructure
+      conflictedOutput = runGit(['diff', '--name-only', '--diff-filter=U'], {
+        cwd: worktreeDir,
+      });
+      conflictedFiles = conflictedOutput
         ? conflictedOutput.split(/\r?\n/).filter(Boolean)
         : [];
       const nonChangelogConflicts = conflictedFiles.filter((f) => f !== 'CHANGELOG.md');
@@ -1025,14 +1064,21 @@ async function syncCommitsToCp({
         break;
       }
 
-      if (!cherryPickClean && conflictedFiles.length === 0) {
+      if (!cherryPickClean && !hadInitialConflicts) {
         runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
-        results.push({ sha, subject, verdict: verdictLabel, status: '❌ 合并失败已回滚', reason: 'Cherry-pick failed without resolvable conflicts.', blocked: true });
+        results.push({
+          sha,
+          subject,
+          verdict: verdictLabel,
+          status: '❌ 合并失败已回滚',
+          reason: 'Cherry-pick failed without resolvable conflicts.',
+          blocked: true,
+        });
         break;
       }
 
       // Smart merge CHANGELOG.md if touched or conflicted
-      if (files.includes('CHANGELOG.md')) {
+      if (files.includes('CHANGELOG.md') || conflictedFiles.includes('CHANGELOG.md')) {
         // Use -U100000 so `## [Unreleased]` and `### <Section>` headings are always included in context
         const changelogDiff = runGit(
           ['show', '--first-parent', '-U100000', '--format=', sha, '--', 'CHANGELOG.md'],
@@ -1245,4 +1291,5 @@ module.exports = {
   isCommitAlreadyOnBranch,
   formatSyncSummaryMarkdown,
   syncCommitsToCp,
+  MAIN_ONLY_SYNC_INFRA_FILES,
 };

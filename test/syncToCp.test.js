@@ -20,6 +20,7 @@ const {
   resolveCommitsToEvaluate,
   isCommitAlreadyOnBranch,
   syncCommitsToCp,
+  MAIN_ONLY_SYNC_INFRA_FILES,
 } = require('../scripts/sync-to-cp.js');
 
 const repoRoot = path.resolve(__dirname, '..');
@@ -303,6 +304,13 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     });
     assert.equal(syncInfraOnly.applicable, false);
     assert.equal(syncInfraOnly.category, 'sync-infrastructure');
+
+    const syncWorkflowOnly = classifyCommitHeuristic({
+      subject: 'ci: update sync workflow trigger',
+      files: ['.github/workflows/sync-to-cp.yml', 'docs/decisions/ADR-049-main-to-cp-auto-sync.md'],
+    });
+    assert.equal(syncWorkflowOnly.applicable, false);
+    assert.equal(syncWorkflowOnly.category, 'sync-infrastructure');
   });
 
   await t.test('createSanitizedChildEnv strips sensitive tokens from child process environments', () => {
@@ -1023,6 +1031,72 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         remoteCpChangelog,
         /岳七|沈九/,
         'QiJiu brand names must be filtered out from CP CHANGELOG'
+      );
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('discards main-only sync infrastructure files during cherry-pick without conflict', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-infra-integ-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const localRepo = path.join(tmpBase, 'local');
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', localRepo]);
+      git(localRepo, ['remote', 'add', 'origin', bareRemote]);
+
+      // Base commit
+      fs.mkdirSync(path.join(localRepo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 1 };\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'chore: base']);
+      git(localRepo, ['branch', '-M', 'main']);
+      git(localRepo, ['push', '-u', 'origin', 'main']);
+
+      // Target CP branch without any sync infra files
+      git(localRepo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      git(localRepo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      // On main, commit changes to shared.js AND add/modify sync infra files
+      git(localRepo, ['checkout', 'main']);
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 2 };\n');
+      fs.mkdirSync(path.join(localRepo, 'scripts'), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'scripts', 'sync-to-cp.js'), '// sync bot script\n');
+      fs.mkdirSync(path.join(localRepo, 'test'), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'test', 'syncToCp.test.js'), '// sync test\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'feat: update shared and sync infra']);
+      const mixedCommitSha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', 'origin', 'main']);
+
+      const syncResult = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: mixedCommitSha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+
+      assert.equal(syncResult.syncedCount, 1);
+      assert.match(syncResult.results[0].status, /✅ 已同步/);
+
+      // Verify on remote CP branch that shared.js is updated, but sync infra files were never created!
+      git(localRepo, ['fetch', 'origin']);
+      const cpRef = 'origin/cp/crowley-aziraphale';
+      assert.match(
+        git(localRepo, ['show', `${cpRef}:src/shared.js`]),
+        /module\.exports = { v: 2 };/
+      );
+      assert.throws(
+        () => git(localRepo, ['show', `${cpRef}:scripts/sync-to-cp.js`]),
+        /does not exist|exists on disk, but not in/
+      );
+      assert.throws(
+        () => git(localRepo, ['show', `${cpRef}:test/syncToCp.test.js`]),
+        /does not exist|exists on disk, but not in/
       );
     } finally {
       fs.rmSync(tmpBase, { recursive: true, force: true });
