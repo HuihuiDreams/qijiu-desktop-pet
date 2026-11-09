@@ -17,6 +17,7 @@ test('Dependabot configuration for npm dependencies', async (t) => {
     assert.match(content, /directory:\s*["']?\/["']?/, 'Must monitor root directory for npm updates');
     assert.match(content, /interval:\s*["']?weekly["']?/, 'Must run on a weekly schedule to avoid PR fatigue');
     assert.match(content, /open-pull-requests-limit:\s*\d+/, 'Must declare open-pull-requests-limit');
+    assert.match(content, /versioning-strategy:\s*["']?increase["']?/, 'Must declare versioning-strategy: increase so grouped updates bump all ranges in package.json');
   });
 
   await t.test('groups playwright and @playwright/* together with matching package.json semver ranges', () => {
