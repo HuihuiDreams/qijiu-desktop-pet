@@ -105,7 +105,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 1. 拦截检查：自动检测 `git status` 中是否包含 `CHANGELOG.md`。
 2. 如果未包含，脚本会拦截提交，并自动用系统默认编辑器打开 `CHANGELOG.md`，强制要求你填写更新记录。
 3. 填写保存后重新运行，脚本执行 `git add .`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
-4. 检查通过后执行 `git commit -m "你的信息"`，成功后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
+4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp` 执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
 
 脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。脚本打印的 `[WIP]` 模板是旧提示，实际应按 `[Unreleased]` 规范填写。
 

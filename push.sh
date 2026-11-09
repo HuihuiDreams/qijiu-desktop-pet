@@ -83,6 +83,23 @@ if [ $? -ne 0 ]; then
     exit $?
 fi
 
+# 好兆头分支自动同步预检（仅在 main 分支且未显式跳过时执行）
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ -z "$SKIP_SYNC_CHECK" ] && [ "$CURRENT_BRANCH" = "main" ]; then
+    echo -e "${CYAN}🔍 正在执行好兆头分支同步预检 (npm run sync:cp)...${NC}"
+    npm run sync:cp
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}==========================================${NC}"
+        echo -e "${RED}❌ 拦截 Push: 该提交向 cp/crowley-aziraphale 同步预检未通过！${NC}"
+        echo -e "${YELLOW}已自动撤销刚才的本地提交 (git reset HEAD~1)，工作区修改已保留。${NC}"
+        echo -e "${YELLOW}若该改动仅限主分支（无需同步至好兆头），请在 commit message 中附加 [skip-cp]；${NC}"
+        echo -e "${YELLOW}若为通用改动，请排查分类规则或在好兆头分支对齐基线后再试。${NC}"
+        echo -e "${RED}==========================================${NC}"
+        git reset HEAD~1
+        exit 1
+    fi
+fi
+
 echo -e "${CYAN}⬆️ 正在推送到远程仓库 origin HEAD...${NC}"
 push_origin_head
 

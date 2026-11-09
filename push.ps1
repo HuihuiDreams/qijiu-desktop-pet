@@ -53,6 +53,23 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# Preflight check for Good Omens branch sync (only on main branch unless explicitly skipped).
+$currentBranch = (git rev-parse --abbrev-ref HEAD).Trim()
+if (-not $env:SKIP_SYNC_CHECK -and $currentBranch -eq "main") {
+    Write-Host "Running Good Omens sync preflight (npm run sync:cp)..." -ForegroundColor Cyan
+    $npmCmd = if (Get-Command "npm.cmd" -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
+    & $npmCmd run sync:cp
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "==========================================" -ForegroundColor Red
+        Write-Host "Push blocked: Sync preflight to cp/crowley-aziraphale failed." -ForegroundColor Red
+        Write-Host "Reverted local commit (git reset HEAD~1). Working tree changes preserved." -ForegroundColor Yellow
+        Write-Host "If this change is main-only, append [skip-cp] to your commit message." -ForegroundColor Yellow
+        Write-Host "==========================================" -ForegroundColor Red
+        git reset HEAD~1
+        exit 1
+    }
+}
+
 Write-Host "Pushing to origin HEAD..." -ForegroundColor Cyan
 git push origin HEAD
 
