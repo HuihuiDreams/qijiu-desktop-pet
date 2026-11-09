@@ -641,7 +641,7 @@ function findLastSyncedMainCommit(targetRef, afterSha, cwd) {
 }
 
 /**
- * Resolve the ordered list of non-merge commits on `main` to evaluate.
+ * Resolve the ordered first-parent commits on `main`, including merge commits.
  * Combines `findLastSyncedMainCommit` with `beforeSha..afterSha` so cancelled workflow runs
  * never create a gap of uninspected commits.
  */
@@ -662,7 +662,7 @@ function resolveCommitsToEvaluate({
       .filter(Boolean);
     for (const token of tokens) {
       if (token.includes('..')) {
-        const list = runGit(['rev-list', '--reverse', '--no-merges', token], { cwd });
+        const list = runGit(['rev-list', '--reverse', '--first-parent', token], { cwd });
         if (list) commits.push(...list.split(/\r?\n/).filter(Boolean));
       } else {
         commits.push(runGit(['rev-parse', token], { cwd }));
@@ -685,12 +685,12 @@ function resolveCommitsToEvaluate({
     }
   } else if (lastSyncedSha) {
     rangeStart = lastSyncedSha;
-  } else if (hasValidBefore) {
+  } else {
     // With no recorded cherry-pick, recover from the shared history, including a failed first run.
     try {
-      rangeStart = runGit(['merge-base', targetRef, resolvedAfter], { cwd }) || beforeSha;
+      rangeStart = runGit(['merge-base', targetRef, resolvedAfter], { cwd }) || (hasValidBefore ? beforeSha : null);
     } catch {
-      rangeStart = beforeSha;
+      rangeStart = hasValidBefore ? beforeSha : null;
     }
   }
 
@@ -700,7 +700,7 @@ function resolveCommitsToEvaluate({
         [
           'rev-list',
           '--reverse',
-          '--no-merges',
+          '--first-parent',
           `${rangeStart}..${resolvedAfter}`,
         ],
         { cwd }
@@ -833,7 +833,12 @@ async function syncCommitsToCp({
     for (const sha of commits) {
       const subject = runGit(['show', '-s', '--format=%s', sha], { cwd: repoRoot });
       const body = runGit(['show', '-s', '--format=%b', sha], { cwd: repoRoot });
-      const filesOutput = runGit(['diff-tree', '--no-commit-id', '--name-only', '-r', sha], {
+      const parentLine = runGit(['rev-list', '--parents', '-n', '1', sha], { cwd: repoRoot });
+      const isMerge = parentLine.split(/\s+/).length > 2;
+      const mergedMessages = isMerge
+        ? runGit(['log', '--format=%B', `${sha}^1..${sha}`], { cwd: repoRoot })
+        : '';
+      const filesOutput = runGit(['diff-tree', '-m', '--first-parent', '--no-commit-id', '--name-only', '-r', sha], {
         cwd: repoRoot,
       });
       const files = filesOutput ? filesOutput.split(/\r?\n/).filter(Boolean) : [];
@@ -855,7 +860,7 @@ async function syncCommitsToCp({
       const nonChangelogFiles = files.filter((f) => f !== 'CHANGELOG.md');
       let codeDiff = '';
       if (nonChangelogFiles.length > 0) {
-        codeDiff = runGit(['show', '--format=', sha, '--', ...nonChangelogFiles], {
+        codeDiff = runGit(['show', '--first-parent', '--format=', sha, '--', ...nonChangelogFiles], {
           cwd: repoRoot,
         });
       }
@@ -863,14 +868,14 @@ async function syncCommitsToCp({
       const sensitiveFiles = nonChangelogFiles.filter((f) => SENSITIVE_SHARED_FILE_REGEX.test(f));
       let sensitiveDiff = '';
       if (sensitiveFiles.length > 0) {
-        sensitiveDiff = runGit(['show', '--format=', sha, '--', ...sensitiveFiles], {
+        sensitiveDiff = runGit(['show', '--first-parent', '--format=', sha, '--', ...sensitiveFiles], {
           cwd: repoRoot,
         });
       }
 
       const heuristic = classifyCommitHeuristic({
         subject,
-        body,
+        body: `${body}\n${mergedMessages}`,
         files,
         codeDiff,
         sensitiveDiff,
@@ -880,7 +885,7 @@ async function syncCommitsToCp({
       if (heuristic.applicable && (heuristic.needsAiReview || alwaysAi)) {
         aiVerdict = await evaluateCommitWithAi({
           subject,
-          body,
+          body: `${body}\n${mergedMessages}`,
           files,
           codeDiff,
           env,
@@ -977,7 +982,7 @@ async function syncCommitsToCp({
 
       let cherryPickClean = true;
       try {
-        runGit(['cherry-pick', '--no-commit', sha], { cwd: worktreeDir });
+        runGit(['cherry-pick', '--no-commit', ...(isMerge ? ['-m', '1'] : []), sha], { cwd: worktreeDir });
       } catch {
         cherryPickClean = false;
       }
@@ -1004,11 +1009,17 @@ async function syncCommitsToCp({
         break;
       }
 
+      if (!cherryPickClean && conflictedFiles.length === 0) {
+        runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
+        results.push({ sha, subject, verdict: verdictLabel, status: '❌ 合并失败已回滚', reason: 'Cherry-pick failed without resolvable conflicts.', blocked: true });
+        break;
+      }
+
       // Smart merge CHANGELOG.md if touched or conflicted
       if (files.includes('CHANGELOG.md')) {
         // Use -U100000 so `## [Unreleased]` and `### <Section>` headings are always included in context
         const changelogDiff = runGit(
-          ['show', '-U100000', '--format=', sha, '--', 'CHANGELOG.md'],
+          ['show', '--first-parent', '-U100000', '--format=', sha, '--', 'CHANGELOG.md'],
           { cwd: repoRoot }
         );
         const rawAddedSections = parseAddedChangelogSections(changelogDiff);
@@ -1183,7 +1194,7 @@ async function main() {
   });
 
   if (results.length === 0) {
-    console.log('No non-merge commits found to evaluate.');
+    console.log('No commits found to evaluate.');
     return;
   }
 

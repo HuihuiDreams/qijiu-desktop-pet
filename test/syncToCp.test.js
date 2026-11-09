@@ -52,6 +52,62 @@ test('authenticated git keeps credentials out of command failures', () => {
     });
 });
 
+test('syncs the resolved merge result relative to the main branch', async () => {
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-cp-merge-'));
+  const repo = path.join(tmpBase, 'local');
+  try {
+    git(tmpBase, ['init', '--bare', path.join(tmpBase, 'remote.git')]);
+    git(tmpBase, ['init', repo]);
+    git(repo, ['remote', 'add', 'origin', path.join(tmpBase, 'remote.git')]);
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'base\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'base']);
+    git(repo, ['branch', '-M', 'main']);
+    git(repo, ['checkout', '-b', 'feature']);
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'feature\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'feature change']);
+    git(repo, ['checkout', 'main']);
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'main\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'main change']);
+    const before = git(repo, ['rev-parse', 'HEAD']);
+    git(repo, ['push', 'origin', 'main:cp/crowley-aziraphale']);
+    assert.throws(() => git(repo, ['merge', '--no-ff', 'feature', '-m', 'merge feature']));
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'resolved merge\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'merge feature']);
+    const merge = git(repo, ['rev-parse', 'HEAD']);
+    git(repo, ['fetch', 'origin']);
+
+    assert.deepEqual(resolveCommitsToEvaluate({ cwd: repo, targetRef: 'origin/cp/crowley-aziraphale', beforeSha: before, afterSha: merge }), [merge]);
+    const result = await syncCommitsToCp({
+      repoRoot: repo, beforeSha: before, afterSha: merge, dryRun: false,
+      installRunner: () => {}, testRunner: () => {},
+    });
+    assert.equal(result.syncedCount, 1);
+    git(repo, ['fetch', 'origin']);
+    assert.equal(git(repo, ['show', 'origin/cp/crowley-aziraphale:shared.js']), 'resolved merge');
+
+    git(repo, ['checkout', '-b', 'private-feature']);
+    fs.writeFileSync(path.join(repo, 'private.js'), 'private\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'private feature [skip-cp]']);
+    git(repo, ['checkout', 'main']);
+    git(repo, ['merge', '--no-ff', 'private-feature', '-m', 'merge private feature']);
+    const privateMerge = git(repo, ['rev-parse', 'HEAD']);
+    const skipped = await syncCommitsToCp({
+      repoRoot: repo, beforeSha: merge, afterSha: privateMerge, dryRun: false,
+      installRunner: () => {}, testRunner: () => {},
+    });
+    assert.equal(skipped.syncedCount, 0);
+    assert.match(skipped.results[0].verdict, /explicit-skip/);
+    assert.throws(() => git(repo, ['show', 'origin/cp/crowley-aziraphale:private.js']));
+  } finally {
+    fs.rmSync(tmpBase, { recursive: true, force: true });
+  }
+});
+
 test('Sync Main to Good Omens workflow and script suite', async (t) => {
   await t.test('.github/workflows/sync-to-cp.yml exists and is properly configured', () => {
     const workflowPath = path.join(repoRoot, '.github', 'workflows', 'sync-to-cp.yml');
@@ -713,6 +769,9 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       assert.deepEqual(resolveCommitsToEvaluate({
         cwd: repo, targetRef: cpRef, beforeSha: rewriteSha, afterSha: rewriteSha,
       }), [rewriteSha], 'Without a sync marker, retry from the shared ancestor');
+      assert.deepEqual(resolveCommitsToEvaluate({
+        cwd: repo, targetRef: cpRef, afterSha: rewriteSha,
+      }), [rewriteSha], 'Manual runs without beforeSha must also recover from the shared ancestor');
       const rewriteRun = await syncCommitsToCp({
         repoRoot: repo,
         targetBranch: 'cp/crowley-aziraphale',

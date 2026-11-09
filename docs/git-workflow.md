@@ -125,7 +125,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 
 决策背景见 [ADR-049](./decisions/ADR-049-main-to-cp-auto-sync.md)。
 
-当 `main` 分支收到新推送（包括本地 `./push.sh` / `.\push.ps1` 推送以及网页端合并 Dependabot / PR）时，GitHub Actions 工作流 [`.github/workflows/sync-to-cp.yml`](../.github/workflows/sync-to-cp.yml) 会自动调用 [`scripts/sync-to-cp.js`](../scripts/sync-to-cp.js) 检测新增的非 Merge 提交是否适用于好兆头分支（`cp/crowley-aziraphale`）：
+当 `main` 分支收到新推送（包括本地 `./push.sh` / `.\push.ps1` 推送以及网页端合并 Dependabot / PR）时，GitHub Actions 工作流 [`.github/workflows/sync-to-cp.yml`](../.github/workflows/sync-to-cp.yml) 会自动调用 [`scripts/sync-to-cp.js`](../scripts/sync-to-cp.js) 沿 main 第一父提交检测新增提交是否适用于好兆头分支（`cp/crowley-aziraphale`）；合并提交按相对第一父提交的完整结果评估与同步，包含冲突解决内容，任何被合并提交的显式跳过指令都会拒绝整个合并提交：
 
 1. **基线追溯与去重检查**：自动检索 `cp/crowley-aziraphale` 历史中最近一次同步的 `(cherry picked from commit <sha>)` 锚点并结合 `before..after` 区间推导待检查提交列表（防止连续多次推送被并发队列合并时漏检中间提交）；若提交已通过 `(cherry picked from commit <sha>)` 标记或补丁内容（挑拣后 staged diff 为空）存在于 `cp/crowley-aziraphale`，自动跳过且不生成空提交。
    - **已知限制**：锚点只记录已同步的提交，被判定「不适用」的提交不会推进锚点，下次推送会在最多 50 个提交的回看窗口内重新评估（可能重复调用 AI）；积压超过 50 个提交时按**从旧到新**取前 50 个并输出警告，其余留待下次推送（锚点不会越过未评估的提交）。
