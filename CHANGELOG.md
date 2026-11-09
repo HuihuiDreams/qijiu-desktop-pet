@@ -5,6 +5,7 @@
 ## [Unreleased]
 
 ### Added
+- **推送脚本集成好兆头分支同步预检守卫 (`Push Scripts Good Omens Sync Preflight`)**：在 `./push.sh` 与 `push.ps1` 中集成自动同步前置检查，于 `main` 分支提交后、推送到远端前自动执行 `npm run sync:cp` 进行干跑校验；若改动在目标分支存在代码冲突或测试失败，自动执行 `git reset HEAD~1` 回退本地提交并提供 `[skip-cp]` 规避指引，支持通过 `SKIP_SYNC_CHECK=1` 紧急放行，从源头杜绝破坏性提交推向远端触发 Action 报错（详见 [ADR-049](./docs/decisions/ADR-049-main-to-cp-auto-sync.md) 与 [docs/git-workflow.md](./docs/git-workflow.md)）。
 - **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR），并将 `playwright` 与 `@playwright/*` 纳入同一更新分组（`groups.playwright`）以防版本范围漂移；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
 - **领域词汇表建立 (`Domain Glossary`)**：新增 [docs/GLOSSARY.md](./docs/GLOSSARY.md)，系统化审查并沉淀了 DeskPet 的核心领域模型。包含角色与实体、修仙养成与状态、养成互动与行为、双人情景与互动、空间感知与桌面物理、专注与伴工情境、时空感知与天候、换装与资产表现共 8 大核心聚类的权威术语定义与防混淆规范（`_Avoid_` 规则），为后续功能演进与跨角色迁移建立无二义性的领域通用语言（Ubiquitous Language）。
 - **专属技能：皮肤素材流水线 (`skin-asset-pipeline`)**：在 `.agents/skills/skin-asset-pipeline/` 中沉淀项目专有的皮肤素材与图片处理技能，规范化 PNG 原图至 256x256 WebP 的裁剪归一化、Alpha 通道保护、脚部基准对齐、资源加密与多语言同步 SOP；升级 `scripts/convert_images.js` 与 `tools/run_trim.py` 支持指定目标皮肤目录参数，并补充对应自动化验证测试。
