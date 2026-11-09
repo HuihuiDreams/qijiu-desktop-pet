@@ -38,6 +38,7 @@ class MockBrowserWindow {
   setIgnoreMouseEvents(ignore) { this.ignoreMouseEvents = ignore; }
   restore() { this.minimized = false; }
   showInactive() { this.visible = true; }
+  hide() { this.visible = false; }
   loadFile() {}
   setVisibleOnAllWorkspaces() {}
   on(evt, cb) { this.events[evt] = cb; }
@@ -85,6 +86,7 @@ function createMockDeps() {
     WindowAwarenessService: {
       sendActiveWindowInfo: () => {},
       getLastPayload: () => ({}),
+      getNativePayload: () => ({}),
       stopActiveWindowAwareness: () => {},
       startActiveWindowAwareness: () => {}
     },
@@ -312,5 +314,108 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     mockAppListeners['browser-window-focus']({}, windowManager.statusWindow);
     PetWindow.keepPetWindowOnTop();
     assert.deepEqual(calls, ['pomodoro', 'status']);
+  });
+
+  await t.test('fullscreen RDP hides the pet and prevents periodic or second-launch promotion until leaving RDP', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    try {
+      for (const ownerName of ['mstsc', 'MSRDC.EXE']) {
+        const deps = createMockDeps();
+        let payload = { active: true, window: { ownerName, isFullScreen: true, isMinimized: false } };
+        deps.WindowAwarenessService.getNativePayload = () => payload;
+        let manualShows = 0;
+        deps.PetVisibilityService.showPetManually = () => { manualShows++; };
+        PetWindow.init(deps);
+        PetWindow.createWindow();
+        const win = windowManager.mainWindow;
+        win.visible = true;
+        let promotions = 0;
+        win.moveTop = () => { promotions++; };
+        windowManager.statusWindow = new MockBrowserWindow({});
+        windowManager.statusWindow.visible = true;
+        windowManager.statusWindow.alwaysOnTop = true;
+        windowManager.statusWindow.moveTop = () => { promotions++; };
+        windowManager.pomodoroWindow = new MockBrowserWindow({});
+        windowManager.pomodoroWindow.visible = true;
+        windowManager.pomodoroWindow.alwaysOnTop = true;
+        windowManager.skinSelectorWindow = new MockBrowserWindow({});
+        windowManager.skinSelectorWindow.alwaysOnTop = true;
+        windowManager.petScaleWindow = new MockBrowserWindow({});
+        windowManager.petScaleWindow.visible = true;
+
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, false);
+        assert.equal(win.alwaysOnTop, false);
+        assert.equal(windowManager.statusWindow.visible, false);
+        assert.equal(windowManager.pomodoroWindow.visible, false);
+        assert.equal(windowManager.petScaleWindow.visible, true);
+        PetWindow.keepPetWindowOnTop();
+        PetWindow.showExistingInstance();
+        assert.equal(win.visible, false);
+        assert.equal(promotions, 0);
+        assert.equal(manualShows, 0);
+
+        // A transient provider failure must not expose the pet over RDP.
+        payload = { active: false, reason: 'provider-failed' };
+        PetWindow.keepPetWindowOnTop();
+        assert.equal(win.visible, false);
+        assert.equal(win.alwaysOnTop, false);
+        assert.equal(windowManager.statusWindow.visible, false);
+
+        // A destroyed window must not be reopened on restoration.
+        windowManager.pomodoroWindow.destroyed = true;
+
+        // Leaving fullscreen restores the native window without changing
+        // renderer-owned manual/meeting/pomodoro visibility or input focus.
+        payload = { active: true, window: { ownerName, isFullScreen: false } };
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, true);
+        assert.equal(win.alwaysOnTop, true);
+        assert.equal(win.focused, false);
+        assert.equal(manualShows, 0);
+        assert.equal(windowManager.statusWindow.visible, true);
+        assert.equal(windowManager.statusWindow.focused, false);
+        assert.equal(windowManager.pomodoroWindow.visible, false);
+        assert.equal(windowManager.skinSelectorWindow.visible, false);
+        assert.equal(windowManager.petScaleWindow.visible, true);
+        windowManager.statusWindow = null;
+        windowManager.pomodoroWindow = null;
+        windowManager.skinSelectorWindow = null;
+        windowManager.petScaleWindow = null;
+        win.trigger('closed');
+      }
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
+  await t.test('RDP suppression is Windows-only and excludes windowed/minimized RDP and other fullscreen apps', () => {
+    const originalPlatform = process.platform;
+    try {
+      for (const [platform, ownerName, isFullScreen, isMinimized] of [
+        ['win32', 'mstsc', false, false],
+        ['win32', 'mstsc', true, true],
+        ['win32', 'chrome', true, false],
+        ['win32', 'not-mstsc', true, false],
+        ['darwin', 'mstsc', true, false],
+      ]) {
+        Object.defineProperty(process, 'platform', { value: platform, configurable: true });
+        const deps = createMockDeps();
+        deps.WindowAwarenessService.getNativePayload = () => ({
+          active: true, window: { ownerName, isFullScreen, isMinimized },
+        });
+        PetWindow.init(deps);
+        PetWindow.createWindow();
+        const win = windowManager.mainWindow;
+        win.visible = true;
+        PetWindow.keepPetWindowOnTop();
+        assert.equal(win.visible, true);
+        assert.equal(win.alwaysOnTop, true);
+        win.trigger('closed');
+      }
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
   });
 });

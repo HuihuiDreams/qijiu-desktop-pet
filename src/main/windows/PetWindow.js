@@ -19,6 +19,9 @@ const { shouldClearStartupCache } = require('../services/StartupCachePolicy');
 let deps = {};
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
+let fullscreenRdpSuppressed = false;
+let restorePetWindowAfterRdp = false;
+const restoreSubWindowsAfterRdp = new Set();
 const subWindowFocusOrder = new WeakMap();
 let nextSubWindowFocusOrder = 0;
 
@@ -39,24 +42,80 @@ function init(dependencies) {
   });
 }
 
-/**
- * 窗口置顶逻辑 (ADR-018)
- */
-function keepPetWindowOnTop() {
-  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
-  // screen-saver 级别确保在全屏应用上方
-  windowManager.mainWindow.setAlwaysOnTop(true, 'screen-saver');
-  windowManager.mainWindow.moveTop();
-
-  const subWindows = [
+function getPetSubWindows() {
+  return [
     windowManager.statusWindow,
     windowManager.pomodoroWindow,
     windowManager.skinSelectorWindow,
     windowManager.petScaleWindow,
     windowManager.citySettingWindow,
   ];
+}
+
+/**
+ * 全屏 RDP 期间隐藏原生透明窗口和置顶子窗口，采样暂时失败时保留保护。
+ * 不修改 renderer 的手动/会议/番茄钟隐藏状态。
+ */
+function syncFullscreenRdpSuppression() {
+  const win = windowManager.mainWindow;
+  const info = deps.WindowAwarenessService?.getNativePayload?.();
+  if (process.platform !== 'win32') return false;
+
+  if (info?.active === true && info.window) {
+    fullscreenRdpSuppressed = !info.window.isMinimized
+      && info.window.isFullScreen === true
+      && /^(mstsc|msrdc)(?:\.exe)?$/i.test(info.window.ownerName || '');
+  } else if (info?.reason === 'no-active-window') {
+    fullscreenRdpSuppressed = false;
+  }
+
+  if (fullscreenRdpSuppressed) {
+    for (const subWin of getPetSubWindows()) {
+      if (!subWin || subWin.isDestroyed() || !subWin.isVisible() || subWin.isMinimized() || !subWin.isAlwaysOnTop()) continue;
+      restoreSubWindowsAfterRdp.add(subWin);
+      subWin.hide();
+    }
+    win.setAlwaysOnTop(false);
+    if (win.isVisible()) {
+      restorePetWindowAfterRdp = true;
+      win.hide();
+    }
+    return true;
+  }
+
+  const currentSubWindows = getPetSubWindows();
+  const subWindowsToRestore = [...restoreSubWindowsAfterRdp];
+  restoreSubWindowsAfterRdp.clear();
+  for (const subWin of subWindowsToRestore) {
+    if (currentSubWindows.includes(subWin) && !subWin.isDestroyed() && !subWin.isVisible() && !subWin.isMinimized()) {
+      subWin.showInactive();
+    }
+  }
+  if (restorePetWindowAfterRdp) {
+    restorePetWindowAfterRdp = false;
+    win.showInactive();
+  }
+  return false;
+}
+
+function onActiveWindowChanged() {
+  if (process.platform !== 'win32' || !windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
+  const wasSuppressed = fullscreenRdpSuppressed;
+  if (!syncFullscreenRdpSuppression() && wasSuppressed) keepPetWindowOnTop();
+}
+
+/**
+ * 窗口置顶逻辑 (ADR-018)
+ */
+function keepPetWindowOnTop() {
+  if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
+  if (syncFullscreenRdpSuppression()) return;
+  // screen-saver 级别确保在全屏应用上方
+  windowManager.mainWindow.setAlwaysOnTop(true, 'screen-saver');
+  windowManager.mainWindow.moveTop();
+
   const visibleTopWindows = [];
-  for (const subWin of subWindows) {
+  for (const subWin of getPetSubWindows()) {
     if (!subWin || (typeof subWin.isDestroyed === 'function' ? subWin.isDestroyed() : false)) {
       continue;
     }
@@ -115,6 +174,7 @@ function startKeepOnTopWatcher() {
  */
 function showExistingInstance() {
   if (!windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
+  if (syncFullscreenRdpSuppression()) return;
 
   if (windowManager.mainWindow.isMinimized()) {
     windowManager.mainWindow.restore();
@@ -135,6 +195,9 @@ function showExistingInstance() {
 function createWindow() {
   const { DisplayService, WindowAwarenessService, PetVisibilityService, MeetingDetectorController, WeatherSyncController } = deps;
   const { isPetCurrentlyHidden } = PetVisibilityService;
+  fullscreenRdpSuppressed = false;
+  restorePetWindowAfterRdp = false;
+  restoreSubWindowsAfterRdp.clear();
 
   if (process.platform === 'darwin') {
     DisplayService.setCurrentPetDisplay(screen.getPrimaryDisplay());
@@ -222,6 +285,9 @@ function createWindow() {
   FinalSaveService.installFinalSaveBeforeClose(windowManager.mainWindow);
 
   windowManager.mainWindow.on('closed', () => {
+    fullscreenRdpSuppressed = false;
+    restorePetWindowAfterRdp = false;
+    restoreSubWindowsAfterRdp.clear();
     if (keepOnTopTimer) {
       clearInterval(keepOnTopTimer);
       keepOnTopTimer = null;
@@ -262,6 +328,7 @@ module.exports = {
   init,
   createWindow,
   keepPetWindowOnTop,
+  onActiveWindowChanged,
   setPetWindowMousePassthrough,
   startKeepOnTopWatcher,
   showExistingInstance,

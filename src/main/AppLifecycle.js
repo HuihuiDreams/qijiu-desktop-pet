@@ -168,6 +168,7 @@ class AppLifecycle {
       powerMonitor,
       getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
       getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
+      onActiveWindowChanged: petWindowModule.onActiveWindowChanged,
     });
 
     PetVisibilityService.init({

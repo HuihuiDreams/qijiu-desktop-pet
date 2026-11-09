@@ -51,6 +51,7 @@
 - 修复多个置顶子窗口被定时守卫按固定顺序重排的问题，保留最近操作窗口的层级（[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)）。
 - 修复 CP 自动同步遗漏合并提交中冲突解决内容的问题，按 main 第一父提交评估并同步完整合并结果，保留被合并提交的跳过指令（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 - 修复首次置顶检查之前快速切换窗口时焦点顺序可能丢失的问题，通过应用级焦点事件即时记录（[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)）。
+- 修复 Windows 全屏 RDP 被桌宠定时置顶遮挡的问题：前台 `mstsc` / `msrdc` 全屏期间临时隐藏宠物窗口和可见置顶子窗口并停止抬升，离开后无焦点抢占地恢复；窗口感知行走关闭及休眠恢复后仍保留防遮挡保护，同时维持休息提醒和屏保原有的关闭语义（[ADR-018](docs/decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](docs/decisions/ADR-030-window-awareness.md)）。
 
 ### Removed
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。

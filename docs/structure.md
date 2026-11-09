@@ -124,7 +124,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
@@ -290,6 +290,7 @@ qijiu-desktop-pet/
 `main.js` 仅是极简系统层入口：完成 `app.requestSingleInstanceLock()` 单实例锁与 QA userData 目录配置后调用 `AppLifecycle.init(app)`。`src/main/AppLifecycle.js` 收敛为薄编排层，在 `app.whenReady()` 内按依赖顺序对各 `init(deps)` 模块接线；下述具体职责由对应的服务/窗口/控制器模块承担（详见第 2 节目录树与 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
 - 创建透明、无边框、可置顶的主宠物窗口（`windows/PetWindow.js`，含点击穿透与置顶守卫）。
+- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化或切回本地应用后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败维持保护；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
 - 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果（`windows/CitySettingWindow.js` + `services/WeatherSyncController.js`）。
