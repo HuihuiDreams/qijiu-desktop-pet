@@ -138,7 +138,7 @@ macOS / Linux / WSL 在 Bash 中运行：
    - 当提交涉及 `package.json` 或 `package-lock.json` 依赖更新时，自动保护并还原好兆头分支专属的应用身份（`good-omens-desktop-pet`、`1.0.0`、`com.deskpet.good-omens` 等）。
 4. **临时 Worktree 隔离、单提交回滚与单元测试门禁**：
    - 全程在临时 `git worktree` 中执行合并与验证，绝不切换或污染当前主工作区分支。
-   - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，自动将该条提交回滚至其合并前检查点；每条验证通过后立即向远端推送（即使大 PR 批次在后续提交超时也能断点续传），并在 GitHub Actions Summary 输出报告。
+   - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，回滚该条提交并停止批次，工作流标记失败；后续运行从最后同步标记重试，尚无标记时从共同祖先恢复。每条验证通过后立即向远端推送，并在 GitHub Actions Summary 输出报告。
    - Windows 下以 `shell` 方式调用 `npm`（`npm.cmd`），本地 `--push` 可正常运行；`git` 输出缓冲上限为 64 MiB。
    - 本地运行 `npm run sync:cp` 默认采用安全的 `--dry-run` 预览模式（仅当显式传入 `npm run sync:cp -- --push` 时才会执行推送）。
 

@@ -686,7 +686,12 @@ function resolveCommitsToEvaluate({
   } else if (lastSyncedSha) {
     rangeStart = lastSyncedSha;
   } else if (hasValidBefore) {
-    rangeStart = beforeSha;
+    // With no recorded cherry-pick, recover from the shared history, including a failed first run.
+    try {
+      rangeStart = runGit(['merge-base', targetRef, resolvedAfter], { cwd }) || beforeSha;
+    } catch {
+      rangeStart = beforeSha;
+    }
   }
 
   if (rangeStart) {
@@ -1012,8 +1017,9 @@ async function syncCommitsToCp({
           verdict: verdictLabel,
           status: '⚠️ 代码冲突跳过',
           reason: `存在代码冲突文件: ${nonChangelogConflicts.join(', ')}`,
+          blocked: true,
         });
-        continue;
+        break;
       }
 
       // Smart merge CHANGELOG.md if touched or conflicted
@@ -1145,8 +1151,9 @@ async function syncCommitsToCp({
           verdict: verdictLabel,
           status: '❌ 测试未通过已回滚',
           reason: `在 ${targetBranch} 上安装依赖或运行单元测试失败，已回滚本次提交`,
+          blocked: true,
         });
-        continue;
+        break;
       }
 
       if (!dryRun) {
@@ -1220,6 +1227,7 @@ async function main() {
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summaryMarkdown}\n`, 'utf8');
   }
+  if (results.some((result) => result.blocked)) process.exitCode = 1;
 }
 
 if (require.main === module) {

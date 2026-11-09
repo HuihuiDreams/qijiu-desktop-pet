@@ -627,13 +627,22 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         installRunner: () => {},
       });
 
-      assert.equal(batchSync.results.length, 3, 'Must recover depCommitSha since anchorSha and evaluate all 3 commits');
+      assert.equal(batchSync.results.length, 2, 'A conflict must stop the batch before later commits');
       assert.equal(batchSync.results[0].sha, depCommitSha);
       assert.match(batchSync.results[0].status, /✅ 已同步/);
       assert.equal(batchSync.results[1].sha, conflictCommitSha);
       assert.equal(batchSync.results[1].status, '⚠️ 代码冲突跳过');
-      assert.equal(batchSync.results[2].sha, cleanUtilSha);
-      assert.match(batchSync.results[2].status, /✅ 已同步/);
+      const retry = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        beforeSha: cleanUtilSha,
+        afterSha: cleanUtilSha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+      assert.equal(retry.results.length, 1);
+      assert.equal(retry.results[0].sha, conflictCommitSha, 'The failed commit must be retried on the next run');
 
       // Verify remote cp/crowley-aziraphale state
       git(localRepo, ['fetch', 'origin', 'cp/crowley-aziraphale']);
@@ -653,8 +662,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       assert.match(cpChangelogAfter, /Synced anchor fix\./);
       assert.match(cpChangelogAfter, /Bump electron-log to 5\.4\.4\./);
 
-      const cpUtilAfter = git(localRepo, ['show', 'origin/cp/crowley-aziraphale:src/util.js']);
-      assert.match(cpUtilAfter, /exports\.sum/);
+      assert.throws(() => git(localRepo, ['show', 'origin/cp/crowley-aziraphale:src/util.js']));
     } finally {
       fs.rmSync(tmpBase, { recursive: true, force: true });
     }
@@ -688,6 +696,9 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       git(repo, ['add', '.']);
       git(repo, ['commit', '-m', 'fix: rewrite bullet and add x']);
       const rewriteSha = git(repo, ['rev-parse', 'HEAD']);
+      assert.deepEqual(resolveCommitsToEvaluate({
+        cwd: repo, targetRef: cpRef, beforeSha: rewriteSha, afterSha: rewriteSha,
+      }), [rewriteSha], 'Without a sync marker, retry from the shared ancestor');
       const rewriteRun = await syncCommitsToCp({
         repoRoot: repo,
         targetBranch: 'cp/crowley-aziraphale',
@@ -884,11 +895,15 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       git(repo, ['add', '.']);
       git(repo, ['commit', '-m', 'feat: tool 2 which fails tests']);
       const commit2Sha = git(repo, ['rev-parse', 'HEAD']);
+      fs.writeFileSync(path.join(repo, 'src', 'tool3.js'), 'module.exports = 3;\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: tool 3']);
+      const commit3Sha = git(repo, ['rev-parse', 'HEAD']);
 
       const multiSyncRun = await syncCommitsToCp({
         repoRoot: repo,
         targetBranch: 'cp/crowley-aziraphale',
-        manualCommitsArg: `${commit1Sha},${commit2Sha}`,
+        manualCommitsArg: `${commit1Sha},${commit2Sha},${commit3Sha}`,
         dryRun: false,
         testRunner: (cwd) => {
           const hasTool2 = fs.existsSync(path.join(cwd, 'src', 'tool2.js'));
@@ -900,6 +915,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       });
 
       assert.equal(multiSyncRun.syncedCount, 1);
+      assert.equal(multiSyncRun.results.length, 2);
       assert.match(multiSyncRun.results[0].status, /✅ 已同步/);
       assert.equal(multiSyncRun.results[1].status, '❌ 测试未通过已回滚');
 
@@ -914,6 +930,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         () => git(repo, ['show', `${cpRef}:src/tool2.js`]),
         'Commit 2 must not be present on remote'
       );
+      assert.throws(() => git(repo, ['show', `${cpRef}:src/tool3.js`]));
 
       // Verify remote CP CHANGELOG contains the universal fix and excludes QiJiu brand bullet
       const remoteCpChangelog = git(repo, ['show', `${cpRef}:CHANGELOG.md`]);
