@@ -26,6 +26,8 @@ Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms�
 
 macOS 使用 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 断言（通常由视频播放或演示触发），借此模拟 `isFullScreen` 状态，主要用于阻止 CP 屏保。该机制与媒体播放状态强绑定，暂停的视频会解除断言（允许屏保），部分非全屏视频会议（如 Zoom/Meet）可能会保持断言。macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。其它平台在活动窗口感知上返回 unavailable fallback。
 
+Windows 的全屏 RDP 防遮挡复用该采样器（[ADR-018](./ADR-018-always-on-top-reliability.md)）：即使用户关闭窗口感知行走，主进程仍保留 2 秒采样并在休眠恢复后重启，RDP 守卫通过 `getNativePayload()` 读取原始采样。休息提醒和屏保使用的 `getLastPayload()` 与 renderer 的 `active-window-info` 推送、`get-active-window-info` 查询继续返回 `disabled`，保持原有中断判定，也不向 renderer 发送原始窗口信息或恢复边缘行走。macOS 的关闭行为保持原样。
+
 ### 平台选择概率
 活动窗口顶部平台的选择概率显式配置为：
 

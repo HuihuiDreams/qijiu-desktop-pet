@@ -110,7 +110,7 @@ qijiu-desktop-pet/
 |-- .agents/skills/skin-asset-pipeline/SKILL.md      # 皮肤素材处理与图片转换流水线技能
 |-- .agents/skills/release-and-packaging/SKILL.md    # 发布打包与签名合规流水线技能
 |-- .github/dependabot.yml              # Dependabot 依赖更新配置：每周一定时检测 npm 依赖并提 PR，无自动合并
-|-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建与发布预检）
+|-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建、发布预检与 CP 分支自动同步）
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
@@ -124,7 +124,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC，导出 getLastPayload() 供 presentationGuard 用
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
@@ -173,6 +173,7 @@ qijiu-desktop-pet/
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
+│  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；失败停止批次并从锚点重试（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
@@ -190,8 +191,8 @@ qijiu-desktop-pet/
 │  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用设计令牌与羊皮纸旧书店面板，包含星芒表盘底心、奇迹白黑双色羽毛飘落与光环波纹动效（支持减弱动态模式）
-│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio Soho 古董书店黄铜门铃敲钟仪式
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
+│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
 │  ├─ city-setting.html                 # 城市设置独立窗口 HTML
 │  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
 │  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
@@ -199,8 +200,8 @@ qijiu-desktop-pet/
 │  ├─ pet-scale.css                     # 桌宠体型设置差异样式，复用 .xianxia-panel 基类与设计令牌，包含滑块与数值样式
 │  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程；按钮保留原生 Enter 动作，非按钮区域 Enter 确认、Esc 取消
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
-│  ├─ skin-selector.css                 # 皮肤画廊网格与好兆头面板样式
-│  ├─ settings-calligraphy.css          # 换肤、城市与体型窗口共用的好兆头暖金标题；保留三语标题，无竖排书法底纹，装饰不拦截输入
+│  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
+│  ├─ settings-calligraphy.css          # 换肤、城市与体型窗口共用的七九金色文字；保留三语标题，无竖排书法底纹，装饰不拦截输入
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
@@ -236,8 +237,11 @@ qijiu-desktop-pet/
 │  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（每次 mount 清除并重建节点，最多 12 个爱心粒子，跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
-│     ├─ fonts/                         # 内置多语言字体资源
-│     └─ default/                       # 默认皮肤（经典英伦原皮）：基础动作、互动动作、双角色行走帧
+│     ├─ calligraphy-*.webp             # 水墨书法题签、纵向暗纹与闲章（中日文 UI 微装饰）
+│     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
+│     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
+│     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
+│     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner：单元与行为测试 (npm test)
 │  ├─ integration/                      # 跨模块/IPC 轻量级集成测试套件 (npm run test:integration)；通过模拟 IPC 调度、窗口事件记录与 StoreManager 内存存储，验证多窗口状态机、安全拦截与持久化闭环
@@ -266,7 +270,7 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
-   ├─ GLOSSARY.md                       # 领域词汇表：统一好兆头角色养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
+   ├─ GLOSSARY.md                       # 领域词汇表：统一修仙养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
    ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
@@ -286,6 +290,7 @@ qijiu-desktop-pet/
 `main.js` 仅是极简系统层入口：完成 `app.requestSingleInstanceLock()` 单实例锁与 QA userData 目录配置后调用 `AppLifecycle.init(app)`。`src/main/AppLifecycle.js` 收敛为薄编排层，在 `app.whenReady()` 内按依赖顺序对各 `init(deps)` 模块接线；下述具体职责由对应的服务/窗口/控制器模块承担（详见第 2 节目录树与 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
 - 创建透明、无边框、可置顶的主宠物窗口（`windows/PetWindow.js`，含点击穿透与置顶守卫）。
+- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化或切回本地应用后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败维持保护；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
 - 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果（`windows/CitySettingWindow.js` + `services/WeatherSyncController.js`）。
@@ -408,15 +413,12 @@ src/assets/{skinId}/
 - 独立状态窗口保存 `lastRenderData`，语言变化时可用当前状态重新渲染。
 - 独立番茄钟窗口使用 `data-i18n` 和 `data-i18n-title` 刷新标题、按钮、完成台词和置顶按钮说明。
 - `preload.js` 暴露 `getLocale`、`setLocale` 和 `onLocaleChange` 等 IPC API。
-- 多语言排版在 `src/index.css` 中区分展示（`--font-display`）与正文（`--font-body`），全套采用本地按需切片的开源 WebFont（OFL 1.1，遵守 CSP `font-src 'self'`）：
-  - **英文 (EN)**：展示使用古罗马铭文/伦敦古董书店质感的 `Cinzel` 与 `Cormorant Garamond`，正文使用古典文学书籍衬线 `EB Garamond`。
-  - **中文 (ZH)**：展示使用行云流水的毛笔书法体 `Ma Shan Zheng`（全量覆盖 Good Omens 角色与 UI 词汇），正文使用典雅古典宋体与 `EB Garamond` 混排。
-  - **日文 (JA)**：展示使用笔势苍劲的毛笔行楷 `Yuji Syuku`，正文使用古典文库本明朝体 `Shippori Mincho`。
-  - 各字体切片 `.woff2` 及版权许可声明文件（`*-OFL.txt`）均归档于 `src/assets/fonts/`。
+- 日语排版在 `src/index.css` 中区分展示与正文：本地切片的 `Yuji Syuku` 用于 `--font-display`，保留 `Shippori Mincho` 用于 `--font-body`，使仙侠题字有行书笔势而不牺牲小字号可读性。`src/assets/fonts/YujiSyuku-OFL.txt` 随字体资源保存 SIL Open Font License 1.1 及版权声明。
 
 ### 3.10 更新系统
 
 `updateManager.js` 封装更新流程：
+
 - 下载完成后必须同时取得本地安装包路径和 SHA-512 元数据，并在安装确认前完成 Base64 或 Hex 摘要比对；任何缺失、不可读或不匹配情况都按 `integrity-check-failed` 终止，成功下载本身不等于可信更新。
 
 - Windows 主要走 `electron-updater` 和 GitHub Releases。
@@ -487,7 +489,7 @@ src/assets/{skinId}/
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
 - 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟和城市设置窗分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
 - 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口配置 `minimizable: true` 并支持跨 Space 显示（`setVisibleOnAllWorkspaces` 带 `skipTransformProcessType: true`），唤起与聚焦时执行 180ms `screen-saver` 脉冲置顶以可靠浮出，超时后回落到普通层级避免持续遮挡；被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
-- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `screen-saver` 顶层层级并支持跨 Space 展示，主窗口 `keepPetWindowOnTop()` 在抬升自身后会顺次将当前可见且处于 `alwaysOnTop` 态的子窗口重新置顶，确保由托盘唤起或常驻展示时不会被全屏桌面应用与宠物主窗口覆盖；番茄钟窗口切换置顶与取消置顶均携带 `skipTransformProcessType: true` 防止 macOS Dock 闪烁。
+- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `screen-saver` 顶层层级并支持跨 Space 展示，应用级焦点事件即时记录窗口顺序，主窗口 `keepPetWindowOnTop()` 在抬升自身后按最近焦点顺序重新抬升可见置顶子窗口（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)）；番茄钟窗口切换置顶与取消置顶均携带 `skipTransformProcessType: true` 防止 macOS Dock 闪烁。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
@@ -509,12 +511,12 @@ DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗
   对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（城市设置、体型调节、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
 - **无障碍语义化 (ARIA) 与按钮语义**：
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。城市设置、体型调节与状态窗口标题采用语义化 `<h1>`，城市输入框接入 `aria-describedby="city-status"` 与动态 `aria-invalid` 反馈；体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`，初始挂载通过安全守卫自动聚焦以支持方向键无障碍调节；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
+- **状态面板事件驱动就地更新与 IPC 降频**：
+  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **子窗口关闭按钮与操作按钮视觉设计系统规范**：
   各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **主窗口与独立状态窗口 DOM 及样式解耦**：
   主窗口（`src/index.html`）彻底移除废弃的内嵌 `#status-panel` 孤儿 DOM 节点与查询依赖（`ContextMenu.js`、`PetRenderer.js` 直接恢复鼠标点击穿透而不再轮询该面板）；原滞留在 `src/index.css` 的面板定位、动画及状态条辅助样式完整内聚至 `src/status.css`，保持主窗口轻量渲染与状态窗口样式自治。
-- **状态面板事件驱动就地更新与 IPC 降频**：
-  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **零外部 Polyfill 与 Node 桩测试兼容**：
   严格维持免 Polyfill / 免外部依赖架构，所有现代浏览器特有 API 调用均配合可选链（`?.`）或类型守卫（`typeof ... === 'function'`）及兜底逻辑，保证 Node.js fake-DOM 单测套件极速、稳定运行。详见 [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)。
 
@@ -645,7 +647,6 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定、拖动实时预览与独立设置子窗口）。
 - [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
 
-
 ## 6. 维护提示
 
 - 遵循 `AGENTS.md` 与 `.geminirules` 的工程规范：多步骤重构或修复任务 (`/goal`) 必须遵循“改一题 -> 跑回归 -> 更新对应文档”的闭环验证链路，禁止无测试批量攒改。
@@ -666,6 +667,6 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - `scripts/protect-assets.js` 从 `src/assets/{skinId}/**/*.webp` 生成 `protected-assets/manifest.json` 和加密后的 `protected-assets/*.dat`。
 - `protectedAssetLoader.js` 校验 `skin/{skinId}/...webp` manifest 资源 ID，在主进程中解密 AES-256-GCM 数据，并校验 size 与 SHA-256 完整性。
 - `protectedAssetLoader.js` 对已解密资源使用有大小上限的内存 LRU 缓存，并对 manifest 结果及缺失检查 (`manifestNotFound`) 实施全内存缓冲，避免运行期或番茄钟心跳触发重复读盘和解密。
-- `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，配合 `loadProtectedAssetAsync` 的异步读盘与在途请求 (`inFlightLoads`) 去重机制，支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与联合奇迹/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
+- `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，配合 `loadProtectedAssetAsync` 的异步读盘与在途请求 (`inFlightLoads`) 去重机制，支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与双修/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
 - renderer 运行时代码应使用 `pet-asset://skin/...` URL 加载皮肤 WebP，不能直接使用 Node 文件系统 API。源素材仍保留在 `src/assets/` 便于编辑；打包产物排除明文皮肤 WebP，并包含 `protected-assets/`。
 - 架构决策见 `docs/decisions/ADR-040-encrypted-skin-assets.md`。

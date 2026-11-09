@@ -32,7 +32,7 @@ function init(dependencies) {
       stopActiveWindowAwareness();
     });
     powerMonitor.on('resume', () => {
-      if (windowAwarenessEnabled && deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
+      if ((windowAwarenessEnabled || process.platform === 'win32') && deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
         startActiveWindowAwareness();
       }
     });
@@ -42,7 +42,8 @@ function init(dependencies) {
     ipcMain.handle('get-active-window-info', async (event) => {
       if (!isSenderMainWindow(event, deps.windowManager?.mainWindow)) return null;
       if (!activeWindowSampler) startActiveWindowAwareness();
-      return activeWindowSampler.sampleOnce();
+      const payload = await activeWindowSampler.sampleOnce();
+      return windowAwarenessEnabled ? payload : unavailableActiveWindowPayload('disabled');
     });
   }
 }
@@ -50,7 +51,9 @@ function init(dependencies) {
 function sendActiveWindowInfo(activeWindowInfo) {
   const { windowManager } = deps;
   if (!windowManager?.mainWindow || windowManager.mainWindow.isDestroyed() || !activeWindowInfo) return;
-  windowManager.mainWindow.webContents.send('active-window-info', activeWindowInfo);
+  windowManager.mainWindow.webContents.send('active-window-info', windowAwarenessEnabled
+    ? activeWindowInfo
+    : unavailableActiveWindowPayload('disabled'));
 }
 
 function unavailableActiveWindowPayload(reason) {
@@ -68,7 +71,8 @@ function stopActiveWindowAwareness() {
 
 function startActiveWindowAwareness() {
   stopActiveWindowAwareness();
-  const provider = windowAwarenessEnabled
+  // Windows 的全屏 RDP 防遮挡独立于窗口边缘行走开关，复用同一采样器。
+  const provider = (windowAwarenessEnabled || process.platform === 'win32')
     ? (deps.createActiveWindowProvider ? deps.createActiveWindowProvider(process.platform) : createActiveWindowProvider(process.platform))
     : createUnavailableActiveWindowProvider('disabled');
 
@@ -76,7 +80,10 @@ function startActiveWindowAwareness() {
     provider,
     getWindowBounds: deps.getActiveWindowMainBounds,
     getDisplays: deps.getActiveWindowDisplays,
-    onChange: sendActiveWindowInfo,
+    onChange: (payload) => {
+      deps.onActiveWindowChanged?.();
+      sendActiveWindowInfo(payload);
+    },
     intervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
     refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
   });
@@ -107,6 +114,9 @@ module.exports = {
   setWindowAwarenessEnabled,
   unavailableActiveWindowPayload,
   sendActiveWindowInfo,
-  getLastPayload: () => activeWindowSampler?.getLastPayload(),
+  getLastPayload: () => activeWindowSampler
+    ? (windowAwarenessEnabled ? activeWindowSampler.getLastPayload() : unavailableActiveWindowPayload('disabled'))
+    : undefined,
+  getNativePayload: () => activeWindowSampler?.getLastPayload(),
   isEnabled: () => windowAwarenessEnabled,
 };

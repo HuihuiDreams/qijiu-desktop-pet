@@ -2,7 +2,14 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { EventEmitter } = require('node:events');
 
+const { setupElectronMock } = require('./helpers/mockElectron');
+const ipcHandlers = {};
+const restoreRequire = setupElectronMock({
+  ipcMain: { handle: (channel, callback) => { ipcHandlers[channel] = callback; } },
+});
 const WindowAwarenessService = require('../src/main/services/WindowAwarenessService');
+const { createPresentationGuard } = require('../src/main/services/PresentationGuard');
+restoreRequire();
 
 function createMockProvider() {
   return {
@@ -98,7 +105,7 @@ test('WindowAwarenessService resume does not restart sampling if main window is 
   WindowAwarenessService.stopActiveWindowAwareness();
 });
 
-test('WindowAwarenessService disabling stops sampling and sends disabled payload', () => {
+test('WindowAwarenessService disabling sends disabled payload', () => {
   let sentPayload = null;
   const mockMainWindow = {
     isDestroyed: () => false,
@@ -129,5 +136,80 @@ test('WindowAwarenessService disabling stops sampling and sends disabled payload
   } finally {
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     WindowAwarenessService.stopActiveWindowAwareness();
+  }
+});
+
+test('Windows retains native RDP sampling and resumes it while renderer window awareness is disabled', async () => {
+  const originalPlatform = process.platform;
+  Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+  const powerMonitor = new EventEmitter();
+  const sentPayloads = [];
+  let providerCount = 0;
+  let nativeChanges = 0;
+  const webContents = {
+    isDestroyed: () => false,
+    send: (_channel, payload) => sentPayloads.push(payload),
+  };
+  try {
+    WindowAwarenessService.init({
+      windowManager: {
+        mainWindow: {
+          isDestroyed: () => false,
+          webContents,
+        },
+      },
+      trayManager: { refreshTrayMenu: () => {} },
+      getActiveWindowDisplays: () => [],
+      getActiveWindowMainBounds: () => ({ x: 0, y: 0, width: 800, height: 600 }),
+      createActiveWindowProvider: () => {
+        providerCount++;
+        return {
+          async getActiveWindowInfo() {
+            const info = await createMockProvider().getActiveWindowInfo();
+            info.window.ownerName = 'mstsc';
+            info.window.isFullScreen = true;
+            return info;
+          },
+          dispose() {},
+        };
+      },
+      onActiveWindowChanged: () => { nativeChanges++; },
+      powerMonitor,
+    });
+    WindowAwarenessService.setWindowAwarenessEnabled(false);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(providerCount, 1);
+    assert.equal(nativeChanges, 1);
+    assert.equal(WindowAwarenessService.getLastPayload().reason, 'disabled');
+    assert.equal(WindowAwarenessService.getNativePayload().window.ownerName, 'mstsc');
+    for (const mode of ['break-reminder', 'screensaver']) {
+      const guard = createPresentationGuard({
+        platform: 'win32',
+        getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
+      }, { mode });
+      assert.equal(guard.canInterrupt().canInterrupt, true);
+    }
+    assert.ok(sentPayloads.every((payload) => payload.active === false && payload.reason === 'disabled'));
+    const ipcPayload = await ipcHandlers['get-active-window-info']({ sender: webContents });
+    assert.equal(ipcPayload.active, false);
+    assert.equal(ipcPayload.reason, 'disabled');
+    assert.equal(ipcPayload.window, null);
+
+    powerMonitor.emit('suspend');
+    assert.equal(WindowAwarenessService.getLastPayload(), undefined);
+    powerMonitor.emit('resume');
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(providerCount, 2);
+    assert.equal(nativeChanges, 2);
+    assert.equal(WindowAwarenessService.isEnabled(), false);
+    assert.equal(WindowAwarenessService.getLastPayload().reason, 'disabled');
+    assert.equal(WindowAwarenessService.getNativePayload().window.ownerName, 'mstsc');
+    WindowAwarenessService.setWindowAwarenessEnabled(true);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(WindowAwarenessService.getLastPayload().window.ownerName, 'mstsc');
+  } finally {
+    WindowAwarenessService.setWindowAwarenessEnabled(true);
+    WindowAwarenessService.stopActiveWindowAwareness();
+    Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
   }
 });

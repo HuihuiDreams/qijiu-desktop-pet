@@ -28,7 +28,7 @@ test('renderer Window Awareness TTL covers more than two sampling intervals', ()
 
 test('main process exposes active window IPC request and push channel', () => {
   assert.ok(mainSource.includes("ipcMain.handle('get-active-window-info'"));
-  assert.ok(mainSource.includes('return activeWindowSampler.sampleOnce()'));
+  assert.ok(mainSource.includes('activeWindowSampler.sampleOnce()'));
   assert.ok(mainSource.includes("webContents.send('active-window-info'"));
 });
 
