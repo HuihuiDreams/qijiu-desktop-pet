@@ -580,26 +580,22 @@ function applyPackageLockIdentity(packageLockText, identity) {
 }
 
 function runGit(args, options = {}) {
+  const { authToken, ...execOptions } = options;
   const childEnv = createSanitizedChildEnv(options.env || process.env);
+  if (authToken) {
+    const count = Number.parseInt(childEnv.GIT_CONFIG_COUNT || '0', 10);
+    const index = Number.isSafeInteger(count) && count >= 0 ? count : 0;
+    childEnv.GIT_CONFIG_COUNT = String(index + 1);
+    childEnv[`GIT_CONFIG_KEY_${index}`] = 'http.https://github.com/.extraheader';
+    childEnv[`GIT_CONFIG_VALUE_${index}`] = `AUTHORIZATION: basic ${Buffer.from(`x-access-token:${authToken}`).toString('base64')}`;
+  }
   return execFileSync('git', args, {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
+    ...execOptions,
     env: childEnv,
   }).trim();
-}
-
-/**
- * Git args that authenticate against github.com with the job token for a single command.
- * The workflow checks out with `persist-credentials: false`, so the token never sits in `.git/config`
- * where `npm ci` / `npm test` subprocesses could read it.
- */
-function gitAuthArgs(env = process.env) {
-  const token = env.GITHUB_TOKEN;
-  if (!token) return [];
-  const basic = Buffer.from(`x-access-token:${token}`).toString('base64');
-  return ['-c', `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basic}`];
 }
 
 function isCommitAlreadyOnBranch(targetRef, sha, cwd) {
@@ -799,12 +795,11 @@ async function syncCommitsToCp({
   try {
     runGit(
       [
-        ...gitAuthArgs(env),
         'fetch',
         remoteName,
         `${targetBranch}:refs/remotes/${remoteName}/${targetBranch}`,
       ],
-      { cwd: repoRoot }
+      { cwd: repoRoot, authToken: env.GITHUB_TOKEN }
     );
   } catch (err) {
     console.warn(`Warning fetching ${remoteName}/${targetBranch}: ${err.message}`);
@@ -1156,8 +1151,9 @@ async function syncCommitsToCp({
 
       if (!dryRun) {
         console.log(`Pushing synced commit ${sha.slice(0, 7)} to ${remoteName}/${targetBranch}...`);
-        runGit([...gitAuthArgs(env), 'push', remoteName, `HEAD:refs/heads/${targetBranch}`], {
+        runGit(['push', remoteName, `HEAD:refs/heads/${targetBranch}`], {
           cwd: worktreeDir,
+          authToken: env.GITHUB_TOKEN,
         });
       }
 
@@ -1235,6 +1231,7 @@ if (require.main === module) {
 
 module.exports = {
   createSanitizedChildEnv,
+  runGit,
   filterDiffByFilePredicate,
   parseAddedChangelogSections,
   mergeChangelogEntries,

@@ -132,7 +132,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 2. **启发式 + GitHub Models AI 语义判定**：
    - 自动拦截包含 `[skip-cp]` / `[no-cp-sync]` 标记的提交、修改任意皮肤目录或角色专属素材（`src/assets/<skinId>/`、`calligraphy-*.webp`、`icon.*`）或专属台词（`src/data/dialogues.js`）的提交，修改 `.github/workflows/*`（`GITHUB_TOKEN` 无 `workflows` 推送权限，需手动同步）的提交，以及仅针对共享敏感配置文件（`package.json`、`src/data/{config,i18n}.js`、`readme_*.txt`、`build/installer.nsh`）自身 Diff 中引入七九专属门派/名称文案的提交。
    - 当触及共享敏感配置文件时，工作流通过 `permissions: models: read` 直接复用 GitHub Actions 随任务自动签发、运行结束即销毁的临时 `GITHUB_TOKEN` 调用官方 GitHub Models 端点（`https://models.github.ai/inference/chat/completions`）做语义适用性复核（仅支持 GitHub Models，无需长期第三方 API Key）。AI 只能否决提交，**不能**推翻启发式规则的拒绝判定；若 AI 接口调用失败保持放行但在报告中显式留痕。
-   - **凭据隔离**：workflow 的 `actions/checkout` 使用 `persist-credentials: false`，Token 不会写入 `.git/config`；脚本仅在 `fetch` / `push` 时通过一次性 `http.extraheader` 注入认证，且在派生 `npm ci`、`npm test` 与其余 `git` 子进程时通过 `createSanitizedChildEnv` 剥离凭据环境变量，杜绝供应链脚本或测试进程读取 Token。
+   - **凭据隔离**：workflow 的 `actions/checkout` 使用 `persist-credentials: false`，Token 不会写入 `.git/config`；脚本仅在 `fetch` / `push` 的 Git 子进程配置环境中注入一次性 `http.extraheader`，避免失败日志输出编码后的凭据；`npm ci`、`npm test` 与其余 `git` 子进程通过 `createSanitizedChildEnv` 剥离 Token。
 3. **`CHANGELOG.md` 与包身份智能合并**：
    - 自动以全文上下文（`-U100000`）提取本次提交在 `CHANGELOG.md` 的 `## [Unreleased]` 下**新增**的日志条目，过滤含七九专属文案（`岳七` / `沈九` / `苍穹静修` 等）的 bullet，按分类（`Added` / `Changed` / `Fixed` / `Removed` / `Security`）无冲突并入好兆头分支的 `CHANGELOG.md`（注：仅同步新增 bullet 条目，若提交改写或删除了已有 bullet，则整份 CHANGELOG 变更都不同步、保留好兆头分支原样，以免产生重复条目），且保证不产生重复分类标题。
    - 当提交涉及 `package.json` 或 `package-lock.json` 依赖更新时，自动保护并还原好兆头分支专属的应用身份（`good-omens-desktop-pet`、`1.0.0`、`com.deskpet.good-omens` 等）。

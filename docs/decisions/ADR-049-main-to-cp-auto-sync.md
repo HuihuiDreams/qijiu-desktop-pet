@@ -14,7 +14,7 @@ Accepted
 2. **启发式优先，AI 只能否决**：专属路径、品牌文案与 workflow 文件由确定性规则拒绝且不可被 AI 推翻；AI 仅对触及共享敏感配置的提交做二次否决，避免提示词注入把专属内容带入；AI 复核失败时保持 fail-open 但在报告中明确标注原因留痕。
 3. **精准去重与日志脱敏**：提交去重严格依赖 `(cherry picked from commit <sha>)` 标记与补丁空 staged diff 兜底，不使用提交标题查重以免误吞同名提交；合并 `CHANGELOG.md` 时自动过滤包含七九专属设定的 bullet 条目，杜绝原版角色名泄漏至好兆头分支。
 4. **仅使用 GitHub Models + 临时 `GITHUB_TOKEN`**（`permissions: models: read`），不引入 Gemini / OpenAI 等长期第三方 Key。
-5. **凭据隔离**：checkout 使用 `persist-credentials: false`，仅在 `fetch` / `push` 时通过一次性 `http.extraheader` 注入认证，`npm ci` / `npm test` 子进程剥离 Token 环境变量。
+5. **凭据隔离**：checkout 使用 `persist-credentials: false`；`fetch` / `push` 的 `http.extraheader` 仅通过 Git 子进程的配置环境变量传递，避免失败时命令参数泄漏编码后的 Token。`npm ci` / `npm test` 子进程剥离 Token 环境变量。
 6. **改动 `.github/workflows/*` 的提交不自动同步**：默认 `GITHUB_TOKEN` 无 `workflows` 权限，推送会被拒绝，需手动同步。
 
 ## Consequences

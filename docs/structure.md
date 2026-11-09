@@ -173,7 +173,7 @@ qijiu-desktop-pet/
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
-│  ├─ sync-to-cp.js                     # 主分支通用提交自动检测、智能合并 CHANGELOG、测试验证并同步至 cp/crowley-aziraphale 的自动化脚本
+│  ├─ sync-to-cp.js                     # 主分支通用提交自动检测、智能合并 CHANGELOG、测试验证并同步至 cp/crowley-aziraphale；Git 认证仅注入子进程配置环境（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验

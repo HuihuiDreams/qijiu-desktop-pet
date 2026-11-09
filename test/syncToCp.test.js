@@ -7,6 +7,7 @@ const path = require('node:path');
 
 const {
   createSanitizedChildEnv,
+  runGit,
   filterDiffByFilePredicate,
   parseAddedChangelogSections,
   mergeChangelogEntries,
@@ -37,6 +38,19 @@ function git(cwd, args) {
     },
   }).trim();
 }
+
+test('authenticated git keeps credentials out of command failures', () => {
+    const token = 'fake-test-token';
+    const encoded = Buffer.from(`x-access-token:${token}`).toString('base64');
+    const env = { ...process.env, GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'test.existing', GIT_CONFIG_VALUE_0: 'preserved' };
+    assert.equal(runGit(['config', '--get', 'test.existing'], { cwd: repoRoot, env, authToken: token }), 'preserved');
+    assert.equal(runGit(['config', '--get', 'http.https://github.com/.extraheader'], { cwd: repoRoot, env, authToken: token }), `AUTHORIZATION: basic ${encoded}`);
+    assert.throws(() => runGit(['--invalid-option'], { cwd: repoRoot, env, authToken: token }), (error) => {
+      assert.doesNotMatch(String(error), new RegExp(`${token}|${encoded}`));
+      if (error.cmd) assert.doesNotMatch(error.cmd, new RegExp(`${token}|${encoded}`));
+      return true;
+    });
+});
 
 test('Sync Main to Good Omens workflow and script suite', async (t) => {
   await t.test('.github/workflows/sync-to-cp.yml exists and is properly configured', () => {
