@@ -379,6 +379,23 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
         assert.equal(windowManager.pomodoroWindow.visible, false);
         assert.equal(windowManager.skinSelectorWindow.visible, false);
         assert.equal(windowManager.petScaleWindow.visible, true);
+
+        // Entering fullscreen RDP again and exiting via no-active-window (e.g. session disconnect
+        // or closing the RDP window) also releases suppression and restores windows.
+        payload = { active: true, window: { ownerName, isFullScreen: true, isMinimized: false } };
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, false);
+        assert.equal(windowManager.statusWindow.visible, false);
+
+        payload = { active: false, reason: 'no-active-window' };
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, true);
+        assert.equal(win.alwaysOnTop, true);
+        assert.equal(win.focused, false);
+        assert.equal(manualShows, 0);
+        assert.equal(windowManager.statusWindow.visible, true);
+        assert.equal(windowManager.statusWindow.focused, false);
+
         windowManager.statusWindow = null;
         windowManager.pomodoroWindow = null;
         windowManager.skinSelectorWindow = null;

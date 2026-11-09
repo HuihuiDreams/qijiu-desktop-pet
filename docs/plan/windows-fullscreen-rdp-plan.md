@@ -11,6 +11,7 @@
 - [x] 复用 2 秒采样，Windows 关闭窗口感知行走及休眠恢复后保留防遮挡检测，renderer 继续返回 `disabled`。
 - [x] 定向测试覆盖全屏/窗口化、最小化、其它应用、macOS、采样失败、IPC 过滤与休眠恢复。
 - [x] 审查修复：保护期间隐藏可见置顶子窗口，恢复仍存在的窗口并保留原有隐藏及最小化状态（[ADR-018](../decisions/ADR-018-always-on-top-reliability.md)）。
+- [x] 审查修复：覆盖 RDP 退出时 `reason: 'no-active-window'`（会话断开/关窗后短暂无前台窗口）的原生窗口与置顶子窗口恢复测试。
 - [x] 审查修复：隔离 RDP 原始采样与休息提醒、屏保的窗口感知关闭语义，并验证休眠恢复及重新启用（[ADR-030](../decisions/ADR-030-window-awareness.md)）。
 - [x] 同步 `CHANGELOG.md`、`docs/structure.md`、[ADR-018](../decisions/ADR-018-always-on-top-reliability.md) 和 [ADR-030](../decisions/ADR-030-window-awareness.md)。
 - [x] 运行完整 `npm.cmd test`：1189 项全部通过。
