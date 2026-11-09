@@ -19,6 +19,8 @@ const { shouldClearStartupCache } = require('../services/StartupCachePolicy');
 let deps = {};
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
+const subWindowFocusOrder = new WeakMap();
+let nextSubWindowFocusOrder = 0;
 
 function init(dependencies) {
   deps = dependencies;
@@ -49,6 +51,7 @@ function keepPetWindowOnTop() {
     windowManager.petScaleWindow,
     windowManager.citySettingWindow,
   ];
+  const visibleTopWindows = [];
   for (const subWin of subWindows) {
     if (!subWin || (typeof subWin.isDestroyed === 'function' ? subWin.isDestroyed() : false)) {
       continue;
@@ -57,10 +60,19 @@ function keepPetWindowOnTop() {
     const isAlwaysOnTop = typeof subWin.isAlwaysOnTop === 'function'
       ? subWin.isAlwaysOnTop()
       : Boolean(subWin.alwaysOnTop);
+    if (!subWindowFocusOrder.has(subWin)) {
+      subWindowFocusOrder.set(subWin, 0);
+      subWin.on?.('focus', () => subWindowFocusOrder.set(subWin, ++nextSubWindowFocusOrder));
+    }
+    if (subWin.isFocused?.()) {
+      subWindowFocusOrder.set(subWin, ++nextSubWindowFocusOrder);
+    }
     if (isVisible && isAlwaysOnTop && typeof subWin.moveTop === 'function') {
-      subWin.moveTop();
+      visibleTopWindows.push(subWin);
     }
   }
+  visibleTopWindows.sort((a, b) => subWindowFocusOrder.get(a) - subWindowFocusOrder.get(b));
+  for (const subWin of visibleTopWindows) subWin.moveTop();
 }
 
 function setPetWindowMousePassthrough(ignore, options = {}) {

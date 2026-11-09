@@ -12,6 +12,7 @@ class MockBrowserWindow {
     this.visible = false;
     this.minimized = false;
     this.alwaysOnTop = false;
+    this.focused = false;
     this.ignoreMouseEvents = false;
     this.events = {};
     
@@ -30,6 +31,7 @@ class MockBrowserWindow {
   isVisible() { return this.visible; }
   isMinimized() { return this.minimized; }
   isAlwaysOnTop() { return Boolean(this.alwaysOnTop); }
+  isFocused() { return this.focused; }
   setAlwaysOnTop(v) { this.alwaysOnTop = v; }
   moveTop() {}
   setIgnoreMouseEvents(ignore) { this.ignoreMouseEvents = ignore; }
@@ -270,6 +272,24 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
 
     PetWindow.keepPetWindowOnTop();
 
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
+
+    // Status was focused most recently; it must stay above the pinned pomodoro,
+    // including after focus leaves the application.
+    moveTopCalls.length = 0;
+    windowManager.statusWindow.focused = true;
+    windowManager.statusWindow.trigger('focus');
+    PetWindow.keepPetWindowOnTop();
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'statusWindow']);
+
+    moveTopCalls.length = 0;
+    windowManager.statusWindow.focused = false;
+    PetWindow.keepPetWindowOnTop();
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'statusWindow']);
+
+    moveTopCalls.length = 0;
+    windowManager.pomodoroWindow.trigger('focus');
+    PetWindow.keepPetWindowOnTop();
     assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
   });
 });
