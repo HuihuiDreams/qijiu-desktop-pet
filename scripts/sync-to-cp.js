@@ -749,23 +749,6 @@ function formatSyncSummaryMarkdown(results, targetBranch) {
   return lines.join('\n');
 }
 
-function linkNodeModulesIfAvailable(sourceRepoRoot, worktreeDir) {
-  const srcNodeModules = path.join(sourceRepoRoot, 'node_modules');
-  const destNodeModules = path.join(worktreeDir, 'node_modules');
-  if (!fs.existsSync(srcNodeModules) || fs.existsSync(destNodeModules)) {
-    return;
-  }
-  try {
-    fs.symlinkSync(
-      srcNodeModules,
-      destNodeModules,
-      process.platform === 'win32' ? 'junction' : 'dir'
-    );
-  } catch {
-    // Ignore symlink failure; testRunner can still resolve or install
-  }
-}
-
 /**
  * Core end-to-end git orchestration for evaluating, cherry-picking, smart-merging CHANGELOG,
  * preserving package identity, running tests, and pushing to `targetBranch`.
@@ -836,8 +819,6 @@ async function syncCommitsToCp({
   if (!dryRun) {
     worktreeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-cp-sync-'));
     runGit(['worktree', 'add', '--detach', worktreeDir, targetRemoteRef], { cwd: repoRoot });
-    linkNodeModulesIfAvailable(repoRoot, worktreeDir);
-
     const cpPkgPath = path.join(worktreeDir, 'package.json');
     if (fs.existsSync(cpPkgPath)) {
       cpIdentity = extractPackageIdentity(fs.readFileSync(cpPkgPath, 'utf8'));
@@ -846,6 +827,7 @@ async function syncCommitsToCp({
 
   const results = [];
   let syncedCount = 0;
+  let dependenciesInstalled = false;
 
   try {
     for (const sha of commits) {
@@ -1121,30 +1103,13 @@ async function syncCommitsToCp({
 
       // Run installRunner if dependencies changed, then testRunner to verify compatibility
       try {
-        if (touchesPkg) {
-          const worktreeNodeModules = path.join(worktreeDir, 'node_modules');
-          try {
-            if (fs.lstatSync(worktreeNodeModules).isSymbolicLink()) {
-              fs.unlinkSync(worktreeNodeModules);
-            }
-          } catch {
-            // Not a symlink or doesn't exist
-          }
+        if (touchesPkg || !dependenciesInstalled) {
           installRunner(worktreeDir);
+          dependenciesInstalled = true;
         }
         testRunner(worktreeDir);
       } catch {
         runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
-        // Restore clean node_modules link if npm ci failed or modified dependencies
-        if (touchesPkg) {
-          const worktreeNodeModules = path.join(worktreeDir, 'node_modules');
-          try {
-            fs.rmSync(worktreeNodeModules, { recursive: true, force: true });
-          } catch {
-            // Ignore cleanup error
-          }
-          linkNodeModulesIfAvailable(repoRoot, worktreeDir);
-        }
         results.push({
           sha,
           subject,

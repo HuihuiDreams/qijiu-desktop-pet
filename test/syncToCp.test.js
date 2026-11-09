@@ -529,14 +529,28 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       const anchorSha = git(localRepo, ['rev-parse', 'HEAD']);
 
       // Sync Commit 1 first so cp/crowley-aziraphale has a `(cherry picked from commit <anchorSha>)` marker
+      const sourceModules = path.join(localRepo, 'node_modules');
+      fs.mkdirSync(sourceModules);
+      fs.writeFileSync(path.join(sourceModules, 'identity'), 'main');
+      let installedFromTarget = false;
       const firstSync = await syncCommitsToCp({
         repoRoot: localRepo,
         targetBranch: 'cp/crowley-aziraphale',
         manualCommitsArg: anchorSha,
         dryRun: false,
-        testRunner: () => {},
-        installRunner: () => {},
+        testRunner: (cwd) => {
+          assert.equal(fs.readFileSync(path.join(cwd, 'node_modules', 'identity'), 'utf8'), 'good-omens-desktop-pet');
+        },
+        installRunner: (cwd) => {
+          installedFromTarget = true;
+          assert.equal(fs.existsSync(path.join(cwd, 'node_modules')), false);
+          const name = JSON.parse(fs.readFileSync(path.join(cwd, 'package-lock.json'), 'utf8')).name;
+          fs.mkdirSync(path.join(cwd, 'node_modules'));
+          fs.writeFileSync(path.join(cwd, 'node_modules', 'identity'), name);
+        },
       });
+      assert.equal(installedFromTarget, true, 'A code-only commit must install the target lockfile before tests');
+      fs.rmSync(sourceModules, { recursive: true, force: true });
       assert.equal(firstSync.syncedCount, 1);
       assert.equal(git(localRepo, ['rev-parse', '--abbrev-ref', 'HEAD']), 'main', 'Main working tree must stay on main');
 

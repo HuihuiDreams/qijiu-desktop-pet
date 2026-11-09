@@ -16,6 +16,7 @@ Accepted
 4. **仅使用 GitHub Models + 临时 `GITHUB_TOKEN`**（`permissions: models: read`），不引入 Gemini / OpenAI 等长期第三方 Key。
 5. **凭据隔离**：checkout 使用 `persist-credentials: false`；`fetch` / `push` 的 `http.extraheader` 仅通过 Git 子进程的配置环境变量传递，避免失败时命令参数泄漏编码后的 Token。`npm ci` / `npm test` 子进程剥离 Token 环境变量。
 6. **改动 `.github/workflows/*` 的提交不自动同步**：默认 `GITHUB_TOKEN` 无 `workflows` 权限，推送会被拒绝，需手动同步。
+7. **目标分支依赖隔离**：首次验证前在临时工作树按目标分支锁文件执行 `npm ci`；依赖文件改变后重新安装，不复用 main 的 `node_modules`。
 
 ## Consequences
 - 被判定不适用的提交不会推进同步锚点，会在最多 50 个提交的窗口内被重复评估；更大积压需用 `workflow_dispatch` 的 `commits` 参数手动补跑。
