@@ -86,8 +86,8 @@ fi
 # 好兆头分支自动同步预检（仅在 main 分支且未显式跳过时执行）
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ -z "$SKIP_SYNC_CHECK" ] && [ "$CURRENT_BRANCH" = "main" ]; then
-    echo -e "${CYAN}🔍 正在执行好兆头分支同步预检 (npm run sync:cp)...${NC}"
-    npm run sync:cp
+    echo -e "${CYAN}🔍 正在执行好兆头分支同步预检 (npm run sync:cp -- --verify)...${NC}"
+    SYNC_PUSH=false npm run sync:cp -- --verify
     if [ $? -ne 0 ]; then
         echo -e "${RED}==========================================${NC}"
         echo -e "${RED}❌ 拦截 Push: 该提交向 cp/crowley-aziraphale 同步预检未通过！${NC}"

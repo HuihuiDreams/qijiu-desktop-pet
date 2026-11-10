@@ -18,6 +18,7 @@ const {
   applyPackageLockIdentity,
   formatSyncSummaryMarkdown,
   resolveCommitsToEvaluate,
+  resolveSyncCliOptions,
   isCommitAlreadyOnBranch,
   syncCommitsToCp,
   MAIN_ONLY_SYNC_INFRA_FILES,
@@ -1098,6 +1099,325 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         () => git(localRepo, ['show', `${cpRef}:test/syncToCp.test.js`]),
         /does not exist|exists on disk, but not in/
       );
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('resolveSyncCliOptions enforces verifyOnly and protects against SYNC_PUSH env leakage', () => {
+    // Defaults to dry-run
+    assert.deepEqual(resolveSyncCliOptions([], {}), {
+      dryRun: true,
+      verifyOnly: false,
+      explicitPush: false,
+      explicitDryRun: false,
+    });
+
+    // Explicit --push and SYNC_PUSH=true
+    assert.deepEqual(resolveSyncCliOptions(['--push'], {}), {
+      dryRun: false,
+      verifyOnly: false,
+      explicitPush: true,
+      explicitDryRun: false,
+    });
+    assert.deepEqual(resolveSyncCliOptions([], { SYNC_PUSH: 'true' }), {
+      dryRun: false,
+      verifyOnly: false,
+      explicitPush: true,
+      explicitDryRun: false,
+    });
+
+    // Explicit --dry-run
+    assert.deepEqual(resolveSyncCliOptions(['--dry-run'], {}), {
+      dryRun: true,
+      verifyOnly: false,
+      explicitPush: false,
+      explicitDryRun: true,
+    });
+
+    const warnings = [];
+    const origWarn = console.warn;
+    console.warn = (msg) => warnings.push(msg);
+    try {
+      // --verify CLI arg forces verifyOnly: true, dryRun: false, explicitPush: false, even if SYNC_PUSH=true
+      assert.deepEqual(resolveSyncCliOptions(['--verify'], { SYNC_PUSH: 'true' }), {
+        dryRun: false,
+        verifyOnly: true,
+        explicitPush: false,
+        explicitDryRun: false,
+      });
+      assert.equal(warnings.includes('--push ignored in --verify mode'), true);
+
+      // Both --verify and --push CLI flags
+      warnings.length = 0;
+      assert.deepEqual(resolveSyncCliOptions(['--verify', '--push'], {}), {
+        dryRun: false,
+        verifyOnly: true,
+        explicitPush: false,
+        explicitDryRun: false,
+      });
+      assert.equal(warnings.includes('--push ignored in --verify mode'), true);
+
+      // SYNC_VERIFY=true env forces verifyOnly: true even with SYNC_PUSH=true or --push
+      warnings.length = 0;
+      assert.deepEqual(resolveSyncCliOptions(['--push'], { SYNC_VERIFY: 'true', SYNC_PUSH: 'true' }), {
+        dryRun: false,
+        verifyOnly: true,
+        explicitPush: false,
+        explicitDryRun: false,
+      });
+      assert.equal(warnings.includes('--push ignored in --verify mode'), true);
+    } finally {
+      console.warn = origWarn;
+    }
+  });
+
+  await t.test('push.sh and push.ps1 contain --verify flag and SYNC_PUSH isolation safeguard', () => {
+    const pushSh = fs.readFileSync(path.join(repoRoot, 'push.sh'), 'utf8');
+    const pushPs1 = fs.readFileSync(path.join(repoRoot, 'push.ps1'), 'utf8');
+
+    assert.match(pushSh, /npm run sync:cp -- --verify/);
+    assert.match(pushSh, /SYNC_PUSH=false npm run sync:cp -- --verify/);
+
+    assert.match(pushPs1, /npm run sync:cp -- --verify/);
+    assert.match(pushPs1, /\$env:SYNC_PUSH\s*=\s*"false"/);
+    assert.match(pushPs1, /try\s*\{[\s\S]*\$env:SYNC_PUSH\s*=\s*"false"[\s\S]*\}\s*finally\s*\{[\s\S]*\$env:SYNC_PUSH\s*=\s*\$origSyncPush/);
+  });
+
+  await t.test('verifyOnly: true executes cherry-pick and tests in isolated worktree without pushing to remote', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-verify-only-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const repo = path.join(tmpBase, 'local');
+    const cpRef = 'origin/cp/crowley-aziraphale';
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', repo]);
+      git(repo, ['remote', 'add', 'origin', bareRemote]);
+
+      // Base commit
+      fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(repo, 'src', 'calc.js'), 'module.exports = { add: (a, b) => a + b };\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'chore: base']);
+      git(repo, ['branch', '-M', 'main']);
+      git(repo, ['push', '-u', 'origin', 'main']);
+      git(repo, ['push', 'origin', 'main:cp/crowley-aziraphale']);
+
+      // 1. Clean commit: verifyOnly passes, calls testRunner, sets '✅ 预检通过', does NOT push (syncedCount === 0)
+      fs.writeFileSync(path.join(repo, 'src', 'calc.js'), 'module.exports = { add: (a, b) => a + b, sub: (a, b) => a - b };\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat(calc): add sub method']);
+      const cleanSha = git(repo, ['rev-parse', 'HEAD']);
+
+      let testRan = false;
+      const cleanVerify = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: cleanSha,
+        verifyOnly: true,
+        testRunner: (dir) => {
+          testRan = true;
+          assert.match(fs.readFileSync(path.join(dir, 'src', 'calc.js'), 'utf8'), /sub: \(a, b\)/);
+        },
+        installRunner: () => {},
+      });
+
+      assert.equal(testRan, true);
+      assert.equal(cleanVerify.syncedCount, 0);
+      assert.equal(cleanVerify.results[0].status, '✅ 预检通过');
+      assert.equal(Boolean(cleanVerify.results[0].blocked), false);
+
+      // Verify remote origin/cp/crowley-aziraphale was NOT modified!
+      git(repo, ['fetch', 'origin']);
+      assert.doesNotMatch(git(repo, ['show', `${cpRef}:src/calc.js`]), /sub: \(a, b\)/);
+
+      // 2. Commit causes code conflict on CP branch -> blocked: true, status: ⚠️ 代码冲突跳过
+      const cpClone = path.join(tmpBase, 'cp-clone');
+      git(tmpBase, ['clone', bareRemote, cpClone]);
+      git(cpClone, ['checkout', 'cp/crowley-aziraphale']);
+      fs.writeFileSync(path.join(cpClone, 'src', 'calc.js'), 'module.exports = { cpConflict: true };\n');
+      git(cpClone, ['add', '.']);
+      git(cpClone, ['commit', '-m', 'chore(cp): modify calc on CP branch']);
+      git(cpClone, ['push', 'origin', 'cp/crowley-aziraphale']);
+
+      fs.writeFileSync(path.join(repo, 'src', 'calc.js'), 'module.exports = { mainConflict: true };\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: conflict commit on main']);
+      const conflictSha = git(repo, ['rev-parse', 'HEAD']);
+
+      const conflictVerify = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: conflictSha,
+        verifyOnly: true,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+      assert.equal(conflictVerify.syncedCount, 0);
+      assert.equal(conflictVerify.results[0].blocked, true);
+      assert.equal(conflictVerify.results[0].status, '⚠️ 代码冲突跳过');
+
+      // 3. Clean commit, but testRunner throws -> blocked: true, status: ❌ 测试未通过已回滚
+      fs.writeFileSync(path.join(repo, 'src', 'new-feature.js'), 'module.exports = "feature";\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: new feature failing tests']);
+      const testFailSha = git(repo, ['rev-parse', 'HEAD']);
+
+      const testFailVerify = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: testFailSha,
+        verifyOnly: true,
+        testRunner: () => {
+          throw new Error('Unit tests failed on CP branch');
+        },
+        installRunner: () => {},
+      });
+      assert.equal(testFailVerify.syncedCount, 0);
+      assert.equal(testFailVerify.results[0].blocked, true);
+      assert.equal(testFailVerify.results[0].status, '❌ 测试未通过已回滚');
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('backlog > 50 commits covers HEAD and unpushed commits with ensureAfterSha and verifyOnly', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-backlog-verify-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const repo = path.join(tmpBase, 'local');
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', repo]);
+      git(repo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(repo, 'src', 'util.js'), 'module.exports = { v: 0 };\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'chore: initial base']);
+      git(repo, ['branch', '-M', 'main']);
+      git(repo, ['push', '-u', 'origin', 'main']);
+      git(repo, ['push', 'origin', 'main:cp/crowley-aziraphale']);
+      const baseSha = git(repo, ['rev-parse', 'HEAD']);
+
+      // Create 54 backlog commits already on origin/main (e.g. skipped by [skip-cp] so anchor never moved)
+      for (let i = 1; i <= 54; i += 1) {
+        git(repo, ['commit', '--allow-empty', '-m', `chore: backlog commit ${i} [skip-cp]`]);
+      }
+      git(repo, ['push', 'origin', 'main']);
+
+      // 55th commit (local unpushed HEAD) modifies util.js
+      fs.writeFileSync(path.join(repo, 'src', 'util.js'), 'module.exports = { v: 55 };\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: commit 55 on main (HEAD)']);
+      const headSha = git(repo, ['rev-parse', 'HEAD']);
+
+      const warn = console.warn;
+      console.warn = () => {};
+      try {
+        // Without ensureAfterSha, only first 50 commits evaluated; headSha is omitted
+        const defaultList = resolveCommitsToEvaluate({
+          cwd: repo,
+          targetRef: 'origin/cp/crowley-aziraphale',
+          beforeSha: baseSha,
+          afterSha: headSha,
+          ensureAfterSha: false,
+        });
+        assert.equal(defaultList.length, 50);
+        assert.equal(defaultList.includes(headSha), false);
+
+        // With ensureAfterSha: true, first 50 backlog commits PLUS unpushed headSha are included (51 total)
+        const ensuredList = resolveCommitsToEvaluate({
+          cwd: repo,
+          targetRef: 'origin/cp/crowley-aziraphale',
+          beforeSha: baseSha,
+          afterSha: headSha,
+          ensureAfterSha: true,
+          remoteName: 'origin',
+        });
+        assert.equal(ensuredList.length, 51);
+        assert.equal(ensuredList.at(-1), headSha);
+
+        // Run syncCommitsToCp with verifyOnly: true:
+        // When commit 55 fails testRunner, verifyOnly successfully intercepts and flags blocked: true!
+        const verifyRun = await syncCommitsToCp({
+          repoRoot: repo,
+          targetBranch: 'cp/crowley-aziraphale',
+          beforeSha: baseSha,
+          afterSha: headSha,
+          verifyOnly: true,
+          testRunner: (dir) => {
+            const content = fs.readFileSync(path.join(dir, 'src', 'util.js'), 'utf8');
+            if (content.includes('v: 55')) {
+              throw new Error('HEAD commit 55 broke the build on CP!');
+            }
+          },
+          installRunner: () => {},
+        });
+
+        assert.equal(verifyRun.syncedCount, 0);
+        assert.equal(verifyRun.results.some((r) => r.sha === headSha && r.blocked), true);
+        const headResult = verifyRun.results.find((r) => r.sha === headSha);
+        assert.equal(headResult.status, '❌ 测试未通过已回滚');
+
+        // Verify cap on massive unpushed backlog (120 commits all unpushed relative to origin/main)
+        // Ensure result length <= MAX_LOOKBACK_COMMITS * 2 (100) and contains both head 50 and tail 50
+        const massiveRemote = path.join(tmpBase, 'massive-remote.git');
+        const massiveBase = path.join(tmpBase, 'massive-local');
+        git(tmpBase, ['init', '--bare', massiveRemote]);
+        git(tmpBase, ['init', massiveBase]);
+        git(massiveBase, ['remote', 'add', 'origin', massiveRemote]);
+        fs.mkdirSync(path.join(massiveBase, 'src'), { recursive: true });
+        fs.writeFileSync(path.join(massiveBase, 'src', 'massive.js'), 'module.exports = 0;\n');
+        git(massiveBase, ['add', '.']);
+        git(massiveBase, ['commit', '-m', 'chore: massive base']);
+        git(massiveBase, ['branch', '-M', 'main']);
+        git(massiveBase, ['push', '-u', 'origin', 'main']);
+        git(massiveBase, ['push', 'origin', 'main:cp/crowley-aziraphale']);
+        const massiveBaseSha = git(massiveBase, ['rev-parse', 'HEAD']);
+
+        for (let i = 1; i <= 119; i += 1) {
+          git(massiveBase, ['commit', '--allow-empty', '-m', `chore: massive unpushed ${i} [skip-cp]`]);
+        }
+        fs.writeFileSync(path.join(massiveBase, 'src', 'massive.js'), 'module.exports = 120;\n');
+        git(massiveBase, ['add', '.']);
+        git(massiveBase, ['commit', '-m', 'feat: massive commit 120 (HEAD)']);
+        const massiveHeadSha = git(massiveBase, ['rev-parse', 'HEAD']);
+
+        const massiveList = resolveCommitsToEvaluate({
+          cwd: massiveBase,
+          targetRef: 'origin/cp/crowley-aziraphale',
+          beforeSha: massiveBaseSha,
+          afterSha: massiveHeadSha,
+          ensureAfterSha: true,
+          remoteName: 'origin',
+        });
+
+        assert.equal(massiveList.length <= 100, true);
+        assert.equal(massiveList.length, 100);
+        assert.equal(massiveList.includes(massiveHeadSha), true);
+        assert.equal(massiveList.at(-1), massiveHeadSha);
+
+        const fullList = git(massiveBase, [
+          'rev-list',
+          '--reverse',
+          '--first-parent',
+          `${massiveBaseSha}..${massiveHeadSha}`,
+        ])
+          .split('\n')
+          .filter(Boolean);
+        const head50 = fullList.slice(0, 50);
+        const tail50 = fullList.slice(-50);
+        for (const sha of head50) {
+          assert.equal(massiveList.includes(sha), true);
+        }
+        for (const sha of tail50) {
+          assert.equal(massiveList.includes(sha), true);
+        }
+      } finally {
+        console.warn = warn;
+      }
     } finally {
       fs.rmSync(tmpBase, { recursive: true, force: true });
     }

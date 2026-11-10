@@ -115,7 +115,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 1. 拦截检查：自动检测 `git status` 中是否包含 `CHANGELOG.md`。
 2. 如果未包含，脚本会拦截提交，并自动用系统默认编辑器打开 `CHANGELOG.md`，强制要求你填写更新记录。
 3. 填写保存后重新运行，脚本执行 `git add .`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
-4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp` 执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin main`。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
+4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp -- --verify` 执行好兆头分支自动同步预检（在隔离 worktree 中完整执行挑拣与测试验证，但不推送到远端，且隔离 `SYNC_PUSH` 环境变量）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin main`。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
 
 脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。脚本打印的 `[WIP]` 模板是旧提示，实际应按 `[Unreleased]` 规范填写。
 
@@ -141,7 +141,7 @@ macOS / Linux / WSL 在 Bash 中运行：
    - 全程在临时 `git worktree` 中执行合并与验证，绝不切换或污染当前主工作区分支。
    - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，回滚该条提交并停止批次，工作流标记失败；后续运行从最后同步标记重试，尚无标记时从共同祖先恢复。每条验证通过后立即向远端推送，并在 GitHub Actions Summary 输出报告。
    - Windows 下以 `shell` 方式调用 `npm`（`npm.cmd`），本地 `--push` 可正常运行；`git` 输出缓冲上限为 64 MiB。
-   - 本地运行 `npm run sync:cp` 默认采用安全的 `--dry-run` 预览模式（仅当显式传入 `npm run sync:cp -- --push` 时才会执行推送）。
+   - 本地运行 `npm run sync:cp` 默认采用安全的 `--dry-run` 预览模式；推送脚本使用 `npm run sync:cp -- --verify` 模式（在临时 worktree 中完整模拟 cherry-pick 与单元测试门禁，但不向远端推送，强制屏蔽 `SYNC_PUSH` 环境变量以杜绝误推，且积压超过 50 条时保证覆盖 `origin/main..HEAD`）；仅当显式传入 `npm run sync:cp -- --push` 时才会真正执行向远端分支的推送。
 
 ---
 

@@ -678,6 +678,8 @@ function resolveCommitsToEvaluate({
   beforeSha = '',
   afterSha = 'HEAD',
   manualCommitsArg = '',
+  ensureAfterSha = false,
+  remoteName = 'origin',
 }) {
   const resolvedAfter = runGit(['rev-parse', afterSha], { cwd });
 
@@ -738,6 +740,37 @@ function resolveCommitsToEvaluate({
         console.warn(
           `Backlog of ${all.length} commits exceeds ${MAX_LOOKBACK_COMMITS}; evaluating the oldest ${MAX_LOOKBACK_COMMITS}, ${all.length - MAX_LOOKBACK_COMMITS} remain for the next run.`
         );
+        if (ensureAfterSha) {
+          const selected = all.slice(0, MAX_LOOKBACK_COMMITS);
+          try {
+            const unpushedList = runGit(
+              [
+                'rev-list',
+                '--reverse',
+                '--first-parent',
+                `${remoteName}/main..${resolvedAfter}`,
+              ],
+              { cwd }
+            );
+            if (unpushedList) {
+              const unpushedCommits = unpushedList
+                .split(/\r?\n/)
+                .filter(Boolean)
+                .slice(-MAX_LOOKBACK_COMMITS);
+              for (const sha of unpushedCommits) {
+                if (!selected.includes(sha)) {
+                  selected.push(sha);
+                }
+              }
+            }
+          } catch {
+            // remote branch may not exist in local-only / detached environments
+          }
+          if (!selected.includes(resolvedAfter)) {
+            selected.push(resolvedAfter);
+          }
+          return selected;
+        }
       }
       return all.slice(0, MAX_LOOKBACK_COMMITS);
     } catch {
@@ -789,6 +822,7 @@ async function syncCommitsToCp({
   afterSha = 'HEAD',
   manualCommitsArg = '',
   dryRun = true,
+  verifyOnly = false,
   alwaysAi = false,
   env = process.env,
   fetchImpl = globalThis.fetch,
@@ -807,6 +841,9 @@ async function syncCommitsToCp({
       shell: process.platform === 'win32', // npm is npm.cmd on Windows; args are constants
     }),
 } = {}) {
+  const effectiveDryRun = verifyOnly ? false : dryRun;
+  const shouldPush = !effectiveDryRun && !verifyOnly;
+
   try {
     runGit(
       [
@@ -827,6 +864,8 @@ async function syncCommitsToCp({
     beforeSha,
     afterSha,
     manualCommitsArg,
+    ensureAfterSha: verifyOnly,
+    remoteName,
   });
 
   if (commits.length === 0) {
@@ -843,7 +882,7 @@ async function syncCommitsToCp({
   let worktreeDir = null;
   let cpIdentity = null;
 
-  if (!dryRun) {
+  if (!effectiveDryRun) {
     worktreeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-cp-sync-'));
     runGit(['worktree', 'add', '--detach', worktreeDir, targetRemoteRef], { cwd: repoRoot });
     const cpPkgPath = path.join(worktreeDir, 'package.json');
@@ -870,8 +909,8 @@ async function syncCommitsToCp({
       });
       const files = filesOutput ? filesOutput.split(/\r?\n/).filter(Boolean) : [];
 
-      const checkRef = dryRun ? targetRemoteRef : 'HEAD';
-      const checkCwd = dryRun ? repoRoot : worktreeDir;
+      const checkRef = effectiveDryRun ? targetRemoteRef : 'HEAD';
+      const checkCwd = effectiveDryRun ? repoRoot : worktreeDir;
 
       if (isCommitAlreadyOnBranch(checkRef, sha, checkCwd)) {
         results.push({
@@ -953,7 +992,7 @@ async function syncCommitsToCp({
         ? (aiVerdict.reason || heuristic.reason)
         : heuristic.reason;
 
-      if (dryRun) {
+      if (effectiveDryRun) {
         results.push({
           sha,
           subject,
@@ -1194,20 +1233,24 @@ async function syncCommitsToCp({
         break;
       }
 
-      if (!dryRun) {
+      if (shouldPush) {
         console.log(`Pushing synced commit ${sha.slice(0, 7)} to ${remoteName}/${targetBranch}...`);
         runGit(['push', remoteName, `HEAD:refs/heads/${targetBranch}`], {
           cwd: worktreeDir,
           authToken: env.GITHUB_TOKEN,
         });
+        syncedCount += 1;
       }
 
-      syncedCount += 1;
+      const successStatus = verifyOnly
+        ? (cherryPickClean ? '✅ 预检通过' : '✅ 预检通过 (智能合并日志)')
+        : (cherryPickClean ? '✅ 已同步' : '✅ 已同步 (智能合并日志)');
+
       results.push({
         sha,
         subject,
         verdict: verdictLabel,
-        status: cherryPickClean ? '✅ 已同步' : '✅ 已同步 (智能合并日志)',
+        status: successStatus,
         reason: summaryReason,
       });
     }
@@ -1230,12 +1273,28 @@ async function syncCommitsToCp({
   return { results, syncedCount, summaryMarkdown };
 }
 
+/**
+ * Resolve command line and environment options for sync / verify runs.
+ *
+ * @param {string[]} [args]
+ * @param {NodeJS.ProcessEnv} [env]
+ * @returns {{ dryRun: boolean, verifyOnly: boolean, explicitPush: boolean, explicitDryRun: boolean }}
+ */
+function resolveSyncCliOptions(args = process.argv.slice(2), env = process.env) {
+  const verifyOnly = args.includes('--verify') || env.SYNC_VERIFY === 'true';
+  const pushRequested = args.includes('--push') || env.SYNC_PUSH === 'true';
+  if (verifyOnly && pushRequested) {
+    console.warn('--push ignored in --verify mode');
+  }
+  const explicitPush = !verifyOnly && pushRequested;
+  const explicitDryRun = !verifyOnly && (args.includes('--dry-run') || env.SYNC_DRY_RUN === 'true');
+  const dryRun = verifyOnly ? false : (explicitDryRun || !explicitPush);
+  return { dryRun, verifyOnly, explicitPush, explicitDryRun };
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  // Default to dry-run locally for safety; only push when `--push` is passed or `SYNC_PUSH=true` in CI
-  const explicitPush = args.includes('--push') || process.env.SYNC_PUSH === 'true';
-  const explicitDryRun = args.includes('--dry-run') || process.env.SYNC_DRY_RUN === 'true';
-  const dryRun = explicitDryRun || !explicitPush;
+  const { dryRun, verifyOnly } = resolveSyncCliOptions(args, process.env);
 
   const targetBranch = process.env.TARGET_BRANCH || DEFAULT_TARGET_BRANCH;
   const beforeSha = process.env.BEFORE_SHA || '';
@@ -1252,6 +1311,7 @@ async function main() {
     afterSha,
     manualCommitsArg,
     dryRun,
+    verifyOnly,
     alwaysAi,
   });
 
@@ -1287,6 +1347,7 @@ module.exports = {
   applyPackageIdentity,
   applyPackageLockIdentity,
   resolveCommitsToEvaluate,
+  resolveSyncCliOptions,
   findLastSyncedMainCommit,
   isCommitAlreadyOnBranch,
   formatSyncSummaryMarkdown,

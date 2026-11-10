@@ -56,9 +56,15 @@ if ($LASTEXITCODE -ne 0) {
 # Preflight check for Good Omens branch sync (only on main branch unless explicitly skipped).
 $currentBranch = (git rev-parse --abbrev-ref HEAD).Trim()
 if (-not $env:SKIP_SYNC_CHECK -and $currentBranch -eq "main") {
-    Write-Host "Running Good Omens sync preflight (npm run sync:cp)..." -ForegroundColor Cyan
+    Write-Host "Running Good Omens sync preflight (npm run sync:cp -- --verify)..." -ForegroundColor Cyan
     $npmCmd = if (Get-Command "npm.cmd" -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
-    & $npmCmd run sync:cp
+    $origSyncPush = $env:SYNC_PUSH
+    try {
+        $env:SYNC_PUSH = "false"
+        & $npmCmd run sync:cp -- --verify
+    } finally {
+        $env:SYNC_PUSH = $origSyncPush
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "==========================================" -ForegroundColor Red
         Write-Host "Push blocked: Sync preflight to cp/crowley-aziraphale failed." -ForegroundColor Red
