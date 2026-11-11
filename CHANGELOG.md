@@ -49,6 +49,7 @@
 
 ### Removed
 - **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。
+- **废弃换肤 IPC 通道清理 (`Skin Selector Dead select-skin IPC Channel Removal`)**：移除 `src/main/services/SkinService.js` 中无任何调用方的 `select-skin` IPC 处理器与 `skinSelectorPreload.js` 对应暴露方法，收窄 IPC 暴露面并确保换肤严格受限于「预览→确认/取消」状态机；保留主进程内部 `SkinService.selectSkin()` 供托盘与回滚复用，并同步清理测试中的陈旧断言。
 
 ### Security
 - 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；同时将开发环境传递依赖 `undici`（`@electron/get` 依赖）从 7.29.0 升级至 7.30.2 以消除 `GHSA-w293-vg96-wgc3` 等上游高危安全通告，并在 `test/dependencyUriSecurity.test.js` 中补充 URI 回归、正常 schema 引用解析及锁文件版本防回退测试，同步更新 `docs/security_best_practices_report.md` 状态标记（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。

@@ -13,7 +13,7 @@ test('main process exposes gallery data and validated skin selection IPC', () =>
   const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js');
 
   assert.match(mainSource, /ipcMain\.handle\('get-skin-gallery-items'/);
-  assert.match(mainSource, /ipcMain\.handle\('select-skin'/);
+  assert.match(mainSource, /ipcMain\.handle\('preview-skin'/);
   assert.match(mainSource, /function selectSkin\(skinId\)/);
   assert.match(mainSource, /mainWindow\.webContents\.send\('switch-skin', skinId/);
 });
@@ -34,7 +34,6 @@ test('skin selector uses a dedicated limited preload bridge', () => {
   const preloadSource = readProjectFile('skinSelectorPreload.js');
 
   assert.match(preloadSource, /getSkinGalleryItems: \(\) => ipcRenderer\.invoke\('get-skin-gallery-items'\)/);
-  assert.match(preloadSource, /selectSkin: \(skinId\) => ipcRenderer\.invoke\('select-skin', skinId\)/);
   assert.match(preloadSource, /previewSkin: \(skinId\) => ipcRenderer\.invoke\('preview-skin', skinId\)/);
   assert.match(preloadSource, /confirmSkin: \(\) => ipcRenderer\.invoke\('confirm-skin'\)/);
   assert.match(preloadSource, /cancelSkin: \(\) => ipcRenderer\.invoke\('cancel-skin'\)/);
@@ -51,7 +50,6 @@ test('skin selector IPC only accepts requests from the selector window', () => {
 
   for (const channel of [
     'get-skin-gallery-items',
-    'select-skin',
     'preview-skin',
     'confirm-skin',
     'cancel-skin',

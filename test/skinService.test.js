@@ -89,7 +89,6 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.ok(mockIpcHandlers['get-available-overlay-keys']);
     assert.ok(mockIpcHandlers['get-skin-gallery-items']);
     assert.ok(mockIpcHandlers['set-current-skin']);
-    assert.ok(mockIpcHandlers['select-skin']);
     assert.ok(mockIpcHandlers['preview-skin']);
     assert.ok(mockIpcHandlers['confirm-skin']);
     assert.ok(mockIpcHandlers['cancel-skin']);
@@ -187,29 +186,6 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
     assert.equal(result.error.code, 'VALIDATION_ERROR');
   });
 
-  await t.test('select-skin requires correct event sender', async () => {
-    const deps = createMockDeps();
-    SkinService.init(deps);
-    
-    const invalidEvent = { sender: { id: 111 } };
-    const result = await mockIpcHandlers['select-skin'](invalidEvent, 'default');
-    assert.equal(result.success, false);
-    assert.equal(result.error.code, 'FORBIDDEN');
-  });
-
-  await t.test('select-skin success via valid event', async () => {
-    const deps = createMockDeps();
-    SkinService.init(deps);
-    
-    const validEvent = { sender: { id: 999 } };
-    const result = await mockIpcHandlers['select-skin'](validEvent, 'default');
-    assert.equal(result.success, true);
-    assert.equal(mockScreensaverCancelled, true);
-    assert.ok(mockWindowSent);
-    assert.equal(mockWindowSent.channel, 'switch-skin');
-    assert.equal(mockWindowSent.data, 'default');
-  });
-  
   await t.test('preview-skin does not change confirmed skin and sends isPreview: true', async () => {
     const deps = createMockDeps();
     SkinService.init(deps);
