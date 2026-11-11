@@ -323,8 +323,7 @@ async function collectMacProcessInfo(execFileImpl, processName, commandTimeoutMs
   const { stdout } = await runExecFile(execFileImpl, 'pgrep', ['-x', processName], commandTimeoutMs);
   const pids = stdout.split(/\r?\n/).map((line) => line.trim()).filter((line) => /^\d+$/.test(line));
 
-  const processes = [];
-  for (const pid of pids) {
+  return Promise.all(pids.map(async (pid) => {
     try {
       const { stdout: lsofOutput } = await runExecFile(
         execFileImpl,
@@ -336,23 +335,21 @@ async function collectMacProcessInfo(execFileImpl, processName, commandTimeoutMs
         .split(/\r?\n/)
         .filter((line) => line.startsWith('n'))
         .map((line) => ({ raw: line.slice(1) }));
-      processes.push({
+      return {
         processName,
         pid,
         udpCount: udpEndpoints.length,
         udpEndpoints,
-      });
+      };
     } catch {
-      processes.push({
+      return {
         processName,
         pid,
         udpCount: 0,
         udpEndpoints: [],
-      });
+      };
     }
-  }
-
-  return processes;
+  }));
 }
 
 async function collectMacSnapshot(options) {

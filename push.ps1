@@ -15,13 +15,15 @@ if (-not ($status -match "CHANGELOG\.md")) {
     Write-Host "==========================================" -ForegroundColor Red
 
     # Print a ready-to-copy changelog template.
-    $dateStr = Get-Date -Format "yyyy-MM-dd"
-    Write-Host "Add a section near the top using this format:" -ForegroundColor Yellow
-    Write-Host "## [WIP] - $dateStr"
+    Write-Host "Add a section under ## [Unreleased] using standard category headers:" -ForegroundColor Yellow
+    Write-Host "## [Unreleased]"
+    Write-Host ""
     Write-Host "### Added"
     Write-Host "- "
+    Write-Host ""
     Write-Host "### Changed"
     Write-Host "- "
+    Write-Host ""
     Write-Host "### Fixed"
     Write-Host "- "
     

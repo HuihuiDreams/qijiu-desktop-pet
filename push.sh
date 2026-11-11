@@ -45,14 +45,15 @@ if ! git status --porcelain | grep -q "CHANGELOG\.md"; then
     echo -e "${YELLOW}正在为您打开 CHANGELOG.md，请填写后保存并关闭文件，然后再运行此脚本...${NC}"
     echo -e "${RED}==========================================${NC}"
 
-    # 获取当前日期并准备占位符
-    DATE_STR=$(date +"%Y-%m-%d")
-    echo -e "${YELLOW}提示：请在头部添加类似如下格式的内容：${NC}"
-    echo "## [WIP] - $DATE_STR"
+    echo -e "${YELLOW}提示：请在头部 ## [Unreleased] 下添加规范分类的内容（如 Added / Changed / Fixed / Removed / Security）：${NC}"
+    echo "## [Unreleased]"
+    echo ""
     echo "### Added"
     echo "- "
+    echo ""
     echo "### Changed"
     echo "- "
+    echo ""
     echo "### Fixed"
     echo "- "
     

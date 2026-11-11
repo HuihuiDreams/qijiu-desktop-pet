@@ -15,6 +15,7 @@
 - **主分支向好兆头分支自动评估与同步流水线 (`Main-to-CP Auto-Sync Workflow`)**：新增 `.github/workflows/sync-to-cp.yml`、`scripts/sync-to-cp.js` 与 `npm run sync:cp`（默认 dry-run）。`main` 有新推送时，在隔离的临时 `git worktree` 中以启发式规则 + GitHub Models（临时 `GITHUB_TOKEN`，仅 AI 否决、不覆盖启发式拒绝）评估提交，自动拦截皮肤目录、专属台词与 workflow 文件改动，智能合并 `CHANGELOG.md` `## [Unreleased]` 条目、还原好兆头 `package.json` 身份字段，通过 `npm test` 门禁后推送至 `cp/crowley-aziraphale`；checkout 使用 `persist-credentials: false`，子进程不可读取 Token。改写 / 删除已有日志 bullet 的提交不同步 CHANGELOG（避免重复），积压按从旧到新取前 50 条，Windows 本地 `--push` 兼容 `npm.cmd`。详见 [ADR-049](./docs/decisions/ADR-049-main-to-cp-auto-sync.md) 与 [docs/git-workflow.md](./docs/git-workflow.md)，附 `test/syncToCp.test.js`。
 
 ### Changed
+- **macOS 会议检测 UDP 探测并行化 (`macOS Meeting Detection UDP Endpoint Probing Parallelization`)**：在 `meetingDetector.js` 的 `collectMacProcessInfo` 中将基于 `lsof` 的多 PID UDP 状态探测由 `for...of` 串行等待重构为 `Promise.all` 并行采集，将单个会议应用拥有多个子进程时的网络端点检测耗时从线性累加（$O(\sum t)$）优化至并发上限（$O(\max t)$），避免因冷启动或超时拖慢 5 秒轮询节拍导致桌宠延迟退避隐藏；补充多 PID 并行探测与进程顺序保持回归测试（[ADR-035](./docs/decisions/ADR-035-meeting-auto-hide.md)）。
 - **核心运行时与依赖大版本基线升级 (`Runtime & Dependency Major Upgrades: Electron 45, electron-store 12 & asar 4`)**：
   - **核心引擎升级**：Electron 由 42.2.0 升级至 45.2.1（内置 Chromium 基线由 148 提升至 156），开发依赖 `@electron/asar` 由 3.4.1 升级至 4.3.1，`glob` 由 13.0.6 升级至 14.0.3，生产依赖 `electron-store` 由 10.1.0 升级至 12.0.0。
   - **系统要求变更（Breaking Change）**：将 `package.json` 中的 macOS 最低系统要求（`mac.minimumSystemVersion`）提升至 `13.0`（Ventura），全语言 Readme 同步更新；不再支持 macOS 12 Monterey，严格对齐 Electron 44+ 官方运行时要求（详见 [ADR-026](./docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
@@ -29,6 +30,7 @@
 - 更新开发者 README：明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装及 Electron 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 
 ### Fixed
+- **推送脚本更新日志模板格式修复 (`Push Script Changelog Template Fix`)**：修复 `push.sh` 与 `push.ps1` 在检测到缺少 CHANGELOG 时向用户提示错误的 `## [WIP] - 日期` 格式的问题，统一更正为符合流水线与规范的 `## [Unreleased]` 及标准分类大写标题（`Added`/`Changed`/`Fixed`），防止开发者被误导撰写非标准标题导致改动在 `sync-to-cp` 智能合并阶段被静默丢弃。
 - 修复 CP 自动同步的 Git 失败日志可能包含编码后认证令牌的问题，改为仅向 Git 子进程传递认证配置（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 - **主分支向好兆头分支自动同步防超时死锁与去重脱敏修复 (`CP Auto-Sync Deadlock, Deduplication & Sanitization Fixes`)**：
   - **防止超时丢批次与死循环**：在 `scripts/sync-to-cp.js` 中将推送机制由批次结束总推送重构为单提交验证通过后立即推送（`push per verified commit`）。当大 PR 批量处理耗时触发 GitHub Actions 15 分钟超时时，已验证提交已持久化在远端分支，下一次触发自动断点续传，彻底消除重复挑拣同一批次超时导致的死锁。
@@ -57,6 +59,7 @@
 - **推送预检守卫真机验证、环境变量隔离与大积压覆盖加固 (`Push Sync Preflight Verification, Env Isolation & Backlog Coverage`)**：修复推送脚本在默认 dry-run 模式下仅进行元数据静态判定、无法真实拦截代码冲突与测试失败的问题，新增 `--verify` 专用模式在临时 worktree 中完整模拟 cherry-pick 与单元测试；修复环境中的 `SYNC_PUSH=true` 污染导致预检阶段误向远端提前推送分支的问题，通过 `resolveSyncCliOptions` 强制屏蔽并在 `push.sh` 与 `push.ps1` 中执行环境变量沙箱还原；修复待评估提交积压超过 50 条时因限制前 50 条回溯而漏检未推送提交与 `HEAD` 的隐患，在 `--verify` 模式下确保 `origin/main..HEAD` 与 `HEAD` 均被强制纳入预检覆盖（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 
 ### Removed
+- **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。
 - **主窗口废弃内嵌 `#status-panel` 孤儿 DOM 与重复样式清理 (`Legacy Embedded Status Panel Cleanup`)**：彻底移除 `src/index.html` 中遗留的 `<div id="status-panel">` 孤儿 DOM 节点及其所有子元素；将曾作用于独立状态窗口但滞留在 `src/index.css` 的面板定位（`top: 50%`、`left: 50%`、`transform: translate(-50%, -50%)`、`z-index: 10000`）、入场动画（`animation: panelSlideIn` 及 `@keyframes panelSlideIn`）、悬停边框与头像阴影等规则完整回迁至 `src/status.css`，并从 `src/index.css` 中干净剥离 `.status-panel`、`.status-panel-header`、`.status-close`、`.pet-status-*` 等冗余选择器；同时在 `src/ui/ContextMenu.js` 的 `hide()` 中解耦内嵌状态面板检查直接恢复鼠标点击穿透，在 `src/pet/PetRenderer.js` 的 `mouseleave` 事件中移除未判空的 `#status-panel` 查询，杜绝 DOM 移除引发的 `TypeError` 崩溃风险。
 
 ### Security

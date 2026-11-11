@@ -689,3 +689,56 @@ test('macOS snapshot probes meeting apps in parallel and preserves order', async
   assert.deepEqual(snapshot.apps.map(a => a.name), ['Teams', 'Zoom']);
 });
 
+test('macOS snapshot probes multiple PIDs of the same app in parallel via lsof', async () => {
+  let activeInFlightLsof = 0;
+  let maxConcurrentLsof = 0;
+
+  const execFile = (command, args, options, callback) => {
+    const cb = typeof options === 'function' ? options : callback;
+    const key = [command, ...(args || [])].join(' ');
+
+    if (key === 'pgrep -x zoom.us') {
+      cb(null, '2001\n2002\n2003\n', '');
+      return;
+    }
+
+    if (key.startsWith('lsof -a -nP -i UDP -p')) {
+      activeInFlightLsof++;
+      if (activeInFlightLsof > maxConcurrentLsof) {
+        maxConcurrentLsof = activeInFlightLsof;
+      }
+      setTimeout(() => {
+        activeInFlightLsof--;
+        if (key.includes('-p 2002')) {
+          cb(null, 'n*:50000\nn*:50001\nn*:50002\nn*:50003\nn*:50004\n', '');
+        } else {
+          cb(null, '', '');
+        }
+      }, 10);
+      return;
+    }
+
+    cb(new Error('Process not running'));
+  };
+
+  const snapshot = await collectMeetingUdpSnapshot({
+    platform: 'darwin',
+    execFile,
+    meetingApps: [{ name: 'Zoom', darwin: ['zoom.us'] }],
+    udpThreshold: 5,
+  });
+
+  assert.equal(maxConcurrentLsof, 3, 'All PIDs of the process should run lsof concurrently');
+  assert.equal(snapshot.isActive, true);
+  assert.deepEqual(snapshot.detectedApps, ['Zoom']);
+  const zoomApp = snapshot.apps.find((app) => app.name === 'Zoom');
+  assert.deepEqual(
+    zoomApp.processes.map((p) => p.pid),
+    ['2001', '2002', '2003'],
+  );
+  assert.deepEqual(
+    zoomApp.processes.map((p) => p.udpCount),
+    [0, 5, 0],
+  );
+});
+
