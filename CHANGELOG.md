@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-11-11
+
 ### Added
 - **推送脚本集成好兆头分支同步预检守卫 (`Push Scripts Good Omens Sync Preflight`)**：在 `./push.sh` 与 `push.ps1` 中集成自动同步前置检查，于 `main` 分支提交后、推送到远端前自动执行 `npm run sync:cp` 进行干跑校验；若改动在目标分支存在代码冲突或测试失败，自动执行 `git reset HEAD~1` 回退本地提交并提供 `[skip-cp]` 规避指引，支持通过 `SKIP_SYNC_CHECK=1` 紧急放行，从源头杜绝破坏性提交推向远端触发 Action 报错（详见 [ADR-049](./docs/decisions/ADR-049-main-to-cp-auto-sync.md) 与 [docs/git-workflow.md](./docs/git-workflow.md)）。
 - **Dependabot 依赖项自动化检测配置 (`Dependabot npm Updates`)**：新增 `.github/dependabot.yml`，配置每周一定时检测项目根目录 npm 依赖更新并开启 Pull Request（上限 10 个未合 PR），并将 `playwright` 与 `@playwright/*` 纳入同一更新分组（`groups.playwright`）以防版本范围漂移；保持默认的人工审查机制，不配置任何自动通过或自动合并，联动现有 CI 流水线运行单元测试与安全审计，确保依赖变更完全由人工把关与决定合并。
