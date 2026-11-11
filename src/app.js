@@ -484,7 +484,9 @@
 
         // Shared updates: Time & Auto-save
         if (timeSystem.update(deltaMs)) {
-          offlineReturnSystem.saveCurrentState();
+          offlineReturnSystem.saveCurrentState().catch((error) => {
+            console.error('Auto save failed:', error);
+          });
         }
 
         if (isScreensaverActive) {

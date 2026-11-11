@@ -30,6 +30,7 @@
 - 更新开发者 README：明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装及 Electron 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 
 ### Fixed
+- **退出与自动保存写盘失败判定修复 (`Save Before Quit & Auto Save Failure Detection`)**：在 `TimeSystem.save()` 中检查 `saveData` 的布尔返回值并在写盘失败时返回 `false`，修复 `preload.js` 中 `onSaveBeforeQuit` 无论写盘成功与否均向主进程上报 `success: true` 导致应用静默退出丢失存档的隐患；在 `src/app.js` 定期保存中补充 `.catch` 避免未处理的 Promise rejection，并补充相关单元测试。
 - **推送脚本更新日志模板格式修复 (`Push Script Changelog Template Fix`)**：修复 `push.sh` 与 `push.ps1` 在检测到缺少 CHANGELOG 时向用户提示错误的 `## [WIP] - 日期` 格式的问题，统一更正为符合流水线与规范的 `## [Unreleased]` 及标准分类大写标题（`Added`/`Changed`/`Fixed`），防止开发者被误导撰写非标准标题导致改动在 `sync-to-cp` 智能合并阶段被静默丢弃。
 - 修复 CP 自动同步的 Git 失败日志可能包含编码后认证令牌的问题，改为仅向 Git 子进程传递认证配置（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 - **主分支向好兆头分支自动同步防超时死锁与去重脱敏修复 (`CP Auto-Sync Deadlock, Deduplication & Sanitization Fixes`)**：

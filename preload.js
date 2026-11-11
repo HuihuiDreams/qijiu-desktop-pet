@@ -36,8 +36,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = async (_event, requestId) => {
       let success = false;
       try {
-        await callback();
-        success = true;
+        const result = await callback();
+        success = result !== false;
       } catch (error) {
         console.error('Final save before quit failed:', error);
       } finally {
