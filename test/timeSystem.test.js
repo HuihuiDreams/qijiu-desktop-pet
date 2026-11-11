@@ -43,15 +43,32 @@ test('TimeSystem.save persists explicit lastVisibleTime', async () => {
       saveData: async (key, value) => {
         saved.key = key;
         saved.value = value;
+        return true;
       },
     },
   };
 
   const ts = 1700000000000;
   const timeSystem = new TimeSystem();
-  await timeSystem.save(createPet('yueqi'), createPet('shenjiu'), 'default', ts);
+  const result = await timeSystem.save(createPet('yueqi'), createPet('shenjiu'), 'default', ts);
 
+  assert.equal(result, true);
   assert.equal(saved.value.lastVisibleTime, ts);
+});
+
+test('TimeSystem.save returns false and does not advance lastSaveTime if saveData fails', async () => {
+  global.window = {
+    electronAPI: {
+      saveData: async () => false,
+    },
+  };
+
+  const timeSystem = new TimeSystem();
+  timeSystem.lastSaveTime = 1000;
+  const result = await timeSystem.save(createPet('yueqi'), createPet('shenjiu'), 'default');
+
+  assert.equal(result, false);
+  assert.equal(timeSystem.lastSaveTime, 1000);
 });
 
 test('TimeSystem.load returns persisted skinId', async () => {

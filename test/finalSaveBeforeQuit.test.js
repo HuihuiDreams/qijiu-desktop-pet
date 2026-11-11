@@ -37,6 +37,7 @@ test('preload exposes final-save request handler to the renderer', () => {
   assert.ok(preloadSource.includes('onSaveBeforeQuit'));
   assert.ok(preloadSource.includes("return subscribeIpc('save-before-quit', listener)"));
   assert.ok(preloadSource.includes("ipcRenderer.send('save-before-quit-complete'"));
+  assert.ok(preloadSource.includes('result !== false'), 'preload should verify callback result before reporting success');
 });
 
 test('renderer registers saveCurrentState for the final-save request', () => {

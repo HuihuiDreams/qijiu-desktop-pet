@@ -41,6 +41,7 @@
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
 - **子窗口置顶守卫协同与番茄钟取消置顶防闪烁加固 (`Sub-window Z-Order Coordination & Unpin Flicker Fix`)**：修复 `PetWindow.keepPetWindowOnTop()` 每 3 秒置顶轮询无条件将 `mainWindow` 提到同级 `screen-saver` 子窗口（如 `StatusWindow`、置顶态 `PomodoroWindow` 及脉冲期的子窗口）之上的覆盖问题，在 `mainWindow.moveTop()` 后顺次重新抬升可见的置顶子窗口；为 `PomodoroWindow.applyPomodoroWindowPinState()` 取消置顶分支补齐 `setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true })`，消除取消置顶时的 macOS Dock 闪烁；为 `PomodoroWindow` 与 `CitySettingWindow` 创建时补齐 `show: false`，将 `CitySettingWindow` 的 `restore` 事件回调统一为 `pulseCitySettingWindowTop()`，并补充跨平台（`darwin` / `win32`）焦点抢占与置顶顺序回归测试。
 - **推送脚本更新日志模板格式修复 (`Push Script Changelog Template Fix`)**：修复 `push.sh` 与 `push.ps1` 在检测到缺少 CHANGELOG 时向用户提示错误的 `## [WIP] - 日期` 格式的问题，统一更正为符合流水线与规范的 `## [Unreleased]` 及标准分类大写标题（`Added`/`Changed`/`Fixed`），防止开发者被误导撰写非标准标题导致改动在 `sync-to-cp` 智能合并阶段被静默丢弃。
+- **退出与自动保存写盘失败判定修复 (`Save Before Quit & Auto Save Failure Detection`)**：在 `TimeSystem.save()` 中检查 `saveData` 的布尔返回值并在写盘失败时返回 `false`，修复 `preload.js` 中 `onSaveBeforeQuit` 无论写盘成功与否均向主进程上报 `success: true` 导致应用静默退出丢失存档的隐患；在 `src/app.js` 定期保存中补充 `.catch` 避免未处理的 Promise rejection，并补充相关单元测试。
 
 ### Removed
 - **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。

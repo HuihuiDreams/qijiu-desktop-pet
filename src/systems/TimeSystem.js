@@ -69,8 +69,12 @@ class TimeSystem {
       savedAt: Date.now(),
       lastVisibleTime: lastVisibleTime ?? Date.now()
     };
-    await window.electronAPI.saveData('petState', data);
+    const result = await window.electronAPI.saveData('petState', data);
+    if (result === false) {
+      return false;
+    }
     this.lastSaveTime = Date.now();
+    return true;
   }
 
   /**
