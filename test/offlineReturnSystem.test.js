@@ -76,6 +76,26 @@ test('saveCurrentState persists both pets, the current skin, and refreshes lastV
   assert.deepEqual(saveCalls, [{ petA: 'yueqi', petB: 'shenjiu', skinId: 'default', lastVisibleTime: 999 }]);
 });
 
+test('saveCurrentState logs and forwards a false storage result', async () => {
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    const { deps } = makeDeps({
+      timeSystem: {
+        save: () => Promise.resolve(false),
+        deserializePet: () => {},
+      },
+    });
+    const system = new OfflineReturnSystem(deps);
+    assert.equal(await system.saveCurrentState(), false);
+    assert.equal(errors.length, 1);
+    assert.match(errors[0][0], /storage write returned false/);
+  } finally {
+    console.error = originalError;
+  }
+});
+
 test('handleOfflineReturn applies decay to both pets and always saves', () => {
   const { deps, decayCalls, saveCalls } = makeDeps();
   const system = new OfflineReturnSystem(deps);

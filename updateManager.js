@@ -79,7 +79,7 @@ function comparePrerelease(preA, preB) {
     if (numA === null && numB !== null) {
       return 1;
     }
-    return a.localeCompare(b);
+    return a < b ? -1 : 1;
   }
   return 0;
 }

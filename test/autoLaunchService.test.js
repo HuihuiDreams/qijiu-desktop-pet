@@ -13,10 +13,14 @@ function createAutoLaunchTestContext(options = {}) {
     platform = process.platform,
     initialStore = {},
     initialOpenAtLogin = false,
+    initialWillLaunchAtLogin = initialOpenAtLogin,
+    initialStatus = initialOpenAtLogin ? 'enabled' : 'not-registered',
     throwOnSet = false,
   } = options;
 
   let currentOpenAtLogin = initialOpenAtLogin;
+  let currentWillLaunchAtLogin = initialWillLaunchAtLogin;
+  let currentStatus = initialStatus;
   const storeData = new Map(Object.entries(initialStore));
 
   const mockStore = {
@@ -27,12 +31,18 @@ function createAutoLaunchTestContext(options = {}) {
 
   const mockApp = {
     isPackaged,
-    getLoginItemSettings: () => ({ openAtLogin: currentOpenAtLogin }),
+    getLoginItemSettings: () => ({
+      openAtLogin: currentOpenAtLogin,
+      executableWillLaunchAtLogin: currentWillLaunchAtLogin,
+      status: currentStatus,
+    }),
     setLoginItemSettings: (settings) => {
       if (throwOnSet) {
         throw new Error('System policy rejected login item registration');
       }
       currentOpenAtLogin = Boolean(settings.openAtLogin);
+      currentWillLaunchAtLogin = Boolean(settings.openAtLogin);
+      currentStatus = settings.openAtLogin ? 'enabled' : 'not-registered';
     },
   };
 
@@ -153,6 +163,44 @@ test('AutoLaunchService: syncAutoLaunchPreference in packaged mode aligns with r
     const res = await ctx.service.syncAutoLaunchPreference();
     assert.equal(res.preference, true);
     assert.equal(res.loginItem.openAtLogin, false);
+    assert.equal(ctx.service.isAutoLaunchEnabled(), false);
+  } finally {
+    ctx.cleanup();
+  }
+});
+
+test('AutoLaunchService: Windows sync treats a Run key disabled in Task Manager as off', async () => {
+  const ctx = createAutoLaunchTestContext({
+    isPackaged: true,
+    platform: 'win32',
+    initialStore: { autoLaunch: true },
+    initialOpenAtLogin: true,
+    initialWillLaunchAtLogin: false, // Run key exists but StartupApproved disables it
+    throwOnSet: true,
+  });
+  try {
+    const res = await ctx.service.syncAutoLaunchPreference();
+    assert.equal(res.loginItem.openAtLogin, true);
+    assert.equal(res.loginItem.executableWillLaunchAtLogin, false);
+    assert.equal(ctx.service.isAutoLaunchEnabled(), false);
+  } finally {
+    ctx.cleanup();
+  }
+});
+
+test('AutoLaunchService: macOS sync treats requires-approval as off even when openAtLogin is true', async () => {
+  const ctx = createAutoLaunchTestContext({
+    isPackaged: true,
+    platform: 'darwin',
+    initialStore: { autoLaunch: true },
+    initialOpenAtLogin: true,
+    initialStatus: 'requires-approval',
+    throwOnSet: true,
+  });
+  try {
+    const res = await ctx.service.syncAutoLaunchPreference();
+    assert.equal(res.loginItem.openAtLogin, true);
+    assert.equal(res.loginItem.status, 'requires-approval');
     assert.equal(ctx.service.isAutoLaunchEnabled(), false);
   } finally {
     ctx.cleanup();

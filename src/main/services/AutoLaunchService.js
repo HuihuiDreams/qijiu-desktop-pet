@@ -33,6 +33,18 @@ function getLoginItemStatus() {
   }
 }
 
+function isLoginItemEnabled(loginItem) {
+  if (!loginItem) return false;
+  if (process.platform === 'win32') {
+    // openAtLogin only proves the Run key exists; Task Manager can disable it separately.
+    return Boolean(loginItem.executableWillLaunchAtLogin);
+  }
+  if (process.platform === 'darwin' && loginItem.status) {
+    return loginItem.status === 'enabled';
+  }
+  return Boolean(loginItem.openAtLogin);
+}
+
 function applyAutoLaunchSetting(enabled) {
   if (process.platform !== 'win32' && process.platform !== 'darwin') return getLoginItemStatus();
   if (!app.isPackaged) return getLoginItemStatus();
@@ -70,7 +82,7 @@ async function syncAutoLaunchPreference() {
   const loginItem = applyAutoLaunchSetting(preference);
   const isPlatformSupported = process.platform === 'win32' || process.platform === 'darwin';
   if (app.isPackaged && isPlatformSupported) {
-    autoLaunchEnabled = Boolean(loginItem?.openAtLogin);
+    autoLaunchEnabled = isLoginItemEnabled(loginItem);
   } else {
     autoLaunchEnabled = preference;
   }
@@ -86,7 +98,7 @@ async function setAutoLaunchPreference(enabled) {
   const loginItem = applyAutoLaunchSetting(preference);
 
   const isPlatformSupported = process.platform === 'win32' || process.platform === 'darwin';
-  const effectiveSuccess = !app.isPackaged || !isPlatformSupported || Boolean(loginItem?.openAtLogin) === preference;
+  const effectiveSuccess = !app.isPackaged || !isPlatformSupported || isLoginItemEnabled(loginItem) === preference;
 
   if (effectiveSuccess) {
     store.set(AUTO_LAUNCH_KEY, preference);

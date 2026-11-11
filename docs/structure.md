@@ -124,7 +124,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：2 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
