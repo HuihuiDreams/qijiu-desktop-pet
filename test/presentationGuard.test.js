@@ -52,6 +52,33 @@ test('macOS: defers when provider unavailable', () => {
   assert.equal(result.reason, null);
 });
 
+test('macOS screensaver mode: allows cache freshness up to 60s for 30s sampling intervals', () => {
+  const now = 100000;
+  const guardFresh = createPresentationGuard({
+    platform: 'darwin',
+    now: () => now,
+    getActiveWindowInfo: () => ({
+      active: true,
+      sampledAt: now - 35000, // 35s old, within 60s
+      window: { bounds: { x: 0, y: 0, width: 0, height: 0 }, isFullScreen: false },
+    }),
+  }, { mode: 'screensaver' });
+
+  assert.deepEqual(guardFresh.canInterrupt(), { canInterrupt: true, reason: null });
+
+  const guardStale = createPresentationGuard({
+    platform: 'darwin',
+    now: () => now,
+    getActiveWindowInfo: () => ({
+      active: true,
+      sampledAt: now - 65000, // 65s old (> 60s)
+      window: { bounds: { x: 0, y: 0, width: 0, height: 0 }, isFullScreen: false },
+    }),
+  }, { mode: 'screensaver' });
+
+  assert.deepEqual(guardStale.canInterrupt(), { canInterrupt: false, reason: 'stale_cache' });
+});
+
 // ═══════════════════════════════════════════════════════════════════
 //  Linux / unsupported: always canInterrupt
 // ═══════════════════════════════════════════════════════════════════

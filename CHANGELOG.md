@@ -27,6 +27,7 @@
 - 为换肤画廊 E2E 测试接入 QA 专用虚拟第二皮肤（`setQaExtraSkinIdForQA`），恢复单内置皮肤仓库下的预览、确认、加载失败回退与取消全链路 E2E 自动化验证，并补齐 `SkinService` 真实目录与白名单扫描单元测试。
 - 重构好兆头双人互动「一起施展奇迹」（`cultivate`）的数值逻辑以贴合原作设定：移除原七九版双修恢复灵力及为角色 A 额外恢复 15 点饱腹的机制，改为双方各消耗 10 点奇迹能量（`qiA: -10, qiB: -10`，且须双方当前奇迹能量均 `>= 10` 方可触发），同时大幅提升双方心境（`+12`）与羁绊（`+6`），同步更新中、英、日三语发行说明、领域词汇表与自动化测试。
 - **macOS 会议检测 UDP 探测并行化 (`macOS Meeting Detection UDP Endpoint Probing Parallelization`)**：在 `meetingDetector.js` 的 `collectMacProcessInfo` 中将基于 `lsof` 的多 PID UDP 状态探测由 `for...of` 串行等待重构为 `Promise.all` 并行采集，将单个会议应用拥有多个子进程时的网络端点检测耗时从线性累加（$O(\sum t)$）优化至并发上限（$O(\max t)$），避免因冷启动或超时拖慢 5 秒轮询节拍导致桌宠延迟退避隐藏；补充多 PID 并行探测与进程顺序保持回归测试（[ADR-035](./docs/decisions/ADR-035-meeting-auto-hide.md)）。
+- **macOS 窗口感知与打扰守卫采样节拍减负 (`macOS Window Awareness pmset Sampling Throttle`)**：由于 macOS 不支持窗口边缘行走物理交互、仅将防休眠断言用于放映与屏保防打扰，在 `WindowAwarenessService.js` 中将 macOS 采样间隔由 2 秒放宽至 30 秒（子进程创建削减 93%），并在 `PresentationGuard.js` 中适配 60 秒有效缓存窗口，彻底解决 MacBook 上高频反复拉起 `pmset` 子进程损耗 CPU 与电量的问题；补充相关单元测试。
 
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
