@@ -33,8 +33,8 @@
   - [x] 补充单元测试：覆盖预发布版本、纯版本号及带 `v` 前缀的升级比较场景。
   - [x] 文档同步与原子提交。
 
-- [ ] **Task 6: 清理无调用方的 select-skin IPC 通道**
-  - [ ] 删除 `SkinService.js` 中无外部调用的 `select-skin` IPC 处理器（保留内部主进程 `selectSkin` 函数）。
-  - [ ] 删除 `skinSelectorPreload.js` 中暴露的 `selectSkin` 方法。
-  - [ ] 同步清理 `test/skinSelectorIntegration.test.js` 中关于该通道的陈旧断言。
-  - [ ] 文档同步与原子提交。
+- [x] **Task 6: 清理无调用方的 select-skin IPC 通道**
+  - [x] 删除 `SkinService.js` 中无外部调用的 `select-skin` IPC 处理器（保留内部主进程 `selectSkin` 函数）。
+  - [x] 删除 `skinSelectorPreload.js` 中暴露的 `selectSkin` 方法。
+  - [x] 同步清理 `test/skinSelectorIntegration.test.js` 中关于该通道的陈旧断言。
+  - [x] 文档同步与原子提交。

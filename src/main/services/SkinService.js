@@ -66,25 +66,6 @@ function init(dependencies) {
     return createIpcSuccess({ skinId, success });
   });
 
-  ipcMain.handle('select-skin', async (event, skinId) => {
-    const { skinSelectorWindowModule } = deps;
-    if (!isSkinSelectorRequest(event)) {
-      return createIpcFailure('FORBIDDEN', 'Skin selector access denied');
-    }
-    if (!isAllowedSkinId(skinId, scanAvailableSkins())) {
-      return createIpcFailure('VALIDATION_ERROR', 'Invalid skin id');
-    }
-
-    try {
-      skinSelectorWindowModule.setSkinSelectorSelectionInProgress();
-      return createIpcSuccess(selectSkin(skinId));
-    } catch (error) {
-      skinSelectorWindowModule.setSkinSelectorSelectionInProgress();
-      console.error('Failed to select skin:', error);
-      return createIpcFailure('INTERNAL_ERROR', 'Failed to select skin');
-    }
-  });
-
   ipcMain.handle('preview-skin', async (event, skinId) => {
     const { skinSelectorWindowModule } = deps;
     if (!isSkinSelectorRequest(event)) {
