@@ -5,6 +5,7 @@
  */
 
 const DEFAULT_MAX_CACHE_AGE_MS = 2000;
+const MAC_DEFAULT_MAX_CACHE_AGE_MS = 60000;
 
 function createPresentationGuard(deps = {}, options = {}) {
   const {
@@ -15,9 +16,10 @@ function createPresentationGuard(deps = {}, options = {}) {
     now = Date.now,
   } = deps;
 
+  const defaultMaxCacheAge = platform === 'darwin' ? MAC_DEFAULT_MAX_CACHE_AGE_MS : DEFAULT_MAX_CACHE_AGE_MS;
   const {
     mode = 'break-reminder', // 'break-reminder' | 'screensaver'
-    maxCacheAgeMs = mode === 'screensaver' ? DEFAULT_MAX_CACHE_AGE_MS : null,
+    maxCacheAgeMs = mode === 'screensaver' ? defaultMaxCacheAge : null,
   } = options;
 
   // Linux / Unsupported behavior

@@ -11,6 +11,7 @@ const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
 
 const ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000;
+const MAC_ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 30000;
 const WINDOW_AWARENESS_STORE_KEY = 'windowAwarenessEnabled';
 
 let deps = {};
@@ -71,6 +72,12 @@ function stopActiveWindowAwareness() {
 
 function startActiveWindowAwareness() {
   stopActiveWindowAwareness();
+  // macOS 上无窗口边缘行走物理交互，采样仅用于全屏/防打扰守卫，将采样间隔放宽至 30 秒，
+  // 避免高频 pmset -g assertions 子进程空转损耗笔记本电量与 CPU。
+  const sampleIntervalMs = process.platform === 'darwin'
+    ? MAC_ACTIVE_WINDOW_SAMPLE_INTERVAL_MS
+    : ACTIVE_WINDOW_SAMPLE_INTERVAL_MS;
+
   // Windows 的全屏 RDP 防遮挡独立于窗口边缘行走开关，复用同一采样器。
   const provider = (windowAwarenessEnabled || process.platform === 'win32')
     ? (deps.createActiveWindowProvider ? deps.createActiveWindowProvider(process.platform) : createActiveWindowProvider(process.platform))
@@ -84,8 +91,8 @@ function startActiveWindowAwareness() {
       deps.onActiveWindowChanged?.();
       sendActiveWindowInfo(payload);
     },
-    intervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
-    refreshUnchangedIntervalMs: ACTIVE_WINDOW_SAMPLE_INTERVAL_MS,
+    intervalMs: sampleIntervalMs,
+    refreshUnchangedIntervalMs: sampleIntervalMs,
   });
   activeWindowSampler.start();
 }
