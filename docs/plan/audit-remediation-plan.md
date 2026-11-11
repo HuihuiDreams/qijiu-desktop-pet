@@ -28,10 +28,10 @@
   - [x] 补充/更新对应测试：验证 darwin 与 win32 下采样器启动与配置行为。
   - [x] 文档同步与原子提交。
 
-- [ ] **Task 5: 预发布版本号解析与语义化比较**
-  - [ ] 修改 `updateManager.js`：优化 `isNewerVersion`，支持去除前导 `v`、解析 `-beta.x` 等预发布后缀，实现规范的 SemVer 核心比较。
-  - [ ] 补充单元测试：覆盖预发布版本、纯版本号及带 `v` 前缀的升级比较场景。
-  - [ ] 文档同步与原子提交。
+- [x] **Task 5: 预发布版本号解析与语义化比较**
+  - [x] 修改 `updateManager.js`：优化 `isNewerVersion`，支持去除前导 `v`、解析 `-beta.x` 等预发布后缀，实现规范的 SemVer 核心比较。
+  - [x] 补充单元测试：覆盖预发布版本、纯版本号及带 `v` 前缀的升级比较场景。
+  - [x] 文档同步与原子提交。
 
 - [ ] **Task 6: 清理无调用方的 select-skin IPC 通道**
   - [ ] 删除 `SkinService.js` 中无外部调用的 `select-skin` IPC 处理器（保留内部主进程 `selectSkin` 函数）。

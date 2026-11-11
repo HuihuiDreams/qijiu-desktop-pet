@@ -31,6 +31,7 @@
 - 更新开发者 README：明确 Node.js 22.12.0+ 要求、`npm ci` 锁定安装及 Electron 二进制准备步骤，补充 Windows 目录读取权限与 PowerShell 命令排障说明（[ADR-020](./docs/decisions/ADR-020-windows-release-and-code-signing.md)）。
 
 ### Fixed
+- **更新检查预发布版本与前缀解析修复 (`Pre-release & Prefix SemVer Comparison Fix`)**：在 `updateManager.js` 中重写 `isNewerVersion`，支持自动剥离 `v` 前缀并解析 `-beta.x` / `-rc.x` 等语义化预发布标签；修复带有 `-beta` 的新版本被错误切分为 `NaN -> 0` 导致被误判为旧版本的缺陷，补齐完整的预发布与数字段比较单元测试。
 - **开机自启设置状态核验与失败回滚 (`Auto Launch Setting Verification & Failure Rollback`)**：在 `AutoLaunchService.js` 中将开机自启动生效判定与操作系统真实登录项状态（`openAtLogin`）对齐；当系统策略阻止或 API 抛错时，自动回滚内存偏好与持久化存储并返回 `success: false`，修复托盘菜单在注册失败时依然虚假显示“已开启”的问题；补充专项单元测试套件。
 - **离线时间戳校验与防卡死封顶 (`Offline Timestamp Validation & Freeze Prevention`)**：在 `TimeSystem.getOfflineTime()` 与 `NurtureSystem.applyOfflineDecay()` 中增加数值有限性校验与 7 天最大时长封顶（604,800,000 ms），杜绝远古或秒级时间戳导致启动时空转数百万次引发主线程卡顿，并防止非法非数字时间戳造成 `NaN` 累加器污染导致属性衰减永久停摆；补充边界单元测试。
 - **退出与自动保存写盘失败判定修复 (`Save Before Quit & Auto Save Failure Detection`)**：在 `TimeSystem.save()` 中检查 `saveData` 的布尔返回值并在写盘失败时返回 `false`，修复 `preload.js` 中 `onSaveBeforeQuit` 无论写盘成功与否均向主进程上报 `success: true` 导致应用静默退出丢失存档的隐患；在 `src/app.js` 定期保存中补充 `.catch` 避免未处理的 Promise rejection，并补充相关单元测试。

@@ -7,6 +7,7 @@ const {
   classifyUpdateError,
   createMacManualUpdateManager,
   createUpdateManager,
+  isNewerVersion,
   verifyDownloadedPackageIntegrity,
 } = require('../updateManager');
 
@@ -836,5 +837,39 @@ test('mac manual update supports injected getShell option', async () => {
 
   await manager.checkForUpdatesFromTray();
   assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/qijiu-desktop-pet/releases/latest']);
+});
+
+test('isNewerVersion compares semver versions with prefix and pre-release support', () => {
+  // Standard numerical comparisons
+  assert.equal(isNewerVersion('0.11.3', '0.11.2'), true);
+  assert.equal(isNewerVersion('0.11.2', '0.11.3'), false);
+  assert.equal(isNewerVersion('0.11.2', '0.11.2'), false);
+  assert.equal(isNewerVersion('1.0.0', '0.99.99'), true);
+
+  // Stripping 'v' or 'V'
+  assert.equal(isNewerVersion('v0.11.3', '0.11.2'), true);
+  assert.equal(isNewerVersion('V0.11.3', 'v0.11.2'), true);
+  assert.equal(isNewerVersion('v0.11.2', 'v0.11.2'), false);
+
+  // Prerelease with newer core version
+  assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.2'), true);
+  assert.equal(isNewerVersion('v0.11.3-alpha.1', '0.11.2'), true);
+  assert.equal(isNewerVersion('0.11.2-beta.1', '0.11.3'), false);
+
+  // Release vs prerelease with identical core
+  assert.equal(isNewerVersion('0.11.2', '0.11.2-beta.1'), true, 'official release is newer than pre-release');
+  assert.equal(isNewerVersion('0.11.2-beta.1', '0.11.2'), false, 'pre-release is older than official release');
+
+  // Prerelease vs prerelease with identical core
+  assert.equal(isNewerVersion('0.11.3-beta.2', '0.11.3-beta.1'), true);
+  assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.3-beta.2'), false);
+  assert.equal(isNewerVersion('0.11.3-beta.10', '0.11.3-beta.2'), true, 'numeric segment comparison: 10 > 2');
+  assert.equal(isNewerVersion('0.11.3-rc.1', '0.11.3-beta.9'), true, 'lexical segment comparison: rc > beta');
+  assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.3-beta.1'), false);
+
+  // Bad inputs
+  assert.equal(isNewerVersion('', '0.11.2'), false);
+  assert.equal(isNewerVersion('0.11.3', null), false);
+  assert.equal(isNewerVersion(null, '0.11.2'), false);
 });
 
