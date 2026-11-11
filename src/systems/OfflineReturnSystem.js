@@ -56,7 +56,14 @@ class OfflineReturnSystem {
       this.lastVisibleTime = this.now();
     }
     const [yueqi, shenjiu] = this.getPets();
-    return this.timeSystem.save(yueqi, shenjiu, this.skinManager.getCurrentSkin(), this.lastVisibleTime);
+    return this.timeSystem.save(yueqi, shenjiu, this.skinManager.getCurrentSkin(), this.lastVisibleTime)
+      .then((result) => {
+        // save() 写盘失败时返回 false 而不是 reject，调用方的 .catch 捕不到。
+        if (result === false) {
+          console.error('Failed to persist pet state: storage write returned false');
+        }
+        return result;
+      });
   }
 
   /**

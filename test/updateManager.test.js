@@ -865,6 +865,7 @@ test('isNewerVersion compares semver versions with prefix and pre-release suppor
   assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.3-beta.2'), false);
   assert.equal(isNewerVersion('0.11.3-beta.10', '0.11.3-beta.2'), true, 'numeric segment comparison: 10 > 2');
   assert.equal(isNewerVersion('0.11.3-rc.1', '0.11.3-beta.9'), true, 'lexical segment comparison: rc > beta');
+  assert.equal(isNewerVersion('0.11.3-alpha1', '0.11.3-alpha-1'), true, 'alphanumeric identifiers use ASCII order (- < 1)');
   assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.3-beta.1'), false);
 
   // Bad inputs
