@@ -138,3 +138,24 @@ test('TimeSystem.deserializePet restores saved zero coordinates', () => {
   assert.equal(pet.x, 0);
   assert.equal(pet.y, 0);
 });
+
+test('TimeSystem.getOfflineTime validates timestamps and caps at 7 days', () => {
+  const timeSystem = new TimeSystem();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+  // Invalid inputs
+  assert.equal(timeSystem.getOfflineTime(undefined), 0);
+  assert.equal(timeSystem.getOfflineTime(null), 0);
+  assert.equal(timeSystem.getOfflineTime('bad'), 0);
+  assert.equal(timeSystem.getOfflineTime(NaN), 0);
+  assert.equal(timeSystem.getOfflineTime(-100), 0);
+  assert.equal(timeSystem.getOfflineTime(Date.now() + 5000), 0);
+
+  // Ancient timestamp (savedAt = 1) capped at 7 days
+  assert.equal(timeSystem.getOfflineTime(1), SEVEN_DAYS_MS);
+
+  // Normal recent duration
+  const oneHourAgo = Date.now() - 3600000;
+  const elapsed = timeSystem.getOfflineTime(oneHourAgo);
+  assert.ok(Math.abs(elapsed - 3600000) < 50);
+});
