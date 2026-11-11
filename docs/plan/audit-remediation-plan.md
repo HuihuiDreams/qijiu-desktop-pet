@@ -18,10 +18,10 @@
   - [x] 补充单元测试：`savedAt = 1`（大跨度）与 `savedAt = "bad"`（坏数据）等边界场景。
   - [x] 文档同步与原子提交。
 
-- [ ] **Task 3: 开机自启设置状态核验与错误回滚**
-  - [ ] 修改 `AutoLaunchService.js`：`setAutoLaunchPreference` 中比对系统真实状态与请求值；失败时回滚内存偏好并返回 `success: false`。
-  - [ ] 补充单元测试：测试 `app.setLoginItemSettings` 抛错时 `success` 为 `false`，状态正确回滚。
-  - [ ] 文档同步与原子提交。
+- [x] **Task 3: 开机自启设置状态核验与错误回滚**
+  - [x] 修改 `AutoLaunchService.js`：`setAutoLaunchPreference` 中比对系统真实状态与请求值；失败时回滚内存偏好并返回 `success: false`。
+  - [x] 补充单元测试：测试 `app.setLoginItemSettings` 抛错时 `success` 为 `false`，状态正确回滚。
+  - [x] 文档同步与原子提交。
 
 - [ ] **Task 4: macOS 窗口感知降低无意义 pmset 采样开销**
   - [ ] 修改 `WindowAwarenessService.js`：在 macOS (`darwin`) 下优化采样器调度策略（增大采样间隔至 30 秒或配合守卫按需调度），减少子进程创建。
