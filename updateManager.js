@@ -45,15 +45,63 @@ function getUpdateVersion(info) {
   return info?.version || info?.releaseName || null;
 }
 
+function parseSemver(versionStr) {
+  if (typeof versionStr !== 'string') return null;
+  const clean = versionStr.trim().replace(/^[vV]/, '');
+  if (!clean) return null;
+  const [coreStr, ...preParts] = clean.split('-');
+  const prerelease = preParts.length > 0 ? preParts.join('-') : null;
+  const core = coreStr.split('.').map((p) => {
+    const n = Number(p);
+    return Number.isFinite(n) ? n : 0;
+  });
+  return { core, prerelease };
+}
+
+function comparePrerelease(preA, preB) {
+  const partsA = preA.split('.');
+  const partsB = preB.split('.');
+  const len = Math.max(partsA.length, partsB.length);
+  for (let i = 0; i < len; i++) {
+    const a = partsA[i];
+    const b = partsB[i];
+    if (a === undefined) return -1;
+    if (b === undefined) return 1;
+    if (a === b) continue;
+    const numA = /^\d+$/.test(a) ? Number(a) : null;
+    const numB = /^\d+$/.test(b) ? Number(b) : null;
+    if (numA !== null && numB !== null) {
+      return numA - numB;
+    }
+    if (numA !== null && numB === null) {
+      return -1;
+    }
+    if (numA === null && numB !== null) {
+      return 1;
+    }
+    return a.localeCompare(b);
+  }
+  return 0;
+}
+
 function isNewerVersion(latest, current) {
   if (!latest || !current) return false;
-  const lParts = latest.split('.').map(Number);
-  const cParts = current.split('.').map(Number);
-  for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
-    const l = lParts[i] || 0;
-    const c = cParts[i] || 0;
-    if (l > c) return true;
-    if (l < c) return false;
+  const l = parseSemver(latest);
+  const c = parseSemver(current);
+  if (!l || !c) return false;
+
+  for (let i = 0; i < Math.max(l.core.length, c.core.length); i++) {
+    const lp = l.core[i] || 0;
+    const cp = c.core[i] || 0;
+    if (lp > cp) return true;
+    if (lp < cp) return false;
+  }
+
+  // Core 相同，比较预发布版本（SemVer 规则：正式版 > 预发布版）
+  if (!l.prerelease && c.prerelease) return true;
+  if (l.prerelease && !c.prerelease) return false;
+  if (l.prerelease && c.prerelease) {
+    return comparePrerelease(l.prerelease, c.prerelease) > 0;
   }
   return false;
 }
@@ -609,6 +657,7 @@ module.exports = {
   checkForUpdatesFromTray: defaultUpdateManager.checkForUpdatesFromTray,
   getUpdateMenuState: defaultUpdateManager.getUpdateMenuState,
   classifyUpdateError,
+  isNewerVersion,
   createUpdateManager,
   createMacManualUpdateManager: (options = {}) => createUpdateManager({ isMac: true, ...options }), // Backwards compatibility if needed
   verifyDownloadedPackageIntegrity,
