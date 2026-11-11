@@ -68,7 +68,12 @@ async function syncAutoLaunchPreference() {
   }
 
   const loginItem = applyAutoLaunchSetting(preference);
-  autoLaunchEnabled = preference;
+  const isPlatformSupported = process.platform === 'win32' || process.platform === 'darwin';
+  if (app.isPackaged && isPlatformSupported) {
+    autoLaunchEnabled = Boolean(loginItem?.openAtLogin);
+  } else {
+    autoLaunchEnabled = preference;
+  }
   return { preference, loginItem };
 }
 
@@ -77,11 +82,20 @@ async function setAutoLaunchPreference(enabled) {
   if (!store) return { success: false, preference: DEFAULT_AUTO_LAUNCH, loginItem: getLoginItemStatus() };
 
   const preference = Boolean(enabled);
-  store.set(AUTO_LAUNCH_KEY, preference);
-  autoLaunchEnabled = preference;
+  const previousPreference = autoLaunchEnabled;
   const loginItem = applyAutoLaunchSetting(preference);
 
-  return { success: true, preference, loginItem };
+  const isPlatformSupported = process.platform === 'win32' || process.platform === 'darwin';
+  const effectiveSuccess = !app.isPackaged || !isPlatformSupported || Boolean(loginItem?.openAtLogin) === preference;
+
+  if (effectiveSuccess) {
+    store.set(AUTO_LAUNCH_KEY, preference);
+    autoLaunchEnabled = preference;
+    return { success: true, preference, loginItem };
+  }
+
+  autoLaunchEnabled = previousPreference;
+  return { success: false, preference: previousPreference, loginItem };
 }
 
 async function getAutoLaunchPreference() {

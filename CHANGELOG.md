@@ -43,6 +43,7 @@
 - **推送脚本更新日志模板格式修复 (`Push Script Changelog Template Fix`)**：修复 `push.sh` 与 `push.ps1` 在检测到缺少 CHANGELOG 时向用户提示错误的 `## [WIP] - 日期` 格式的问题，统一更正为符合流水线与规范的 `## [Unreleased]` 及标准分类大写标题（`Added`/`Changed`/`Fixed`），防止开发者被误导撰写非标准标题导致改动在 `sync-to-cp` 智能合并阶段被静默丢弃。
 - **退出与自动保存写盘失败判定修复 (`Save Before Quit & Auto Save Failure Detection`)**：在 `TimeSystem.save()` 中检查 `saveData` 的布尔返回值并在写盘失败时返回 `false`，修复 `preload.js` 中 `onSaveBeforeQuit` 无论写盘成功与否均向主进程上报 `success: true` 导致应用静默退出丢失存档的隐患；在 `src/app.js` 定期保存中补充 `.catch` 避免未处理的 Promise rejection，并补充相关单元测试。
 - **离线时间戳校验与防卡死封顶 (`Offline Timestamp Validation & Freeze Prevention`)**：在 `TimeSystem.getOfflineTime()` 与 `NurtureSystem.applyOfflineDecay()` 中增加数值有限性校验与 7 天最大时长封顶（604,800,000 ms），杜绝远古或秒级时间戳导致启动时空转数百万次引发主线程卡顿，并防止非法非数字时间戳造成 `NaN` 累加器污染导致属性衰减永久停摆；补充边界单元测试。
+- **开机自启设置状态核验与失败回滚 (`Auto Launch Setting Verification & Failure Rollback`)**：在 `AutoLaunchService.js` 中将开机自启动生效判定与操作系统真实登录项状态（`openAtLogin`）对齐；当系统策略阻止或 API 抛错时，自动回滚内存偏好与持久化存储并返回 `success: false`，修复托盘菜单在注册失败时依然虚假显示“已开启”的问题；补充专项单元测试套件。
 
 ### Removed
 - **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。
