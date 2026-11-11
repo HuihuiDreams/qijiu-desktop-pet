@@ -26,6 +26,7 @@
 - 明确说明 `.github/workflows/release-preflight.yml` 触发前须手动同步 `package.json` 版本号（在 `contents: read` 权限下检测不一致将阻断报错而非自动提交），并在 `.github/workflows/build-installer.yml` 中将草稿 Release 创建（`gh release create --draft`）前移至上游 `create-release-tag` Job 消除 Windows/macOS 并行构建竞态，同时移除无效的 `Remove auto-generated source code archives` 死步骤。
 - 为换肤画廊 E2E 测试接入 QA 专用虚拟第二皮肤（`setQaExtraSkinIdForQA`），恢复单内置皮肤仓库下的预览、确认、加载失败回退与取消全链路 E2E 自动化验证，并补齐 `SkinService` 真实目录与白名单扫描单元测试。
 - 重构好兆头双人互动「一起施展奇迹」（`cultivate`）的数值逻辑以贴合原作设定：移除原七九版双修恢复灵力及为角色 A 额外恢复 15 点饱腹的机制，改为双方各消耗 10 点奇迹能量（`qiA: -10, qiB: -10`，且须双方当前奇迹能量均 `>= 10` 方可触发），同时大幅提升双方心境（`+12`）与羁绊（`+6`），同步更新中、英、日三语发行说明、领域词汇表与自动化测试。
+- **macOS 会议检测 UDP 探测并行化 (`macOS Meeting Detection UDP Endpoint Probing Parallelization`)**：在 `meetingDetector.js` 的 `collectMacProcessInfo` 中将基于 `lsof` 的多 PID UDP 状态探测由 `for...of` 串行等待重构为 `Promise.all` 并行采集，将单个会议应用拥有多个子进程时的网络端点检测耗时从线性累加（$O(\sum t)$）优化至并发上限（$O(\max t)$），避免因冷启动或超时拖慢 5 秒轮询节拍导致桌宠延迟退避隐藏；补充多 PID 并行探测与进程顺序保持回归测试（[ADR-035](./docs/decisions/ADR-035-meeting-auto-hide.md)）。
 
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
@@ -39,6 +40,10 @@
 - 修复不同高度宠物的朝下气泡忽略朝上气泡而导致对白重叠的问题，按排除入场动画变换的最终布局检测并向下错开，依父级显示缩放换算偏移，补充混合朝向及不同 DPI 回归测试，并在迁移计划中记录手动复核步骤（[ADR-024](./docs/decisions/ADR-024-i18n-multilingual-support.md)）。
 - 修复 Windows 皮肤管线测试和图片转换备用路径硬编码 `python3`、误调用 WindowsApps 商店重定向别名导致启动失败的问题；Windows 改用 `python`，macOS/Linux 保留 `python3`，并补充跨平台备用路径测试及明确的解释器启动错误信息。
 - **子窗口置顶守卫协同与番茄钟取消置顶防闪烁加固 (`Sub-window Z-Order Coordination & Unpin Flicker Fix`)**：修复 `PetWindow.keepPetWindowOnTop()` 每 3 秒置顶轮询无条件将 `mainWindow` 提到同级 `screen-saver` 子窗口（如 `StatusWindow`、置顶态 `PomodoroWindow` 及脉冲期的子窗口）之上的覆盖问题，在 `mainWindow.moveTop()` 后顺次重新抬升可见的置顶子窗口；为 `PomodoroWindow.applyPomodoroWindowPinState()` 取消置顶分支补齐 `setVisibleOnAllWorkspaces(false, { skipTransformProcessType: true })`，消除取消置顶时的 macOS Dock 闪烁；为 `PomodoroWindow` 与 `CitySettingWindow` 创建时补齐 `show: false`，将 `CitySettingWindow` 的 `restore` 事件回调统一为 `pulseCitySettingWindowTop()`，并补充跨平台（`darwin` / `win32`）焦点抢占与置顶顺序回归测试。
+- **推送脚本更新日志模板格式修复 (`Push Script Changelog Template Fix`)**：修复 `push.sh` 与 `push.ps1` 在检测到缺少 CHANGELOG 时向用户提示错误的 `## [WIP] - 日期` 格式的问题，统一更正为符合流水线与规范的 `## [Unreleased]` 及标准分类大写标题（`Added`/`Changed`/`Fixed`），防止开发者被误导撰写非标准标题导致改动在 `sync-to-cp` 智能合并阶段被静默丢弃。
+
+### Removed
+- **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。
 
 ### Security
 - 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；同时将开发环境传递依赖 `undici`（`@electron/get` 依赖）从 7.29.0 升级至 7.30.2 以消除 `GHSA-w293-vg96-wgc3` 等上游高危安全通告，并在 `test/dependencyUriSecurity.test.js` 中补充 URI 回归、正常 schema 引用解析及锁文件版本防回退测试，同步更新 `docs/security_best_practices_report.md` 状态标记（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
