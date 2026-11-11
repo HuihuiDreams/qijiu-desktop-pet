@@ -54,8 +54,14 @@ class TimeSystem {
    * 计算应用离线了多长时间。
    */
   getOfflineTime(savedTimestamp) {
-    if (!savedTimestamp) return 0;
-    return Math.max(0, Date.now() - savedTimestamp);
+    if (typeof savedTimestamp !== 'number' || !Number.isFinite(savedTimestamp) || savedTimestamp <= 0) {
+      return 0;
+    }
+    const elapsed = Date.now() - savedTimestamp;
+    if (elapsed <= 0) return 0;
+    // 封顶 7 天（约 2016 个结算周期），防止秒级时间戳或远古数据在启动时引起数百万次空转卡死
+    const MAX_OFFLINE_MS = 7 * 24 * 60 * 60 * 1000;
+    return Math.min(elapsed, MAX_OFFLINE_MS);
   }
 
   /**

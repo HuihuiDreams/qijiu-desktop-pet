@@ -13,10 +13,10 @@
   - [x] 补充单元测试：测试 `saveData` 返回 `false` 时 `save()` 返回 `false` 以及退出确认标记为 `false`。
   - [x] 文档同步与原子提交。
 
-- [ ] **Task 2: 离线时间戳校验与防卡死封顶**
-  - [ ] 修改 `TimeSystem.getOfflineTime()`：校验 `Number.isFinite` 且大于 0；封顶最大离线时长（如 7 天 = 604,800,000 ms）。
-  - [ ] 补充单元测试：`savedAt = 1`（大跨度）与 `savedAt = "bad"`（坏数据）等边界场景。
-  - [ ] 文档同步与原子提交。
+- [x] **Task 2: 离线时间戳校验与防卡死封顶**
+  - [x] 修改 `TimeSystem.getOfflineTime()`：校验 `Number.isFinite` 且大于 0；封顶最大离线时长（如 7 天 = 604,800,000 ms）。
+  - [x] 补充单元测试：`savedAt = 1`（大跨度）与 `savedAt = "bad"`（坏数据）等边界场景。
+  - [x] 文档同步与原子提交。
 
 - [ ] **Task 3: 开机自启设置状态核验与错误回滚**
   - [ ] 修改 `AutoLaunchService.js`：`setAutoLaunchPreference` 中比对系统真实状态与请求值；失败时回滚内存偏好并返回 `success: false`。

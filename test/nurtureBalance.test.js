@@ -50,6 +50,41 @@ test('offline decay makes qi and mood visibly fall over one hour', () => {
   assert.equal(Math.round(pet.stats.affection * 10) / 10, 9.5); 
 });
 
+test('applyOfflineDecay gracefully handles invalid offlineMs without corrupting decayAccumulator', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  nurtureSystem.decayAccumulator = 1000;
+
+  nurtureSystem.applyOfflineDecay(pet, 'bad');
+  assert.equal(nurtureSystem.decayAccumulator, 1000);
+
+  nurtureSystem.applyOfflineDecay(pet, NaN);
+  assert.equal(nurtureSystem.decayAccumulator, 1000);
+
+  nurtureSystem.applyOfflineDecay(pet, -500);
+  assert.equal(nurtureSystem.decayAccumulator, 1000);
+
+  // Normal decay still works afterwards
+  nurtureSystem.update(pet, CONFIG.DECAY_INTERVAL);
+  assert.ok(pet.stats.hunger < 80);
+});
+
+test('applyOfflineDecay with capped 7 days offline finishes quickly and clamps stats at 0', () => {
+  const pet = createPet();
+  const nurtureSystem = new NurtureSystem();
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+  const start = Date.now();
+  nurtureSystem.applyOfflineDecay(pet, SEVEN_DAYS_MS);
+  const duration = Date.now() - start;
+
+  assert.ok(duration < 100, `Decay took too long: ${duration}ms`);
+  assert.equal(pet.stats.hunger, 0);
+  assert.equal(pet.stats.qi, 0);
+  assert.equal(pet.stats.mood, 0);
+  assert.equal(pet.stats.affection, 0);
+});
+
 test('solo meditation restores one qi per second', () => {
   const pet = createPet();
   const nurtureSystem = new NurtureSystem();
