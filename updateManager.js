@@ -47,9 +47,10 @@ function getUpdateVersion(info) {
 
 function parseSemver(versionStr) {
   if (typeof versionStr !== 'string') return null;
-  const clean = versionStr.trim().replace(/^[vV]/, '');
+  const clean = versionStr.trim().replace(/^[vV]/, '').split('+')[0].trim();
   if (!clean) return null;
   const [coreStr, ...preParts] = clean.split('-');
+  if (!coreStr) return null;
   const prerelease = preParts.length > 0 ? preParts.join('-') : null;
   const core = coreStr.split('.').map((p) => {
     const n = Number(p);

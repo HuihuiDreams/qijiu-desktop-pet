@@ -46,6 +46,8 @@
 - **离线时间戳校验与防卡死封顶 (`Offline Timestamp Validation & Freeze Prevention`)**：在 `TimeSystem.getOfflineTime()` 与 `NurtureSystem.applyOfflineDecay()` 中增加数值有限性校验与 7 天最大时长封顶（604,800,000 ms），杜绝远古或秒级时间戳导致启动时空转数百万次引发主线程卡顿，并防止非法非数字时间戳造成 `NaN` 累加器污染导致属性衰减永久停摆；补充边界单元测试。
 - **开机自启设置状态核验与失败回滚 (`Auto Launch Setting Verification & Failure Rollback`)**：在 `AutoLaunchService.js` 中将开机自启动生效判定与操作系统真实登录项状态（`openAtLogin`）对齐；当系统策略阻止或 API 抛错时，自动回滚内存偏好与持久化存储并返回 `success: false`，修复托盘菜单在注册失败时依然虚假显示“已开启”的问题；补充专项单元测试套件。
 - **更新检查预发布版本与前缀解析修复 (`Pre-release & Prefix SemVer Comparison Fix`)**：在 `updateManager.js` 中重写 `isNewerVersion`，支持自动剥离 `v` 前缀并解析 `-beta.x` / `-rc.x` 等语义化预发布标签；修复带有 `-beta` 的新版本被错误切分为 `NaN -> 0` 导致被误判为旧版本的缺陷，补齐完整的预发布与数字段比较单元测试。
+- **macOS 待批准自启动意图保留 (`macOS Pending Approval Auto-Launch Intent Preservation`)**：修复 `AutoLaunchService.setAutoLaunchPreference(true)` 在 macOS 返回 `status: 'requires-approval'` 时误走失败回滚分支、保留旧存储偏好 `false` 却未撤销系统注册的问题；显式识别 `requires-approval` 待批准状态并持久化用户开启偏好（`autoLaunch: true`、`pendingApproval: true`），同时保持运行期 `isAutoLaunchEnabled()` 为 `false` 直至用户在系统设置中批准，避免批准后下次启动 `syncAutoLaunchPreference()` 按 `false` 撤销注册；补充完整生命周期回归测试。
+- **更新检查 SemVer 构建元数据剥离 (`SemVer Build Metadata Stripping in Update Check`)**：修复 `updateManager.js` 中 `parseSemver` 未先剥离 `+build` 构建元数据导致 `0.11.3-beta.2+build.1` 被误判为比 `0.11.3-beta.10` 更新、以及 `0.11.3` 被误判为比 `0.11.3+build.1` 更新的问题；严格遵循 SemVer 2.0.0 第 10 条规范在比较前忽略 `+` 及其后构建元数据，并补充对应回归测试。
 
 ### Removed
 - **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。

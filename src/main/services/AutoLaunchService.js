@@ -45,6 +45,10 @@ function isLoginItemEnabled(loginItem) {
   return Boolean(loginItem.openAtLogin);
 }
 
+function isLoginItemPendingApproval(loginItem) {
+  return process.platform === 'darwin' && loginItem?.status === 'requires-approval';
+}
+
 function applyAutoLaunchSetting(enabled) {
   if (process.platform !== 'win32' && process.platform !== 'darwin') return getLoginItemStatus();
   if (!app.isPackaged) return getLoginItemStatus();
@@ -94,7 +98,8 @@ async function setAutoLaunchPreference(enabled) {
   if (!store) return { success: false, preference: DEFAULT_AUTO_LAUNCH, loginItem: getLoginItemStatus() };
 
   const preference = Boolean(enabled);
-  const previousPreference = autoLaunchEnabled;
+  const previousPreference = getStoredAutoLaunchPreference();
+  const previousEnabled = autoLaunchEnabled;
   const loginItem = applyAutoLaunchSetting(preference);
 
   const isPlatformSupported = process.platform === 'win32' || process.platform === 'darwin';
@@ -106,7 +111,13 @@ async function setAutoLaunchPreference(enabled) {
     return { success: true, preference, loginItem };
   }
 
-  autoLaunchEnabled = previousPreference;
+  if (preference && isLoginItemPendingApproval(loginItem)) {
+    store.set(AUTO_LAUNCH_KEY, true);
+    autoLaunchEnabled = false;
+    return { success: true, pendingApproval: true, preference: true, loginItem };
+  }
+
+  autoLaunchEnabled = previousEnabled;
   return { success: false, preference: previousPreference, loginItem };
 }
 
