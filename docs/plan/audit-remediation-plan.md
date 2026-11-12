@@ -19,8 +19,8 @@
   - [x] 文档同步与原子提交。
 
 - [x] **Task 3: 开机自启设置状态核验与错误回滚**
-  - [x] 修改 `AutoLaunchService.js`：`setAutoLaunchPreference` / `syncAutoLaunchPreference` 中比对系统真实状态与请求值（Windows `executableWillLaunchAtLogin`、macOS `status`）；失败时回滚内存偏好并返回 `success: false`。
-  - [x] 补充单元测试：测试 `app.setLoginItemSettings` 抛错时 `success` 为 `false`、状态正确回滚，以及 Windows 启动项被禁用与 macOS `requires-approval` 时同步结果保持关闭。
+  - [x] 修改 `AutoLaunchService.js`：`setAutoLaunchPreference` / `syncAutoLaunchPreference` 中比对系统真实状态与请求值（Windows `executableWillLaunchAtLogin`、macOS `status`）；显式处理 macOS `requires-approval` 待批准状态以保留用户开启意图（避免用户在系统设置批准后下次启动被撤销），真正注册失败时回滚内存偏好并返回 `success: false`。
+  - [x] 补充单元测试：测试 `app.setLoginItemSettings` 抛错时 `success` 为 `false`、状态正确回滚，Windows 启动项被禁用与 macOS `requires-approval` 时同步结果保持关闭，以及开启时遇到 `requires-approval` 保留存储偏好并在下次启动批准后正常生效。
   - [x] 文档同步与原子提交。
 
 - [x] **Task 4: macOS 窗口感知降低无意义 pmset 采样开销**
@@ -29,8 +29,8 @@
   - [x] 文档同步与原子提交。
 
 - [x] **Task 5: 预发布版本号解析与语义化比较**
-  - [x] 修改 `updateManager.js`：优化 `isNewerVersion`，支持去除前导 `v`、解析 `-beta.x` 等预发布后缀，实现规范的 SemVer 核心比较。
-  - [x] 补充单元测试：覆盖预发布版本、纯版本号及带 `v` 前缀的升级比较场景。
+  - [x] 修改 `updateManager.js`：优化 `isNewerVersion`，支持去除前导 `v`、剥离 `+build` 构建元数据、解析 `-beta.x` 等预发布后缀，实现规范的 SemVer 2.0.0 优先级比较。
+  - [x] 补充单元测试：覆盖预发布版本、构建元数据（`+build`）忽略、纯版本号及带 `v` 前缀的升级比较场景。
   - [x] 文档同步与原子提交。
 
 - [x] **Task 6: 清理无调用方的 select-skin IPC 通道**

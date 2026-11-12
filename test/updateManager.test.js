@@ -868,6 +868,13 @@ test('isNewerVersion compares semver versions with prefix and pre-release suppor
   assert.equal(isNewerVersion('0.11.3-alpha1', '0.11.3-alpha-1'), true, 'alphanumeric identifiers use ASCII order (- < 1)');
   assert.equal(isNewerVersion('0.11.3-beta.1', '0.11.3-beta.1'), false);
 
+  // Build metadata (+build) must be ignored per SemVer 2.0.0 item 10
+  assert.equal(isNewerVersion('0.11.3-beta.2+build.1', '0.11.3-beta.10'), false);
+  assert.equal(isNewerVersion('0.11.3-beta.10', '0.11.3-beta.2+build.1'), true);
+  assert.equal(isNewerVersion('0.11.3', '0.11.3+build.1'), false);
+  assert.equal(isNewerVersion('0.11.3+build.1', '0.11.3'), false);
+  assert.equal(isNewerVersion('0.11.4+20261112', '0.11.3+20261111'), true);
+
   // Bad inputs
   assert.equal(isNewerVersion('', '0.11.2'), false);
   assert.equal(isNewerVersion('0.11.3', null), false);

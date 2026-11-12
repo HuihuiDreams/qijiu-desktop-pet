@@ -15,12 +15,14 @@ function createAutoLaunchTestContext(options = {}) {
     initialOpenAtLogin = false,
     initialWillLaunchAtLogin = initialOpenAtLogin,
     initialStatus = initialOpenAtLogin ? 'enabled' : 'not-registered',
+    statusOnEnable = 'enabled',
     throwOnSet = false,
   } = options;
 
   let currentOpenAtLogin = initialOpenAtLogin;
   let currentWillLaunchAtLogin = initialWillLaunchAtLogin;
   let currentStatus = initialStatus;
+  let currentStatusOnEnable = statusOnEnable;
   const storeData = new Map(Object.entries(initialStore));
 
   const mockStore = {
@@ -42,7 +44,7 @@ function createAutoLaunchTestContext(options = {}) {
       }
       currentOpenAtLogin = Boolean(settings.openAtLogin);
       currentWillLaunchAtLogin = Boolean(settings.openAtLogin);
-      currentStatus = settings.openAtLogin ? 'enabled' : 'not-registered';
+      currentStatus = settings.openAtLogin ? currentStatusOnEnable : 'not-registered';
     },
   };
 
@@ -77,6 +79,13 @@ function createAutoLaunchTestContext(options = {}) {
       mockStore,
       storeData,
       getOpenAtLogin: () => currentOpenAtLogin,
+      getStatus: () => currentStatus,
+      approveInSystemSettings: () => {
+        currentStatusOnEnable = 'enabled';
+        currentOpenAtLogin = true;
+        currentWillLaunchAtLogin = true;
+        currentStatus = 'enabled';
+      },
       cleanup: () => {
         delete require.cache[AUTO_LAUNCH_PATH];
         delete require.cache[STORE_MANAGER_PATH];
@@ -206,3 +215,34 @@ test('AutoLaunchService: macOS sync treats requires-approval as off even when op
     ctx.cleanup();
   }
 });
+
+test('AutoLaunchService: macOS setAutoLaunchPreference preserves enable intent during requires-approval so next launch does not revoke approval', async () => {
+  const ctx = createAutoLaunchTestContext({
+    isPackaged: true,
+    platform: 'darwin',
+    initialStore: { autoLaunch: false },
+    initialOpenAtLogin: false,
+    statusOnEnable: 'requires-approval',
+  });
+  try {
+    const setRes = await ctx.service.setAutoLaunchPreference(true);
+    assert.equal(setRes.success, true);
+    assert.equal(setRes.pendingApproval, true);
+    assert.equal(setRes.preference, true);
+    assert.equal(setRes.loginItem.status, 'requires-approval');
+    assert.equal(ctx.storeData.get('autoLaunch'), true);
+    assert.equal(ctx.service.isAutoLaunchEnabled(), false);
+
+    // User subsequently approves the login item in macOS System Settings
+    ctx.approveInSystemSettings();
+
+    // Next app launch syncs preference and must keep it enabled rather than revoking it
+    const syncRes = await ctx.service.syncAutoLaunchPreference();
+    assert.equal(syncRes.preference, true);
+    assert.equal(ctx.getOpenAtLogin(), true);
+    assert.equal(ctx.service.isAutoLaunchEnabled(), true);
+  } finally {
+    ctx.cleanup();
+  }
+});
+
