@@ -16,6 +16,7 @@ const REQUIRED_PACKAGE_EXCLUSIONS = [
   '!.geminirules',
   '!AGENTS.md',
   '!CLAUDE.md',
+  '!backups/**', // 本地未跟踪的明文皮肤备份；electron-builder 不读取 .gitignore
 ];
 
 test('electron-builder excludes internal agent files from app.asar', () => {
@@ -36,6 +37,7 @@ test('package content verifier recognizes internal paths on every platform', () 
       '/.geminirules',
       '/AGENTS.md',
       '/CLAUDE.md',
+      '/backups/assets/default_qijiu/left.webp',
       '/src/app.js',
     ]),
     [
@@ -45,6 +47,7 @@ test('package content verifier recognizes internal paths on every platform', () 
       '.geminirules',
       'AGENTS.md',
       'CLAUDE.md',
+      'backups/assets/default_qijiu/left.webp',
     ],
   );
 });

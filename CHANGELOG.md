@@ -80,6 +80,7 @@
 
 ### Security
 - 将 `electron-store → conf → ajv` 及构建工具共享的间接依赖 `fast-uri` 从 3.1.7 升级至兼容补丁版 3.1.9，修复 URI 主机名规范化、scheme 解析及相对引用转义等上游安全问题；同时将开发环境传递依赖 `undici`（`@electron/get` 依赖）从 7.29.0 升级至 7.30.2 以消除 `GHSA-w293-vg96-wgc3` 等上游高危安全通告，并在 `test/dependencyUriSecurity.test.js` 中补充 URI 回归、正常 schema 引用解析及锁文件版本防回退测试，同步更新 `docs/security_best_practices_report.md` 状态标记（[ADR-029](./docs/decisions/ADR-029-security-audit-and-local-hardening.md)）。
+- **本地未跟踪备份目录不再进入安装包 (`Local backups/ Excluded From Package`)**：electron-builder 不读取 `.gitignore`，本机打包时被忽略的 `backups/`（含明文 `.webp` 皮肤备份）会进入 `app.asar`；`package.json` 的 `build.files` 新增 `!backups/**`，`scripts/verify-package-contents.js` 的禁止路径新增 `backups`，打包后检查会拦截；补充 `packageContentsSecurity` 测试（[审核复核 L17](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ## [go-v1.0.0] - 2026-11-01
 
