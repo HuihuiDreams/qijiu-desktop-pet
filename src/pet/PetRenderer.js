@@ -152,7 +152,6 @@ class PetRenderer {
 
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
-    pet._renderedDirection = null;
     pet._renderedHungry = null;
     pet._renderedLowMood = null;
     const setWeatherInteractionMuted = (muted) => {
@@ -298,11 +297,6 @@ class PetRenderer {
       if (pet._renderedState) el.classList.remove(`pet--${pet._renderedState}`);
       if (pet.state !== 'idle') el.classList.add(`pet--${pet.state}`);
       pet._renderedState = pet.state;
-    }
-
-    // 优化：仅当朝向或状态改变时更新类
-    if (pet._renderedDirection !== pet.direction || stateChanged) {
-      pet._renderedDirection = pet.direction;
     }
 
     // 优化：仅当过低状态改变时更新类

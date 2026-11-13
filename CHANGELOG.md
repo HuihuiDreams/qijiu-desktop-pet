@@ -31,6 +31,7 @@
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
 - **皮肤服务无效素材根目录配置清理 (`SkinService Ineffective appRoot Cleanup`)**：移除 `SkinService.js` 中三处向受保护素材加载器传入的 `appRoot: __dirname`（`src/main/services/protected-assets` 并不存在，加载器本就会回退到仓库根目录、`resourcesPath` 与 `appPath` 下的 `protected-assets`），不改变开发与打包环境的素材查找结果；加载器中 `manifestNotFound` 负缓存按既有测试约定保持到显式清理，不做修改（[审核复核 L4](docs/code-review-audit-verification-2026-11-13.md)）。
 - **更新进度窗口检查中动画改用 transform (`Update Progress Sweep Animation Uses Transform`)**：`update-progress.css` 的 `@keyframes sweep` 原先逐帧修改 `left` 触发布局，改为 `transform: translateX()`（百分比按检查中 38% 的填充宽度换算为约 -105% / 79% / 263%，对应原来相对进度条的 -40% / 30% / 100%），并为 `.checking .fill` 显式设置 `left: 0`；补充样式回归测试（[审核复核 L10](docs/code-review-audit-verification-2026-11-13.md)）。
+- **死代码清理：宠物朝向缓存与选肤窗口未使用的 sender 校验 (`Dead Code Cleanup: Rendered Direction Cache & Unused Skin Selector Sender Check`)**：删除 `PetRenderer.update()` 中只更新 `_renderedDirection` 缓存字段、不产生任何效果的判断块及其初始化；删除 `SkinSelectorWindow.js` 中既无调用方也未导出的 `isValidSkinSelectorSender`，选肤窗口的 sender 校验仍由 `SkinService.isSkinSelectorRequest` 承担；无行为变化（[审核复核 L15–L16](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
