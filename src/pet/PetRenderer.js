@@ -164,10 +164,14 @@ class PetRenderer {
       window.electronAPI.setIgnoreMouseEvents(false);
     });
 
+    const isContextMenuOpen = () => {
+      const menu = document.getElementById?.('context-menu');
+      return Boolean(menu) && !menu.classList?.contains('hidden');
+    };
+
     el.addEventListener('mouseleave', () => {
       // 拖拽中，或有菜单打开时，不要恢复点击穿透
-      const menuOpen = !document.getElementById('context-menu')?.classList?.contains('hidden');
-      if (!pet.isDragging && !menuOpen) {
+      if (!pet.isDragging && !isContextMenuOpen()) {
         setWeatherInteractionMuted(false);
         window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
       }
@@ -181,16 +185,19 @@ class PetRenderer {
       setWeatherInteractionMuted(false);
       window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
     };
-    const isContextMenuOpen = () => {
-      const menu = document.getElementById?.('context-menu');
-      return Boolean(menu) && !menu.classList?.contains('hidden');
-    };
     // 拖拽结束时指针几乎总停在宠物上，此时不会再触发 mouseenter。
     // 若这里直接恢复穿透，下一次点击会落到宠物下方的应用，
     // 所以指针仍在宠物上或菜单已打开时保持可交互，交给 mouseleave 恢复穿透。
     const restoreMousePassthroughIfIdle = () => {
       if (pet.isDragging) return;
-      if (el.matches?.(':hover') || isContextMenuOpen()) return;
+      // 菜单打开时由 ContextMenu 的租约续期负责，这里不去取消它
+      if (isContextMenuOpen()) return;
+      if (el.matches?.(':hover')) {
+        // 拖拽期间下发的 1000ms 租约仍在主进程计时，到期会把窗口改回穿透；
+        // 发送不带 leaseMs 的调用来取消它，保持可交互直到 mouseleave。
+        window.electronAPI.setIgnoreMouseEvents(false);
+        return;
+      }
       restoreMousePassthrough();
     };
     const keepPetReachable = () => {

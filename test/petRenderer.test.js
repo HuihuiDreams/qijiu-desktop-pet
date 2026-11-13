@@ -1447,7 +1447,8 @@ test('drag end keeps the window interactive while the pointer is still over the 
     harness.docListeners.mouseup({});
     harness.runTimer(100);
 
-    assert.deepEqual(harness.mouseEvents, [], 'passthrough must not be restored under the pointer');
+    // 不带 leaseMs 的 false 调用用于取消主进程里拖拽期间的 1000ms 租约定时器
+    assert.deepEqual(harness.mouseEvents, [[false, undefined]], 'passthrough must not be restored under the pointer');
     assert.equal(harness.bodyClassList.contains('weather-interaction-muted'), true);
 
     // 指针之后离开宠物时，mouseleave 负责恢复穿透
@@ -1486,6 +1487,39 @@ test('drag end keeps the window interactive while the context menu is open', () 
   }
 });
 
+test('drag end with the menu open leaves the menu lease alone even when hovering the pet', () => {
+  const harness = createDragHarness({ hovered: true, menuClasses: [] });
+  try {
+    harness.docListeners.mouseup({});
+    harness.runTimer(100);
+
+    assert.deepEqual(harness.mouseEvents, [], 'must not cancel the ContextMenu lease');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('mouseleave does not restore passthrough while the context menu is open', () => {
+  const open = createDragHarness({ hovered: false, menuClasses: [] });
+  try {
+    open.pet.isDragging = false;
+    open.el.listeners.mouseleave();
+    assert.deepEqual(open.mouseEvents, []);
+  } finally {
+    open.restore();
+  }
+
+  // 菜单元素不存在时不应被当成"菜单已打开"
+  const missing = createDragHarness({ hovered: false });
+  try {
+    missing.pet.isDragging = false;
+    missing.el.listeners.mouseleave();
+    assert.deepEqual(missing.mouseEvents, [[true, { forward: true }]]);
+  } finally {
+    missing.restore();
+  }
+});
+
 test('drag end restores passthrough when the context menu exists but is hidden', () => {
   const harness = createDragHarness({ hovered: false, menuClasses: ['hidden'] });
   try {
@@ -1518,7 +1552,7 @@ test('window blur during a drag restores passthrough only when the pointer left 
   try {
     hovered.windowListeners.blur();
     assert.equal(hovered.pet.isDragging, false);
-    assert.deepEqual(hovered.mouseEvents, []);
+    assert.deepEqual(hovered.mouseEvents, [[false, undefined]]);
   } finally {
     hovered.restore();
   }

@@ -17,6 +17,7 @@
   - [x] 回归测试：非默认皮肤 + 首次 `save-data` 先于 `applySkinById`，落盘 `skinId` 不变（`test/storageIpcAuthorization.test.js`），另有 `test/skinService.test.js` 与 `test/appLifecycle.behavior.test.js` 的单元覆盖。
 - [x] **Task H2：拖拽结束后无条件恢复鼠标穿透**
   - [x] macOS 上完成修复与 fake-DOM 单元测试：`PetRenderer` 的 `finishDrag` 三条恢复路径（100ms 延迟、watchdog、`blur`）统一走 `restoreMousePassthroughIfIdle()`，指针仍在宠物上（`:hover`）或右键菜单打开时不恢复。
+  - [x] 复核补修：拖拽期间下发的 `leaseMs: 1000` 租约会在主进程计时，到期把窗口改回穿透。`:hover` 分支现在额外发送一次不带 `leaseMs` 的 `setIgnoreMouseEvents(false)` 取消该租约；菜单已打开时仍不发送，避免取消 `ContextMenu` 自己的 10 秒租约。`mouseleave` 的菜单判断同步改用 `isContextMenuOpen()`（菜单元素不存在时不再被当作"已打开"）。`test/petWindow.test.js` 补主进程租约取消/到期测试。
   - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透（步骤见文末清单）。macOS 真机同样建议手动确认一次。
 - [ ] **Task H3：Windows 前台窗口坐标口径不确定**（本轮未改代码）
   - [ ] 【Windows 待验证】先在 Windows 采集原始 bounds，确认口径后再改代码。该功能只在 Windows 启用（macOS 不支持窗口边缘行走），无法在 macOS 上复现，步骤见文末清单。
