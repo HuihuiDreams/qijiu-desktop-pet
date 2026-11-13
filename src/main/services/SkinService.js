@@ -280,7 +280,6 @@ function scanAvailableSkins(forceRefresh = false) {
   try {
     const knownSkinIds = new Set(Object.keys(SKIN_NAME_KEYS));
     const protectedSkinIds = listAvailableSkinIds({
-      appRoot: __dirname,
       resourcesPath: process.resourcesPath,
       appPath: typeof app?.getAppPath === 'function' ? app.getAppPath() : null,
     }).filter(id => knownSkinIds.has(id));
@@ -338,7 +337,7 @@ function hasSkinAsset(skinId, filename) {
   }
   const assetId = `skin/${skinId}/${filename}`;
   try {
-    if (hasProtectedAsset(assetId, { appRoot: __dirname, resourcesPath: process.resourcesPath })) {
+    if (hasProtectedAsset(assetId, { resourcesPath: process.resourcesPath })) {
       return true;
     }
   } catch (error) {
@@ -445,7 +444,7 @@ function hideSkinSelector() {
 function resolvePomodoroAsset(skinId, filename) {
   const safeSkinId = isAllowedSkinId(skinId, scanAvailableSkins()) ? skinId : 'default';
   const protectedAssetId = `skin/${safeSkinId}/${filename}`;
-  if (hasProtectedAsset(protectedAssetId, { appRoot: __dirname, resourcesPath: process.resourcesPath })) {
+  if (hasProtectedAsset(protectedAssetId, { resourcesPath: process.resourcesPath })) {
     return createAssetUrl(protectedAssetId);
   }
 
