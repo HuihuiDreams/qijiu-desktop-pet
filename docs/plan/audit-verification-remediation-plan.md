@@ -39,7 +39,7 @@
   - [x] 顶层权限降为 `contents: read`；版本号同步拆成只在 `workflow_dispatch` 运行的 `sync-version` 作业（唯一 `contents: write`），Windows 预检作业 `needs: sync-version` 并在手动触发时检出分支最新提交。新增 `test/releasePreflightWorkflow.test.js` 静态断言权限边界。
   - [x] macOS 预检作业新增 `npm run test:integration`（本机 <1 秒，19 个用例通过）。
   - [x] 复核补修：`preflight-mac` 补上与 Windows 预检一致的 `needs: sync-version`、`if: always() && (…)` 与 `workflow_dispatch` 时的 checkout `ref`，`test/releasePreflightWorkflow.test.js` 增加对称断言。
-  - [ ] 【Windows 待验证】Windows 预检作业暂未接入 `test:integration`，等在 Windows 本机跑通后再加。`test:e2e` 与 `qa:electron:smoke` 需要显示环境，本轮不接入 CI。
+  - [x] 【Windows 已验证】已在 Windows 本机跑通 `npm run test:integration`（19 passed, 0 failed），并将该步骤接入 `.github/workflows/release-preflight.yml` 的 Windows `preflight` 作业与 `test/releasePreflightWorkflow.test.js` 断言。`test:e2e` 与 `qa:electron:smoke` 需要显示环境，本轮不接入 CI。
 - [x] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
   - [x] Windows 上传步骤在 `gh release create` 失败后再执行一次 `gh release view`，两者都失败才抛错，与 macOS 作业一致。新增 `test/buildInstallerWorkflow.test.js` 静态断言。
   - [ ] 【Windows 待验证】需要在真实 tag 推送上观察一次，见文末清单。
@@ -100,7 +100,7 @@
 | L17 | Windows | Windows 打包后确认 `app.asar` 不含 `iconTemplate` |
 | L18 | Windows | Windows 打包版确认 `debugToolsEnabled === false` |
 | L10 | 任一平台 | 目测"检查更新"进度动画 |
-| M6 补充 | Windows | 本机跑通 `npm run test:integration` 后，把该步骤加入 Windows 预检作业 |
+| M6 补充（已完成） | Windows | 本机已跑通 `npm run test:integration`（19 passed），已将该步骤加入 Windows 预检作业 |
 
 ### H3 Windows 前台窗口坐标口径
 

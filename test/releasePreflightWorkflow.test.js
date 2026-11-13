@@ -69,6 +69,7 @@ test('the macOS preflight job waits for sync-version and checks out the synced c
   assert.match(jobs['preflight-mac'], /ref: \$\{\{ github\.event_name == 'workflow_dispatch' && github\.ref \|\| '' \}\}/);
 });
 
-test('the macOS preflight job also runs the integration tests', () => {
+test('the Windows and macOS preflight jobs both run the integration tests', () => {
+  assert.match(jobs.preflight, /run: npm run test:integration/);
   assert.match(jobs['preflight-mac'], /run: npm run test:integration/);
 });

@@ -215,7 +215,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 * 目标 GitHub tag 是否已经存在。
 * 根目录三份 `readme*.txt` 是否存在。
 * Windows 签名 secrets 是否存在；缺失时只提示将发布未签名 Windows 安装包。
-* Windows 单元测试、安装包前置检查、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
+* Windows 单元测试、集成测试（`npm run test:integration`）、安装包前置检查、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
 * macOS 单元测试、集成测试（`npm run test:integration`）、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build、包内容检查，以及 `DeskPet` 包内可执行文件元数据检查。
 
 工作流默认令牌为只读（`contents: read`），只有仅在手动运行时才会执行的 `sync-version` 作业声明了 `contents: write`，因此 pull request 触发的 `npm ci`、测试和构建脚本拿不到可写令牌。

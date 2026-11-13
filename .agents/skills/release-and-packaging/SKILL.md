@@ -119,7 +119,7 @@ npm run verify:signatures
 ### Preflight 自动执行的校验
 1. **版本与元数据**：验证 SemVer 格式；检查 `CHANGELOG.md` 是否存在 `## [0.11.3]`；若 `package.json` 版本不一致，由独立的只在手动触发时运行的 `sync-version` 作业（唯一持有 `contents: write` 的作业）提交并推回仓库，Windows 预检作业随后检出最新提交并再次确认版本一致。
 2. **签名机密探测**：检测 `WIN_CSC_LINK` 与 `WIN_CSC_KEY_PASSWORD`，确认是否具备已签名构建条件。
-3. **Windows 虚拟机 (`windows-latest`)**：执行 `npm ci`、`npm test`、`npm audit`、`npm run protect:assets`、构建 Windows smoke package 并运行 `npm run verify:package`。
+3. **Windows 虚拟机 (`windows-latest`)**：执行 `npm ci`、`npm test`、`npm run test:integration`、`npm audit`、`npm run protect:assets`、构建 Windows smoke package 并运行 `npm run verify:package`。
 4. **macOS 虚拟机 (`macos-latest`)**：执行 `npm ci`、`npm test`、`npm run test:integration`、`npm audit`、`npm run protect:assets`、构建 macOS smoke package、运行 `npm run verify:package`，并通过 `plutil` 严格核验 `七九爱宠.app` 内的 `DeskPet` 可执行文件名与 plist 元数据。
 
 ---
