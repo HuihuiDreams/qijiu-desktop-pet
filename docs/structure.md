@@ -168,7 +168,7 @@ qijiu-desktop-pet/
 │  └─ installer.nsh                     # Windows NSIS 安装器定制脚本
 ├─ scripts/                             # 项目自动化脚本：npm 命令、打包发布钩子和维护检查
 │  ├─ afterPack.js                      # Electron Builder 打包后处理
-│  ├─ check_adrs.js                     # ADR 格式检查脚本
+│  ├─ check_adrs.js                     # ADR 格式检查脚本（`npm run check:adrs`；有 ADR 缺少必需章节时退出码为 1，`test/check_adrs.test.js` 对全部 ADR 做同样的检查）
 │  ├─ convert_images.js                 # 图片转换维护脚本
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)

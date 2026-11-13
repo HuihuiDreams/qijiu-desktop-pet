@@ -8,6 +8,7 @@
     "test": "node scripts/run-tests.js",
     "test:integration": "node scripts/run-integration-tests.js",
     "test:all": "node scripts/run-tests.js && node scripts/run-integration-tests.js",
+    "check:adrs": "node scripts/check_adrs.js",
     "test:font": "playwright test font.spec.js",
     "test:e2e": "playwright test",
     "qa:electron:smoke": "node tools/playwright-electron-smoke.js",

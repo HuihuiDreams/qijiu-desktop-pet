@@ -49,7 +49,10 @@ function checkAdrFiles(adrDir = getAdrDir()) {
 }
 
 if (require.main === module) {
-  console.log(JSON.stringify(checkAdrFiles(), null, 2));
+  const report = checkAdrFiles();
+  console.log(JSON.stringify(report, null, 2));
+  // 有 ADR 缺少必需章节时以非零状态退出，便于脚本和 CI 据此判断
+  process.exitCode = report.length > 0 ? 1 : 0;
 }
 
 module.exports = {
