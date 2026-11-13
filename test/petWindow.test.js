@@ -198,6 +198,27 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     assert.equal(windowManager.mainWindow.alwaysOnTop, true);
   });
 
+  await t.test('createWindow passes the debug tools argument only when the app is not packaged', () => {
+    const origPlatform = process.platform;
+    const create = (isPackaged) => {
+      const deps = createMockDeps();
+      deps.app.isPackaged = isPackaged;
+      PetWindow.init(deps);
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      try {
+        PetWindow.createWindow();
+      } finally {
+        Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+      }
+      const args = windowManager.mainWindow.options.webPreferences.additionalArguments;
+      windowManager.mainWindow.trigger('closed');
+      return args;
+    };
+
+    assert.deepEqual(create(false), ['--deskpet-debug-tools']);
+    assert.deepEqual(create(true), []);
+  });
+
   await t.test('showExistingInstance brings window to front', () => {
     const deps = createMockDeps();
     PetWindow.init(deps);

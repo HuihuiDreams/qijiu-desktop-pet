@@ -76,7 +76,11 @@
   - [x] `build.files` 增加 `!src/assets/iconTemplate*.png`。已在 macOS 用 `electron-builder --mac --dir --arm64`（输出到临时目录）实际打包验证：`app.asar` 里不再有这两个文件，`icon.png/ico/icns` 保留；测试和 CP 同步白名单仍引用的源文件留在仓库。
   - 额外发现（未处理）：本机未跟踪的 `backups/` 目录（`.gitignore` 已忽略）没有被 `build.files` 排除，本机打包时其中 41 个明文皮肤 WebP 会进入 `app.asar`。CI 上没有这个目录，不受影响；如果会在本机打正式包，建议另行加入 `!backups/**`。
   - [ ] 【Windows 待验证】Windows 打包同样走 `build.files`，下次在 Windows 上 `npx electron-builder --win --dir` 后，用 `npm run verify:package` 并确认 `app.asar` 不含 `iconTemplate`。
-- [ ] **Task L18：调试工具门控**
+- [x] **Task L18：调试工具门控**
+  - [x] `src/debug.js` 的控制台辅助函数由路径含 `/app.asar/` 改为按主进程下发的开关启用：`PetWindow` 在 `!app.isPackaged` 时通过 `additionalArguments` 传 `--deskpet-debug-tools`，`preload.js` 暴露 `electronAPI.debugToolsEnabled`。
+  - [x] **刻意保留** `app.js` 挂载的 `window.__DEBUG_*` 数据对象：`tools/performance/scenarios.js` 在打包版上用 `__DEBUG_WEATHER/PETS/MOVEMENT` 做性能基线，门控它们会破坏这套测量；这一点审核报告没有提到。它们只存在于渲染进程主世界，不暴露任何 Node 能力，CSP 也限制了脚本来源。
+  - [x] 已在 macOS 实机验证：开发模式 `debugToolsEnabled=true` 且 `testInteraction` 可用；`electron-builder --mac --dir` 的打包版 `debugToolsEnabled=false`、`testInteraction` 未定义、`__DEBUG_PETS/__DEBUG_WEATHER` 仍可用。
+  - [ ] 【Windows 待验证】Windows 打包版同样需要确认一次，见文末清单。
 
 ---
 
@@ -120,6 +124,10 @@ pwsh 对原生命令退出码的处理无法在 macOS 上复现，需要在 Wind
 1. `npm run protect:assets`，再 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false`。
 2. `npm run verify:package` 通过。
 3. `npx @electron/asar list dist\\win-unpacked\\resources\\app.asar | findstr iconTemplate` 应无输出。
+
+### L18 调试开关（Windows 打包版）
+
+用 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 打出未签名包，启动 `dist\\win-unpacked\\*.exe`，在 DevTools 或用 Playwright `electron.launch({ executablePath })` 检查：`window.electronAPI.debugToolsEnabled === false`、`typeof window.testInteraction === 'undefined'`、`window.__DEBUG_PETS` 存在。开发模式（`npm run dev`）下 `debugToolsEnabled === true`。
 
 ### L10 更新进度窗口"检查中"动画
 

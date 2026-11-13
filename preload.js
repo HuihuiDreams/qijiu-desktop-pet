@@ -7,6 +7,8 @@ function subscribeIpc(channel, listener) {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
+  // 主进程仅在未打包运行时下发该参数；src/debug.js 的控制台辅助函数据此启用
+  debugToolsEnabled: process.argv.includes('--deskpet-debug-tools'),
 
   // 鼠标事件控制：切换穿透状态
   setIgnoreMouseEvents: (ignore, options) => {

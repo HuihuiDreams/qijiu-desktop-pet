@@ -3,9 +3,13 @@
  * 仅在开发阶段使用。提供全局 testKiss() 等辅助函数，可在 DevTools Console 调用。
  *
  * 用法：在 DevTools Console 输入 testKiss() 并回车。
+ *
+ * 仅当主进程下发调试开关（未打包运行，见 PetWindow 的 additionalArguments 与 preload 的
+ * electronAPI.debugToolsEnabled）时才定义这些函数。src/app.js 挂载的 window.__DEBUG_* 数据对象
+ * 不受此开关影响，打包版性能基线（tools/performance）依赖它们。
  */
 
-if (!window.location.pathname.includes('/app.asar/')) {
+if (window.electronAPI?.debugToolsEnabled) {
 
 window.testInteraction = function (type = 'kiss') {
   const forceShareFood = arguments[1] === true;
@@ -467,5 +471,5 @@ window.clearWeatherEffect = function () {
 
 console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
 
-} // End of app.asar check
+} // End of debugToolsEnabled check
 

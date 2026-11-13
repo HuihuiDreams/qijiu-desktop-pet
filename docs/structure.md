@@ -186,7 +186,7 @@ qijiu-desktop-pet/
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
 │  ├─ app.js                            # 渲染进程组合根：初始化、game loop、保存、皮肤切换、状态同步；渲染进程巨石文件拆分（ADR-042 Phase R1 起）逐步收敛为薄编排层
 │  ├─ i18nHelpers.js                    # 渲染进程 i18n 纯函数辅助：getI18nDictionaries/translateUi/getI18nUi/applyI18n，locale → zh → key 回退链，无可变状态
-│  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等
+│  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等；仅当 `window.electronAPI.debugToolsEnabled` 为真时定义控制台辅助函数。该开关由 `PetWindow` 在未打包运行时通过 `additionalArguments` 下发、`preload.js` 读取；`app.js` 挂载的 `window.__DEBUG_*` 数据对象不受影响，打包版性能基线（`tools/performance`）依赖它们
 │  ├─ status.html                       # 独立状态窗口 HTML
 │  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
