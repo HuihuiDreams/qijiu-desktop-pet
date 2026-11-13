@@ -630,6 +630,8 @@ test('mac manual update opens the release page when a newer version is accepted'
         updateMacManualTitle: 'Manual update',
         updateMacManualMsg: 'Download and replace the app.',
         updateMacManualBtn: 'Open releases',
+        updateMacManualCurrentVersion: 'Current version: {version}',
+        updateMacManualLatestVersion: 'Latest version: {version}',
         updateBtnLater: 'Later',
       })[key] || key,
     });
@@ -637,6 +639,11 @@ test('mac manual update opens the release page when a newer version is accepted'
     await manager.checkForUpdatesFromTray();
 
     assert.equal(messages[0].title, 'Manual update');
+    assert.equal(
+      messages[0].message,
+      'Current version: 0.1.0\nLatest version: 0.2.0\n\nDownload and replace the app.',
+      'version labels must come from the injected translations, not hard-coded Chinese',
+    );
     assert.match(messages[0].message, /0\.1\.0/);
     assert.match(messages[0].message, /0\.2\.0/);
     assert.deepEqual(openedUrls, ['https://github.com/HuihuiDreams/good-omens-desktop-pet/releases/latest']);
@@ -644,6 +651,16 @@ test('mac manual update opens the release page when a newer version is accepted'
   } finally {
     global.fetch = originalFetch;
     Module._load = originalLoad;
+  }
+});
+
+test('mac manual update version labels exist in every locale with a version placeholder', () => {
+  const { I18N } = require('../src/data/i18n');
+
+  for (const locale of ['zh', 'en', 'ja']) {
+    for (const key of ['updateMacManualCurrentVersion', 'updateMacManualLatestVersion']) {
+      assert.match(I18N[locale].ui[key], /\{version\}/, `${locale}.ui.${key} must contain {version}`);
+    }
   }
 });
 

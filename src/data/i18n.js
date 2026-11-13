@@ -162,6 +162,8 @@ const I18N = {
       updateMacManualTitle: '检查更新',
       updateMacManualMsg: '请先从托盘菜单完全退出当前应用，再下载最新 DMG 并拖入 Applications 覆盖安装。',
       updateMacManualBtn: '前往下载页面',
+      updateMacManualCurrentVersion: '当前版本：{version}',
+      updateMacManualLatestVersion: '最新版本：{version}',
 
       // 语言选项
       langZh: '中文',
@@ -565,6 +567,8 @@ const I18N = {
       updateMacManualTitle: 'Check for Updates',
       updateMacManualMsg: 'Quit the current app from the tray menu first, then download the latest DMG and drag it into Applications to replace the old app.',
       updateMacManualBtn: 'Open Download Page',
+      updateMacManualCurrentVersion: 'Current version: {version}',
+      updateMacManualLatestVersion: 'Latest version: {version}',
 
       // Language options
       langZh: '中文',
@@ -960,6 +964,8 @@ const I18N = {
       updateMacManualTitle: '更新を確認',
       updateMacManualMsg: 'まずトレイメニューから現在のアプリを完全に終了し、最新のDMGをダウンロードしてApplicationsにドラッグし、古いアプリを置き換えてください。',
       updateMacManualBtn: 'ダウンロードページを開く',
+      updateMacManualCurrentVersion: '現在のバージョン：{version}',
+      updateMacManualLatestVersion: '最新バージョン：{version}',
 
       // Language options
       langZh: '中文',
