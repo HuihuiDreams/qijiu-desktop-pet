@@ -94,7 +94,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 | [`src/systems/AmbientDialogueSystem.js`](../src/systems/AmbientDialogueSystem.js) | 时段问候、低状态提醒、夜间梦话、角色联动及兜底文案 |
 | [`src/systems/InteractionSystem.js`](../src/systems/InteractionSystem.js)、[`src/debug.js`](../src/debug.js) | 吃撑互动与调试工具里的旧角色台词 |
 | [`src/systems/OfflineReturnSystem.js`](../src/systems/OfflineReturnSystem.js) | 离线时长换算与归来问候（原修仙设定按“时辰 = 2 小时”折算；若新世界观改用“小时”，需同步修改换算公式与 `i18n.js` 单位） |
-| [`src/main/TrayManager.js`](../src/main/TrayManager.js)、[`src/main/services/SystemIntegrationService.js`](../src/main/services/SystemIntegrationService.js) | 托盘 16×16 兜底点阵位图（原版硬编码 `7 9` 像素点阵，需改为新 CP 首字母如 `C A`）、托盘首行默认标题、开机自启动项名称 |
+| [`src/main/TrayManager.js`](../src/main/TrayManager.js)、[`src/main/services/AutoLaunchService.js`](../src/main/services/AutoLaunchService.js) | 托盘 16×16 兜底点阵位图（原版硬编码 `7 9` 像素点阵，需改为新 CP 首字母如 `C A`）、托盘首行默认标题、开机自启动项名称 |
 | [`src/index.html`](../src/index.html)、[`src/pomodoro.html`](../src/pomodoro.html)、[`src/status.html`](../src/status.html) 等子窗口 HTML | 页面 `<title>`、静态初始兜底文案（IPC 翻译注入前可见，且会被静态测试断言检查）和 `data-i18n` 对应文案 |
 | [`src/index.css`](../src/index.css)、[`src/status.css`](../src/status.css)、[`src/stat-bar.css`](../src/stat-bar.css)、[`src/pomodoro.css`](../src/pomodoro.css)、[`src/effects.css`](../src/effects.css)、[`src/context-menu.css`](../src/context-menu.css) | 角色主题配色、光晕、天气粒子（如雨天改流星雨/星辉）、番茄钟印章装饰；移除旧角色专属书法遮罩（`calligraphy-*.webp` 与 `clip-path: inset(50%)`） |
 | [`src/pet/SpriteView.js`](../src/pet/SpriteView.js) | 两名角色的状态图片和 `emojiMap`，避免缺图时出现原角色的标志性 emoji |
