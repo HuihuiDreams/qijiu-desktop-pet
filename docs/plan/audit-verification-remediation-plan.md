@@ -19,8 +19,8 @@
   - [x] macOS 上完成修复与 fake-DOM 单元测试：`PetRenderer` 的 `finishDrag` 三条恢复路径（100ms 延迟、watchdog、`blur`）统一走 `restoreMousePassthroughIfIdle()`，指针仍在宠物上（`:hover`）或右键菜单打开时不恢复。
   - [x] 复核补修：拖拽期间下发的 `leaseMs: 1000` 租约会在主进程计时，到期把窗口改回穿透。`:hover` 分支现在额外发送一次不带 `leaseMs` 的 `setIgnoreMouseEvents(false)` 取消该租约；菜单已打开时仍不发送，避免取消 `ContextMenu` 自己的 10 秒租约。`mouseleave` 的菜单判断同步改用 `isContextMenuOpen()`（菜单元素不存在时不再被当作"已打开"）。`test/petWindow.test.js` 补主进程租约取消/到期测试。
   - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透（步骤见文末清单）。macOS 真机同样建议手动确认一次。
-- [ ] **Task H3：Windows 前台窗口坐标口径不确定**（本轮未改代码）
-  - [ ] 【Windows 待验证】先在 Windows 采集原始 bounds，确认口径后再改代码。该功能只在 Windows 启用（macOS 不支持窗口边缘行走），无法在 macOS 上复现，步骤见文末清单。
+- [x] **Task H3：Windows 前台窗口坐标口径已统一**
+  - [x] 【Windows 已验证】在 Windows 11 混合 DPI 双屏（主屏 150% `2560×1440` DIP / `3840×2160` 物理，副屏 100% `1080×1920` 位于逻辑 `x=2560` / 物理 `x=3840`）实测确认：未设 DPI awareness 的 `powershell.exe` 处于 `DPI_AWARENESS_UNAWARE`，主屏返回缩放后坐标 `{100,100,800,600}`（会被 `PresentationGuard` 再除以 1.5），副屏却返回物理偏移 `{3940,100,600,500}`（`activeWindowAwareness` 错失副屏范围）。现已在 `activeWindowProvider.js` 脚本启用 `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)`（`-4`，预置 `-3` 回退）统一输出物理像素；由 `WindowAwarenessService` / `activeWindowAwareness` 在主进程采样时只做一次 `screen.screenToDipRect(null, rect)` 转为 DIP 供渲染进程平台与 `PresentationGuard` 共用，并删除 `PresentationGuard`、`AppLifecycle`、`BreakReminderController` 中的重复转换。已更新 `activeWindowProvider`、`activeWindowAwareness`、`windowAwarenessService`、`presentationGuard` 与 `presentationGuardWiring` 测试，并在 live Electron 混合 DPI 窗口验证主副屏常规/无边框全屏场景均精确匹配 DIP。
 
 ## P2
 
@@ -92,7 +92,7 @@
 
 | 编号 | 需要什么环境 | 要做什么 |
 | --- | --- | --- |
-| H3 | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 采集原始坐标，确认口径后再修复（唯一尚未改代码的 P1） |
+| H3（已完成） | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 已在 Windows 11 150%+100% 混合 DPI 采集原始坐标并完成统一物理像素采样与主进程单次 DIP 转换修复与实测 |
 | H2 | Windows 与 macOS 实机 | 拖拽后原地单击、右键，确认不穿透 |
 | M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
 | M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |

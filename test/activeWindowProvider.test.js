@@ -384,6 +384,8 @@ test('Windows provider script samples true full-screen signal via monitor bounds
 
   assert.match(script, /MonitorFromWindow/);
   assert.match(script, /GetMonitorInfo/);
+  assert.match(script, /SetThreadDpiAwarenessContext\(IntPtr dpiContext\)/);
+  assert.match(script, /\$DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = \[IntPtr\]\(-4\)/);
   assert.match(script, /\$isFullScreen = \(-not \$isMaximized\) -and \$coversMonitor/);
   assert.equal(info.window.isFullScreen, true);
   assert.equal(info.window.isMaximized, false);

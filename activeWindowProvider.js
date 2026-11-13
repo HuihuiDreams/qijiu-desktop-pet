@@ -118,11 +118,22 @@ public static class NativeWindow {
   [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hWnd);
   [DllImport("user32.dll")] public static extern IntPtr MonitorFromWindow(IntPtr hWnd, uint dwFlags);
   [DllImport("user32.dll", CharSet=CharSet.Auto)] public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
+  [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr dpiContext);
 }
 public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
 [StructLayout(LayoutKind.Sequential)]
 public struct MONITORINFO { public uint cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
 "@
+# Normalize thread awareness to PER_MONITOR_AWARE_V2 (-4) so GetWindowRect and
+# GetMonitorInfo always return physical screen pixels across mixed-DPI displays.
+$DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = [IntPtr](-4)
+$DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = [IntPtr](-3)
+try {
+  $previousDpiContext = [NativeWindow]::SetThreadDpiAwarenessContext($DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+  if ($previousDpiContext -eq [IntPtr]::Zero) {
+    [void][NativeWindow]::SetThreadDpiAwarenessContext($DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE)
+  }
+} catch {}
 $GW_HWNDNEXT = 2
 $MONITOR_DEFAULTTONEAREST = 2
 $ignoredClasses = @("Progman", "WorkerW", "Shell_TrayWnd")

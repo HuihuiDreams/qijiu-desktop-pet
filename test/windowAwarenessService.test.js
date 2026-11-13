@@ -213,3 +213,76 @@ test('Windows retains native RDP sampling and resumes it while renderer window a
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
   }
 });
+
+test('WindowAwarenessService converts raw bounds to DIP once for both PresentationGuard and surface platform', async () => {
+  const mixedDisplays = [
+    {
+      bounds: { x: 0, y: 0, width: 2560, height: 1440 },
+      workArea: { x: 0, y: 0, width: 2560, height: 1392 },
+      scaleFactor: 1.5,
+    },
+    {
+      bounds: { x: 2560, y: 0, width: 1080, height: 1920 },
+      workArea: { x: 2560, y: 0, width: 1080, height: 1872 },
+      scaleFactor: 1,
+    },
+  ];
+  const rawPhysicalBounds = { x: 3840, y: 0, width: 1080, height: 1920 };
+  const dipConvertedBounds = { x: 2560, y: 0, width: 1080, height: 1920 };
+  let conversionCalls = 0;
+
+  WindowAwarenessService.init({
+    windowManager: {
+      mainWindow: {
+        isDestroyed: () => false,
+        webContents: { send: () => {} },
+      },
+    },
+    trayManager: { refreshTrayMenu: () => {} },
+    getActiveWindowDisplays: () => mixedDisplays,
+    getActiveWindowMainBounds: () => ({ x: 0, y: 0, width: 3640, height: 1920 }),
+    screenToDipRect: (rect) => {
+      conversionCalls += 1;
+      assert.deepEqual(rect, rawPhysicalBounds);
+      return dipConvertedBounds;
+    },
+    createActiveWindowProvider: () => ({
+      async getActiveWindowInfo() {
+        return {
+          active: true,
+          sampledAt: Date.now(),
+          source: 'active-window',
+          window: {
+            id: '42',
+            title: 'Presentation Window',
+            ownerName: 'POWERPNT',
+            bounds: rawPhysicalBounds,
+            isMinimized: false,
+            isMaximized: false,
+            isFullScreen: false,
+          },
+        };
+      },
+      dispose() {},
+    }),
+  });
+
+  try {
+    WindowAwarenessService.setWindowAwarenessEnabled(true);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const payload = WindowAwarenessService.getLastPayload();
+    assert.equal(conversionCalls, 1);
+    assert.deepEqual(payload.window.bounds, dipConvertedBounds);
+
+    const guard = createPresentationGuard({
+      platform: 'win32',
+      getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
+      getDisplays: () => mixedDisplays,
+    }, { mode: 'screensaver' });
+    assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
+    assert.equal(conversionCalls, 1);
+  } finally {
+    WindowAwarenessService.stopActiveWindowAwareness();
+  }
+});

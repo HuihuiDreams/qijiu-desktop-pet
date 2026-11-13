@@ -1,15 +1,47 @@
-const { getActiveWindowPlatformRelativeToBounds } = require('./displayBounds');
+const { getActiveWindowPlatformRelativeToBounds, isValidRect } = require('./displayBounds');
 const { unavailableActiveWindowInfo } = require('./activeWindowProvider');
 
-function buildActiveWindowPayload(activeWindowInfo, windowBounds, displays, options = {}) {
-  const info = activeWindowInfo || unavailableActiveWindowInfo('unavailable');
-  if (!info.active) {
+/**
+ * Convert native window bounds (physical px on Windows) to DIP once at sampling time.
+ */
+function normalizeActiveWindowInfo(info, screenToDipRect) {
+  const rawBounds = info?.window?.bounds;
+  if (!info?.active || !info.window || !isValidRect(rawBounds) || typeof screenToDipRect !== 'function') {
+    return info;
+  }
+
+  try {
+    const converted = screenToDipRect(rawBounds);
+    if (!isValidRect(converted)) {
+      return info;
+    }
     return {
       ...info,
+      window: {
+        ...info.window,
+        bounds: {
+          x: converted.x,
+          y: converted.y,
+          width: converted.width,
+          height: converted.height,
+        },
+      },
+    };
+  } catch {
+    return info;
+  }
+}
+
+function buildActiveWindowPayload(activeWindowInfo, windowBounds, displays, options = {}) {
+  const rawInfo = activeWindowInfo || unavailableActiveWindowInfo('unavailable');
+  if (!rawInfo.active) {
+    return {
+      ...rawInfo,
       platform: null,
     };
   }
 
+  const info = normalizeActiveWindowInfo(rawInfo, options.screenToDipRect);
   return {
     ...info,
     platform: getActiveWindowPlatformRelativeToBounds(info, windowBounds, displays, options),
@@ -54,6 +86,7 @@ function createActiveWindowSampler(options) {
     intervalMs = 1000,
     refreshUnchangedIntervalMs = Infinity,
     platformOptions,
+    screenToDipRect,
     setIntervalImpl = setInterval,
     clearIntervalImpl = clearInterval,
   } = options;
@@ -81,11 +114,14 @@ function createActiveWindowSampler(options) {
     sampling = true;
     try {
       const providerInfo = await provider.getActiveWindowInfo();
+      const buildOptions = typeof screenToDipRect === 'function'
+        ? { ...(platformOptions || {}), screenToDipRect }
+        : platformOptions;
       const payload = buildActiveWindowPayload(
         providerInfo,
         getWindowBounds(),
         getDisplays(),
-        platformOptions,
+        buildOptions,
       );
       const nextKey = activeWindowPayloadKey(payload);
       lastPayload = payload;

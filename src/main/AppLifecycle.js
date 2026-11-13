@@ -96,7 +96,6 @@ class AppLifecycle {
         platform: process.platform,
         getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
         getDisplays: () => screen.getAllDisplays(),
-        screenToDipRect: (rect) => screen.screenToDipRect(null, rect),
         now: Date.now,
       },
       { mode: 'screensaver' }

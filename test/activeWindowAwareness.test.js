@@ -197,3 +197,100 @@ test('active window sampler disposes provider on stop', () => {
   sampler.stop();
   assert.equal(disposed, true);
 });
+
+test('buildActiveWindowPayload normalizes physical bounds via screenToDipRect once across mixed DPI displays', () => {
+  const mixedDisplays = [
+    {
+      bounds: { x: 0, y: 0, width: 2560, height: 1440 },
+      workArea: { x: 0, y: 0, width: 2560, height: 1392 },
+      scaleFactor: 1.5,
+    },
+    {
+      bounds: { x: 2560, y: 0, width: 1080, height: 1920 },
+      workArea: { x: 2560, y: 0, width: 1080, height: 1872 },
+      scaleFactor: 1,
+    },
+  ];
+  const virtualBounds = { x: 0, y: 0, width: 3640, height: 1920 };
+  const calls = [];
+
+  // 150% primary window: physical {150, 150, 1200, 900} -> DIP {100, 100, 800, 600}
+  const primaryPayload = buildActiveWindowPayload(
+    activeInfo({ x: 150, y: 150, width: 1200, height: 900 }),
+    virtualBounds,
+    mixedDisplays,
+    {
+      screenToDipRect(rect) {
+        calls.push(rect);
+        return {
+          x: Math.round(rect.x / 1.5),
+          y: Math.round(rect.y / 1.5),
+          width: Math.round(rect.width / 1.5),
+          height: Math.round(rect.height / 1.5),
+        };
+      },
+    },
+  );
+  assert.deepEqual(primaryPayload.window.bounds, { x: 100, y: 100, width: 800, height: 600 });
+  assert.deepEqual(primaryPayload.platform, {
+    x: 100,
+    y: 76,
+    width: 800,
+    height: 48,
+    source: 'active-window-top',
+  });
+  assert.equal(calls.length, 1);
+
+  // 100% secondary display behind 150% primary: physical x=3940 -> DIP x=2660
+  const secondaryPayload = buildActiveWindowPayload(
+    activeInfo({ x: 3940, y: 100, width: 600, height: 500 }),
+    virtualBounds,
+    mixedDisplays,
+    {
+      screenToDipRect(rect) {
+        assert.deepEqual(rect, { x: 3940, y: 100, width: 600, height: 500 });
+        return { x: 2660, y: 100, width: 600, height: 500 };
+      },
+    },
+  );
+  assert.deepEqual(secondaryPayload.window.bounds, { x: 2660, y: 100, width: 600, height: 500 });
+  assert.deepEqual(secondaryPayload.platform, {
+    x: 2660,
+    y: 76,
+    width: 600,
+    height: 48,
+    source: 'active-window-top',
+  });
+});
+
+test('createActiveWindowSampler applies screenToDipRect once per sample and degrades safely if conversion throws', async () => {
+  let shouldThrow = false;
+  let conversionCount = 0;
+  const sampler = createActiveWindowSampler({
+    provider: {
+      async getActiveWindowInfo() {
+        return activeInfo({ x: 150, y: 150, width: 1200, height: 900 });
+      },
+    },
+    getWindowBounds: () => ({ x: 0, y: 0, width: 2560, height: 1440 }),
+    getDisplays: () => [{
+      bounds: { x: 0, y: 0, width: 2560, height: 1440 },
+      workArea: { x: 0, y: 0, width: 2560, height: 1392 },
+      scaleFactor: 1.5,
+    }],
+    screenToDipRect: () => {
+      conversionCount += 1;
+      if (shouldThrow) throw new Error('screen unavailable');
+      return { x: 100, y: 100, width: 800, height: 600 };
+    },
+  });
+
+  const converted = await sampler.sampleOnce();
+  assert.equal(conversionCount, 1);
+  assert.deepEqual(converted.window.bounds, { x: 100, y: 100, width: 800, height: 600 });
+  assert.equal(converted.platform.x, 100);
+
+  shouldThrow = true;
+  const fallback = await sampler.sampleOnce();
+  assert.deepEqual(fallback.window.bounds, { x: 150, y: 150, width: 1200, height: 900 });
+});

@@ -124,15 +124,15 @@ qijiu-desktop-pet/
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、win32 下注入 screen.screenToDipRect(null, rect) 将原生物理矩形一次性归一化为 DIP、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
-├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（Windows 以 screenToDipRect 归一化前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
+├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
-├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；以 Electron screenToDipRect 将原生物理窗口矩形转换为 DIP，适配混合 DPI 多屏后再与完整 display.bounds 比较；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
+├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；直接将 WindowAwarenessService 已转换为 DIP 的 window.bounds 与完整 display.bounds/workArea 比较（适配混合 DPI 多屏且避免消费端重复除以 scaleFactor）；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 TrayManager 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
@@ -153,8 +153,8 @@ qijiu-desktop-pet/
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
-├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，避免重复 Add-Type 编译开销；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
-├─ activeWindowAwareness.js             # 活动窗口 bounds 到渲染进程 surface platform payload 的转换、去重与续期
+├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，通过 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 统一输出物理像素并避免重复 Add-Type 编译开销；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
+├─ activeWindowAwareness.js             # 活动窗口 bounds（win32 经 screenToDipRect 单次归一化为 DIP）到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
 ├─ meetingDetector.js                   # 会议自动隐藏检测：已知会议进程 + UDP 端点数量轮询与防抖状态机
@@ -341,8 +341,8 @@ qijiu-desktop-pet/
 
 Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
 
-- `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过 PowerShell/User32 辅助逻辑读取前台窗口；macOS 和暂不支持的平台返回不可用兜底。
-- `activeWindowAwareness.js` 将活动窗口 bounds 转成渲染进程相对坐标中的平台矩形，并在 IPC 发送前去重；主进程会按采样间隔刷新未变化 payload 的 `sampledAt`，避免 renderer 侧平台 TTL 在窗口长期不变时过期。
+- `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过启用 `PER_MONITOR_AWARE_V2` 线程 DPI 上下文的 PowerShell/User32 辅助逻辑统一读取物理像素级前台窗口与显示器矩形；macOS 和暂不支持的平台返回不可用兜底。
+- `activeWindowAwareness.js` 在 `win32` 采样时通过 `WindowAwarenessService` 注入的 `screen.screenToDipRect(null, rect)` 将物理像素 bounds 一次性转为 DIP 后再计算渲染进程相对坐标平台矩形，同时将该 DIP 坐标保留在共享 `lastPayload` 中供 `PresentationGuard` 直接比较，并在 IPC 发送前去重；主进程会按采样间隔刷新未变化 payload 的 `sampledAt`，避免 renderer 侧平台 TTL 在窗口长期不变时过期。
 - `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
 - `src/systems/WindowAwarenessSystem.js` 在渲染进程缓存最新 IPC payload，并为 game loop 提供 O(1) 的 `getCurrentPlatform()` 读取。
@@ -435,7 +435,7 @@ src/assets/{skinId}/
 - 系统锁屏/挂起/恢复事件也会重置计时器。
 - 提醒触发前经过 `PresentationGuard` 检查：
   - macOS：始终允许提醒（不做全屏检测，避免请求辅助功能权限）。
-  - Windows：检查前台窗口是否全屏；非最大化窗口覆盖完整显示器时视为演示窗口，命中则延后 60 秒重试。屏保与久坐提醒接线均以 `screen.screenToDipRect(null, rect)` 将原生物理矩形转为 DIP 坐标；首参 `null` 让 Electron 按该矩形选择显示器进行换算，不绑定可能跨屏的桌宠窗口。
+  - Windows：检查前台窗口是否全屏；非最大化窗口覆盖完整显示器时视为演示窗口，命中则延后 60 秒重试。活动窗口采样已在 `WindowAwarenessService` 中以 `screen.screenToDipRect(null, rect)` 将物理矩形一次性归一化为 DIP（首参 `null` 让 Electron 按窗口所在显示器换算），`PresentationGuard` 直接使用统一后的 DIP 坐标进行比较，不再对同一矩形二次缩放或转换。
   - 不保存窗口标题、进程名或 URL。
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
 - 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。
