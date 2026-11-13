@@ -9,6 +9,9 @@ const DEFAULT_UPDATE_STATE = Object.freeze({
 
 const DEFAULT_MAC_CHECK_TIMEOUT_MS = 15_000;
 
+// 下载的安装包未通过本地 SHA-512 校验时写入 state.error 的稳定标识
+const INTEGRITY_CHECK_FAILED = 'integrity-check-failed';
+
 // macOS 下没有 Apple Developer 证书时，Squirrel.Mac 会因 ad-hoc 签名
 // 不满足代码要求而报错。此标志用于在 macOS 上跳过 electron-updater，
 // 改为引导用户到 GitHub Releases 页面手动下载。
@@ -219,7 +222,7 @@ function getTranslatedText(t, key, fallback) {
 }
 
 // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
-async function verifyDownloadedPackageIntegrity(info) {
+async function verifyDownloadedPackageIntegrity(info, { log = null } = {}) {
   if (!info || typeof info.downloadedFile !== 'string' || !info.downloadedFile.trim()) return false;
   const expectedSha512 = info.sha512 || info.files?.[0]?.sha512;
   if (typeof expectedSha512 !== 'string' || !expectedSha512.trim()) return false;
@@ -235,7 +238,8 @@ async function verifyDownloadedPackageIntegrity(info) {
     const actualHex = actualBuffer.toString('hex');
     const normalizedExpectedHash = expectedSha512.trim();
     return actualHash === normalizedExpectedHash || actualHex === normalizedExpectedHash.toLowerCase();
-  } catch (_err) {
+  } catch (err) {
+    log?.error?.('Update package integrity check could not read the downloaded file:', err);
     return false;
   }
 }
@@ -460,15 +464,23 @@ function createUpdateManager(options = {}) {
     if (isMac) return; // Mac doesn't reach here
 
     // Based on OWASP guidance: Verify software and data integrity before execution (SBP-001 / TH-01)
-    if (!(await verifyDownloadedPackageIntegrity(info))) {
+    if (!(await verifyDownloadedPackageIntegrity(info, { log }))) {
+      logError(new Error(`Update package failed integrity verification (version: ${getUpdateVersion(info) || 'unknown'})`));
       setState({
         checking: false,
         downloading: false,
         downloaded: false,
-        error: 'integrity-check-failed',
+        error: INTEGRITY_CHECK_FAILED,
       });
       setMainWindowProgress(-1);
       closeProgressUi();
+      await showMessageBox({
+        type: 'error',
+        title: t('updateErrTitle'),
+        message: t('updateErrIntegrity'),
+        buttons: [t('updateBtnOk')],
+        noLink: true,
+      });
       return;
     }
 

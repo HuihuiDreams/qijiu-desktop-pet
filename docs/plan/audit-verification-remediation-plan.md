@@ -26,7 +26,8 @@
 - [x] **Task M1：首个 `screen-info` 丢失后无补偿**
   - [x] `src/app.js` 在第一个 `await` 之前订阅 `onScreenInfo` 并缓存，系统就绪后回放，不新增 IPC 拉取接口。
   - [x] 不提前 `onSaveBeforeQuit`：状态未加载时保存会用默认值覆盖存档，与审核报告"可随 M1 提前"的建议不同，理由见 `docs/structure.md`。
-- [ ] **Task M2：更新包完整性校验失败无提示、无日志**
+- [x] **Task M2：更新包完整性校验失败无提示、无日志**
+  - [x] 校验失败写日志并弹出 `updateErrIntegrity` 错误对话框（三语），`verifyDownloadedPackageIntegrity` 的 `catch` 记录异常；`state.error` 仍为稳定标识 `integrity-check-failed`，保持 ADR-025 约定。
 - [ ] **Task M3：更新进度窗口加载期间进度被初始载荷覆盖**
 - [ ] **Task M4：主窗口关闭时未关闭体型调节窗口**
 - [ ] **Task M5：互动覆盖层重复 ID**
