@@ -121,7 +121,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
 ├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/脉冲置顶与跨 Space 支持/设置读取/预览/确认/取消 + 对应 IPC
-├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用
+├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
 ├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
