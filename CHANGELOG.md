@@ -75,6 +75,8 @@
 - **拖拽租约到期后窗口重新穿透修复 (`Drag Lease Expiry Re-Enables Click-Through`)**：修复拖拽结束后指针仍停在宠物上时，`restoreMousePassthroughIfIdle()` 只返回、没有取消 `mousedown`/`mousemove` 下发的 `leaseMs: 1000` 主进程租约，约 1 秒后窗口仍被改回点击穿透、期间的单击落到下层应用的问题；`:hover` 分支现在额外发送不带 `leaseMs` 的 `setIgnoreMouseEvents(false)` 取消租约，菜单已打开时不发送以免取消 `ContextMenu` 自己的租约；同时 `mouseleave` 的菜单判断改用 `isContextMenuOpen()`，菜单元素不存在时不再被误判为已打开；补充渲染进程与主进程（`petWindow.test.js` 租约取消/到期）测试（[ADR-004](docs/decisions/ADR-004-drag-implementation.md)、[ADR-002](docs/decisions/ADR-002-mouse-clickthrough-strategy.md)）。
 
 - 修复 `docs/cp-migration-guide.md` 中托盘与开机自启动改造清单链接到不存在的 `SystemIntegrationService.js` 的死链，改为实际承载登录项名称的 `src/main/services/AutoLaunchService.js`。
+- **Windows 混合 DPI 前台窗口坐标口径统一 (`Unified Windows Mixed-DPI Foreground Window Coordinates`)**：在 Windows 11 150% 主屏与 100% 副屏混合 DPI 环境下实测确认，原 `activeWindowProvider.js` 常驻 `powershell.exe` 处于 `DPI_AWARENESS_UNAWARE`，导致主屏 `GetWindowRect` 返回系统虚拟化坐标（使 `PresentationGuard` 二次缩放）而副屏返回物理偏移坐标（使窗口顶部行走平台错失副屏范围）；现于采样脚本中启用 `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` 统一输出真实物理像素，由 `WindowAwarenessService` / `activeWindowAwareness` 在主进程采样时仅执行一次 `screen.screenToDipRect(null, rect)` 转为 Electron DIP 供渲染进程平台与 `PresentationGuard` 共享，并移除 `PresentationGuard`、`AppLifecycle` 与 `BreakReminderController` 中的重复转换；更新 `activeWindowProvider`、`activeWindowAwareness`、`windowAwarenessService`、`presentationGuard` 与 `presentationGuardWiring` 回归测试并完成混合 DPI 实机验证（[ADR-030](docs/decisions/ADR-030-window-awareness.md)、[审核复核 H3](docs/code-review-audit-verification-2026-11-13.md)）。
+
 ### Removed
 - **清理废弃 ADR 检查临时脚本 (`Clean Up Deprecated Scratch ADR Scripts`)**：彻底移除硬编码开发者本机绝对路径的临时脚本 `tools/scratch_check_adrs.js` 与 `tools/scratch_check_adrs.py`，消除死代码并同步更新 `docs/structure.md` 目录树，统一以受测试保障的 `scripts/check_adrs.js` 开展 ADR 规范校验。
 - **废弃换肤 IPC 通道清理 (`Skin Selector Dead select-skin IPC Channel Removal`)**：移除 `src/main/services/SkinService.js` 中无任何调用方的 `select-skin` IPC 处理器与 `skinSelectorPreload.js` 对应暴露方法，收窄 IPC 暴露面并确保换肤严格受限于「预览→确认/取消」状态机；保留主进程内部 `SkinService.selectSkin()` 供托盘与回滚复用，并同步清理测试中的陈旧断言。
@@ -85,6 +87,7 @@
 - **本地未跟踪备份目录不再进入安装包 (`Local backups/ Excluded From Package`)**：electron-builder 不读取 `.gitignore`，本机打包时被忽略的 `backups/`（含明文 `.webp` 皮肤备份）会进入 `app.asar`；`package.json` 的 `build.files` 新增 `!backups/**`，`scripts/verify-package-contents.js` 的禁止路径新增 `backups`，打包后检查会拦截；补充 `packageContentsSecurity` 测试（[审核复核 L17](docs/code-review-audit-verification-2026-11-13.md)）。
 
 - **Release Preflight 工作流令牌权限收紧 (`Release Preflight Least-Privilege Token`)**：将 `.github/workflows/release-preflight.yml` 顶层权限由 `contents: write` 降为 `contents: read`，避免同仓库分支的 `pull_request` 在执行 `npm ci`、`npm test` 与构建脚本时持有可写令牌；原先在 Windows 预检作业内的版本号同步与 `git push` 拆为仅 `workflow_dispatch` 触发的 `sync-version` 作业（唯一声明 `contents: write`），Windows 预检作业改为 `needs: sync-version` 并在手动触发时检出分支最新提交后再次确认版本一致；macOS 预检作业新增 `npm run test:integration`；新增 `test/releasePreflightWorkflow.test.js` 静态断言权限边界（[审核复核 M6](docs/code-review-audit-verification-2026-11-13.md)、[docs/git-workflow.md](docs/git-workflow.md)）。
+
 ## [go-v1.0.0] - 2026-11-01
 
 ### Added

@@ -16,8 +16,8 @@ Accepted
 ## Decision
 将窗口感知实现为主进程 provider 加渲染进程缓存：
 
-- `activeWindowProvider.js` 定义 provider 合同，并负责 Windows 前台窗口采样。
-- `activeWindowAwareness.js` 构建渲染进程 payload，将活动窗口 bounds 转换为桌宠主窗口内的 platform 坐标，并在 IPC 推送前去重。
+- `activeWindowProvider.js` 定义 provider 合同，并负责 Windows 前台窗口采样。Windows PowerShell 脚本显式调用 `SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)`（`-4` 并附 `-3` 回退），保证即使宿主进程未声明 DPI 清单或目标窗口自身 DPI-unaware，`GetWindowRect` 与 `GetMonitorInfo` 仍统一输出真实物理像素坐标。
+- `activeWindowAwareness.js`（配合 `WindowAwarenessService.js` 在 `win32` 注入的 `screen.screenToDipRect(null, rect)`）在主进程采样时将原生物理 `window.bounds` 一次性归一化为 Electron DIP，并将同一 DIP 坐标用于构建渲染进程 `platform`、主进程 `getLastPayload()` 缓存与 IPC 去重；`PresentationGuard` 直接消费已归一化的 DIP 坐标，不在消费端重复转换。
 - `preload.js` 只暴露 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)`。
 - 渲染进程 `WindowAwarenessSystem` 只缓存最新 payload，并用 O(1) 的 `getCurrentPlatform()` 给游戏循环读取。
 - `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏/Dock 平台，只在 idle 重新选择目标时使用它们。

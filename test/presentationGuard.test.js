@@ -299,31 +299,46 @@ test('coversBounds: scaleFactor=1 (100% DPI) behaves identically to no-scaleFact
 
 
 
-test('Windows: detects a presentation window on a mixed-DPI secondary display', () => {
-  const physicalBounds = { x: 1920, y: 0, width: 1920, height: 1080 };
-  const dipBounds = { x: 1920, y: 0, width: 1280, height: 720 };
-  const guard = createPresentationGuard({
+test('Windows: detects a presentation window on a mixed-DPI secondary display using DIP bounds without dividing twice', () => {
+  const primaryDisplay = {
+    bounds: { x: 0, y: 0, width: 2560, height: 1440 },
+    workArea: { x: 0, y: 0, width: 2560, height: 1392 },
+    scaleFactor: 1.5,
+  };
+  const secondaryDisplay = {
+    bounds: { x: 2560, y: 0, width: 1080, height: 1920 },
+    workArea: { x: 2560, y: 0, width: 1080, height: 1872 },
+    scaleFactor: 1,
+  };
+
+  // WindowAwarenessService already normalizes win32 bounds to Electron DIP.
+  const guardOn150Primary = createPresentationGuard({
     platform: 'win32',
     getActiveWindowInfo: () => ({
       active: true,
       window: {
-        bounds: physicalBounds,
+        bounds: { x: 0, y: 0, width: 2560, height: 1440 },
         isFullScreen: false,
         isMaximized: false,
       },
     }),
-    getDisplays: () => [{
-      bounds: dipBounds,
-      workArea: dipBounds,
-      scaleFactor: 1.5,
-    }],
-    screenToDipRect: (bounds) => {
-      assert.deepEqual(bounds, physicalBounds);
-      return dipBounds;
-    },
+    getDisplays: () => [primaryDisplay, secondaryDisplay],
   });
+  assert.deepEqual(guardOn150Primary.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
 
-  assert.deepEqual(guard.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
+  const guardOnSecondary = createPresentationGuard({
+    platform: 'win32',
+    getActiveWindowInfo: () => ({
+      active: true,
+      window: {
+        bounds: { x: 2560, y: 0, width: 1080, height: 1920 },
+        isFullScreen: false,
+        isMaximized: false,
+      },
+    }),
+    getDisplays: () => [primaryDisplay, secondaryDisplay],
+  });
+  assert.deepEqual(guardOnSecondary.canInterrupt(), { canInterrupt: false, reason: 'presentation' });
 });
 
 test('PresentationGuard does not store any window content', () => {

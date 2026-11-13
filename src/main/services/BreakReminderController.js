@@ -48,7 +48,6 @@ function init(dependencies) {
       platform: process.platform,
       getActiveWindowInfo: () => WindowAwarenessService.getLastPayload() || null,
       getDisplays: () => screen.getAllDisplays(),
-      screenToDipRect: (rect) => screen.screenToDipRect(null, rect),
     },
     { mode: 'break-reminder' }
   );

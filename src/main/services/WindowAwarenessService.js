@@ -5,7 +5,7 @@
  * getActiveWindowMainBounds }（后两者由 DisplayService 提供，避免与 displayFitScheduler
  * 产生跨模块循环依赖）。
  */
-const { ipcMain } = require('electron');
+const { ipcMain, screen } = require('electron');
 const { createActiveWindowProvider, createUnavailableActiveWindowProvider, unavailableActiveWindowInfo } = require('../../../activeWindowProvider');
 const { createActiveWindowSampler } = require('../../../activeWindowAwareness');
 const { isSenderMainWindow } = require('./IpcSenderAuthorization');
@@ -70,6 +70,19 @@ function stopActiveWindowAwareness() {
   activeWindowSampler = null;
 }
 
+function resolveScreenToDipRect() {
+  if (typeof deps.screenToDipRect === 'function') {
+    return deps.screenToDipRect;
+  }
+  if (deps.screenToDipRect === null) {
+    return null;
+  }
+  if (process.platform === 'win32' && typeof screen?.screenToDipRect === 'function') {
+    return (rect) => screen.screenToDipRect(null, rect);
+  }
+  return null;
+}
+
 function startActiveWindowAwareness() {
   stopActiveWindowAwareness();
   // macOS 上无窗口边缘行走物理交互，采样仅用于全屏/防打扰守卫，将采样间隔放宽至 30 秒，
@@ -87,6 +100,7 @@ function startActiveWindowAwareness() {
     provider,
     getWindowBounds: deps.getActiveWindowMainBounds,
     getDisplays: deps.getActiveWindowDisplays,
+    screenToDipRect: resolveScreenToDipRect(),
     onChange: (payload) => {
       deps.onActiveWindowChanged?.();
       sendActiveWindowInfo(payload);

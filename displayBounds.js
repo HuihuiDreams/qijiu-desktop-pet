@@ -241,6 +241,7 @@ function findAdjacentDisplay(display, direction, displays) {
 }
 
 module.exports = {
+  isValidRect,
   getActiveWindowPlatformRelativeToBounds,
   getTaskbarPlatformsRelativeToBounds,
   getVirtualDisplayBounds,
