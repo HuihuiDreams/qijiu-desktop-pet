@@ -393,7 +393,10 @@ function createUpdateManager(options = {}) {
       const manualTitle = getTranslatedText(t, 'updateMacManualTitle', '发现新版本');
       
       let manualMsg = getTranslatedText(t, 'updateMacManualMsg', '请先从托盘菜单完全退出当前应用，再下载最新 DMG 并拖入 Applications 覆盖安装。');
-      manualMsg = `当前版本: ${currentVersion}\n最新版本: ${latestVersion}\n\n${manualMsg}`;
+      // macOS 分支只在 isNewerVersion(latest, current) 为真后进入，两个版本号必然都存在
+      const currentLine = getTranslatedText(t, 'updateMacManualCurrentVersion', '当前版本：{version}').replace('{version}', currentVersion);
+      const latestLine = getTranslatedText(t, 'updateMacManualLatestVersion', '最新版本：{version}').replace('{version}', latestVersion);
+      manualMsg = `${currentLine}\n${latestLine}\n\n${manualMsg}`;
 
       const manualBtn = getTranslatedText(t, 'updateMacManualBtn', '前往下载页面');
       const laterBtn = getTranslatedText(t, 'updateBtnLater', '稍后');

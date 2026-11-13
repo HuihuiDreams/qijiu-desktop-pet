@@ -33,7 +33,8 @@
 - [ ] **Task M5：互动覆盖层重复 ID**
 - [ ] **Task M6：Release Preflight 权限过宽**（工作流改动，需在 GitHub Actions 上验证）
 - [ ] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
-- [ ] **Task M8：macOS 手动更新弹窗硬编码中文**
+- [x] **Task M8：macOS 手动更新弹窗硬编码中文**
+  - [x] 新增 `updateMacManualCurrentVersion` / `updateMacManualLatestVersion`（带 `{version}` 占位符，三语）。没有实现审核报告建议的"版本号缺失时省略对应行"：macOS 分支只在 `isNewerVersion(latest, current)` 为真后进入，两个版本号必然存在，`null` 字面值不会出现，省略分支是死代码。
 
 ## P3
 
