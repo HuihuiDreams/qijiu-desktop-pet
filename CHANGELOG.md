@@ -30,6 +30,7 @@
 - **macOS 窗口感知与打扰守卫采样节拍减负 (`macOS Window Awareness pmset Sampling Throttle`)**：由于 macOS 不支持窗口边缘行走物理交互、仅将防休眠断言用于放映与屏保防打扰，在 `WindowAwarenessService.js` 中将 macOS 采样间隔由 2 秒放宽至 30 秒（子进程创建削减 93%），并在 `PresentationGuard.js` 中适配 60 秒有效缓存窗口，彻底解决 MacBook 上高频反复拉起 `pmset` 子进程损耗 CPU 与电量的问题；补充相关单元测试。
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
 - **皮肤服务无效素材根目录配置清理 (`SkinService Ineffective appRoot Cleanup`)**：移除 `SkinService.js` 中三处向受保护素材加载器传入的 `appRoot: __dirname`（`src/main/services/protected-assets` 并不存在，加载器本就会回退到仓库根目录、`resourcesPath` 与 `appPath` 下的 `protected-assets`），不改变开发与打包环境的素材查找结果；加载器中 `manifestNotFound` 负缓存按既有测试约定保持到显式清理，不做修改（[审核复核 L4](docs/code-review-audit-verification-2026-11-13.md)）。
+- **更新进度窗口检查中动画改用 transform (`Update Progress Sweep Animation Uses Transform`)**：`update-progress.css` 的 `@keyframes sweep` 原先逐帧修改 `left` 触发布局，改为 `transform: translateX()`（百分比按检查中 38% 的填充宽度换算为约 -105% / 79% / 263%，对应原来相对进度条的 -40% / 30% / 100%），并为 `.checking .fill` 显式设置 `left: 0`；补充样式回归测试（[审核复核 L10](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。

@@ -51,6 +51,7 @@ p {
 
 .checking .fill {
   position: absolute;
+  left: 0;
   animation: sweep 1.25s ease-in-out infinite;
 }
 
@@ -65,16 +66,18 @@ p {
   visibility: hidden;
 }
 
+/* 用 transform 代替 left，避免每帧触发布局。检查中的填充宽度是 38%（见 update-progress.js），
+   translateX 的百分比相对自身宽度：-105% / 79% / 263% 约等于相对进度条的 -40% / 30% / 100%。 */
 @keyframes sweep {
   0% {
-    left: -40%;
+    transform: translateX(-105%);
   }
 
   50% {
-    left: 30%;
+    transform: translateX(79%);
   }
 
   100% {
-    left: 100%;
+    transform: translateX(263%);
   }
 }
