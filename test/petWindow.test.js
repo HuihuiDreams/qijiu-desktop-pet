@@ -228,7 +228,15 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     
     let cityClosed = false;
     citySettingWindowModule.closeCitySettingWindow = () => { cityClosed = true; };
-    
+
+    windowManager.petScaleWindow = new MockBrowserWindow({});
+    let petScaleClosed = false;
+    windowManager.petScaleWindow.close = () => { petScaleClosed = true; };
+
+    windowManager.updateProgressWindow = new MockBrowserWindow({});
+    let updateProgressClosed = false;
+    windowManager.updateProgressWindow.close = () => { updateProgressClosed = true; };
+
     PetWindow.startKeepOnTopWatcher();
     
     windowManager.mainWindow.trigger('closed');
@@ -236,6 +244,26 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     assert.equal(windowManager.mainWindow, null);
     assert.equal(statusClosed, true);
     assert.equal(cityClosed, true);
+    assert.equal(petScaleClosed, true, 'the parentless pet scale window must not outlive the main window');
+    assert.equal(updateProgressClosed, true, 'the update progress window must not outlive the main window');
+    assert.equal(windowManager.updateProgressWindow, null);
+    windowManager.petScaleWindow = null;
+  });
+
+  await t.test('closed event skips destroyed pet scale and missing update progress windows', () => {
+    const deps = createMockDeps();
+    PetWindow.init(deps);
+    PetWindow.createWindow();
+
+    windowManager.petScaleWindow = new MockBrowserWindow({});
+    windowManager.petScaleWindow.destroyed = true;
+    let petScaleClosed = false;
+    windowManager.petScaleWindow.close = () => { petScaleClosed = true; };
+    windowManager.updateProgressWindow = null;
+
+    assert.doesNotThrow(() => windowManager.mainWindow.trigger('closed'));
+    assert.equal(petScaleClosed, false);
+    windowManager.petScaleWindow = null;
   });
 
   await t.test('keepPetWindowOnTop re-raises visible alwaysOnTop sub-windows and skips hidden/unpinned', () => {

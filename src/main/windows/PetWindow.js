@@ -3,7 +3,7 @@
  * 主宠物透明窗口：创建、置顶守卫、鼠标穿透、二次启动唤回。
  * 本文件是全应用的集成点——did-finish-load/closed 事件天然需要触达多个
  * 服务（多屏几何、窗口感知、可见性状态机、会议检测、天气同步），这些均经
- * init(deps) 注入；windowManager/citySettingWindowModule 作为窗口注册表
+ * init(deps) 注入；windowManager/citySettingWindowModule/updateProgressWindowModule 作为窗口注册表
  * 的兄弟模块，沿用既有窗口模块（StatusWindow/CitySettingWindow/PomodoroWindow）
  * 直接引入的约定。
  */
@@ -12,6 +12,7 @@ const path = require('path');
 const { normalizeMousePassthroughRequest } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
 const citySettingWindowModule = require('./CitySettingWindow');
+const updateProgressWindowModule = require('./UpdateProgressWindow');
 const FinalSaveService = require('../services/FinalSaveService');
 const { isSenderMainWindow } = require('../services/IpcSenderAuthorization');
 const { shouldClearStartupCache } = require('../services/StartupCachePolicy');
@@ -309,6 +310,11 @@ function createWindow() {
     if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
       windowManager.skinSelectorWindow.close();
     }
+    // 体型窗口没有 parent，主窗口关闭后会独立存活；其 close 监听器负责回滚未确认的预览
+    if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
+      windowManager.petScaleWindow.close();
+    }
+    updateProgressWindowModule.closeUpdateProgressWindow();
 
     // Clear screen global listeners to prevent memory leaks across window rebuilds
     screen.removeListener('display-added', DisplayService.displayFitScheduler.schedule);
