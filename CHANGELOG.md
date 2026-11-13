@@ -6,6 +6,7 @@
 
 ### Changed
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
+- **皮肤服务无效素材根目录配置清理 (`SkinService Ineffective appRoot Cleanup`)**：移除 `SkinService.js` 中三处向受保护素材加载器传入的 `appRoot: __dirname`（`src/main/services/protected-assets` 并不存在，加载器本就会回退到仓库根目录、`resourcesPath` 与 `appPath` 下的 `protected-assets`），不改变开发与打包环境的素材查找结果；加载器中 `manifestNotFound` 负缓存按既有测试约定保持到显式清理，不做修改（[审核复核 L4](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ### Fixed
 - **macOS 待批准自启动意图保留 (`macOS Pending Approval Auto-Launch Intent Preservation`)**：修复 `AutoLaunchService.setAutoLaunchPreference(true)` 在 macOS 返回 `status: 'requires-approval'` 时误走失败回滚分支、保留旧存储偏好 `false` 却未撤销系统注册的问题；显式识别 `requires-approval` 待批准状态并持久化用户开启偏好（`autoLaunch: true`、`pendingApproval: true`），同时保持运行期 `isAutoLaunchEnabled()` 为 `false` 直至用户在系统设置中批准，避免批准后下次启动 `syncAutoLaunchPreference()` 按 `false` 撤销注册；补充完整生命周期回归测试。

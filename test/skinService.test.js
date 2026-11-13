@@ -338,6 +338,13 @@ test('SkinService - restoreConfirmedSkinFromStore', async (t) => {
   });
 });
 
+test('SkinService does not pass its own directory as the protected asset root', () => {
+  // src/main/services/protected-assets 并不存在；加载器会回退到仓库根目录与 resourcesPath/appPath，
+  // 传入 __dirname 只是一个永远不命中的无效候选路径。
+  const source = require('node:fs').readFileSync(require.resolve('../src/main/services/SkinService'), 'utf8');
+  assert.doesNotMatch(source, /appRoot:\s*__dirname/);
+});
+
 test('SkinService - Utility Functions', async (t) => {
   await t.test('resolvePomodoroAsset fallbacks correctly', () => {
     const url = SkinService.resolvePomodoroAsset('invalid_skin_id', 'walk_left.webp');
