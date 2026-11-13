@@ -10,6 +10,18 @@
 - 原报告漏判了一条高频问题：每次拖拽结束都会恢复鼠标穿透（H2）。现升为 P1。
 - 标注"需实测"的条目只能靠静态阅读推断，修复前要先在对应平台复现。
 
+## 修复进度
+
+逐项进度、每项的取舍与需要在 Windows 上完成的验证步骤见[修复计划](plan/audit-verification-remediation-plan.md)。下文各节保留复核时的原始分析，行号仍以 `main@ea5e163` 为准。
+
+| 状态 | 条目 |
+| --- | --- |
+| 已修复，macOS 上已验证 | H1、M1、M2、M3、M4、M5、M8、L1、L2、L5、L6、L7、L9、L11、L13、L14、L15、L16 |
+| 已修复，仍需 Windows 或 CI 验证 | H2（真机手动确认）、M6（GitHub Actions 实跑）、M7（Windows runner）、L10（目测动画）、L12（`push.ps1` 解析）、L17（Windows 打包）、L18（Windows 打包版） |
+| 部分修复 | L4：已移除无效的 `appRoot`；`manifestNotFound` 负缓存按既有测试约定保留 |
+| 评估后不修复 | L3、L8，理由见修复计划 |
+| 未改代码，等待 Windows 采集数据 | H3 |
+
 ## 优先级定义
 
 | 级别 | 含义 |
