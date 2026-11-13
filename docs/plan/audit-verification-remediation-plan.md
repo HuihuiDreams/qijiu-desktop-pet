@@ -48,6 +48,9 @@
 
 - [x] **Task L1：`PetVisibilityService` 补 `isDestroyed()` 守卫**
 - [ ] **Task L2–L4：`SkinService` 小问题**
+  - [x] L2：确认皮肤时等待中的加载被取消或被取代，返回 `STALE_REQUEST` 而不是 `LOAD_FAILED`。
+  - [ ] L3：**不修复**。首次安装没有 `petState` 时由随后 `switch-skin` 的 `persist: true` 让渲染进程保存完整 `petState`；若主进程改写一个只有 `skinId` 的残缺 `petState`，渲染进程启动读取时会拿到缺少养成数值的存档，风险高于收益。
+  - [ ] L4：移除 `appRoot: __dirname` 无效配置（待做）；`manifestNotFound` 粘滞缓存**不修复**，`test/protectedAssetLoader.test.js` 明确把"负缓存保持到显式清理"作为设计行为。
 - [ ] **Task L5：托盘保留 `idleResetMinutes` 原值**
 - [ ] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
 - [ ] **Task L7：天气同步数值校验与响应上限**

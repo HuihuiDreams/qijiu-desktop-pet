@@ -146,9 +146,22 @@ test('changing preview while confirmation waits rejects the old confirmation and
   await harness.report(school, true);
 
   assert.equal(result.success, false, 'a confirmation for a superseded preview must fail');
+  assert.equal(result.error.code, 'STALE_REQUEST', 'a superseded preview is stale, not a load failure');
   assert.deepEqual(afterOldConfirmation, {
     confirmed: 'default', preview: 'school_au', stored: { skinId: 'default', score: 10 }, closeCount: 0,
   });
+});
+
+test('cancelling while a confirmation waits for the load reports a stale request, not a load failure', async () => {
+  const harness = createHarness();
+  await harness.preview('birds');
+  const confirmation = harness.confirm();
+  harness.cancel();
+  const result = await confirmation;
+
+  assert.equal(result.success, false);
+  assert.equal(result.error.code, 'STALE_REQUEST');
+  assert.equal(harness.snapshot().confirmed, 'default');
 });
 
 test('cancel after a successful report is queued rejects the old confirmation without closing a new preview', async () => {
