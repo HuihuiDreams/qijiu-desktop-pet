@@ -60,6 +60,15 @@ test('the Windows preflight job waits for sync-version but still runs for pull r
   assert.match(jobs.preflight, /ref: \$\{\{ github\.event_name == 'workflow_dispatch' && github\.ref \|\| '' \}\}/);
 });
 
+test('the macOS preflight job waits for sync-version and checks out the synced commit like Windows', () => {
+  assert.match(jobs['preflight-mac'], /needs: sync-version/);
+  assert.match(
+    jobs['preflight-mac'],
+    /if: always\(\) && \(needs\.sync-version\.result == 'success' \|\| needs\.sync-version\.result == 'skipped'\)/,
+  );
+  assert.match(jobs['preflight-mac'], /ref: \$\{\{ github\.event_name == 'workflow_dispatch' && github\.ref \|\| '' \}\}/);
+});
+
 test('the macOS preflight job also runs the integration tests', () => {
   assert.match(jobs['preflight-mac'], /run: npm run test:integration/);
 });
