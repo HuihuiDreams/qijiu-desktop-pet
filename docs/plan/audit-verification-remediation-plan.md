@@ -65,7 +65,8 @@
   - [x] `push.sh` 提交失败原先 `exit $?` 返回的是 `echo` 的状态（0），推送失败后脚本也以 0 结束；现在两种失败都以 1 退出。`push.ps1` 同样补上推送失败的 `exit 1`。新增 `test/pushScript.test.js` 在临时仓库里实跑 `push.sh`（pre-commit 钩子拒绝、无 `origin` 两种场景）。
   - [x] **不修改**：`git add .`（脚本契约就是提交全部改动，已有敏感目录拦截）、固定推送 `origin main`（文档约定的主干工作流）、本地 `sync:cp --verify` 内部的 `npm ci`（隔离 worktree 验证的必要步骤，[ADR-049](decisions/ADR-049-main-to-cp-auto-sync.md)），这些是流程取舍，不是缺陷。
   - [ ] 【Windows 待验证】`push.ps1` 的 `exit 1` 无法在 macOS 上执行；需在 Windows 上运行 `node --test test/pushScript.test.js`（其中 "push.ps1 parses in Windows PowerShell" 仅在 win32 执行）确认脚本仍可解析。
-- [ ] **Task L13：ADR 校验退出码与 `check:adrs` 脚本**
+- [x] **Task L13：ADR 校验退出码与 `check:adrs` 脚本**
+  - [x] `check_adrs.js` 发现缺失章节时退出码为 1；新增 `npm run check:adrs`；补齐 [ADR-049](../decisions/ADR-049-main-to-cp-auto-sync.md) 缺失的 `Alternatives Considered`（内容全部取自该 ADR 已有的 Context/Decision 理由）。`test/check_adrs.test.js` 增加对全部 ADR 的检查，因此 `npm test`（CI 已运行）会拦截今后的格式缺失。
 - [ ] **Task L14：失效文档链接**
 - [ ] **Task L15–L16：死代码清理**
 - [ ] **Task L17：托盘模板图标从打包中排除**
