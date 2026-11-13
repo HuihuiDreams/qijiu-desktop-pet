@@ -527,12 +527,16 @@ test('update-downloaded refuses a package when checksum metadata is missing', as
   fs.writeFileSync(tmpFile, 'unverified-update');
 
   try {
-    const { updater, manager } = createHarness();
+    const { updater, manager, messages, logErrors } = createHarness();
     updater.emit('update-downloaded', { downloadedFile: tmpFile });
-    await waitFor(() => manager.getUpdateMenuState().error === 'integrity-check-failed');
+    await waitFor(() => messages.length === 1);
 
     assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
     assert.equal(updater.quitAndInstallArgs, undefined);
+    assert.equal(messages[0].type, 'error');
+    assert.equal(messages[0].title, 'updateErrTitle');
+    assert.equal(messages[0].message, 'updateErrIntegrity');
+    assert.equal(logErrors.length, 1, 'the refusal must be written to the update log');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -546,14 +550,37 @@ test('update-downloaded intercepts corrupted package integrity (SBP-001)', async
   const tmpFile = path.join(os.tmpdir(), 'deskpet-corrupt-update.bin');
   fs.writeFileSync(tmpFile, 'deskpet-corrupt-content');
 
-  const { updater, manager, messages } = createHarness();
-  updater.emit('update-downloaded', { downloadedFile: tmpFile, sha512: 'invalid-hash' });
-  await waitFor(() => manager.getUpdateMenuState().error === 'integrity-check-failed');
+  const { updater, manager, messages, logErrors, progressEvents } = createHarness();
+  updater.emit('update-downloaded', { version: '0.12.0', downloadedFile: tmpFile, sha512: 'invalid-hash' });
+  await waitFor(() => messages.length === 1);
 
   assert.equal(manager.getUpdateMenuState().error, 'integrity-check-failed');
-  assert.equal(messages.length, 0);
+  assert.equal(updater.quitAndInstallArgs, undefined, 'a corrupted package must never be installed');
+  assert.equal(messages[0].type, 'error');
+  assert.equal(messages[0].title, 'updateErrTitle');
+  assert.equal(messages[0].message, 'updateErrIntegrity');
+  assert.deepEqual(messages[0].buttons, ['updateBtnOk']);
+  assert.equal(logErrors.length, 1);
+  assert.match(String(logErrors[0][1]?.message), /integrity verification \(version: 0\.12\.0\)/);
+  assert.deepEqual(progressEvents.at(-1), ['close'], 'the progress window must be closed before the error dialog');
 
   if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+});
+
+test('verifyDownloadedPackageIntegrity logs the read failure instead of swallowing it', async () => {
+  const path = require('node:path');
+  const os = require('node:os');
+  const logged = [];
+  const log = { error: (...args) => logged.push(args) };
+
+  const result = await verifyDownloadedPackageIntegrity({
+    downloadedFile: path.join(os.tmpdir(), 'deskpet-update-missing-file.bin'),
+    sha512: 'abc',
+  }, { log });
+
+  assert.equal(result, false);
+  assert.equal(logged.length, 1);
+  assert.equal(logged[0][1]?.code, 'ENOENT');
 });
 
 test('mac manual update opens the release page when a newer version is accepted', async () => {

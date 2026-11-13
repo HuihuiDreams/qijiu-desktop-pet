@@ -130,6 +130,7 @@ const I18N = {
       updateErrServer: '更新服务器暂时不可用，请稍后再试。',
       updateErrDownload: '更新包下载中断，请稍后重试；如果反复失败，可改用手动下载安装包。',
       updateErrGeneric: '检查更新失败，详细原因已写入日志。',
+      updateErrIntegrity: '更新包校验失败，已停止安装。请稍后重试，或从 GitHub Releases 页面手动下载安装包；详细原因已写入日志。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：未知错误，详情已写入日志。',
 
@@ -532,6 +533,7 @@ const I18N = {
       updateErrServer: 'Update server is temporarily unavailable. Please try again later.',
       updateErrDownload: 'Update download interrupted. Please try again. If it keeps failing, consider downloading the installer manually.',
       updateErrGeneric: 'Failed to check for updates. Details have been logged.',
+      updateErrIntegrity: 'The downloaded update failed verification and was not installed. Please try again later, or download the installer manually from the GitHub Releases page. Details have been logged.',
       updateErrDetailPrefix: 'Reason: ',
       updateErrUnknownDetail: 'Reason: Unknown error, details have been logged.',
 
@@ -926,6 +928,7 @@ const I18N = {
       updateErrServer: '更新サーバーが一時的に利用できません。後でもう一度お試しください。',
       updateErrDownload: 'ダウンロードが中断されました。後で再試行するか、手動でインストーラーをダウンロードしてください。',
       updateErrGeneric: '更新の確認に失敗しました。詳細はログに記録されています。',
+      updateErrIntegrity: 'ダウンロードした更新ファイルの検証に失敗したため、インストールを中止しました。後でもう一度お試しいただくか、GitHub Releasesページからインストーラーを手動でダウンロードしてください。詳細はログに記録されています。',
       updateErrDetailPrefix: '原因：',
       updateErrUnknownDetail: '原因：不明なエラー。詳細はログに記録されています。',
 

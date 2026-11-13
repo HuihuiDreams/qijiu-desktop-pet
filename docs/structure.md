@@ -417,7 +417,7 @@ src/assets/{skinId}/
 
 `updateManager.js` 封装更新流程：
 
-- 下载完成后必须同时取得本地安装包路径和 SHA-512 元数据，并在安装确认前完成 Base64 或 Hex 摘要比对；任何缺失、不可读或不匹配情况都按 `integrity-check-failed` 终止，成功下载本身不等于可信更新。
+- 下载完成后必须同时取得本地安装包路径和 SHA-512 元数据，并在安装确认前完成 Base64 或 Hex 摘要比对；任何缺失、不可读或不匹配情况都按 `integrity-check-failed` 终止，同时写入更新日志并弹出错误提示（`updateErrIntegrity`），成功下载本身不等于可信更新。
 
 - Windows 主要走 `electron-updater` 和 GitHub Releases。
 - macOS 包含手动更新提示和可执行文件名处理；GitHub Releases 请求使用 `AbortController` 固定在 15 秒后中止，所有成功与失败路径都会清理定时器，超时后恢复托盘入口以允许重试。

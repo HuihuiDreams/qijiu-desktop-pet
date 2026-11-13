@@ -81,6 +81,8 @@ Accepted
 
 更新包的本地 SHA-512 校验采用 fail-closed 语义：只有下载路径存在、校验元数据为非空字符串、文件可读且 Base64 或 Hex 摘要匹配时，才能进入安装确认。缺少 `downloadedFile`、`sha512`（含 `files[0].sha512` 回退）、文件读取失败或摘要不匹配时统一设置 `integrity-check-failed` 并停止安装。
 
+2026-11-13 补充：校验失败时除了设置 `integrity-check-failed`，还会写入更新日志（文件读取异常另记一条，包含原始错误），并弹出带 `updateErrIntegrity` 文案的错误对话框，避免用户看到下载完成后没有任何反馈。详见 [审核复核 M2](../code-review-audit-verification-2026-11-13.md)。
+
 这避免把 electron-updater 的“下载完成”事件误当成应用层完整性证明；相应单测覆盖合法双格式摘要、缺失元数据、不可读文件、损坏包以及不调用 `quitAndInstall` 的负向路径。
 
 ### 补充：macOS 手动更新检查超时 (2026-09-01)
