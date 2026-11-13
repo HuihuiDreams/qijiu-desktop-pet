@@ -215,6 +215,8 @@ test('Windows retains native RDP sampling and resumes it while renderer window a
 });
 
 test('WindowAwarenessService converts raw bounds to DIP once for both PresentationGuard and surface platform', async () => {
+  const originalPlatform = process.platform;
+  Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
   const mixedDisplays = [
     {
       bounds: { x: 0, y: 0, width: 2560, height: 1440 },
@@ -231,43 +233,43 @@ test('WindowAwarenessService converts raw bounds to DIP once for both Presentati
   const dipConvertedBounds = { x: 2560, y: 0, width: 1080, height: 1920 };
   let conversionCalls = 0;
 
-  WindowAwarenessService.init({
-    windowManager: {
-      mainWindow: {
-        isDestroyed: () => false,
-        webContents: { send: () => {} },
-      },
-    },
-    trayManager: { refreshTrayMenu: () => {} },
-    getActiveWindowDisplays: () => mixedDisplays,
-    getActiveWindowMainBounds: () => ({ x: 0, y: 0, width: 3640, height: 1920 }),
-    screenToDipRect: (rect) => {
-      conversionCalls += 1;
-      assert.deepEqual(rect, rawPhysicalBounds);
-      return dipConvertedBounds;
-    },
-    createActiveWindowProvider: () => ({
-      async getActiveWindowInfo() {
-        return {
-          active: true,
-          sampledAt: Date.now(),
-          source: 'active-window',
-          window: {
-            id: '42',
-            title: 'Presentation Window',
-            ownerName: 'POWERPNT',
-            bounds: rawPhysicalBounds,
-            isMinimized: false,
-            isMaximized: false,
-            isFullScreen: false,
-          },
-        };
-      },
-      dispose() {},
-    }),
-  });
-
   try {
+    WindowAwarenessService.init({
+      windowManager: {
+        mainWindow: {
+          isDestroyed: () => false,
+          webContents: { send: () => {} },
+        },
+      },
+      trayManager: { refreshTrayMenu: () => {} },
+      getActiveWindowDisplays: () => mixedDisplays,
+      getActiveWindowMainBounds: () => ({ x: 0, y: 0, width: 3640, height: 1920 }),
+      screenToDipRect: (rect) => {
+        conversionCalls += 1;
+        assert.deepEqual(rect, rawPhysicalBounds);
+        return dipConvertedBounds;
+      },
+      createActiveWindowProvider: () => ({
+        async getActiveWindowInfo() {
+          return {
+            active: true,
+            sampledAt: Date.now(),
+            source: 'active-window',
+            window: {
+              id: '42',
+              title: 'Presentation Window',
+              ownerName: 'POWERPNT',
+              bounds: rawPhysicalBounds,
+              isMinimized: false,
+              isMaximized: false,
+              isFullScreen: false,
+            },
+          };
+        },
+        dispose() {},
+      }),
+    });
+
     WindowAwarenessService.setWindowAwarenessEnabled(true);
     await new Promise((resolve) => setImmediate(resolve));
 
@@ -284,5 +286,6 @@ test('WindowAwarenessService converts raw bounds to DIP once for both Presentati
     assert.equal(conversionCalls, 1);
   } finally {
     WindowAwarenessService.stopActiveWindowAwareness();
+    Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
   }
 });
