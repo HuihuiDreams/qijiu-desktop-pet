@@ -61,7 +61,7 @@
   - 相关的真实风险是 H2 同类问题：右键菜单覆盖在宠物上，选完项后指针可能停在宠物上而穿透已恢复。`hide()` 当下指针在菜单上，`pet.element.matches(':hover')` 恒为假，无法像 H2 那样在此处判断，需要实机复现后再设计。已加入文末 H2 验证步骤。
 - [x] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
   - [x] L9：番茄钟提示框改用 `--font-body`。
-  - [x] L10：`sweep` 关键帧改为 `transform: translateX()`（百分比按 38% 填充宽度换算）。动画观感需要目测一次，见文末清单。
+  - [x] L10：`sweep` 关键帧改为 `transform: translateX()`（百分比按 38% 填充宽度换算）。已在 Windows 运行 `UpdateProgressWindow` 检查中状态（`380×172`），实测截图确认绿色滑块全程在 `.bar`（`overflow: hidden`、`border-radius: 999px`）圆角内平滑往返滑入/滑出，`left` 保持 `0px`、无跳变或溢出。
 - [x] **Task L11：`protect-assets` 清理残留 `.dat`**
 - [x] **Task L12：`push.sh` 工具链问题**
   - [x] `push.sh` 提交失败原先 `exit $?` 返回的是 `echo` 的状态（0），推送失败后脚本也以 0 结束；现在两种失败都以 1 退出。`push.ps1` 同样补上推送失败的 `exit 1`。新增 `test/pushScript.test.js` 在临时仓库里实跑 `push.sh`（pre-commit 钩子拒绝、无 `origin` 两种场景）。
@@ -77,12 +77,12 @@
 - [x] **Task L17：托盘模板图标从打包中排除**
   - [x] `build.files` 增加 `!src/assets/iconTemplate*.png`。已在 macOS 用 `electron-builder --mac --dir --arm64`（输出到临时目录）实际打包验证：`app.asar` 里不再有这两个文件，`icon.png/ico/icns` 保留；测试和 CP 同步白名单仍引用的源文件留在仓库。
   - [x] 额外发现已处理：本机未跟踪的 `backups/` 目录（`.gitignore` 已忽略，但 electron-builder 不读取 `.gitignore`）此前会把其中的明文皮肤 WebP 打进 `app.asar`。`build.files` 增加 `!backups/**`，`scripts/verify-package-contents.js` 的禁止路径增加 `backups`，打包后检查会拦截；`test/packageContentsSecurity.test.js` 补断言。CI 上没有这个目录，不受影响。
-  - [ ] 【Windows 待验证】Windows 打包同样走 `build.files`，下次在 Windows 上 `npx electron-builder --win --dir` 后，用 `npm run verify:package` 并确认 `app.asar` 不含 `iconTemplate`。
+  - [x] 【Windows 已验证】已执行 `npm run protect:assets` 与 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false`，`npm run verify:package` 通过，`npx @electron/asar list dist\win-unpacked\resources\app.asar` 确认仅含 `icon.icns/ico/png`、不含 `iconTemplate` 与 `backups`。
 - [x] **Task L18：调试工具门控**
   - [x] `src/debug.js` 的控制台辅助函数由路径含 `/app.asar/` 改为按主进程下发的开关启用：`PetWindow` 在 `!app.isPackaged` 时通过 `additionalArguments` 传 `--deskpet-debug-tools`，`preload.js` 暴露 `electronAPI.debugToolsEnabled`。
   - [x] **刻意保留** `app.js` 挂载的 `window.__DEBUG_*` 数据对象：`tools/performance/scenarios.js` 在打包版上用 `__DEBUG_WEATHER/PETS/MOVEMENT` 做性能基线，门控它们会破坏这套测量；这一点审核报告没有提到。它们只存在于渲染进程主世界，不暴露任何 Node 能力，CSP 也限制了脚本来源。
   - [x] 已在 macOS 实机验证：开发模式 `debugToolsEnabled=true` 且 `testInteraction` 可用；`electron-builder --mac --dir` 的打包版 `debugToolsEnabled=false`、`testInteraction` 未定义、`__DEBUG_PETS/__DEBUG_WEATHER` 仍可用。
-  - [ ] 【Windows 待验证】Windows 打包版同样需要确认一次，见文末清单。
+  - [x] 【Windows 已验证】已启动未签名打包版 `dist\win-unpacked\七九爱宠.exe` 与开发模式对照实测：开发模式 `debugToolsEnabled === true`、`typeof window.testInteraction === 'function'`；打包版 `debugToolsEnabled === false`、`typeof window.testInteraction === 'undefined'`，`window.__DEBUG_PETS` 与 `window.__DEBUG_WEATHER` 保持可用。
 
 ---
 
@@ -97,9 +97,9 @@
 | M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
 | M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |
 | L12（已完成） | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip） |
-| L17 | Windows | Windows 打包后确认 `app.asar` 不含 `iconTemplate` |
-| L18 | Windows | Windows 打包版确认 `debugToolsEnabled === false` |
-| L10 | 任一平台 | 目测"检查更新"进度动画 |
+| L17（已完成） | Windows | Windows 打包后已确认 `verify:package` 通过且 `app.asar` 不含 `iconTemplate` 与 `backups` |
+| L18（已完成） | Windows | Windows 打包版已确认 `debugToolsEnabled === false`、`testInteraction === undefined`、`__DEBUG_PETS` 保留 |
+| L10（已完成） | Windows | 已在 Electron 实屏截图逐帧确认"检查中" `sweep` 动画在圆角进度条内平滑滑行无溢出 |
 | M6 补充（已完成） | Windows | 本机已跑通 `npm run test:integration`（19 passed），已将该步骤加入 Windows 预检作业 |
 
 ### H3 Windows 前台窗口坐标口径
