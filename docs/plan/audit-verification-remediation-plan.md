@@ -46,7 +46,7 @@
 
 ## P3
 
-- [ ] **Task L1：`PetVisibilityService` 补 `isDestroyed()` 守卫**
+- [x] **Task L1：`PetVisibilityService` 补 `isDestroyed()` 守卫**
 - [ ] **Task L2–L4：`SkinService` 小问题**
 - [ ] **Task L5：托盘保留 `idleResetMinutes` 原值**
 - [ ] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
