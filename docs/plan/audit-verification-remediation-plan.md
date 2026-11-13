@@ -42,7 +42,7 @@
   - [x] 【Windows 已验证】已在 Windows 本机跑通 `npm run test:integration`（19 passed, 0 failed），并将该步骤接入 `.github/workflows/release-preflight.yml` 的 Windows `preflight` 作业与 `test/releasePreflightWorkflow.test.js` 断言。`test:e2e` 与 `qa:electron:smoke` 需要显示环境，本轮不接入 CI。
 - [x] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
   - [x] Windows 上传步骤在 `gh release create` 失败后再执行一次 `gh release view`，两者都失败才抛错，与 macOS 作业一致。新增 `test/buildInstallerWorkflow.test.js` 静态断言。
-  - [ ] 【Windows 待验证】需要在真实 tag 推送上观察一次，见文末清单。
+  - [ ] 【Windows / CI 待验证】本机已安装 `gh 2.104.0` 与 `pwsh 7.7.0` 并实测验证 `$LASTEXITCODE` 竞态兜底逻辑（`$ErrorActionPreference = 'Stop'` 下 `gh release create` 非零退出加 stderr 不提前中止，成功进入 `gh release view` 兜底分支，双失败按预期抛错；`gh.exe` 返回 `$LASTEXITCODE = 4`）。真实 `v*` tag 推送上的 GitHub Actions Windows runner 步骤仍待在远端观察一次。
 - [x] **Task M8：macOS 手动更新弹窗硬编码中文**
   - [x] 新增 `updateMacManualCurrentVersion` / `updateMacManualLatestVersion`（带 `{version}` 占位符，三语）。没有实现审核报告建议的"版本号缺失时省略对应行"：macOS 分支只在 `isNewerVersion(latest, current)` 为真后进入，两个版本号必然存在，`null` 字面值不会出现，省略分支是死代码。
 
@@ -95,7 +95,7 @@
 | H3（已完成） | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 已在 Windows 11 150%+100% 混合 DPI 采集原始坐标并完成统一物理像素采样与主进程单次 DIP 转换修复与实测 |
 | H2 | Windows 与 macOS 已解锁真机 | Electron 45 `:hover` 与租约取消已实测通过；仍待在已解锁桌面用真实物理鼠标确认一次下层窗口不穿透（及 macOS 真机） |
 | M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
-| M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |
+| M7 | GitHub Actions（Windows runner） | 本机 `pwsh 7.7.0` + `gh 2.104.0` 已验证 `$LASTEXITCODE` 兜底分支；待 `gh auth login` 推送并推 `v*` tag 时观察真实 runner |
 | L12（已完成） | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip） |
 | L17（已完成） | Windows | Windows 打包后已确认 `verify:package` 通过且 `app.asar` 不含 `iconTemplate` 与 `backups` |
 | L18（已完成） | Windows | Windows 打包版已确认 `debugToolsEnabled === false`、`testInteraction === undefined`、`__DEBUG_PETS` 保留 |
