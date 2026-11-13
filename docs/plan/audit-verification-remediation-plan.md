@@ -28,7 +28,8 @@
   - [x] 不提前 `onSaveBeforeQuit`：状态未加载时保存会用默认值覆盖存档，与审核报告"可随 M1 提前"的建议不同，理由见 `docs/structure.md`。
 - [x] **Task M2：更新包完整性校验失败无提示、无日志**
   - [x] 校验失败写日志并弹出 `updateErrIntegrity` 错误对话框（三语），`verifyDownloadedPackageIntegrity` 的 `catch` 记录异常；`state.error` 仍为稳定标识 `integrity-check-failed`，保持 ADR-025 约定。
-- [ ] **Task M3：更新进度窗口加载期间进度被初始载荷覆盖**
+- [x] **Task M3：更新进度窗口加载期间进度被初始载荷覆盖**
+  - [x] `UpdateProgressWindow.js` 记录 `latestPayload`，`did-finish-load` 补发最新值；`closed` 回调只清理仍指向自己的引用；`close()` 同时重置 `latestPayload`。新增 `test/updateProgressWindow.behavior.test.js`。
 - [ ] **Task M4：主窗口关闭时未关闭体型调节窗口**
 - [ ] **Task M5：互动覆盖层重复 ID**
 - [ ] **Task M6：Release Preflight 权限过宽**（工作流改动，需在 GitHub Actions 上验证）
