@@ -90,17 +90,17 @@
 
 换到 Windows 机器后按此清单处理，处理完成后回到本文件勾选。
 
-| 编号 | 需要什么环境 | 要做什么 |
-| --- | --- | --- |
-| H3（已完成） | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 已在 Windows 11 150%+100% 混合 DPI 采集原始坐标并完成统一物理像素采样与主进程单次 DIP 转换修复与实测 |
-| H2 | Windows 与 macOS 已解锁真机 | Electron 45 `:hover` 与租约取消已实测通过；仍待在已解锁桌面用真实物理鼠标确认一次下层窗口不穿透（及 macOS 真机） |
-| M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
-| M7 | GitHub Actions（Windows runner） | 本机 `pwsh 7.7.0` + `gh 2.104.0` 已验证 `$LASTEXITCODE` 兜底分支；待 `gh auth login` 推送并推 `v*` tag 时观察真实 runner |
-| L12（已完成） | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip） |
-| L17（已完成） | Windows | Windows 打包后已确认 `verify:package` 通过且 `app.asar` 不含 `iconTemplate` 与 `backups` |
-| L18（已完成） | Windows | Windows 打包版已确认 `debugToolsEnabled === false`、`testInteraction === undefined`、`__DEBUG_PETS` 保留 |
-| L10（已完成） | Windows | 已在 Electron 实屏截图逐帧确认"检查中" `sweep` 动画在圆角进度条内平滑滑行无溢出 |
-| M6 补充（已完成） | Windows | 本机已跑通 `npm run test:integration`（19 passed），已将该步骤加入 Windows 预检作业 |
+| 编号              | 需要什么环境                                | 要做什么                                                                                                                 |
+| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| H3（已完成）      | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 已在 Windows 11 150%+100% 混合 DPI 采集原始坐标并完成统一物理像素采样与主进程单次 DIP 转换修复与实测                     |
+| H2                | Windows 与 macOS 已解锁真机                 | Electron 45 `:hover` 与租约取消已实测通过；仍待在已解锁桌面用真实物理鼠标确认一次下层窗口不穿透（及 macOS 真机）         |
+| M6                | GitHub Actions                              | 手动触发与 PR 各跑一次 Release Preflight                                                                                 |
+| M7                | GitHub Actions（Windows runner）            | 本机 `pwsh 7.7.0` + `gh 2.104.0` 已验证 `$LASTEXITCODE` 兜底分支；待 `gh auth login` 推送并推 `v*` tag 时观察真实 runner |
+| L12（已完成）     | Windows                                     | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip）           |
+| L17（已完成）     | Windows                                     | Windows 打包后已确认 `verify:package` 通过且 `app.asar` 不含 `iconTemplate` 与 `backups`                                 |
+| L18（已完成）     | Windows                                     | Windows 打包版已确认 `debugToolsEnabled === false`、`testInteraction === undefined`、`__DEBUG_PETS` 保留                 |
+| L10（已完成）     | Windows                                     | 已在 Electron 实屏截图逐帧确认"检查中" `sweep` 动画在圆角进度条内平滑滑行无溢出                                          |
+| M6 补充（已完成） | Windows                                     | 本机已跑通 `npm run test:integration`（19 passed），已将该步骤加入 Windows 预检作业                                      |
 
 ### H3 Windows 前台窗口坐标口径
 
