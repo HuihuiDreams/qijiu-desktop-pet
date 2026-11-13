@@ -432,6 +432,28 @@ function getAvailableOverlayKeys(skinId) {
   return CANDIDATE_KEYS.filter((key) => hasSkinAsset(safeSkinId, `${key}.webp`));
 }
 
+function setCurrentSkinId(skinId) {
+  cancelPendingSkinLoads('CANCELLED');
+  ++skinLoadRequestId;
+  confirmedSkinId = skinId;
+  previewTargetSkinId = null;
+  lastLoadedSkinId = skinId;
+  lastLoadSuccess = true;
+}
+
+/**
+ * 启动时用 store 中已保存的 petState.skinId 同步主进程的 confirmedSkinId。
+ * 渲染进程在 applySkinById 之前就可能触发 save-data（如离线结算），
+ * 而 StorageIpc 会用 confirmedSkinId 覆盖落盘的 skinId，
+ * 不同步会把已保存的皮肤写回 'default'。保存值不可用时保持当前值。
+ */
+function restoreConfirmedSkinFromStore(store) {
+  const savedSkinId = store?.get?.('petState')?.skinId;
+  if (!isAllowedSkinId(savedSkinId, scanAvailableSkins())) return confirmedSkinId;
+  setCurrentSkinId(savedSkinId);
+  return confirmedSkinId;
+}
+
 module.exports = {
   init,
   scanAvailableSkins,
@@ -446,12 +468,6 @@ module.exports = {
   getCurrentSkinId: () => confirmedSkinId,
   getConfirmedSkinId: () => confirmedSkinId,
   getPreviewSkinId: () => previewTargetSkinId,
-  setCurrentSkinId: (val) => {
-    cancelPendingSkinLoads('CANCELLED');
-    ++skinLoadRequestId;
-    confirmedSkinId = val;
-    previewTargetSkinId = null;
-    lastLoadedSkinId = val;
-    lastLoadSuccess = true;
-  },
+  setCurrentSkinId,
+  restoreConfirmedSkinFromStore,
 };

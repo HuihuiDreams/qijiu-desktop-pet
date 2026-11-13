@@ -7,6 +7,7 @@
 ### Fixed
 - **macOS 待批准自启动意图保留 (`macOS Pending Approval Auto-Launch Intent Preservation`)**：修复 `AutoLaunchService.setAutoLaunchPreference(true)` 在 macOS 返回 `status: 'requires-approval'` 时误走失败回滚分支、保留旧存储偏好 `false` 却未撤销系统注册的问题；显式识别 `requires-approval` 待批准状态并持久化用户开启偏好（`autoLaunch: true`、`pendingApproval: true`），同时保持运行期 `isAutoLaunchEnabled()` 为 `false` 直至用户在系统设置中批准，避免批准后下次启动 `syncAutoLaunchPreference()` 按 `false` 撤销注册；补充完整生命周期回归测试。
 - **更新检查 SemVer 构建元数据剥离 (`SemVer Build Metadata Stripping in Update Check`)**：修复 `updateManager.js` 中 `parseSemver` 未先剥离 `+build` 构建元数据导致 `0.11.3-beta.2+build.1` 被误判为比 `0.11.3-beta.10` 更新、以及 `0.11.3` 被误判为比 `0.11.3+build.1` 更新的问题；严格遵循 SemVer 2.0.0 第 10 条规范在比较前忽略 `+` 及其后构建元数据，并补充对应回归测试。
+- **启动阶段已保存皮肤被写回默认值修复 (`Saved Skin Overwritten By Early Save-Data`)**：修复主进程 `confirmedSkinId` 启动时固定为 `default`、渲染进程在 `applySkinById` 之前因离线结算触发 `save-data` 时，`StorageIpc` 用 `default` 覆盖已保存 `petState.skinId` 并落盘，导致此时崩溃或被强制结束会永久丢失所选皮肤的问题；`SkinService` 新增 `restoreConfirmedSkinFromStore()`，在 `AppLifecycle.initCoreServices()` 于 store 就绪后立即用可用皮肤列表校验并同步已保存皮肤（校验失败保持 `default`），补充启动首次 `save-data` 回归测试（[审核复核 H1](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ## [0.11.3] - 2026-11-11
 
