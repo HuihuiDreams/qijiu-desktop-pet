@@ -18,7 +18,7 @@
 - [x] **Task H2：拖拽结束后无条件恢复鼠标穿透**
   - [x] macOS 上完成修复与 fake-DOM 单元测试：`PetRenderer` 的 `finishDrag` 三条恢复路径（100ms 延迟、watchdog、`blur`）统一走 `restoreMousePassthroughIfIdle()`，指针仍在宠物上（`:hover`）或右键菜单打开时不恢复。
   - [x] 复核补修：拖拽期间下发的 `leaseMs: 1000` 租约会在主进程计时，到期把窗口改回穿透。`:hover` 分支现在额外发送一次不带 `leaseMs` 的 `setIgnoreMouseEvents(false)` 取消该租约；菜单已打开时仍不发送，避免取消 `ContextMenu` 自己的 10 秒租约。`mouseleave` 的菜单判断同步改用 `isContextMenuOpen()`（菜单元素不存在时不再被当作"已打开"）。`test/petWindow.test.js` 补主进程租约取消/到期测试。
-  - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透（步骤见文末清单）。macOS 真机同样建议手动确认一次。
+  - [ ] 【Windows 部分验证 / 待解锁实机人工确认】已在 Windows Electron 45 通过 Playwright 注入与主进程 `setIgnoreMouseEvents` 插桩验证：短拖拽与 >1.2s watchdog 拖拽松手后指针不动时 `pet.matches(':hover')` 仍为 `true`，`:hover` 分支取消了 `1000ms` 租约，等待 1350ms 后主进程仍维持 `ignore: false`，原地单击与右键均正常打开菜单，鼠标移出后恢复 `ignore: true, { forward: true }`。因本机当前为锁屏/非活动输入桌面（`GetCursorPos`/`SetCursorPos` 返回 `false`），基于 OS `WS_EX_TRANSPARENT` 真实光标透传与下层窗口点击行为仍待在解锁桌面后手动点按确认一次；macOS 真机同样建议手动确认一次。
 - [x] **Task H3：Windows 前台窗口坐标口径已统一**
   - [x] 【Windows 已验证】在 Windows 11 混合 DPI 双屏（主屏 150% `2560×1440` DIP / `3840×2160` 物理，副屏 100% `1080×1920` 位于逻辑 `x=2560` / 物理 `x=3840`）实测确认：未设 DPI awareness 的 `powershell.exe` 处于 `DPI_AWARENESS_UNAWARE`，主屏返回缩放后坐标 `{100,100,800,600}`（会被 `PresentationGuard` 再除以 1.5），副屏却返回物理偏移 `{3940,100,600,500}`（`activeWindowAwareness` 错失副屏范围）。现已在 `activeWindowProvider.js` 脚本启用 `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)`（`-4`，预置 `-3` 回退）统一输出物理像素；由 `WindowAwarenessService` / `activeWindowAwareness` 在主进程采样时只做一次 `screen.screenToDipRect(null, rect)` 转为 DIP 供渲染进程平台与 `PresentationGuard` 共用，并删除 `PresentationGuard`、`AppLifecycle`、`BreakReminderController` 中的重复转换。已更新 `activeWindowProvider`、`activeWindowAwareness`、`windowAwarenessService`、`presentationGuard` 与 `presentationGuardWiring` 测试，并在 live Electron 混合 DPI 窗口验证主副屏常规/无边框全屏场景均精确匹配 DIP。
 
@@ -58,7 +58,7 @@
 - [x] **Task L7：天气同步数值校验与响应上限**
 - [x] **Task L8：`ContextMenu.hide()` 淡出期间恢复穿透**（**不修复**）
   - 菜单关闭后立即恢复穿透符合"菜单已关闭"的语义。若改成等 `getAnimations()` 结束（最长约 250ms）再恢复，用户在淡出期间点到仍可见的菜单项还可能重复触发动作，风险大于收益。
-  - 相关的真实风险是 H2 同类问题：右键菜单覆盖在宠物上，选完项后指针可能停在宠物上而穿透已恢复。`hide()` 当下指针在菜单上，`pet.element.matches(':hover')` 恒为假，无法像 H2 那样在此处判断，需要实机复现后再设计。已加入文末 H2 验证步骤。
+  - 相关的真实风险是 H2 同类问题：右键菜单覆盖在宠物上，选完项或按 `Escape` 关闭后指针停在宠物上时穿透已恢复。Windows Electron 45 实测确认：指针悬停在宠物上右键打开菜单后按 `Escape` 关闭时，`pet.matches(':hover')` 为 `true`，但 `ContextMenu.hide()` 仍立即下发 `setIgnoreMouseEvents(true, { forward: true })`，若随后完全不动鼠标直接再单击/右键会命中穿透状态（轻微晃动鼠标才会重新触发 `mousemove`/`mouseenter`）。按原定策略暂保持现状并记录复现条件。
 - [x] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
   - [x] L9：番茄钟提示框改用 `--font-body`。
   - [x] L10：`sweep` 关键帧改为 `transform: translateX()`（百分比按 38% 填充宽度换算）。已在 Windows 运行 `UpdateProgressWindow` 检查中状态（`380×172`），实测截图确认绿色滑块全程在 `.bar`（`overflow: hidden`、`border-radius: 999px`）圆角内平滑往返滑入/滑出，`left` 保持 `0px`、无跳变或溢出。
@@ -93,7 +93,7 @@
 | 编号 | 需要什么环境 | 要做什么 |
 | --- | --- | --- |
 | H3（已完成） | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 已在 Windows 11 150%+100% 混合 DPI 采集原始坐标并完成统一物理像素采样与主进程单次 DIP 转换修复与实测 |
-| H2 | Windows 与 macOS 实机 | 拖拽后原地单击、右键，确认不穿透 |
+| H2 | Windows 与 macOS 已解锁真机 | Electron 45 `:hover` 与租约取消已实测通过；仍待在已解锁桌面用真实物理鼠标确认一次下层窗口不穿透（及 macOS 真机） |
 | M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
 | M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |
 | L12（已完成） | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip） |
