@@ -17,6 +17,9 @@ const FinalSaveService = require('../services/FinalSaveService');
 const { isSenderMainWindow } = require('../services/IpcSenderAuthorization');
 const { shouldClearStartupCache } = require('../services/StartupCachePolicy');
 
+// 与 preload.js 中的同名字符串保持一致（沙箱 preload 无法 require 本地模块）
+const DEBUG_TOOLS_ARGUMENT = '--deskpet-debug-tools';
+
 let deps = {};
 let keepOnTopTimer = null;     // 置顶守卫计时器
 let mousePassthroughResetTimer = null;
@@ -224,6 +227,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // 未打包运行时才下发调试开关，preload 据此决定是否启用 src/debug.js 的控制台辅助函数
+      additionalArguments: deps.app && !deps.app.isPackaged ? [DEBUG_TOOLS_ARGUMENT] : [],
     },
   });
 
