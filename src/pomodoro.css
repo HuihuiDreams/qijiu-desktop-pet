@@ -624,7 +624,8 @@ html[data-locale="en"] .pomodoro-stamp-ceremony--active .pomodoro-stamp-seal {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  font-family: var(--font-display);
+  /* 11px 的小字号配书法体（--font-display）在低 DPI 屏上笔画粘连，提示文字用正文字体 */
+  font-family: var(--font-body);
   font-size: 11px;
   border-radius: 6px;
   white-space: nowrap;
