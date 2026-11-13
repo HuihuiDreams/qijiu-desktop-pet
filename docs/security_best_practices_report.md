@@ -19,7 +19,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
 | **SBP-001** | **Medium (Resolved)** | Electron Process Isolation | `src/main/AppLifecycle.js:50-53` | `disable-site-isolation-trials` command-line switch removed to restore Chromium Site Isolation |
 | **SBP-002** | **Low** | IPC Boundary / Input Validation (`TH-05`) | `src/main/services/StorageIpc.js:20-47`, `src/main/windows/StatusWindow.js:13-26` | `save-data` and status window IPC channels lack value schema/size validation and write rate limiting |
 | **SBP-003** | **Low** | Content Security Policy & Trusted Types (`JS-CSP-001`, `JS-TT-001`) | `src/index.html:6-13` (and 6 sub-window HTML files) | `style-src 'unsafe-inline'` in `src/index.html` and absence of `require-trusted-types-for 'script'` across HTML entrypoints |
-| **SBP-004** | **Low** | Network Response Resource Bounds | `weatherSyncService.js:111-120`, `weatherSyncService.js:137-146` | Unbounded response body accumulation in `requestJsonWithElectronNet` and `requestJsonWithHttps` |
+| **SBP-004** | **Low (Resolved)** | Network Response Resource Bounds | `weatherSyncService.js:111-120`, `weatherSyncService.js:137-146` | Unbounded response body accumulation in `requestJsonWithElectronNet` and `requestJsonWithHttps` |
 | **SBP-005** | **Informational** | OS Subprocess Binary Path Consistency (`TH-03`) | `activeWindowProvider.js:389-393` | `pmset` invoked by bare binary name rather than resolved system path `/usr/bin/pmset` |
 | **SBP-006** | **Informational** | Documented Project Overrides / Design Trade-offs | `protectedAssetLoader.js:6-8`, `main.js:5-12` | Embedded asset obfuscation key (`deskpet-protected-skin-assets-v1`) and QA `DESKTOP_PET_USER_DATA_DIR` override |
 
@@ -148,7 +148,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
 
 ---
 
-### SBP-004 — Unbounded Response Body Accumulation in External Weather HTTPS Requests
+### SBP-004 — Unbounded Response Body Accumulation in External Weather HTTPS Requests [Resolved]
 
 - **Rule ID**: Network Resource Bounds / Main Process Memory Protection (`TH-02`)
 - **Severity**: Low
@@ -199,6 +199,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
   });
   ```
 - **False-Positive / Override Notes**: Normal Open-Meteo geocoding and forecast JSON payloads are under 10 KB, so a 256 KB cap has zero impact on normal operation.
+- **Status / Resolution**: `weatherSyncService.js` now enforces `MAX_RESPONSE_BYTES = 256 * 1024` in both transports (the Electron net path aborts the request, the HTTPS fallback destroys it) and the HTTPS fallback also handles `res` stream errors. Covered by `test/weatherSyncService.test.js` (audit L7, see [code-review-audit-verification-2026-11-13.md](code-review-audit-verification-2026-11-13.md)).
 
 ---
 

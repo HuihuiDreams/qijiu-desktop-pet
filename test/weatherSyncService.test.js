@@ -831,3 +831,144 @@ describe('WeatherSyncService - resolveCityToCoordinates and Aliases', () => {
     }
   });
 });
+
+describe('WeatherSyncService - stored coordinates and response bounds (audit L7)', () => {
+  const { MAX_RESPONSE_BYTES, resolveCityToCoordinates } = require('../weatherSyncService');
+
+  it('normalizeSettings only keeps finite stored coordinates', () => {
+    const infinite = normalizeSettings({ enabled: true, city: 'X', lat: Infinity, lon: -Infinity });
+    assert.strictEqual(infinite.lat, null);
+    assert.strictEqual(infinite.lon, null);
+
+    const nan = normalizeSettings({ enabled: true, city: 'X', lat: NaN, lon: NaN });
+    assert.strictEqual(nan.lat, null);
+    assert.strictEqual(nan.lon, null);
+
+    const valid = normalizeSettings({ enabled: true, city: 'X', lat: 35.68, lon: 139.76 });
+    assert.strictEqual(valid.lat, 35.68);
+    assert.strictEqual(valid.lon, 139.76);
+  });
+
+  it('rejects an oversized Electron net response and aborts the request', async () => {
+    const originalLoad = Module._load;
+    let aborted = false;
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => { aborted = true; };
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.alloc(MAX_RESPONSE_BYTES + 1, 'a'));
+                  res.emit('end');
+                });
+              };
+              return req;
+            },
+          },
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      await assert.rejects(resolveCityToCoordinates('Tokyo'), /Response too large/);
+      assert.strictEqual(aborted, true);
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  it('accepts a normal-sized response', async () => {
+    const originalLoad = Module._load;
+    const body = JSON.stringify({ results: [{ latitude: 35.68, longitude: 139.76, padding: 'x'.repeat(4096) }] });
+    Module._load = function(request) {
+      if (request === 'electron') {
+        return {
+          net: {
+            request() {
+              const req = new EventEmitter();
+              req.abort = () => {};
+              req.end = () => {
+                const res = new EventEmitter();
+                res.statusCode = 200;
+                res.resume = () => {};
+                res.setEncoding = () => {};
+                setImmediate(() => {
+                  req.emit('response', res);
+                  res.emit('data', Buffer.from(body));
+                  res.emit('end');
+                });
+              };
+              return req;
+            },
+          },
+        };
+      }
+      return originalLoad.apply(this, arguments);
+    };
+
+    try {
+      assert.deepStrictEqual(await resolveCityToCoordinates('Tokyo'), { lat: 35.68, lon: 139.76 });
+    } finally {
+      Module._load = originalLoad;
+    }
+  });
+
+  async function withHttpsFallback(emitFromResponse, assertion) {
+    const https = require('https');
+    const originalGet = https.get;
+    const originalLoad = Module._load;
+    const req = new EventEmitter();
+    req.destroyed = false;
+    req.destroy = () => { req.destroyed = true; };
+
+    Module._load = function(request) {
+      if (request === 'electron') throw new Error('electron unavailable');
+      return originalLoad.apply(this, arguments);
+    };
+    https.get = (url, options, callback) => {
+      setImmediate(() => {
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        res.setEncoding = () => {};
+        callback(res);
+        emitFromResponse(res);
+      });
+      return req;
+    };
+
+    try {
+      await assertion(req);
+    } finally {
+      https.get = originalGet;
+      Module._load = originalLoad;
+    }
+  }
+
+  it('rejects an oversized HTTPS fallback response and destroys the request', async () => {
+    await withHttpsFallback(
+      (res) => res.emit('data', 'a'.repeat(MAX_RESPONSE_BYTES + 1)),
+      async (req) => {
+        await assert.rejects(resolveCityToCoordinates('Tokyo'), /Response too large/);
+        assert.strictEqual(req.destroyed, true);
+      },
+    );
+  });
+
+  it('rejects when the HTTPS fallback response stream errors', async () => {
+    await withHttpsFallback(
+      (res) => res.emit('error', new Error('socket reset')),
+      async () => {
+        await assert.rejects(resolveCityToCoordinates('Tokyo'), /socket reset/);
+      },
+    );
+  });
+});
