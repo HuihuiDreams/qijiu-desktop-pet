@@ -76,7 +76,7 @@
   - [x] 删除 `PetRenderer.update()` 里只更新缓存字段的 `_renderedDirection` 判断块及其初始化（仓库内无其他引用）；删除 `SkinSelectorWindow.js` 中没有调用方也未导出的 `isValidSkinSelectorSender`（选肤窗口的 sender 校验由 `SkinService.isSkinSelectorRequest` 承担）。无行为变化，不新增测试，由现有全量测试覆盖。
 - [x] **Task L17：托盘模板图标从打包中排除**
   - [x] `build.files` 增加 `!src/assets/iconTemplate*.png`。已在 macOS 用 `electron-builder --mac --dir --arm64`（输出到临时目录）实际打包验证：`app.asar` 里不再有这两个文件，`icon.png/ico/icns` 保留；测试和 CP 同步白名单仍引用的源文件留在仓库。
-  - 额外发现（未处理）：本机未跟踪的 `backups/` 目录（`.gitignore` 已忽略）没有被 `build.files` 排除，本机打包时其中 41 个明文皮肤 WebP 会进入 `app.asar`。CI 上没有这个目录，不受影响；如果会在本机打正式包，建议另行加入 `!backups/**`。
+  - [x] 额外发现已处理：本机未跟踪的 `backups/` 目录（`.gitignore` 已忽略，但 electron-builder 不读取 `.gitignore`）此前会把其中的明文皮肤 WebP 打进 `app.asar`。`build.files` 增加 `!backups/**`，`scripts/verify-package-contents.js` 的禁止路径增加 `backups`，打包后检查会拦截；`test/packageContentsSecurity.test.js` 补断言。CI 上没有这个目录，不受影响。
   - [ ] 【Windows 待验证】Windows 打包同样走 `build.files`，下次在 Windows 上 `npx electron-builder --win --dir` 后，用 `npm run verify:package` 并确认 `app.asar` 不含 `iconTemplate`。
 - [x] **Task L18：调试工具门控**
   - [x] `src/debug.js` 的控制台辅助函数由路径含 `/app.asar/` 改为按主进程下发的开关启用：`PetWindow` 在 `!app.isPackaged` 时通过 `additionalArguments` 传 `--deskpet-debug-tools`，`preload.js` 暴露 `electronAPI.debugToolsEnabled`。

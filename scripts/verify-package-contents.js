@@ -9,6 +9,7 @@ const FORBIDDEN_TOP_LEVEL_PATHS = [
   '.geminirules',
   'agents.md',
   'claude.md',
+  'backups',
 ];
 
 function normalizeAsarEntry(entry) {

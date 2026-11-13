@@ -41,6 +41,7 @@
 - **历史性能复测清单与本地原始采样 JSON 清理 (`Legacy Performance Retest Checklist & Raw JSON Cleanup`)**：移除已归档的 `docs/performance/task3-retest-checklist.md`（及本机留存的未追踪 `docs/performance/raw/`、`docs/performance/task3-post-optimization.json` 原始采样数据），`docs/performance/` 仅保留采样指南 `README.md` 与 `2026-07-23-windows-baseline.md` 基线报告。
 
 ### Security
+- **本地未跟踪备份目录不再进入安装包 (`Local backups/ Excluded From Package`)**：electron-builder 不读取 `.gitignore`，本机打包时被忽略的 `backups/`（含明文 `.webp` 皮肤备份）会进入 `app.asar`；`package.json` 的 `build.files` 新增 `!backups/**`，`scripts/verify-package-contents.js` 的禁止路径新增 `backups`，打包后检查会拦截；补充 `packageContentsSecurity` 测试（[审核复核 L17](docs/code-review-audit-verification-2026-11-13.md)）。
 - **Release Preflight 工作流令牌权限收紧 (`Release Preflight Least-Privilege Token`)**：将 `.github/workflows/release-preflight.yml` 顶层权限由 `contents: write` 降为 `contents: read`，避免同仓库分支的 `pull_request` 在执行 `npm ci`、`npm test` 与构建脚本时持有可写令牌；原先在 Windows 预检作业内的版本号同步与 `git push` 拆为仅 `workflow_dispatch` 触发的 `sync-version` 作业（唯一声明 `contents: write`），Windows 预检作业改为 `needs: sync-version` 并在手动触发时检出分支最新提交后再次确认版本一致；macOS 预检作业新增 `npm run test:integration`；新增 `test/releasePreflightWorkflow.test.js` 静态断言权限边界（[审核复核 M6](docs/code-review-audit-verification-2026-11-13.md)、[docs/git-workflow.md](docs/git-workflow.md)）。
 
 

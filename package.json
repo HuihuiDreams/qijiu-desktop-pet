@@ -57,6 +57,7 @@
       "!security-scans/**",
       "!tools/**",
       "!scripts/**",
+      "!backups/**",
       "!src/assets/*/*.webp",
       "!src/assets/*/*/*.webp",
       "!src/assets/iconTemplate*.png",
