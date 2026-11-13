@@ -502,6 +502,63 @@ test('hideOverlay fades overlay and restores pet body visibility', () => {
   }
 });
 
+test('a new overlay shown during the previous overlay fade-out is the one found by id', () => {
+  const nodes = []; // DOM 顺序：getElementById 返回第一个匹配的节点
+  const timers = [];
+  const stage = {
+    appendChild(el) { nodes.push(el); },
+    querySelectorAll() { return []; },
+  };
+  const renderer = new PetRenderer(stage);
+  const makePet = () => {
+    const body = { style: {} };
+    return { element: { querySelector: () => body }, x: 100, y: 100, size: 96, body };
+  };
+  const petA = makePet();
+  const petB = makePet();
+
+  const originalDocument = global.document;
+  const originalSetTimeout = global.setTimeout;
+  const originalRaf = global.requestAnimationFrame;
+  global.document = {
+    createElement() {
+      const el = createFakeDomElement();
+      el.remove = () => { nodes.splice(nodes.indexOf(el), 1); };
+      return el;
+    },
+    getElementById(id) {
+      return nodes.find((el) => el.id === id) || null;
+    },
+  };
+  global.setTimeout = (callback) => { timers.push(callback); return timers.length; };
+  global.requestAnimationFrame = () => 1;
+
+  try {
+    renderer.showOverlay(petA, petB, 'hug');
+    const first = nodes[0];
+    renderer.hideOverlay(petA, petB);
+    assert.equal(document.getElementById('interaction-overlay'), null, 'a fading overlay must not be found by id');
+
+    renderer.showOverlay(petA, petB, 'kiss');
+    const second = nodes[1];
+    assert.equal(nodes.length, 2, 'both nodes coexist during the fade-out');
+    assert.equal(document.getElementById('interaction-overlay'), second);
+
+    // 渐隐期间的几何更新和再次隐藏都必须作用于新节点
+    renderer.updateOverlay({ ...petA, x: 400 }, { ...petB, x: 500 });
+    assert.notEqual(second.style.left, first.style.left, 'updateOverlay must resize the new overlay');
+    renderer.hideOverlay(petA, petB);
+    assert.equal(second.style.opacity, '0', 'hideOverlay must fade the new overlay instead of the old one');
+
+    timers.forEach((callback) => callback());
+    assert.deepEqual(nodes, [], 'both overlays are eventually removed');
+  } finally {
+    global.document = originalDocument;
+    global.setTimeout = originalSetTimeout;
+    global.requestAnimationFrame = originalRaf;
+  }
+});
+
 test('hideOverlay clears overlay bubbles and cancels timers', () => {
   const clearedTimers = [];
   const activeBubbles = [];

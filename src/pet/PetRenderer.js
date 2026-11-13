@@ -562,6 +562,9 @@ class PetRenderer {
 
     const overlay = document.getElementById('interaction-overlay');
     if (overlay) {
+      // 渐隐的 400ms 内可能已经显示了新的覆盖层。先释放 id，
+      // 否则 getElementById 会一直返回这个正在消失的旧节点。
+      overlay.id = '';
       overlay.style.opacity = '0';
       overlay.style.transform = 'scale(0.92)';
       setTimeout(() => overlay.remove(), 400);
