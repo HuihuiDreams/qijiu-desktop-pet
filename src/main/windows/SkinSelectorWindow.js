@@ -65,14 +65,6 @@ function sendSkinSelectorData(sendOptions = {}) {
   windowManager.skinSelectorWindow.webContents.send('skin-selector-data', data, options);
 }
 
-function isValidSkinSelectorSender(event) {
-  return (
-    windowManager.skinSelectorWindow
-    && !windowManager.skinSelectorWindow.isDestroyed()
-    && event?.sender?.id === windowManager.skinSelectorWindow.webContents.id
-  );
-}
-
 function createSkinSelectorWindow() {
   if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) return windowManager.skinSelectorWindow;
 

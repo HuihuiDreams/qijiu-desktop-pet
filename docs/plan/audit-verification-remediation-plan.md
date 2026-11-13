@@ -70,7 +70,8 @@
 - [x] **Task L14：失效文档链接**
   - [x] `docs/structure.md`、`ADR-031`、`CHANGELOG.md` 改指向 `docs/archive/`；CHANGELOG 里同一批归档的 `code-review-report` 与 `code-review-fix-plan` 两条链接一并修正；本计划文件里一处缺少 `../` 的 ADR 链接也已修正。新增 `test/docLinks.test.js` 检查 `docs/*.md`、`docs/decisions/`、`docs/plan/` 的相对链接。
   - 其余未处理的失效链接（不在 L14 范围，历史记录）：`CHANGELOG.md` 中指向已归档或不存在的 `docs/plan/*-plan.md` 四处、`AGENTS.md` 里的 `ADR-xxx.md` 示例占位符、`docs/performance/` 基线报告里指向未提交 `raw/` 采样文件的链接。
-- [ ] **Task L15–L16：死代码清理**
+- [x] **Task L15–L16：死代码清理**
+  - [x] 删除 `PetRenderer.update()` 里只更新缓存字段的 `_renderedDirection` 判断块及其初始化（仓库内无其他引用）；删除 `SkinSelectorWindow.js` 中没有调用方也未导出的 `isValidSkinSelectorSender`（选肤窗口的 sender 校验由 `SkinService.isSkinSelectorRequest` 承担）。无行为变化，不新增测试，由现有全量测试覆盖。
 - [ ] **Task L17：托盘模板图标从打包中排除**
 - [ ] **Task L18：调试工具门控**
 
