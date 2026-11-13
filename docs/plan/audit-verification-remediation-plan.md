@@ -15,9 +15,9 @@
 - [x] **Task H1：启动阶段已保存的皮肤被写回 `default`**
   - [x] `SkinService` 新增 `restoreConfirmedSkinFromStore(store)`，`AppLifecycle.initCoreServices()` 在 store 就绪后、渲染进程可调用 `save-data` 之前调用。放在 `initCoreServices` 而非审核报告建议的 `initSubWindowsAndIpc`，这样托盘、番茄钟等所有主进程消费方从一开始就读到正确皮肤。
   - [x] 回归测试：非默认皮肤 + 首次 `save-data` 先于 `applySkinById`，落盘 `skinId` 不变（`test/storageIpcAuthorization.test.js`），另有 `test/skinService.test.js` 与 `test/appLifecycle.behavior.test.js` 的单元覆盖。
-- [ ] **Task H2：拖拽结束后无条件恢复鼠标穿透**
-  - [ ] macOS 上完成修复与 fake-DOM 单元测试。
-  - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透。
+- [x] **Task H2：拖拽结束后无条件恢复鼠标穿透**
+  - [x] macOS 上完成修复与 fake-DOM 单元测试：`PetRenderer` 的 `finishDrag` 三条恢复路径（100ms 延迟、watchdog、`blur`）统一走 `restoreMousePassthroughIfIdle()`，指针仍在宠物上（`:hover`）或右键菜单打开时不恢复。
+  - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透（步骤见文末清单）。macOS 真机同样建议手动确认一次。
 - [ ] **Task H3：Windows 前台窗口坐标口径不确定**
   - [ ] 【Windows 待验证】需先在 Windows 采集原始 bounds，确认口径后再改代码。macOS 不启用该功能，本轮不改代码。
 
@@ -55,4 +55,14 @@
 
 换到 Windows 机器后按此清单处理，处理完成后回到本文件勾选。
 
-（随任务推进补充）
+### H2 拖拽后原地单击不应穿透
+
+代码已在 macOS 修复并有单元测试覆盖，但 `:hover` 在透明窗口 + `setIgnoreMouseEvents(true, { forward: true })` 下的真实行为需要实机确认。
+
+1. `npm run dev` 启动，等宠物出现。
+2. 按住宠物拖到屏幕中间，松手后鼠标不动。
+3. 在宠物身上单击一次、再右键一次。预期：右键菜单正常弹出，下层应用窗口没有收到点击（可先在宠物下方放一个浏览器或记事本窗口观察）。
+4. 把鼠标移出宠物，再点击宠物下方的应用。预期：点击正常落到下层应用（穿透已恢复）。
+5. 拖拽时按住不动超过 1.2 秒（触发 watchdog）再松手，重复第 3、4 步。
+
+（随任务推进补充其余条目）

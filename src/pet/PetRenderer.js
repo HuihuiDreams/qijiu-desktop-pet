@@ -182,6 +182,18 @@ class PetRenderer {
       setWeatherInteractionMuted(false);
       window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
     };
+    const isContextMenuOpen = () => {
+      const menu = document.getElementById?.('context-menu');
+      return Boolean(menu) && !menu.classList?.contains('hidden');
+    };
+    // 拖拽结束时指针几乎总停在宠物上，此时不会再触发 mouseenter。
+    // 若这里直接恢复穿透，下一次点击会落到宠物下方的应用，
+    // 所以指针仍在宠物上或菜单已打开时保持可交互，交给 mouseleave 恢复穿透。
+    const restoreMousePassthroughIfIdle = () => {
+      if (pet.isDragging) return;
+      if (el.matches?.(':hover') || isContextMenuOpen()) return;
+      restoreMousePassthrough();
+    };
     const keepPetReachable = () => {
       if (this.keepPetReachable) {
         this.keepPetReachable(pet);
@@ -208,15 +220,11 @@ class PetRenderer {
       if (window.electronAPI.notifyDragEnded) window.electronAPI.notifyDragEnded();
 
       if (restoreImmediately) {
-        restoreMousePassthrough();
+        restoreMousePassthroughIfIdle();
         return;
       }
 
-      setTimeout(() => {
-        if (!pet.isDragging) {
-          restoreMousePassthrough();
-        }
-      }, 100);
+      setTimeout(restoreMousePassthroughIfIdle, 100);
     };
     const refreshDragWatchdog = () => {
       clearDragWatchdog();
