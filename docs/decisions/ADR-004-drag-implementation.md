@@ -52,3 +52,7 @@ if (pet.isDragging || pet.isBusy()) return;
 - `Pet` 类新增 `isDragging` 属性
 - 每个角色在 `document` 上注册了 `mousemove` 和 `mouseup` 监听器（共 4 个）
 - 未来如果角色数量增加，需要考虑事件监听器的管理和清理
+
+## 后续更新 (2026-11-13)
+
+拖拽结束（`mouseup` 延迟 100ms、watchdog 超时、窗口 `blur`）恢复穿透前，`PetRenderer.js` 增加两项判断：指针是否仍在宠物元素上（`el.matches(':hover')`），以及右键菜单是否打开。任一成立就保持可交互，交给 `mouseleave` 恢复穿透。原因是拖拽时宠物跟随指针，松手时指针几乎总在宠物上，`mouseenter` 不会再次触发，无条件恢复会让下一次点击落到下层应用。详见 [审核复核 H2](../code-review-audit-verification-2026-11-13.md) 与 [ADR-002](./ADR-002-mouse-clickthrough-strategy.md)。

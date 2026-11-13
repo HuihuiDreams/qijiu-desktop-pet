@@ -1308,3 +1308,170 @@ test('hideOverlay cancels active getAnimations on overlay bubbles', () => {
   }
 });
 
+
+function createDragHarness({ hovered = false, menuClasses = null } = {}) {
+  const mouseEvents = [];
+  const windowListeners = {};
+  const docListeners = {};
+  const timers = [];
+  const bodyClassList = createFakeClassList();
+  const originals = { setTimeout: global.setTimeout, clearTimeout: global.clearTimeout };
+  const state = { hovered, menuClasses };
+  const pet = {
+    id: 'dragpet',
+    x: 50,
+    y: 50,
+    size: 96,
+    isDragging: false,
+    setState() {},
+  };
+
+  global.window = {
+    innerWidth: 800,
+    innerHeight: 600,
+    electronAPI: {
+      setIgnoreMouseEvents(ignore, options) {
+        mouseEvents.push([ignore, options]);
+      },
+      notifyDragStarted() {},
+      notifyDragEnded() {},
+    },
+    addEventListener(type, callback) {
+      windowListeners[type] = callback;
+    },
+  };
+  global.document = {
+    body: { classList: bodyClassList },
+    createElement() {
+      const element = createFakeDomElement();
+      element.matches = (selector) => selector === ':hover' && state.hovered;
+      return element;
+    },
+    addEventListener(type, callback) {
+      docListeners[type] = callback;
+    },
+    getElementById(id) {
+      return id === 'context-menu' && state.menuClasses ? createFakeElement(state.menuClasses) : null;
+    },
+  };
+  global.setTimeout = (callback, delay) => { timers.push({ callback, delay }); return timers.length; };
+  global.clearTimeout = () => {};
+
+  const renderer = new PetRenderer({ appendChild() {} });
+  const el = renderer.createPetElement(pet);
+  el.listeners.mousedown({ button: 0, clientX: 60, clientY: 60, preventDefault() {} });
+  mouseEvents.length = 0;
+
+  return {
+    el,
+    pet,
+    state,
+    mouseEvents,
+    bodyClassList,
+    windowListeners,
+    docListeners,
+    runTimer(delay) {
+      const index = timers.findIndex((timer) => timer.delay === delay);
+      assert.notEqual(index, -1, `timer with delay ${delay} must be scheduled`);
+      timers.splice(index, 1)[0].callback();
+    },
+    restore() {
+      global.setTimeout = originals.setTimeout;
+      global.clearTimeout = originals.clearTimeout;
+      delete global.window;
+      delete global.document;
+    },
+  };
+}
+
+test('drag end keeps the window interactive while the pointer is still over the pet', () => {
+  const harness = createDragHarness({ hovered: true, menuClasses: ['hidden'] });
+  try {
+    harness.docListeners.mouseup({});
+    harness.runTimer(100);
+
+    assert.deepEqual(harness.mouseEvents, [], 'passthrough must not be restored under the pointer');
+    assert.equal(harness.bodyClassList.contains('weather-interaction-muted'), true);
+
+    // 指针之后离开宠物时，mouseleave 负责恢复穿透
+    harness.state.hovered = false;
+    harness.el.listeners.mouseleave();
+    assert.deepEqual(harness.mouseEvents.at(-1), [true, { forward: true }]);
+    assert.equal(harness.bodyClassList.contains('weather-interaction-muted'), false);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('drag end restores mouse passthrough when the pointer is no longer over the pet', () => {
+  const harness = createDragHarness({ hovered: false });
+  try {
+    harness.docListeners.mouseup({});
+    assert.deepEqual(harness.mouseEvents, [], 'restore waits for the 100ms delay');
+    harness.runTimer(100);
+
+    assert.deepEqual(harness.mouseEvents, [[true, { forward: true }]]);
+    assert.equal(harness.bodyClassList.contains('weather-interaction-muted'), false);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('drag end keeps the window interactive while the context menu is open', () => {
+  const harness = createDragHarness({ hovered: false, menuClasses: [] });
+  try {
+    harness.docListeners.mouseup({});
+    harness.runTimer(100);
+
+    assert.deepEqual(harness.mouseEvents, []);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('drag end restores passthrough when the context menu exists but is hidden', () => {
+  const harness = createDragHarness({ hovered: false, menuClasses: ['hidden'] });
+  try {
+    harness.docListeners.mouseup({});
+    harness.runTimer(100);
+
+    assert.deepEqual(harness.mouseEvents, [[true, { forward: true }]]);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('drag restarted during the 100ms delay is not interrupted by the delayed restore', () => {
+  const harness = createDragHarness({ hovered: false });
+  try {
+    harness.docListeners.mouseup({});
+    harness.el.listeners.mousedown({ button: 0, clientX: 60, clientY: 60, preventDefault() {} });
+    harness.mouseEvents.length = 0;
+    harness.runTimer(100);
+
+    assert.equal(harness.pet.isDragging, true);
+    assert.deepEqual(harness.mouseEvents, []);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('window blur during a drag restores passthrough only when the pointer left the pet', () => {
+  const hovered = createDragHarness({ hovered: true });
+  try {
+    hovered.windowListeners.blur();
+    assert.equal(hovered.pet.isDragging, false);
+    assert.deepEqual(hovered.mouseEvents, []);
+  } finally {
+    hovered.restore();
+  }
+
+  const away = createDragHarness({ hovered: false });
+  try {
+    away.windowListeners.blur();
+    assert.equal(away.pet.isDragging, false);
+    assert.deepEqual(away.mouseEvents, [[true, { forward: true }]]);
+  } finally {
+    away.restore();
+  }
+});
