@@ -57,8 +57,9 @@
 - [x] **Task L8：`ContextMenu.hide()` 淡出期间恢复穿透**（**不修复**）
   - 菜单关闭后立即恢复穿透符合"菜单已关闭"的语义。若改成等 `getAnimations()` 结束（最长约 250ms）再恢复，用户在淡出期间点到仍可见的菜单项还可能重复触发动作，风险大于收益。
   - 相关的真实风险是 H2 同类问题：右键菜单覆盖在宠物上，选完项后指针可能停在宠物上而穿透已恢复。`hide()` 当下指针在菜单上，`pet.element.matches(':hover')` 恒为假，无法像 H2 那样在此处判断，需要实机复现后再设计。已加入文末 H2 验证步骤。
-- [ ] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
+- [x] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
   - [x] L9：番茄钟提示框改用 `--font-body`。
+  - [x] L10：`sweep` 关键帧改为 `transform: translateX()`（百分比按 38% 填充宽度换算）。动画观感需要目测一次，见文末清单。
 - [ ] **Task L11：`protect-assets` 清理残留 `.dat`**
 - [ ] **Task L12：`push.sh` 工具链问题**
 - [ ] **Task L13：ADR 校验退出码与 `check:adrs` 脚本**
@@ -99,5 +100,9 @@ pwsh 对原生命令退出码的处理无法在 macOS 上复现，需要在 Wind
 
 1. 下一次正式发布推送 `v*` tag 时，观察 `Build NSIS installer` 作业的 "Upload Windows release assets" 步骤日志：如果 `gh release create` 因为 macOS 作业抢先创建而失败，应继续并成功上传；如果两个作业间没有竞争，行为与之前一致。
 2. 也可以在 Windows 本机用 PowerShell 7 手动验证 `$LASTEXITCODE` 判断逻辑：对一个已存在的 tag 执行 `gh release create`（预期非零退出），确认随后的 `gh release view` 分支走通。
+
+### L10 更新进度窗口"检查中"动画
+
+macOS 或 Windows 任一平台目测即可（样式与平台无关）：在托盘点击"检查更新"，观察进度窗口的"检查中"状态，绿色条应当和修改前一样从左侧滑入、划过进度条、从右侧滑出，循环往复，没有跳变或溢出进度条圆角。
 
 （随任务推进补充其余条目）

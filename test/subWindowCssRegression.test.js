@@ -30,3 +30,18 @@ test('pomodoro page loads index.css so --font-body is defined', () => {
   assert.match(html, /<link rel="stylesheet" href="index\.css">/);
   assert.match(readSource('src/index.css'), /--font-body:/);
 });
+
+test('update progress sweep animates transform instead of layout-affecting left', () => {
+  const css = readSource('src/update-progress.css');
+  const keyframes = css.slice(css.indexOf('@keyframes sweep'));
+  const body = keyframes.slice(0, keyframes.indexOf('\n}\n') + 3);
+
+  assert.match(body, /transform:\s*translateX\(/);
+  assert.doesNotMatch(body, /\bleft\s*:/);
+  assert.match(extractRule(css, '.checking .fill'), /left:\s*0/);
+});
+
+test('update progress checking state keeps the fill width the sweep keyframes were derived from', () => {
+  // translateX 的百分比相对填充自身宽度，换算依据是 38%
+  assert.match(readSource('src/update-progress.js'), /mode === 'checking' \? '38%'/);
+});
