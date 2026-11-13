@@ -14,21 +14,21 @@
 
 逐项进度、每项的取舍与需要在 Windows 上完成的验证步骤见[修复计划](plan/audit-verification-remediation-plan.md)。下文各节保留复核时的原始分析，行号仍以 `main@ea5e163` 为准。
 
-| 状态 | 条目 |
-| --- | --- |
-| 已修复，macOS 上已验证 | H1、M1、M2、M3、M4、M5、M8、L1、L2、L5、L6、L7、L9、L11、L13、L14、L15、L16 |
-| 已修复，Windows 上已验证 | H3（混合 DPI 物理坐标采样与单次 DIP 转换已修复并实测）、L10（`UpdateProgressWindow` 检查中动画逐帧截图目测通过）、L12（`push.ps1` 解析与退出码测试通过）、L17（Windows smoke 打包 `app.asar` 内容核验通过）、L18（Windows 打包版与开发版调试开关对照实测通过） |
-| 已修复，仍需已解锁真机或 GitHub CI 验证 | H2（Electron 45 `:hover` 与租约取消已测，仍待已解锁桌面物理鼠标确认下层不穿透）、M6（Windows 已接入集成测试，待 GitHub Actions 实跑）、M7（本机 `pwsh 7.7.0` + `gh 2.104.0` 已验证 `$LASTEXITCODE` 兜底分支，待 `v*` tag 推送在 Windows runner 实跑观察） |
-| 部分修复 | L4：已移除无效的 `appRoot`；`manifestNotFound` 负缓存按既有测试约定保留 |
-| 评估后不修复 | L3、L8，理由见修复计划 |
+| 状态                                    | 条目                                                                                                                                                                                                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 已修复，macOS 上已验证                  | H1、M1、M2、M3、M4、M5、M8、L1、L2、L5、L6、L7、L9、L11、L13、L14、L15、L16                                                                                                                                                                                    |
+| 已修复，Windows 上已验证                | H3（混合 DPI 物理坐标采样与单次 DIP 转换已修复并实测）、L10（`UpdateProgressWindow` 检查中动画逐帧截图目测通过）、L12（`push.ps1` 解析与退出码测试通过）、L17（Windows smoke 打包 `app.asar` 内容核验通过）、L18（Windows 打包版与开发版调试开关对照实测通过） |
+| 已修复，仍需已解锁真机或 GitHub CI 验证 | H2（Electron 45 `:hover` 与租约取消已测，仍待已解锁桌面物理鼠标确认下层不穿透）、M6（Windows 已接入集成测试，待 GitHub Actions 实跑）、M7（本机 `pwsh 7.7.0` + `gh 2.104.0` 已验证 `$LASTEXITCODE` 兜底分支，待 `v*` tag 推送在 Windows runner 实跑观察）      |
+| 部分修复                                | L4：已移除无效的 `appRoot`；`manifestNotFound` 负缓存按既有测试约定保留                                                                                                                                                                                        |
+| 评估后不修复                            | L3、L8，理由见修复计划                                                                                                                                                                                                                                         |
 
 ## 优先级定义
 
-| 级别 | 含义 |
-| --- | --- |
-| P1 | 会造成用户数据丢失、高频交互错误，或核心平台功能的坐标口径错误。优先修复。 |
-| P2 | 低频的功能缺陷、缺少用户反馈、生命周期遗漏、CI 与发布流程风险。按迭代排期。 |
-| P3 | 有兜底的边界缺陷、规范一致性问题、死代码、文档与工具链小问题。顺手修复。 |
+| 级别 | 含义                                                                        |
+| ---- | --------------------------------------------------------------------------- |
+| P1   | 会造成用户数据丢失、高频交互错误，或核心平台功能的坐标口径错误。优先修复。  |
+| P2   | 低频的功能缺陷、缺少用户反馈、生命周期遗漏、CI 与发布流程风险。按迭代排期。 |
+| P3   | 有兜底的边界缺陷、规范一致性问题、死代码、文档与工具链小问题。顺手修复。    |
 
 ---
 
@@ -151,53 +151,53 @@
 
 ## 3. P3：顺手修复
 
-| ID | 位置 | 问题 | 复核说明 |
-| --- | --- | --- | --- |
-| L1 | `src/main/services/PetVisibilityService.js#L64`、`#L77` | 发送 `toggle-pause` 前只判断引用是否存在，没有检查 `isDestroyed()` | 属实。主窗口 `closed` 时会立即置空引用，触发窗口极短。同文件 L50、L133 已有正确写法，可照抄。 |
-| L2 | `src/main/services/SkinService.js#L99-L109` | 取消或被取代时返回 `LOAD_FAILED`，不是 `STALE_REQUEST` | 属实。原因会放在 message 里，唯一调用方 `skinSelectorWindow.js#L77` 只判断 `success`，属于接口语义问题。 |
-| L3 | `src/main/services/SkinService.js#L114-L120` | 首次安装时 `petState` 不存在，主进程不写盘 | 有兜底：随后 `switch-skin` 带 `persist: true`，渲染进程会保存完整的 `petState`。只有渲染进程失效时才会丢失。 |
-| L4 | `src/main/services/SkinService.js#L265`、`#L311`、`#L418`；`protectedAssetLoader.js#L53-L61` | `appRoot: __dirname` 指向不存在的目录；`manifestNotFound` 置位后不再重置 | 加载器会回退到自身目录下的 `protected-assets`，开发和打包环境都能找到，所以是无效配置。粘滞缓存只影响开发时"启动后才生成 manifest"的情况。 |
-| L5 | `src/main/TrayManager.js#L160`、`#L176` | `idleResetMinutes: 5` 写死 | 仓库里没有任何 UI 或 IPC 能修改这个值，用户感知不到。可改为保留原有设置值。 |
-| L6 | `breakReminderService.js#L106-L110`、`#L128-L130` | `updateSettings` 不清理 `deferTimer`；`rawElapsed` 未做 `Math.max(0, …)` | 回调里会再检查 `enabled`，最多推迟 60 秒。时钟回拨只会推迟提醒，空闲或锁屏时会自动归零。 |
-| L7 | `weatherSyncService.js#L26-L29`、`#L34-L35`、`#L113`、`#L139` | 空的 `schemaVersion` 分支；lat/lon 未用 `Number.isFinite`；响应没有大小上限；https 回退路径缺少 `res.on('error')` | 存储经过 JSON 序列化，`Infinity` 会变成 `null`；地理编码结果已校验。主要问题是不符合 AGENTS.md 中 `firstFiniteNumber` 的规范。 |
-| L8 | `src/ui/ContextMenu.js#L287-L300` | `hide()` 时菜单还在淡出，就立即恢复鼠标穿透 | 原报告"`.hidden` 截断过渡"的说法不成立（见第 5 节），这里是剩下的小问题。 |
-| L9 | `src/pomodoro.css#L615-L628` | 提示框使用 `--font-display` 配 11px 字号 | 属实。低 DPI 屏上可读性差，建议改用正文字体。 |
-| L10 | `src/update-progress.css#L52-L55`、`#L68` | `@keyframes sweep` 动画修改的是 `left` | 属实。这个窗口很小且显示时间短，性能影响可以忽略，可改为 `transform: translateX()`。 |
-| L11 | `scripts/protect-assets.js#L81-L109` | 重新加密时不清理残留的 `.dat` | 属实。孤儿文件不在 manifest 中，运行时不会加载，但会被打包。 |
-| L12 | `push.sh#L15`、`#L24`、`#L68`、`#L84`、`#L89-L99` | `git add .`；固定推送 `origin main`；本地执行 `sync:cp --verify` 会跑 `npm ci`；L84 的 `exit $?` 返回的是条件判断的状态 | 属实，均为本地工具链问题。 |
-| L13 | `scripts/check_adrs.js#L51-L53` | 发现缺失字段时仍以退出码 0 结束；`package.json` 中没有 `check:adrs` 脚本 | 已实测：报告 ADR-049 缺少 `Alternatives Considered`，退出码为 0。 |
-| L14 | `docs/structure.md#L7`、`docs/decisions/ADR-031-break-reminder.md#L63`、`CHANGELOG.md#L150` | 指向 `docs/code-review-recheck-2026-10-06.md` 的链接失效 | 文件实际位于 `docs/archive/`。`docs/archive/code-review-fix-plan-2026-10-06.md#L4` 中的链接有效。 |
-| L15 | `src/pet/PetRenderer.js#L295-L298` | `_renderedDirection` 判断块只更新缓存字段，注释说会更新 class | 无效逻辑，可删除。 |
-| L16 | `src/main/windows/SkinSelectorWindow.js#L68-L74` | `isValidSkinSelectorSender` 没有调用方，也没有导出 | 不构成安全缺口：`SkinService.isSkinSelectorRequest` 已经做了同样的 sender 校验。可删除。 |
-| L17 | `src/assets/iconTemplate.png`、`iconTemplate@2x.png` | 运行时没有引用，但仍被打包进 asar | 托盘图标由 `TrayManager.js#L317-L328` 在代码中生成。可从 `build.files` 中排除，同时保留测试和 CP 白名单。 |
-| L18 | `src/debug.js#L8`、`src/app.js#L626-L640` | 调试工具只靠路径中是否有 `/app.asar/` 来门控；`window.__DEBUG_*` 在生产环境也会挂载 | 默认 `asar: true`，打包后不会启用。CSP `script-src 'self'` 限制了暴露面。可以改用主进程下发的 `isPackaged` 标志。 |
+| ID  | 位置                                                                                         | 问题                                                                                                                    | 复核说明                                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| L1  | `src/main/services/PetVisibilityService.js#L64`、`#L77`                                      | 发送 `toggle-pause` 前只判断引用是否存在，没有检查 `isDestroyed()`                                                      | 属实。主窗口 `closed` 时会立即置空引用，触发窗口极短。同文件 L50、L133 已有正确写法，可照抄。                                              |
+| L2  | `src/main/services/SkinService.js#L99-L109`                                                  | 取消或被取代时返回 `LOAD_FAILED`，不是 `STALE_REQUEST`                                                                  | 属实。原因会放在 message 里，唯一调用方 `skinSelectorWindow.js#L77` 只判断 `success`，属于接口语义问题。                                   |
+| L3  | `src/main/services/SkinService.js#L114-L120`                                                 | 首次安装时 `petState` 不存在，主进程不写盘                                                                              | 有兜底：随后 `switch-skin` 带 `persist: true`，渲染进程会保存完整的 `petState`。只有渲染进程失效时才会丢失。                               |
+| L4  | `src/main/services/SkinService.js#L265`、`#L311`、`#L418`；`protectedAssetLoader.js#L53-L61` | `appRoot: __dirname` 指向不存在的目录；`manifestNotFound` 置位后不再重置                                                | 加载器会回退到自身目录下的 `protected-assets`，开发和打包环境都能找到，所以是无效配置。粘滞缓存只影响开发时"启动后才生成 manifest"的情况。 |
+| L5  | `src/main/TrayManager.js#L160`、`#L176`                                                      | `idleResetMinutes: 5` 写死                                                                                              | 仓库里没有任何 UI 或 IPC 能修改这个值，用户感知不到。可改为保留原有设置值。                                                                |
+| L6  | `breakReminderService.js#L106-L110`、`#L128-L130`                                            | `updateSettings` 不清理 `deferTimer`；`rawElapsed` 未做 `Math.max(0, …)`                                                | 回调里会再检查 `enabled`，最多推迟 60 秒。时钟回拨只会推迟提醒，空闲或锁屏时会自动归零。                                                   |
+| L7  | `weatherSyncService.js#L26-L29`、`#L34-L35`、`#L113`、`#L139`                                | 空的 `schemaVersion` 分支；lat/lon 未用 `Number.isFinite`；响应没有大小上限；https 回退路径缺少 `res.on('error')`       | 存储经过 JSON 序列化，`Infinity` 会变成 `null`；地理编码结果已校验。主要问题是不符合 AGENTS.md 中 `firstFiniteNumber` 的规范。             |
+| L8  | `src/ui/ContextMenu.js#L287-L300`                                                            | `hide()` 时菜单还在淡出，就立即恢复鼠标穿透                                                                             | 原报告"`.hidden` 截断过渡"的说法不成立（见第 5 节），这里是剩下的小问题。                                                                  |
+| L9  | `src/pomodoro.css#L615-L628`                                                                 | 提示框使用 `--font-display` 配 11px 字号                                                                                | 属实。低 DPI 屏上可读性差，建议改用正文字体。                                                                                              |
+| L10 | `src/update-progress.css#L52-L55`、`#L68`                                                    | `@keyframes sweep` 动画修改的是 `left`                                                                                  | 属实。这个窗口很小且显示时间短，性能影响可以忽略，可改为 `transform: translateX()`。                                                       |
+| L11 | `scripts/protect-assets.js#L81-L109`                                                         | 重新加密时不清理残留的 `.dat`                                                                                           | 属实。孤儿文件不在 manifest 中，运行时不会加载，但会被打包。                                                                               |
+| L12 | `push.sh#L15`、`#L24`、`#L68`、`#L84`、`#L89-L99`                                            | `git add .`；固定推送 `origin main`；本地执行 `sync:cp --verify` 会跑 `npm ci`；L84 的 `exit $?` 返回的是条件判断的状态 | 属实，均为本地工具链问题。                                                                                                                 |
+| L13 | `scripts/check_adrs.js#L51-L53`                                                              | 发现缺失字段时仍以退出码 0 结束；`package.json` 中没有 `check:adrs` 脚本                                                | 已实测：报告 ADR-049 缺少 `Alternatives Considered`，退出码为 0。                                                                          |
+| L14 | `docs/structure.md#L7`、`docs/decisions/ADR-031-break-reminder.md#L63`、`CHANGELOG.md#L150`  | 指向 `docs/code-review-recheck-2026-10-06.md` 的链接失效                                                                | 文件实际位于 `docs/archive/`。`docs/archive/code-review-fix-plan-2026-10-06.md#L4` 中的链接有效。                                          |
+| L15 | `src/pet/PetRenderer.js#L295-L298`                                                           | `_renderedDirection` 判断块只更新缓存字段，注释说会更新 class                                                           | 无效逻辑，可删除。                                                                                                                         |
+| L16 | `src/main/windows/SkinSelectorWindow.js#L68-L74`                                             | `isValidSkinSelectorSender` 没有调用方，也没有导出                                                                      | 不构成安全缺口：`SkinService.isSkinSelectorRequest` 已经做了同样的 sender 校验。可删除。                                                   |
+| L17 | `src/assets/iconTemplate.png`、`iconTemplate@2x.png`                                         | 运行时没有引用，但仍被打包进 asar                                                                                       | 托盘图标由 `TrayManager.js#L317-L328` 在代码中生成。可从 `build.files` 中排除，同时保留测试和 CP 白名单。                                  |
+| L18 | `src/debug.js#L8`、`src/app.js#L626-L640`                                                    | 调试工具只靠路径中是否有 `/app.asar/` 来门控；`window.__DEBUG_*` 在生产环境也会挂载                                     | 默认 `asar: true`，打包后不会启用。CSP `script-src 'self'` 限制了暴露面。可以改用主进程下发的 `isPackaged` 标志。                          |
 
 ---
 
 ## 4. 原报告条目对照
 
-| 原报告条目 | 原级别 | 复核后 |
-| --- | --- | --- |
-| Windows 混合 DPI 坐标未转换为 DIP | High | P1 → H3（前提待实测，修复方案需调整） |
-| 启动阶段 skinId 被覆盖 | High | P1 → H1（有触发条件，可能造成永久丢失） |
-| 主渲染进程 IPC 监听空窗 | High | P2 → M1（只有 `screen-info` 没有兜底） |
-| `PetVisibilityService` 缺少 `isDestroyed` | High | P3 → L1 |
-| `finishDrag` 恢复穿透 | High | P1 → H2（高频交互问题） |
-| `hideOverlay` 误删新覆盖层 | High | 驳回；相关的重复 ID 问题为 P2 → M5 |
-| 皮肤状态机细节（3 项） | Medium | P3 → L2、L3、L4 |
-| 子窗口关闭清理遗漏 | Medium | P2 → M4 |
-| 更新进度窗口时序 | Medium | P2 → M3 |
-| macOS 更新弹窗硬编码中文 | Medium | P2 → M8 |
-| 完整性校验失败无反馈 | Medium | P2 → M2 |
-| 久坐提醒与天气同步边界缺陷 | Medium | P3 → L5、L6、L7 |
-| ContextMenu 截断退场过渡 | Medium | 驳回；剩余小问题为 P3 → L8 |
-| 番茄钟提示字号 / `sweep` 动画 | Medium | P3 → L9、L10 |
-| Windows draft release 竞态 | Medium | P2 → M7 |
-| Release Preflight 权限 / CI 覆盖 | Medium | P2 → M6 |
-| `.DS_Store` 被打包 | Medium | 驳回 |
-| `protect-assets` 残留 / `push.sh` | Medium | P3 → L11、L12 |
-| ADR 校验与悬空引用 | Low | P3 → L13、L14（4 处引用中有 1 处说错） |
-| 未使用的代码与资源 | Low | P3 → L15–L18 |
+| 原报告条目                                | 原级别 | 复核后                                  |
+| ----------------------------------------- | ------ | --------------------------------------- |
+| Windows 混合 DPI 坐标未转换为 DIP         | High   | P1 → H3（前提待实测，修复方案需调整）   |
+| 启动阶段 skinId 被覆盖                    | High   | P1 → H1（有触发条件，可能造成永久丢失） |
+| 主渲染进程 IPC 监听空窗                   | High   | P2 → M1（只有 `screen-info` 没有兜底）  |
+| `PetVisibilityService` 缺少 `isDestroyed` | High   | P3 → L1                                 |
+| `finishDrag` 恢复穿透                     | High   | P1 → H2（高频交互问题）                 |
+| `hideOverlay` 误删新覆盖层                | High   | 驳回；相关的重复 ID 问题为 P2 → M5      |
+| 皮肤状态机细节（3 项）                    | Medium | P3 → L2、L3、L4                         |
+| 子窗口关闭清理遗漏                        | Medium | P2 → M4                                 |
+| 更新进度窗口时序                          | Medium | P2 → M3                                 |
+| macOS 更新弹窗硬编码中文                  | Medium | P2 → M8                                 |
+| 完整性校验失败无反馈                      | Medium | P2 → M2                                 |
+| 久坐提醒与天气同步边界缺陷                | Medium | P3 → L5、L6、L7                         |
+| ContextMenu 截断退场过渡                  | Medium | 驳回；剩余小问题为 P3 → L8              |
+| 番茄钟提示字号 / `sweep` 动画             | Medium | P3 → L9、L10                            |
+| Windows draft release 竞态                | Medium | P2 → M7                                 |
+| Release Preflight 权限 / CI 覆盖          | Medium | P2 → M6                                 |
+| `.DS_Store` 被打包                        | Medium | 驳回                                    |
+| `protect-assets` 残留 / `push.sh`         | Medium | P3 → L11、L12                           |
+| ADR 校验与悬空引用                        | Low    | P3 → L13、L14（4 处引用中有 1 处说错）  |
+| 未使用的代码与资源                        | Low    | P3 → L15–L18                            |
 
 ## 5. 已驳回或不成立
 
