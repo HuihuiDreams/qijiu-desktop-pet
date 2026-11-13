@@ -100,7 +100,9 @@ function init(dependencies) {
         if (lastLoadedSkinId !== targetSkinId || lastLoadedRequestId !== requestId) {
           const loadResult = await waitForSkinLoad(targetSkinId, requestId, 2500);
           if (!loadResult.success) {
-            return createIpcFailure('LOAD_FAILED', loadResult.error || 'Skin failed to load');
+            // 预览被新选择取代或被取消时不是加载失败，与下方的 STALE_REQUEST 语义保持一致
+            const code = STALE_LOAD_ERRORS.has(loadResult.error) ? 'STALE_REQUEST' : 'LOAD_FAILED';
+            return createIpcFailure(code, loadResult.error || 'Skin failed to load');
           }
         } else if (!lastLoadSuccess) {
           return createIpcFailure('LOAD_FAILED', lastLoadError || 'Skin failed to load');
@@ -195,6 +197,9 @@ let lastLoadError = null;
 let skinLoadRequestId = 0;
 let lastLoadedRequestId = null;
 let pendingLoadResolvers = [];
+
+// cancelPendingSkinLoads 用这两个原因结束仍在等待的加载
+const STALE_LOAD_ERRORS = new Set(['CANCELLED', 'SUPERSEDED']);
 
 function cancelPendingSkinLoads(error) {
   for (const item of pendingLoadResolvers) {
