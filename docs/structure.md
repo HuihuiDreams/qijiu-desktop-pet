@@ -116,7 +116,7 @@ qijiu-desktop-pet/
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
 ├─ src/main/TrayManager.js              # 系统托盘管理：构建托盘菜单、处理中英文切换及各菜单项的点击交互
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
-├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点
+├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、城市设置、选肤、体型调节（无 parent）与更新进度窗口
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC

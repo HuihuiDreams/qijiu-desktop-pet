@@ -30,7 +30,8 @@
   - [x] 校验失败写日志并弹出 `updateErrIntegrity` 错误对话框（三语），`verifyDownloadedPackageIntegrity` 的 `catch` 记录异常；`state.error` 仍为稳定标识 `integrity-check-failed`，保持 ADR-025 约定。
 - [x] **Task M3：更新进度窗口加载期间进度被初始载荷覆盖**
   - [x] `UpdateProgressWindow.js` 记录 `latestPayload`，`did-finish-load` 补发最新值；`closed` 回调只清理仍指向自己的引用；`close()` 同时重置 `latestPayload`。新增 `test/updateProgressWindow.behavior.test.js`。
-- [ ] **Task M4：主窗口关闭时未关闭体型调节窗口**
+- [x] **Task M4：主窗口关闭时未关闭体型调节窗口**
+  - [x] `PetWindow` 的 `closed` 回调补关体型调节窗口（走窗口自身 `close` 监听器回滚未确认预览）与更新进度窗口，`getPetSubWindows()` 保持不变。
 - [ ] **Task M5：互动覆盖层重复 ID**
 - [ ] **Task M6：Release Preflight 权限过宽**（工作流改动，需在 GitHub Actions 上验证）
 - [ ] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
