@@ -55,4 +55,6 @@ if (pet.isDragging || pet.isBusy()) return;
 
 ## 后续更新 (2026-11-13)
 
-拖拽结束（`mouseup` 延迟 100ms、watchdog 超时、窗口 `blur`）恢复穿透前，`PetRenderer.js` 增加两项判断：指针是否仍在宠物元素上（`el.matches(':hover')`），以及右键菜单是否打开。任一成立就保持可交互，交给 `mouseleave` 恢复穿透。原因是拖拽时宠物跟随指针，松手时指针几乎总在宠物上，`mouseenter` 不会再次触发，无条件恢复会让下一次点击落到下层应用。详见 [审核复核 H2](../code-review-audit-verification-2026-11-13.md) 与 [ADR-002](./ADR-002-mouse-clickthrough-strategy.md)。
+拖拽结束（`mouseup` 延迟 100ms、watchdog 超时、窗口 `blur`）恢复穿透前，`PetRenderer.js` 增加两项判断：指针是否仍在宠物元素上（`el.matches(':hover')`），以及右键菜单是否打开。任一成立就保持可交互，交给 `mouseleave` 恢复穿透。原因是拖拽时宠物跟随指针，松手时指针几乎总在宠物上，`mouseenter` 不会再次触发，无条件恢复会让下一次点击落到下层应用。
+
+保持可交互时，仅"返回"并不够：拖拽期间 `mousedown`/`mousemove` 持续下发的 `setIgnoreMouseEvents(false, { leaseMs: 1000 })` 会在主进程启动 1000ms 定时器（`PetWindow.setPetWindowMousePassthrough`），到期把窗口改回穿透，只有再次调用才会清掉。因此指针仍在宠物上时，`restoreMousePassthroughIfIdle()` 会再发送一次不带 `leaseMs` 的 `setIgnoreMouseEvents(false)` 取消该租约；菜单已打开时不发送，避免取消 `ContextMenu` 自己的 10 秒租约。详见 [审核复核 H2](../code-review-audit-verification-2026-11-13.md) 与 [ADR-002](./ADR-002-mouse-clickthrough-strategy.md)。

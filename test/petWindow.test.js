@@ -149,6 +149,26 @@ test('PetWindow - Initialization and IPC', async (t) => {
     
     windowManager.mainWindow.trigger('closed'); // clean timers
   });
+
+  await t.test('a later call without leaseMs cancels the pending lease timer', async () => {
+    const deps = createMockDeps();
+    PetWindow.init(deps);
+
+    windowManager.mainWindow = new MockBrowserWindow({});
+    const mockEvent = { sender: windowManager.mainWindow.webContents };
+
+    mockIpcListeners['set-ignore-mouse-events'](mockEvent, false, { leaseMs: 20 });
+    mockIpcListeners['set-ignore-mouse-events'](mockEvent, false);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.equal(windowManager.mainWindow.ignoreMouseEvents, false, 'cancelled lease must not restore passthrough');
+
+    // 对照：没有被取消的租约到期后会恢复穿透
+    mockIpcListeners['set-ignore-mouse-events'](mockEvent, false, { leaseMs: 20 });
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.equal(windowManager.mainWindow.ignoreMouseEvents, true, 'expired lease restores passthrough');
+
+    windowManager.mainWindow.trigger('closed'); // clean timers
+  });
 });
 
 test('PetWindow - Lifecycle and Methods', async (t) => {
