@@ -61,7 +61,9 @@ function enterPomodoroPetFocus() {
   }
   if (!isPaused) {
     isPaused = true;
-    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', true);
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('toggle-pause', true);
+    }
   }
   sendPetVisibility(false);
   trayManager.refreshTrayMenu();
@@ -74,7 +76,9 @@ function restorePomodoroPetFocus() {
   pomodoroPetHidden = false;
   if (isPaused !== wasPaused) {
     isPaused = wasPaused;
-    if (windowManager.mainWindow) windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
+    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+      windowManager.mainWindow.webContents.send('toggle-pause', isPaused);
+    }
   }
   sendPetVisibility(!isPetCurrentlyHidden());
   pomodoroFocusSnapshot = null;

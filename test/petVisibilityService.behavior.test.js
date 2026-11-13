@@ -229,3 +229,21 @@ test('sendPetVisibility is a no-op when there is no live main window', () => {
   assert.doesNotThrow(() => Service.showPetManually());
   assert.equal(sent.length, 0);
 });
+
+test('pomodoro focus enter/restore never send toggle-pause to a destroyed main window', () => {
+  const Service = loadFreshService();
+  const { deps, sent } = createStubDeps();
+  // 真实 Electron 在窗口销毁后访问 webContents 会抛错，这里模拟这一行为
+  deps.windowManager.mainWindow.webContents.send = () => {
+    throw new Error('Object has been destroyed');
+  };
+  deps.windowManager.mainWindow.isDestroyed = () => true;
+  Service.init(deps);
+
+  assert.doesNotThrow(() => Service.enterPomodoroPetFocus());
+  assert.equal(Service.getIsPaused(), true, 'state still changes even though nothing can be sent');
+  assert.doesNotThrow(() => Service.restorePomodoroPetFocus());
+  assert.equal(Service.getIsPaused(), false);
+  assert.equal(Service.getPomodoroPetHidden(), false);
+  assert.equal(sent.length, 0);
+});
