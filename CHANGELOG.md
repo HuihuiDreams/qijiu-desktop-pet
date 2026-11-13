@@ -30,6 +30,7 @@
 - **受保护素材重新生成时清理残留密文 (`Protected Assets Stale .dat Cleanup`)**：修复 `scripts/protect-assets.js` 重新加密时不清理上一轮遗留的 `.dat` 文件，源皮肤素材被删除或改名后，孤儿密文虽不在 manifest 中、运行时不会加载，却仍会被打进安装包的问题；生成完 manifest 后现在会删除输出目录中不在 manifest 里的 `.dat`，其它文件不受影响；补充回归测试（[审核复核 L11](docs/code-review-audit-verification-2026-11-13.md)）。
 - **推送脚本失败退出码修复 (`Push Script Failure Exit Codes`)**：修复 `push.sh` 在 `git commit` 失败时 `exit $?` 实际返回 `echo` 的状态（0）、以及推送失败后脚本仍以 0 退出，导致外层工具无法发现失败的问题，两种失败现在都以非零退出；`push.ps1` 同样补上推送失败的 `exit 1`；新增在临时 Git 仓库里实际运行 `push.sh` 的回归测试（[审核复核 L12](docs/code-review-audit-verification-2026-11-13.md)、[docs/git-workflow.md](docs/git-workflow.md)）。
 - **ADR 格式检查退出码与脚本入口修复 (`ADR Check Exit Code & npm Script`)**：修复 `scripts/check_adrs.js` 发现 ADR 缺少必需章节时仍以退出码 0 结束的问题，现在返回 1；新增 `npm run check:adrs`；补齐 `ADR-049` 缺失的 `Alternatives Considered` 章节（内容取自其已有的 Context 与 Decision 理由）；`test/check_adrs.test.js` 新增对全部 ADR 的检查与 CLI 退出码测试，`npm test` 会拦截今后的格式缺失（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)、[审核复核 L13](docs/code-review-audit-verification-2026-11-13.md)）。
+- **文档失效链接修复 (`Dead Documentation Links After Archiving`)**：修复 `docs/structure.md`、`docs/decisions/ADR-031-break-reminder.md` 与 `CHANGELOG.md` 中指向已归档到 `docs/archive/` 的 2026-10-06 代码审查复核报告（以及同批归档的审查报告、复核修复计划）的失效链接；新增 `test/docLinks.test.js` 检查 `docs/` 下维护中文档的相对链接（[审核复核 L14](docs/code-review-audit-verification-2026-11-13.md)）。
 
 ### Removed
 - **历史性能复测清单与本地原始采样 JSON 清理 (`Legacy Performance Retest Checklist & Raw JSON Cleanup`)**：移除已归档的 `docs/performance/task3-retest-checklist.md`（及本机留存的未追踪 `docs/performance/raw/`、`docs/performance/task3-post-optimization.json` 原始采样数据），`docs/performance/` 仅保留采样指南 `README.md` 与 `2026-07-23-windows-baseline.md` 基线报告。
@@ -176,9 +177,9 @@
 ## [0.11.0] - 2026-10-15
 
 ### Added
-- 新增全代码库五维质量与架构深度审查报告（[`docs/code-review-report-2026-10-06.md`](docs/code-review-report-2026-10-06.md)），涵盖正确性、简洁性、架构设计、安全加固及性能效率的完整审计评估与评级（A+）。
-- 新增[全仓库代码审查复核报告](docs/code-review-recheck-2026-10-06.md)，记录七项问题及修复状态、复现证据、测试结果及平台与依赖审计限制。
-- 新增[代码审查复核修复计划](docs/code-review-fix-plan-2026-10-06.md)，按 R2、R3、R4、R5、R7、R6 明确独立修复、行为测试、中文变更记录、文档同步及分平台验收要求。
+- 新增全代码库五维质量与架构深度审查报告（[`docs/code-review-report-2026-10-06.md`](docs/archive/code-review-report-2026-10-06.md)），涵盖正确性、简洁性、架构设计、安全加固及性能效率的完整审计评估与评级（A+）。
+- 新增[全仓库代码审查复核报告](docs/archive/code-review-recheck-2026-10-06.md)，记录七项问题及修复状态、复现证据、测试结果及平台与依赖审计限制。
+- 新增[代码审查复核修复计划](docs/archive/code-review-fix-plan-2026-10-06.md)，按 R2、R3、R4、R5、R7、R6 明确独立修复、行为测试、中文变更记录、文档同步及分平台验收要求。
 - 新增[更换 CP 的迁移指南](docs/cp-migration-guide.md)，说明将岳七与沈九替换为其他角色时的名称、三语对白、皮肤素材、互动规则、内部标识、存档隔离、独立发布与验收回滚步骤，补充同仓库分支维护、通用功能同步及逐步提取角色配置的建议，并同步项目结构索引。
 - 新增桌宠体型大小缩放支持（50%~150%），基于逻辑尺寸 `pet.size` 与脚底底边中点锚定算法（[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md)）；主进程通过 `PetScaleService` 管理持久化配置 `petScalePercent` 与实时拖动预览/确认状态机，渲染进程启动自动恢复并在变更时同步约束可行走区域。
 - 新增托盘菜单“📏 调整大小…”入口与独立体型调节子窗口（`src/pet-scale.html`、`src/pet-scale.css`、`src/petScaleWindow.js`），提供 50%~150% 滑块拖动实时预览、恢复默认（100%）、确认持久化保存与取消/ESC/关闭安全回滚的原生交互体验，并完成中/英/日三语字典国际化与权限矩阵安全加固。
