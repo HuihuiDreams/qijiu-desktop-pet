@@ -34,7 +34,10 @@
   - [x] `PetWindow` 的 `closed` 回调补关体型调节窗口（走窗口自身 `close` 监听器回滚未确认预览）与更新进度窗口，`getPetSubWindows()` 保持不变。
 - [x] **Task M5：互动覆盖层重复 ID**
   - [x] 采用审核报告的第二种方案：`hideOverlay` 开始渐隐前先释放旧节点的 `id`，保留渐隐动画，不在 `showOverlay` 里直接移除旧节点。
-- [ ] **Task M6：Release Preflight 权限过宽**（工作流改动，需在 GitHub Actions 上验证）
+- [x] **Task M6：Release Preflight 权限过宽**（工作流改动，【CI 待验证】见文末清单）
+  - [x] 顶层权限降为 `contents: read`；版本号同步拆成只在 `workflow_dispatch` 运行的 `sync-version` 作业（唯一 `contents: write`），Windows 预检作业 `needs: sync-version` 并在手动触发时检出分支最新提交。新增 `test/releasePreflightWorkflow.test.js` 静态断言权限边界。
+  - [x] macOS 预检作业新增 `npm run test:integration`（本机 <1 秒，19 个用例通过）。
+  - [ ] 【Windows 待验证】Windows 预检作业暂未接入 `test:integration`，等在 Windows 本机跑通后再加。`test:e2e` 与 `qa:electron:smoke` 需要显示环境，本轮不接入 CI。
 - [ ] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
 - [x] **Task M8：macOS 手动更新弹窗硬编码中文**
   - [x] 新增 `updateMacManualCurrentVersion` / `updateMacManualLatestVersion`（带 `{version}` 占位符，三语）。没有实现审核报告建议的"版本号缺失时省略对应行"：macOS 分支只在 `isNewerVersion(latest, current)` 为真后进入，两个版本号必然存在，`null` 字面值不会出现，省略分支是死代码。
@@ -71,5 +74,14 @@
 3. 在宠物身上单击一次、再右键一次。预期：右键菜单正常弹出，下层应用窗口没有收到点击（可先在宠物下方放一个浏览器或记事本窗口观察）。
 4. 把鼠标移出宠物，再点击宠物下方的应用。预期：点击正常落到下层应用（穿透已恢复）。
 5. 拖拽时按住不动超过 1.2 秒（触发 watchdog）再松手，重复第 3、4 步。
+
+### M6 Release Preflight 工作流拆分（GitHub Actions 实跑）
+
+本机只能做静态校验（`test/releasePreflightWorkflow.test.js`），需要在 GitHub 上各跑一次：
+
+1. 在 GitHub Actions 手动运行 `Release Preflight`，版本填一个与 `package.json` 不一致的值（例如当前版本 +0.0.1，跑完后手动回滚该版本提交），确认 `sync-version` 推送了提交，且 `preflight` 检出的是含该提交的最新版本、"Validate release metadata" 通过。
+2. 再用与 `package.json` 一致的版本手动运行一次，确认 `sync-version` 打印 "already match" 后成功退出，`preflight` 正常继续。
+3. 开一个触碰 `src/**` 的 PR，确认 `sync-version` 显示为 skipped，`preflight` 与 `preflight-mac` 仍然运行，且日志里的 `GITHUB_TOKEN` 权限为 `Contents: read`。
+4. 确认 `preflight-mac` 的 "Run integration tests" 步骤通过。
 
 （随任务推进补充其余条目）

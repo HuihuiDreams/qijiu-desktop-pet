@@ -210,13 +210,15 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 
 这个 workflow 也会在相关 pull request 上自动运行。手动运行时，它会验证：
 
-* 输入版本是否为 `X.Y.Z` 或 `vX.Y.Z`（不接受预发布或构建元数据），以及 `package.json` 是否匹配；不一致时同步两个版本文件并推送版本提交。
+* 输入版本是否为 `X.Y.Z` 或 `vX.Y.Z`（不接受预发布或构建元数据），以及 `package.json` 是否匹配；不一致时由独立的 `sync-version` 作业同步两个版本文件并推送版本提交，Windows 预检作业随后检出分支最新提交并再次确认版本一致。
 * `CHANGELOG.md` 是否包含目标版本段落。
 * 目标 GitHub tag 是否已经存在。
 * 根目录三份 `readme*.txt` 是否存在。
 * Windows 签名 secrets 是否存在；缺失时只提示将发布未签名 Windows 安装包。
 * Windows 单元测试、安装包前置检查、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
-* macOS 单元测试、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build、包内容检查，以及 `DeskPet` 包内可执行文件元数据检查。
+* macOS 单元测试、集成测试（`npm run test:integration`）、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build、包内容检查，以及 `DeskPet` 包内可执行文件元数据检查。
+
+工作流默认令牌为只读（`contents: read`），只有仅在手动运行时才会执行的 `sync-version` 作业声明了 `contents: write`，因此 pull request 触发的 `npm ci`、测试和构建脚本拿不到可写令牌。
 
 版本、日志与 tag 的元数据检查仅在手动运行时执行；两个平台的构建检查也会在匹配路径的 pull request 上运行。若预检生成了新提交，应同步本地与所选分支，并针对同步后的提交重新运行预检，再启动正式构建。`Build Installers` 没有强制依赖预检，也不自动运行 `npm test` 或 E2E，因此需要自行确认预检覆盖的是将要发布的源码。
 
