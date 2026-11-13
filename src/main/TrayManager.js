@@ -26,6 +26,12 @@ function trayMenuLabel(key, fallback) {
   return escapeElectronMenuLabel(value);
 }
 
+// 托盘只改开关和间隔；其余字段（如 idleResetMinutes）沿用服务当前值，避免写盘时被重置
+function buildBreakReminderSettings(patch) {
+  const current = deps.getBreakReminderService()?.getSettings?.() || {};
+  return { ...current, ...patch };
+}
+
 function getPomodoroTrayLabel() {
   const snapshot = deps.getPomodoroSnapshot();
   if (snapshot.status === 'running') {
@@ -157,7 +163,7 @@ function buildTrayMenu() {
       click: async () => {
         const newEnabled = !deps.getBreakReminderEnabled();
         deps.setBreakReminderEnabled(newEnabled);
-        const newSettings = { enabled: newEnabled, intervalMinutes: deps.getBreakReminderIntervalMinutes(), idleResetMinutes: 5 };
+        const newSettings = buildBreakReminderSettings({ enabled: newEnabled, intervalMinutes: deps.getBreakReminderIntervalMinutes() });
         if (deps.getBreakReminderService()) deps.getBreakReminderService().updateSettings(newSettings);
         await deps.initStore();
         if (deps.getStore()) deps.getStore().set(deps.BREAK_REMINDER_STORE_KEY, newSettings);
@@ -173,7 +179,7 @@ function buildTrayMenu() {
         checked: deps.getBreakReminderIntervalMinutes() === minutes,
         click: async () => {
           deps.setBreakReminderIntervalMinutes(minutes);
-          const newSettings = { enabled: deps.getBreakReminderEnabled(), intervalMinutes: minutes, idleResetMinutes: 5 };
+          const newSettings = buildBreakReminderSettings({ enabled: deps.getBreakReminderEnabled(), intervalMinutes: minutes });
           if (deps.getBreakReminderService()) deps.getBreakReminderService().updateSettings(newSettings);
           await deps.initStore();
           if (deps.getStore()) deps.getStore().set(deps.BREAK_REMINDER_STORE_KEY, newSettings);

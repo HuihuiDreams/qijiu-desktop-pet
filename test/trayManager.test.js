@@ -283,6 +283,35 @@ test('TrayManager - Full Coverage', async (t) => {
     assert.ok(opened);
   });
 
+  await t.test('break reminder toggles keep the current idleResetMinutes instead of resetting it to 5', async () => {
+    const deps = createMockDeps();
+    let enabled = false;
+    let intervalMinutes = 60;
+    const serviceUpdates = [];
+    const storedWrites = [];
+    deps.getBreakReminderEnabled = () => enabled;
+    deps.setBreakReminderEnabled = (v) => { enabled = v; };
+    deps.getBreakReminderIntervalMinutes = () => intervalMinutes;
+    deps.setBreakReminderIntervalMinutes = (v) => { intervalMinutes = v; };
+    deps.getBreakReminderService = () => ({
+      getSettings: () => ({ enabled, intervalMinutes, idleResetMinutes: 12 }),
+      updateSettings: (s) => serviceUpdates.push(s),
+    });
+    deps.getStore = () => ({ set: (key, value) => storedWrites.push([key, value]) });
+    TrayManager.init(deps);
+    TrayManager.createTray();
+    const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
+
+    await findItem('trayBreakReminderOff').click();
+    await findItem('trayBreakReminderInterval').submenu[0].click();
+
+    assert.deepEqual(serviceUpdates, [
+      { enabled: true, intervalMinutes: 60, idleResetMinutes: 12 },
+      { enabled: true, intervalMinutes: 30, idleResetMinutes: 12 },
+    ]);
+    assert.deepEqual(storedWrites.map(([, value]) => value), serviceUpdates);
+  });
+
   await t.test('disables interval and threshold submenus when break reminder or screensaver is disabled', async () => {
     const deps = createMockDeps();
     let breakEnabled = false;
