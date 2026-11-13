@@ -18,8 +18,8 @@
 - [x] **Task H2：拖拽结束后无条件恢复鼠标穿透**
   - [x] macOS 上完成修复与 fake-DOM 单元测试：`PetRenderer` 的 `finishDrag` 三条恢复路径（100ms 延迟、watchdog、`blur`）统一走 `restoreMousePassthroughIfIdle()`，指针仍在宠物上（`:hover`）或右键菜单打开时不恢复。
   - [ ] 【Windows 待验证】真机拖拽后原地单击，确认不穿透（步骤见文末清单）。macOS 真机同样建议手动确认一次。
-- [ ] **Task H3：Windows 前台窗口坐标口径不确定**
-  - [ ] 【Windows 待验证】需先在 Windows 采集原始 bounds，确认口径后再改代码。macOS 不启用该功能，本轮不改代码。
+- [ ] **Task H3：Windows 前台窗口坐标口径不确定**（本轮未改代码）
+  - [ ] 【Windows 待验证】先在 Windows 采集原始 bounds，确认口径后再改代码。该功能只在 Windows 启用（macOS 不支持窗口边缘行走），无法在 macOS 上复现，步骤见文末清单。
 
 ## P2
 
@@ -49,7 +49,7 @@
 - [x] **Task L1：`PetVisibilityService` 补 `isDestroyed()` 守卫**
 - [x] **Task L2–L4：`SkinService` 小问题**
   - [x] L2：确认皮肤时等待中的加载被取消或被取代，返回 `STALE_REQUEST` 而不是 `LOAD_FAILED`。
-  - [ ] L3：**不修复**。首次安装没有 `petState` 时由随后 `switch-skin` 的 `persist: true` 让渲染进程保存完整 `petState`；若主进程改写一个只有 `skinId` 的残缺 `petState`，渲染进程启动读取时会拿到缺少养成数值的存档，风险高于收益。
+  - L3：**不修复**。首次安装没有 `petState` 时由随后 `switch-skin` 的 `persist: true` 让渲染进程保存完整 `petState`；若主进程改写一个只有 `skinId` 的残缺 `petState`，渲染进程启动读取时会拿到缺少养成数值的存档，风险高于收益。
   - [x] L4：移除 `appRoot: __dirname` 无效配置；`manifestNotFound` 粘滞缓存**不修复**，`test/protectedAssetLoader.test.js` 明确把"负缓存保持到显式清理"作为设计行为。
 - [x] **Task L5：托盘保留 `idleResetMinutes` 原值**
 - [x] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
@@ -88,6 +88,36 @@
 
 换到 Windows 机器后按此清单处理，处理完成后回到本文件勾选。
 
+| 编号 | 需要什么环境 | 要做什么 |
+| --- | --- | --- |
+| H3 | Windows 实机，125%/150% 缩放及混合 DPI 多屏 | 采集原始坐标，确认口径后再修复（唯一尚未改代码的 P1） |
+| H2 | Windows 与 macOS 实机 | 拖拽后原地单击、右键，确认不穿透 |
+| M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
+| M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |
+| L12 | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析 |
+| L17 | Windows | Windows 打包后确认 `app.asar` 不含 `iconTemplate` |
+| L18 | Windows | Windows 打包版确认 `debugToolsEnabled === false` |
+| L10 | 任一平台 | 目测"检查更新"进度动画 |
+| M6 补充 | Windows | 本机跑通 `npm run test:integration` 后，把该步骤加入 Windows 预检作业 |
+
+### H3 Windows 前台窗口坐标口径
+
+**背景**：`activeWindowProvider.js` 里常驻的 `powershell.exe` 子进程用 P/Invoke 调 `GetWindowRect`，脚本没有设置 DPI awareness，返回值是物理像素还是被系统虚拟化的逻辑坐标，取决于 `powershell.exe` 自身的清单设置。两个消费方的假设不一致：`PresentationGuard` 在 win32 上先做 `screenToDipRect` 再比较，`getActiveWindowPlatformRelativeToBounds` 直接把原始值当 DIP 使用。至少有一个是错的。**在确认口径之前不要套用 `screenToDipRect`，否则可能转换两次。**
+
+**采集步骤**（每种环境各做一次：单屏 100%、单屏 125%、单屏 150%、混合 DPI 双屏，窗口分别放在两块屏上）：
+
+1. 把记事本最大化，使其铺满一块屏；再还原并放到一个已知位置（例如屏幕左上附近）。
+2. 在 `src/main/services/WindowAwarenessService.js` 收到采样结果的位置临时打印 `payload.bounds`（不要提交），`npm run dev` 启动，在终端里记录记事本成为前台窗口时的原始 `bounds`。
+3. 在宠物窗口 DevTools 里执行 `window.__DEBUG_SCREEN()`，记录 `displays` 的 `bounds`、`scaleFactor`，再执行 `await window.probeWindowAwareness()` 看 `main` 与 `renderer` 里的平台矩形。
+4. 判断口径：把记事本最大化后，原始 `bounds.width` 如果约等于显示器的**物理**宽度（例如 150% 缩放的 3840×2160 屏上约 3840），说明是物理像素；如果约等于**逻辑**宽度（约 2560），说明是被虚拟化的坐标。
+5. 在 125%、150% 下把记事本放在屏幕上沿，观察宠物"站在窗口顶边"的位置是否与窗口上沿对齐；混合 DPI 下重复，记录偏移量。
+
+**确认口径之后的修复方向**（沿用审核报告的建议）：
+
+- 在脚本里调用 `SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)`，把坐标统一为物理像素。
+- 主进程收到 payload 时只做一次 `screenToDipRect`，两个消费方共用转换后的结果，并删除 `PresentationGuard` 里单独的转换。
+- 补充 `test/activeWindowAwareness.test.js`、`test/presentationGuard.test.js` 里的 DPI 场景。
+
 ### H2 拖拽后原地单击不应穿透
 
 代码已在 macOS 修复并有单元测试覆盖，但 `:hover` 在透明窗口 + `setIgnoreMouseEvents(true, { forward: true })` 下的真实行为需要实机确认。
@@ -123,14 +153,13 @@ pwsh 对原生命令退出码的处理无法在 macOS 上复现，需要在 Wind
 
 1. `npm run protect:assets`，再 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false`。
 2. `npm run verify:package` 通过。
-3. `npx @electron/asar list dist\\win-unpacked\\resources\\app.asar | findstr iconTemplate` 应无输出。
+3. `npx @electron/asar list dist\win-unpacked\resources\app.asar | findstr iconTemplate` 应无输出。
 
 ### L18 调试开关（Windows 打包版）
 
-用 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 打出未签名包，启动 `dist\\win-unpacked\\*.exe`，在 DevTools 或用 Playwright `electron.launch({ executablePath })` 检查：`window.electronAPI.debugToolsEnabled === false`、`typeof window.testInteraction === 'undefined'`、`window.__DEBUG_PETS` 存在。开发模式（`npm run dev`）下 `debugToolsEnabled === true`。
+用 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false` 打出未签名包，启动 `dist\win-unpacked\*.exe`，在 DevTools 或用 Playwright `electron.launch({ executablePath })` 检查：`window.electronAPI.debugToolsEnabled === false`、`typeof window.testInteraction === 'undefined'`、`window.__DEBUG_PETS` 存在。开发模式（`npm run dev`）下 `debugToolsEnabled === true`。
 
 ### L10 更新进度窗口"检查中"动画
 
 macOS 或 Windows 任一平台目测即可（样式与平台无关）：在托盘点击"检查更新"，观察进度窗口的"检查中"状态，绿色条应当和修改前一样从左侧滑入、划过进度条、从右侧滑出，循环往复，没有跳变或溢出进度条圆角。
 
-（随任务推进补充其余条目）
