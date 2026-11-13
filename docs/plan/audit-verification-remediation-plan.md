@@ -72,7 +72,10 @@
   - 其余未处理的失效链接（不在 L14 范围，历史记录）：`CHANGELOG.md` 中指向已归档或不存在的 `docs/plan/*-plan.md` 四处、`AGENTS.md` 里的 `ADR-xxx.md` 示例占位符、`docs/performance/` 基线报告里指向未提交 `raw/` 采样文件的链接。
 - [x] **Task L15–L16：死代码清理**
   - [x] 删除 `PetRenderer.update()` 里只更新缓存字段的 `_renderedDirection` 判断块及其初始化（仓库内无其他引用）；删除 `SkinSelectorWindow.js` 中没有调用方也未导出的 `isValidSkinSelectorSender`（选肤窗口的 sender 校验由 `SkinService.isSkinSelectorRequest` 承担）。无行为变化，不新增测试，由现有全量测试覆盖。
-- [ ] **Task L17：托盘模板图标从打包中排除**
+- [x] **Task L17：托盘模板图标从打包中排除**
+  - [x] `build.files` 增加 `!src/assets/iconTemplate*.png`。已在 macOS 用 `electron-builder --mac --dir --arm64`（输出到临时目录）实际打包验证：`app.asar` 里不再有这两个文件，`icon.png/ico/icns` 保留；测试和 CP 同步白名单仍引用的源文件留在仓库。
+  - 额外发现（未处理）：本机未跟踪的 `backups/` 目录（`.gitignore` 已忽略）没有被 `build.files` 排除，本机打包时其中 41 个明文皮肤 WebP 会进入 `app.asar`。CI 上没有这个目录，不受影响；如果会在本机打正式包，建议另行加入 `!backups/**`。
+  - [ ] 【Windows 待验证】Windows 打包同样走 `build.files`，下次在 Windows 上 `npx electron-builder --win --dir` 后，用 `npm run verify:package` 并确认 `app.asar` 不含 `iconTemplate`。
 - [ ] **Task L18：调试工具门控**
 
 ---
@@ -111,6 +114,12 @@ pwsh 对原生命令退出码的处理无法在 macOS 上复现，需要在 Wind
 ### L12 `push.ps1` 解析校验
 
 在 Windows 上运行 `node --test test/pushScript.test.js`，确认 "push.ps1 parses in Windows PowerShell" 通过（本次只在失败分支加了 `exit 1`）。
+
+### L17 Windows 打包确认
+
+1. `npm run protect:assets`，再 `npx electron-builder --win --dir --config.win.signAndEditExecutable=false`。
+2. `npm run verify:package` 通过。
+3. `npx @electron/asar list dist\\win-unpacked\\resources\\app.asar | findstr iconTemplate` 应无输出。
 
 ### L10 更新进度窗口"检查中"动画
 

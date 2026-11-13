@@ -59,6 +59,7 @@
       "!scripts/**",
       "!src/assets/*/*.webp",
       "!src/assets/*/*/*.webp",
+      "!src/assets/iconTemplate*.png",
       "!push.*",
       "!dist/**"
     ],
