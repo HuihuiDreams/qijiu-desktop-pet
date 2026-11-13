@@ -13,6 +13,8 @@ const DEFAULT_WEATHER_SYNC_SETTINGS = {
 };
 
 const MIN_REFRESH_INTERVAL_MINUTES = 30;
+// 天气与地理编码响应都只有几 KB，设置上限防止异常响应无限占用内存
+const MAX_RESPONSE_BYTES = 256 * 1024;
 
 /**
  * 规范化持久化存储的设置
@@ -22,17 +24,12 @@ const MIN_REFRESH_INTERVAL_MINUTES = 30;
 function normalizeSettings(raw) {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
 
-  // schema fallback
-  if (raw.schemaVersion !== 1) {
-    // 未来如果升 schema 版本，可以在这里做迁移
-    // 目前发现不匹配，或者没有，直接取其存在的部分或者重置
-  }
-
   const enabled = typeof raw.enabled === 'boolean' ? raw.enabled : DEFAULT_WEATHER_SYNC_SETTINGS.enabled;
   const city = typeof raw.city === 'string' ? raw.city.trim() : DEFAULT_WEATHER_SYNC_SETTINGS.city;
   
-  const lat = (typeof raw.lat === 'number' && !Number.isNaN(raw.lat)) ? raw.lat : null;
-  const lon = (typeof raw.lon === 'number' && !Number.isNaN(raw.lon)) ? raw.lon : null;
+  // 只接受有限数字，Infinity 会被 JSON 序列化成 null，但内存里的值同样不能放行
+  const lat = (typeof raw.lat === 'number' && Number.isFinite(raw.lat)) ? raw.lat : null;
+  const lon = (typeof raw.lon === 'number' && Number.isFinite(raw.lon)) ? raw.lon : null;
 
   let refreshIntervalMinutes = Number(raw.refreshIntervalMinutes);
   if (!Number.isFinite(refreshIntervalMinutes)) {
@@ -109,8 +106,22 @@ function requestJsonWithElectronNet(electronNet, url, signal) {
       }
 
       let data = '';
+      let receivedBytes = 0;
       res.setEncoding('utf8');
-      res.on('data', chunk => { data += chunk.toString(); });
+      res.on('data', chunk => {
+        if (settled) return;
+        receivedBytes += Buffer.byteLength(chunk);
+        if (receivedBytes > MAX_RESPONSE_BYTES) {
+          try {
+            req.abort();
+          } catch (err) {
+            // The size error below is the meaningful failure.
+          }
+          finish(reject, new Error('Response too large'));
+          return;
+        }
+        data += chunk.toString();
+      });
       res.on('end', () => {
         try {
           finish(resolve, parseJsonResponse(data));
@@ -135,15 +146,29 @@ function requestJsonWithHttps(url, signal) {
       }
 
       let data = '';
+      let receivedBytes = 0;
+      let tooLarge = false;
       res.setEncoding('utf8');
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', chunk => {
+        if (tooLarge) return;
+        receivedBytes += Buffer.byteLength(chunk);
+        if (receivedBytes > MAX_RESPONSE_BYTES) {
+          tooLarge = true;
+          reject(new Error('Response too large'));
+          req.destroy?.();
+          return;
+        }
+        data += chunk;
+      });
       res.on('end', () => {
+        if (tooLarge) return;
         try {
           resolve(parseJsonResponse(data));
         } catch (e) {
           reject(e);
         }
       });
+      res.on('error', reject);
     });
 
     req.on('error', reject);
@@ -446,6 +471,7 @@ async function processSettingsChange(newSettings, provider = defaultProvider) {
 module.exports = {
   DEFAULT_WEATHER_SYNC_SETTINGS,
   MIN_REFRESH_INTERVAL_MINUTES,
+  MAX_RESPONSE_BYTES,
   WEATHER_FETCH_TIMEOUT_MS,
   GEOCODE_TIMEOUT_MS,
   FALLBACK_TTL_MS,

@@ -53,7 +53,7 @@
   - [x] L4：移除 `appRoot: __dirname` 无效配置；`manifestNotFound` 粘滞缓存**不修复**，`test/protectedAssetLoader.test.js` 明确把"负缓存保持到显式清理"作为设计行为。
 - [x] **Task L5：托盘保留 `idleResetMinutes` 原值**
 - [x] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
-- [ ] **Task L7：天气同步数值校验与响应上限**
+- [x] **Task L7：天气同步数值校验与响应上限**
 - [ ] **Task L8：`ContextMenu.hide()` 淡出期间恢复穿透**
 - [ ] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
 - [ ] **Task L11：`protect-assets` 清理残留 `.dat`**
