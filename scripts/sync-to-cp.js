@@ -39,6 +39,20 @@ const MAIN_ONLY_SYNC_INFRA_FILES = new Set([
 ]);
 
 /**
+ * Main-branch working documents that only track main's own remediation progress.
+ * The target CP branch never carries them, and when a skipped commit (e.g. a workflow change)
+ * also edited one, later commits no longer apply cleanly there. Like the sync infrastructure
+ * files, they are dropped from cherry-picks instead of being synchronized.
+ */
+const MAIN_ONLY_WORKING_DOC_FILES = new Set([
+  'docs/plan/audit-verification-remediation-plan.md',
+]);
+
+function isMainOnlySyncPath(file) {
+  return MAIN_ONLY_SYNC_INFRA_FILES.has(file) || MAIN_ONLY_WORKING_DOC_FILES.has(file);
+}
+
+/**
  * Exclusive file patterns that belong to a specific CP's visual assets, dialogues, or lore.
  * Any skin folder under `src/assets/<skinId>/` (excluding `src/assets/fonts/`) is treated as CP-exclusive
  * so future skin additions are automatically protected without hardcoding skin directory names.
@@ -377,15 +391,13 @@ function classifyCommitHeuristic({
     };
   }
 
-  // Commits modifying only main-to-cp sync infrastructure are main-branch exclusive
-  const isSyncInfraOnly = nonChangelogFiles.every((file) =>
-    MAIN_ONLY_SYNC_INFRA_FILES.has(file)
-  );
+  // Commits modifying only main-to-cp sync infrastructure or main-only working documents are main-branch exclusive
+  const isSyncInfraOnly = nonChangelogFiles.every(isMainOnlySyncPath);
   if (isSyncInfraOnly) {
     return {
       applicable: false,
       category: 'sync-infrastructure',
-      reason: 'Commit only modifies main-to-cp sync infrastructure.',
+      reason: 'Commit only modifies main-to-cp sync infrastructure or main-only working documents.',
       needsAiReview: false,
     };
   }
@@ -1064,7 +1076,7 @@ async function syncCommitsToCp({
 
       // Unstage / discard any main-only sync infrastructure files so they never conflict
       // or leak into the target CP branch (which does not maintain sync-to-cp infrastructure).
-      for (const syncFile of MAIN_ONLY_SYNC_INFRA_FILES) {
+      for (const syncFile of [...MAIN_ONLY_SYNC_INFRA_FILES, ...MAIN_ONLY_WORKING_DOC_FILES]) {
         if (files.includes(syncFile) || conflictedFiles.includes(syncFile)) {
           const existsInCheckpoint = Boolean(
             runGit(['ls-tree', checkpointSha, syncFile], { cwd: worktreeDir }).trim()
@@ -1353,4 +1365,5 @@ module.exports = {
   formatSyncSummaryMarkdown,
   syncCommitsToCp,
   MAIN_ONLY_SYNC_INFRA_FILES,
+  MAIN_ONLY_WORKING_DOC_FILES,
 };

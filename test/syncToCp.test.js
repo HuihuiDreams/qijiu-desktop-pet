@@ -312,6 +312,13 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     });
     assert.equal(syncWorkflowOnly.applicable, false);
     assert.equal(syncWorkflowOnly.category, 'sync-infrastructure');
+
+    const workingDocOnly = classifyCommitHeuristic({
+      subject: 'docs: record remediation status',
+      files: ['docs/plan/audit-verification-remediation-plan.md', 'CHANGELOG.md'],
+    });
+    assert.equal(workingDocOnly.applicable, false);
+    assert.equal(workingDocOnly.category, 'sync-infrastructure');
   });
 
   await t.test('createSanitizedChildEnv strips sensitive tokens from child process environments', () => {
@@ -1097,6 +1104,65 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       );
       assert.throws(
         () => git(localRepo, ['show', `${cpRef}:test/syncToCp.test.js`]),
+        /does not exist|exists on disk, but not in/
+      );
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('discards main-only working documents so later commits do not conflict on them', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-workdoc-integ-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const localRepo = path.join(tmpBase, 'local');
+    const planPath = path.join(localRepo, 'docs', 'plan', 'audit-verification-remediation-plan.md');
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', localRepo]);
+      git(localRepo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.join(localRepo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 1 };\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'chore: base']);
+      git(localRepo, ['branch', '-M', 'main']);
+      git(localRepo, ['push', '-u', 'origin', 'main']);
+
+      // CP branch has no copy of the plan document
+      git(localRepo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      git(localRepo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+      git(localRepo, ['checkout', 'main']);
+
+      // First main commit creates the plan document, the second edits it alongside a shared change
+      fs.mkdirSync(path.dirname(planPath), { recursive: true });
+      fs.writeFileSync(planPath, '- [ ] task\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'docs: add remediation plan']);
+      fs.writeFileSync(planPath, '- [x] task\n');
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 2 };\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'fix: update shared and tick the plan']);
+      const editSha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', 'origin', 'main']);
+
+      const syncResult = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: editSha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+
+      assert.equal(syncResult.syncedCount, 1);
+      assert.match(syncResult.results[0].status, /✅ 已同步/);
+
+      git(localRepo, ['fetch', 'origin']);
+      const cpRef = 'origin/cp/crowley-aziraphale';
+      assert.match(git(localRepo, ['show', `${cpRef}:src/shared.js`]), /v: 2/);
+      assert.throws(
+        () => git(localRepo, ['show', `${cpRef}:docs/plan/audit-verification-remediation-plan.md`]),
         /does not exist|exists on disk, but not in/
       );
     } finally {
