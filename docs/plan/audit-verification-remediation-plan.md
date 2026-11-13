@@ -23,7 +23,9 @@
 
 ## P2
 
-- [ ] **Task M1：首个 `screen-info` 丢失后无补偿**
+- [x] **Task M1：首个 `screen-info` 丢失后无补偿**
+  - [x] `src/app.js` 在第一个 `await` 之前订阅 `onScreenInfo` 并缓存，系统就绪后回放，不新增 IPC 拉取接口。
+  - [x] 不提前 `onSaveBeforeQuit`：状态未加载时保存会用默认值覆盖存档，与审核报告"可随 M1 提前"的建议不同，理由见 `docs/structure.md`。
 - [ ] **Task M2：更新包完整性校验失败无提示、无日志**
 - [ ] **Task M3：更新进度窗口加载期间进度被初始载荷覆盖**
 - [ ] **Task M4：主窗口关闭时未关闭体型调节窗口**

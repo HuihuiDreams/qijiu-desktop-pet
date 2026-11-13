@@ -14,6 +14,16 @@
     weatherAwarenessSystem?.setWeatherPayload(payload);
   });
 
+  // 同理，主进程在 did-finish-load 时就会发送首个 screen-info，preload 不缓冲事件。
+  // 先在这里缓存最新值，等 StageGeometry 与 MovementSystem 就绪后再回放，
+  // 否则首个事件丢失后要等显示器配置变化才会拿到 walkAreas 与任务栏平台。
+  let latestScreenInfo = null;
+  let applyScreenInfo = null;
+  window.electronAPI.onScreenInfo((info) => {
+    latestScreenInfo = info;
+    applyScreenInfo?.(info);
+  });
+
   // === 初始化 i18n （必须在其他系统之前）===
   const locale = await window.electronAPI.getLocale();
   window.__currentLocale = locale;
@@ -142,10 +152,9 @@
     })
     .catch(() => {});
 
-  // 监听主进程的屏幕信息更新事件
-  window.electronAPI.onScreenInfo((info) => {
-    stageGeometry.applyScreenInfo(info);
-  });
+  // 系统就绪后接管 screen-info 更新，并回放启动期间已到达的最新值
+  applyScreenInfo = (info) => stageGeometry.applyScreenInfo(info);
+  if (latestScreenInfo) applyScreenInfo(latestScreenInfo);
   windowAwarenessSystem.start();
 
   // macOS: 窗口迁移到新显示器后，调整所有宠物坐标
