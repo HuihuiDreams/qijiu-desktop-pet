@@ -60,7 +60,7 @@
 - [x] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**
   - [x] L9：番茄钟提示框改用 `--font-body`。
   - [x] L10：`sweep` 关键帧改为 `transform: translateX()`（百分比按 38% 填充宽度换算）。动画观感需要目测一次，见文末清单。
-- [ ] **Task L11：`protect-assets` 清理残留 `.dat`**
+- [x] **Task L11：`protect-assets` 清理残留 `.dat`**
 - [ ] **Task L12：`push.sh` 工具链问题**
 - [ ] **Task L13：ADR 校验退出码与 `check:adrs` 脚本**
 - [ ] **Task L14：失效文档链接**

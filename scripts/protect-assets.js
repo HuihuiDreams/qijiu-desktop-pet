@@ -61,6 +61,15 @@ function encryptAsset(buffer, aad) {
   };
 }
 
+// 源素材被删除或改名后，旧的 .dat 不在 manifest 里、运行时不会加载，但仍会被打进安装包
+function removeStaleEncryptedFiles(outputDir, keepFiles) {
+  for (const name of fs.readdirSync(outputDir)) {
+    if (name.endsWith('.dat') && !keepFiles.has(name)) {
+      fs.rmSync(path.join(outputDir, name), { force: true });
+    }
+  }
+}
+
 function protectAssets(options = {}) {
   const inputDir = options.inputDir || DEFAULT_INPUT_DIR;
   const outputDir = options.outputDir || DEFAULT_OUTPUT_DIR;
@@ -107,6 +116,8 @@ function protectAssets(options = {}) {
     path.join(outputDir, MANIFEST_NAME),
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
+
+  removeStaleEncryptedFiles(outputDir, new Set(Object.values(manifest.assets).map(entry => entry.file)));
 
   return manifest;
 }

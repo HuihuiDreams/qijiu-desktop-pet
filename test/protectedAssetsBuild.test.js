@@ -88,3 +88,31 @@ test('protectAssets throws on duplicate asset IDs', () => {
   assert.equal(Object.keys(manifest.assets).length, 1);
 });
 
+
+test('protectAssets removes stale .dat files left by deleted or renamed assets', () => {
+  const root = makeTempDir();
+  const inputDir = path.join(root, 'assets');
+  const outputDir = path.join(root, 'protected-assets');
+  fs.mkdirSync(path.join(inputDir, 'default'), { recursive: true });
+  fs.writeFileSync(path.join(inputDir, 'default', 'left.webp'), Buffer.from('left'));
+  fs.writeFileSync(path.join(inputDir, 'default', 'right.webp'), Buffer.from('right'));
+
+  const first = protectAssets({ inputDir, outputDir });
+  const rightFile = first.assets['skin/default/right.webp'].file;
+  assert.equal(fs.existsSync(path.join(outputDir, rightFile)), true);
+
+  // 删除一个源素材，并放一个与 manifest 无关的非 .dat 文件
+  fs.rmSync(path.join(inputDir, 'default', 'right.webp'));
+  fs.writeFileSync(path.join(outputDir, 'NOTES.txt'), 'keep me');
+
+  const second = protectAssets({ inputDir, outputDir });
+
+  assert.deepEqual(Object.keys(second.assets), ['skin/default/left.webp']);
+  assert.equal(fs.existsSync(path.join(outputDir, rightFile)), false, 'orphaned .dat must be removed');
+  assert.equal(fs.existsSync(path.join(outputDir, second.assets['skin/default/left.webp'].file)), true);
+  assert.equal(fs.existsSync(path.join(outputDir, 'NOTES.txt')), true, 'only .dat files are cleaned');
+  assert.deepEqual(
+    fs.readdirSync(outputDir).filter(name => name.endsWith('.dat')).sort(),
+    Object.values(second.assets).map(entry => entry.file).sort(),
+  );
+});
