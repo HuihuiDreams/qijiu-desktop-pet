@@ -77,11 +77,9 @@ if git diff --cached --name-only --diff-filter=ACMR | grep -E '^(\.codex/|\.agen
     exit 1
 fi
 
-git commit -m "$COMMIT_MESSAGE"
-
-if [ $? -ne 0 ]; then
+if ! git commit -m "$COMMIT_MESSAGE"; then
     echo -e "${RED}❌ Commit 失败，请检查。${NC}"
-    exit $?
+    exit 1
 fi
 
 # 好兆头分支自动同步预检（仅在 main 分支且未显式跳过时执行）
@@ -108,4 +106,5 @@ if [ $? -eq 0 ]; then
     echo -e "${GREEN}🎉 Push 成功完成！${NC}"
 else
     echo -e "${RED}❌ Push 失败，请检查网络或冲突。${NC}"
+    exit 1
 fi
