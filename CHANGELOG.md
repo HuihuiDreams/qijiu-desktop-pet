@@ -4,11 +4,18 @@
 
 ## [Unreleased]
 
+### Changed
+- **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
+
 ### Fixed
 - **macOS 待批准自启动意图保留 (`macOS Pending Approval Auto-Launch Intent Preservation`)**：修复 `AutoLaunchService.setAutoLaunchPreference(true)` 在 macOS 返回 `status: 'requires-approval'` 时误走失败回滚分支、保留旧存储偏好 `false` 却未撤销系统注册的问题；显式识别 `requires-approval` 待批准状态并持久化用户开启偏好（`autoLaunch: true`、`pendingApproval: true`），同时保持运行期 `isAutoLaunchEnabled()` 为 `false` 直至用户在系统设置中批准，避免批准后下次启动 `syncAutoLaunchPreference()` 按 `false` 撤销注册；补充完整生命周期回归测试。
 - **更新检查 SemVer 构建元数据剥离 (`SemVer Build Metadata Stripping in Update Check`)**：修复 `updateManager.js` 中 `parseSemver` 未先剥离 `+build` 构建元数据导致 `0.11.3-beta.2+build.1` 被误判为比 `0.11.3-beta.10` 更新、以及 `0.11.3` 被误判为比 `0.11.3+build.1` 更新的问题；严格遵循 SemVer 2.0.0 第 10 条规范在比较前忽略 `+` 及其后构建元数据，并补充对应回归测试。
 - **启动阶段已保存皮肤被写回默认值修复 (`Saved Skin Overwritten By Early Save-Data`)**：修复主进程 `confirmedSkinId` 启动时固定为 `default`、渲染进程在 `applySkinById` 之前因离线结算触发 `save-data` 时，`StorageIpc` 用 `default` 覆盖已保存 `petState.skinId` 并落盘，导致此时崩溃或被强制结束会永久丢失所选皮肤的问题；`SkinService` 新增 `restoreConfirmedSkinFromStore()`，在 `AppLifecycle.initCoreServices()` 于 store 就绪后立即用可用皮肤列表校验并同步已保存皮肤（校验失败保持 `default`），补充启动首次 `save-data` 回归测试（[审核复核 H1](docs/code-review-audit-verification-2026-11-13.md)）。
 - **拖拽结束后下一次点击穿透到下层应用修复 (`Click-Through After Drag End`)**：修复 `PetRenderer` 在拖拽结束（`mouseup` 延迟 100ms、watchdog 超时、窗口 `blur`）时无条件恢复鼠标穿透，而松手时指针仍停在宠物上、`mouseenter` 不会再次触发，导致紧接着的单击或右键落到宠物下方应用的问题；恢复前新增指针是否仍在宠物上（`:hover`）与右键菜单是否打开的判断，任一成立则保持可交互并交给 `mouseleave` 恢复穿透；补充 fake-DOM 回归测试（[ADR-004](docs/decisions/ADR-004-drag-implementation.md)、[审核复核 H2](docs/code-review-audit-verification-2026-11-13.md)）。
+- **首个屏幕信息事件丢失修复 (`Early Screen-Info Event Loss`)**：修复主进程在 `did-finish-load` 时发送的首个 `screen-info` 可能早于渲染进程订阅（`onScreenInfo` 原先在 `await getLocale()` 之后才注册，preload 不缓冲事件）而丢失，导致 `StageGeometry` 一直使用 `window.innerWidth/innerHeight`、缺少 `walkAreas` 与任务栏平台，直到显示器配置变化才恢复的问题；`src/app.js` 改为在第一个 `await` 之前订阅并缓存最新值，待 `StageGeometry` 与 `MovementSystem` 就绪后回放一次；`onSaveBeforeQuit` 保持原位，避免状态未加载时保存默认值覆盖存档；新增 `test/screenInfoRendererSubscription.test.js`（[审核复核 M1](docs/code-review-audit-verification-2026-11-13.md)）。
+
+### Removed
+- **历史性能复测清单与本地原始采样 JSON 清理 (`Legacy Performance Retest Checklist & Raw JSON Cleanup`)**：移除已归档的 `docs/performance/task3-retest-checklist.md`（及本机留存的未追踪 `docs/performance/raw/`、`docs/performance/task3-post-optimization.json` 原始采样数据），`docs/performance/` 仅保留采样指南 `README.md` 与 `2026-07-23-windows-baseline.md` 基线报告。
 
 ## [0.11.3] - 2026-11-11
 
