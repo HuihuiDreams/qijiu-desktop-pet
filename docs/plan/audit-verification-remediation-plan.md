@@ -66,7 +66,7 @@
 - [x] **Task L12：`push.sh` 工具链问题**
   - [x] `push.sh` 提交失败原先 `exit $?` 返回的是 `echo` 的状态（0），推送失败后脚本也以 0 结束；现在两种失败都以 1 退出。`push.ps1` 同样补上推送失败的 `exit 1`。新增 `test/pushScript.test.js` 在临时仓库里实跑 `push.sh`（pre-commit 钩子拒绝、无 `origin` 两种场景）。
   - [x] **不修改**：`git add .`（脚本契约就是提交全部改动，已有敏感目录拦截）、固定推送 `origin main`（文档约定的主干工作流）、本地 `sync:cp --verify` 内部的 `npm ci`（隔离 worktree 验证的必要步骤，[ADR-049](../decisions/ADR-049-main-to-cp-auto-sync.md)），这些是流程取舍，不是缺陷。
-  - [ ] 【Windows 待验证】`push.ps1` 的 `exit 1` 无法在 macOS 上执行；需在 Windows 上运行 `node --test test/pushScript.test.js`（其中 "push.ps1 parses in Windows PowerShell" 仅在 win32 执行）确认脚本仍可解析。
+  - [x] 【Windows 已验证】`push.ps1` 的 `exit 1` 无法在 macOS 上执行；已在 Windows 上运行 `node --test test/pushScript.test.js`，确认 "push.ps1 parses in Windows PowerShell" 与 "push.ps1 reports a failed push through its exit code" 均通过（`push.sh` 用例按平台跳过）。
 - [x] **Task L13：ADR 校验退出码与 `check:adrs` 脚本**
   - [x] `check_adrs.js` 发现缺失章节时退出码为 1；新增 `npm run check:adrs`；补齐 [ADR-049](../decisions/ADR-049-main-to-cp-auto-sync.md) 缺失的 `Alternatives Considered`（内容全部取自该 ADR 已有的 Context/Decision 理由）。`test/check_adrs.test.js` 增加对全部 ADR 的检查，因此 `npm test`（CI 已运行）会拦截今后的格式缺失。
 - [x] **Task L14：失效文档链接**
@@ -96,7 +96,7 @@
 | H2 | Windows 与 macOS 实机 | 拖拽后原地单击、右键，确认不穿透 |
 | M6 | GitHub Actions | 手动触发与 PR 各跑一次 Release Preflight |
 | M7 | GitHub Actions（Windows runner） | 下次推 `v*` tag 时观察 draft release 步骤 |
-| L12 | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析 |
+| L12（已完成） | Windows | `node --test test/pushScript.test.js` 确认 `push.ps1` 可解析（Windows 实跑通过：2 pass, 0 fail, 2 win32 skip） |
 | L17 | Windows | Windows 打包后确认 `app.asar` 不含 `iconTemplate` |
 | L18 | Windows | Windows 打包版确认 `debugToolsEnabled === false` |
 | L10 | 任一平台 | 目测"检查更新"进度动画 |
