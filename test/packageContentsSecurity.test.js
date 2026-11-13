@@ -60,3 +60,14 @@ test('package content verifier fails when no app.asar exists', () => {
     fs.rmSync(emptyDist, { recursive: true, force: true });
   }
 });
+
+test('electron-builder leaves the unused tray template icons out of app.asar', () => {
+  // 托盘图标由 TrayManager.createTrayIconBuffer 在代码中生成，运行时不读取这两个文件。
+  // 不断言源文件是否存在：它们属于各角色分支的专属素材，不同分支上不一定有。
+  assert.ok(packageJson.build.files.includes('!src/assets/iconTemplate*.png'));
+
+  const runtimeSources = ['src/main/TrayManager.js', 'main.js']
+    .map((file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8'))
+    .join('\n');
+  assert.ok(!runtimeSources.includes('iconTemplate'), 'runtime code must not load the template icon files');
+});
