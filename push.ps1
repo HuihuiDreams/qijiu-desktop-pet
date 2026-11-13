@@ -85,5 +85,6 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Push completed." -ForegroundColor Green
 } else {
     Write-Host "Push failed. Check network connectivity or Git conflicts." -ForegroundColor Red
+    exit 1
 }
 
