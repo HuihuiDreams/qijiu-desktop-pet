@@ -331,6 +331,32 @@ test('SkinService - Initialization and IPC Handlers', async (t) => {
   });
 });
 
+test('SkinService - restoreConfirmedSkinFromStore', async (t) => {
+  const createStore = (petState) => ({ get: (key) => (key === 'petState' ? petState : undefined) });
+
+  t.beforeEach(() => {
+    SkinService.setCurrentSkinId('default');
+  });
+
+  await t.test('adopts the saved skin as the confirmed skin', () => {
+    assert.equal(SkinService.restoreConfirmedSkinFromStore(createStore({ skinId: 'birds' })), 'birds');
+    assert.equal(SkinService.getConfirmedSkinId(), 'birds');
+    assert.equal(SkinService.getPreviewSkinId(), null);
+  });
+
+  await t.test('keeps the current skin when the saved id is missing, unknown or not a string', () => {
+    for (const petState of [undefined, null, {}, { skinId: 'deleted_skin' }, { skinId: 42 }, { skinId: '../default' }]) {
+      assert.equal(SkinService.restoreConfirmedSkinFromStore(createStore(petState)), 'default');
+      assert.equal(SkinService.getConfirmedSkinId(), 'default');
+    }
+  });
+
+  await t.test('tolerates a missing store', () => {
+    assert.equal(SkinService.restoreConfirmedSkinFromStore(null), 'default');
+    assert.equal(SkinService.restoreConfirmedSkinFromStore({}), 'default');
+  });
+});
+
 test('SkinService - Utility Functions', async (t) => {
   await t.test('resolvePomodoroAsset fallbacks correctly', () => {
     const url = SkinService.resolvePomodoroAsset('invalid_skin_id', 'walk_left.webp');

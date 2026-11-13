@@ -83,6 +83,8 @@ class AppLifecycle {
 
   static async initCoreServices() {
     await StoreManager.initStore();
+    // 渲染进程首次 save-data 前先同步已保存的皮肤，避免 StorageIpc 把 skinId 写回 default
+    SkinService.restoreConfirmedSkinFromStore(StoreManager.getStore());
     // 加载持久化语言设置，若无则自动检测
     LocaleService.loadInitialLocale();
     await AutoLaunchService.syncAutoLaunchPreference();

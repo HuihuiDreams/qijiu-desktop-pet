@@ -44,7 +44,7 @@ function createHarness() {
   const services = {
     StoreManager: createCallableModule('StoreManager', ['initStore', 'getStore'], calls),
     AutoLaunchService: createCallableModule('AutoLaunchService', ['syncAutoLaunchPreference'], calls),
-    SkinService: createCallableModule('SkinService', ['init', 'selectSkin', 'getCurrentSkinId', 'getSkinGalleryItems'], calls),
+    SkinService: createCallableModule('SkinService', ['init', 'selectSkin', 'getCurrentSkinId', 'getSkinGalleryItems', 'restoreConfirmedSkinFromStore'], calls),
     LocaleService: createCallableModule('LocaleService', ['loadInitialLocale', 'getCurrentLocale', 'setCurrentLocale', 'init'], calls),
     StorageIpc: createCallableModule('StorageIpc', ['init'], calls),
     DisplayService: createCallableModule('DisplayService', ['init', 'getActiveWindowDisplays', 'getActiveWindowMainBounds', 'getCurrentPetDisplay', 'migrateWindowToDisplay'], calls),
@@ -149,6 +149,9 @@ test('AppLifecycle initializes services before creating the pet window and tears
     const createWindowIndex = indexOfCall(harness.calls, 'petWindowModule.createWindow');
     assert.ok(createWindowIndex >= 0);
     assert.ok(indexOfCall(harness.calls, 'StoreManager.initStore') < createWindowIndex);
+    const restoreSkinIndex = indexOfCall(harness.calls, 'SkinService.restoreConfirmedSkinFromStore');
+    assert.ok(restoreSkinIndex > indexOfCall(harness.calls, 'StoreManager.initStore'), 'saved skin must be restored after the store is ready');
+    assert.ok(restoreSkinIndex < createWindowIndex, 'saved skin must be restored before the renderer can call save-data');
     assert.ok(indexOfCall(harness.calls, 'WeatherSyncController.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'PetVisibilityService.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'MeetingDetectorController.init') < createWindowIndex);
