@@ -105,8 +105,13 @@ function createBreakReminderService(deps) {
 
   function updateSettings(newSettings) {
     settings = normalizeSettings(newSettings);
-    // Reset active timer on settings change so the new interval takes effect
-    // from now, but do not clear activeMs — the user has been active this long.
+    // Do not clear activeMs on settings change — the user has been active this long.
+    // 关闭提醒时取消仍在等待重试的延后定时器，避免它在关闭之后还保持 reminderPending。
+    if (!settings.enabled && deferTimer) {
+      _clearTimeout(deferTimer);
+      deferTimer = null;
+      reminderPending = false;
+    }
   }
 
   function getState() {
@@ -125,7 +130,8 @@ function createBreakReminderService(deps) {
     if (!settings.enabled || !running) return;
 
     const currentTime = now();
-    const rawElapsed = lastSampleTime > 0 ? currentTime - lastSampleTime : sampleIntervalMs;
+    // 系统时钟回拨时差值为负，按 0 处理，避免 activeMs 被扣减
+    const rawElapsed = lastSampleTime > 0 ? Math.max(0, currentTime - lastSampleTime) : sampleIntervalMs;
     // 钳制：防止 App Nap / 系统睡眠唤醒后单次 elapsed 暴涨导致提醒提前触发
     const elapsed = Math.min(rawElapsed, sampleIntervalMs * 10);
     lastSampleTime = currentTime;
