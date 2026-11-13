@@ -52,7 +52,7 @@
   - [ ] L3：**不修复**。首次安装没有 `petState` 时由随后 `switch-skin` 的 `persist: true` 让渲染进程保存完整 `petState`；若主进程改写一个只有 `skinId` 的残缺 `petState`，渲染进程启动读取时会拿到缺少养成数值的存档，风险高于收益。
   - [x] L4：移除 `appRoot: __dirname` 无效配置；`manifestNotFound` 粘滞缓存**不修复**，`test/protectedAssetLoader.test.js` 明确把"负缓存保持到显式清理"作为设计行为。
 - [x] **Task L5：托盘保留 `idleResetMinutes` 原值**
-- [ ] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
+- [x] **Task L6：久坐提醒 `deferTimer` 清理与时钟回拨**
 - [ ] **Task L7：天气同步数值校验与响应上限**
 - [ ] **Task L8：`ContextMenu.hide()` 淡出期间恢复穿透**
 - [ ] **Task L9–L10：番茄钟提示字体与 `sweep` 动画**

@@ -515,6 +515,75 @@ test('does not double-send while deferred (no duplicate renderer events)', () =>
   service.stop();
 });
 
+test('disabling the reminder cancels a pending deferred retry', () => {
+  const guard = {
+    canInterrupt: () => ({ canInterrupt: false, reason: 'fullscreen' }),
+  };
+
+  const { service, clock, reminders, runToFirstReminder } = createTestService({
+    presentationGuard: guard,
+  });
+
+  service.start();
+  runToFirstReminder();
+  assert.equal(service.getState().reminderPending, true);
+  assert.equal(clock.pendingTimeouts, 1);
+
+  service.updateSettings({ enabled: false, intervalMinutes: MIN_INTERVAL_MINUTES, idleResetMinutes: 5 });
+
+  assert.equal(service.getState().reminderPending, false, 'a disabled reminder must not stay pending');
+  assert.equal(clock.pendingTimeouts, 0, 'the deferred retry timer must be cleared');
+
+  guard.canInterrupt = () => ({ canInterrupt: true });
+  clock.advance(60000);
+  clock.tickTimeouts();
+  assert.equal(reminders.length, 0);
+  service.stop();
+});
+
+test('changing settings while enabled keeps a pending deferred retry', () => {
+  const guard = {
+    canInterrupt: () => ({ canInterrupt: false, reason: 'fullscreen' }),
+  };
+
+  const { service, clock, reminders, runToFirstReminder } = createTestService({
+    presentationGuard: guard,
+  });
+
+  service.start();
+  runToFirstReminder();
+  service.updateSettings({ enabled: true, intervalMinutes: MIN_INTERVAL_MINUTES, idleResetMinutes: 8 });
+
+  assert.equal(service.getState().reminderPending, true);
+  guard.canInterrupt = () => ({ canInterrupt: true });
+  clock.advance(60000);
+  clock.tickTimeouts();
+  assert.equal(reminders.length, 1);
+  service.stop();
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Service: clock rollback
+// ═══════════════════════════════════════════════════════════════════
+
+test('a system clock rollback does not reduce accumulated active time', () => {
+  const { service, clock, pm, sampleMs, simulateActiveSamples } = createTestService();
+
+  service.start();
+  simulateActiveSamples(3);
+  const before = service.getState().activeMs;
+  assert.equal(before, 3 * sampleMs);
+
+  // 时钟回拨 1 小时后的下一次采样：elapsed 为负，不应扣减 activeMs
+  clock.advance(-60 * 60 * 1000);
+  pm.setIdleTime(5);
+  pm.setIdleState('active');
+  service._sample();
+
+  assert.equal(service.getState().activeMs, before);
+  service.stop();
+});
+
 // ═══════════════════════════════════════════════════════════════════
 //  Service: sample interval enforcement
 // ═══════════════════════════════════════════════════════════════════

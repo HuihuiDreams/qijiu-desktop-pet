@@ -61,3 +61,6 @@ Accepted
 `BreakReminderController` 向统一 `PresentationGuard` 注入的适配器改为 `screen.screenToDipRect(null, rect)`，补齐 Electron 必需的首个参数。`null` 表示按前台窗口矩形选择显示器，避免绑定跨屏的桌宠窗口。原单参数调用会抛错，使提醒守卫跳过演示窗口的几何保护。
 
 新增 `test/presentationGuardWiring.test.js`，执行生产初始化接线与真实守卫，严格校验原生 API 的两个参数，并覆盖普通窗口放行、演示窗口拒绝及全屏前置拒绝。修复与验证记录见[审查复核报告 R1](../code-review-recheck-2026-10-06.md#r1--p1screentodiprect-接线遗漏首个参数)。
+
+### 2026-11-13：设置变更与时钟回拨边界（审核复核 L6）
+`updateSettings()` 在提醒被关闭（`enabled: false`）时会取消仍在等待重试的延后定时器并清除 `reminderPending`，不再等 60 秒后的回调自行收尾；采样间隔 `rawElapsed` 增加 `Math.max(0, …)`，系统时钟回拨时按 0 累计，避免 `activeMs` 被扣减。详见 [审核复核 L6](../code-review-audit-verification-2026-11-13.md)。
