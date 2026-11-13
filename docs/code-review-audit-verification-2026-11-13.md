@@ -17,7 +17,8 @@
 | 状态 | 条目 |
 | --- | --- |
 | 已修复，macOS 上已验证 | H1、M1、M2、M3、M4、M5、M8、L1、L2、L5、L6、L7、L9、L11、L13、L14、L15、L16 |
-| 已修复，仍需 Windows 或 CI 验证 | H2（真机手动确认）、M6（GitHub Actions 实跑）、M7（Windows runner）、L10（目测动画）、L12（`push.ps1` 解析）、L17（Windows 打包）、L18（Windows 打包版） |
+| 已修复，Windows 上已验证 | L12（`push.ps1` 解析与退出码测试通过） |
+| 已修复，仍需 Windows 或 CI 验证 | H2（真机手动确认）、M6（GitHub Actions 实跑）、M7（Windows runner）、L10（目测动画）、L17（Windows 打包）、L18（Windows 打包版） |
 | 部分修复 | L4：已移除无效的 `appRoot`；`manifestNotFound` 负缓存按既有测试约定保留 |
 | 评估后不修复 | L3、L8，理由见修复计划 |
 | 未改代码，等待 Windows 采集数据 | H3 |
