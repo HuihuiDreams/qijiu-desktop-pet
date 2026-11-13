@@ -167,6 +167,13 @@ jobs:
           $viewResult = gh release view $tag --repo $repo 2>&1
           if ($LASTEXITCODE -ne 0) {
             gh release create $tag --draft --repo $repo --title $tag --notes "Release $tag"
+            if ($LASTEXITCODE -ne 0) {
+              # macOS 作业会在同一时刻创建同一个 draft release；create 失败时确认它已存在再继续
+              $viewResult = gh release view $tag --repo $repo 2>&1
+              if ($LASTEXITCODE -ne 0) {
+                throw "Failed to create or find release $tag."
+              }
+            }
           }
 
           $assets = Get-ChildItem -Path dist -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.blockmap' -or $_.Name -eq 'latest.yml' -or $_.Name -eq 'UNSIGNED-RELEASE.txt' } | Select-Object -ExpandProperty FullName

@@ -38,7 +38,9 @@
   - [x] 顶层权限降为 `contents: read`；版本号同步拆成只在 `workflow_dispatch` 运行的 `sync-version` 作业（唯一 `contents: write`），Windows 预检作业 `needs: sync-version` 并在手动触发时检出分支最新提交。新增 `test/releasePreflightWorkflow.test.js` 静态断言权限边界。
   - [x] macOS 预检作业新增 `npm run test:integration`（本机 <1 秒，19 个用例通过）。
   - [ ] 【Windows 待验证】Windows 预检作业暂未接入 `test:integration`，等在 Windows 本机跑通后再加。`test:e2e` 与 `qa:electron:smoke` 需要显示环境，本轮不接入 CI。
-- [ ] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
+- [x] **Task M7：Windows 构建创建 draft release 缺少竞态兜底**（pwsh 步骤，【Windows 待验证】）
+  - [x] Windows 上传步骤在 `gh release create` 失败后再执行一次 `gh release view`，两者都失败才抛错，与 macOS 作业一致。新增 `test/buildInstallerWorkflow.test.js` 静态断言。
+  - [ ] 【Windows 待验证】需要在真实 tag 推送上观察一次，见文末清单。
 - [x] **Task M8：macOS 手动更新弹窗硬编码中文**
   - [x] 新增 `updateMacManualCurrentVersion` / `updateMacManualLatestVersion`（带 `{version}` 占位符，三语）。没有实现审核报告建议的"版本号缺失时省略对应行"：macOS 分支只在 `isNewerVersion(latest, current)` 为真后进入，两个版本号必然存在，`null` 字面值不会出现，省略分支是死代码。
 
@@ -83,5 +85,12 @@
 2. 再用与 `package.json` 一致的版本手动运行一次，确认 `sync-version` 打印 "already match" 后成功退出，`preflight` 正常继续。
 3. 开一个触碰 `src/**` 的 PR，确认 `sync-version` 显示为 skipped，`preflight` 与 `preflight-mac` 仍然运行，且日志里的 `GITHUB_TOKEN` 权限为 `Contents: read`。
 4. 确认 `preflight-mac` 的 "Run integration tests" 步骤通过。
+
+### M7 Windows draft release 竞态兜底（pwsh 步骤）
+
+pwsh 对原生命令退出码的处理无法在 macOS 上复现，需要在 Windows runner 上确认：
+
+1. 下一次正式发布推送 `v*` tag 时，观察 `Build NSIS installer` 作业的 "Upload Windows release assets" 步骤日志：如果 `gh release create` 因为 macOS 作业抢先创建而失败，应继续并成功上传；如果两个作业间没有竞争，行为与之前一致。
+2. 也可以在 Windows 本机用 PowerShell 7 手动验证 `$LASTEXITCODE` 判断逻辑：对一个已存在的 tag 执行 `gh release create`（预期非零退出），确认随后的 `gh release view` 分支走通。
 
 （随任务推进补充其余条目）
