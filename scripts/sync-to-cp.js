@@ -48,6 +48,11 @@ const MAIN_ONLY_WORKING_DOC_FILES = new Set([
   'docs/plan/audit-verification-remediation-plan.md',
 ]);
 
+// Conflicts in maintained Markdown docs are resolved in favour of the target branch instead of blocking.
+function isDocConflictSkippable(file) {
+  return /^docs\/.+\.md$/.test(file);
+}
+
 function isMainOnlySyncPath(file) {
   return MAIN_ONLY_SYNC_INFRA_FILES.has(file) || MAIN_ONLY_WORKING_DOC_FILES.has(file);
 }
@@ -1100,7 +1105,23 @@ async function syncCommitsToCp({
       conflictedFiles = conflictedOutput
         ? conflictedOutput.split(/\r?\n/).filter(Boolean)
         : [];
-      const nonChangelogConflicts = conflictedFiles.filter((f) => f !== 'CHANGELOG.md');
+      // Documentation drifts between branches on purpose (e.g. the CP branch has no sync section in
+      // docs/git-workflow.md). A conflict there must not block code from syncing: keep the target
+      // branch's version of the document and report it instead.
+      const skippedDocConflicts = conflictedFiles.filter(isDocConflictSkippable);
+      for (const docFile of skippedDocConflicts) {
+        const existsInCheckpoint = Boolean(
+          runGit(['ls-tree', checkpointSha, docFile], { cwd: worktreeDir }).trim()
+        );
+        if (existsInCheckpoint) {
+          runGit(['checkout', checkpointSha, '--', docFile], { cwd: worktreeDir });
+        } else {
+          runGit(['rm', '-f', docFile], { cwd: worktreeDir });
+        }
+      }
+      const nonChangelogConflicts = conflictedFiles.filter(
+        (f) => f !== 'CHANGELOG.md' && !skippedDocConflicts.includes(f)
+      );
 
       if (nonChangelogConflicts.length > 0) {
         runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
@@ -1263,7 +1284,9 @@ async function syncCommitsToCp({
         subject,
         verdict: verdictLabel,
         status: successStatus,
-        reason: summaryReason,
+        reason: skippedDocConflicts.length > 0
+          ? `${summaryReason} 文档冲突已跳过（保留目标分支版本）: ${skippedDocConflicts.join(', ')}`
+          : summaryReason,
       });
     }
   } finally {

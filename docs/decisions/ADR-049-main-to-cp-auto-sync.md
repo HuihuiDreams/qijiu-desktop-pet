@@ -19,6 +19,7 @@ Accepted
 7. **目标分支依赖隔离**：首次验证前在临时工作树按目标分支锁文件执行 `npm ci`；依赖文件改变后重新安装，不复用 main 的 `node_modules`。
 8. **合并提交**：按 main 第一父提交遍历；合并提交作为一个整体，以第一父提交为基准评估与 cherry-pick，保留冲突解决结果。被合并提交中的显式跳过指令同样拒绝整个合并提交。
 9. **仅属于 main 的工作文档**：`MAIN_ONLY_WORKING_DOC_FILES`（目前是 `docs/plan/audit-verification-remediation-plan.md`）与同步基建文件一样，在 cherry-pick 时被丢弃，且只改动它们的提交判定为不适用。该文件只记录 main 的修复进度，目标分支没有它；被整体跳过的提交（如修改 workflow 的提交）对它的改动丢失后，后续提交的上下文就会在目标分支冲突。
+10. **文档冲突不阻塞代码同步**：`docs/**/*.md` 在目标分支有意分叉（例如好兆头分支没有 `docs/git-workflow.md` 的同步章节），cherry-pick 时这类文件的冲突改为保留目标分支版本，代码部分照常同步，并在报告的说明里列出被跳过的文档。非文档文件的冲突仍然回滚当前提交并停止批次。
 
 ## Alternatives Considered
 以下取舍均来自上文 Context 与 Decision 的理由，此处集中列出被放弃的方案：

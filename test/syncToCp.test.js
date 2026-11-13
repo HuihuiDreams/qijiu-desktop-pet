@@ -1170,6 +1170,63 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     }
   });
 
+  await t.test('keeps the target branch version of a conflicting doc and still syncs the code', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-docconflict-integ-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const localRepo = path.join(tmpBase, 'local');
+    const docPath = path.join(localRepo, 'docs', 'guide.md');
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', localRepo]);
+      git(localRepo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.join(localRepo, 'src'), { recursive: true });
+      fs.mkdirSync(path.dirname(docPath), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 1 };\n');
+      fs.writeFileSync(docPath, 'step 1: shared text\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'chore: base']);
+      git(localRepo, ['branch', '-M', 'main']);
+      git(localRepo, ['push', '-u', 'origin', 'main']);
+
+      // The CP branch words the same line differently, so main's edit conflicts there
+      git(localRepo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      fs.writeFileSync(docPath, 'step 1: cp specific text\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'docs: cp wording']);
+      git(localRepo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      git(localRepo, ['checkout', 'main']);
+      fs.writeFileSync(docPath, 'step 1: shared text, now longer\n');
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 2 };\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'fix: update shared and the guide']);
+      const sha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', 'origin', 'main']);
+
+      const syncResult = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: sha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+
+      assert.equal(syncResult.syncedCount, 1);
+      assert.match(syncResult.results[0].status, /✅ 已同步/);
+      assert.match(syncResult.results[0].reason, /文档冲突已跳过.*docs\/guide\.md/);
+
+      git(localRepo, ['fetch', 'origin']);
+      const cpRef = 'origin/cp/crowley-aziraphale';
+      assert.match(git(localRepo, ['show', `${cpRef}:src/shared.js`]), /v: 2/);
+      assert.match(git(localRepo, ['show', `${cpRef}:docs/guide.md`]), /cp specific text/);
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
   await t.test('resolveSyncCliOptions enforces verifyOnly and protects against SYNC_PUSH env leakage', () => {
     // Defaults to dry-run
     assert.deepEqual(resolveSyncCliOptions([], {}), {
