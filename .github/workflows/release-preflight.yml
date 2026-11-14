@@ -164,6 +164,9 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Run integration tests
+        run: npm run test:integration
+
       - name: Verify installer prerequisites
         run: npm run verify:installer
 
