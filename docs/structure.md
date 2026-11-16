@@ -142,7 +142,7 @@ qijiu-desktop-pet/
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
-├─ settingsPreload.js                   # 统一设置窗专用最小 preload：语义化 `settingsAPI`（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），严禁暴露 `FORBIDDEN_SUBWINDOW_APIS`
+├─ settingsPreload.js                   # 统一设置窗专用最小 preload：经 `window.electronAPI` 暴露的语义化窄接口（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），严禁暴露 `FORBIDDEN_SUBWINDOW_APIS`
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC

@@ -23,18 +23,18 @@ Accepted
 2. **3 标签统一设置窗口 (`SettingsWindow`) 与生命周期**：
    - 新增 [SettingsWindow.js](../../src/main/windows/SettingsWindow.js)，创建默认 `520×456`（按当前显示器 `workArea` 安全夹紧，确保 3 个标签页含“高甜屏保”在内的全部卡片一屏免滚动展示）的透明无边框单实例窗口（`alwaysOnTop: false`、`minimizable: true`、`hasShadow: false`、`resizable: false`）。
    - 窗口唤起、复用或恢复时执行 180ms `screen-saver` 脉冲置顶并在 macOS 上守卫式调用 `app.focus({ steal: true })`，超时回落普通层级；不因 `blur` 自动隐藏。
-   - 界面采用顶部 3 标签结构：**外观**（宠物体型滑块 `50%~150%` 含恢复默认、当前皮肤展示与“打开选肤画廊”按钮）、**陪伴**（界面感知开关及平台不支持说明、天气同步开关与城市设置表单、久坐提醒开关与 `[30, 45, 60, 90, 120]` 分钟间隔、高甜屏保开关与 `[1, 3, 5, 10, 15, 30]` 分钟等待时间）、**系统**（`中文` / `English` / `日本語` 固定母语标签、开机自动启动开关与 macOS `requires-approval` 待批准提示）。
+   - 界面采用顶部 3 标签结构：**外观**（宠物体型滑块 `50%~150%` 含恢复默认、当前皮肤展示与“打开选肤画廊”按钮、界面感知开关及平台不支持说明）、**陪伴**（天气同步开关与城市设置表单、久坐提醒开关与 `[30, 45, 60, 90, 120]` 分钟间隔、高甜屏保开关与 `[1, 3, 5, 10, 15, 30]` 分钟等待时间）、**系统**（`中文` / `English` / `日本語` 固定母语标签、开机自动启动开关与 macOS `requires-approval` 待批准提示）。
    - 选肤画廊保留 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 独立 `800×520` 窗口与 `app.openSkinSelectorForQA`。仅当通过设置窗触发 `settings-open-skin-selector` 时标记 `returnFocusToSettings`，在选肤窗关闭后安全恢复设置窗焦点并派发 `settings-restore-skin-focus`，从托盘直接开选肤窗不误唤回设置窗。
    - [PetWindow.js](../../src/main/windows/PetWindow.js) 在 `closed` 与 Windows 全屏 RDP 抑制时连带管理 `settingsWindow`；`SettingsWindow` 在自身 `close` 时调用 [PetScaleService.js](../../src/main/services/PetScaleService.js) 的 `flushPreview()` 落盘未提交预览值。
 
 3. **混合提交语义（即时自动保存 vs 城市名异步校验）**：
    - **开关与分段选择**：切换后立即通过对应 `settings-*` 通道写入持久化存储并触发 `settings-updated` 推送。
    - **体型滑块**：拖动 `input` 实时调用 `settings-preview-pet-scale` 仅刷新桌宠逻辑尺寸与脚底锚定渲染（兼容主窗口 `get-pet-scale` 与 `pet-scale-changed` 契约，保留 [ADR-047](./ADR-047-pet-scale-setting.md) 算法）；松手或键盘步进触发 `change` 时立即调用 `settings-commit-pet-scale`（`PetScaleService.confirm(percent)`）持久化。
-   - **天气与城市**：支持在关闭天气同步时预填或更新城市，仅通过点击“保存”或在城市输入框按非 IME 组合态 `Enter` 触发 Open-Meteo 地名解析，保留 [ADR-038](./ADR-038-weather-sync.md) 并发取消与最新开关仲裁语义；开启天气同步但尚未配置城市时，前端自动聚焦并定位城市输入框。
+   - **天气与城市**：支持在关闭天气同步时预填或更新城市，仅通过点击“确认”或在城市输入框按非 IME 组合态 `Enter` 触发 Open-Meteo 地名解析，保留 [ADR-038](./ADR-038-weather-sync.md) 并发取消与最新开关仲裁语义；开启天气同步但尚未配置城市时，前端自动聚焦并定位城市输入框。
    - 城市输入框处于 IME 组合态时按 `Esc` 不关闭设置窗口；非输入/非 IME 状态下按 `Esc` 或点击关闭按钮安全关闭窗口并自动刷入未提交体型预览。
 
 4. **最小权限 Preload 与主进程聚合安全边界**：
-   - 新增独立沙盒 [settingsPreload.js](../../settingsPreload.js)，严禁复用 `preload.js` 或暴露 `FORBIDDEN_SUBWINDOW_APIS`（如 `saveData`、`loadData`、`setLocale`、`setAutoLaunch`、`setCurrentSkin`），仅暴露语义化 `settingsAPI`。
+   - 新增独立沙盒 [settingsPreload.js](../../settingsPreload.js)，严禁复用 `preload.js` 或暴露 `FORBIDDEN_SUBWINDOW_APIS`（如 `saveData`、`loadData`、`setLocale`、`setAutoLaunch`、`setCurrentSkin`），仅通过 `window.electronAPI` 暴露语义化窄接口（与 `windowI18n.js` 的 `getLocale` / `onLocaleChange` 约定对齐）。
    - 新增 [SettingsService.js](../../src/main/services/SettingsService.js) 作为主进程聚合控制器，统一提供快照 `getSnapshot()`、参数边界校验、全部 `settings-*` IPC 注册（逐条经 `isSenderWindow(event, settingsWindow)` 鉴权），并订阅 `store.onDidChange` 与各子服务回调双向推送 `settings-updated`。
    - 渲染端（[settings.html](../../src/settings.html)、[settings.css](../../src/settings.css)、[settingsWindow.js](../../src/settingsWindow.js)）遵循 [ADR-048](./ADR-048-modern-web-standards-adoption.md)：严格 CSP（含 `font-src 'self'`）、零 `innerHTML` 拼接、顶部 Tab 采用 Roving `tabindex` 与 `ArrowLeft`/`ArrowRight`/`Home`/`End` 键盘导航、`role="switch"` 与非纯色 `aria-pressed` 分段控件、`prefers-reduced-motion` 覆盖与 `.xianxia-panel` + `settings-calligraphy-title` 统一风格。
 
