@@ -53,113 +53,6 @@ If you use multiple monitors, you can drag characters or the status panel to a s
 To switch languages, open "⚙️ Settings… -> System" from the tray menu and select "中文", "English", or "日本語"; the main window, right-click menus, status panel, Pomodoro, skin/settings windows, and update prompts refresh together.
 
 ========================================
-💕 CP Sweet Screensaver
-========================================
-
-After the system has been idle longer than the configured wait time, the screensaver starts:
-- Crowley and Aziraphale play a CP combo at the center of the screen: share food -> hug -> kiss.
-- The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
-- When they detect that you are back, the two pets hurriedly cover up their secret rendezvous (Crowley pretends he is carrying out corrupting demon work, while Aziraphale nervously hides his pastry, claiming it was just standard faction diplomacy), before running back to their spots.
-
-In the tray under "⚙️ Settings… -> Companion", you can:
-- Toggle the "Sweet Screensaver" switch.
-- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Wait Time" (default: 3 min).
-
-Note:
-This app does NOT block or modify Windows screen-off / sleep timing.
-To see the animation, make sure the Windows "turn off screen" and "sleep" timers are set later than the selected CP wait time.
-Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 minutes or longer, lengthen the screen-off / sleep timers in the system power settings.
-
-========================================
-🎨 Skins & Display
-========================================
-
-The app currently includes one built-in skin:
-- Default Outfit - (Artist) Nano Banana
-
-Visual Skin Gallery:
-Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin gallery window. Each skin card displays the exclusive preview image (kiss sprite), skin name, and artist signature ("🎨 Artist") across separate lines.
-- Live Preview: Clicking any card instantly updates the desktop characters so you can preview the skin in real time.
-- Confirm & Cancel: Previews do not change your saved skin. When you are satisfied, click "Confirm" to save. Clicking "Cancel", pressing ESC, or closing the window restores your original skin. Switching to another window or minimizing keeps the preview; open the gallery again from the tray to continue choosing.
-
-Skin Actions & Fallback:
-Skins replace standing, walking, hungry, sleeping, feeding, tending plants / reading, care / favor, kiss, hug, and share-food visuals together.
-Missing optional action assets use default assets where possible. If a required standing image or walking frame fails to load during a switch, the app restores the last successfully loaded skin. "Confirm" then shows an error and refuses to save; you can choose another skin or cancel.
-
-When pets move between displays with different scale factors, the character sprites, right-click menu, and miracle effects scale with the current display to keep their visual size consistent.
-
-Pet Size:
-Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to live-preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
-Changes save automatically on slider release, keyboard step, or window close; "Reset" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
-
-Bookshop Typography:
-Character menus, the status panel, and settings windows feature warm parchment and antique gold styling inspired by A.Z. Fell & Co. Antiquarian Booksellers, with crisp native typography across Chinese, English, and Japanese.
-
-========================================
-📦 Updates
-========================================
-
-- Windows packaged builds: use "📦 Check for Updates" from the tray menu to check GitHub Releases. When a new version is available, a progress window is shown during download, and you can restart to install after it finishes.
-- macOS: because the app is not currently signed with an Apple Developer ID certificate, update checks show the current and latest version, then guide you to open Releases, download the new DMG, and replace the app manually.
-- Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
-
-========================================
-🪟 Window Sensing
-========================================
-
-When Window Sensing is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
-During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
-
-You can toggle the "Window Sensing" switch under "⚙ Settings… -> Appearance".
-If the current system does not support it, the setting displays an unavailable notice and disables toggling.
-
-========================================
-🌤️ Weather Awareness & Time Sync
-========================================
-
-Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
-During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
-
-If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
-When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
-If weather sync is disabled or offline, time-based atmosphere changes still apply.
-
-========================================
-📖 Bookshop Study
-========================================
-
-Bookshop Study is the lightweight Pomodoro feature.
-Open it from the tray menu with "📖 Bookshop Study"; while running, the tray menu shows "📖 Studying N min", and after completion it shows "📖 Study Complete".
-
-Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
-After you start, Crowley and Aziraphale enter the countdown window, which displays the timer, progress bar, and a joint miracle illustration. Concentric rings with an angelic golden starburst gently pulse at the center of the dial.
-The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the countdown ends, a resonant bookshop wind-chime and bell chime plays as a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
-The window supports "Begin Study", "End Early", and "Done" actions. Click "Done", stop early, or close the window to return the pets to their previous visibility and walking state.
-
-========================================
-📹 Meeting Auto-Hide
-========================================
-
-Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
-
-- The current MVP is mainly calibrated against Windows Teams.
-- After the meeting ends, pets usually reappear within about 15 seconds.
-- If you manually hid the pets before the meeting, they will not be shown automatically afterward.
-- If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
-- The detector only uses meeting app process names and UDP endpoint counts. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
-
-========================================
-⏰ Break Reminder
-========================================
-
-When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
-When it triggers, Crowley and Aziraphale move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
-
-You can toggle "Break Reminder" under "⚙️ Settings… -> Companion" and select 30, 45, 60, 90, or 120 minutes for the reminder interval.
-Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
-
-========================================
 📊 Pet Status
 ========================================
 
@@ -254,6 +147,113 @@ You can also judge their status visually without keeping the status panel open:
 - Golden / green glow: tending plants or reading, Miracle will recover.
 - Orange glow: Satiety is below 25, feed them soon.
 - Semi-transparent body: Mood is below 25, they need company, food, or care.
+
+========================================
+📖 Bookshop Study
+========================================
+
+Bookshop Study is the lightweight Pomodoro feature.
+Open it from the tray menu with "📖 Bookshop Study"; while running, the tray menu shows "📖 Studying N min", and after completion it shows "📖 Study Complete".
+
+Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
+After you start, Crowley and Aziraphale enter the countdown window, which displays the timer, progress bar, and a joint miracle illustration. Concentric rings with an angelic golden starburst gently pulse at the center of the dial.
+The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
+When the countdown ends, a resonant bookshop wind-chime and bell chime plays as a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+The window supports "Begin Study", "End Early", and "Done" actions. Click "Done", stop early, or close the window to return the pets to their previous visibility and walking state.
+
+========================================
+🎨 Skins & Display
+========================================
+
+The app currently includes one built-in skin:
+- Default Outfit - (Artist) Nano Banana
+
+Visual Skin Gallery:
+Clicking "🎨 Choose Skin…" in the tray menu opens a dedicated visual skin gallery window. Each skin card displays the exclusive preview image (kiss sprite), skin name, and artist signature ("🎨 Artist") across separate lines.
+- Live Preview: Clicking any card instantly updates the desktop characters so you can preview the skin in real time.
+- Confirm & Cancel: Previews do not change your saved skin. When you are satisfied, click "Confirm" to save. Clicking "Cancel", pressing ESC, or closing the window restores your original skin. Switching to another window or minimizing keeps the preview; open the gallery again from the tray to continue choosing.
+
+Skin Actions & Fallback:
+Skins replace standing, walking, hungry, sleeping, feeding, tending plants / reading, care / favor, kiss, hug, and share-food visuals together.
+Missing optional action assets use default assets where possible. If a required standing image or walking frame fails to load during a switch, the app restores the last successfully loaded skin. "Confirm" then shows an error and refuses to save; you can choose another skin or cancel.
+
+When pets move between displays with different scale factors, the character sprites, right-click menu, and miracle effects scale with the current display to keep their visual size consistent.
+
+Pet Size:
+Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to live-preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
+Changes save automatically on slider release, keyboard step, or window close; "Reset" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
+
+Bookshop Typography:
+Character menus, the status panel, and settings windows feature warm parchment and antique gold styling inspired by A.Z. Fell & Co. Antiquarian Booksellers, with crisp native typography across Chinese, English, and Japanese.
+
+========================================
+📹 Meeting Auto-Hide
+========================================
+
+Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
+
+- The current MVP is mainly calibrated against Windows Teams.
+- After the meeting ends, pets usually reappear within about 15 seconds.
+- If you manually hid the pets before the meeting, they will not be shown automatically afterward.
+- If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
+- The detector only uses meeting app process names and UDP endpoint counts. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
+
+========================================
+🪟 Window Sensing
+========================================
+
+When Window Sensing is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
+During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
+
+You can toggle the "Window Sensing" switch under "⚙ Settings… -> Appearance".
+If the current system does not support it, the setting displays an unavailable notice and disables toggling.
+
+========================================
+🌤️ Weather Awareness & Time Sync
+========================================
+
+Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
+During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
+
+If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
+When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
+If weather sync is disabled or offline, time-based atmosphere changes still apply.
+
+========================================
+⏰ Break Reminder
+========================================
+
+When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
+When it triggers, Crowley and Aziraphale move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
+
+You can toggle "Break Reminder" under "⚙️ Settings… -> Companion" and select 30, 45, 60, 90, or 120 minutes for the reminder interval.
+Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
+
+========================================
+💕 CP Sweet Screensaver
+========================================
+
+After the system has been idle longer than the configured wait time, the screensaver starts:
+- Crowley and Aziraphale play a CP combo at the center of the screen: share food -> hug -> kiss.
+- The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
+- When they detect that you are back, the two pets hurriedly cover up their secret rendezvous (Crowley pretends he is carrying out corrupting demon work, while Aziraphale nervously hides his pastry, claiming it was just standard faction diplomacy), before running back to their spots.
+
+In the tray under "⚙️ Settings… -> Companion", you can:
+- Toggle the "Sweet Screensaver" switch.
+- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Wait Time" (default: 3 min).
+
+Note:
+This app does NOT block or modify Windows screen-off / sleep timing.
+To see the animation, make sure the Windows "turn off screen" and "sleep" timers are set later than the selected CP wait time.
+Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 minutes or longer, lengthen the screen-off / sleep timers in the system power settings.
+
+========================================
+📦 Updates
+========================================
+
+- Windows packaged builds: use "📦 Check for Updates" from the tray menu to check GitHub Releases. When a new version is available, a progress window is shown during download, and you can restart to install after it finishes.
+- macOS: because the app is not currently signed with an Apple Developer ID certificate, update checks show the current and latest version, then guide you to open Releases, download the new DMG, and replace the app manually.
+- Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
 
 ========================================
 💡 Tips

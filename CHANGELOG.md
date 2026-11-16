@@ -16,6 +16,7 @@
 - **统一设置窗口三语界面与无障碍交互 (`Unified Settings Window UI/UX & Trilingual I18N`)**：新增 `src/settings.html`、`src/settings.css` 与 `src/settingsWindow.js` 并在 `src/data/i18n.js` 补全中/英/日三语设置词典；采用免滚动玉简卡片与内联当前城市徽章、单行 CSS Grid 等分分段键帽布局，实现顶部 3 标签页 Roving `tabindex` 键盘漫游、`role="switch"` 与非纯色分段控件、体型滑块 `input` 实时预览与 `change` 即时落盘、未设城市开启天气同步自动聚焦引导、子档位原生 `disabled` 联动、IME 组合态 `Esc` 守卫、严格 CSP 与零 `innerHTML` 安全渲染及减动效降级覆盖（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
 
 ### Changed
+- **README 功能章节顺序与托盘菜单、设置窗口对齐 (`README Feature Order Aligned with Tray & Settings`)**：`readme_zh.txt` / `readme_en.txt` / `readme_ja.txt` 的功能章节改为按托盘菜单与设置窗口标签页顺序排列（状态面板 → 旧书店伴读 → 皮肤与显示 → 会议自动隐藏 → 外观与交互：界面感知 → 陪伴与守护：天气同步、久坐提醒、高甜屏保 → 检查更新 → 小贴士）；`README.md` 的托盘说明按当前托盘菜单与三个设置标签页重写（移除已迁入设置的旧托盘项），核心机制列表中番茄钟调整到天气之前，仅调整文档顺序，不涉及运行时行为（参见 [ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
 - **托盘图标点阵从 `CA` 改为 `GO` (`Tray Icon Bitmap Updated from CA to GO`)**：更新 `src/main/TrayManager.js` 中 `createTrayIconBuffer()` 的 16×16 像素点阵定义，将托盘图标显示的字母由 `CA` 替换为 `GO`。
 - **核心运行时与依赖大版本基线升级 (`Runtime & Dependency Major Upgrades: Electron 45, electron-store 12 & asar 4`)**：
   - **核心引擎升级**：Electron 升级至 45.2.1（内置 Chromium 基线由 134+ 提升至 156+），开发依赖 `@electron/asar` 升级至 4.3.1，`electron-builder` 升级至 26.18.0，`glob` 升级至 14.0.3，`@playwright/test` 升级至 1.64.1，生产依赖 `electron-store` 升级至 12.0.0，`electron-log` 升级至 5.4.4，`electron-updater` 升级至 6.8.11。
