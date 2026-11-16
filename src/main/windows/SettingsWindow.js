@@ -3,8 +3,8 @@ const path = require('path');
 const windowManager = require('./WindowManager');
 const PetScaleService = require('../services/PetScaleService');
 
-const SETTINGS_WINDOW_WIDTH = 480;
-const SETTINGS_WINDOW_HEIGHT = 420;
+const SETTINGS_WINDOW_WIDTH = 520;
+const SETTINGS_WINDOW_HEIGHT = 476;
 const SETTINGS_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 const SETTINGS_TOP_PULSE_MS = 180;
 const VALID_SETTINGS_TABS = new Set(['appearance', 'companion', 'system']);

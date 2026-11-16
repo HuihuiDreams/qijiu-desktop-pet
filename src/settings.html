@@ -140,7 +140,13 @@
       >
         <div class="settings-card">
           <div class="settings-row">
-            <span id="weather-sync-label" class="settings-section-title" data-i18n="settingsWeatherSyncLabel">天气同步</span>
+            <div class="settings-title-group">
+              <span id="weather-sync-label" class="settings-section-title" data-i18n="settingsWeatherSyncLabel">天气同步</span>
+              <div class="settings-city-current">
+                <span data-i18n="citySettingCurrent">当前城市：</span>
+                <span id="city-current-value" class="settings-city-value" data-i18n="citySettingNone">未设置</span>
+              </div>
+            </div>
             <button
               id="weather-sync-switch"
               class="settings-switch"
@@ -153,10 +159,6 @@
                 <span class="settings-switch-thumb"></span>
               </span>
             </button>
-          </div>
-          <div class="settings-city-current">
-            <span data-i18n="citySettingCurrent">当前城市：</span>
-            <span id="city-current-value" class="settings-city-value" data-i18n="citySettingNone">未设置</span>
           </div>
           <div class="city-input-row">
             <input
