@@ -8,6 +8,7 @@ let skinSelectorTopPulseTimer = null;
 let skinSelectorSelectionInProgress = false;
 let skinSelectorOriginalSkinId = null;
 let skinSelectorCloseInProgress = false;
+let returnFocusToSettings = false;
 let deps = {};
 
 function init(dependencies) {
@@ -115,16 +116,40 @@ function createSkinSelectorWindow() {
       clearTimeout(skinSelectorTopPulseTimer);
       skinSelectorTopPulseTimer = null;
     }
+    const shouldReturnFocus = returnFocusToSettings;
+    returnFocusToSettings = false;
     windowManager.skinSelectorWindow = null;
     skinSelectorSelectionInProgress = false;
     skinSelectorOriginalSkinId = null;
     skinSelectorCloseInProgress = false;
+
+    if (shouldReturnFocus) {
+      const settingsWin = windowManager.settingsWindow;
+      const isSettingsAlive = Boolean(
+        settingsWin
+        && !settingsWin.isDestroyed?.()
+        && settingsWin.isVisible?.()
+        && !settingsWin.isMinimized?.()
+      );
+      if (isSettingsAlive) {
+        if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof settingsWin.isFocused !== 'function' || !settingsWin.isFocused())) {
+          app.focus({ steal: true });
+        }
+        settingsWin.focus?.();
+        if (settingsWin.webContents && !settingsWin.webContents.isDestroyed?.()) {
+          settingsWin.webContents.send('settings-restore-skin-focus');
+        }
+      }
+    }
   });
 
   return windowManager.skinSelectorWindow;
 }
 
-function openSkinSelectorWindow() {
+function openSkinSelectorWindow(options = {}) {
+  if (typeof options?.fromSettings === 'boolean') {
+    returnFocusToSettings = options.fromSettings;
+  }
   const wasAlreadyCreated = !!(windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed());
   const preserveSelection = wasAlreadyCreated && skinSelectorOriginalSkinId != null;
   const win = createSkinSelectorWindow();
@@ -190,6 +215,8 @@ module.exports = {
   setSkinSelectorSelectionInProgress: (val) => { skinSelectorSelectionInProgress = val; },
   setSkinSelectorOriginalSkinId: (val) => { skinSelectorOriginalSkinId = val; },
   getSkinSelectorOriginalSkinId,
+  setReturnFocusToSettings: (val) => { returnFocusToSettings = Boolean(val); },
+  getReturnFocusToSettings: () => returnFocusToSettings,
   sendSkinSelectorData,
   pulseSkinSelectorWindowTop,
 };

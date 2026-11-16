@@ -18,37 +18,49 @@ function init(dependencies) {
       windowManager.citySettingWindow,
       windowManager.skinSelectorWindow,
       windowManager.petScaleWindow,
+      windowManager.settingsWindow,
     ];
     return isSenderAnyWindow(event, allowedWindows) ? currentLocale : null;
   });
   ipcMain.handle('set-locale', async (event, lang) => {
-    const { windowManager, skinSelectorWindowModule, trayManager } = deps;
+    const { windowManager } = deps;
     if (!isSenderMainWindow(event, windowManager.mainWindow)) return { success: false };
-    if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
-    currentLocale = lang;
-    await StoreManager.initStore();
-    const store = StoreManager.getStore();
-    if (store) store.set(LOCALE_KEY, lang);
-    trayManager.refreshTrayMenu();
-    if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('locale-changed', lang);
-    if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
-      windowManager.statusWindow.webContents.send('locale-changed', lang);
-    }
-    if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
-      windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
-    }
-    if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
-      windowManager.citySettingWindow.webContents.send('locale-changed', lang);
-    }
-    if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-      windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
-      skinSelectorWindowModule.sendSkinSelectorData({ resetSelection: false });
-    }
-    if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
-      windowManager.petScaleWindow.webContents.send('locale-changed', lang);
-    }
-    return { success: true, locale: lang };
+    return changeLocale(lang);
   });
+}
+
+async function changeLocale(lang) {
+  const { windowManager, skinSelectorWindowModule, trayManager } = deps;
+  if (!['zh', 'en', 'ja'].includes(lang)) return { success: false };
+  currentLocale = lang;
+  await StoreManager.initStore();
+  const store = StoreManager.getStore();
+  if (store) store.set(LOCALE_KEY, lang);
+  trayManager?.refreshTrayMenu?.();
+  if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
+    windowManager.mainWindow.webContents.send('locale-changed', lang);
+  }
+  if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+    windowManager.statusWindow.webContents.send('locale-changed', lang);
+  }
+  if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
+    windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
+  }
+  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
+    windowManager.citySettingWindow.webContents.send('locale-changed', lang);
+  }
+  if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
+    windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
+    skinSelectorWindowModule?.sendSkinSelectorData?.({ resetSelection: false });
+  }
+  if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
+    windowManager.petScaleWindow.webContents.send('locale-changed', lang);
+  }
+  if (windowManager.settingsWindow && !windowManager.settingsWindow.isDestroyed()) {
+    windowManager.settingsWindow.webContents.send('locale-changed', lang);
+  }
+  deps.onLocaleChanged?.(lang);
+  return { success: true, locale: lang };
 }
 
 /**
@@ -77,6 +89,7 @@ function loadInitialLocale() {
 
 module.exports = {
   init,
+  changeLocale,
   detectLocale,
   loadInitialLocale,
   getCurrentLocale: () => currentLocale,

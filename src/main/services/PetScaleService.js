@@ -36,28 +36,36 @@ function createPetScaleService(dependencies = {}, options = {}) {
     }
   }
 
+  const confirm = (percent) => {
+    const target = percent !== undefined
+      ? normalizePetScalePercent(percent)
+      : (localPreview ?? localCommitted);
+    localCommitted = target;
+    localPreview = null;
+    if (store && typeof store.set === 'function') {
+      store.set(PET_SCALE_STORE_KEY, localCommitted);
+    }
+    broadcast(localCommitted);
+    serviceDeps.onScaleChanged?.(localCommitted);
+    return localCommitted;
+  };
+
   return {
     getCommittedPercent: () => localCommitted,
     getPreviewPercent: () => localPreview ?? localCommitted,
+    hasPendingPreview: () => localPreview !== null,
     preview: (percent) => {
       const normalized = normalizePetScalePercent(percent);
       localPreview = normalized;
       broadcast(normalized);
       return normalized;
     },
-    confirm: () => {
-      const target = localPreview ?? localCommitted;
-      localCommitted = target;
-      localPreview = null;
-      if (store && typeof store.set === 'function') {
-        store.set(PET_SCALE_STORE_KEY, localCommitted);
-      }
-      broadcast(localCommitted);
-      return localCommitted;
-    },
+    confirm,
+    flushPreview: () => (localPreview !== null ? confirm() : localCommitted),
     cancel: () => {
       localPreview = null;
       broadcast(localCommitted);
+      serviceDeps.onScaleChanged?.(localCommitted);
       return localCommitted;
     },
   };
@@ -75,8 +83,10 @@ module.exports = {
   createPetScaleService,
   getCommittedPercent: () => activeService.getCommittedPercent(),
   getPreviewPercent: () => activeService.getPreviewPercent(),
+  hasPendingPreview: () => activeService.hasPendingPreview(),
   preview: (percent) => activeService.preview(percent),
-  confirm: () => activeService.confirm(),
+  confirm: (percent) => activeService.confirm(percent),
+  flushPreview: () => activeService.flushPreview(),
   cancel: () => activeService.cancel(),
 };
 

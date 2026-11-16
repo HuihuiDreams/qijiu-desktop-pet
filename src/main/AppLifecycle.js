@@ -20,10 +20,12 @@ const PomodoroService = require('./services/PomodoroService');
 const WeatherSyncController = require('./services/WeatherSyncController');
 const BreakReminderController = require('./services/BreakReminderController');
 const PetScaleService = require('./services/PetScaleService');
+const SettingsService = require('./services/SettingsService');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
 const citySettingWindowModule = require('./windows/CitySettingWindow');
 const petScaleWindowModule = require('./windows/PetScaleWindow');
+const settingsWindowModule = require('./windows/SettingsWindow');
 const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
 const updateProgressWindowModule = require('./windows/UpdateProgressWindow');
@@ -119,13 +121,16 @@ class AppLifecycle {
       PetVisibilityService,
       WindowAwarenessService,
       windowManager,
+      trayManager,
       interruptionCoordinator,
+      onSettingsChanged: () => SettingsService.notifySettingsUpdated(),
     });
 
     WeatherSyncController.init({
       windowManager,
       trayManager,
       StoreManager,
+      onWeatherSettingsChanged: () => SettingsService.notifySettingsUpdated(),
     });
 
     updateProgressWindowModule.init({
@@ -170,6 +175,7 @@ class AppLifecycle {
       getActiveWindowDisplays: DisplayService.getActiveWindowDisplays,
       getActiveWindowMainBounds: DisplayService.getActiveWindowMainBounds,
       onActiveWindowChanged: petWindowModule.onActiveWindowChanged,
+      onSettingsChanged: () => SettingsService.notifySettingsUpdated(),
     });
 
     PetVisibilityService.init({
@@ -256,14 +262,19 @@ class AppLifecycle {
     });
     citySettingWindowModule.init();
     petScaleWindowModule.init();
+    settingsWindowModule.init({
+      flushPetScalePreview: PetScaleService.flushPreview,
+    });
     PetScaleService.init({
       windowManager,
       StoreManager,
+      onScaleChanged: () => SettingsService.notifySettingsUpdated(),
     });
     LocaleService.init({
       windowManager,
       skinSelectorWindowModule,
-      trayManager
+      trayManager,
+      onLocaleChanged: () => SettingsService.notifySettingsUpdated(),
     });
     StorageIpc.init({
       windowManager,
@@ -276,6 +287,23 @@ class AppLifecycle {
       StoreManager,
       sendPomodoroState: PomodoroService.sendPomodoroState,
       cancelScreensaverSession: (reason) => screensaverController?.cancelSession(reason),
+      onSkinConfirmed: () => SettingsService.notifySettingsUpdated(),
+    });
+    SettingsService.init({
+      windowManager,
+      StoreManager,
+      trayManager,
+      settingsWindowModule,
+      skinSelectorWindowModule,
+      PetScaleService,
+      LocaleService,
+      WeatherSyncController,
+      BreakReminderController,
+      WindowAwarenessService,
+      AutoLaunchService,
+      SkinService,
+      getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 3 }),
+      updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
     });
     skinSelectorWindowModule.init({
       selectSkin: SkinService.selectSkin,

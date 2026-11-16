@@ -50,6 +50,7 @@ function init(dependencies) {
       lastLoadSuccess = true;
       sendPomodoroState();
       trayManager.refreshTrayMenu();
+      deps.onSkinConfirmed?.(confirmedSkinId);
       return createIpcSuccess({ skinId });
     } catch (error) {
       console.error('Failed to set current skin:', error);
@@ -123,6 +124,7 @@ function init(dependencies) {
 
         sendPomodoroState();
         trayManager.refreshTrayMenu();
+        deps.onSkinConfirmed?.(confirmedSkinId);
 
         if (deps.windowManager?.mainWindow && !deps.windowManager.mainWindow.isDestroyed()) {
           deps.windowManager.mainWindow.webContents.send('switch-skin', confirmedSkinId, { isPreview: false, persist: true });
@@ -183,7 +185,7 @@ const SKIN_ARTIST_KEYS = {
 
 function getSkinGalleryDisplayName(skinId) {
   const key = SKIN_NAME_KEYS[skinId];
-  return key ? deps.trayManager.trayT(key) : skinId;
+  return key && deps.trayManager?.trayT ? deps.trayManager.trayT(key) : skinId;
 }
 
 function getSkinLabel(skinId) {
@@ -373,6 +375,7 @@ function selectSkin(skinId) {
     if (trayManager?.refreshTrayMenu) {
       trayManager.refreshTrayMenu();
     }
+    deps.onSkinConfirmed?.(confirmedSkinId);
   }
   return { skinId };
 }
@@ -472,6 +475,7 @@ module.exports = {
   getCurrentSkinId: () => confirmedSkinId,
   getConfirmedSkinId: () => confirmedSkinId,
   getPreviewSkinId: () => previewTargetSkinId,
+  getSkinDisplayName: (skinId = confirmedSkinId) => getSkinGalleryDisplayName(skinId),
   setCurrentSkinId,
   restoreConfirmedSkinFromStore,
 };

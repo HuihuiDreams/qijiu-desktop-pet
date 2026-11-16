@@ -53,6 +53,7 @@ function getPetSubWindows() {
     windowManager.skinSelectorWindow,
     windowManager.petScaleWindow,
     windowManager.citySettingWindow,
+    windowManager.settingsWindow,
   ];
 }
 
@@ -315,9 +316,12 @@ function createWindow() {
     if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
       windowManager.skinSelectorWindow.close();
     }
-    // 体型窗口没有 parent，主窗口关闭后会独立存活；其 close 监听器负责回滚未确认的预览
+    // 体型窗口与统一设置窗口没有 parent，主窗口关闭后会独立存活；其 close 监听器负责兜底刷盘/回滚
     if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
       windowManager.petScaleWindow.close();
+    }
+    if (windowManager.settingsWindow && !windowManager.settingsWindow.isDestroyed()) {
+      windowManager.settingsWindow.close();
     }
     updateProgressWindowModule.closeUpdateProgressWindow();
 

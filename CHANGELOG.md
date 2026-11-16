@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+### Added
+- **统一设置窗口主进程窗口基座与聚合服务 (`Unified Settings Window Main Base & SettingsService`)**：新增沙盒化统一设置窗口 `SettingsWindow`（`480×420`、工作区边界夹紧、`180ms` `screen-saver` 置顶脉冲、关窗未落盘体型预览兜底刷盘，并纳入 `PetWindow` 子窗层级排序与连带关闭链）、最小权限语义化 `settingsPreload.js` 及聚合控制器 `SettingsService`（全 `settings-*` 通道绑定 `isSenderWindow(settingsWindow)` 鉴权与边界校验）；同时扩展 `PetScaleService.confirm(percent)` / `flushPreview()`、`AutoLaunchService.getAutoLaunchState()`、`BreakReminderController.updateBreakReminderSettings()`、`WeatherSyncController.setCityName()` / `getCitySettings()`、`LocaleService.changeLocale()` 与 `SkinService` 确认态通知，并由 `SkinSelectorWindow` 维护 `returnFocusToSettings` 标识隔离设置窗唤起与托盘唤起的焦点回传。
+
 ### Changed
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
 - **皮肤服务无效素材根目录配置清理 (`SkinService Ineffective appRoot Cleanup`)**：移除 `SkinService.js` 中三处向受保护素材加载器传入的 `appRoot: __dirname`（`src/main/services/protected-assets` 并不存在，加载器本就会回退到仓库根目录、`resourcesPath` 与 `appPath` 下的 `protected-assets`），不改变开发与打包环境的素材查找结果；加载器中 `manifestNotFound` 负缓存按既有测试约定保持到显式清理，不做修改（[审核复核 L4](docs/code-review-audit-verification-2026-11-13.md)）。
