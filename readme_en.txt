@@ -113,7 +113,7 @@ Character menus and the status panel use calligraphic character names in Chinese
 When Realm Awareness is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
 During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
 
-You can toggle the "Realm Awareness" switch under "⚙️ Settings… -> Companion".
+You can toggle the "Realm Awareness" switch under "⚙️ Settings… -> Appearance".
 If the current system does not support it, the setting displays an unavailable notice and disables toggling.
 
 ========================================
