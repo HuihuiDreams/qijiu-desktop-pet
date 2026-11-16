@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self';">
+  <title data-i18n="settingsTitle">设置</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="settings-calligraphy.css">
+</head>
+
+<body>
+  <main id="settings-panel" class="settings-panel xianxia-panel" aria-live="polite">
+    <header class="settings-titlebar">
+      <h1 class="settings-calligraphy-title" data-i18n="settingsTitle">设置</h1>
+      <button id="settings-close" class="settings-close-button" type="button" aria-label="关闭" data-i18n-aria-label="settingsClose" data-i18n-title="settingsClose" title="关闭">
+        <svg class="settings-close-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </header>
+
+    <div id="settings-tablist" class="settings-tablist" role="tablist" aria-orientation="horizontal">
+      <button
+        id="tab-appearance"
+        class="settings-tab is-active"
+        type="button"
+        role="tab"
+        aria-selected="true"
+        aria-controls="panel-appearance"
+        tabindex="0"
+        data-tab="appearance"
+        data-i18n="settingsTabAppearance"
+      >外观与交互</button>
+      <button
+        id="tab-companion"
+        class="settings-tab"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-companion"
+        tabindex="-1"
+        data-tab="companion"
+        data-i18n="settingsTabCompanion"
+      >陪伴与守护</button>
+      <button
+        id="tab-system"
+        class="settings-tab"
+        type="button"
+        role="tab"
+        aria-selected="false"
+        aria-controls="panel-system"
+        tabindex="-1"
+        data-tab="system"
+        data-i18n="settingsTabSystem"
+      >系统偏好</button>
+    </div>
+
+    <div class="settings-body">
+      <section
+        id="panel-appearance"
+        class="settings-tabpanel"
+        role="tabpanel"
+        aria-labelledby="tab-appearance"
+        data-panel="appearance"
+      >
+        <div class="settings-card">
+          <div class="settings-row settings-row--tight">
+            <div class="settings-scale-info">
+              <label id="scale-label" class="settings-section-title" for="scale-slider" data-i18n="settingsScaleSection">桌宠体型</label>
+              <span id="scale-current-value" class="settings-scale-value">100%</span>
+            </div>
+            <button id="scale-reset" class="settings-secondary-button" type="button" data-i18n="petScaleReset">恢复默认</button>
+          </div>
+          <div class="settings-slider-container">
+            <input
+              id="scale-slider"
+              class="settings-slider"
+              type="range"
+              min="50"
+              max="150"
+              step="5"
+              value="100"
+              aria-labelledby="scale-label"
+              aria-valuetext="100%"
+            >
+            <div class="settings-slider-labels" aria-hidden="true">
+              <span>50%</span>
+              <span>100%</span>
+              <span>150%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="settings-item-copy">
+              <span class="settings-section-title" data-i18n="settingsSkinSection">皮肤外观</span>
+              <div class="settings-skin-meta">
+                <span class="settings-muted-label" data-i18n="settingsSkinCurrentLabel">当前皮肤：</span>
+                <span id="settings-current-skin-name" class="settings-skin-name"></span>
+              </div>
+            </div>
+            <button id="settings-open-skin-button" class="settings-action-button" type="button" data-i18n="settingsOpenSkinSelector">选择皮肤…</button>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="settings-item-copy">
+              <span id="window-awareness-label" class="settings-section-title" data-i18n="settingsWindowAwarenessLabel">界面感知</span>
+              <p id="window-awareness-hint" class="settings-hint" data-i18n="settingsWindowAwarenessHint">让桌宠感知活动窗口、任务栏与程序坞边缘</p>
+            </div>
+            <button
+              id="window-awareness-switch"
+              class="settings-switch"
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-labelledby="window-awareness-label"
+              aria-describedby="window-awareness-hint"
+            >
+              <span class="settings-switch-track" aria-hidden="true">
+                <span class="settings-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="panel-companion"
+        class="settings-tabpanel"
+        role="tabpanel"
+        aria-labelledby="tab-companion"
+        data-panel="companion"
+        hidden
+      >
+        <div class="settings-card">
+          <div class="settings-row">
+            <span id="weather-sync-label" class="settings-section-title" data-i18n="settingsWeatherSyncLabel">天气同步</span>
+            <button
+              id="weather-sync-switch"
+              class="settings-switch"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-labelledby="weather-sync-label"
+            >
+              <span class="settings-switch-track" aria-hidden="true">
+                <span class="settings-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
+          <div class="settings-city-current">
+            <span data-i18n="citySettingCurrent">当前城市：</span>
+            <span id="city-current-value" class="settings-city-value" data-i18n="citySettingNone">未设置</span>
+          </div>
+          <div class="city-input-row">
+            <input
+              id="city-input"
+              class="city-input"
+              type="text"
+              maxlength="100"
+              autocomplete="off"
+              spellcheck="false"
+              data-i18n-placeholder="citySettingPlaceholder"
+              placeholder="请输入城市名"
+              data-i18n-aria-label="citySettingPlaceholder"
+              aria-label="请输入城市名"
+              aria-describedby="city-status"
+            >
+            <button id="city-confirm" class="city-confirm-button" type="button" data-i18n="citySettingConfirm">确认</button>
+          </div>
+          <div id="city-status" class="city-status" aria-live="assertive"></div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <span id="break-reminder-label" class="settings-section-title" data-i18n="settingsBreakReminderLabel">久坐提醒</span>
+            <button
+              id="break-reminder-switch"
+              class="settings-switch"
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-labelledby="break-reminder-label"
+            >
+              <span class="settings-switch-track" aria-hidden="true">
+                <span class="settings-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
+          <div id="break-reminder-intervals-group" class="settings-suboption" role="group" aria-labelledby="break-reminder-interval-title" aria-disabled="false">
+            <span id="break-reminder-interval-title" class="settings-suboption-label" data-i18n="settingsBreakReminderIntervalLabel">提醒间隔</span>
+            <div id="break-reminder-intervals" class="settings-segment-group">
+              <button type="button" class="settings-segment-button" data-interval="30" aria-pressed="false">30 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-interval="45" aria-pressed="false">45 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-interval="60" aria-pressed="true">60 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-interval="90" aria-pressed="false">90 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-interval="120" aria-pressed="false">120 <span data-i18n="trayMinuteUnit">分钟</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <span id="screensaver-label" class="settings-section-title" data-i18n="settingsScreensaverLabel">高甜屏保</span>
+            <button
+              id="screensaver-switch"
+              class="settings-switch"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-labelledby="screensaver-label"
+            >
+              <span class="settings-switch-track" aria-hidden="true">
+                <span class="settings-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
+          <div id="screensaver-thresholds-group" class="settings-suboption" role="group" aria-labelledby="screensaver-threshold-title" aria-disabled="true">
+            <span id="screensaver-threshold-title" class="settings-suboption-label" data-i18n="settingsScreensaverThresholdLabel">触发等待</span>
+            <div id="screensaver-thresholds" class="settings-segment-group">
+              <button type="button" class="settings-segment-button" data-threshold="1" aria-pressed="false" disabled>1 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-threshold="3" aria-pressed="true" disabled>3 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-threshold="5" aria-pressed="false" disabled>5 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-threshold="10" aria-pressed="false" disabled>10 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-threshold="15" aria-pressed="false" disabled>15 <span data-i18n="trayMinuteUnit">分钟</span></button>
+              <button type="button" class="settings-segment-button" data-threshold="30" aria-pressed="false" disabled>30 <span data-i18n="trayMinuteUnit">分钟</span></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="panel-system"
+        class="settings-tabpanel"
+        role="tabpanel"
+        aria-labelledby="tab-system"
+        data-panel="system"
+        hidden
+      >
+        <div class="settings-card">
+          <div class="settings-suboption settings-suboption--flush">
+            <span id="language-label" class="settings-section-title" data-i18n="settingsLanguageLabel">界面语言</span>
+            <div id="locale-buttons" class="settings-segment-group" role="group" aria-labelledby="language-label">
+              <button type="button" class="settings-segment-button" data-locale="zh" aria-pressed="true">中文</button>
+              <button type="button" class="settings-segment-button" data-locale="en" aria-pressed="false">English</button>
+              <button type="button" class="settings-segment-button" data-locale="ja" aria-pressed="false">日本語</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="settings-item-copy">
+              <span id="auto-launch-label" class="settings-section-title" data-i18n="settingsAutoLaunchLabel">开机自动启动</span>
+              <p class="settings-hint" data-i18n="settingsAutoLaunchHint">登录系统时自动启动桌宠</p>
+            </div>
+            <button
+              id="auto-launch-switch"
+              class="settings-switch"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-labelledby="auto-launch-label"
+            >
+              <span class="settings-switch-track" aria-hidden="true">
+                <span class="settings-switch-thumb"></span>
+              </span>
+            </button>
+          </div>
+          <div id="auto-launch-status" class="settings-inline-status" aria-live="polite"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="data/i18n.js"></script>
+  <script src="utils/windowI18n.js"></script>
+  <script src="settingsWindow.js"></script>
+</body>
+
+</html>
