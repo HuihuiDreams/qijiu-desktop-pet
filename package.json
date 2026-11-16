@@ -30,7 +30,7 @@
     "@playwright/test": "^1.65.0",
     "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
-    "glob": "^14.0.4",
+    "glob": "^14.0.6",
     "playwright": "^1.65.0"
   },
   "dependencies": {
