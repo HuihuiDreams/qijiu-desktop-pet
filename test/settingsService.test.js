@@ -1,7 +1,9 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const Module = require('node:module');
+const path = require('node:path');
 const test = require('node:test');
 
 const SETTINGS_SERVICE_PATH = require.resolve('../src/main/services/SettingsService');
@@ -276,8 +278,6 @@ test('SettingsService.getSnapshot returns all 7 config groups, confirmed skin, a
       allowedThresholds: [1, 3, 5, 10, 15, 30],
     },
     autoLaunch: { enabled: false, preference: true, pendingApproval: true },
-    windowAwarenessSupported: true,
-    autoLaunchPendingApproval: true,
   });
 });
 
@@ -345,7 +345,7 @@ test('SettingsService auto-launch propagates pendingApproval and returns authori
   const pendingRes = await pendingFixture.ipcMain.invoke('settings-set-auto-launch', pendingFixture.settingsEvent, true);
   assert.equal(pendingRes.success, true);
   assert.equal(pendingRes.data.pendingApproval, true);
-  assert.equal(pendingRes.data.snapshot.autoLaunchPendingApproval, true);
+  assert.equal(pendingRes.data.snapshot.autoLaunch.pendingApproval, true);
 });
 
 test('SettingsService opens skin selector with fromSettings: true and pushes store changes', async () => {
@@ -356,8 +356,44 @@ test('SettingsService opens skin selector with fromSettings: true and pushes sto
 
   fixture.settingsWindow.sentMessages.length = 0;
   fixture.store.set('petScalePercent', 130);
+  await Promise.resolve();
   assert.equal(fixture.settingsWindow.sentMessages.length, 1);
   assert.equal(fixture.settingsWindow.sentMessages[0].channel, 'settings-updated');
+});
+
+test('SettingsService coalesces repeated change notifications within one tick into the latest snapshot', async () => {
+  const fixture = createSettingsServiceFixture();
+  const { SettingsService } = fixture;
+  fixture.settingsWindow.sentMessages.length = 0;
+
+  // one user action typically fires store.onDidChange, a service callback and the IPC handler itself
+  fixture.store.set('petScalePercent', 130);
+  SettingsService.notifySettingsUpdated();
+  SettingsService.notifySettingsUpdated();
+  assert.equal(fixture.settingsWindow.sentMessages.length, 0, 'push is deferred to the end of the tick');
+
+  await Promise.resolve();
+  assert.equal(fixture.settingsWindow.sentMessages.length, 1);
+
+  // a later change after the flush produces a new push
+  SettingsService.notifySettingsUpdated();
+  await Promise.resolve();
+  assert.equal(fixture.settingsWindow.sentMessages.length, 2);
+});
+
+test('settings snapshot no longer duplicates platform flags at the top level', async () => {
+  const fixture = createSettingsServiceFixture();
+  const snapshot = await fixture.ipcMain.invoke('settings-get-snapshot', fixture.settingsEvent);
+  assert.equal('windowAwarenessSupported' in snapshot, false);
+  assert.equal('autoLaunchPendingApproval' in snapshot, false);
+  assert.equal(typeof snapshot.windowAwareness.supported, 'boolean');
+  assert.equal(typeof snapshot.autoLaunch.pendingApproval, 'boolean');
+});
+
+test('AppLifecycle exposes app.openSettingsForQA next to app.openSkinSelectorForQA', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'AppLifecycle.js'), 'utf8');
+  assert.match(source, /app\.openSkinSelectorForQA\s*=\s*skinSelectorWindowModule\.openSkinSelectorWindow;/);
+  assert.match(source, /app\.openSettingsForQA\s*=\s*settingsWindowModule\.openSettingsWindow;/);
 });
 
 test('PetScaleService supports confirm(percent) and flushPreview() while keeping confirm() compatible', () => {

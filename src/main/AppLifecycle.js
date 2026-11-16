@@ -60,6 +60,8 @@ configureChromiumMemoryBudget();
 // Playwright smoke 钩子：E2E 冒烟测试通过此入口直接唤起选肤窗口，绕过渲染进程 UI 交互。
 // 实现委托给 SkinService/SkinSelectorWindow，这里仅保留 QA 入口本身。
 app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
+// 统一设置窗同样只能从托盘打开，QA 入口让 E2E 不依赖原生托盘菜单（可选参数为初始标签页）。
+app.openSettingsForQA = settingsWindowModule.openSettingsWindow;
 
 // --- 应用生命周期 ---
 

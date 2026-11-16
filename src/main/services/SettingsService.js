@@ -35,6 +35,7 @@ const STORE_WATCHED_KEYS = [
 
 let deps = {};
 let storeUnsubscribers = [];
+let notifyScheduled = false;
 
 function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -62,8 +63,6 @@ function getSnapshot() {
   const allowedIntervals = Array.isArray(deps.BreakReminderController?.BREAK_REMINDER_TRAY_INTERVALS)
     ? [...deps.BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS]
     : [30, 45, 60, 90, 120];
-  const windowAwarenessSupported = isWindowAwarenessSupported();
-  const autoLaunchPendingApproval = Boolean(autoLaunchState.pendingApproval);
 
   return {
     locale: deps.LocaleService?.getCurrentLocale?.() || 'zh',
@@ -81,7 +80,7 @@ function getSnapshot() {
     },
     windowAwareness: {
       enabled: Boolean(deps.WindowAwarenessService?.isEnabled?.()),
-      supported: windowAwarenessSupported,
+      supported: isWindowAwarenessSupported(),
     },
     weather: {
       enabled: Boolean(weather.enabled),
@@ -100,19 +99,25 @@ function getSnapshot() {
     autoLaunch: {
       enabled: Boolean(autoLaunchState.enabled),
       preference: Boolean(autoLaunchState.preference),
-      pendingApproval: autoLaunchPendingApproval,
+      pendingApproval: Boolean(autoLaunchState.pendingApproval),
     },
-    windowAwarenessSupported,
-    autoLaunchPendingApproval,
   };
 }
 
-function notifySettingsUpdated() {
+function sendSettingsUpdated() {
+  notifyScheduled = false;
   const settingsWin = deps.windowManager?.settingsWindow;
   if (!settingsWin || settingsWin.isDestroyed?.() || !settingsWin.webContents || settingsWin.webContents.isDestroyed?.()) {
     return;
   }
   settingsWin.webContents.send('settings-updated', getSnapshot());
+}
+
+// 同一次变更常被 store.onDidChange、服务回调与 IPC handler 多处触发；合并到当前 tick 末尾只推送一次最新快照。
+function notifySettingsUpdated() {
+  if (notifyScheduled) return;
+  notifyScheduled = true;
+  queueMicrotask(sendSettingsUpdated);
 }
 
 function clearStoreSubscriptions() {

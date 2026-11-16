@@ -116,7 +116,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
-├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 520×456 3-Tab 窗口/workArea 夹紧/180ms 置顶 pulse/Tab 切换/关闭时刷盘未提交体型预览
+├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 520×456 3-Tab 窗口/workArea 夹紧/180ms 置顶 pulse/Tab 切换/关闭时刷盘未提交体型预览；`AppLifecycle.js` 暴露 `app.openSettingsForQA(initialTab?)` 供 E2E 绕过托盘直接唤起
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler（确认换肤通知 `onSkinConfirmed`）
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、`changeLocale(lang)` 持久化及跨窗口 `locale-changed` 广播（含主窗口、状态窗、番茄钟、选肤窗、设置窗）
@@ -127,7 +127,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询（`setCityName`/`getCitySettings`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
-├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送
+├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；直接将 WindowAwarenessService 已转换为 DIP 的 window.bounds 与完整 display.bounds/workArea 比较（适配混合 DPI 多屏且避免消费端重复除以 scaleFactor）；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
