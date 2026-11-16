@@ -1,6 +1,6 @@
 # Implementation Plan: 统一设置窗口与托盘菜单精简
 
-> 状态：已定稿待实施
+> 状态：代码、文档与自动化验收已完成（待人工实机与 Windows 跨平台验收）
 > 最后更新：2026-11-16
 > 依据：`/game-ui-ux` 与 `/grill-me` 设计对齐
 
@@ -213,7 +213,7 @@
     - [x] Phase 3 收尾全量验证：`npm test && npm run test:integration && npm run check:adrs` 全部通过且无 skipped 降级断言、无死文件引用报错。
 
 ### Phase 4: 文档与 ADR 同步及实机验证
-- [ ] **Task 4.1: 文档、ADR 与发布说明同步**
+- [x] **Task 4.1: 文档、ADR 与发布说明同步**
   - **Description**:
     - 新建 ADR-050（`docs/decisions/ADR-050-unified-settings-window.md`），记录托盘瘦身边界、3 Tab 架构、即时自动保存 vs 城市校验模型、安全边界及废弃独立小窗的决策取舍；同步更新 [docs/decisions/README.md](../decisions/README.md) 索引表（并标明相对 ADR-039 / ADR-047 窗口形态的演进）。
     - **按局部行号切片更新 [structure.md](../structure.md)**（该文件 ~83 KB，严禁整文件读取，仅分段读取/修改以下 5 处区间）：
@@ -225,9 +225,10 @@
     - 更新 [CHANGELOG.md](../../CHANGELOG.md)（`## [Unreleased]` 下按规范分组记录变更并关联 ADR-050）。
     - 检查并更新三语说明文本（`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`）中关于托盘路径与「设置」窗口的操作指引。
   - **Acceptance criteria**:
-    - [ ] 聚焦验证命令：`npm run check:adrs && node --test test/docLinks.test.js` 全部通过。
+    - [x] 聚焦验证命令：`npm run check:adrs && node --test test/docLinks.test.js` 全部通过。
 
 - [ ] **Task 4.2: 实机与跨平台手动验收（macOS + Windows）**
+  - **Automated Status**: `npm run qa:electron:smoke`、`npm test`、`npm run test:integration`、`npm run check:adrs` 与 `test/docLinks.test.js` 已在 macOS 验证通过；以下交互式与 Windows 实机项留待人工验收。
   - **Description**: 启动 `npm run dev`（及可选 `npm run qa:electron:smoke`），逐项人工验证：
     1. 托盘菜单精简后各项展示与三语切换正常；`⚙️ 设置…` 能稳定唤起并前置窗口；`🎨 选择皮肤…` 独立打开、换肤后设置窗同步刷新当前皮肤名。
     2. 体型滑块 `50%–150%` 实时脚底锚定缩放、松手持久化、重启应用保持；设置窗不长期置顶阻挡其他应用。

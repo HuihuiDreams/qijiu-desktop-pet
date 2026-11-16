@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-10-26
+最后更新：2026-11-16
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./archive/code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -33,6 +33,8 @@ graph TB
             PomodoroService["PomodoroService"]
             WeatherSyncController["WeatherSyncController"]
             BreakReminderController["BreakReminderController"]
+            PetScaleService["PetScaleService"]
+            SettingsService["SettingsService"]
             StartupCachePolicy["StartupCachePolicy"]
             FinalSaveService["FinalSaveService"]
         end
@@ -41,7 +43,7 @@ graph TB
         WindowManager --> StatusWindow["windows/StatusWindow.js → Status BrowserWindow"]
         WindowManager --> SkinSelectorWindow["windows/SkinSelectorWindow.js → Skin Selector BrowserWindow"]
         WindowManager --> PomodoroWindow["windows/PomodoroWindow.js → Pomodoro BrowserWindow"]
-        WindowManager --> CitySettingWindow["windows/CitySettingWindow.js → City Setting BrowserWindow"]
+        WindowManager --> SettingsWindow["windows/SettingsWindow.js → Unified Settings BrowserWindow"]
         WindowManager --> UpdateProgressWindow["windows/UpdateProgressWindow.js → Update Progress BrowserWindow"]
 
         StorageIpc --> Store["electron-store (StoreManager)"]
@@ -84,20 +86,15 @@ graph TB
         PomodoroHtml["src/pomodoro.html + pomodoro.css"] --> PomodoroJs["src/pomodoroWindow.js"]
     end
 
-    subgraph CitySetting["City Setting Renderer Process"]
-        CitySettingHtml["src/city-setting.html + city-setting.css"] --> CitySettingJs["src/citySettingWindow.js"]
-    end
-
-    subgraph PetScale["Pet Scale Renderer Process"]
-        PetScaleHtml["src/pet-scale.html + pet-scale.css"] --> PetScaleJs["src/petScaleWindow.js"]
+    subgraph Settings["Unified Settings Renderer Process"]
+        SettingsHtml["src/settings.html + settings.css"] --> SettingsJs["src/settingsWindow.js"]
     end
 
     Preload["preload.js"] --> Renderer
     Preload --> Status
     Preload --> Pomodoro
-    Preload --> CitySetting
     SkinSelectorPreload["skinSelectorPreload.js"] --> SkinSelector
-    PetScalePreload["petScalePreload.js"] --> PetScale
+    SettingsPreload["settingsPreload.js"] --> Settings
     UpdatePreload["updateProgressPreload.js"] --> Update
     IPC <--> Preload
 ```
@@ -114,30 +111,30 @@ qijiu-desktop-pet/
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
-├─ src/main/TrayManager.js              # 系统托盘管理：构建托盘菜单、处理中英文切换及各菜单项的点击交互
-├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗等)
-├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、城市设置、选肤、体型调节（无 parent）与更新进度窗口
+├─ src/main/TrayManager.js              # 系统托盘管理：精简托盘菜单（实时行为控制、状态/静修/选肤/统一设置入口、更新与退出）
+├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗、统一设置窗、更新进度窗)
+├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
-├─ src/main/windows/CitySettingWindow.js # 城市设置独立窗口 init() 模块：创建/显示/置顶 pulse/关闭 + 对应 IPC
-├─ src/main/windows/PetScaleWindow.js    # 桌宠体型调节独立窗口 init() 模块：创建/显示/脉冲置顶与跨 Space 支持/设置读取/预览/确认/取消 + 对应 IPC
+├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 480×420 3-Tab 窗口/workArea 夹紧/180ms 置顶 pulse/Tab 切换/关闭时刷盘未提交体型预览
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
-├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler
-├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、get-locale/set-locale IPC 及跨窗口 locale-changed 广播
-├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、win32 下注入 screen.screenToDipRect(null, rect) 将原生物理矩形一次性归一化为 DIP、开关状态、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
+├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler（确认换肤通知 `onSkinConfirmed`）
+├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、`changeLocale(lang)` 持久化及跨窗口 `locale-changed` 广播（含主窗口、状态窗、番茄钟、选肤窗、设置窗）
+├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、win32 下注入 screen.screenToDipRect(null, rect) 将原生物理矩形一次性归一化为 DIP、开关状态、`isSupported()`、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
-├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/确认/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
+├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()`/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
-├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅、get-city-settings/set-city-name IPC；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
-├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取
+├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询（`setCityName`/`getCitySettings`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
+├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
+├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；直接将 WindowAwarenessService 已转换为 DIP 的 window.bounds 与完整 display.bounds/workArea 比较（适配混合 DPI 多屏且避免消费端重复除以 scaleFactor）；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
-├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 TrayManager 共用
+├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 SettingsService 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
 ├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data（save-data 强制钳制 petState.skinId 为已确认皮肤以防试穿泄漏）、set/get-auto-launch
-├─ src/main/services/AutoLaunchService.js # 开机自启服务：基于 electron.app.setLoginItemSettings 的状态读写与统一结果包装
+├─ src/main/services/AutoLaunchService.js # 开机自启服务：基于 electron.app.setLoginItemSettings 的状态读写（含 macOS 待批准状态 `getAutoLaunchState()`）与统一结果包装
 ├─ src/main/services/StoreManager.js    # electron-store 统一初始化与单例管理器
 ├─ src/main/services/IpcSenderAuthorization.js # IPC 调用方安全鉴权：严格校验 event.sender 是否匹配目标 BrowserWindow，防止跨窗口或伪造调用
 ├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY）
@@ -145,8 +142,7 @@ qijiu-desktop-pet/
 ├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
-├─ citySettingPreload.js                # 城市设置窗最小 preload：语言、城市读写与关闭
-├─ petScalePreload.js                   # 体型设置专用最小 preload：语言、设置读取、预览/确认/取消
+├─ settingsPreload.js                   # 统一设置窗专用最小 preload：语义化 `settingsAPI`（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），严禁暴露 `FORBIDDEN_SUBWINDOW_APIS`
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
@@ -193,15 +189,12 @@ qijiu-desktop-pet/
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
-│  ├─ city-setting.html                 # 城市设置独立窗口 HTML
-│  ├─ city-setting.css                  # 城市设置差异样式，复用 .xianxia-panel 基类与设计令牌
-│  ├─ citySettingWindow.js              # 城市设置独立窗口渲染、输入验证与状态反馈
-│  ├─ pet-scale.html                    # 桌宠体型设置独立窗口 HTML，使用严格 CSP
-│  ├─ pet-scale.css                     # 桌宠体型设置差异样式，复用 .xianxia-panel 基类与设计令牌，包含滑块与数值样式
-│  ├─ petScaleWindow.js                 # 桌宠体型设置窗口渲染、滑块拖动实时预览、恢复默认与确认/取消流程；按钮保留原生 Enter 动作，非按钮区域 Enter 确认、Esc 取消
+│  ├─ settings.html                     # 统一设置窗口 HTML（480×420，3 标签页），使用严格 CSP
+│  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
+│  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交、城市异步校验与状态同步
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
-│  ├─ settings-calligraphy.css          # 换肤、城市与体型窗口共用的七九金色文字；保留三语标题，无竖排书法底纹，装饰不拦截输入
+│  ├─ settings-calligraphy.css          # 选肤与统一设置窗口共用的金色书法标题样式；保留三语标题，无竖排书法底纹，装饰不拦截输入
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式
@@ -291,8 +284,8 @@ qijiu-desktop-pet/
 - Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化或切回本地应用后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败维持保护；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
-- 创建独立城市设置窗口，接收城市名输入，触发实时地名解析（Geocoding）及回传验证结果（`windows/CitySettingWindow.js` + `services/WeatherSyncController.js`）。
-- 维护系统托盘菜单，包括显示/隐藏、恢复走动、重置位置、皮肤切换、语言切换、开机启动、检查更新和退出（`TrayManager.js`，其 `init(deps)` 的回调实现分散在各服务模块）。
+- 创建统一设置窗口，提供“外观 / 陪伴 / 系统”三标签页集中配置体型、选肤快捷跳转、界面感知、天气同步及城市地名解析（Geocoding）、久坐提醒及间隔、高甜屏保及等待、三语切换与开机自启（`windows/SettingsWindow.js` + `services/SettingsService.js`，见 [ADR-050](./decisions/ADR-050-unified-settings-window.md)）。
+- 维护精简后的系统托盘菜单，保留实时控制（显示/隐藏、暂停/恢复走动、重置位置、多屏切换）、状态/专注/选肤入口、`⚙️ 设置…`、检查更新与退出（`TrayManager.js`，其 `init(deps)` 的回调实现分散在各服务模块）。
 - 使用 `electron-store` 保存宠物状态、当前皮肤、语言、位置、开机启动偏好等数据（`services/StoreManager.js` + `services/StorageIpc.js`，key 常量集中于 `src/main/constants.js`）。
 - 计算多显示器虚拟桌面范围与每块屏幕的可行走区域，并合并显示器指标突发事件、桥接 min/max 尺寸约束（`DisplayService.js`，底层复用 `displayBounds.js`/`displayFit.js`）。
 - 管理点击穿透：默认让窗口不阻挡桌面操作，在宠物、菜单或状态条悬停时恢复鼠标事件（`windows/PetWindow.js`）。
@@ -473,7 +466,7 @@ src/assets/{skinId}/
 - **本地时段感知**：无需网络，根据本地系统时间计算五个阶段（`morning`, `day`, `dusk`, `evening`, `night`）。
 - **无打扰休眠**：处于 `night`（00:00 - 04:59）且状态为 `idle` 时，宠物自动切换至睡觉动作，不触发消耗与养成惩罚；大幅降低夜间主动双人互动概率。
 - **天气与地理服务**：默认关闭以保护隐私；开启后基于 Open-Meteo 免 Key 接口，通过 `weatherSyncService.js` 发起。在城市地名解析 (Geocoding) 时内置 `WELL_KNOWN_CITY_ALIASES` 词典预转国际大都市中英简称，并采用 `count=10` 多候选结合 `population` (常住人口) 降序择优；获取天气数据后在主进程清洗温度、WMO 天气代码、降水、雨量、阵雨、降雪、风速、风向和阵风字段。
-- **城市设置独立 UI**：提供沙盒化的高颜值独立窗口（`citySettingWindow`）进行城市输入。用户输入后由主进程发起地名解析（Geocoding）并实时回传结果，避免直接暴露底层 `config.json`；窗口在打开、恢复或任务栏重新激活时会短暂提升层级并抬到前台，随后恢复普通窗口层级（见 [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)）。
+- **城市设置与统一设置 UI**：由沙盒化统一设置窗口（`settingsWindow`）“陪伴”标签页承担城市输入与即时/预编辑校验；用户输入后由主进程 `SettingsService` + `WeatherSyncController` 发起地名解析（Geocoding）并回传状态反馈，避免直接暴露底层 `config.json`；窗口在打开、恢复或重新激活时会短暂执行 180ms `screen-saver` 置顶脉冲，随后恢复普通窗口层级（窗口形态由 [ADR-039](./decisions/ADR-039-city-setting-ui-window.md) 演进整合至 [ADR-050](./decisions/ADR-050-unified-settings-window.md)）。
 - **局部天气渲染**：渲染进程收到天气特征（如 `rain`, `snow`, `clear`, `windy`, `thunderstorm`, `heat`）和时段后，通过 `data-weather` 和 `data-time-phase` 保留状态语义；雨雪、大风、雷暴和高温使用 `WeatherParticleLayer` 在桌宠附近创建有上限的局部粒子组，粒子容器尺寸、单体大小及关键帧位移距离通过 `--weather-effect-scale` 同步融合显示器 DPI 倍率与宠物体型比例（`pet.size / CONFIG.PET_SIZE`，50%~150% 实时跟随且不重建 DOM 节点）。雷暴表现为雨粒子叠加低频局部闪电（当主天气为 `thunderstorm` 时，系统与粒子层将 `windIntensity` 自动归一化为 `'none'`，不再叠加刮风风痕，避免画面要素过多变得杂乱），大风仅在非雷暴状态下表现为风痕粒子；非降水天气达到 33°C 时归一化为炎热 (`heat`)，表现为自底向上升腾的清透白银阳炎折射流线与底座 (`top: 94%~100%`) 真实呼吸热辐射场，同时配合中英日三语 `weather_heat` 专属对话台词。动画交给 CSS `transform`，切换、隐藏或禁用时立即清理。天气效果不改变整屏亮度、对比度或饱和度。
 - **高温光晕缩放**：底座光晕宽度使用相对粒子容器的 108% / 92%，容器已包含体型与 DPI 倍率，百分比宽度不再乘 `--weather-effect-scale`；像素高度、模糊半径和动画位移继续按该变量缩放。
 - **刮风强度分档**：`WeatherAwarenessSystem` 仅依据平均风速判断，低于 3.4 米/秒无风粒子；达到 3.4、5.5、8 米/秒时分别使用 `light`、`normal`、`heavy` 三档。Open-Meteo 输入单位为 km/h，对应阈值 12.24、19.8、28.8；阵风不参与分档，雷暴继续隐藏风粒子。
@@ -485,9 +478,9 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟和城市设置窗分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
-- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口配置 `minimizable: true` 并支持跨 Space 显示（`setVisibleOnAllWorkspaces` 带 `skipTransformProcessType: true`），唤起与聚焦时执行 180ms `screen-saver` 脉冲置顶以可靠浮出，超时后回落到普通层级避免持续遮挡；被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过托盘切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
-- 主窗口、状态窗口、番茄钟窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `screen-saver` 顶层层级并支持跨 Space 展示，应用级焦点事件即时记录窗口顺序，主窗口 `keepPetWindowOnTop()` 在抬升自身后按最近焦点顺序重新抬升可见置顶子窗口（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)）；番茄钟窗口切换置顶与取消置顶均携带 `skipTransformProcessType: true` 防止 macOS Dock 闪烁。
+- 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟与统一设置窗（`settingsPreload.js` 严禁触及 `FORBIDDEN_SUBWINDOW_APIS`）分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
+- 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口配置 `minimizable: true` 并支持跨 Space 显示（`setVisibleOnAllWorkspaces` 带 `skipTransformProcessType: true`），唤起与聚焦时执行 180ms `screen-saver` 脉冲置顶以可靠浮出，超时后回落到普通层级避免持续遮挡；被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过统一设置窗口切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
+- 主窗口、状态窗口、番茄钟窗口、统一设置窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `screen-saver` 顶层层级并支持跨 Space 展示，应用级焦点事件即时记录窗口顺序，主窗口 `keepPetWindowOnTop()` 在抬升自身后按最近焦点顺序重新抬升可见置顶子窗口（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)）；番茄钟窗口切换置顶与取消置顶均携带 `skipTransformProcessType: true` 防止 macOS Dock 闪烁。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
 - IPC 通道不再集中在单一文件，而是由各 `init(deps)` 服务/窗口模块在自身 `init()` 内就近注册（`ipcMain.handle`/`ipcMain.on`），职责边界清晰、便于按模块审计。
 - 新增或迁移后的 `ipcMain.handle` 优先使用 `ipcContracts.js` 中的 `{ success, data }` / `{ success, error }` 结果 helper；既有广覆盖接口在调用方完成兼容迁移前保持原返回形状。
@@ -506,13 +499,13 @@ DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗
 - **`content-visibility: auto` 与占位尺寸保护**：
   皮肤画廊（`src/skin-selector.css`）严格遵循 `defer-rendering-heavy-content` 指南，仅对首屏视口（前 6 张卡片）以外的离屏卡片应用 `.skin-card:nth-child(n + 7) { content-visibility: auto; contain-intrinsic-size: auto none auto 182px; }`，保障首屏 FCP/LCP 不劣化并杜绝列表滚动跳变（CLS）；悬浮样式限定为 `:not(:disabled)` 避免加载锁定时卡片浮动。
 - **`@starting-style` 与动画退场协调及减动效覆盖 (Prefers-Reduced-Motion)**：
-  对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（城市设置、体型调节、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
+  对话气泡（`DialogBubble.js`、`src/dialog-bubble.css`）使用 `@starting-style` 实现挂载即刻渐入过渡，退场通过 `getAnimations()` 协同 Web Animations 承诺在动效结束后清理节点；支持 `@media (prefers-reduced-motion: reduce)` 减动效降级；在立即销毁与快速重触发时同步清理计时器与取消活跃动画，彻底杜绝幽灵定时器。各独立子窗口（统一设置、番茄钟、状态窗）全面覆盖 `@media (prefers-reduced-motion: reduce)` 关闭面板弹入与循环脉冲动画，同时锁定保留宠物角色核心常驻动画（`walkBounce`、`sleepBreath` 等）不受影响。
 - **无障碍语义化 (ARIA) 与按钮语义**：
-  状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。城市设置、体型调节与状态窗口标题采用语义化 `<h1>`，城市输入框接入 `aria-describedby="city-status"` 与动态 `aria-invalid` 反馈；体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`，初始挂载通过安全守卫自动聚焦以支持方向键无障碍调节；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
+  状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。统一设置与状态窗口标题采用语义化 `<h1>`，设置窗口顶部标签采用 Roving `tabindex` 键盘漫游，开关使用 `role="switch"` + `aria-checked`，分段按钮使用非纯色 `aria-pressed` 高亮，城市输入框接入 `aria-describedby` 与动态 `aria-invalid` 反馈，体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
 - **状态面板事件驱动就地更新与 IPC 降频**：
   `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **子窗口关闭按钮与操作按钮视觉设计系统规范**：
-  各子窗口（`status.html`、`city-setting.html`、`pet-scale.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
+  各子窗口（`status.html`、`settings.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **主窗口与独立状态窗口 DOM 及样式解耦**：
   主窗口（`src/index.html`）彻底移除废弃的内嵌 `#status-panel` 孤儿 DOM 节点与查询依赖（`ContextMenu.js`、`PetRenderer.js` 直接恢复鼠标点击穿透而不再轮询该面板）；原滞留在 `src/index.css` 的面板定位、动画及状态条辅助样式完整内聚至 `src/status.css`，保持主窗口轻量渲染与状态窗口样式自治。
 - **零外部 Polyfill 与 Node 桩测试兼容**：
@@ -634,7 +627,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-036](./decisions/ADR-036-cp-interaction-anti-overlap.md)：CP 互动防交叠机制。
 - [ADR-037](./decisions/ADR-037-lightweight-pomodoro-companion.md)：轻量番茄钟陪伴模式。
 - [ADR-038](./decisions/ADR-038-weather-sync.md)：天气感知与时空同步系统架构与隐私边界。
-- [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)：城市设置 UI 独立窗口与配置隔离。
+- [ADR-039](./decisions/ADR-039-city-setting-ui-window.md)：城市设置 UI 独立窗口与配置隔离（窗口形态已由 ADR-050 整合）。
 - [ADR-040](./decisions/ADR-040-encrypted-skin-assets.md)：加密皮肤资产与 `pet-asset://` 协议。
 - [ADR-041](./decisions/ADR-041-skin-selector-performance-and-scaling.md)：选肤器性能与多皮肤扩展。
 - [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)：主进程与渲染进程巨石文件模块化拆分（`init(deps)` DI 模块 / 全局 class + 双导出守卫 / 统一测试 corpus）。
@@ -642,8 +635,10 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-044](./decisions/ADR-044-cp-screensaver-session.md)：CP 局部屏保采用独立的主进程会话。
 - [ADR-045](./decisions/ADR-045-ai-diary-credential-boundary.md)：AI 日记的第三方凭据仅保存在已认证的服务端代理，Hub IPC 保持主进程授权与输入校验边界。
 - [ADR-046](./decisions/ADR-046-electron-mock-testing-strategy.md)：主进程测试的 Electron Mock 拦截策略。
-- [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定、拖动实时预览与独立设置子窗口）。
+- [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定与拖动实时预览；窗口形态已由 ADR-050 整合）。
 - [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
+- [ADR-049](./decisions/ADR-049-main-to-cp-auto-sync.md)：主分支向好兆头分支自动同步。
+- [ADR-050](./decisions/ADR-050-unified-settings-window.md)：统一设置窗口与托盘菜单精简（3 Tab 架构、托盘入口收敛、即时自动保存与城市异步校验混合模型、最小权限 preload 与旧独立设置窗下线）。
 
 ## 6. 维护提示
 
