@@ -116,7 +116,7 @@ qijiu-desktop-pet/
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 screen-saver 置顶与跨 Space 支持/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
-├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 520×476 3-Tab 窗口/workArea 夹紧/180ms 置顶 pulse/Tab 切换/关闭时刷盘未提交体型预览
+├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 520×456 3-Tab 窗口/workArea 夹紧/180ms 置顶 pulse/Tab 切换/关闭时刷盘未提交体型预览
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler（确认换肤通知 `onSkinConfirmed`）
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、`changeLocale(lang)` 持久化及跨窗口 `locale-changed` 广播（含主窗口、状态窗、番茄钟、选肤窗、设置窗）
@@ -189,7 +189,7 @@ qijiu-desktop-pet/
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
-│  ├─ settings.html                     # 统一设置窗口 HTML（520×476，3 标签页），使用严格 CSP
+│  ├─ settings.html                     # 统一设置窗口 HTML（520×456，3 标签页），使用严格 CSP
 │  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
 │  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交、城市异步校验与状态同步
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
