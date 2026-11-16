@@ -538,6 +538,7 @@ test('SkinService only fires onSkinConfirmed on confirm, not on preview or cance
       },
       trayManager: { refreshTrayMenu: () => {}, trayT: (k) => k },
       sendPomodoroState: () => {},
+      availableSkins: ['default', 'birds'],
       onSkinConfirmed: (skinId) => confirmedNotifications.push(skinId),
     });
 
