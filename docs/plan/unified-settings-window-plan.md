@@ -257,3 +257,13 @@
 - ADR 格式与文档链接校验：`npm run check:adrs && node --test test/docLinks.test.js`
 - 开发态实机启动：`npm run dev`
 - Electron 冒烟（含选肤 QA 钩子）：`npm run qa:electron:smoke`
+
+---
+## 6. Post-Review Remediation（四提交代码审核后的修复）
+- [x] **R1 文档对齐**：界面感知所在标签页、`settingsAPI` 命名、城市按钮文案与三语 readme 标签页名称。
+- [x] **R2 渲染端点击错误兜底与串行化**：所有设置提交经 `runSetting` 按控件串行，IPC 抛错或失败无快照时回读主进程快照，`scale-reset` 失败回滚乐观显示。
+- [x] **R3 滑块拖动期间不接受快照回写**：`pointerdown` 置位，`pointerup` / `pointercancel` / `blur` / `change` 清除，避免「拖走再拖回原值不触发 `change`」导致标记卡死。
+- [ ] **R4 `settings-updated` 单 tick 合并推送**。
+- [ ] **R5 快照去除顶层冗余字段**（`windowAwarenessSupported`、`autoLaunchPendingApproval`）。
+- [ ] **R6 新增 `app.openSettingsForQA` E2E 入口**。
+- [ ] **R7 清理托盘精简后的无调用方方法与孤立 i18n 键**。

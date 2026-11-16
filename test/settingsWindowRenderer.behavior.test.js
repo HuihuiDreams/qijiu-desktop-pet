@@ -213,6 +213,8 @@ function loadSettingsRenderer(options = {}) {
     onRestoreSkinFocus: (cb) => { callbacks.onRestoreSkinFocus = cb; return () => {}; },
   };
 
+  Object.assign(electronAPI, options.api);
+
   let customLocaleCallback = null;
   const sandbox = {
     document: {
@@ -242,6 +244,9 @@ function loadSettingsRenderer(options = {}) {
     triggerLocaleRefresh: () => customLocaleCallback?.(),
     emitWindowKeydown: (event) => {
       for (const fn of windowListeners.keydown || []) fn(event);
+    },
+    emitWindowEvent: (type, event = {}) => {
+      for (const fn of windowListeners[type] || []) fn(event);
     },
     setMockSnapshot: (next) => {
       snapshot = makeSnapshot(next);
@@ -491,4 +496,160 @@ test('locale switch, external push updates, and skin selector focus restoration'
   env.triggerLocaleRefresh();
   await new Promise((r) => setImmediate(r));
   assert.equal(env.elements.get('settings-current-skin-name').textContent, 'School AU');
+});
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+test('a rejected settings IPC does not leak an unhandled rejection and resyncs the switch from main', async () => {
+  const unhandled = [];
+  const onUnhandled = (reason) => unhandled.push(reason);
+  process.on('unhandledRejection', onUnhandled);
+  try {
+    const errors = [];
+    const originalError = console.error;
+    console.error = (...args) => errors.push(args);
+    let env;
+    try {
+      env = loadSettingsRenderer({
+        api: { setWindowAwareness: async () => { throw new Error('ipc down'); } },
+      });
+      await flush();
+      const awareness = env.elements.get('window-awareness-switch');
+      assert.equal(awareness.getAttribute('aria-checked'), 'true');
+
+      const getSnapshotBefore = env.calls.filter(([name]) => name === 'getSnapshot').length;
+      env.setMockSnapshot({ windowAwareness: { enabled: false, supported: true } });
+      await Promise.all(awareness.dispatch('click'));
+      await flush();
+
+      assert.equal(errors.length, 1);
+      assert.equal(env.calls.filter(([name]) => name === 'getSnapshot').length, getSnapshotBefore + 1);
+      assert.equal(awareness.getAttribute('aria-checked'), 'false', 'switch follows the main process snapshot');
+    } finally {
+      console.error = originalError;
+    }
+  } finally {
+    process.off('unhandledRejection', onUnhandled);
+  }
+  assert.deepEqual(unhandled, []);
+});
+
+test('rapid clicks on one switch are serialized and each reads the latest state', async () => {
+  const env = loadSettingsRenderer({ snapshot: { weather: { enabled: false, city: 'Tokyo' } } });
+  await flush();
+  const weatherSwitch = env.elements.get('weather-sync-switch');
+
+  const first = weatherSwitch.dispatch('click');
+  const second = weatherSwitch.dispatch('click');
+  await Promise.all([...first, ...second]);
+
+  assert.deepEqual(
+    env.calls.filter(([name]) => name === 'setWeatherEnabled'),
+    [['setWeatherEnabled', true], ['setWeatherEnabled', false]],
+  );
+  assert.equal(weatherSwitch.getAttribute('aria-checked'), 'false');
+});
+
+test('rapid segment clicks are queued in click order without being dropped', async () => {
+  const env = loadSettingsRenderer();
+  await flush();
+  const [b30, b45] = env.elements.get('break-reminder-intervals').children;
+
+  await Promise.all([...b30.dispatch('click'), ...b45.dispatch('click')]);
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(env.calls.filter(([name]) => name === 'setBreakReminder'))),
+    [['setBreakReminder', { intervalMinutes: 30 }], ['setBreakReminder', { intervalMinutes: 45 }]],
+  );
+  assert.equal(b45.getAttribute('aria-pressed'), 'true');
+  assert.equal(b30.getAttribute('aria-pressed'), 'false');
+});
+
+test('slider ignores pushed snapshots while dragging and releases on pointerup even without a change event', async () => {
+  const env = loadSettingsRenderer();
+  await flush();
+  const slider = env.elements.get('scale-slider');
+  const valueEl = env.elements.get('scale-current-value');
+
+  slider.dispatch('pointerdown', {});
+  slider.dispatch('input', { target: { value: '140' } });
+  assert.equal(valueEl.textContent, '140%');
+
+  env.callbacks.onSettingsUpdated(makeSnapshot({
+    petScale: { ...makeSnapshot().petScale, currentPercent: 80 },
+  }));
+  assert.equal(valueEl.textContent, '140%', 'stale snapshot must not move the slider mid-drag');
+  assert.equal(slider.value, '140');
+
+  // drag back to the original value and release: browsers may skip `change`
+  slider.dispatch('input', { target: { value: '100' } });
+  env.emitWindowEvent('pointerup');
+  env.callbacks.onSettingsUpdated(makeSnapshot({
+    petScale: { ...makeSnapshot().petScale, currentPercent: 90 },
+  }));
+  assert.equal(valueEl.textContent, '90%', 'drag flag must be cleared by pointerup');
+});
+
+test('slider drag flag is also cleared by pointercancel, blur and change', async () => {
+  const env = loadSettingsRenderer();
+  await flush();
+  const slider = env.elements.get('scale-slider');
+  const valueEl = env.elements.get('scale-current-value');
+
+  const push = (percent) => env.callbacks.onSettingsUpdated(makeSnapshot({
+    petScale: { ...makeSnapshot().petScale, currentPercent: percent },
+  }));
+
+  slider.dispatch('pointerdown', {});
+  env.emitWindowEvent('pointercancel');
+  push(70);
+  assert.equal(valueEl.textContent, '70%');
+
+  slider.dispatch('pointerdown', {});
+  slider.dispatch('blur', {});
+  push(75);
+  assert.equal(valueEl.textContent, '75%');
+
+  slider.dispatch('pointerdown', {});
+  await Promise.all(slider.dispatch('change', { target: { value: '120' } }));
+  push(120);
+  assert.equal(valueEl.textContent, '120%');
+});
+
+test('pet scale reset failure rolls the optimistic 100% back to the main process value', async () => {
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    const env = loadSettingsRenderer({
+      snapshot: { petScale: { ...makeSnapshot().petScale, currentPercent: 130, committedPercent: 130 } },
+      api: { resetPetScale: async () => { throw new Error('ipc down'); } },
+    });
+    await flush();
+    const valueEl = env.elements.get('scale-current-value');
+    assert.equal(valueEl.textContent, '130%');
+
+    await Promise.all(env.elements.get('scale-reset').dispatch('click'));
+    await flush();
+    assert.equal(valueEl.textContent, '130%');
+    assert.equal(errors.length, 1);
+  } finally {
+    console.error = originalError;
+  }
+});
+
+test('auto launch IPC rejection shows the error notice instead of an unhandled rejection', async () => {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const env = loadSettingsRenderer({
+      api: { changeAutoLaunch: async () => { throw new Error('ipc down'); } },
+    });
+    await flush();
+    await Promise.all(env.elements.get('auto-launch-switch').dispatch('click'));
+    assert.equal(env.elements.get('auto-launch-status').textContent, 'settingsAutoLaunchError');
+    assert.equal(env.elements.get('auto-launch-switch').getAttribute('aria-checked'), 'false');
+  } finally {
+    console.error = originalError;
+  }
 });
