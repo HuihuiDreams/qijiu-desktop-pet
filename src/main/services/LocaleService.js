@@ -85,5 +85,4 @@ module.exports = {
   detectLocale,
   loadInitialLocale,
   getCurrentLocale: () => currentLocale,
-  setCurrentLocale: (val) => { currentLocale = val; },
 };

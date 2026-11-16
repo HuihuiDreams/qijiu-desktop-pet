@@ -4,7 +4,6 @@ const test = require('node:test');
 const { I18N } = require('../src/data/i18n');
 
 const REQUIRED_CITY_SETTING_KEYS = [
-  'citySettingTitle',
   'citySettingCurrent',
   'citySettingNone',
   'citySettingPlaceholder',
@@ -33,10 +32,12 @@ test('city setting success message includes {city} placeholder for substitution'
   }
 });
 
-test('city setting tray menu label key exists in all locales', () => {
+test('retired city/scale tray menu keys are removed while the unified settings tray entry remains', () => {
   for (const locale of ['zh', 'en', 'ja']) {
-    const label = I18N[locale].ui.trayWeatherSyncConfig;
-    assert.equal(typeof label, 'string');
-    assert.notEqual(label.trim(), '');
+    const ui = I18N[locale].ui;
+    assert.equal(typeof ui.traySettings, 'string');
+    assert.notEqual(ui.traySettings.trim(), '');
+    assert.equal('trayWeatherSyncConfig' in ui, false, `${locale}.trayWeatherSyncConfig should be removed`);
+    assert.equal('citySettingTitle' in ui, false, `${locale}.citySettingTitle should be removed`);
   }
 });

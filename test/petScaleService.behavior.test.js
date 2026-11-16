@@ -114,31 +114,6 @@ test('PetScaleService.confirm persists to store and confirms value', () => {
   assert.equal(fakeStore.get('petScalePercent'), 125);
 });
 
-test('PetScaleService.cancel reverts preview and broadcasts committed value', () => {
-  const { createPetScaleService } = require('../src/main/services/PetScaleService');
-  const fakeStore = createFakeStore({ petScalePercent: 100 });
-  const fakeWindow = createFakeWindow();
-  const fakeIpc = createFakeIpcMain();
-
-  const service = createPetScaleService({
-    ipcMain: fakeIpc,
-    windowManager: { mainWindow: fakeWindow },
-    StoreManager: { getStore: () => fakeStore },
-  });
-
-  service.preview(150);
-  fakeWindow.sentMessages.length = 0; // reset
-
-  service.cancel();
-
-  assert.equal(service.getCommittedPercent(), 100);
-  assert.equal(service.getPreviewPercent(), 100);
-  assert.equal(fakeStore.get('petScalePercent'), 100);
-  assert.deepEqual(fakeWindow.sentMessages[0], {
-    channel: 'pet-scale-changed',
-    args: [100],
-  });
-});
 
 test('PetScaleService get-pet-scale IPC handler authorizes sender', () => {
   const { createPetScaleService } = require('../src/main/services/PetScaleService');

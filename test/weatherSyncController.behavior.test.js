@@ -116,7 +116,7 @@ test('WeatherSyncController exposes persisted city settings immediately after in
 
   Controller.init(deps);
 
-  assert.deepEqual(Controller.getCitySettings(), { city: 'Tokyo' });
+  assert.equal(Controller.getWeatherSyncSettings().city, 'Tokyo');
   assert.equal(typeof Controller.setCityName, 'function');
   assert.equal(typeof storeListeners.weatherSyncSettings, 'function');
 });
@@ -664,19 +664,6 @@ test('store.onDidChange callback triggers updateWeatherSyncSettings for truthy v
   } finally {
     restoreTimers();
   }
-});
-
-test('getCitySettings returns empty string when city is not set', () => {
-  const ipcMain = createIpcMain();
-  const Controller = loadFreshController({
-    ipcMain,
-    fetchWeather: async () => {},
-    processSettingsChange: async (settings) => settings,
-  });
-  const { deps } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
-  Controller.init(deps);
-
-  assert.deepEqual(Controller.getCitySettings(), { city: '' });
 });
 
 test('getStoredWeatherSyncSettings returns defaults when store is unavailable', () => {

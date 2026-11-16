@@ -266,4 +266,4 @@
 - [x] **R4 `settings-updated` 单 tick 合并推送**（`notifySettingsUpdated()` 经 `queueMicrotask` 合并）。
 - [x] **R5 快照去除顶层冗余字段**（`windowAwarenessSupported`、`autoLaunchPendingApproval`）。
 - [x] **R6 新增 `app.openSettingsForQA` E2E 入口**。
-- [ ] **R7 清理托盘精简后的无调用方方法与孤立 i18n 键**。
+- [x] **R7 清理托盘精简后的无调用方方法与孤立 i18n 键**：移除 `WeatherSyncController.getCitySettings`、`PetScaleService.hasPendingPreview` / `cancel`、`SkinSelectorWindow.set/getReturnFocusToSettings`、`BreakReminderController.setBreakReminderEnabled` / `setBreakReminderIntervalMinutes`、`LocaleService.setCurrentLocale` 及三语 24 个托盘/旧窗词条（保留 `getBreakReminderService`，供控制器测试清理定时器）。上文 Phase 1 条目中对 `getCitySettings()` / `hasPendingPreview()` 的描述为当时的设计记录。

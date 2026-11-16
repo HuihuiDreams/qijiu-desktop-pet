@@ -164,9 +164,7 @@ module.exports = {
   init,
   BREAK_REMINDER_TRAY_INTERVALS,
   getBreakReminderEnabled: () => breakReminderEnabled,
-  setBreakReminderEnabled: (val) => { breakReminderEnabled = val; },
   getBreakReminderIntervalMinutes: () => breakReminderIntervalMinutes,
-  setBreakReminderIntervalMinutes: (val) => { breakReminderIntervalMinutes = val; },
   getBreakReminderService: () => breakReminderService,
   updateBreakReminderSettings,
 };

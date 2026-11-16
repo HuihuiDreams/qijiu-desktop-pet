@@ -332,7 +332,6 @@ test('SkinSelectorWindow: returnFocusToSettings isolates settings-launched vs tr
     assert.deepEqual(windowManager.settingsWindow.sentMessages, [
       { channel: 'settings-restore-skin-focus', args: [] },
     ]);
-    assert.equal(skinSelectorWindow.getReturnFocusToSettings(), false);
 
     // 3. Minimized settingsWindow does NOT receive focus restoration
     windowManager.settingsWindow.minimized = true;
