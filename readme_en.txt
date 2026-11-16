@@ -63,7 +63,7 @@ After the system has been idle longer than the configured wait time, the screens
 
 In the tray under "⚙️ Settings… -> Companion", you can:
 - Toggle the "Sweet Screensaver" switch.
-- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Screensaver Wait Time" (default: 3 min).
+- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Wait Time" (default: 3 min).
 
 Note:
 This app does NOT block or modify Windows screen-off / sleep timing.
@@ -90,7 +90,7 @@ When pets move between displays with different scale factors, the character spri
 
 Pet Size:
 Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to live-preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
-Changes save automatically on slider release, keyboard step, or window close; "Reset to Default" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
+Changes save automatically on slider release, keyboard step, or window close; "Reset" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
 
 Bookshop Typography:
 Character menus, the status panel, and settings windows feature warm parchment and antique gold styling inspired by A.Z. Fell & Co. Antiquarian Booksellers, with crisp native typography across Chinese, English, and Japanese.

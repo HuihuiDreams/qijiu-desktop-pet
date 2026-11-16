@@ -333,6 +333,12 @@ test('SkinSelectorWindow: returnFocusToSettings isolates settings-launched vs tr
       { channel: 'settings-restore-skin-focus', args: [] },
     ]);
 
+    // 2b. Subsequent open without options (e.g. openSkinSelectorForQA) does not reuse stale returnFocusToSettings
+    const neutralWin = skinSelectorWindow.openSkinSelectorWindow();
+    neutralWin.close();
+    assert.equal(windowManager.settingsWindow.focusCalls, 1);
+    assert.equal(windowManager.settingsWindow.sentMessages.length, 1);
+
     // 3. Minimized settingsWindow does NOT receive focus restoration
     windowManager.settingsWindow.minimized = true;
     const win3 = skinSelectorWindow.openSkinSelectorWindow({ fromSettings: true });

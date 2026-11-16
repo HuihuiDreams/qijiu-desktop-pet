@@ -65,6 +65,7 @@ function createFakeElement(id, dataset = {}) {
       return this.children;
     },
     focus() {
+      if (this.disabled) return;
       this.focused = true;
     },
   };
@@ -263,6 +264,8 @@ test('settings.html and settings.css enforce CSP, calligraphy title, scrollable 
   assert.match(html, /role="tablist"/);
   assert.match(html, /role="switch"/);
   assert.match(html, /class="settings-title-group"[\s\S]*id="weather-sync-label"[\s\S]*class="settings-city-current"/);
+  assert.doesNotMatch(html, /<main id="settings-panel"[^>]*aria-live=/);
+  assert.match(html, /id="auto-launch-switch"[\s\S]*aria-describedby="auto-launch-hint"/);
   assert.equal(js.includes('innerHTML'), false);
 
   assert.match(css, /\.settings-tabpanel\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;[\s\S]*overflow-y:\s*auto;[\s\S]*scrollbar-gutter:\s*stable;/);
@@ -364,27 +367,30 @@ test('weather toggle on with empty city keeps switch enabled, focuses city input
 
   // Enter city and press Enter (while IME composing should ignore, non-composing submits)
   cityInput.value = 'Beijing';
+  cityInput.focused = false;
   cityInput.dispatch('keydown', { key: 'Enter', isComposing: true, preventDefault() {} });
   assert.equal(cityStatus.textContent, 'settingsWeatherCityPrompt');
 
   const submitPromises = cityInput.dispatch('keydown', { key: 'Enter', isComposing: false, preventDefault() {} });
   assert.equal(cityStatus.textContent, 'citySettingSearching');
   assert.equal(cityConfirm.disabled, true);
+  assert.equal(cityInput.disabled, true);
 
   // Escape is blocked while loading
   env.emitWindowKeydown({ key: 'Escape', preventDefault() {} });
   assert.equal(env.calls.some(([name]) => name === 'closeSettingsWindow'), false);
 
-  // Resolve failure first
+  // Resolve failure first: input must be re-enabled BEFORE focus() is restored
   resolveGeocode({ success: false });
   await Promise.all(submitPromises);
   await new Promise((r) => setImmediate(r));
   assert.equal(cityConfirm.disabled, false);
+  assert.equal(cityInput.disabled, false);
+  assert.equal(cityInput.focused, true);
   assert.equal(cityInput.getAttribute('aria-invalid'), 'true');
   assert.equal(cityStatus.textContent, 'citySettingError');
 
   // Resolve success on retry
-  let resolveRetry;
   const retryEnv = loadSettingsRenderer({
     snapshot: { weather: { enabled: true, city: '' } },
     setCityName: async (city) => ({
@@ -649,4 +655,63 @@ test('auto launch IPC rejection shows the error notice instead of an unhandled r
   } finally {
     console.error = originalError;
   }
+});
+
+test('city confirm rejection re-enables the input before restoring focus', async () => {
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const env = loadSettingsRenderer({
+      setCityName: async () => { throw new Error('network error'); },
+    });
+    await flush();
+
+    const cityInput = env.elements.get('city-input');
+    cityInput.value = 'Beijing';
+    cityInput.focused = false;
+    await Promise.all(env.elements.get('city-confirm').dispatch('click'));
+
+    assert.equal(cityInput.disabled, false);
+    assert.equal(cityInput.focused, true);
+    assert.equal(cityInput.getAttribute('aria-invalid'), 'true');
+    assert.equal(env.elements.get('city-status').textContent, 'citySettingError');
+  } finally {
+    console.error = originalError;
+  }
+});
+
+test('rapid auto-launch clicks where the first fails and the second succeeds clear the error notice', async () => {
+  let attempt = 0;
+  let resolveFirst;
+  const env = loadSettingsRenderer({
+    changeAutoLaunch: async (enabled) => {
+      attempt += 1;
+      if (attempt === 1) {
+        return new Promise((resolve) => { resolveFirst = resolve; });
+      }
+      return {
+        success: true,
+        data: {
+          enabled,
+          pendingApproval: false,
+          snapshot: makeSnapshot({ autoLaunch: { enabled, preference: enabled, pendingApproval: false } }),
+        },
+      };
+    },
+  });
+  await flush();
+
+  const sw = env.elements.get('auto-launch-switch');
+  const firstClick = sw.dispatch('click');
+  const secondClick = sw.dispatch('click');
+  await flush();
+
+  resolveFirst({
+    success: false,
+    snapshot: makeSnapshot({ autoLaunch: { enabled: false, preference: false, pendingApproval: false } }),
+  });
+
+  await Promise.all([...firstClick, ...secondClick]);
+  assert.equal(sw.getAttribute('aria-checked'), 'true');
+  assert.equal(env.elements.get('auto-launch-status').textContent, '');
 });

@@ -1,6 +1,6 @@
 /**
  * src/main/services/PetScaleService.js
- * 桌宠体型大小服务：持久化存储、实时预览、确认/取消状态机与 IPC 通信。
+ * 桌宠体型大小服务：持久化存储、实时预览、预览/确认状态机与 IPC 通信。
  */
 const { ipcMain: electronIpcMain } = require('electron');
 const { PET_SCALE_STORE_KEY } = require('../constants');

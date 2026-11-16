@@ -327,6 +327,7 @@
     cityInputEl?.setAttribute?.('aria-invalid', 'false');
     setCityStatus('citySettingSearching', 'city-status--searching');
 
+    let shouldFocusInput = false;
     try {
       const res = await window.electronAPI?.setCityName?.(cityName);
       if (res?.success) {
@@ -345,15 +346,19 @@
         }
         cityInputEl?.setAttribute?.('aria-invalid', 'true');
         setCityStatus('citySettingError', 'city-status--error');
-        cityInputEl?.focus?.();
+        shouldFocusInput = true;
       }
     } catch (err) {
       console.error('Failed to set city:', err);
       cityInputEl?.setAttribute?.('aria-invalid', 'true');
       setCityStatus('citySettingError', 'city-status--error');
-      cityInputEl?.focus?.();
+      shouldFocusInput = true;
     } finally {
       setCityLoading(false);
+      // 须先解除 disabled 再恢复焦点，否则浏览器会忽略对禁用输入框的 focus() 调用
+      if (shouldFocusInput) {
+        cityInputEl?.focus?.();
+      }
     }
   }
 
@@ -499,13 +504,15 @@
 
   if (autoLaunchSwitch) {
     autoLaunchSwitch.addEventListener('click', async () => {
-      setAutoLaunchStatus(null, null);
-      const res = await runSetting('auto-launch', () => (
-        window.electronAPI?.changeAutoLaunch?.(!isSwitchOn(autoLaunchSwitch))
-      ));
+      const res = await runSetting('auto-launch', () => {
+        setAutoLaunchStatus(null, null);
+        return window.electronAPI?.changeAutoLaunch?.(!isSwitchOn(autoLaunchSwitch));
+      });
       if (res?.success) {
         if (res.data?.pendingApproval || res.data?.snapshot?.autoLaunch?.pendingApproval) {
           setAutoLaunchStatus('settingsAutoLaunchPendingApproval', 'settings-inline-status--warning');
+        } else {
+          setAutoLaunchStatus(null, null);
         }
       } else {
         if (latestSnapshot) {
