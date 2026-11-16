@@ -122,7 +122,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/LocaleService.js   # 语言服务 init(deps) 模块：当前语言状态、启动时加载/自动检测、`changeLocale(lang)` 持久化及跨窗口 `locale-changed` 广播（含主窗口、状态窗、番茄钟、选肤窗、设置窗）
 ├─ src/main/services/WindowAwarenessService.js # 活动窗口感知服务 init(deps) 模块：Windows 2 秒 / macOS 30 秒缓存采样器生命周期、win32 下注入 screen.screenToDipRect(null, rect) 将原生物理矩形一次性归一化为 DIP、开关状态、`isSupported()`、powerMonitor 挂起/恢复调度、get-active-window-info IPC；Windows 关闭行走感知后 getNativePayload() 供 RDP 守卫读取原始采样，getLastPayload() 及 renderer 仍接收 disabled
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
-├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()`/取消状态机、get-pet-scale IPC 与 pet-scale-changed 广播
+├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()` 状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
@@ -240,10 +240,10 @@ qijiu-desktop-pet/
 │  ├─ integration/                      # 跨模块/IPC 轻量级集成测试套件 (npm run test:integration)；通过模拟 IPC 调度、窗口事件记录与 StoreManager 内存存储，验证多窗口状态机、安全拦截与持久化闭环
 │  │  ├─ harness/                       # 集成测试统一环境装配（内存 Store、模拟 WebContents、窗口生命周期与 ipcMain 拦截调度）
 │  │  ├─ harness.integration.test.js    # 环境装配器契约测试（内存 Store、窗口与 webContents 销毁联动、直接/间接 IPC sender 适配）
-│  │  ├─ petScale.integration.test.js   # 体型缩放端到端集成测试（授权校验、设置读取、拖动预览广播、取消回滚、确认持久化）
+│  │  ├─ petScale.integration.test.js   # 体型缩放端到端集成测试（授权校验、设置读取、拖动预览广播、确认持久化、恢复默认与关窗刷盘）
 │  │  ├─ skinLifecycle.integration.test.js # 选肤器端到端集成测试（真实窗口双向装配、换肤预览、加载汇报、确认落盘、取消安全回滚与鉴权拦截）
 │  │  └─ storage.integration.test.js    # 存储 IPC 白名单、持久化读写与 skinId 强制归一化安全集成测试
-│  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，font.spec.js 通过真实 locale-changed 验证日语字体且可由 test:font 独立运行
+│  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，涵盖启动、右键菜单、选肤画廊、统一设置窗口（settingsWindow.spec.js）、子窗 preload 隔离（ipcIsolation.spec.js）及日语字体验证（font.spec.js，可由 test:font 独立运行）
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具

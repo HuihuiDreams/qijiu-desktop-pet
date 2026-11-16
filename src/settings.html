@@ -12,7 +12,7 @@
 </head>
 
 <body>
-  <main id="settings-panel" class="settings-panel xianxia-panel" aria-live="polite">
+  <main id="settings-panel" class="settings-panel xianxia-panel">
     <header class="settings-titlebar">
       <h1 class="settings-calligraphy-title" data-i18n="settingsTitle">设置</h1>
       <button id="settings-close" class="settings-close-button" type="button" aria-label="关闭" data-i18n-aria-label="settingsClose" data-i18n-title="settingsClose" title="关闭">
@@ -260,7 +260,7 @@
           <div class="settings-row">
             <div class="settings-item-copy">
               <span id="auto-launch-label" class="settings-section-title" data-i18n="settingsAutoLaunchLabel">开机自动启动</span>
-              <p class="settings-hint" data-i18n="settingsAutoLaunchHint">登录系统时自动启动桌宠</p>
+              <p id="auto-launch-hint" class="settings-hint" data-i18n="settingsAutoLaunchHint">登录系统时自动启动桌宠</p>
             </div>
             <button
               id="auto-launch-switch"
@@ -269,6 +269,7 @@
               role="switch"
               aria-checked="false"
               aria-labelledby="auto-launch-label"
+              aria-describedby="auto-launch-hint"
             >
               <span class="settings-switch-track" aria-hidden="true">
                 <span class="settings-switch-thumb"></span>

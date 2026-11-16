@@ -58,5 +58,32 @@ test.describe('sub-window IPC isolation', () => {
       canSetAutoLaunch: 'undefined',
       canSetSkin: 'undefined',
     });
+
+    const [settingsWindow] = await Promise.all([
+      electronApp.waitForEvent('window', { timeout: 15000 }),
+      electronApp.evaluate(async ({ app }) => {
+        app.openSettingsForQA('companion');
+      }),
+    ]);
+    await settingsWindow.waitForLoadState('domcontentloaded', { timeout: 15000 });
+
+    const settingsApi = await settingsWindow.evaluate(() => ({
+      canGetSnapshot: typeof window.electronAPI.getSnapshot,
+      canChangeLocale: typeof window.electronAPI.changeSettingsLocale,
+      canChangeAutoLaunch: typeof window.electronAPI.changeAutoLaunch,
+      canSave: typeof window.electronAPI.saveData,
+      canSetAutoLaunch: typeof window.electronAPI.setAutoLaunch,
+      canSetLocale: typeof window.electronAPI.setLocale,
+      canSetSkin: typeof window.electronAPI.setCurrentSkin,
+    }));
+    expect(settingsApi).toEqual({
+      canGetSnapshot: 'function',
+      canChangeLocale: 'function',
+      canChangeAutoLaunch: 'function',
+      canSave: 'undefined',
+      canSetAutoLaunch: 'undefined',
+      canSetLocale: 'undefined',
+      canSetSkin: 'undefined',
+    });
   });
 });
