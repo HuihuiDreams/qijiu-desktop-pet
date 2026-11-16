@@ -6,14 +6,14 @@ const mainSource = readMainProcessSource();
 const i18nSource = read('src/data/i18n.js');
 const debugSource = read('src/debug.js');
 const appSource = read('src/app.js');
-const traySource = read('src/main/TrayManager.js');
+const settingsServiceSource = read('src/main/services/SettingsService.js');
+const settingsHtmlSource = read('src/settings.html');
 
-test('tray exposes Window Awareness toggle on Windows/macOS and unavailable state elsewhere', () => {
-  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOff')"));
-  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessOn')"));
-  assert.ok(mainSource.includes("trayMenuLabel('trayWindowAwarenessUnavailable')"));
-  assert.ok(mainSource.includes("enabled: process.platform === 'win32' || process.platform === 'darwin'"));
-  assert.match(mainSource, /setWindowAwarenessEnabled\(!.*?getWindowAwarenessEnabled\(\)\)/);
+test('SettingsService exposes Window Awareness toggle on Windows/macOS and unavailable state elsewhere', () => {
+  assert.match(mainSource, /ipc(?:Main)?\.handle\(['"]settings-set-window-awareness['"]/);
+  assert.ok(mainSource.includes("process.platform === 'win32' || process.platform === 'darwin'"));
+  assert.ok(mainSource.includes('setWindowAwarenessEnabled(enabled)'));
+  assert.ok(settingsHtmlSource.includes('id="window-awareness-switch"'));
 });
 
 test('Window Awareness toggle sends disabled fallback and restarts sampling', () => {
@@ -22,21 +22,17 @@ test('Window Awareness toggle sends disabled fallback and restarts sampling', ()
   assert.ok(mainSource.includes('startActiveWindowAwareness();'));
 });
 
-test('Window Awareness tray labels are localized', () => {
-  assert.ok(i18nSource.includes('trayWindowAwarenessOn'));
-  assert.ok(i18nSource.includes('trayWindowAwarenessOff'));
-  assert.ok(i18nSource.includes('trayWindowAwarenessUnavailable'));
+test('Window Awareness settings labels are localized', () => {
+  assert.ok(i18nSource.includes('settingsWindowAwarenessLabel'));
+  assert.ok(i18nSource.includes('settingsWindowAwarenessHint'));
+  assert.ok(i18nSource.includes('settingsWindowAwarenessUnavailable'));
 });
 
-test('CP Screensaver tray threshold submenu uses shared allowlist source and no in-menu power hint', () => {
-  // Submenu must not hard-code the old [1,5,10,30,60] array; it must reuse the
-  // shared allowlist from screensaverAllowedMinutes.js.
-  assert.ok(traySource.includes('SCREENSAVER_ALLOWED_IDLE_MINUTES'));
-  assert.ok(traySource.includes("require('./services/screensaverAllowedMinutes')"));
-  assert.ok(!traySource.includes('[1, 5, 10, 30, 60]'));
+test('CP Screensaver settings threshold uses shared allowlist source without tray submenu', () => {
+  assert.ok(settingsServiceSource.includes('SCREENSAVER_ALLOWED_IDLE_MINUTES'));
+  assert.ok(settingsServiceSource.includes("require('./screensaverAllowedMinutes')"));
+  assert.ok(!settingsServiceSource.includes('[1, 5, 10, 30, 60]'));
 
-  // No in-tray-menu power hint: the explanation lives in the README, not the submenu.
-  assert.ok(!traySource.includes('trayScreensaverPowerHint'));
   assert.ok(!i18nSource.includes('trayScreensaverPowerHint'));
 });
 

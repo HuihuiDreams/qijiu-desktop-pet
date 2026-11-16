@@ -69,7 +69,6 @@ const { setupElectronMock } = require('./helpers/mockElectron');
 const restoreRequire = setupElectronMock(electronMock);
 
 const windowManager = require('../src/main/windows/WindowManager');
-const citySettingWindowModule = require('../src/main/windows/CitySettingWindow');
 const PetWindow = require('../src/main/windows/PetWindow');
 test.after(() => restoreRequire());
 
@@ -178,10 +177,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.statusWindow = null;
     windowManager.pomodoroWindow = null;
     windowManager.skinSelectorWindow = null;
-    windowManager.petScaleWindow = null;
-    windowManager.citySettingWindow = null;
-    // VERY IMPORTANT TO PREVENT REAL CitySettingWindow from executing and triggering electron issues
-    citySettingWindowModule.closeCitySettingWindow = () => {};
+    windowManager.settingsWindow = null;
   });
   
   t.afterEach(() => {
@@ -266,45 +262,41 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.statusWindow = new MockBrowserWindow({});
     let statusClosed = false;
     windowManager.statusWindow.close = () => { statusClosed = true; };
-    
-    let cityClosed = false;
-    citySettingWindowModule.closeCitySettingWindow = () => { cityClosed = true; };
 
-    windowManager.petScaleWindow = new MockBrowserWindow({});
-    let petScaleClosed = false;
-    windowManager.petScaleWindow.close = () => { petScaleClosed = true; };
+    windowManager.settingsWindow = new MockBrowserWindow({});
+    let settingsClosed = false;
+    windowManager.settingsWindow.close = () => { settingsClosed = true; };
 
     windowManager.updateProgressWindow = new MockBrowserWindow({});
     let updateProgressClosed = false;
     windowManager.updateProgressWindow.close = () => { updateProgressClosed = true; };
 
     PetWindow.startKeepOnTopWatcher();
-    
+
     windowManager.mainWindow.trigger('closed');
-    
+
     assert.equal(windowManager.mainWindow, null);
     assert.equal(statusClosed, true);
-    assert.equal(cityClosed, true);
-    assert.equal(petScaleClosed, true, 'the parentless pet scale window must not outlive the main window');
+    assert.equal(settingsClosed, true, 'the parentless settings window must not outlive the main window');
     assert.equal(updateProgressClosed, true, 'the update progress window must not outlive the main window');
     assert.equal(windowManager.updateProgressWindow, null);
-    windowManager.petScaleWindow = null;
+    windowManager.settingsWindow = null;
   });
 
-  await t.test('closed event skips destroyed pet scale and missing update progress windows', () => {
+  await t.test('closed event skips destroyed settings and missing update progress windows', () => {
     const deps = createMockDeps();
     PetWindow.init(deps);
     PetWindow.createWindow();
 
-    windowManager.petScaleWindow = new MockBrowserWindow({});
-    windowManager.petScaleWindow.destroyed = true;
-    let petScaleClosed = false;
-    windowManager.petScaleWindow.close = () => { petScaleClosed = true; };
+    windowManager.settingsWindow = new MockBrowserWindow({});
+    windowManager.settingsWindow.destroyed = true;
+    let settingsClosed = false;
+    windowManager.settingsWindow.close = () => { settingsClosed = true; };
     windowManager.updateProgressWindow = null;
 
     assert.doesNotThrow(() => windowManager.mainWindow.trigger('closed'));
-    assert.equal(petScaleClosed, false);
-    windowManager.petScaleWindow = null;
+    assert.equal(settingsClosed, false);
+    windowManager.settingsWindow = null;
   });
 
   await t.test('keepPetWindowOnTop re-raises visible alwaysOnTop sub-windows and skips hidden/unpinned', () => {
@@ -331,17 +323,10 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.skinSelectorWindow.moveTop = () => { moveTopCalls.push('skinSelectorWindow'); };
 
     // Unpinned sub-window (alwaysOnTop = false)
-    windowManager.petScaleWindow = new MockBrowserWindow({});
-    windowManager.petScaleWindow.visible = true;
-    windowManager.petScaleWindow.alwaysOnTop = false;
-    windowManager.petScaleWindow.moveTop = () => { moveTopCalls.push('petScaleWindow'); };
-
-    // Destroyed sub-window
-    windowManager.citySettingWindow = new MockBrowserWindow({});
-    windowManager.citySettingWindow.destroyed = true;
-    windowManager.citySettingWindow.visible = true;
-    windowManager.citySettingWindow.alwaysOnTop = true;
-    windowManager.citySettingWindow.moveTop = () => { moveTopCalls.push('citySettingWindow'); };
+    windowManager.settingsWindow = new MockBrowserWindow({});
+    windowManager.settingsWindow.visible = true;
+    windowManager.settingsWindow.alwaysOnTop = false;
+    windowManager.settingsWindow.moveTop = () => { moveTopCalls.push('settingsWindow'); };
 
     PetWindow.keepPetWindowOnTop();
 
@@ -371,8 +356,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.statusWindow = new MockBrowserWindow({});
     windowManager.pomodoroWindow = new MockBrowserWindow({});
     windowManager.skinSelectorWindow = null;
-    windowManager.petScaleWindow = null;
-    windowManager.citySettingWindow = null;
+    windowManager.settingsWindow = null;
     const calls = [];
     for (const [name, win] of [['status', windowManager.statusWindow], ['pomodoro', windowManager.pomodoroWindow]]) {
       win.visible = true;
@@ -410,15 +394,15 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
         windowManager.pomodoroWindow.alwaysOnTop = true;
         windowManager.skinSelectorWindow = new MockBrowserWindow({});
         windowManager.skinSelectorWindow.alwaysOnTop = true;
-        windowManager.petScaleWindow = new MockBrowserWindow({});
-        windowManager.petScaleWindow.visible = true;
+        windowManager.settingsWindow = new MockBrowserWindow({});
+        windowManager.settingsWindow.visible = true;
 
         PetWindow.onActiveWindowChanged();
         assert.equal(win.visible, false);
         assert.equal(win.alwaysOnTop, false);
         assert.equal(windowManager.statusWindow.visible, false);
         assert.equal(windowManager.pomodoroWindow.visible, false);
-        assert.equal(windowManager.petScaleWindow.visible, true);
+        assert.equal(windowManager.settingsWindow.visible, true);
         PetWindow.keepPetWindowOnTop();
         PetWindow.showExistingInstance();
         assert.equal(win.visible, false);
@@ -447,7 +431,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
         assert.equal(windowManager.statusWindow.focused, false);
         assert.equal(windowManager.pomodoroWindow.visible, false);
         assert.equal(windowManager.skinSelectorWindow.visible, false);
-        assert.equal(windowManager.petScaleWindow.visible, true);
+        assert.equal(windowManager.settingsWindow.visible, true);
 
         // Entering fullscreen RDP again and exiting via no-active-window (e.g. session disconnect
         // or closing the RDP window) also releases suppression and restores windows.
@@ -468,7 +452,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
         windowManager.statusWindow = null;
         windowManager.pomodoroWindow = null;
         windowManager.skinSelectorWindow = null;
-        windowManager.petScaleWindow = null;
+        windowManager.settingsWindow = null;
         win.trigger('closed');
       }
     } finally {

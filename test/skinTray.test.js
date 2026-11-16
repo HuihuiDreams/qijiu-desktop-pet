@@ -129,13 +129,13 @@ test('main.js 托盘菜单用分割线区分桌宠功能和软件功能', () => 
   const mainSource = readMainProcessSource();
   const resetIndex = mainSource.indexOf("trayMenuLabel('trayResetPos')");
   const softwareSeparatorIndex = mainSource.indexOf("{ type: 'separator' }", resetIndex);
-  const autoLaunchIndex = mainSource.indexOf("trayMenuLabel('trayAutoLaunchOn')", softwareSeparatorIndex);
+  const settingsIndex = mainSource.indexOf("trayMenuLabel('traySettings')", softwareSeparatorIndex);
   const devToolsIndex = mainSource.indexOf("trayMenuLabel('trayDevTools')", softwareSeparatorIndex);
   const exitIndex = mainSource.indexOf("trayMenuLabel('trayQuit')", softwareSeparatorIndex);
 
   assert.ok(resetIndex > -1, '桌宠功能组应包含重置位置');
   assert.ok(softwareSeparatorIndex > resetIndex, '重置位置之后应有分割线');
-  assert.ok(autoLaunchIndex > softwareSeparatorIndex, '软件功能组应从分割线后开始');
+  assert.ok(settingsIndex > softwareSeparatorIndex, '软件功能组应从设置入口开始');
   assert.ok(devToolsIndex > softwareSeparatorIndex, '开发者工具应位于软件功能组');
   assert.ok(exitIndex > softwareSeparatorIndex, '退出应位于软件功能组');
 });

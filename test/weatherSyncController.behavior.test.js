@@ -80,10 +80,6 @@ function createDependencies(initialSettings, initialWeatherCache) {
     isDestroyed: () => false,
     webContents: { send: (channel, payload) => sent.push([channel, payload]) },
   };
-  const citySettingWindow = {
-    isDestroyed: () => false,
-    webContents: { isDestroyed: () => false },
-  };
   const store = {
     get: (key) => storeValues.get(key),
     set: (key, value) => storeValues.set(key, value),
@@ -93,14 +89,13 @@ function createDependencies(initialSettings, initialWeatherCache) {
     deps: {
       StoreManager: { getStore: () => store },
       trayManager: { refreshTrayMenu: () => { trayRefreshCount += 1; } },
-      windowManager: { mainWindow, citySettingWindow },
+      windowManager: { mainWindow },
     },
     sent,
     storeListeners,
     storedSettings: () => storeValues.get('weatherSyncSettings'),
     storedValue: (key) => storeValues.get(key),
     getTrayRefreshCount: () => trayRefreshCount,
-    cityEvent: { sender: citySettingWindow.webContents },
   };
 }
 
@@ -111,7 +106,7 @@ test('WeatherSyncController exposes persisted city settings immediately after in
     fetchWeather: async () => ({ active: true }),
     processSettingsChange: async (settings) => settings,
   });
-  const { deps, storeListeners, cityEvent } = createDependencies({
+  const { deps, storeListeners } = createDependencies({
     ...DEFAULT_SETTINGS,
     city: 'Tokyo',
     enabled: true,
@@ -121,8 +116,8 @@ test('WeatherSyncController exposes persisted city settings immediately after in
 
   Controller.init(deps);
 
-  assert.deepEqual(ipcMain.handlers['get-city-settings'](cityEvent), { city: 'Tokyo' });
-  assert.equal(typeof ipcMain.handlers['set-city-name'], 'function');
+  assert.deepEqual(Controller.getCitySettings(), { city: 'Tokyo' });
+  assert.equal(typeof Controller.setCityName, 'function');
   assert.equal(typeof storeListeners.weatherSyncSettings, 'function');
 });
 
@@ -353,21 +348,21 @@ test('WeatherSyncController keeps only the newest interval when weather sync sta
   }
 });
 
-test('set-city-name rejects non-string input', async () => {
+test('setCityName rejects non-string input', async () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({
     ipcMain,
     fetchWeather: async () => {},
     processSettingsChange: async () => {},
   });
-  const { deps, cityEvent } = createDependencies(DEFAULT_SETTINGS);
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  assert.deepEqual(await ipcMain.handlers['set-city-name'](cityEvent, 123), { success: false });
-  assert.deepEqual(await ipcMain.handlers['set-city-name'](cityEvent, '  '), { success: false });
+  assert.deepEqual(await Controller.setCityName(123), { success: false });
+  assert.deepEqual(await Controller.setCityName('  '), { success: false });
 });
 
-test('set-city-name success: geocode passes, saves, starts sync, returns { success: true, city }', async () => {
+test('setCityName success: geocode passes, saves, starts sync, returns { success: true, city }', async () => {
   const ipcMain = createIpcMain();
   let fetchCalled = false;
   const Controller = loadFreshController({
@@ -380,12 +375,12 @@ test('set-city-name success: geocode passes, saves, starts sync, returns { succe
       city: 'Tokyo'
     }),
   });
-  const { deps, storedSettings, getTrayRefreshCount, cityEvent } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
+  const { deps, storedSettings, getTrayRefreshCount } = createDependencies({ ...DEFAULT_SETTINGS, enabled: true });
   Controller.init(deps);
 
   stubTimers();
   try {
-    const result = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+    const result = await Controller.setCityName('Tokyo');
     // startWeatherSync is async, wait a tick for fetchWeather to complete
     await new Promise(resolve => setImmediate(resolve));
     assert.deepEqual(result, { success: true, city: 'Tokyo' });
@@ -397,7 +392,7 @@ test('set-city-name success: geocode passes, saves, starts sync, returns { succe
   }
 });
 
-test('set-city-name geocode failure: lat/lon remain null -> { success: false }', async () => {
+test('setCityName geocode failure: lat/lon remain null -> { success: false }', async () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({
     ipcMain,
@@ -408,29 +403,29 @@ test('set-city-name geocode failure: lat/lon remain null -> { success: false }',
       lon: null,
     }),
   });
-  const { deps, storedSettings, cityEvent } = createDependencies(DEFAULT_SETTINGS);
+  const { deps, storedSettings } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  const result = await ipcMain.handlers['set-city-name'](cityEvent, 'UnknownCity');
+  const result = await Controller.setCityName('UnknownCity');
   assert.deepEqual(result, { success: false });
   assert.equal(storedSettings().city, '');
 });
 
-test('set-city-name processSettingsChange throws -> { success: false }', async () => {
+test('setCityName processSettingsChange throws -> { success: false }', async () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({
     ipcMain,
     fetchWeather: async () => {},
     processSettingsChange: async () => { throw new Error('Network error'); },
   });
-  const { deps, cityEvent } = createDependencies(DEFAULT_SETTINGS);
+  const { deps } = createDependencies(DEFAULT_SETTINGS);
   Controller.init(deps);
 
-  const result = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+  const result = await Controller.setCityName('Tokyo');
   assert.deepEqual(result, { success: false });
 });
 
-test('set-city-name while in-flight does not revive weather sync if disabled via tray', async () => {
+test('setCityName while in-flight does not revive weather sync if disabled via settings', async () => {
   const ipcMain = createIpcMain();
   let fetchCount = 0;
   let resolveGeocode;
@@ -453,7 +448,7 @@ test('set-city-name while in-flight does not revive weather sync if disabled via
     },
   });
 
-  const { deps, storedSettings, cityEvent } = createDependencies({
+  const { deps, storedSettings } = createDependencies({
     ...DEFAULT_SETTINGS,
     enabled: true,
     city: 'London',
@@ -463,9 +458,9 @@ test('set-city-name while in-flight does not revive weather sync if disabled via
 
   try {
     // 1. User starts city query for Tokyo
-    const cityPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+    const cityPromise = Controller.setCityName('Tokyo');
 
-    // 2. While in-flight, user turns off weather sync from tray
+    // 2. While in-flight, user turns off weather sync
     await Controller.updateWeatherSyncSettings({
       ...Controller.getWeatherSyncSettings(),
       enabled: false,
@@ -511,7 +506,7 @@ test('consecutive city queries: older slow query completing after newer fast que
     },
   });
 
-  const { deps, storedSettings, cityEvent } = createDependencies({
+  const { deps, storedSettings } = createDependencies({
     ...DEFAULT_SETTINGS,
     enabled: true,
     city: 'Kyoto',
@@ -521,10 +516,10 @@ test('consecutive city queries: older slow query completing after newer fast que
 
   try {
     // 1. Submit slow query Osaka
-    const osakaResultPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Osaka');
+    const osakaResultPromise = Controller.setCityName('Osaka');
 
     // 2. Submit fast query Tokyo
-    const tokyoResult = await ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+    const tokyoResult = await Controller.setCityName('Tokyo');
     assert.deepEqual(tokyoResult, { success: true, city: 'Tokyo' });
     assert.equal(storedSettings().city, 'Tokyo');
 
@@ -553,13 +548,13 @@ for (const firstCompleted of ['Tokyo', 'London']) {
         pending.set(settings.city, () => resolve({ ...settings, lat: 35.68, lon: 139.76 }));
       }),
     });
-    const { deps, cityEvent, storedSettings } = createDependencies({
+    const { deps, storedSettings } = createDependencies({
       ...DEFAULT_SETTINGS, enabled: false, city: 'London',
     });
     Controller.init(deps);
     stubTimers();
     try {
-      const cityQuery = ipcMain.handlers['set-city-name'](cityEvent, 'Tokyo');
+      const cityQuery = Controller.setCityName('Tokyo');
       const enableToggle = Controller.updateWeatherSyncSettings({
         ...Controller.getStoredWeatherSyncSettings(), enabled: true, refreshIntervalMinutes: 30,
       });
@@ -582,7 +577,7 @@ for (const firstCompleted of ['Tokyo', 'London']) {
   });
 }
 
-test('closing city window and reopening to query a different city invalidates older query even if older settles first', async () => {
+test('resubmitting a different city invalidates older query even if older settles first', async () => {
   const ipcMain = createIpcMain();
   let resolveOsaka;
   let resolveTokyo;
@@ -605,7 +600,7 @@ test('closing city window and reopening to query a different city invalidates ol
     },
   });
 
-  const { deps, storedSettings, cityEvent } = createDependencies({
+  const { deps, storedSettings } = createDependencies({
     ...DEFAULT_SETTINGS,
     enabled: true,
     city: 'Kyoto',
@@ -615,15 +610,10 @@ test('closing city window and reopening to query a different city invalidates ol
 
   try {
     // 1. Submit query Osaka
-    const osakaResultPromise = ipcMain.handlers['set-city-name'](cityEvent, 'Osaka');
+    const osakaResultPromise = Controller.setCityName('Osaka');
 
-    // 2. Simulate closing window and reopening to query Tokyo
-    deps.windowManager.citySettingWindow = {
-      isDestroyed: () => false,
-      webContents: { isDestroyed: () => false },
-    };
-    const newCityEvent = { sender: deps.windowManager.citySettingWindow.webContents };
-    const tokyoResultPromise = ipcMain.handlers['set-city-name'](newCityEvent, 'Tokyo');
+    // 2. Reopen / resubmit query for Tokyo
+    const tokyoResultPromise = Controller.setCityName('Tokyo');
 
     // 3. Osaka settles FIRST
     resolveOsaka();
@@ -676,17 +666,17 @@ test('store.onDidChange callback triggers updateWeatherSyncSettings for truthy v
   }
 });
 
-test('get-city-settings returns empty string when city is not set', () => {
+test('getCitySettings returns empty string when city is not set', () => {
   const ipcMain = createIpcMain();
   const Controller = loadFreshController({
     ipcMain,
     fetchWeather: async () => {},
     processSettingsChange: async (settings) => settings,
   });
-  const { deps, cityEvent } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
+  const { deps } = createDependencies({ ...DEFAULT_SETTINGS, city: null });
   Controller.init(deps);
 
-  assert.deepEqual(ipcMain.handlers['get-city-settings'](cityEvent), { city: '' });
+  assert.deepEqual(Controller.getCitySettings(), { city: '' });
 });
 
 test('getStoredWeatherSyncSettings returns defaults when store is unavailable', () => {

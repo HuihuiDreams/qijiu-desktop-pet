@@ -40,32 +40,32 @@ test('pomodoro window uses a minimal dedicated preload', () => {
   for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
 });
 
-test('city setting window uses a minimal dedicated preload', () => {
-  const source = read('citySettingPreload.js');
-  const windowSource = read('src/main/windows/CitySettingWindow.js');
+test('settings window uses a minimal dedicated preload', () => {
+  const source = read('settingsPreload.js');
+  const windowSource = read('src/main/windows/SettingsWindow.js');
 
-  assert.match(windowSource, /preload: path\.join\([^\n]*'citySettingPreload\.js'\)/);
-  for (const api of ['getLocale', 'onLocaleChange', 'getCitySettings', 'setCityName', 'closeCitySettingWindow']) {
-    assert.match(source, new RegExp(`${api}:`));
-  }
-  for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
-});
-
-test('pet scale window uses a minimal dedicated preload', () => {
-  const source = read('petScalePreload.js');
-  const windowSource = read('src/main/windows/PetScaleWindow.js');
-
-  assert.match(windowSource, /preload: path\.join\([^\n]*'petScalePreload\.js'\)/);
+  assert.match(windowSource, /preload: path\.join\([^\n]*'settingsPreload\.js'\)/);
   for (const api of [
     'getLocale',
     'onLocaleChange',
-    'getPetScaleSettings',
+    'getSnapshot',
     'previewPetScale',
-    'confirmPetScale',
-    'cancelPetScale',
+    'commitPetScale',
+    'resetPetScale',
+    'setWindowAwareness',
+    'setWeatherEnabled',
+    'setCityName',
+    'setBreakReminder',
+    'setScreensaver',
+    'changeSettingsLocale',
+    'changeAutoLaunch',
+    'openSkinSelector',
+    'closeSettingsWindow',
+    'onSettingsUpdated',
+    'onSwitchTab',
+    'onRestoreSkinFocus',
   ]) {
     assert.match(source, new RegExp(`${api}:`));
   }
-  assert.equal(source.includes('closePetScaleWindow:'), false);
   for (const api of FORBIDDEN_SUBWINDOW_APIS) assert.equal(source.includes(`${api}:`), false);
 });

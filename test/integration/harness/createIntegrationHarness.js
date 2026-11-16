@@ -221,10 +221,9 @@ function createIntegrationHarness(initialStoreData = {}) {
   const windowManager = {
     mainWindow,
     statusWindow: null,
-    petScaleWindow: null,
+    settingsWindow: null,
     skinSelectorWindow: null,
     pomodoroWindow: null,
-    citySettingWindow: null,
     updateProgressWindow: null,
   };
 

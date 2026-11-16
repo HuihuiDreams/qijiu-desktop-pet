@@ -9,6 +9,7 @@
 - **统一设置窗口三语界面与无障碍交互 (`Unified Settings Window UI/UX & Trilingual I18N`)**：新增 `src/settings.html`、`src/settings.css` 与 `src/settingsWindow.js` 并在 `src/data/i18n.js` 补全中/英/日三语设置词典；实现顶部 3 标签页 Roving `tabindex` 键盘漫游、`role="switch"` 与非纯色分段控件、体型滑块 `input` 实时预览与 `change` 即时落盘、未设城市开启天气同步自动聚焦引导、子档位原生 `disabled` 联动、IME 组合态 `Esc` 守卫、严格 CSP 与零 `innerHTML` 安全渲染及减动效降级覆盖。
 
 ### Changed
+- **托盘菜单精简与设置入口收敛 (`Streamlined Tray Menu & Unified Settings Entry`)**：将调整大小、界面感知、天气同步及城市设置、久坐提醒及提醒间隔、高甜屏保及触发等待、界面语言与开机自动启动 7 项配置从系统托盘菜单迁入统一设置窗口，在 `TrayManager.js` 仅保留实时控制、状态面板、专注窗口、选肤入口、`⚙️ 设置…`、更新与生命周期项；并迁移受影响的单测与集成测试套件至 `SettingsWindow` / `SettingsService` 契约。
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。
 - **皮肤服务无效素材根目录配置清理 (`SkinService Ineffective appRoot Cleanup`)**：移除 `SkinService.js` 中三处向受保护素材加载器传入的 `appRoot: __dirname`（`src/main/services/protected-assets` 并不存在，加载器本就会回退到仓库根目录、`resourcesPath` 与 `appPath` 下的 `protected-assets`），不改变开发与打包环境的素材查找结果；加载器中 `manifestNotFound` 负缓存按既有测试约定保持到显式清理，不做修改（[审核复核 L4](docs/code-review-audit-verification-2026-11-13.md)）。
 - **更新进度窗口检查中动画改用 transform (`Update Progress Sweep Animation Uses Transform`)**：`update-progress.css` 的 `@keyframes sweep` 原先逐帧修改 `left` 触发布局，改为 `transform: translateX()`（百分比按检查中 38% 的填充宽度换算为约 -105% / 79% / 263%，对应原来相对进度条的 -40% / 30% / 100%），并为 `.checking .fill` 显式设置 `left: 0`；补充样式回归测试（[审核复核 L10](docs/code-review-audit-verification-2026-11-13.md)）。
@@ -48,6 +49,7 @@
 - **CP 同步流水线纯锁文件冲突自动重生成 (`Auto-Regenerate Sole package-lock.json Conflict in CP Sync`)**：修复 `main` 与 `cp/crowley-aziraphale` 传递依赖锁版本分叉时（如 Dependabot `#16` `@electron/asar` 4.3.2 更新），`package.json` 合并无冲突但 `package-lock.json` 冲突导致整个自动同步队列（连带 `#15`、`#14`）卡死的问题；`scripts/sync-to-cp.js` 现在当提交修改了 `package.json` 且仅 `package-lock.json` 存在非文档冲突时，先还原目标分支既有锁文件基线与好兆头包身份，执行 `npm install --package-lock-only --ignore-scripts` 就地更新锁文件后交由 `npm ci` 与 `npm test` 门禁验证；未改动 `package.json` 的纯锁文件冲突或伴随其他文件冲突仍保持阻断回滚，补充对应回归测试（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。
 
 ### Removed
+- **下线废弃独立城市与体型子窗口及残留死通道 (`Remove Deprecated CitySettingWindow, PetScaleWindow & Dead Preload APIs`)**：移除 `CitySettingWindow`、`PetScaleWindow` 及其对应的 10 个窗口/preload/前端文件、不再使用的 `get-city-settings` / `set-city-name` / `close-city-setting-window` / `pet-scale-*` 独立窗 IPC，以及主窗口 `preload.js` 中未曾使用的 3 个旧城市设置死方法（`getCitySettings`、`setCityName`、`closeCitySettingWindow`）；保留主窗口 `get-pet-scale` / `pet-scale-changed` 兼容契约。
 - **历史性能复测清单与本地原始采样 JSON 清理 (`Legacy Performance Retest Checklist & Raw JSON Cleanup`)**：移除已归档的 `docs/performance/task3-retest-checklist.md`（及本机留存的未追踪 `docs/performance/raw/`、`docs/performance/task3-post-optimization.json` 原始采样数据），`docs/performance/` 仅保留采样指南 `README.md` 与 `2026-07-23-windows-baseline.md` 基线报告。
 
 ### Security

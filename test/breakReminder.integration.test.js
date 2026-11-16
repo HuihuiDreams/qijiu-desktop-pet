@@ -52,20 +52,19 @@ test('main.js listens to powerMonitor lock/suspend/unlock/resume', () => {
   assert.ok(mainSource.includes("powerMonitor.on('resume'"), 'should listen to resume');
 });
 
-test('main.js tray menu includes break reminder toggle', () => {
-  assert.ok(mainSource.includes("trayBreakReminderOn"), 'should have trayBreakReminderOn label');
-  assert.ok(mainSource.includes("trayBreakReminderOff"), 'should have trayBreakReminderOff label');
-});
-
-test('main.js tray menu includes break reminder interval submenu', () => {
-  assert.ok(mainSource.includes("trayBreakReminderInterval"), 'should have interval label');
-  assert.ok(mainSource.includes("trayMinuteUnit"), 'should have minute unit label');
-  assert.ok(mainSource.includes("BREAK_REMINDER_TRAY_INTERVALS"), 'should use intervals array');
+test('main.js settings service manages break reminder toggle and interval options', () => {
+  const i18nSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'i18n.js'), 'utf8');
+  assert.match(mainSource, /ipc(?:Main)?\.handle\(['"]settings-set-break-reminder['"]/, 'should register settings-set-break-reminder IPC');
+  assert.ok(mainSource.includes('updateBreakReminderSettings'), 'should delegate via BreakReminderController.updateBreakReminderSettings');
+  assert.ok(mainSource.includes('BREAK_REMINDER_TRAY_INTERVALS'), 'should use intervals array');
+  assert.ok(i18nSource.includes('settingsBreakReminderLabel'), 'should localize break reminder label');
+  assert.ok(i18nSource.includes('settingsBreakReminderIntervalLabel'), 'should localize interval label');
+  assert.ok(i18nSource.includes('trayMinuteUnit'), 'should have minute unit label');
 });
 
 test('break reminder tray intervals keep the full original option set', () => {
-  // The tray menu must offer the original [30, 45, 60, 90, 120] minute options and
-  // pass the shared constant, not a hardcoded literal that drops 90/120.
+  // Break reminder interval selection in SettingsWindow must offer [30, 45, 60, 90, 120]
+  // from the shared constant in BreakReminderController.js.
   assert.match(
     mainSource,
     /const BREAK_REMINDER_TRAY_INTERVALS = \[30, 45, 60, 90, 120\]/,
@@ -73,8 +72,8 @@ test('break reminder tray intervals keep the full original option set', () => {
   );
   assert.match(
     mainSource,
-    /BREAK_REMINDER_TRAY_INTERVALS,/,
-    'tray init must pass the constant, not a hardcoded literal'
+    /BREAK_REMINDER_TRAY_INTERVALS/,
+    'settings snapshot and validation must reference the shared constant'
   );
 });
 

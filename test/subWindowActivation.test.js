@@ -128,10 +128,9 @@ function withMockedModule(targetModulePath, testFn) {
   const harness = createHarness();
   const windowManager = {
     skinSelectorWindow: null,
-    petScaleWindow: null,
     statusWindow: null,
-    citySettingWindow: null,
     pomodoroWindow: null,
+    settingsWindow: null,
     mainWindow: null,
   };
 
@@ -228,14 +227,14 @@ test('SkinSelectorWindow: activates with screen-saver pulse, skipTransformProces
   });
 });
 
-test('PetScaleWindow: activates with screen-saver pulse, skipTransformProcessType, and guarded focus steal', (t) => {
+test('SettingsWindow: activates with screen-saver pulse, skipTransformProcessType, and guarded focus steal', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
 
-  withMockedModule('../src/main/windows/PetScaleWindow', ({ mod, windowManager, focusCalls }) => {
+  withMockedModule('../src/main/windows/SettingsWindow', ({ mod, windowManager, focusCalls }) => {
     mod.init();
 
-    const win = mod.openPetScaleWindow();
-    assert.equal(windowManager.petScaleWindow, win);
+    const win = mod.openSettingsWindow();
+    assert.equal(windowManager.settingsWindow, win);
 
     // 1. Workspace options and initial top pulse
     assert.equal(win.visibleOnAllWorkspaces, true);
@@ -258,7 +257,7 @@ test('PetScaleWindow: activates with screen-saver pulse, skipTransformProcessTyp
 
     // 4. Repeated open while focused does not steal focus again
     const previousFocusCallsCount = focusCalls.length;
-    mod.openPetScaleWindow();
+    mod.openSettingsWindow();
     assert.equal(focusCalls.length, previousFocusCallsCount);
 
     // 5. Native restore triggers pulse
@@ -268,7 +267,7 @@ test('PetScaleWindow: activates with screen-saver pulse, skipTransformProcessTyp
     t.mock.timers.tick(200);
     assert.equal(win.alwaysOnTop, false);
 
-    mod.closePetScaleWindow();
+    mod.closeSettingsWindow();
   });
 });
 
@@ -301,38 +300,6 @@ test('StatusWindow: activates with permanent screen-saver level and skipTransfor
 
     const previousFocusCallsCount = focusCalls.length;
     mod.openStatusWindow();
-    assert.equal(focusCalls.length, previousFocusCallsCount);
-  });
-});
-
-test('CitySettingWindow: activates with screen-saver pulse, skipTransformProcessType, and guarded focus steal', (t) => {
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
-
-  withMockedModule('../src/main/windows/CitySettingWindow', ({ mod, windowManager, focusCalls }) => {
-    mod.init();
-
-    const win = mod.openCitySettingWindow();
-    assert.equal(windowManager.citySettingWindow, win);
-    assert.equal(win.options.show, false);
-
-    assert.equal(win.visibleOnAllWorkspaces, true);
-    assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
-      visibleOnFullScreen: true,
-      skipTransformProcessType: true,
-    });
-    assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
-
-    if (process.platform === 'darwin') {
-      assert.equal(focusCalls.length, 1);
-      assert.deepEqual(focusCalls[0], { steal: true });
-    }
-
-    t.mock.timers.tick(200);
-    assert.equal(win.alwaysOnTop, false);
-
-    const previousFocusCallsCount = focusCalls.length;
-    mod.openCitySettingWindow();
     assert.equal(focusCalls.length, previousFocusCallsCount);
   });
 });

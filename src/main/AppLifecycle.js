@@ -23,8 +23,6 @@ const PetScaleService = require('./services/PetScaleService');
 const SettingsService = require('./services/SettingsService');
 const windowManager = require('./windows/WindowManager');
 const statusWindowModule = require('./windows/StatusWindow');
-const citySettingWindowModule = require('./windows/CitySettingWindow');
-const petScaleWindowModule = require('./windows/PetScaleWindow');
 const settingsWindowModule = require('./windows/SettingsWindow');
 const skinSelectorWindowModule = require('./windows/SkinSelectorWindow');
 const pomodoroWindowModule = require('./windows/PomodoroWindow');
@@ -34,7 +32,6 @@ const trayManager = require('./TrayManager');
 const { createInterruptionCoordinator } = require('./services/InterruptionCoordinator');
 const { createPresentationGuard } = require('./services/PresentationGuard');
 const { createScreensaverController } = require('./services/ScreensaverController');
-const { LOCALE_KEY, BREAK_REMINDER_STORE_KEY } = require('./constants');
 
 const APP_USER_MODEL_ID = 'com.deskpet.yueqi-shenjiu';
 let screensaverController = null;
@@ -218,13 +215,10 @@ class AppLifecycle {
       getPomodoroSnapshot: PomodoroService.getPomodoroSnapshot,
       getUpdateMenuState,
       getCurrentLocale: LocaleService.getCurrentLocale,
-      setCurrentLocale: LocaleService.setCurrentLocale,
-      I18N, initStore: () => StoreManager.initStore(),
-      getStore: () => StoreManager.getStore(),
-      LOCALE_KEY,
-      sendSkinSelectorData: (...args) => skinSelectorWindowModule.sendSkinSelectorData(...args),
+      I18N,
       openPomodoroWindow: () => pomodoroWindowModule.openPomodoroWindow(),
-      openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow(),
+      openSkinSelector: () => skinSelectorWindowModule.openSkinSelectorWindow({ fromSettings: false }),
+      openSettingsWindow: (initialTab) => settingsWindowModule.openSettingsWindow(initialTab),
       getIsPaused: PetVisibilityService.getIsPaused,
       getPomodoroPetHidden: PetVisibilityService.getPomodoroPetHidden,
       setIsPaused: PetVisibilityService.setPaused,
@@ -233,25 +227,8 @@ class AppLifecycle {
       hidePetManually: PetVisibilityService.hidePetManually,
       getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
       migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
-      getBreakReminderEnabled: BreakReminderController.getBreakReminderEnabled,
-      setBreakReminderEnabled: BreakReminderController.setBreakReminderEnabled,
-      getBreakReminderIntervalMinutes: BreakReminderController.getBreakReminderIntervalMinutes,
-      setBreakReminderIntervalMinutes: BreakReminderController.setBreakReminderIntervalMinutes,
-      getBreakReminderService: BreakReminderController.getBreakReminderService,
-      BREAK_REMINDER_STORE_KEY,
-      BREAK_REMINDER_TRAY_INTERVALS: BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS,
-      getScreensaverSettings: () => (screensaverController ? screensaverController.getSettings() : { enabled: false, idleThresholdMinutes: 3 }),
-      updateScreensaverSettings: (s) => { if (screensaverController) screensaverController.updateSettings(s); },
-      getWeatherSyncSettings: WeatherSyncController.getWeatherSyncSettings,
-      getStoredWeatherSyncSettings: WeatherSyncController.getStoredWeatherSyncSettings,
-      updateWeatherSyncSettings: WeatherSyncController.updateWeatherSyncSettings,
-      openCitySettingWindow: () => citySettingWindowModule.openCitySettingWindow(),
-      openPetScaleWindow: () => petScaleWindowModule.openPetScaleWindow(),
-      getWindowAwarenessEnabled: WindowAwarenessService.isEnabled,
-      setWindowAwarenessEnabled: (val) => WindowAwarenessService.setWindowAwarenessEnabled(val),
-      AutoLaunchService,
       checkForUpdatesFromTray,
-      windowManager
+      windowManager,
     });
     trayManager.createTray();
   }
@@ -260,8 +237,6 @@ class AppLifecycle {
     statusWindowModule.init({
       refreshTrayMenu: () => trayManager.refreshTrayMenu()
     });
-    citySettingWindowModule.init();
-    petScaleWindowModule.init();
     settingsWindowModule.init({
       flushPetScalePreview: PetScaleService.flushPreview,
     });

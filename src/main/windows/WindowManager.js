@@ -9,9 +9,7 @@ class WindowManager {
       status: null,
       skinSelector: null,
       pomodoro: null,
-      citySetting: null,
       updateProgress: null,
-      petScale: null,
       settings: null
     };
   }
@@ -30,14 +28,8 @@ class WindowManager {
   get pomodoroWindow() { return this.windows.pomodoro; }
   set pomodoroWindow(val) { this.windows.pomodoro = val; }
 
-  get citySettingWindow() { return this.windows.citySetting; }
-  set citySettingWindow(val) { this.windows.citySetting = val; }
-
   get updateProgressWindow() { return this.windows.updateProgress; }
   set updateProgressWindow(val) { this.windows.updateProgress = val; }
-
-  get petScaleWindow() { return this.windows.petScale; }
-  set petScaleWindow(val) { this.windows.petScale = val; }
 
   get settingsWindow() { return this.windows.settings; }
   set settingsWindow(val) { this.windows.settings = val; }

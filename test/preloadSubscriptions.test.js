@@ -66,10 +66,10 @@ test('preload exposes pomodoro command APIs through electronAPI', () => {
   assert.match(preloadSource, /setPomodoroAlwaysOnTop:\s*\(enabled\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-set-always-on-top', enabled\)/);
 });
 
-test('preload exposes city setting APIs through electronAPI', () => {
-  assert.match(preloadSource, /getCitySettings:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('get-city-settings'\)/);
-  assert.match(preloadSource, /setCityName:\s*\(name\)\s*=>\s*ipcRenderer\.invoke\('set-city-name', name\)/);
-  assert.match(preloadSource, /closeCitySettingWindow:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('close-city-setting-window'\)/);
+test('preload does not expose legacy city setting subwindow APIs', () => {
+  assert.equal(preloadSource.includes('getCitySettings:'), false);
+  assert.equal(preloadSource.includes('setCityName:'), false);
+  assert.equal(preloadSource.includes('closeCitySettingWindow:'), false);
 });
 
 test('preload exposes screensaver notification APIs through electronAPI', () => {

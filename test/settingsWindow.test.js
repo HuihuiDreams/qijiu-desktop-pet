@@ -353,8 +353,6 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
     statusWindow: null,
     pomodoroWindow: null,
     skinSelectorWindow: null,
-    petScaleWindow: null,
-    citySettingWindow: null,
     settingsWindow: null,
     updateProgressWindow: null,
   };
@@ -376,7 +374,6 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
         };
       }
       if (request === './WindowManager') return windowManager;
-      if (request === './CitySettingWindow') return { closeCitySettingWindow: () => {} };
       if (request === './UpdateProgressWindow') return { closeUpdateProgressWindow: () => {} };
       if (request.includes('FinalSaveService')) return { installFinalSaveBeforeClose: () => {} };
       if (request.includes('IpcSenderAuthorization')) return { isSenderMainWindow: () => true };

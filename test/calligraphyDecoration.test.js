@@ -8,8 +8,7 @@ const ROOT = path.join(__dirname, '..');
 test('settings windows keep only the Qijiu seal alongside localized titles', () => {
   for (const [file, titleKey] of [
     ['skin-selector.html', 'skinSelectorTitle'],
-    ['city-setting.html', 'citySettingTitle'],
-    ['pet-scale.html', 'petScaleTitle'],
+    ['settings.html', 'settingsTitle'],
   ]) {
     const html = fs.readFileSync(path.join(ROOT, 'src', file), 'utf8');
     assert.match(html, /href="settings-calligraphy\.css"/);

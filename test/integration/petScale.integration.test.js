@@ -3,7 +3,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const Module = require('node:module');
-const path = require('node:path');
 
 const { createIntegrationHarness } = require('./harness/createIntegrationHarness');
 const { PET_SCALE_STORE_KEY } = require('../../src/main/constants');
@@ -14,16 +13,18 @@ const {
   PET_SCALE_STEP_PERCENT,
 } = require('../../ipcContracts');
 
-const PET_SCALE_WINDOW_PATH = require.resolve('../../src/main/windows/PetScaleWindow');
+const SETTINGS_WINDOW_PATH = require.resolve('../../src/main/windows/SettingsWindow');
+const SETTINGS_SERVICE_PATH = require.resolve('../../src/main/services/SettingsService');
 const PET_SCALE_SERVICE_PATH = require.resolve('../../src/main/services/PetScaleService');
 
 /**
- * Loads PetScaleWindow and PetScaleService wired together to the harness.
+ * Loads SettingsWindow, SettingsService, and PetScaleService wired together to the harness.
  */
 function loadPetScaleIntegration(harness) {
   const originalLoad = Module._load;
 
-  delete require.cache[PET_SCALE_WINDOW_PATH];
+  delete require.cache[SETTINGS_WINDOW_PATH];
+  delete require.cache[SETTINGS_SERVICE_PATH];
   delete require.cache[PET_SCALE_SERVICE_PATH];
 
   class TestBrowserWindow {
@@ -39,6 +40,7 @@ function loadPetScaleIntegration(harness) {
   Module._load = function (request, parent, isMain) {
     if (request === 'electron') {
       return {
+        app: { focus: () => {} },
         BrowserWindow: TestBrowserWindow,
         screen: {
           getCursorScreenPoint: () => ({ x: 100, y: 100 }),
@@ -49,135 +51,143 @@ function loadPetScaleIntegration(harness) {
         ipcMain: harness.ipcMain,
       };
     }
-    if (request === './WindowManager' && parent?.filename === PET_SCALE_WINDOW_PATH) {
+    if (request === './WindowManager' && parent?.filename === SETTINGS_WINDOW_PATH) {
       return harness.windowManager;
+    }
+    if (request === '../services/PetScaleService' && parent?.filename === SETTINGS_WINDOW_PATH) {
+      return require('../../src/main/services/PetScaleService');
     }
     return originalLoad.call(this, request, parent, isMain);
   };
 
   try {
     const PetScaleService = require('../../src/main/services/PetScaleService');
-    const PetScaleWindow = require('../../src/main/windows/PetScaleWindow');
+    const SettingsWindow = require('../../src/main/windows/SettingsWindow');
+    const SettingsService = require('../../src/main/services/SettingsService');
 
     PetScaleService.init({
       windowManager: harness.windowManager,
       StoreManager: harness.StoreManager,
       ipcMain: harness.ipcMain,
+      onScaleChanged: () => SettingsService.notifySettingsUpdated(),
     });
 
-    PetScaleWindow.init();
+    SettingsWindow.init({
+      flushPetScalePreview: PetScaleService.flushPreview,
+    });
+
+    SettingsService.init({
+      ipcMain: harness.ipcMain,
+      windowManager: harness.windowManager,
+      StoreManager: harness.StoreManager,
+      trayManager: { refreshTrayMenu: () => {} },
+      settingsWindowModule: SettingsWindow,
+      skinSelectorWindowModule: { openSkinSelectorWindow: () => {} },
+      PetScaleService,
+      LocaleService: { getCurrentLocale: () => 'zh', changeLocale: async (lang) => ({ success: true, locale: lang }) },
+      WeatherSyncController: {
+        getWeatherSyncSettings: () => ({ enabled: false, city: '' }),
+        getStoredWeatherSyncSettings: () => ({ enabled: false, city: '' }),
+        updateWeatherSyncSettings: async () => {},
+        setCityName: async () => ({ success: false }),
+      },
+      BreakReminderController: {
+        BREAK_REMINDER_TRAY_INTERVALS: [30, 45, 60, 90, 120],
+        getBreakReminderEnabled: () => true,
+        getBreakReminderIntervalMinutes: () => 60,
+        updateBreakReminderSettings: () => ({ success: true, settings: {} }),
+      },
+      WindowAwarenessService: { isEnabled: () => true, isSupported: () => true, setWindowAwarenessEnabled: () => {} },
+      AutoLaunchService: {
+        getAutoLaunchState: () => ({ enabled: false, preference: false, pendingApproval: false }),
+        setAutoLaunchPreference: async () => ({ success: true }),
+      },
+      SkinService: { getCurrentSkinId: () => 'default', getSkinDisplayName: () => 'default' },
+      getScreensaverSettings: () => ({ enabled: false, idleThresholdMinutes: 3 }),
+      updateScreensaverSettings: () => {},
+    });
 
     return {
       PetScaleService,
-      PetScaleWindow,
+      SettingsWindow,
+      SettingsService,
     };
   } finally {
     Module._load = originalLoad;
   }
 }
 
-test('Integration: PetScale lifecycle, preview, cancel, and persistence', async (t) => {
+test('Integration: PetScale lifecycle through SettingsWindow and SettingsService (preview, commit, reset, close flush)', async (t) => {
   const harness = createIntegrationHarness({
     [PET_SCALE_STORE_KEY]: 110,
   });
 
-  const { PetScaleService, PetScaleWindow } = loadPetScaleIntegration(harness);
+  const { PetScaleService, SettingsWindow } = loadPetScaleIntegration(harness);
 
   await t.test('1. Initial state reads persisted value from Store and verifies IPC security', async () => {
-    // Authorized call from mainWindow
     const scaleFromMain = await harness.ipcMain.invoke('get-pet-scale', harness.mainWindow);
     assert.equal(scaleFromMain, 110, 'Main window should retrieve persisted scale of 110%');
 
-    // Unauthorized call from unknown sender
     const unauthorizedSender = harness.createMockWindow(999);
     const unauthorizedResult = await harness.ipcMain.invoke('get-pet-scale', unauthorizedSender);
     assert.equal(unauthorizedResult, null, 'Unauthorized window must be blocked by IpcSenderAuthorization');
   });
 
-  await t.test('2. Opening PetScale window registers window and returns scale settings', async () => {
-    const scaleWin = PetScaleWindow.openPetScaleWindow();
-    assert.ok(scaleWin, 'PetScale window must be created');
-    assert.equal(harness.windowManager.petScaleWindow, scaleWin);
+  await t.test('2. Opening SettingsWindow exposes snapshot scale settings only to SettingsWindow', async () => {
+    const settingsWin = SettingsWindow.openSettingsWindow('appearance');
+    assert.ok(settingsWin, 'SettingsWindow must be created');
+    assert.equal(harness.windowManager.settingsWindow, settingsWin);
 
-    // Call pet-scale-get-settings from petScaleWindow
-    const settings = await harness.ipcMain.invoke('pet-scale-get-settings', scaleWin);
-    assert.deepEqual(settings, {
+    const snapshot = await harness.ipcMain.invoke('settings-get-snapshot', settingsWin);
+    assert.deepEqual(snapshot.petScale, {
       currentPercent: 110,
+      committedPercent: 110,
       defaultPercent: PET_SCALE_DEFAULT_PERCENT,
       minPercent: PET_SCALE_MIN_PERCENT,
       maxPercent: PET_SCALE_MAX_PERCENT,
       stepPercent: PET_SCALE_STEP_PERCENT,
     });
 
-    // Calling settings from unauthorized window is rejected
-    const blockedSettings = await harness.ipcMain.invoke('pet-scale-get-settings', harness.mainWindow);
-    assert.equal(blockedSettings, null, 'Settings query must only be accessible to PetScaleWindow');
+    const blockedSnapshot = await harness.ipcMain.invoke('settings-get-snapshot', harness.mainWindow);
+    assert.equal(blockedSnapshot, null, 'Settings snapshot must only be accessible to SettingsWindow');
   });
 
-  await t.test('3. Previewing scale broadcasts pet-scale-changed but does NOT persist to Store', async () => {
-    const scaleWin = harness.windowManager.petScaleWindow;
+  await t.test('3. Previewing scale broadcasts pet-scale-changed without writing Store, and commit persists immediately', async () => {
+    const settingsWin = harness.windowManager.settingsWindow;
     harness.mainWindow.webContents.clearSentMessages();
 
-    // User previews 80%
-    const previewResult = await harness.ipcMain.invoke('pet-scale-preview', scaleWin, 80);
-    assert.equal(previewResult, 80);
+    const previewResult = await harness.ipcMain.invoke('settings-preview-pet-scale', settingsWin, 80);
+    assert.equal(previewResult.success, true);
+    assert.equal(previewResult.data.percent, 80);
 
-    // Broadcast must be received by mainWindow
     const lastBroadcast = harness.mainWindow.webContents.getLastMessage('pet-scale-changed');
     assert.ok(lastBroadcast, 'MainWindow must receive pet-scale-changed event');
     assert.equal(lastBroadcast.args[0], 80);
-
-    // CRITICAL: Store must still retain committed value 110, not 80
     assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 110, 'Preview must NOT write to Store');
-    assert.equal(PetScaleService.getCommittedPercent(), 110);
-    assert.equal(PetScaleService.getPreviewPercent(), 80);
 
-    // Querying settings while previewing returns the active preview percent so reloading stays in sync
-    const previewSettings = await harness.ipcMain.invoke('pet-scale-get-settings', scaleWin);
-    assert.equal(previewSettings.currentPercent, 80);
+    const commitResult = await harness.ipcMain.invoke('settings-commit-pet-scale', settingsWin, 80);
+    assert.equal(commitResult.success, true);
+    assert.equal(commitResult.data.percent, 80);
+    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 80, 'Commit must write to Store immediately');
+    assert.equal(PetScaleService.getCommittedPercent(), 80);
   });
 
-  await t.test('4. Canceling reverts pet scale to committed value and destroys window', async () => {
-    const scaleWin = harness.windowManager.petScaleWindow;
-    harness.mainWindow.webContents.clearSentMessages();
+  await t.test('4. Reset restores 100% and closing SettingsWindow flushes uncommitted preview', async () => {
+    const settingsWin = harness.windowManager.settingsWindow;
+    const resetRes = await harness.ipcMain.invoke('settings-reset-pet-scale', settingsWin);
+    assert.equal(resetRes.success, true);
+    assert.equal(resetRes.data.percent, 100);
+    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 100);
 
-    const cancelResult = await harness.ipcMain.invoke('pet-scale-cancel', scaleWin);
-    assert.deepEqual(cancelResult, { success: true });
+    // Preview 135% without committing via change event, then close window -> flushPreview persists 135%
+    await harness.ipcMain.invoke('settings-preview-pet-scale', settingsWin, 135);
+    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 100);
 
-    // MainWindow must receive revert broadcast back to 110%
-    const revertBroadcast = harness.mainWindow.webContents.getLastMessage('pet-scale-changed');
-    assert.ok(revertBroadcast);
-    assert.equal(revertBroadcast.args[0], 110);
+    SettingsWindow.closeSettingsWindow();
+    assert.equal(settingsWin.isDestroyed(), true);
+    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 135, 'Close must flush uncommitted preview');
 
-    // Store is unchanged
-    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 110);
-
-    // Window must be closed / destroyed
-    assert.equal(scaleWin.isDestroyed(), true);
-  });
-
-  await t.test('5. Reopening, previewing and confirming commits to Store and closes window', async () => {
-    const scaleWin = PetScaleWindow.openPetScaleWindow();
-    harness.mainWindow.webContents.clearSentMessages();
-
-    // Preview 125%
-    await harness.ipcMain.invoke('pet-scale-preview', scaleWin, 125);
-    assert.equal(harness.mainWindow.webContents.getLastMessage('pet-scale-changed').args[0], 125);
-    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 110);
-
-    // Confirm 125%
-    const confirmResult = await harness.ipcMain.invoke('pet-scale-confirm', scaleWin);
-    assert.deepEqual(confirmResult, { success: true, percent: 125 });
-
-    // Store MUST be updated to 125
-    assert.equal(harness.store.get(PET_SCALE_STORE_KEY), 125, 'Confirm must commit new value to Store');
-    assert.equal(PetScaleService.getCommittedPercent(), 125);
-
-    // Window is closed
-    assert.equal(scaleWin.isDestroyed(), true);
-
-    // Subsequent query from MainWindow returns updated 125%
     const updatedScale = await harness.ipcMain.invoke('get-pet-scale', harness.mainWindow);
-    assert.equal(updatedScale, 125);
+    assert.equal(updatedScale, 135);
   });
 });
