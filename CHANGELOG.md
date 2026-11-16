@@ -6,6 +6,7 @@
 
 ### Added
 - **统一设置窗口主进程窗口基座与聚合服务 (`Unified Settings Window Main Base & SettingsService`)**：新增沙盒化统一设置窗口 `SettingsWindow`（`480×420`、工作区边界夹紧、`180ms` `screen-saver` 置顶脉冲、关窗未落盘体型预览兜底刷盘，并纳入 `PetWindow` 子窗层级排序与连带关闭链）、最小权限语义化 `settingsPreload.js` 及聚合控制器 `SettingsService`（全 `settings-*` 通道绑定 `isSenderWindow(settingsWindow)` 鉴权与边界校验）；同时扩展 `PetScaleService.confirm(percent)` / `flushPreview()`、`AutoLaunchService.getAutoLaunchState()`、`BreakReminderController.updateBreakReminderSettings()`、`WeatherSyncController.setCityName()` / `getCitySettings()`、`LocaleService.changeLocale()` 与 `SkinService` 确认态通知，并由 `SkinSelectorWindow` 维护 `returnFocusToSettings` 标识隔离设置窗唤起与托盘唤起的焦点回传。
+- **统一设置窗口三语界面与无障碍交互 (`Unified Settings Window UI/UX & Trilingual I18N`)**：新增 `src/settings.html`、`src/settings.css` 与 `src/settingsWindow.js` 并在 `src/data/i18n.js` 补全中/英/日三语设置词典；实现顶部 3 标签页 Roving `tabindex` 键盘漫游、`role="switch"` 与非纯色分段控件、体型滑块 `input` 实时预览与 `change` 即时落盘、未设城市开启天气同步自动聚焦引导、子档位原生 `disabled` 联动、IME 组合态 `Esc` 守卫、严格 CSP 与零 `innerHTML` 安全渲染及减动效降级覆盖。
 
 ### Changed
 - **已完成实施计划归档 (`Completed Plans Archived`)**：将已完成的 `docs/plan/audit-remediation-plan.md` 与 `docs/plan/windows-fullscreen-rdp-plan.md` 归档至 `docs/archive/`。

@@ -133,33 +133,33 @@
     - `src/main/AppLifecycle.js`
 
 ### Phase 2: 统一设置窗口 UI/UX 实现与三语 I18N
-- [ ] **Task 2.1: 补齐三语字典（`zh` / `en` / `ja`）**
+- [x] **Task 2.1: 补齐三语字典（`zh` / `en` / `ja`）**
   - **Description**: 在 [i18n.js](../../src/data/i18n.js) 为统一设置窗口补充完整三语文案（窗口标题、3 个 Tab 名称、各分组标签、皮肤快捷卡片、平台不可用提示、macOS 登录项授权提示、未设城市引导提示、时间单位等），复用既有校验/提示文案（如 `citySetting*`、`petScale*`、`lang*`）。
   - **Context / Line Slices（防 Context Flooding，勿整文件读取 1,222 行）**:
     - 仅读取并编辑三语 `ui` 对象切片：`zh.ui`（[i18n.js#L22-L180](../../src/data/i18n.js#L22-L180)，建议插在 `L66–L120` 附近）、`en.ui`（[i18n.js#L414-L572](../../src/data/i18n.js#L414-L572)，`L458–L512` 附近）、`ja.ui`（[i18n.js#L807-L965](../../src/data/i18n.js#L807-L965)，`L851–L905` 附近），跳过后半段角色对话气泡台词。
   - **Acceptance criteria**:
-    - [ ] `zh` / `en` / `ja` 的 `ui` key 完全对齐，无空值、无 raw key 回退、无 `U+FFFD`。
-    - [ ] 聚焦验证命令：`node --test test/i18nKeyCompleteness.test.js test/i18n.test.js test/i18nFallback.test.js test/citySettingI18n.test.js` 全通过。
+    - [x] `zh` / `en` / `ja` 的 `ui` key 完全对齐，无空值、无 raw key 回退、无 `U+FFFD`。
+    - [x] 聚焦验证命令：`node --test test/i18nKeyCompleteness.test.js test/i18n.test.js test/i18nFallback.test.js test/citySettingI18n.test.js` 全通过。
   - **Dependencies**: None
   - **Files likely touched**:
     - `src/data/i18n.js`
 
-- [ ] **Task 2.2: `settings.html` / `settings.css` / `settingsWindow.js` 前端实现**
+- [x] **Task 2.2: `settings.html` / `settings.css` / `settingsWindow.js` 前端实现**
   - **Description**: 基于 `.xianxia-panel` 与 `settings-calligraphy.css` 构建顶部 3 标签页的设置界面，满足 `/game-ui-ux` 布局、键盘导航、非颜色状态编码、即时自动保存与事件驱动更新规范。
   - **Context / Pattern to Follow**:
     - HTML 与面板结构参照 [pet-scale.html](../../src/pet-scale.html#L1-L58)；标题栏拖拽区、关闭按钮与玉金滑块样式复用 [pet-scale.css](../../src/pet-scale.css#L38-L222)；城市输入行、确认按钮、状态脉冲与 `prefers-reduced-motion` 复用 [city-setting.css](../../src/city-setting.css#L129-L244)。
     - Fake-DOM 渲染测试参照 [petScaleWindowRenderer.behavior.test.js](../../test/petScaleWindowRenderer.behavior.test.js) 的 `vm.runInNewContext` 桩模式。
   - **Acceptance criteria**:
-    - [ ] 严格 CSP（含 `font-src 'self'`），引入 `index.css` 与 `settings-calligraphy.css`，标题使用 `class="settings-calligraphy-title"`；`.settings-tabpanel` 配置 `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 及水墨细滚动条兜底，防止多语言分段换行或提示展开时纵向裁切。
-    - [ ] 顶部 3 个 Tab（`role="tablist"`）采用 **Roving `tabindex`**（激活 Tab `tabindex="0"`，其余 `tabindex="-1"`），支持鼠标点击与键盘左右箭头切换，初始聚焦激活 Tab（且窗口已打开时接收 `initialTab` 同步切换与移交焦点）；各控件支持 `Tab` 遍历与 `:focus-visible` 样式；全局 `Esc` 关闭窗口带输入法组合态守卫（`if (event.isComposing || event.keyCode === 229) return;`）；城市输入框内 `Enter` 触发验证。
-    - [ ] 开关控件使用 `role="switch"` + `aria-checked` 并具备滑块位移与边框对比；分段按钮使用 `aria-pressed="true"`（或 `role="radiogroup"` / `role="radio"`），选中态叠加加粗字重、实线玉金边框与内部微光/指示条（非颜色编码）。
-    - [ ] **外观与交互 Tab**：体型滑块 `input` 事件触发 `previewPetScale` 实时缩放、`change` 事件（松手或键盘步进）立即 `commitPetScale` 持久化、「恢复默认」一键回 `100%`；皮肤卡片展示当前已确认皮肤名，点击 `#settings-open-skin-button` 唤起独立选肤窗并支持选肤窗关闭后接收焦点回传；界面感知开关在不支持平台禁用。
-    - [ ] **陪伴与守护 Tab**：天气开关打开且城市为空时保持开关开启态（`enabled: true`），自动聚焦城市输入框并显示引导；城市输入框与确认按钮始终可用，验证通过后立即自动触发首次天气同步；久坐提醒与高甜屏保开关关闭时，子档位按钮使用原生 `disabled`（配合分组 `aria-disabled="true"`），使 `Tab` 键直接跳过。
-    - [ ] **系统偏好 Tab**：三语分段切换即时刷新当前设置窗及全应用文案；开机自启开关在 `pendingApproval: true` 时展示提示，异步操作失败时依据主进程权威快照回弹。
-    - [ ] 全程零 `innerHTML`，包含 `@media (prefers-reduced-motion: reduce)`；切换 `en` / `ja` 时窗口内容区不截断、不溢出。
+    - [x] 严格 CSP（含 `font-src 'self'`），引入 `index.css` 与 `settings-calligraphy.css`，标题使用 `class="settings-calligraphy-title"`；`.settings-tabpanel` 配置 `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 及水墨细滚动条兜底，防止多语言分段换行或提示展开时纵向裁切。
+    - [x] 顶部 3 个 Tab（`role="tablist"`）采用 **Roving `tabindex`**（激活 Tab `tabindex="0"`，其余 `tabindex="-1"`），支持鼠标点击与键盘左右箭头切换，初始聚焦激活 Tab（且窗口已打开时接收 `initialTab` 同步切换与移交焦点）；各控件支持 `Tab` 遍历与 `:focus-visible` 样式；全局 `Esc` 关闭窗口带输入法组合态守卫（`if (event.isComposing || event.keyCode === 229) return;`）；城市输入框内 `Enter` 触发验证。
+    - [x] 开关控件使用 `role="switch"` + `aria-checked` 并具备滑块位移与边框对比；分段按钮使用 `aria-pressed="true"`（或 `role="radiogroup"` / `role="radio"`），选中态叠加加粗字重、实线玉金边框与内部微光/指示条（非颜色编码）。
+    - [x] **外观与交互 Tab**：体型滑块 `input` 事件触发 `previewPetScale` 实时缩放、`change` 事件（松手或键盘步进）立即 `commitPetScale` 持久化、「恢复默认」一键回 `100%`；皮肤卡片展示当前已确认皮肤名，点击 `#settings-open-skin-button` 唤起独立选肤窗并支持选肤窗关闭后接收焦点回传；界面感知开关在不支持平台禁用。
+    - [x] **陪伴与守护 Tab**：天气开关打开且城市为空时保持开关开启态（`enabled: true`），自动聚焦城市输入框并显示引导；城市输入框与确认按钮始终可用，验证通过后立即自动触发首次天气同步；久坐提醒与高甜屏保开关关闭时，子档位按钮使用原生 `disabled`（配合分组 `aria-disabled="true"`），使 `Tab` 键直接跳过。
+    - [x] **系统偏好 Tab**：三语分段切换即时刷新当前设置窗及全应用文案；开机自启开关在 `pendingApproval: true` 时展示提示，异步操作失败时依据主进程权威快照回弹。
+    - [x] 全程零 `innerHTML`，包含 `@media (prefers-reduced-motion: reduce)`；切换 `en` / `ja` 时窗口内容区不截断、不溢出。
   - **Verification**:
-    - [ ] Fake-DOM 行为测试（如 `test/settingsWindowRenderer.behavior.test.js`）覆盖：3 Tab Roving `tabindex` 切换与键盘导航、`Esc` 关闭及 IME `isComposing`/`keyCode === 229` 拦截、体型滑块 `input` 预览 / `change` 立即提交 / 重置、未设城市开天气同步保持开启并自动聚焦、城市验证状态流转、子档位原生 `disabled` 联动、`autoLaunch` 失败回弹、语言实时刷新、外部状态推送同步及选肤窗关闭焦点回传。
-    - [ ] 聚焦验证命令：`node --test test/settingsWindowRenderer.behavior.test.js test/cspHardening.test.js test/htmlInjectionHardening.test.js test/reducedMotionCss.test.js test/calligraphyDecoration.test.js`，Phase 2 收尾执行 `npm test`。
+    - [x] Fake-DOM 行为测试（如 `test/settingsWindowRenderer.behavior.test.js`）覆盖：3 Tab Roving `tabindex` 切换与键盘导航、`Esc` 关闭及 IME `isComposing`/`keyCode === 229` 拦截、体型滑块 `input` 预览 / `change` 立即提交 / 重置、未设城市开天气同步保持开启并自动聚焦、城市验证状态流转、子档位原生 `disabled` 联动、`autoLaunch` 失败回弹、语言实时刷新、外部状态推送同步及选肤窗关闭焦点回传。
+    - [x] 聚焦验证命令：`node --test test/settingsWindowRenderer.behavior.test.js test/cspHardening.test.js test/htmlInjectionHardening.test.js test/reducedMotionCss.test.js test/calligraphyDecoration.test.js`，Phase 2 收尾执行 `npm test`。
   - **Dependencies**: Task 1.2, Task 2.1
   - **Files likely touched**:
     - `src/settings.html` (NEW)
