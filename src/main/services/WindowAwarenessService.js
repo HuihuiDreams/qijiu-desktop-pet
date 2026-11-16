@@ -111,9 +111,13 @@ function startActiveWindowAwareness() {
   activeWindowSampler.start();
 }
 
+function isSupported() {
+  return process.platform === 'win32' || process.platform === 'darwin';
+}
+
 function setWindowAwarenessEnabled(enabled) {
   const { windowManager, trayManager, StoreManager } = deps;
-  if (process.platform !== 'win32' && process.platform !== 'darwin') return;
+  if (!isSupported()) return;
   windowAwarenessEnabled = Boolean(enabled);
   if (StoreManager) {
     const store = StoreManager.getStore();
@@ -126,6 +130,7 @@ function setWindowAwarenessEnabled(enabled) {
     }
   }
   trayManager.refreshTrayMenu();
+  deps.onSettingsChanged?.();
 }
 
 module.exports = {
@@ -140,4 +145,5 @@ module.exports = {
     : undefined,
   getNativePayload: () => activeWindowSampler?.getLastPayload(),
   isEnabled: () => windowAwarenessEnabled,
+  isSupported,
 };

@@ -109,6 +109,57 @@ function init(dependencies) {
   });
 }
 
+function updateBreakReminderSettings(patch = {}) {
+  const currentSettings = breakReminderService?.getSettings?.() || {
+    enabled: breakReminderEnabled,
+    intervalMinutes: breakReminderIntervalMinutes,
+    idleResetMinutes: 5,
+  };
+
+  const nextEnabled = typeof patch.enabled === 'boolean'
+    ? patch.enabled
+    : breakReminderEnabled;
+
+  let nextInterval = breakReminderIntervalMinutes;
+  if (patch.intervalMinutes !== undefined) {
+    const parsed = Number(patch.intervalMinutes);
+    if (!Number.isInteger(parsed) || !BREAK_REMINDER_TRAY_INTERVALS.includes(parsed)) {
+      return {
+        success: false,
+        settings: {
+          ...currentSettings,
+          enabled: breakReminderEnabled,
+          intervalMinutes: breakReminderIntervalMinutes,
+        },
+      };
+    }
+    nextInterval = parsed;
+  }
+
+  const nextSettings = {
+    ...currentSettings,
+    enabled: nextEnabled,
+    intervalMinutes: nextInterval,
+  };
+
+  breakReminderEnabled = nextEnabled;
+  breakReminderIntervalMinutes = nextInterval;
+
+  if (breakReminderService && typeof breakReminderService.updateSettings === 'function') {
+    breakReminderService.updateSettings(nextSettings);
+  }
+
+  const store = deps.StoreManager?.getStore?.();
+  if (store && typeof store.set === 'function') {
+    store.set(BREAK_REMINDER_STORE_KEY, nextSettings);
+  }
+
+  deps.trayManager?.refreshTrayMenu?.();
+  deps.onSettingsChanged?.();
+
+  return { success: true, settings: nextSettings };
+}
+
 module.exports = {
   init,
   BREAK_REMINDER_TRAY_INTERVALS,
@@ -117,4 +168,5 @@ module.exports = {
   getBreakReminderIntervalMinutes: () => breakReminderIntervalMinutes,
   setBreakReminderIntervalMinutes: (val) => { breakReminderIntervalMinutes = val; },
   getBreakReminderService: () => breakReminderService,
+  updateBreakReminderSettings,
 };

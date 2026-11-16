@@ -11,7 +11,8 @@ class WindowManager {
       pomodoro: null,
       citySetting: null,
       updateProgress: null,
-      petScale: null
+      petScale: null,
+      settings: null
     };
   }
 
@@ -37,6 +38,9 @@ class WindowManager {
 
   get petScaleWindow() { return this.windows.petScale; }
   set petScaleWindow(val) { this.windows.petScale = val; }
+
+  get settingsWindow() { return this.windows.settings; }
+  set settingsWindow(val) { this.windows.settings = val; }
 }
 
 module.exports = new WindowManager();

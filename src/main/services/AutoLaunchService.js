@@ -134,14 +134,27 @@ function isAutoLaunchEnabled() {
   return autoLaunchEnabled;
 }
 
+function getAutoLaunchState() {
+  const preference = getStoredAutoLaunchPreference();
+  const loginItem = getLoginItemStatus();
+  const pendingApproval = Boolean(preference && isLoginItemPendingApproval(loginItem));
+  return {
+    enabled: autoLaunchEnabled,
+    preference,
+    pendingApproval,
+  };
+}
+
 module.exports = {
   AUTO_LAUNCH_KEY,
   DEFAULT_AUTO_LAUNCH,
   getStoredAutoLaunchPreference,
   getLoginItemStatus,
+  isLoginItemPendingApproval,
   applyAutoLaunchSetting,
   syncAutoLaunchPreference,
   setAutoLaunchPreference,
   getAutoLaunchPreference,
+  getAutoLaunchState,
   isAutoLaunchEnabled,
 };

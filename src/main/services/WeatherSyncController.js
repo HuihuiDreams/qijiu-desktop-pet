@@ -186,6 +186,61 @@ async function startWeatherSync() {
   weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
 }
 
+function getCitySettings() {
+  return { city: weatherSyncSettings.city || '' };
+}
+
+async function setCityName(cityName) {
+  if (typeof cityName !== 'string' || !cityName.trim()) {
+    return { success: false };
+  }
+
+  const trimmed = cityName.trim().slice(0, 100);
+  const requestId = ++weatherSyncCityRequestId;
+  const currentStored = getStoredWeatherSyncSettings();
+
+  // Force enabled to true temporarily to bypass processSettingsChange's fast-return
+  // and ensure geocoding validation runs.
+  const newSettings = {
+    ...currentStored,
+    city: trimmed,
+    lat: null,
+    lon: null,
+    enabled: true,
+  };
+
+  try {
+    const processed = await processSettingsChange(newSettings);
+    if (requestId !== weatherSyncCityRequestId) {
+      return { success: false };
+    }
+    if (processed.lat === null || processed.lon === null) {
+      return { success: false };
+    }
+
+    // In-memory settings include the latest user intent even while its geocoding
+    // has not completed and the store still contains an older toggle preference.
+    const latestSettings = weatherSyncSettings;
+    weatherSyncSettings = {
+      ...processed,
+      enabled: latestSettings.enabled,
+      refreshIntervalMinutes: latestSettings.refreshIntervalMinutes,
+    };
+
+    // The pending toggle intent is merged above; discard its older city result.
+    ++weatherSyncSettingsUpdateId;
+
+    saveWeatherSyncSettings(weatherSyncSettings);
+    if (typeof deps.trayManager?.refreshTrayMenu === 'function') deps.trayManager.refreshTrayMenu();
+    deps.onWeatherSettingsChanged?.(weatherSyncSettings);
+    startWeatherSync();
+    return { success: true, city: processed.city };
+  } catch (err) {
+    console.error('Failed to set city:', err);
+    return { success: false };
+  }
+}
+
 async function updateWeatherSyncSettings(newSettings) {
   const updateId = ++weatherSyncSettingsUpdateId;
   const previousCity = weatherSyncSettings.city;
@@ -193,19 +248,23 @@ async function updateWeatherSyncSettings(newSettings) {
   if (weatherSyncSettings.city && weatherSyncSettings.city !== previousCity) {
     ++weatherSyncCityRequestId;
   }
-  deps.trayManager.refreshTrayMenu();
+  if (typeof deps.trayManager?.refreshTrayMenu === 'function') deps.trayManager.refreshTrayMenu();
+  deps.onWeatherSettingsChanged?.(weatherSyncSettings);
 
   const processedSettings = await processSettingsChange(weatherSyncSettings);
   if (updateId !== weatherSyncSettingsUpdateId) return;
 
   weatherSyncSettings = processedSettings;
   saveWeatherSyncSettings(weatherSyncSettings);
-  deps.trayManager.refreshTrayMenu();
+  if (typeof deps.trayManager?.refreshTrayMenu === 'function') deps.trayManager.refreshTrayMenu();
+  deps.onWeatherSettingsChanged?.(weatherSyncSettings);
   startWeatherSync();
 }
 
 module.exports = {
   init,
+  getCitySettings,
+  setCityName,
   getStoredWeatherSyncSettings,
   saveWeatherSyncSettings,
   startWeatherSync,
