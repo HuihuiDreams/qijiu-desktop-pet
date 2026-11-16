@@ -28,7 +28,6 @@ const KEY_UI_TEXT_KEYS = [
   'pomodoroTitle',
   'pomodoroStart',
   'pomodoroFinish',
-  'citySettingTitle',
   'citySettingConfirm',
   'contextMenuFeed',
   'contextMenuCultivate',

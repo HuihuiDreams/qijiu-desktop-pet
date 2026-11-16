@@ -407,14 +407,15 @@ test('PetScaleService supports confirm(percent) and flushPreview() while keeping
     onScaleChanged: (p) => scaleChanges.push(p),
   }, { registerIpc: false });
 
-  assert.equal(service.hasPendingPreview(), false);
+  assert.equal(service.getPreviewPercent(), 100);
   assert.equal(service.flushPreview(), 100);
   assert.equal(scaleChanges.length, 0);
 
   service.preview(125);
-  assert.equal(service.hasPendingPreview(), true);
+  assert.equal(service.getPreviewPercent(), 125);
+  assert.equal(service.getCommittedPercent(), 100);
   assert.equal(service.flushPreview(), 125);
-  assert.equal(service.hasPendingPreview(), false);
+  assert.equal(service.getCommittedPercent(), 125);
   assert.equal(fakeStore.get('petScalePercent'), 125);
   assert.deepEqual(scaleChanges, [125]);
 

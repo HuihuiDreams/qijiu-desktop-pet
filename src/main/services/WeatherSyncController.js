@@ -128,10 +128,6 @@ async function startWeatherSync() {
   weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
 }
 
-function getCitySettings() {
-  return { city: weatherSyncSettings.city || '' };
-}
-
 async function setCityName(cityName) {
   if (typeof cityName !== 'string' || !cityName.trim()) {
     return { success: false };
@@ -205,7 +201,6 @@ async function updateWeatherSyncSettings(newSettings) {
 
 module.exports = {
   init,
-  getCitySettings,
   setCityName,
   getStoredWeatherSyncSettings,
   saveWeatherSyncSettings,

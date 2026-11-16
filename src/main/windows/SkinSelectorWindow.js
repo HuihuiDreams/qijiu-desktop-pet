@@ -215,8 +215,6 @@ module.exports = {
   setSkinSelectorSelectionInProgress: (val) => { skinSelectorSelectionInProgress = val; },
   setSkinSelectorOriginalSkinId: (val) => { skinSelectorOriginalSkinId = val; },
   getSkinSelectorOriginalSkinId,
-  setReturnFocusToSettings: (val) => { returnFocusToSettings = Boolean(val); },
-  getReturnFocusToSettings: () => returnFocusToSettings,
   sendSkinSelectorData,
   pulseSkinSelectorWindowTop,
 };
