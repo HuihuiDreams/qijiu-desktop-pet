@@ -191,7 +191,7 @@ qijiu-desktop-pet/
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
 │  ├─ settings.html                     # 统一设置窗口 HTML（520×456，3 标签页），使用严格 CSP
 │  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
-│  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交、城市异步校验与状态同步
+│  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交（拖动期间不接受快照回写）、按控件串行的设置提交与 IPC 失败回读快照、城市异步校验与状态同步
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
 │  ├─ settings-calligraphy.css          # 选肤与统一设置窗口共用的金色书法标题样式；保留三语标题，无竖排书法底纹，装饰不拦截输入

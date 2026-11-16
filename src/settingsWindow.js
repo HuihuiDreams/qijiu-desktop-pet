@@ -47,6 +47,8 @@
   let cityStatusState = null; // { key, city, className }
   let autoLaunchStatusState = null; // { key, className }
   let hasScheduledInitialFocus = false;
+  let isScaleDragging = false;
+  const settingQueues = new Map();
 
   function translate(key) {
     if (typeof window.t === 'function') {
@@ -168,7 +170,10 @@
         scaleSliderEl.max = String(snapshot.petScale.maxPercent);
         scaleSliderEl.step = String(snapshot.petScale.stepPercent);
       }
-      updateScaleDisplay(snapshot.petScale.currentPercent);
+      // 拖动期间不接受快照回写，避免并发/乱序推送把滑块拉回旧值
+      if (!isScaleDragging) {
+        updateScaleDisplay(snapshot.petScale.currentPercent);
+      }
     }
 
     // Appearance: Skin card
@@ -257,6 +262,44 @@
     }
   }
 
+  function applyResultSnapshot(res) {
+    const snapshot = res?.data?.snapshot || res?.snapshot;
+    if (snapshot) {
+      applySnapshot(snapshot);
+    }
+    return Boolean(snapshot);
+  }
+
+  // 同一控件的请求按点击顺序串行执行（开关状态在执行时才读取，连点等价于依次切换）。
+  // IPC 抛错或失败且无快照时回读主进程快照，避免界面停在未生效的乐观状态。
+  function runSetting(key, task) {
+    const run = async () => {
+      try {
+        const res = await task();
+        const hasSnapshot = applyResultSnapshot(res);
+        if (res && res.success === false && !hasSnapshot) {
+          await loadSnapshot();
+        }
+        return res;
+      } catch (err) {
+        console.error(`Failed to update setting ${key}:`, err);
+        await loadSnapshot();
+        return { success: false };
+      }
+    };
+    const next = (settingQueues.get(key) || Promise.resolve()).then(run);
+    settingQueues.set(key, next);
+    return next;
+  }
+
+  function isSwitchOn(switchEl) {
+    return switchEl.getAttribute?.('aria-checked') === 'true';
+  }
+
+  function endScaleDrag() {
+    isScaleDragging = false;
+  }
+
   function handleTabKeydown(event) {
     const key = event?.key;
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
@@ -335,18 +378,25 @@
 
   // Pet Scale events: input -> live preview, change -> immediate commit
   if (scaleSliderEl) {
+    scaleSliderEl.addEventListener('pointerdown', () => {
+      isScaleDragging = true;
+    });
+    // 拖走再拖回原值松手时浏览器可能不触发 change，需靠指针结束/失焦清除拖动标记
+    scaleSliderEl.addEventListener('blur', endScaleDrag);
+    window.addEventListener('pointerup', endScaleDrag);
+    window.addEventListener('pointercancel', endScaleDrag);
     scaleSliderEl.addEventListener('input', (event) => {
       const percent = Number(event.target.value);
       updateScaleDisplay(percent);
-      window.electronAPI?.previewPetScale?.(percent);
+      Promise.resolve(window.electronAPI?.previewPetScale?.(percent)).catch((err) => {
+        console.error('Failed to preview pet scale:', err);
+      });
     });
     scaleSliderEl.addEventListener('change', async (event) => {
       const percent = Number(event.target.value);
+      endScaleDrag();
       updateScaleDisplay(percent);
-      const res = await window.electronAPI?.commitPetScale?.(percent);
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      }
+      await runSetting('scale', () => window.electronAPI?.commitPetScale?.(percent));
     });
   }
 
@@ -354,10 +404,7 @@
     scaleResetBtn.addEventListener('click', async () => {
       const defaultPercent = latestSnapshot?.petScale?.defaultPercent ?? 100;
       updateScaleDisplay(defaultPercent);
-      const res = await window.electronAPI?.resetPetScale?.();
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      }
+      await runSetting('scale', () => window.electronAPI?.resetPetScale?.());
     });
   }
 
@@ -370,25 +417,19 @@
   if (windowAwarenessSwitch) {
     windowAwarenessSwitch.addEventListener('click', async () => {
       if (windowAwarenessSwitch.disabled) return;
-      const nextEnabled = windowAwarenessSwitch.getAttribute?.('aria-checked') !== 'true';
-      const res = await window.electronAPI?.setWindowAwareness?.(nextEnabled);
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('window-awareness', () => (
+        window.electronAPI?.setWindowAwareness?.(!isSwitchOn(windowAwarenessSwitch))
+      ));
     });
   }
 
   if (weatherSwitch) {
     weatherSwitch.addEventListener('click', async () => {
-      const nextEnabled = weatherSwitch.getAttribute?.('aria-checked') !== 'true';
-      const res = await window.electronAPI?.setWeatherEnabled?.(nextEnabled);
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      let nextEnabled = false;
+      const res = await runSetting('weather', () => {
+        nextEnabled = !isSwitchOn(weatherSwitch);
+        return window.electronAPI?.setWeatherEnabled?.(nextEnabled);
+      });
       if (res?.success && res.data?.needsCityPrompt) {
         setCityStatus('settingsWeatherCityPrompt', 'city-status--prompt');
         cityInputEl?.focus?.();
@@ -420,13 +461,9 @@
 
   if (breakReminderSwitch) {
     breakReminderSwitch.addEventListener('click', async () => {
-      const nextEnabled = breakReminderSwitch.getAttribute?.('aria-checked') !== 'true';
-      const res = await window.electronAPI?.setBreakReminder?.({ enabled: nextEnabled });
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('break-reminder', () => (
+        window.electronAPI?.setBreakReminder?.({ enabled: !isSwitchOn(breakReminderSwitch) })
+      ));
     });
   }
 
@@ -434,24 +471,15 @@
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
       const intervalMinutes = Number(btn.dataset?.interval);
-      const res = await window.electronAPI?.setBreakReminder?.({ intervalMinutes });
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('break-reminder', () => window.electronAPI?.setBreakReminder?.({ intervalMinutes }));
     });
   }
 
   if (screensaverSwitch) {
     screensaverSwitch.addEventListener('click', async () => {
-      const nextEnabled = screensaverSwitch.getAttribute?.('aria-checked') !== 'true';
-      const res = await window.electronAPI?.setScreensaver?.({ enabled: nextEnabled });
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('screensaver', () => (
+        window.electronAPI?.setScreensaver?.({ enabled: !isSwitchOn(screensaverSwitch) })
+      ));
     });
   }
 
@@ -459,12 +487,7 @@
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
       const idleThresholdMinutes = Number(btn.dataset?.threshold);
-      const res = await window.electronAPI?.setScreensaver?.({ idleThresholdMinutes });
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('screensaver', () => window.electronAPI?.setScreensaver?.({ idleThresholdMinutes }));
     });
   }
 
@@ -472,31 +495,22 @@
     btn.addEventListener('click', async () => {
       const lang = btn.dataset?.locale;
       if (!lang) return;
-      const res = await window.electronAPI?.changeSettingsLocale?.(lang);
-      if (res?.data?.snapshot) {
-        applySnapshot(res.data.snapshot);
-      } else if (res?.snapshot) {
-        applySnapshot(res.snapshot);
-      }
+      await runSetting('locale', () => window.electronAPI?.changeSettingsLocale?.(lang));
     });
   }
 
   if (autoLaunchSwitch) {
     autoLaunchSwitch.addEventListener('click', async () => {
-      const nextEnabled = autoLaunchSwitch.getAttribute?.('aria-checked') !== 'true';
       setAutoLaunchStatus(null, null);
-      const res = await window.electronAPI?.changeAutoLaunch?.(nextEnabled);
+      const res = await runSetting('auto-launch', () => (
+        window.electronAPI?.changeAutoLaunch?.(!isSwitchOn(autoLaunchSwitch))
+      ));
       if (res?.success) {
-        if (res.data?.snapshot) {
-          applySnapshot(res.data.snapshot);
-        }
         if (res.data?.pendingApproval || res.data?.snapshot?.autoLaunchPendingApproval) {
           setAutoLaunchStatus('settingsAutoLaunchPendingApproval', 'settings-inline-status--warning');
         }
       } else {
-        if (res?.snapshot) {
-          applySnapshot(res.snapshot);
-        } else if (latestSnapshot) {
+        if (latestSnapshot) {
           applySnapshot(latestSnapshot);
         }
         setAutoLaunchStatus('settingsAutoLaunchError', 'settings-inline-status--error');
