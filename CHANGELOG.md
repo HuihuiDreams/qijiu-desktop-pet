@@ -16,6 +16,7 @@
 - **统一设置窗口三语界面与无障碍交互 (`Unified Settings Window UI/UX & Trilingual I18N`)**：新增 `src/settings.html`、`src/settings.css` 与 `src/settingsWindow.js` 并在 `src/data/i18n.js` 补全中/英/日三语设置词典；采用免滚动玉简卡片与内联当前城市徽章、单行 CSS Grid 等分分段键帽布局，实现顶部 3 标签页 Roving `tabindex` 键盘漫游、`role="switch"` 与非纯色分段控件、体型滑块 `input` 实时预览与 `change` 即时落盘、未设城市开启天气同步自动聚焦引导、子档位原生 `disabled` 联动、IME 组合态 `Esc` 守卫、严格 CSP 与零 `innerHTML` 安全渲染及减动效降级覆盖（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
 
 ### Changed
+- **托盘图标点阵从 `CA` 改为 `GO` (`Tray Icon Bitmap Updated from CA to GO`)**：更新 `src/main/TrayManager.js` 中 `createTrayIconBuffer()` 的 16×16 像素点阵定义，将托盘图标显示的字母由 `CA` 替换为 `GO`。
 - **核心运行时与依赖大版本基线升级 (`Runtime & Dependency Major Upgrades: Electron 45, electron-store 12 & asar 4`)**：
   - **核心引擎升级**：Electron 升级至 45.2.1（内置 Chromium 基线由 134+ 提升至 156+），开发依赖 `@electron/asar` 升级至 4.3.1，`electron-builder` 升级至 26.18.0，`glob` 升级至 14.0.3，`@playwright/test` 升级至 1.64.1，生产依赖 `electron-store` 升级至 12.0.0，`electron-log` 升级至 5.4.4，`electron-updater` 升级至 6.8.11。
   - **系统要求变更（Breaking Change）**：将 `package.json` 中的 macOS 最低系统要求（`mac.minimumSystemVersion`）提升至 `13.0`（Ventura），全语言 Readme 同步更新；不再支持 macOS 12 Monterey，严格对齐 Electron 44+ 官方运行时要求（详见 [ADR-026](./docs/decisions/ADR-026-macos-manual-update-executable-name.md)）。
