@@ -37,29 +37,20 @@ After launch, both characters will appear on your desktop.
 
 The tray menu lets you:
 - **📊 Show Status Panel**
-- **📏 Resize Pet…**: resize both pets together with a live preview; confirm to save.
 - **📖 Bookshop Study / 📖 Studying N min / 📖 Study Complete**: open the Pomodoro countdown window; the tray label reflects the current study state.
 - **🎨 Choose Skin…**: opens the visual skin selector gallery window where you can browse and switch built-in skins (currently built-in: Default Outfit - (Artist) Nano Banana). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
 - **⏸️ Pause Walking** or **🚶🏻‍♂️ Resume Walking**
 - **👻 Hide Pets** or **👻 Show Pets**: temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
 - **🔄 Reset Position**
 - **🖥️ Switch Screen**: move pets between displays (macOS multi-display only)
-- **⏰ Enable Break Reminder** or **⏰ Disable Break Reminder**
-- **⏰ Reminder Interval**: choose 30, 45, 60, 90, or 120 minutes (selectable only when break reminder is enabled; disabled when off)
-- **💕 Enable Sweet Screensaver** or **💕 Disable Sweet Screensaver**
-- **💕 Screensaver Wait Time**: choose 1, 3, 5, 10, 15, or 30 min (default: 3 min; selectable only when screensaver is enabled; disabled when off)
-- **🌤️ Enable Weather Sync** or **🌤️ Disable Weather Sync**
-- **🌤️ Set City**
-- **🪟 Enable Window Sensing** or **🪟 Disable Window Sensing**: shows "🪟 Window Sensing Unavailable" if unsupported.
-- **🌐 Language**: choose "中文", "English", or "日本語"
-- **🚀 Launch at Login** or **🚀 Disable Auto-launch**
+- **⚙️ Settings…**: open the unified Settings window with three tabs ("Appearance", "Companion", and "System") to adjust pet size, jump to the skin selector, toggle Window Sensing, Weather Sync & city, Break Reminder & interval, Sweet Screensaver & wait time, interface language, and Launch at Login.
 - **📦 Check for Updates**: packaged Windows builds show download progress and support automatic upgrade; macOS guides you to download and replace the DMG manually.
 - **🛠️ Developer Tools**: shown only in development mode.
 - **❌ Quit**
 - **🏷️ Version**: shows the current app version at the bottom of the tray menu.
 
 If you use multiple monitors, you can drag characters or the status panel to a secondary display.
-When you switch language from the tray menu, the main window, right-click menus, status panel, and update prompts refresh together.
+To switch languages, open "⚙️ Settings… -> System" from the tray menu and select "中文", "English", or "日本語"; the main window, right-click menus, status panel, Pomodoro, skin/settings windows, and update prompts refresh together.
 
 ========================================
 💕 CP Sweet Screensaver
@@ -70,9 +61,9 @@ After the system has been idle longer than the configured wait time, the screens
 - The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
 - When they detect that you are back, the two pets hurriedly cover up their secret rendezvous (Crowley pretends he is carrying out corrupting demon work, while Aziraphale nervously hides his pastry, claiming it was just standard faction diplomacy), before running back to their spots.
 
-In the tray menu, you can:
-- Toggle the screensaver with "💕 Enable Sweet Screensaver" / "💕 Disable Sweet Screensaver".
-- Choose 1 / 3 / 5 / 10 / 15 / 30 min under "💕 Screensaver Wait Time" (default: 3 min).
+In the tray under "⚙️ Settings… -> Companion", you can:
+- Toggle the "Sweet Screensaver" switch.
+- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Screensaver Wait Time" (default: 3 min).
 
 Note:
 This app does NOT block or modify Windows screen-off / sleep timing.
@@ -98,8 +89,8 @@ Missing optional action assets use default assets where possible. If a required 
 When pets move between displays with different scale factors, the character sprites, right-click menu, and miracle effects scale with the current display to keep their visual size consistent.
 
 Pet Size:
-Open "📏 Resize Pet…" from the tray and drag the slider to preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
-Click "Confirm" to save. "Cancel", Esc, or closing the window restores the previous size. "Reset" previews 100%; confirm to save it. Switching to another window or minimizing keeps the preview.
+Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to live-preview both pets at 50%–150% size, in 5% steps (default: 100%). Interaction scenes, miracle auras, the local screensaver scene, and weather effects scale with them.
+Changes save automatically on slider release, keyboard step, or window close; "Reset to Default" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
 
 Bookshop Typography:
 Character menus, the status panel, and settings windows feature warm parchment and antique gold styling inspired by A.Z. Fell & Co. Antiquarian Booksellers, with crisp native typography across Chinese, English, and Japanese.
@@ -119,8 +110,8 @@ Character menus, the status panel, and settings windows feature warm parchment a
 When Window Sensing is enabled, the pets can sense the edge of the current active window, the Windows taskbar, or the macOS Dock.
 During idle walking, they may stroll to the top edge of the active window, the area above the taskbar, or the area above the Dock, making them feel more connected to your desktop.
 
-You can toggle this from the tray menu with "🪟 Enable Window Sensing" or "🪟 Disable Window Sensing".
-If the current system does not support it, the tray menu shows "🪟 Window Sensing Unavailable".
+You can toggle the "Window Sensing" switch under "⚙️ Settings… -> Companion".
+If the current system does not support it, the setting displays an unavailable notice and disables toggling.
 
 ========================================
 🌤️ Weather Awareness & Time Sync
@@ -129,7 +120,7 @@ If the current system does not support it, the tray menu shows "🪟 Window Sens
 Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
 
-If you want them to sense real-world weather, choose "🌤️ Enable Weather Sync" from the tray menu and use "🌤️ Set City".
+If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
 When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
@@ -165,7 +156,7 @@ Meeting Auto-Hide automatically hides the pets when meeting activity is detected
 When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
 When it triggers, Crowley and Aziraphale move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
 
-You can toggle it from the tray menu with "⏰ Enable Break Reminder" or "⏰ Disable Break Reminder", and use "⏰ Reminder Interval" to choose 30, 45, 60, 90, or 120 minutes.
+You can toggle "Break Reminder" under "⚙️ Settings… -> Companion" and select 30, 45, 60, 90, or 120 minutes for the reminder interval.
 Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
 
 ========================================

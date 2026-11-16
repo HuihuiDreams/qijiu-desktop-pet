@@ -49,7 +49,7 @@
 | ADR-036 | CP 互动防交叠机制 | Accepted | 2026-06-08 | [ADR-036-cp-interaction-anti-overlap.md](./ADR-036-cp-interaction-anti-overlap.md) |
 | ADR-037 | 轻量番茄钟陪伴模式 | Accepted | 2026-06-17 | [ADR-037-lightweight-pomodoro-companion.md](./ADR-037-lightweight-pomodoro-companion.md) |
 | ADR-038 | 天气感知与时空同步系统架构与隐私边界 (Weather Sync System) | Accepted | 2026-06-18 | [ADR-038-weather-sync.md](./ADR-038-weather-sync.md) |
-| ADR-039 | 城市设置UI窗口 | Accepted | 2026-06-19 | [ADR-039-city-setting-ui-window.md](./ADR-039-city-setting-ui-window.md) |
+| ADR-039 | 城市设置UI窗口（窗口形态已由 ADR-050 整合） | Accepted | 2026-06-19 | [ADR-039-city-setting-ui-window.md](./ADR-039-city-setting-ui-window.md) |
 | ADR-040 | 加密皮肤资产 | Accepted | 2026-07-09 | [ADR-040-encrypted-skin-assets.md](./ADR-040-encrypted-skin-assets.md) |
 | ADR-041 | 选肤窗口性能测评与长远扩展优化策略 | Accepted | 2026-07-10 | [ADR-041-skin-selector-performance-and-scaling.md](./ADR-041-skin-selector-performance-and-scaling.md) |
 | ADR-042 | 主进程与渲染进程巨石文件拆分方案（Main & Renderer Module Decomposition） | Accepted | 2026-07-20 | [ADR-042-main-and-renderer-module-decomposition.md](./ADR-042-main-and-renderer-module-decomposition.md) |
@@ -57,5 +57,6 @@
 | ADR-044 | CP 局部屏保采用独立的主进程会话 | Accepted | 2026-07-27 | [ADR-044-cp-screensaver-session.md](./ADR-044-cp-screensaver-session.md) |
 | ADR-045 | Keep AI diary provider credentials outside distributed clients | Proposed | 2026-08-12 | [ADR-045-ai-diary-credential-boundary.md](./ADR-045-ai-diary-credential-boundary.md) |
 | ADR-046 | 主进程测试的 Electron Mock 拦截策略 | Accepted | 2026-08-27 | [ADR-046-electron-mock-testing-strategy.md](./ADR-046-electron-mock-testing-strategy.md) |
-| ADR-047 | 桌宠体型大小缩放与渲染架构方案 | Accepted | 2026-10-14 | [ADR-047-pet-scale-setting.md](./ADR-047-pet-scale-setting.md) |
+| ADR-047 | 桌宠体型大小缩放与渲染架构方案（窗口形态已由 ADR-050 整合） | Accepted | 2026-10-14 | [ADR-047-pet-scale-setting.md](./ADR-047-pet-scale-setting.md) |
 | ADR-048 | 桌面渲染层现代 Web 标准采纳 (Modern Web Standards Adoption in Desktop Renderer) | Accepted | 2026-10-22 | [ADR-048-modern-web-standards-adoption.md](./ADR-048-modern-web-standards-adoption.md) |
+| ADR-050 | 统一设置窗口与托盘菜单精简 | Accepted | 2026-11-16 | [ADR-050-unified-settings-window.md](./ADR-050-unified-settings-window.md) |
