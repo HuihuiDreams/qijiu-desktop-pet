@@ -213,8 +213,8 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
   try {
     const win = mod.openSettingsWindow('companion');
     assert.equal(windowManager.settingsWindow, win);
-    assert.equal(win.options.width, 480);
-    assert.equal(win.options.height, 420);
+    assert.equal(win.options.width, 520);
+    assert.equal(win.options.height, 476);
     assert.equal(win.options.transparent, true);
     assert.equal(win.options.frame, false);
     assert.equal(win.options.alwaysOnTop, false);

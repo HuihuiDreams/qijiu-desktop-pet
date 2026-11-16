@@ -259,9 +259,11 @@ test('settings.html and settings.css enforce CSP, calligraphy title, scrollable 
   assert.match(html, /class="settings-calligraphy-title" data-i18n="settingsTitle"/);
   assert.match(html, /role="tablist"/);
   assert.match(html, /role="switch"/);
+  assert.match(html, /class="settings-title-group"[\s\S]*id="weather-sync-label"[\s\S]*class="settings-city-current"/);
   assert.equal(js.includes('innerHTML'), false);
 
   assert.match(css, /\.settings-tabpanel\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;[\s\S]*overflow-y:\s*auto;[\s\S]*scrollbar-gutter:\s*stable;/);
+  assert.match(css, /\.settings-segment-group\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*\.settings-panel[\s\S]*animation:\s*none;/);
   assert.match(css, /\.settings-segment-button\[aria-pressed="true"\]\s*\{[\s\S]*font-weight:\s*700;/);
 });
