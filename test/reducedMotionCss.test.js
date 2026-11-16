@@ -9,23 +9,15 @@ function readSource(relativePath) {
   return fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
 }
 
-test('city-setting.css provides reduced-motion coverage for panel entrance and pulse search', () => {
-  const css = readSource('src/city-setting.css');
+test('settings.css provides reduced-motion coverage for panel entrance, transitions, and pulse search', () => {
+  const css = readSource('src/settings.css');
   assert.match(
     css,
-    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.city-panel[\s\S]*?animation:\s*none;?[\s\S]*?\}/
+    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.settings-panel[\s\S]*?animation:\s*none;?[\s\S]*?\}/
   );
   assert.match(
     css,
     /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.city-status--searching[\s\S]*?animation:\s*none;?[\s\S]*?\}/
-  );
-});
-
-test('pet-scale.css provides reduced-motion coverage for panel entrance', () => {
-  const css = readSource('src/pet-scale.css');
-  assert.match(
-    css,
-    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.scale-panel\s*\{[\s\S]*?animation:\s*none;?[\s\S]*?\}/
   );
 });
 

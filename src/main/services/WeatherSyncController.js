@@ -1,12 +1,10 @@
 /**
  * src/main/services/WeatherSyncController.js
  * 天气感知与时空同步的主进程设置控制器：electron-store 设置存取、周期同步
- * 定时器、store.onDidChange 订阅、城市设置 IPC（get-city-settings/set-city-name）。
+ * 定时器、store.onDidChange 订阅、以及供 SettingsService 委托调用的纯城市设置服务。
  * 勿与根目录已有的 weatherSyncService.js（网络请求/地理编码/数据清洗）混淆。
  * init(deps) 模式，deps: { windowManager, trayManager, StoreManager }。
  */
-const { ipcMain } = require('electron');
-const { isSenderWindow } = require('./IpcSenderAuthorization');
 const {
   DEFAULT_WEATHER_SYNC_SETTINGS,
   normalizeSettings: normalizeWeatherSyncSettings,
@@ -28,62 +26,6 @@ let weatherSyncCityRequestId = 0;
 
 function init(dependencies) {
   deps = dependencies;
-
-  ipcMain.handle('get-city-settings', (event) => {
-    if (!isSenderWindow(event, deps.windowManager.citySettingWindow)) return { success: false };
-    return { city: weatherSyncSettings.city || '' };
-  });
-
-  ipcMain.handle('set-city-name', async (event, cityName) => {
-    if (!isSenderWindow(event, deps.windowManager.citySettingWindow)) return { success: false };
-    if (typeof cityName !== 'string' || !cityName.trim()) {
-      return { success: false };
-    }
-
-    const trimmed = cityName.trim().slice(0, 100);
-    const requestId = ++weatherSyncCityRequestId;
-    const currentStored = getStoredWeatherSyncSettings();
-
-    // Force enabled to true temporarily to bypass processSettingsChange's fast-return
-    // and ensure geocoding validation runs.
-    const newSettings = {
-      ...currentStored,
-      city: trimmed,
-      lat: null,
-      lon: null,
-      enabled: true,
-    };
-
-    try {
-      const processed = await processSettingsChange(newSettings);
-      if (requestId !== weatherSyncCityRequestId) {
-        return { success: false };
-      }
-      if (processed.lat === null || processed.lon === null) {
-        return { success: false };
-      }
-
-      // In-memory settings include the latest user intent even while its geocoding
-      // has not completed and the store still contains an older toggle preference.
-      const latestSettings = weatherSyncSettings;
-      weatherSyncSettings = {
-        ...processed,
-        enabled: latestSettings.enabled,
-        refreshIntervalMinutes: latestSettings.refreshIntervalMinutes,
-      };
-
-      // The pending toggle intent is merged above; discard its older city result.
-      ++weatherSyncSettingsUpdateId;
-
-      saveWeatherSyncSettings(weatherSyncSettings);
-      deps.trayManager?.refreshTrayMenu?.();
-      startWeatherSync();
-      return { success: true, city: processed.city };
-    } catch (err) {
-      console.error('Failed to set city:', err);
-      return { success: false };
-    }
-  });
 
   const store = deps.StoreManager.getStore();
   if (store) {

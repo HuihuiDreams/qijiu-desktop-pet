@@ -33,9 +33,6 @@ Module.prototype.require = function(request) {
       set mainWindow(v) { mainWindowMock = v; }
     };
   }
-  if (request.includes('CitySettingWindow')) {
-    return { closeCitySettingWindow: () => {} };
-  }
   if (request.includes('FinalSaveService')) {
     return { installFinalSaveBeforeClose: () => {} };
   }

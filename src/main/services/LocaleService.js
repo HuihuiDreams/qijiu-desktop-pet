@@ -15,9 +15,7 @@ function init(dependencies) {
       windowManager.mainWindow,
       windowManager.statusWindow,
       windowManager.pomodoroWindow,
-      windowManager.citySettingWindow,
       windowManager.skinSelectorWindow,
-      windowManager.petScaleWindow,
       windowManager.settingsWindow,
     ];
     return isSenderAnyWindow(event, allowedWindows) ? currentLocale : null;
@@ -46,15 +44,9 @@ async function changeLocale(lang) {
   if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
     windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
   }
-  if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
-    windowManager.citySettingWindow.webContents.send('locale-changed', lang);
-  }
   if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
     windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
     skinSelectorWindowModule?.sendSkinSelectorData?.({ resetSelection: false });
-  }
-  if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
-    windowManager.petScaleWindow.webContents.send('locale-changed', lang);
   }
   if (windowManager.settingsWindow && !windowManager.settingsWindow.isDestroyed()) {
     windowManager.settingsWindow.webContents.send('locale-changed', lang);

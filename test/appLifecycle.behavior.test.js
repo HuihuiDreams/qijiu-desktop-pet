@@ -57,8 +57,6 @@ function createHarness() {
     PetScaleService: createCallableModule('PetScaleService', ['init', 'getCommittedPercent', 'preview', 'confirm', 'cancel', 'flushPreview'], calls),
     SettingsService: createCallableModule('SettingsService', ['init', 'notifySettingsUpdated'], calls),
     statusWindowModule: createCallableModule('statusWindowModule', ['init'], calls),
-    citySettingWindowModule: createCallableModule('citySettingWindowModule', ['init', 'openCitySettingWindow'], calls),
-    petScaleWindowModule: createCallableModule('petScaleWindowModule', ['init', 'openPetScaleWindow', 'closePetScaleWindow'], calls),
     settingsWindowModule: createCallableModule('settingsWindowModule', ['init', 'openSettingsWindow', 'closeSettingsWindow'], calls),
     skinSelectorWindowModule: createCallableModule('skinSelectorWindowModule', ['init', 'openSkinSelectorWindow', 'sendSkinSelectorData'], calls),
     pomodoroWindowModule: createCallableModule('pomodoroWindowModule', ['init', 'openPomodoroWindow'], calls),
@@ -101,8 +99,6 @@ function loadFreshLifecycle(harness) {
     './services/SettingsService': services.SettingsService,
     './windows/WindowManager': services.windowManager,
     './windows/StatusWindow': services.statusWindowModule,
-    './windows/CitySettingWindow': services.citySettingWindowModule,
-    './windows/PetScaleWindow': services.petScaleWindowModule,
     './windows/SettingsWindow': services.settingsWindowModule,
     './windows/SkinSelectorWindow': services.skinSelectorWindowModule,
     './windows/PomodoroWindow': services.pomodoroWindowModule,
@@ -160,7 +156,8 @@ test('AppLifecycle initializes services before creating the pet window and tears
     assert.ok(indexOfCall(harness.calls, 'PetVisibilityService.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'MeetingDetectorController.init') < createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'petWindowModule.init') < createWindowIndex);
-    assert.ok(indexOfCall(harness.calls, 'petScaleWindowModule.init') > createWindowIndex);
+    assert.ok(indexOfCall(harness.calls, 'settingsWindowModule.init') > createWindowIndex);
+    assert.ok(indexOfCall(harness.calls, 'SettingsService.init') > createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'PetScaleService.init') > createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'trayManager.createTray') > createWindowIndex);
 
@@ -193,7 +190,7 @@ test('AppLifecycle exposes 7 static initialization methods', () => {
   }
 });
 
-test('AppLifecycle forwards sendSkinSelectorData options to skinSelectorWindowModule', () => {
+test('AppLifecycle forwards tray openSettingsWindow and openSkinSelector options to window modules', () => {
   const harness = createHarness();
   const { AppLifecycle, restore } = loadFreshLifecycle(harness);
   try {
@@ -201,13 +198,19 @@ test('AppLifecycle forwards sendSkinSelectorData options to skinSelectorWindowMo
     harness.services.trayManager.init = (cfg) => { trayInitConfig = cfg; };
     AppLifecycle.initTray();
     assert.ok(trayInitConfig);
-    assert.equal(typeof trayInitConfig.sendSkinSelectorData, 'function');
+    assert.equal(typeof trayInitConfig.openSettingsWindow, 'function');
+    assert.equal(typeof trayInitConfig.openSkinSelector, 'function');
 
-    trayInitConfig.sendSkinSelectorData({ resetSelection: false });
+    trayInitConfig.openSettingsWindow('companion');
+    trayInitConfig.openSkinSelector();
 
-    const sendCall = harness.calls.find(([name]) => name === 'skinSelectorWindowModule.sendSkinSelectorData');
-    assert.ok(sendCall, 'skinSelectorWindowModule.sendSkinSelectorData must be called');
-    assert.deepEqual(sendCall[1], { resetSelection: false }, 'must forward { resetSelection: false } options');
+    const settingsCall = harness.calls.find(([name]) => name === 'settingsWindowModule.openSettingsWindow');
+    assert.ok(settingsCall, 'settingsWindowModule.openSettingsWindow must be called');
+    assert.equal(settingsCall[1], 'companion');
+
+    const skinCall = harness.calls.find(([name]) => name === 'skinSelectorWindowModule.openSkinSelectorWindow');
+    assert.ok(skinCall, 'skinSelectorWindowModule.openSkinSelectorWindow must be called');
+    assert.deepEqual(skinCall[1], { fromSettings: false }, 'tray skin selector must pass { fromSettings: false }');
   } finally {
     restore();
   }

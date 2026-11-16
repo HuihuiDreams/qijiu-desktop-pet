@@ -10,7 +10,7 @@ function readProjectFile(relativePath) {
 }
 
 test('main process exposes gallery data and validated skin selection IPC', () => {
-  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js') + '\n' + readProjectFile('src/main/services/LocaleService.js');
 
   assert.match(mainSource, /ipcMain\.handle\('get-skin-gallery-items'/);
   assert.match(mainSource, /ipcMain\.handle\('preview-skin'/);
@@ -19,7 +19,7 @@ test('main process exposes gallery data and validated skin selection IPC', () =>
 });
 
 test('tray opens the gallery instead of rendering a skin radio submenu', () => {
-  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js') + '\n' + readProjectFile('src/main/services/LocaleService.js');
   const traySkinEntry = mainSource.indexOf("label: trayMenuLabel('trayChooseSkin')");
 
   assert.ok(traySkinEntry > -1);
@@ -41,7 +41,7 @@ test('skin selector uses a dedicated limited preload bridge', () => {
 });
 
 test('skin selector IPC only accepts requests from the selector window', () => {
-  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js') + '\n' + readProjectFile('src/main/services/LocaleService.js');
 
   assert.match(
     mainSource,
@@ -75,12 +75,12 @@ test('reopening the skin selector clears an earlier selection lock', () => {
 });
 
 test('skin selector maintains original active skin and selection during preview when locale changes', () => {
-  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js');
+  const mainSource = readProjectFile('main.js') + '\n' + readProjectFile('src/main/AppLifecycle.js') + '\n' + readProjectFile('src/main/TrayManager.js') + '\n' + readProjectFile('src/main/windows/WindowManager.js') + '\n' + readProjectFile('src/main/services/SkinService.js') + '\n' + readProjectFile('src/main/services/LocaleService.js');
   const preloadSource = readProjectFile('skinSelectorPreload.js');
   const rendererSource = readProjectFile('src/skinSelectorWindow.js');
 
   assert.match(mainSource, /const activeSkinId = skinSelectorWindowModule\.getSkinSelectorOriginalSkinId\(\) != null \? skinSelectorWindowModule\.getSkinSelectorOriginalSkinId\(\) : currentSkinId;/);
-  assert.match(mainSource, /sendSkinSelectorData\(\{ resetSelection: false \}\)/);
+  assert.match(mainSource, /sendSkinSelectorData(?:\?\.)?\(\{ resetSelection: false \}\)/);
   assert.match(preloadSource, /onData: \(callback\) => subscribeIpc\('skin-selector-data', \(_event, items, options\) => callback\(items, options\)\)/);
   assert.match(rendererSource, /window\.skinSelectorAPI\.onData\(\(items, options\) => renderGallery\(items, options\)\)/);
 });

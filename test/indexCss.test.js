@@ -30,12 +30,12 @@ test('xianxia-panel centralizes panel decoration across windows', () => {
   assert.match(indexCss, /\.xianxia-panel::after\s*\{/);
 
   const pomodoroCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'pomodoro.css'), 'utf8');
-  const cityCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'city-setting.css'), 'utf8');
+  const settingsCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'settings.css'), 'utf8');
 
   // Ensure individual panel styles no longer define ::before / ::after decorations
   assert.doesNotMatch(statusCss, /\.status-panel::before/);
   assert.doesNotMatch(pomodoroCss, /\.pomodoro-panel::before/);
-  assert.doesNotMatch(cityCss, /\.city-panel::before/);
+  assert.doesNotMatch(settingsCss, /\.settings-panel::before/);
 });
 
 test('index.css uses var(--pet-size, 96px) for .pet-body dimensions and font-size', () => {

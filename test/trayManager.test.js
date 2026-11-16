@@ -1,6 +1,5 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const Module = require('node:module');
 
 const electronMock = {
   get app() { return mockApp; },
@@ -36,12 +35,26 @@ test.after(() => restoreRequire());
 function createMockDeps() {
   return {
     I18N: {
-      zh: { ui: { trayTitle: '桌宠', langZh: '中文', trayPomodoroRunning: '专注中', trayPomodoroCompleted: '专注完成', trayMinuteUnit: '分钟' } },
-      en: { ui: { trayTitle: 'Pet', langEn: 'English', trayPomodoroRunning: 'Focusing', trayPomodoroCompleted: 'Focus complete', trayMinuteUnit: 'min' } }
+      zh: {
+        ui: {
+          trayTitle: '桌宠',
+          traySettings: '⚙️ 设置…',
+          trayPomodoroRunning: '专注中',
+          trayPomodoroCompleted: '专注完成',
+          trayMinuteUnit: '分钟',
+        },
+      },
+      en: {
+        ui: {
+          trayTitle: 'Pet',
+          traySettings: '⚙️ Settings…',
+          trayPomodoroRunning: 'Focusing',
+          trayPomodoroCompleted: 'Focus complete',
+          trayMinuteUnit: 'min',
+        },
+      },
     },
     getCurrentLocale: () => 'zh',
-    setCurrentLocale: () => {},
-    LOCALE_KEY: 'locale',
     getPomodoroSnapshot: () => ({ status: 'idle' }),
     getUpdateMenuState: () => ({ enabled: true, checking: false, downloading: false }),
     windowManager: {},
@@ -53,29 +66,10 @@ function createMockDeps() {
     hidePetManually: () => {},
     getCurrentPetDisplay: () => null,
     migrateWindowToDisplay: () => {},
-    getBreakReminderEnabled: () => false,
-    setBreakReminderEnabled: () => {},
-    getBreakReminderIntervalMinutes: () => 60,
-    setBreakReminderIntervalMinutes: () => {},
-    getBreakReminderService: () => null,
-    BREAK_REMINDER_TRAY_INTERVALS: [30, 60],
-    BREAK_REMINDER_STORE_KEY: 'breakReminder',
-    getScreensaverSettings: () => ({ enabled: true, idleThresholdMinutes: 5 }),
-    updateScreensaverSettings: () => {},
-    getWeatherSyncSettings: () => ({ enabled: true }),
-    getStoredWeatherSyncSettings: () => ({ enabled: true }),
-    updateWeatherSyncSettings: () => {},
-    getWindowAwarenessEnabled: () => true,
-    setWindowAwarenessEnabled: () => {},
-    AutoLaunchService: { isAutoLaunchEnabled: () => true, setAutoLaunchPreference: async () => {} },
-    initStore: async () => {},
-    getStore: () => ({ set: () => {} }),
     openPomodoroWindow: () => {},
     openSkinSelector: () => {},
-    openPetScaleWindow: () => {},
-    openCitySettingWindow: () => {},
-    sendSkinSelectorData: () => {},
-    checkForUpdatesFromTray: async () => {}
+    openSettingsWindow: () => {},
+    checkForUpdatesFromTray: async () => {},
   };
 }
 
@@ -89,9 +83,8 @@ function withPlatform(platform, fn) {
   }
 }
 
-test('TrayManager - Full Coverage', async (t) => {
+test('TrayManager - Streamlined Menu Coverage', async (t) => {
   t.beforeEach(() => {
-    // Mutate in-place so TrayManager's captured `app` reference stays valid
     mockApp.getVersion = () => '1.0.0';
     mockApp.isPackaged = true;
     mockApp.quit = () => {};
@@ -118,34 +111,24 @@ test('TrayManager - Full Coverage', async (t) => {
     assert.ok(switchScreenItem);
   });
 
-  await t.test('trayMenu items execute correct deps functions', async () => {
+  await t.test('streamlined tray omits migrated preference items and opens unified settings', async () => {
     const deps = createMockDeps();
-    let actions = [];
-    
+    const actions = [];
+
     deps.openSkinSelector = () => actions.push('openSkinSelector');
-    deps.openPetScaleWindow = () => actions.push('openPetScaleWindow');
+    deps.openSettingsWindow = () => actions.push('openSettingsWindow');
     deps.openPomodoroWindow = () => actions.push('openPomodoroWindow');
     deps.setIsPaused = (v) => actions.push(`setIsPaused:${v}`);
     deps.showPetManually = () => actions.push('showPet');
     deps.hidePetManually = () => actions.push('hidePet');
-    deps.openCitySettingWindow = () => actions.push('openCitySettingWindow');
-    deps.updateWeatherSyncSettings = (s) => actions.push(`updateWeather:${s.enabled}`);
-    deps.setWindowAwarenessEnabled = (v) => actions.push(`setWindowAwareness:${v}`);
     deps.checkForUpdatesFromTray = async () => actions.push('checkForUpdates');
-    deps.AutoLaunchService.setAutoLaunchPreference = async (v) => actions.push(`setAutoLaunch:${v}`);
-    deps.updateScreensaverSettings = (s) => actions.push(`updateScreensaver:${s.enabled}:${s.idleThresholdMinutes}`);
-    deps.setBreakReminderEnabled = (v) => actions.push(`setBreakReminderEnabled:${v}`);
-    deps.setBreakReminderIntervalMinutes = (v) => actions.push(`setBreakReminderIntervalMinutes:${v}`);
-    deps.setCurrentLocale = (l) => actions.push(`locale:${l}`);
-    deps.sendSkinSelectorData = (opts) => actions.push(`sendSkinSelectorData:${JSON.stringify(opts)}`);
 
-    mockApp.isPackaged = false; // To show devtools
+    mockApp.isPackaged = false;
 
     let devToolsOpened = false;
     let resetPositionsSent = false;
     let statusPanelToggled = false;
-    let localeChangedCount = 0;
-    
+
     deps.windowManager = {
       mainWindow: {
         isDestroyed: () => false,
@@ -154,198 +137,104 @@ test('TrayManager - Full Coverage', async (t) => {
           send: (ch) => {
             if (ch === 'reset-positions') resetPositionsSent = true;
             if (ch === 'toggle-status-panel') statusPanelToggled = true;
-            if (ch === 'locale-changed') localeChangedCount++;
-          }
-        }
+          },
+        },
       },
       statusWindow: {
         isDestroyed: () => false,
         isVisible: () => true,
-        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
       },
-      pomodoroWindow: {
-        isDestroyed: () => false,
-        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
-      },
-      citySettingWindow: {
-        isDestroyed: () => false,
-        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
-      },
-      skinSelectorWindow: {
-        isDestroyed: () => false,
-        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
-      },
-      petScaleWindow: {
-        isDestroyed: () => false,
-        webContents: { send: (ch) => { if (ch === 'locale-changed') localeChangedCount++; } }
-      }
     };
 
     TrayManager.init(deps);
     TrayManager.createTray();
-    
+
     const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
-    
+
+    // Migrated preference items must NOT exist in tray menu
+    for (const removedKey of [
+      'trayPetScale',
+      'trayBreakReminder',
+      'trayScreensaver',
+      'trayWeatherSync',
+      'trayWindowAwareness',
+      'trayLanguage',
+      'trayAutoLaunch',
+    ]) {
+      assert.equal(findItem(removedKey), undefined, `${removedKey} must be moved to unified SettingsWindow`);
+    }
+
     findItem('trayChooseSkin').click();
     assert.ok(actions.includes('openSkinSelector'));
 
-    findItem('trayPetScale').click();
-    assert.ok(actions.includes('openPetScaleWindow'));
-    
+    findItem('设置').click();
+    assert.ok(actions.includes('openSettingsWindow'));
+
     findItem('trayPauseWalk').click();
     assert.ok(actions.includes('setIsPaused:true'));
-    
+
     findItem('trayHidePet').click();
     assert.ok(actions.includes('hidePet'));
     deps.isPetCurrentlyHidden = () => true;
     TrayManager.refreshTrayMenu();
     findItem('trayShowPet').click();
     assert.ok(actions.includes('showPet'));
-    
-    findItem('trayWeatherSyncConfig').click();
-    assert.ok(actions.includes('openCitySettingWindow'));
-    
-    findItem('trayWeatherSyncOn').click();
-    assert.ok(actions.includes('updateWeather:false')); // toggled
-    
-    withPlatform('win32', () => { TrayManager.refreshTrayMenu(); });
-    const awarenessItem = findItem('trayWindowAwareness');
-    if (awarenessItem && awarenessItem.click) {
-      awarenessItem.click();
-      assert.ok(actions.includes('setWindowAwareness:false'));
-    }
-    
-    await findItem('trayAutoLaunchOn').click();
-    assert.ok(actions.includes('setAutoLaunch:false'));
-    
+
     findItem('trayUpdateCheck').click();
     assert.ok(actions.includes('checkForUpdates'));
-    
+
     findItem('trayDevTools').click();
     assert.ok(devToolsOpened);
-    
+
     findItem('trayResetPos').click();
     assert.ok(resetPositionsSent);
-    
+
     findItem('trayHideStatusPanel').click();
     assert.ok(statusPanelToggled);
-    
-    await findItem('trayScreensaverOn').click();
-    assert.ok(actions.includes('updateScreensaver:false:5'));
-    
-    const ssThresholdItem = findItem('trayScreensaverThreshold');
-    await ssThresholdItem.submenu[0].click();
-    
-    await findItem('trayBreakReminderOff').click();
-    assert.ok(actions.includes('setBreakReminderEnabled:true'));
-    
-    const breakIntervalItem = findItem('trayBreakReminderInterval');
-    await breakIntervalItem.submenu[0].click();
-    assert.ok(actions.includes('setBreakReminderIntervalMinutes:30'));
-    
-    const langItem = findItem('trayLanguage');
-    await langItem.submenu[1].click(); // 'en'
-    assert.ok(actions.includes('locale:en'));
-    assert.ok(actions.includes('sendSkinSelectorData:{"resetSelection":false}'));
-    assert.equal(localeChangedCount, 6); // 6 windows updated (including petScaleWindow)
-    
+
     let quitCalled = false;
     mockApp.quit = () => { quitCalled = true; };
     findItem('trayQuit').click();
     assert.ok(quitCalled);
   });
-  
+
   await t.test('pomodoro tray label reflects state correctly', () => {
     const deps = createMockDeps();
     let currentPomodoro = { status: 'idle' };
     deps.getPomodoroSnapshot = () => currentPomodoro;
-    
+
     TrayManager.init(deps);
     TrayManager.createTray();
-    
+
     let item = mockLastMenu.find(i => i.click && i.label && i.label.includes('trayPomodoroOpen'));
     assert.ok(item);
-    
+
     currentPomodoro = { status: 'running', remainingMs: 65000 };
     TrayManager.refreshTrayMenu();
     item = mockLastMenu.find(i => i.click && i.label && i.label.includes('专注中'));
     assert.ok(item, 'Should show running label');
     assert.ok(item.label.includes('2'), 'Should ceil minutes to 2');
-    
+
     currentPomodoro = { status: 'completed' };
     TrayManager.refreshTrayMenu();
     item = mockLastMenu.find(i => i.click && i.label && i.label.includes('专注完成'));
     assert.ok(item, 'Should show completed label');
-    
+
     let opened = false;
     deps.openPomodoroWindow = () => { opened = true; };
     item.click();
     assert.ok(opened);
   });
 
-  await t.test('break reminder toggles keep the current idleResetMinutes instead of resetting it to 5', async () => {
+  await t.test('pomodoro hidden state disables pause and hide tray actions', () => {
     const deps = createMockDeps();
-    let enabled = false;
-    let intervalMinutes = 60;
-    const serviceUpdates = [];
-    const storedWrites = [];
-    deps.getBreakReminderEnabled = () => enabled;
-    deps.setBreakReminderEnabled = (v) => { enabled = v; };
-    deps.getBreakReminderIntervalMinutes = () => intervalMinutes;
-    deps.setBreakReminderIntervalMinutes = (v) => { intervalMinutes = v; };
-    deps.getBreakReminderService = () => ({
-      getSettings: () => ({ enabled, intervalMinutes, idleResetMinutes: 12 }),
-      updateSettings: (s) => serviceUpdates.push(s),
-    });
-    deps.getStore = () => ({ set: (key, value) => storedWrites.push([key, value]) });
-    TrayManager.init(deps);
-    TrayManager.createTray();
-    const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
-
-    await findItem('trayBreakReminderOff').click();
-    await findItem('trayBreakReminderInterval').submenu[0].click();
-
-    assert.deepEqual(serviceUpdates, [
-      { enabled: true, intervalMinutes: 60, idleResetMinutes: 12 },
-      { enabled: true, intervalMinutes: 30, idleResetMinutes: 12 },
-    ]);
-    assert.deepEqual(storedWrites.map(([, value]) => value), serviceUpdates);
-  });
-
-  await t.test('disables interval and threshold submenus when break reminder or screensaver is disabled', async () => {
-    const deps = createMockDeps();
-    let breakEnabled = false;
-    let ssSettings = { enabled: false, idleThresholdMinutes: 3 };
-
-    deps.getBreakReminderEnabled = () => breakEnabled;
-    deps.setBreakReminderEnabled = (v) => { breakEnabled = v; };
-    deps.getScreensaverSettings = () => ssSettings;
-    deps.updateScreensaverSettings = (s) => { ssSettings = s; };
-
+    deps.getPomodoroPetHidden = () => true;
     TrayManager.init(deps);
     TrayManager.createTray();
 
-    const findItem = (labelFragment) => mockLastMenu.find(i => i.label && i.label.includes(labelFragment));
-
-    // When disabled, interval and threshold items must be disabled (enabled: false)
-    assert.equal(findItem('trayBreakReminderInterval').enabled, false);
-    assert.equal(findItem('trayScreensaverThreshold').enabled, false);
-
-    // Toggle break reminder ON
-    await findItem('trayBreakReminderOff').click();
-    assert.equal(findItem('trayBreakReminderInterval').enabled, true);
-
-    // Toggle screensaver ON
-    await findItem('trayScreensaverOff').click();
-    assert.equal(findItem('trayScreensaverThreshold').enabled, true);
-
-    // Toggle break reminder OFF
-    await findItem('trayBreakReminderOn').click();
-    assert.equal(findItem('trayBreakReminderInterval').enabled, false);
-
-    // Toggle screensaver OFF
-    await findItem('trayScreensaverOn').click();
-    assert.equal(findItem('trayScreensaverThreshold').enabled, false);
+    const pauseItem = mockLastMenu.find(i => i.label && i.label.includes('trayPauseWalk'));
+    const hideItem = mockLastMenu.find(i => i.label && i.label.includes('trayHidePet'));
+    assert.equal(pauseItem.enabled, false);
+    assert.equal(hideItem.enabled, false);
   });
-
 });

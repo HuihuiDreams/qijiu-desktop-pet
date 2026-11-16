@@ -3,15 +3,14 @@
  * 主宠物透明窗口：创建、置顶守卫、鼠标穿透、二次启动唤回。
  * 本文件是全应用的集成点——did-finish-load/closed 事件天然需要触达多个
  * 服务（多屏几何、窗口感知、可见性状态机、会议检测、天气同步），这些均经
- * init(deps) 注入；windowManager/citySettingWindowModule/updateProgressWindowModule 作为窗口注册表
- * 的兄弟模块，沿用既有窗口模块（StatusWindow/CitySettingWindow/PomodoroWindow）
+ * init(deps) 注入；windowManager/updateProgressWindowModule 作为窗口注册表
+ * 的兄弟模块，沿用既有窗口模块（StatusWindow/SettingsWindow/PomodoroWindow）
  * 直接引入的约定。
  */
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const { normalizeMousePassthroughRequest } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
-const citySettingWindowModule = require('./CitySettingWindow');
 const updateProgressWindowModule = require('./UpdateProgressWindow');
 const FinalSaveService = require('../services/FinalSaveService');
 const { isSenderMainWindow } = require('../services/IpcSenderAuthorization');
@@ -51,8 +50,6 @@ function getPetSubWindows() {
     windowManager.statusWindow,
     windowManager.pomodoroWindow,
     windowManager.skinSelectorWindow,
-    windowManager.petScaleWindow,
-    windowManager.citySettingWindow,
     windowManager.settingsWindow,
   ];
 }
@@ -312,14 +309,10 @@ function createWindow() {
     if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
       windowManager.pomodoroWindow.close();
     }
-    citySettingWindowModule.closeCitySettingWindow();
     if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
       windowManager.skinSelectorWindow.close();
     }
-    // 体型窗口与统一设置窗口没有 parent，主窗口关闭后会独立存活；其 close 监听器负责兜底刷盘/回滚
-    if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
-      windowManager.petScaleWindow.close();
-    }
+    // 统一设置窗口没有 parent，主窗口关闭后会独立存活；其 close 监听器负责未落盘体型预览兜底刷盘
     if (windowManager.settingsWindow && !windowManager.settingsWindow.isDestroyed()) {
       windowManager.settingsWindow.close();
     }

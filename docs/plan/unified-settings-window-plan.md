@@ -8,7 +8,7 @@
 
 ## 1. Overview & Locked Decisions
 
-将目前分散在系统托盘菜单（[TrayManager.js](../../src/main/TrayManager.js)）与多个零散子窗口（[CitySettingWindow.js](../../src/main/windows/CitySettingWindow.js)、[PetScaleWindow.js](../../src/main/windows/PetScaleWindow.js)）中的偏好配置收拢至统一的**设置窗口**，同时保持托盘菜单作为“实时桌宠控制 + 高频伴随工具 + 生命周期操作”的极简入口。
+将目前分散在系统托盘菜单（[TrayManager.js](../../src/main/TrayManager.js)）与多个零散子窗口（`CitySettingWindow.js`、`PetScaleWindow.js`）中的偏好配置收拢至统一的**设置窗口**，同时保持托盘菜单作为“实时桌宠控制 + 高频伴随工具 + 生命周期操作”的极简入口。
 
 ### 1.1 托盘菜单 vs 设置窗口分工（严格 1:1 收敛）
 
@@ -90,7 +90,7 @@
 - [x] **Task 1.1: `WindowManager` 与 `SettingsWindow` 窗口模块**
   - **Description**: 在 [WindowManager.js](../../src/main/windows/WindowManager.js) 增加 `settingsWindow` getter/setter（移除 `citySettingWindow` / `petScaleWindow` 留待 Phase 3 与测试迁移同一原子闭环清理，Phase 1 先并行存在确保可编译）；新建 `src/main/windows/SettingsWindow.js` 与 `settingsPreload.js`。
   - **Context / Pattern to Follow**:
-    - 窗口创建、居中、180ms 置顶脉冲、全空间可见与 macOS `app.focus({ steal: true })` 参照 [PetScaleWindow.js](../../src/main/windows/PetScaleWindow.js#L52-L181)。
+    - 窗口创建、居中、180ms 置顶脉冲、全空间可见与 macOS `app.focus({ steal: true })` 参照原 `PetScaleWindow.js` 模式。
     - `settingsPreload.js` 参照 [pomodoroPreload.js](../../pomodoroPreload.js#L1-L17) 的 `subscribeIpc` 订阅与取消订阅清理模式。
   - **Acceptance criteria**:
     - [x] `SettingsWindow` 尺寸为 `480×420`，支持 `openSettingsWindow(initialTab)`（支持指定初始 Tab，默认 `'appearance'`；窗口已打开时同步切换激活 Tab 并移交焦点）、在鼠标所在显示器 `workArea` 内居中并通过 `Math.max`/`Math.min` 安全区夹紧、180ms 置顶脉冲、`alwaysOnTop: false`、`minimizable: true`。
@@ -147,8 +147,8 @@
 - [x] **Task 2.2: `settings.html` / `settings.css` / `settingsWindow.js` 前端实现**
   - **Description**: 基于 `.xianxia-panel` 与 `settings-calligraphy.css` 构建顶部 3 标签页的设置界面，满足 `/game-ui-ux` 布局、键盘导航、非颜色状态编码、即时自动保存与事件驱动更新规范。
   - **Context / Pattern to Follow**:
-    - HTML 与面板结构参照 [pet-scale.html](../../src/pet-scale.html#L1-L58)；标题栏拖拽区、关闭按钮与玉金滑块样式复用 [pet-scale.css](../../src/pet-scale.css#L38-L222)；城市输入行、确认按钮、状态脉冲与 `prefers-reduced-motion` 复用 [city-setting.css](../../src/city-setting.css#L129-L244)。
-    - Fake-DOM 渲染测试参照 [petScaleWindowRenderer.behavior.test.js](../../test/petScaleWindowRenderer.behavior.test.js) 的 `vm.runInNewContext` 桩模式。
+    - HTML 与面板结构参照原 `src/pet-scale.html`；标题栏拖拽区、关闭按钮与玉金滑块样式复用原 `src/pet-scale.css`；城市输入行、确认按钮、状态脉冲与 `prefers-reduced-motion` 复用原 `src/city-setting.css`。
+    - Fake-DOM 渲染测试参照原 `test/petScaleWindowRenderer.behavior.test.js` 的 `vm.runInNewContext` 桩模式。
   - **Acceptance criteria**:
     - [x] 严格 CSP（含 `font-src 'self'`），引入 `index.css` 与 `settings-calligraphy.css`，标题使用 `class="settings-calligraphy-title"`；`.settings-tabpanel` 配置 `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 及水墨细滚动条兜底，防止多语言分段换行或提示展开时纵向裁切。
     - [x] 顶部 3 个 Tab（`role="tablist"`）采用 **Roving `tabindex`**（激活 Tab `tabindex="0"`，其余 `tabindex="-1"`），支持鼠标点击与键盘左右箭头切换，初始聚焦激活 Tab（且窗口已打开时接收 `initialTab` 同步切换与移交焦点）；各控件支持 `Tab` 遍历与 `:focus-visible` 样式；全局 `Esc` 关闭窗口带输入法组合态守卫（`if (event.isComposing || event.keyCode === 229) return;`）；城市输入框内 `Enter` 触发验证。
@@ -169,19 +169,19 @@
 ### Phase 3: 托盘菜单瘦身、旧独立窗口退场与测试矩阵迁移（原子提交闭环）
 > 原子性约束：下线旧窗口文件（Task 3.2）与迁移引用旧窗口的单元测试/集成测试（Task 3.3）**必须在同一次提交闭环内完成**（先更新/迁移测试或同步提交），确保 Phase 3 结束时 `npm test` 与 `npm run test:integration` 全绿，绝不允许中间提交出现 `ENOENT` 或 `MODULE_NOT_FOUND`。
 
-- [ ] **Task 3.1: 重构 `TrayManager` 菜单模板**
+- [x] **Task 3.1: 重构 `TrayManager` 菜单模板**
   - **Description**: 在 [TrayManager.js](../../src/main/TrayManager.js) 移除已迁入设置窗口的菜单项（`调整大小`、`久坐提醒`+子菜单、`高甜屏保`+子菜单、`天气同步`+`修改城市`、`界面感知`、`语言`+子菜单、`开机自动启动`），在「重置位置 / 切换屏幕」之后增加 `⚙️ 设置…`（调用 `deps.openSettingsWindow()`），保留 `🎨 选择皮肤…`、`📦 检查更新`、`❌ 退出` 等全部保留项。
   - **Acceptance criteria**:
-    - [ ] 托盘菜单分组结构清晰、禁用态与平台分支（macOS 多屏切换、`!app.isPackaged` 开发者工具、番茄钟隐藏时禁用暂停/隐藏）均正确保留。
-    - [ ] 不再直接持有重复的 `langSubmenu` 广播逻辑，也不再直接拼接 `breakReminderSettings` 写盘。
+    - [x] 托盘菜单分组结构清晰、禁用态与平台分支（macOS 多屏切换、`!app.isPackaged` 开发者工具、番茄钟隐藏时禁用暂停/隐藏）均正确保留。
+    - [x] 不再直接持有重复的 `langSubmenu` 广播逻辑，也不再直接拼接 `breakReminderSettings` 写盘。
   - **Verification**:
-    - [ ] 聚焦验证命令：`node --test test/trayManager.test.js`（验证瘦身后托盘菜单结构、`⚙️ 设置…` 点击行为、`🎨 选择皮肤…` 保留、已迁移项不再出现）。
+    - [x] 聚焦验证命令：`node --test test/trayManager.test.js`（验证瘦身后托盘菜单结构、`⚙️ 设置…` 点击行为、`🎨 选择皮肤…` 保留、已迁移项不再出现）。
   - **Dependencies**: Task 2.2
   - **Files likely touched**:
     - `src/main/TrayManager.js`
     - `src/main/AppLifecycle.js`
 
-- [ ] **Task 3.2: 下线废弃的独立 `CitySettingWindow` / `PetScaleWindow` 及 `preload.js` 死通道**
+- [x] **Task 3.2: 下线废弃的独立 `CitySettingWindow` / `PetScaleWindow` 及 `preload.js` 死通道**
   - **Description**:
     - 从 [AppLifecycle.js](../../src/main/AppLifecycle.js)、[WindowManager.js](../../src/main/windows/WindowManager.js)、[PetWindow.js](../../src/main/windows/PetWindow.js)（同步清理 `getPetSubWindows()` 与 `closed`）、[LocaleService.js](../../src/main/services/LocaleService.js) 和 [WeatherSyncController.js](../../src/main/services/WeatherSyncController.js) 移除对 `CitySettingWindow` / `PetScaleWindow` 的引用与旧 IPC。
     - 清理主窗口 [preload.js](../../preload.js) 中历史残留但从未被主窗调用的 3 个旧城市设置死方法（`getCitySettings`、`setCityName`、`closeCitySettingWindow`）。
@@ -189,14 +189,14 @@
       - `src/main/windows/CitySettingWindow.js`、`citySettingPreload.js`、`src/city-setting.html`、`src/city-setting.css`、`src/citySettingWindow.js`
       - `src/main/windows/PetScaleWindow.js`、`petScalePreload.js`、`src/pet-scale.html`、`src/pet-scale.css`、`src/petScaleWindow.js`
   - **Acceptance criteria**:
-    - [ ] 全局 `grep` 确认无残留死引用或孤立 IPC handler（`close-city-setting-window`、`get-city-settings`、`set-city-name`、`pet-scale-get-settings`、`pet-scale-preview`、`pet-scale-confirm`、`pet-scale-cancel` 已全面收口至 `settings-*`）。
-    - [ ] 确认 `PetScaleService` 面向主窗口的 `get-pet-scale` / `pet-scale-changed` 契约保持完全兼容（[ADR-047](../decisions/ADR-047-pet-scale-setting.md) 的脚底锚定、多屏 DPI 与渲染端行为零回归）。
+    - [x] 全局 `grep` 确认无残留死引用或孤立 IPC handler（`close-city-setting-window`、`get-city-settings`、`set-city-name`、`pet-scale-get-settings`、`pet-scale-preview`、`pet-scale-confirm`、`pet-scale-cancel` 已全面收口至 `settings-*`）。
+    - [x] 确认 `PetScaleService` 面向主窗口的 `get-pet-scale` / `pet-scale-changed` 契约保持完全兼容（[ADR-047](../decisions/ADR-047-pet-scale-setting.md) 的脚底锚定、多屏 DPI 与渲染端行为零回归）。
   - **Dependencies**: Task 3.1
   - **Files likely touched**:
     - `preload.js`
     - 上述待删文件及引用方
 
-- [ ] **Task 3.3: 迁移与补全单元测试 & 集成测试（与 Task 3.2 同批提交）**
+- [x] **Task 3.3: 迁移与补全单元测试 & 集成测试（与 Task 3.2 同批提交）**
   - **Description**:
     - 更新以下强绑定旧窗口/旧通道的测试与集成桩文件，将旧窗用例平稳迁移至 `SettingsWindow` / `SettingsService` / `settingsPreload.js`（保留 `PetScaleService` 与 `WeatherSyncController` 核心行为与并发竞态覆盖）：
       - [subWindowPreloadSecurity.test.js](../../test/subWindowPreloadSecurity.test.js)（替换旧窗 preload 检查，新增 `settingsPreload.js` 与 `FORBIDDEN_SUBWINDOW_APIS` 校验）
@@ -206,11 +206,11 @@
       - [appLifecycle.behavior.test.js](../../test/appLifecycle.behavior.test.js)、[preloadSubscriptions.test.js](../../test/preloadSubscriptions.test.js)（移除旧窗模块依赖与旧城市死方法断言）
       - [weatherSyncController.behavior.test.js](../../test/weatherSyncController.behavior.test.js)（将对 `citySettingWindow` IPC 的调用迁移至 `WeatherSyncController.setCityName` / `getCitySettings` 或 `SettingsService` 委托测试，完整保留 20+ 并发用例）
       - `test/citySettingTray.test.js`、`test/citySettingWindow.test.js`、`test/petScaleWindow.test.js`、`test/petScaleWindow.behavior.test.js`、`test/petScaleWindowRenderer.behavior.test.js`（清理或重命名为 `settingsWindow*` 测试）
-      - [createIntegrationHarness.js](../../test/integration/harness/createIntegrationHarness.js) 与 `test/integration/petScale.integration.test.js`（`windowManager` 桩增加 `settingsWindow: null` 并迁移集成测试）
+      - [createIntegrationHarness.js](../../test/integration/harness/createIntegrationHarness.js) 与 [petScale.integration.test.js](../../test/integration/petScale.integration.test.js)（`windowManager` 桩增加 `settingsWindow: null` 并迁移集成测试）
     - 保留并复跑 `test/petScale.test.js`、`test/petScaleMovement.behavior.test.js`、`test/petScaleService.behavior.test.js`、`test/skinTray.test.js`、`test/skinSelectorIntegration.test.js`、`test/cspHardening.test.js`、`test/htmlInjectionHardening.test.js`。
   - **Acceptance criteria**:
-    - [ ] 先运行聚焦回归验证迁移后测试集：`node --test test/subWindowPreloadSecurity.test.js test/ipcPermissionMatrix.test.js test/appLifecycle.behavior.test.js test/preloadSubscriptions.test.js test/petWindow.test.js test/weatherSyncController.behavior.test.js`。
-    - [ ] Phase 3 收尾全量验证：`npm test && npm run test:integration && npm run check:adrs` 全部通过且无 skipped 降级断言、无死文件引用报错。
+    - [x] 先运行聚焦回归验证迁移后测试集：`node --test test/subWindowPreloadSecurity.test.js test/ipcPermissionMatrix.test.js test/appLifecycle.behavior.test.js test/preloadSubscriptions.test.js test/petWindow.test.js test/weatherSyncController.behavior.test.js`。
+    - [x] Phase 3 收尾全量验证：`npm test && npm run test:integration && npm run check:adrs` 全部通过且无 skipped 降级断言、无死文件引用报错。
 
 ### Phase 4: 文档与 ADR 同步及实机验证
 - [ ] **Task 4.1: 文档、ADR 与发布说明同步**

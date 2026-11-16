@@ -1,5 +1,4 @@
 const { app, Menu, nativeImage, screen } = require('electron');
-const { SCREENSAVER_ALLOWED_IDLE_MINUTES } = require('./services/screensaverAllowedMinutes');
 let tray = null;
 let deps = {};
 
@@ -26,12 +25,6 @@ function trayMenuLabel(key, fallback) {
   return escapeElectronMenuLabel(value);
 }
 
-// 托盘只改开关和间隔；其余字段（如 idleResetMinutes）沿用服务当前值，避免写盘时被重置
-function buildBreakReminderSettings(patch) {
-  const current = deps.getBreakReminderService()?.getSettings?.() || {};
-  return { ...current, ...patch };
-}
-
 function getPomodoroTrayLabel() {
   const snapshot = deps.getPomodoroSnapshot();
   if (snapshot.status === 'running') {
@@ -47,44 +40,7 @@ function getPomodoroTrayLabel() {
 function buildTrayMenu() {
   const updateMenuState = deps.getUpdateMenuState();
   const appVersion = app.getVersion();
-  const currentLocale = deps.getCurrentLocale();
   const { windowManager } = deps;
-  const isBreakReminderEnabled = Boolean(deps.getBreakReminderEnabled && deps.getBreakReminderEnabled());
-  const screensaverSettings = deps.getScreensaverSettings ? deps.getScreensaverSettings() : { enabled: false };
-  const isScreensaverEnabled = Boolean(screensaverSettings?.enabled);
-
-  const langSubmenu = [
-    { lang: 'zh', key: 'langZh' },
-    { lang: 'en', key: 'langEn' },
-    { lang: 'ja', key: 'langJa' },
-  ].map(({ lang, key }) => ({
-    label: trayMenuLabel(key),
-    type: 'radio',
-    checked: lang === currentLocale,
-    click: async () => {
-      deps.setCurrentLocale(lang);
-      await deps.initStore();
-      if (deps.getStore()) deps.getStore().set(deps.LOCALE_KEY, lang);
-      refreshTrayMenu();
-      if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('locale-changed', lang);
-      if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
-        windowManager.statusWindow.webContents.send('locale-changed', lang);
-      }
-      if (windowManager.pomodoroWindow && !windowManager.pomodoroWindow.isDestroyed()) {
-        windowManager.pomodoroWindow.webContents.send('locale-changed', lang);
-      }
-      if (windowManager.citySettingWindow && !windowManager.citySettingWindow.isDestroyed()) {
-        windowManager.citySettingWindow.webContents.send('locale-changed', lang);
-      }
-      if (windowManager.skinSelectorWindow && !windowManager.skinSelectorWindow.isDestroyed()) {
-        windowManager.skinSelectorWindow.webContents.send('locale-changed', lang);
-        deps.sendSkinSelectorData({ resetSelection: false });
-      }
-      if (windowManager.petScaleWindow && !windowManager.petScaleWindow.isDestroyed()) {
-        windowManager.petScaleWindow.webContents.send('locale-changed', lang);
-      }
-    },
-  }));
 
   const menu = Menu.buildFromTemplate([
     {
@@ -111,12 +67,6 @@ function buildTrayMenu() {
       label: trayMenuLabel('trayChooseSkin'),
       click: () => {
         deps.openSkinSelector();
-      },
-    },
-    {
-      label: trayMenuLabel('trayPetScale'),
-      click: () => {
-        deps.openPetScaleWindow();
       },
     },
     {
@@ -159,92 +109,9 @@ function buildTrayMenu() {
     { type: 'separator' },
 
     {
-      label: isBreakReminderEnabled ? trayMenuLabel('trayBreakReminderOn') : trayMenuLabel('trayBreakReminderOff'),
-      click: async () => {
-        const newEnabled = !deps.getBreakReminderEnabled();
-        deps.setBreakReminderEnabled(newEnabled);
-        const newSettings = buildBreakReminderSettings({ enabled: newEnabled, intervalMinutes: deps.getBreakReminderIntervalMinutes() });
-        if (deps.getBreakReminderService()) deps.getBreakReminderService().updateSettings(newSettings);
-        await deps.initStore();
-        if (deps.getStore()) deps.getStore().set(deps.BREAK_REMINDER_STORE_KEY, newSettings);
-        refreshTrayMenu();
-      },
-    },
-    {
-      label: trayMenuLabel('trayBreakReminderInterval'),
-      enabled: isBreakReminderEnabled,
-      submenu: deps.BREAK_REMINDER_TRAY_INTERVALS.map(minutes => ({
-        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
-        type: 'radio',
-        checked: deps.getBreakReminderIntervalMinutes() === minutes,
-        click: async () => {
-          deps.setBreakReminderIntervalMinutes(minutes);
-          const newSettings = buildBreakReminderSettings({ enabled: deps.getBreakReminderEnabled(), intervalMinutes: minutes });
-          if (deps.getBreakReminderService()) deps.getBreakReminderService().updateSettings(newSettings);
-          await deps.initStore();
-          if (deps.getStore()) deps.getStore().set(deps.BREAK_REMINDER_STORE_KEY, newSettings);
-          refreshTrayMenu();
-        },
-      })),
-    },
-    {
-      label: isScreensaverEnabled
-        ? trayMenuLabel('trayScreensaverOn')
-        : trayMenuLabel('trayScreensaverOff'),
-      click: async () => {
-        if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
-        const current = deps.getScreensaverSettings();
-        deps.updateScreensaverSettings({ ...current, enabled: !current.enabled });
-        refreshTrayMenu();
-      },
-    },
-    {
-      label: trayMenuLabel('trayScreensaverThreshold'),
-      enabled: isScreensaverEnabled,
-      submenu: SCREENSAVER_ALLOWED_IDLE_MINUTES.map((minutes) => ({
-        label: `${minutes} ${trayMenuLabel('trayMinuteUnit')}`,
-        type: 'radio',
-        checked: (screensaverSettings.idleThresholdMinutes ?? 3) === minutes,
-        click: async () => {
-          if (!deps.getScreensaverSettings || !deps.updateScreensaverSettings) return;
-          const current = deps.getScreensaverSettings();
-          deps.updateScreensaverSettings({ ...current, idleThresholdMinutes: minutes });
-          refreshTrayMenu();
-        },
-      })),
-    },
-    {
-      label: deps.getWeatherSyncSettings().enabled ? trayMenuLabel('trayWeatherSyncOn') : trayMenuLabel('trayWeatherSyncOff'),
+      label: trayMenuLabel('traySettings'),
       click: () => {
-        const currentStored = deps.getStoredWeatherSyncSettings();
-        const newSettings = { ...currentStored, enabled: !deps.getWeatherSyncSettings().enabled };
-        deps.updateWeatherSyncSettings(newSettings);
-      },
-    },
-    {
-      label: trayMenuLabel('trayWeatherSyncConfig'),
-      click: () => {
-        deps.openCitySettingWindow();
-      },
-    },
-    {
-      label: (process.platform === 'win32' || process.platform === 'darwin')
-        ? (deps.getWindowAwarenessEnabled() ? trayMenuLabel('trayWindowAwarenessOff') : trayMenuLabel('trayWindowAwarenessOn'))
-        : trayMenuLabel('trayWindowAwarenessUnavailable'),
-      enabled: process.platform === 'win32' || process.platform === 'darwin',
-      click: () => deps.setWindowAwarenessEnabled(!deps.getWindowAwarenessEnabled()),
-    },
-    { type: 'separator' },
-
-    {
-      label: trayMenuLabel('trayLanguage'),
-      submenu: langSubmenu,
-    },
-    {
-      label: deps.AutoLaunchService.isAutoLaunchEnabled() ? trayMenuLabel('trayAutoLaunchOn') : trayMenuLabel('trayAutoLaunchOff'),
-      click: async () => {
-        await deps.AutoLaunchService.setAutoLaunchPreference(!deps.AutoLaunchService.isAutoLaunchEnabled());
-        refreshTrayMenu();
+        deps.openSettingsWindow?.();
       },
     },
     {

@@ -222,10 +222,10 @@ test('Screensaver Settings - Store Persistence & Dynamic Synchronization', async
   });
 });
 
-test('Screensaver Settings - Tray Menu & i18n Localization', async (t) => {
-  await t.test('i18n dictionaries contain non-empty CP Screensaver tray keys for zh, en, ja', () => {
+test('Screensaver Settings - Settings UI & i18n Localization', async (t) => {
+  await t.test('i18n dictionaries contain non-empty CP Screensaver settings keys for zh, en, ja', () => {
     const locales = ['zh', 'en', 'ja'];
-    const requiredKeys = ['trayScreensaverOn', 'trayScreensaverOff', 'trayScreensaverThreshold'];
+    const requiredKeys = ['settingsScreensaverLabel', 'settingsScreensaverThresholdLabel', 'trayMinuteUnit'];
 
     locales.forEach((locale) => {
       assert.ok(I18N[locale], `Locale ${locale} exists`);
@@ -238,15 +238,13 @@ test('Screensaver Settings - Tray Menu & i18n Localization', async (t) => {
     });
   });
 
-  await t.test('Tray menu builds CP Screensaver submenu with enable toggle and threshold radios', () => {
+  await t.test('Tray menu opens unified Settings instead of inline screensaver submenu', () => {
     const TrayManager = require('../src/main/TrayManager');
-    let currentSettings = { enabled: false, idleThresholdMinutes: 5 };
+    let opened = false;
 
     TrayManager.init({
       I18N,
       getCurrentLocale: () => 'zh',
-      getScreensaverSettings: () => currentSettings,
-      updateScreensaverSettings: (s) => { currentSettings = s; },
       getPomodoroSnapshot: () => ({ status: 'idle' }),
       getUpdateMenuState: () => ({ enabled: true }),
       windowManager: { mainWindow: null },
@@ -254,18 +252,12 @@ test('Screensaver Settings - Tray Menu & i18n Localization', async (t) => {
       getPomodoroPetHidden: () => false,
       isPetCurrentlyHidden: () => false,
       getCurrentPetDisplay: () => null,
-      getBreakReminderEnabled: () => true,
-      getBreakReminderIntervalMinutes: () => 60,
-      BREAK_REMINDER_TRAY_INTERVALS: [30, 45, 60, 90, 120],
-      getWeatherSyncSettings: () => ({ enabled: false }),
-      getStoredWeatherSyncSettings: () => ({ enabled: false }),
-      getWindowAwarenessEnabled: () => false,
-      AutoLaunchService: { isAutoLaunchEnabled: () => false },
+      openSettingsWindow: () => { opened = true; },
     });
 
-    // Test initial disabled state
-    assert.equal(TrayManager.trayT('trayScreensaverOff'), '💕 开启高甜屏保');
-    assert.equal(TrayManager.trayT('trayScreensaverOn'), '💕 关闭高甜屏保');
-    assert.equal(TrayManager.trayT('trayScreensaverThreshold'), '💕 屏保触发等待');
+    assert.equal(TrayManager.trayT('traySettings'), '⚙️ 设置…');
+    assert.equal(TrayManager.trayT('settingsScreensaverLabel'), '高甜屏保');
+    assert.equal(TrayManager.trayT('settingsScreensaverThresholdLabel'), '触发等待');
+    assert.equal(opened, false);
   });
 });
