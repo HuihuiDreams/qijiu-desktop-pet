@@ -39,7 +39,7 @@
 
 ### 1.2 UI/UX 与交互规范（`/game-ui-ux`）
 
-1. **顶部 3 标签页分栏**（紧凑尺寸约 `520×476`，免滚动完整呈现各标签页全部设置卡并预留桌面空白以便拖动体型滑块时实时观察桌宠变化；内容区 `.settings-tabpanel` 配置 `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 与水墨细滚动条兜底，防止多语言分段换行或引导提示展开时纵向裁切）：
+1. **顶部 3 标签页分栏**（紧凑尺寸约 `520×456`，免滚动完整呈现各标签页全部设置卡并预留桌面空白以便拖动体型滑块时实时观察桌宠变化；内容区 `.settings-tabpanel` 配置 `flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 与水墨细滚动条兜底，防止多语言分段换行或引导提示展开时纵向裁切）：
    - **Tab 1 — 外观与交互**：
      - **桌宠体型**：`50%–150%` 滑块实时缩放 + 「恢复默认（100%）」按钮。
      - **皮肤外观快捷卡片**：展示当前已确认皮肤名称 + 「选择皮肤…」按钮（点击唤起独立 `SkinSelectorWindow`，设置窗保持开启；**仅在选肤确认提交后实时刷新皮肤名，忽略预览中与取消回滚状态**；关闭选肤窗且设置窗仍可见时，焦点回传至设置窗及「选择皮肤…」按钮）。
@@ -64,7 +64,7 @@
 
 - **窗口与生命周期**：
   - 新增 `src/main/windows/SettingsWindow.js`，在 [WindowManager.js](../../src/main/windows/WindowManager.js) 注册 `settingsWindow`。
-  - 参考 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 与 [ADR-041](../decisions/ADR-041-skin-selector-performance-and-scaling.md)：`520×476` 初始尺寸（坐标在 `display.workArea` 内做 `Math.max`/`Math.min` 安全区夹紧）、`transparent: true`、`frame: false`、`alwaysOnTop: false`、`minimizable: true`、`resizable: false`、`hasShadow: false`，打开/聚焦时执行 `180ms` `screen-saver` 级置顶脉冲后恢复 `alwaysOnTop: false`，并支持 macOS `app.focus({ steal: true })` 与全空间可见。
+  - 参考 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 与 [ADR-041](../decisions/ADR-041-skin-selector-performance-and-scaling.md)：`520×456` 初始尺寸（坐标在 `display.workArea` 内做 `Math.max`/`Math.min` 安全区夹紧）、`transparent: true`、`frame: false`、`alwaysOnTop: false`、`minimizable: true`、`resizable: false`、`hasShadow: false`，打开/聚焦时执行 `180ms` `screen-saver` 级置顶脉冲后恢复 `alwaysOnTop: false`，并支持 macOS `app.focus({ steal: true })` 与全空间可见。
   - 在 [PetWindow.js](../../src/main/windows/PetWindow.js) 中同时将 `windowManager.settingsWindow` 纳入 `getPetSubWindows()`（统一服务于 Windows 全屏 RDP 自动避让恢复与 3 秒 `keepPetWindowOnTop()` 子窗口焦点层级排序）及 `closed` 清理链（主窗口关闭时一并关闭，防止孤儿进程）。
   - `SettingsWindow` `close` 时若存在未落盘的体型 `previewPercent` 则兜底提交保存；通过 `returnFocusToSettings` 标识区分选肤窗入口：仅当从设置窗通过 `settings-open-skin-selector` 唤起 `SkinSelectorWindow` 时置为 `true`，在 `SkinSelectorWindow` `closed` 时若标识为真且设置窗未销毁、可见且未最小化，才聚焦设置窗并发送 `settings-restore-skin-focus`（随后重置标识），防止托盘直接选肤时误抢焦点。
 - **最小权限 Preload 与 IPC 鉴权**：
@@ -93,7 +93,7 @@
     - 窗口创建、居中、180ms 置顶脉冲、全空间可见与 macOS `app.focus({ steal: true })` 参照原 `PetScaleWindow.js` 模式。
     - `settingsPreload.js` 参照 [pomodoroPreload.js](../../pomodoroPreload.js#L1-L17) 的 `subscribeIpc` 订阅与取消订阅清理模式。
   - **Acceptance criteria**:
-    - [x] `SettingsWindow` 尺寸为 `520×476`，支持 `openSettingsWindow(initialTab)`（支持指定初始 Tab，默认 `'appearance'`；窗口已打开时同步切换激活 Tab 并移交焦点）、在鼠标所在显示器 `workArea` 内居中并通过 `Math.max`/`Math.min` 安全区夹紧、180ms 置顶脉冲、`alwaysOnTop: false`、`minimizable: true`。
+    - [x] `SettingsWindow` 尺寸为 `520×456`，支持 `openSettingsWindow(initialTab)`（支持指定初始 Tab，默认 `'appearance'`；窗口已打开时同步切换激活 Tab 并移交焦点）、在鼠标所在显示器 `workArea` 内居中并通过 `Math.max`/`Math.min` 安全区夹紧、180ms 置顶脉冲、`alwaysOnTop: false`、`minimizable: true`。
     - [x] `SettingsWindow` `close` 时调用 `PetScaleService.flushPreview()`（或等价兜底刷盘）持久化未落盘预览值；`SkinSelectorWindow` 维护 `returnFocusToSettings` 标识，仅当从设置窗通过 `settings-open-skin-selector` 唤起时置 `true`，`closed` 且设置窗未销毁、可见、未最小化时才聚焦设置窗并派发 `settings-restore-skin-focus`（随后重置标识），避免从托盘直接选肤时误抢焦点。
     - [x] `settingsPreload.js` 严格通过 `contextBridge` 暴露窄 API，且暴露对象属性名严禁命中 `FORBIDDEN_SUBWINDOW_APIS`（不使用 `saveData`/`loadData`/`setAutoLaunch`/`getAutoLaunch`/`setLocale`/`setCurrentSkin`，改为 `getSnapshot`、`changeSettingsLocale`、`changeAutoLaunch` 等语义化名称）。
     - [x] `webContents` 拦截 `setWindowOpenHandler` 与 `will-navigate`。
@@ -245,7 +245,7 @@
 | 删除 `CitySettingWindow` / `PetScaleWindow` 导致大量既有回归测试直接报错 | High | 将旧窗下线（Task 3.2）与受影响 15+ 测试及集成桩迁移（Task 3.3）纳入同一原子提交闭环内完成，先确保核心服务（`PetScaleService`、`WeatherSyncController`、`AutoLaunchService`、`BreakReminderController`）接口抽离并保留并发测试，防止任何中间提交红灯。 |
 | `settingsPreload.js` 权限过宽或键名误触 `FORBIDDEN_SUBWINDOW_APIS` 破坏隔离边界（`subWindowPreloadSecurity.test.js`） | High | 设置窗不复用 `save-data` / `load-data` / `set-current-skin` / `setLocale` / `setAutoLaunch` 等禁用键名与通道，仅开放受 `isSenderWindow(settingsWindow)` 守卫的 `settings-*` 语义化通道。 |
 | 拖动体型滑块时频繁写盘或关窗瞬间丢帧 / 未保存 | Med | 滑块 `input` 事件仅触发内存 `preview` 实时渲染；原生 `change`（松手或键盘步进）立即调用 `commit` 写入 `electron-store`，且 `SettingsWindow` 在 `close` 时兜底刷入未落盘的 `previewPercent`。 |
-| 切换 `en` / `ja` 后 Tab 栏、分段按钮宽度溢出或 Tab 2 纵向裁切 | Med | 窗口扩至 `520×476` 并夹紧在 `workArea` 安全区内，同时采用内联城市徽章与单行 CSS Grid 等分分段控件，确保 3 标签页（含高甜屏保）免滚动展示；`.settings-tabpanel` 仍保留 `min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 水墨细滚动条兜底，并在三语下核验。 |
+| 切换 `en` / `ja` 后 Tab 栏、分段按钮宽度溢出或 Tab 2 纵向裁切 | Med | 窗口扩至 `520×456` 并夹紧在 `workArea` 安全区内，同时采用内联城市徽章与单行 CSS Grid 等分分段控件，确保 3 标签页（含高甜屏保）免滚动展示；`.settings-tabpanel` 仍保留 `min-height: 0; overflow-y: auto; scrollbar-gutter: stable;` 水墨细滚动条兜底，并在三语下核验。 |
 | 托盘已移除语言切换后，用户不慎切到陌生语言找不到入口 | Low | 设置入口在托盘保留固定齿轮图标 `⚙️`，且设置窗口三语 Tab 与系统语言分段按钮直观可见（`中文` / `English` / `日本語` 始终用各自母语展示，不随当前语言翻译）。 |
 
 ---
