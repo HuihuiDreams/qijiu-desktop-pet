@@ -61,6 +61,8 @@ configureChromiumMemoryBudget();
 // 实现委托给 SkinService/SkinSelectorWindow，这里仅保留 QA 入口本身。
 app.openSkinSelectorForQA = skinSelectorWindowModule.openSkinSelectorWindow;
 app.setQaExtraSkinIdForQA = (skinId) => SkinService.setQaExtraSkinId(skinId);
+// 统一设置窗同样只能从托盘打开，QA 入口让 E2E 不依赖原生托盘菜单（可选参数为初始标签页）。
+app.openSettingsForQA = settingsWindowModule.openSettingsWindow;
 
 // --- 应用生命周期 ---
 

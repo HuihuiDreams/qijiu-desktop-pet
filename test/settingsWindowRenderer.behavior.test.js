@@ -87,8 +87,6 @@ function makeSnapshot(overrides = {}) {
     breakReminder: { enabled: true, intervalMinutes: 60, allowedIntervals: [30, 45, 60, 90, 120] },
     screensaver: { enabled: false, idleThresholdMinutes: 3, allowedThresholds: [1, 3, 5, 10, 15, 30] },
     autoLaunch: { enabled: false, preference: false, pendingApproval: false },
-    windowAwarenessSupported: true,
-    autoLaunchPendingApproval: false,
     ...overrides,
   };
 }
@@ -460,7 +458,6 @@ test('autoLaunch reverts on failure and displays pendingApproval notice', async 
         pendingApproval: true,
         snapshot: makeSnapshot({
           autoLaunch: { enabled: false, preference: true, pendingApproval: true },
-          autoLaunchPendingApproval: true,
         }),
       },
     }),

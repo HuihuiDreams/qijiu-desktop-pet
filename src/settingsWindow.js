@@ -239,9 +239,7 @@
     // System: Auto Launch
     if (snapshot.autoLaunch) {
       setSwitchState(autoLaunchSwitch, snapshot.autoLaunch.enabled, false);
-      const pendingApproval = Boolean(
-        snapshot.autoLaunchPendingApproval || snapshot.autoLaunch.pendingApproval,
-      );
+      const pendingApproval = Boolean(snapshot.autoLaunch.pendingApproval);
       if (pendingApproval) {
         setAutoLaunchStatus('settingsAutoLaunchPendingApproval', 'settings-inline-status--warning');
       } else if (autoLaunchStatusState?.key === 'settingsAutoLaunchPendingApproval') {
@@ -506,7 +504,7 @@
         window.electronAPI?.changeAutoLaunch?.(!isSwitchOn(autoLaunchSwitch))
       ));
       if (res?.success) {
-        if (res.data?.pendingApproval || res.data?.snapshot?.autoLaunchPendingApproval) {
+        if (res.data?.pendingApproval || res.data?.snapshot?.autoLaunch?.pendingApproval) {
           setAutoLaunchStatus('settingsAutoLaunchPendingApproval', 'settings-inline-status--warning');
         }
       } else {

@@ -112,7 +112,7 @@
 - [x] **Task 1.2: 后端服务小幅适配与 `SettingsService` 聚合控制器**
   - **Description**: 适配 [PetScaleService.js](../../src/main/services/PetScaleService.js)、[LocaleService.js](../../src/main/services/LocaleService.js)、[WeatherSyncController.js](../../src/main/services/WeatherSyncController.js)、[BreakReminderController.js](../../src/main/services/BreakReminderController.js)、[AutoLaunchService.js](../../src/main/services/AutoLaunchService.js) 与 [SkinService.js](../../src/main/services/SkinService.js)；新建 `src/main/services/SettingsService.js` 统一注册与鉴权设置窗口的全部 IPC。
   - **Acceptance criteria**:
-    - [x] `AutoLaunchService.js` 导出 `isLoginItemPendingApproval` / `getAutoLaunchState()`（返回 `{ enabled, preference, pendingApproval }`）；`SettingsService.getSnapshot()` 汇总 7 项配置当前值 + 当前已确认皮肤展示名/ID + 平台能力标识（`windowAwarenessSupported`、`autoLaunchPendingApproval`）。
+    - [x] `AutoLaunchService.js` 导出 `isLoginItemPendingApproval` / `getAutoLaunchState()`（返回 `{ enabled, preference, pendingApproval }`）；`SettingsService.getSnapshot()` 汇总 7 项配置当前值 + 当前已确认皮肤展示名/ID + 平台能力标识（嵌套字段 `windowAwareness.supported`、`autoLaunch.pendingApproval`；顶层同名冗余字段已在 R5 移除）。
     - [x] `PetScaleService.js` 将 `confirm(percent)` 扩展为可选接收 `percent` 并提供 `flushPreview()`（兼容既有无参 `confirm()` 契约）；`BreakReminderController.js` 新增内聚方法 `updateBreakReminderSettings(patch)`（校验 `intervalMinutes` 属于 `BREAK_REMINDER_TRAY_INTERVALS` 并保留 `idleResetMinutes`）；`WeatherSyncController.js` 抽取并导出纯方法 `setCityName(cityName)` 与 `getCitySettings()`（及状态变更回调），保留两套防竞态计数逻辑与并发测试契约。
     - [x] 每条 `settings-*` IPC handler 均首先调用 `isSenderWindow(event, windowManager.settingsWindow)`，拒绝一切非设置窗或已销毁窗口的调用；异步设置接口返回最新权威快照以支持异常回滚。
     - [x] `settings-preview-pet-scale` 实时缩放、`settings-commit-pet-scale` 持久化（规范化 `50–150`）；`settings-set-weather-enabled`、`settings-set-city-name`（委托 `WeatherSyncController.setCityName` 并保留未设城市开启后设城市立即同步语义）、`settings-set-break-reminder`（委托 `BreakReminderController.updateBreakReminderSettings`）、`settings-set-screensaver`、`settings-set-window-awareness`、`settings-set-locale`、`settings-set-auto-launch`、`settings-open-skin-selector` 均经主进程边界校验并同步刷新托盘/主窗口。
@@ -263,7 +263,7 @@
 - [x] **R1 文档对齐**：界面感知所在标签页、`settingsAPI` 命名、城市按钮文案与三语 readme 标签页名称。
 - [x] **R2 渲染端点击错误兜底与串行化**：所有设置提交经 `runSetting` 按控件串行，IPC 抛错或失败无快照时回读主进程快照，`scale-reset` 失败回滚乐观显示。
 - [x] **R3 滑块拖动期间不接受快照回写**：`pointerdown` 置位，`pointerup` / `pointercancel` / `blur` / `change` 清除，避免「拖走再拖回原值不触发 `change`」导致标记卡死。
-- [ ] **R4 `settings-updated` 单 tick 合并推送**。
-- [ ] **R5 快照去除顶层冗余字段**（`windowAwarenessSupported`、`autoLaunchPendingApproval`）。
-- [ ] **R6 新增 `app.openSettingsForQA` E2E 入口**。
+- [x] **R4 `settings-updated` 单 tick 合并推送**（`notifySettingsUpdated()` 经 `queueMicrotask` 合并）。
+- [x] **R5 快照去除顶层冗余字段**（`windowAwarenessSupported`、`autoLaunchPendingApproval`）。
+- [x] **R6 新增 `app.openSettingsForQA` E2E 入口**。
 - [ ] **R7 清理托盘精简后的无调用方方法与孤立 i18n 键**。
