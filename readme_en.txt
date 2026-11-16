@@ -53,22 +53,17 @@ If you use multiple monitors, you can drag characters or the status panel to a s
 To switch languages, open "⚙️ Settings… -> System" from the tray menu and select "中文", "English", or "日本語"; the main window, right-click menus, status panel, Pomodoro, skin/settings windows, and update prompts refresh together.
 
 ========================================
-💕 CP Sweet Screensaver
+🧘🏻‍♂️ Cang Qiong Seclusion
 ========================================
 
-After the system has been idle longer than the configured wait time, the screensaver starts:
-- Yueqi and Shenjiu play a CP combo at the center of the screen: share food -> hug -> kiss.
-- The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
-- When they detect that you are back, each pet shows a dialogue bubble above its head (Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
+Cang Qiong Seclusion is the lightweight Pomodoro feature.
+Open it from the tray menu with "🧘🏻‍♂️ Cang Qiong Seclusion"; while running, the tray menu shows "🧘🏻‍♂️ In Seclusion N min", and after completion it shows "🧘🏻‍♂️ Seclusion Complete".
 
-In the tray under "⚙️ Settings… -> Companion", you can:
-- Toggle the "Sweet Screensaver" switch.
-- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Wait Time" (default: 3 min).
-
-Note:
-This app does NOT block or modify Windows screen-off / sleep timing.
-To see the animation, make sure the Windows "turn off screen" and "sleep" timers are set later than the selected CP wait time.
-Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 minutes or longer, lengthen the screen-off / sleep timers in the system power settings.
+Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
+After you start, Yue Qi and Shen Jiu leave the desktop and appear together in a cultivation illustration, alongside the timer and progress bar. A faint gold “七九” calligraphy emblem gently pulses at the center of the dial.
+The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
+When the countdown ends, a resonant singing-bowl chime plays as a gold “七九” seal lands with expanding ripples. The seal then fades into an ink watermark behind a kissing illustration and an encouragement message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+Click "Exit Seclusion", stop early, or close the window to return the pets to their previous visibility and walking state.
 
 ========================================
 🎨 Skins & Display
@@ -99,14 +94,6 @@ Calligraphy Details:
 Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold seal. The skin selector and unified settings windows show the same gold ornament beside their localized titles.
 
 ========================================
-📦 Updates
-========================================
-
-- Windows packaged builds: use "📦 Check for Updates" from the tray menu to check GitHub Releases. When a new version is available, a progress window is shown during download, and you can restart to install after it finishes.
-- macOS: because the app is not currently signed with an Apple Developer ID certificate, update checks show the current and latest version, then guide you to open Releases, download the new DMG, and replace the app manually.
-- Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
-
-========================================
 🪟 Realm Awareness
 ========================================
 
@@ -128,17 +115,32 @@ When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweig
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
-🧘🏻‍♂️ Cang Qiong Seclusion
+⏰ Break Reminder
 ========================================
 
-Cang Qiong Seclusion is the lightweight Pomodoro feature.
-Open it from the tray menu with "🧘🏻‍♂️ Cang Qiong Seclusion"; while running, the tray menu shows "🧘🏻‍♂️ In Seclusion N min", and after completion it shows "🧘🏻‍♂️ Seclusion Complete".
+When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
+When it triggers, Yue Qi and Shen Jiu move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
 
-Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
-After you start, Yue Qi and Shen Jiu leave the desktop and appear together in a cultivation illustration, alongside the timer and progress bar. A faint gold “七九” calligraphy emblem gently pulses at the center of the dial.
-The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the countdown ends, a resonant singing-bowl chime plays as a gold “七九” seal lands with expanding ripples. The seal then fades into an ink watermark behind a kissing illustration and an encouragement message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
-Click "Exit Seclusion", stop early, or close the window to return the pets to their previous visibility and walking state.
+You can toggle "Break Reminder" under "⚙️ Settings… -> Companion" and select 30, 45, 60, 90, or 120 minutes for the reminder interval.
+Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
+
+========================================
+💕 CP Sweet Screensaver
+========================================
+
+After the system has been idle longer than the configured wait time, the screensaver starts:
+- Yueqi and Shenjiu play a CP combo at the center of the screen: share food -> hug -> kiss.
+- The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
+- When they detect that you are back, each pet shows a dialogue bubble above its head (Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
+
+In the tray under "⚙️ Settings… -> Companion", you can:
+- Toggle the "Sweet Screensaver" switch.
+- Choose 1 / 3 / 5 / 10 / 15 / 30 min for "Wait Time" (default: 3 min).
+
+Note:
+This app does NOT block or modify Windows screen-off / sleep timing.
+To see the animation, make sure the Windows "turn off screen" and "sleep" timers are set later than the selected CP wait time.
+Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 minutes or longer, lengthen the screen-off / sleep timers in the system power settings.
 
 ========================================
 📹 Meeting Auto-Hide
@@ -153,14 +155,12 @@ Meeting Auto-Hide automatically hides the pets when meeting activity is detected
 - The detector only uses meeting app process names and UDP endpoint counts. It does not read meeting titles, window titles, browser URLs, audio/video content, or screen contents.
 
 ========================================
-⏰ Break Reminder
+📦 Updates
 ========================================
 
-When Break Reminder is enabled, the app reminds you to stand up and move around after a continuous active period.
-When it triggers, Yue Qi and Shen Jiu move near the center of the screen and show break reminder dialogue. You can click a character to dismiss it, or wait about 20 seconds for it to disappear automatically.
-
-You can toggle "Break Reminder" under "⚙️ Settings… -> Companion" and select 30, 45, 60, 90, or 120 minutes for the reminder interval.
-Locking the screen, suspending the computer, or stepping away long enough resets the timer. If pets are hidden, the reminder will not pop up and the next interval starts fresh.
+- Windows packaged builds: use "📦 Check for Updates" from the tray menu to check GitHub Releases. When a new version is available, a progress window is shown during download, and you can restart to install after it finishes.
+- macOS: because the app is not currently signed with an Apple Developer ID certificate, update checks show the current and latest version, then guide you to open Releases, download the new DMG, and replace the app manually.
+- Development mode: update checks are not supported under `npm run dev`; use a packaged build to verify the update flow.
 
 ========================================
 📊 Cultivation Status
