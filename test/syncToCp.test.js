@@ -1545,4 +1545,207 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       fs.rmSync(tmpBase, { recursive: true, force: true });
     }
   });
+
+  await t.test('regenerates package-lock.json when it is the sole conflict and package.json updated cleanly, with safety guards', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-lockfile-regen-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const repo = path.join(tmpBase, 'local');
+    const cpRef = 'origin/cp/crowley-aziraphale';
+
+    const makePkg = (identity, asarVer, extra = {}) =>
+      `${JSON.stringify(
+        {
+          name: identity.name,
+          version: identity.version,
+          devDependencies: { '@electron/asar': asarVer },
+          ...extra,
+        },
+        null,
+        2
+      )}\n`;
+
+    const makeLock = (identity, asarPkgVer, nestedPkgName, nestedPkgVer) =>
+      `${JSON.stringify(
+        {
+          name: identity.name,
+          version: identity.version,
+          lockfileVersion: 3,
+          packages: {
+            '': {
+              name: identity.name,
+              version: identity.version,
+              devDependencies: { '@electron/asar': `^${asarPkgVer}` },
+            },
+            'node_modules/@electron/asar': {
+              version: asarPkgVer,
+            },
+            [`node_modules/@electron/asar/node_modules/${nestedPkgName}`]: {
+              version: nestedPkgVer,
+            },
+          },
+        },
+        null,
+        2
+      )}\n`;
+
+    const mainId = { name: 'desktop-pet', version: '0.11.3' };
+    const cpId = { name: 'good-omens-desktop-pet', version: '1.0.0' };
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', repo]);
+      git(repo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(repo, 'src', 'shared.js'), 'module.exports = 1;\n');
+      fs.writeFileSync(path.join(repo, 'package.json'), makePkg(mainId, '^4.3.1'));
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(mainId, '4.3.1', 'glob', '13.0.6'));
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'chore: base']);
+      git(repo, ['branch', '-M', 'main']);
+      git(repo, ['push', '-u', 'origin', 'main']);
+
+      // Diverge cp/crowley-aziraphale package-lock.json nested dependency (13.0.7 vs 13.0.6) & src/shared.js
+      git(repo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      fs.writeFileSync(path.join(repo, 'package.json'), makePkg(cpId, '^4.3.1'));
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(cpId, '4.3.1', 'glob', '13.0.7'));
+      fs.writeFileSync(path.join(repo, 'src', 'shared.js'), 'module.exports = 999;\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'chore: cp diverged lockfile']);
+      git(repo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      // 1. On main, bump @electron/asar in package.json + replace nested glob with minimatch in package-lock.json
+      git(repo, ['checkout', 'main']);
+      fs.writeFileSync(path.join(repo, 'package.json'), makePkg(mainId, '^4.3.2'));
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(mainId, '4.3.2', 'minimatch', '11.0.8'));
+      git(repo, ['add', 'package.json', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore(deps): bump @electron/asar from 4.3.1 to 4.3.2']);
+      const asarBumpSha = git(repo, ['rev-parse', 'HEAD']);
+
+      // 1a. If lockfileUpdater throws, rollback and mark blocked
+      let regenFailedAttempts = 0;
+      const failedRegen = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: asarBumpSha,
+        dryRun: false,
+        lockfileUpdater: () => {
+          regenFailedAttempts += 1;
+          throw new Error('npm registry unreachable');
+        },
+        installRunner: () => {},
+        testRunner: () => {},
+      });
+      assert.equal(regenFailedAttempts, 1);
+      assert.equal(failedRegen.syncedCount, 0);
+      assert.equal(failedRegen.results[0].blocked, true);
+      assert.equal(failedRegen.results[0].status, '⚠️ 代码冲突跳过');
+      assert.match(failedRegen.results[0].reason, /自动重生成锁文件失败: npm registry unreachable/);
+
+      // 1b. Successful lockfile regeneration preserves CP identity and updates lockfile
+      let regenCalls = 0;
+      let installedAfterRegen = false;
+      let testedAfterRegen = false;
+      const successRegen = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: asarBumpSha,
+        dryRun: false,
+        lockfileUpdater: (cwd) => {
+          regenCalls += 1;
+          const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
+          assert.equal(pkg.name, cpId.name, 'package.json must have CP identity before lockfile regeneration');
+          assert.equal(pkg.devDependencies['@electron/asar'], '^4.3.2');
+          const baseLock = JSON.parse(fs.readFileSync(path.join(cwd, 'package-lock.json'), 'utf8'));
+          assert.equal(
+            baseLock.packages['node_modules/@electron/asar/node_modules/glob'].version,
+            '13.0.7',
+            'Valid checkpoint lockfile must be restored before running npm'
+          );
+          fs.writeFileSync(path.join(cwd, 'package-lock.json'), makeLock(cpId, '4.3.2', 'minimatch', '11.0.8'));
+        },
+        installRunner: () => {
+          installedAfterRegen = true;
+        },
+        testRunner: () => {
+          testedAfterRegen = true;
+        },
+      });
+      assert.equal(regenCalls, 1);
+      assert.equal(installedAfterRegen, true);
+      assert.equal(testedAfterRegen, true);
+      assert.equal(successRegen.syncedCount, 1);
+      assert.equal(successRegen.results[0].status, '✅ 已同步 (重生成锁文件)');
+      assert.match(successRegen.results[0].reason, /锁文件冲突已自动重生成: package-lock\.json/);
+
+      git(repo, ['fetch', 'origin']);
+      const cpPkg = JSON.parse(git(repo, ['show', `${cpRef}:package.json`]));
+      const cpLock = JSON.parse(git(repo, ['show', `${cpRef}:package-lock.json`]));
+      assert.equal(cpPkg.name, cpId.name);
+      assert.equal(cpPkg.devDependencies['@electron/asar'], '^4.3.2');
+      assert.equal(cpLock.name, cpId.name);
+      assert.equal(cpLock.packages['node_modules/@electron/asar'].version, '4.3.2');
+
+      // 2. Lockfile-only commit (package.json untouched) must NOT silently regenerate/drop transitive bumps
+      // Make cp's lockfile differ from main on a transitive node before main modifies that exact block
+      git(repo, ['checkout', 'cp/crowley-aziraphale']);
+      git(repo, ['reset', '--hard', cpRef]);
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(cpId, '4.3.2', 'minimatch', '11.0.7'));
+      git(repo, ['add', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore: cp transitive minimatch 11.0.7']);
+      const cpHeadWithDivergedMin = git(repo, ['rev-parse', 'HEAD']);
+      git(repo, ['push', 'origin', 'cp/crowley-aziraphale']);
+
+      git(repo, ['checkout', 'main']);
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(mainId, '4.3.2', 'minimatch', '11.0.9'));
+      git(repo, ['add', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore(deps): bump transitive minimatch without touching package.json']);
+      const lockOnlySha = git(repo, ['rev-parse', 'HEAD']);
+
+      let lockOnlyRegenCalls = 0;
+      const lockOnlyResult = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: lockOnlySha,
+        dryRun: false,
+        lockfileUpdater: () => {
+          lockOnlyRegenCalls += 1;
+        },
+        installRunner: () => {},
+        testRunner: () => {},
+      });
+      assert.equal(lockOnlyRegenCalls, 0, 'Must not regenerate when package.json was not modified');
+      assert.equal(lockOnlyResult.results[0].blocked, true);
+      assert.equal(lockOnlyResult.results[0].status, '⚠️ 代码冲突跳过');
+      git(repo, ['fetch', 'origin']);
+      assert.equal(git(repo, ['rev-parse', cpRef]), cpHeadWithDivergedMin);
+
+      // 3. Commit with BOTH package-lock.json conflict AND src/shared.js conflict must NOT regenerate
+      fs.writeFileSync(path.join(repo, 'package.json'), makePkg(mainId, '^4.3.3'));
+      fs.writeFileSync(path.join(repo, 'package-lock.json'), makeLock(mainId, '4.3.3', 'minimatch', '11.0.10'));
+      fs.writeFileSync(path.join(repo, 'src', 'shared.js'), 'module.exports = 2;\n');
+      git(repo, ['add', '.']);
+      git(repo, ['commit', '-m', 'feat: bump asar and edit shared.js']);
+      const multiConflictSha = git(repo, ['rev-parse', 'HEAD']);
+
+      let multiConflictRegenCalls = 0;
+      const multiConflictResult = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: multiConflictSha,
+        dryRun: false,
+        lockfileUpdater: () => {
+          multiConflictRegenCalls += 1;
+        },
+        installRunner: () => {},
+        testRunner: () => {},
+      });
+      assert.equal(multiConflictRegenCalls, 0, 'Must not regenerate when another file also conflicts');
+      assert.equal(multiConflictResult.results[0].blocked, true);
+      assert.match(multiConflictResult.results[0].reason, /package-lock\.json/);
+      assert.match(multiConflictResult.results[0].reason, /src\/shared\.js/);
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
 });

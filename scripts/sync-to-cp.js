@@ -827,6 +827,52 @@ function formatSyncSummaryMarkdown(results, targetBranch) {
 }
 
 /**
+ * Run an npm subcommand with sanitized environment variables (tokens stripped).
+ *
+ * @param {string[]} args
+ * @param {string} cwd
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+function runNpmCommand(args, cwd, env = process.env) {
+  return execFileSync('npm', args, {
+    cwd,
+    stdio: 'inherit',
+    env: createSanitizedChildEnv(env),
+    shell: process.platform === 'win32', // npm is npm.cmd on Windows; args are constants
+  });
+}
+
+/**
+ * Only regenerate `package-lock.json` when it is the sole remaining non-doc/non-changelog conflict
+ * and the commit also updated `package.json` cleanly (so transitive-only lockfile bumps are never silently dropped).
+ */
+function canRegenerateLockfileConflict({
+  nonChangelogConflicts,
+  files,
+  worktreeDir,
+  checkpointSha,
+  repoRoot,
+  commitSha,
+}) {
+  if (nonChangelogConflicts.length !== 1 || nonChangelogConflicts[0] !== 'package-lock.json') {
+    return false;
+  }
+  if (!files.includes('package.json')) {
+    return false;
+  }
+  if (!fs.existsSync(path.join(worktreeDir, 'package.json'))) {
+    return false;
+  }
+  const existsInCheckpoint = Boolean(
+    runGit(['ls-tree', checkpointSha, 'package-lock.json'], { cwd: worktreeDir }).trim()
+  );
+  const existsInCommit = Boolean(
+    runGit(['ls-tree', commitSha, 'package-lock.json'], { cwd: repoRoot }).trim()
+  );
+  return existsInCheckpoint && existsInCommit;
+}
+
+/**
  * Core end-to-end git orchestration for evaluating, cherry-picking, smart-merging CHANGELOG,
  * preserving package identity, running tests, and pushing to `targetBranch`.
  * Uses a temporary `git worktree` so the main working directory is never switched or dirtied.
@@ -843,20 +889,10 @@ async function syncCommitsToCp({
   alwaysAi = false,
   env = process.env,
   fetchImpl = globalThis.fetch,
-  testRunner = (cwd) =>
-    execFileSync('npm', ['test'], {
-      cwd,
-      stdio: 'inherit',
-      env: createSanitizedChildEnv(env),
-      shell: process.platform === 'win32', // npm is npm.cmd on Windows; args are constants
-    }),
-  installRunner = (cwd) =>
-    execFileSync('npm', ['ci'], {
-      cwd,
-      stdio: 'inherit',
-      env: createSanitizedChildEnv(env),
-      shell: process.platform === 'win32', // npm is npm.cmd on Windows; args are constants
-    }),
+  testRunner = (cwd) => runNpmCommand(['test'], cwd, env),
+  installRunner = (cwd) => runNpmCommand(['ci'], cwd, env),
+  lockfileUpdater = (cwd) =>
+    runNpmCommand(['install', '--package-lock-only', '--ignore-scripts'], cwd, env),
 } = {}) {
   const effectiveDryRun = verifyOnly ? false : dryRun;
   const shouldPush = !effectiveDryRun && !verifyOnly;
@@ -1123,7 +1159,46 @@ async function syncCommitsToCp({
         (f) => f !== 'CHANGELOG.md' && !skippedDocConflicts.includes(f)
       );
 
-      if (nonChangelogConflicts.length > 0) {
+      let regeneratedLockfile = false;
+      if (
+        canRegenerateLockfileConflict({
+          nonChangelogConflicts,
+          files,
+          worktreeDir,
+          checkpointSha,
+          repoRoot,
+          commitSha: sha,
+        })
+      ) {
+        // Restore target's valid lockfile base and CP package identity before regenerating from merged package.json
+        runGit(['checkout', checkpointSha, '--', 'package-lock.json'], { cwd: worktreeDir });
+        const pkgPath = path.join(worktreeDir, 'package.json');
+        if (cpIdentity) {
+          fs.writeFileSync(
+            pkgPath,
+            applyPackageIdentity(fs.readFileSync(pkgPath, 'utf8'), cpIdentity)
+          );
+        }
+        try {
+          lockfileUpdater(worktreeDir);
+          runGit(['add', 'package.json', 'package-lock.json'], { cwd: worktreeDir });
+          regeneratedLockfile = true;
+        } catch (err) {
+          const errMsg = String(err?.message || 'unknown error').replace(/[\r\n]+/g, ' ').trim();
+          runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
+          results.push({
+            sha,
+            subject,
+            verdict: verdictLabel,
+            status: '⚠️ 代码冲突跳过',
+            reason: `存在代码冲突文件: package-lock.json (自动重生成锁文件失败: ${errMsg})`,
+            blocked: true,
+          });
+          break;
+        }
+      }
+
+      if (!regeneratedLockfile && nonChangelogConflicts.length > 0) {
         runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
         results.push({
           sha,
@@ -1275,18 +1350,38 @@ async function syncCommitsToCp({
         syncedCount += 1;
       }
 
+      const statusNotes = [];
+      if (conflictedFiles.includes('CHANGELOG.md')) {
+        statusNotes.push('智能合并日志');
+      }
+      if (regeneratedLockfile) {
+        statusNotes.push('重生成锁文件');
+      }
+      if (statusNotes.length === 0 && !cherryPickClean) {
+        statusNotes.push('智能合并日志');
+      }
+      const statusSuffix = statusNotes.length > 0 ? ` (${statusNotes.join(' + ')})` : '';
       const successStatus = verifyOnly
-        ? (cherryPickClean ? '✅ 预检通过' : '✅ 预检通过 (智能合并日志)')
-        : (cherryPickClean ? '✅ 已同步' : '✅ 已同步 (智能合并日志)');
+        ? `✅ 预检通过${statusSuffix}`
+        : `✅ 已同步${statusSuffix}`;
+
+      const reasonNotes = [];
+      if (skippedDocConflicts.length > 0) {
+        reasonNotes.push(`文档冲突已跳过（保留目标分支版本）: ${skippedDocConflicts.join(', ')}`);
+      }
+      if (regeneratedLockfile) {
+        reasonNotes.push('锁文件冲突已自动重生成: package-lock.json');
+      }
+      const finalReason = reasonNotes.length > 0
+        ? `${summaryReason} ${reasonNotes.join('；')}`
+        : summaryReason;
 
       results.push({
         sha,
         subject,
         verdict: verdictLabel,
         status: successStatus,
-        reason: skippedDocConflicts.length > 0
-          ? `${summaryReason} 文档冲突已跳过（保留目标分支版本）: ${skippedDocConflicts.join(', ')}`
-          : summaryReason,
+        reason: finalReason,
       });
     }
   } finally {
