@@ -246,3 +246,35 @@ test('AutoLaunchService: macOS setAutoLaunchPreference preserves enable intent d
   }
 });
 
+test('AutoLaunchService: macOS setAutoLaunchPreference(false) cancels pending requires-approval preference', async () => {
+  const ctx = createAutoLaunchTestContext({
+    isPackaged: true,
+    platform: 'darwin',
+    initialStore: { autoLaunch: true },
+    initialOpenAtLogin: true,
+    initialStatus: 'requires-approval',
+    statusOnEnable: 'requires-approval',
+  });
+  try {
+    await ctx.service.syncAutoLaunchPreference();
+    assert.deepEqual(ctx.service.getAutoLaunchState(), {
+      enabled: false,
+      preference: true,
+      pendingApproval: true,
+    });
+
+    const disableRes = await ctx.service.setAutoLaunchPreference(false);
+    assert.equal(disableRes.success, true);
+    assert.equal(disableRes.preference, false);
+    assert.equal(ctx.storeData.get('autoLaunch'), false);
+    assert.equal(ctx.getOpenAtLogin(), false);
+    assert.deepEqual(ctx.service.getAutoLaunchState(), {
+      enabled: false,
+      preference: false,
+      pendingApproval: false,
+    });
+  } finally {
+    ctx.cleanup();
+  }
+});
+

@@ -520,3 +520,26 @@ test('renderGallery preserves disabled and loading state when rebuilt during an 
   assert.equal(newCards[1].disabled, false);
   assert.equal(newCards[1].classList.contains('skin-card--loading'), false);
 });
+
+test('renderGallery preserves active status text on resetSelection: false rebuilds and clears it on resetSelection: true', async () => {
+  const env = createMockSkinSelectorEnvironment({
+    api: {
+      confirmSkin: async () => ({ success: false, error: { code: 'LOAD_FAILED' } }),
+    },
+  });
+
+  const items = [
+    { id: 'skin-1', skinLabel: 'Skin One', isCurrent: true, previewUrl: '' },
+    { id: 'skin-2', skinLabel: 'Skin Two', isCurrent: false, previewUrl: '' },
+  ];
+  env.sendData(items);
+
+  await vm.runInContext('confirmSelection()', env.context);
+  assert.equal(env.elements.get('skin-selector-status').textContent, 'skinSelectorError');
+
+  env.triggerLocaleChange('en');
+  assert.equal(env.elements.get('skin-selector-status').textContent, 'skinSelectorError');
+
+  env.sendData(items, { resetSelection: true });
+  assert.equal(env.elements.get('skin-selector-status').textContent, '');
+});

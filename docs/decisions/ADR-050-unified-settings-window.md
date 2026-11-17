@@ -21,7 +21,7 @@ Accepted
    - 上述 7 类持久偏好及其子菜单全部移除出托盘，统一迁入设置窗口。托盘中的 `⚙️ 设置…` 保留固定齿轮符号前缀，避免用户切换至不熟悉语言后迷失入口。
 
 2. **3 标签统一设置窗口 (`SettingsWindow`) 与生命周期**：
-   - 新增 [SettingsWindow.js](../../src/main/windows/SettingsWindow.js)，创建默认 `520×456`（按当前显示器 `workArea` 安全夹紧，确保 3 个标签页含“高甜屏保”在内的全部卡片一屏免滚动展示）的透明无边框单实例窗口（`alwaysOnTop: false`、`minimizable: true`、`hasShadow: false`、`resizable: false`）。
+   - 新增 [SettingsWindow.js](../../src/main/windows/SettingsWindow.js)，创建默认 `520×456`（位置与宽高均按当前显示器 `workArea` 安全夹紧：标准屏幕下 3 个标签页含“高甜屏保”在内的全部卡片一屏免滚动展示；极端小屏或高 DPI 缩小至 `workArea` 尺寸后由 `.settings-tabpanel` 的 `overflow-y: auto` 内部滚动兜底访问）的透明无边框单实例窗口（`alwaysOnTop: false`、`minimizable: true`、`hasShadow: false`、`resizable: false`）。
    - 窗口唤起、复用或恢复时执行 180ms `screen-saver` 脉冲置顶并在 macOS 上守卫式调用 `app.focus({ steal: true })`，超时回落普通层级；不因 `blur` 自动隐藏。
    - 界面采用顶部 3 标签结构：**外观**（宠物体型滑块 `50%~150%` 含恢复默认、当前皮肤展示与“打开选肤画廊”按钮、界面感知开关及平台不支持说明）、**陪伴**（天气同步开关与城市设置表单、久坐提醒开关与 `[30, 45, 60, 90, 120]` 分钟间隔、高甜屏保开关与 `[1, 3, 5, 10, 15, 30]` 分钟等待时间）、**系统**（`中文` / `English` / `日本語` 固定母语标签、开机自动启动开关与 macOS `requires-approval` 待批准提示）。
    - 选肤画廊保留 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 独立 `800×520` 窗口与 `app.openSkinSelectorForQA`。仅当通过设置窗触发 `settings-open-skin-selector` 时标记 `returnFocusToSettings`，在选肤窗关闭后安全恢复设置窗焦点并派发 `settings-restore-skin-focus`，从托盘直接开选肤窗不误唤回设置窗。

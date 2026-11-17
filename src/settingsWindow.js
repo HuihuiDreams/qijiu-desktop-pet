@@ -74,6 +74,97 @@
     switchEl.disabled = Boolean(disabled);
   }
 
+  function bindSegmentClickHandler(btn, dataKey, onSelect) {
+    if (!btn || btn._settingsSegmentBound) return;
+    btn._settingsSegmentBound = true;
+    btn.addEventListener?.('click', async () => {
+      if (btn.disabled) return;
+      const value = Number(btn.dataset?.[dataKey]);
+      if (!Number.isFinite(value)) return;
+      await onSelect(value);
+    });
+  }
+
+  function createMinuteSegmentButton(value, dataKey) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'settings-segment-button';
+    btn.dataset[dataKey] = String(value);
+    btn.setAttribute?.('aria-pressed', 'false');
+
+    const unitSpan = document.createElement('span');
+    unitSpan.setAttribute?.('data-i18n', 'trayMinuteUnit');
+    unitSpan.textContent = translate('trayMinuteUnit');
+
+    if (typeof btn.append === 'function') {
+      btn.append(`${value} `, unitSpan);
+    } else {
+      btn.textContent = `${value} ${unitSpan.textContent}`;
+    }
+    return btn;
+  }
+
+  function syncMinuteSegmentOptions(container, allowedValues, dataKey, onSelect) {
+    if (!container) return;
+    const currentButtons = getChildrenArray(container);
+    if (!Array.isArray(allowedValues) || allowedValues.length === 0) {
+      for (const btn of currentButtons) {
+        bindSegmentClickHandler(btn, dataKey, onSelect);
+      }
+      return;
+    }
+
+    const normalizedValues = allowedValues.map((value) => Number(value)).filter((value) => Number.isFinite(value));
+    if (normalizedValues.length === 0) return;
+
+    const currentValues = currentButtons.map((btn) => Number(btn.dataset?.[dataKey]));
+    const matchesDom = normalizedValues.length === currentValues.length
+      && normalizedValues.every((value, idx) => value === currentValues[idx]);
+
+    if (!matchesDom && typeof document?.createElement === 'function' && typeof container.replaceChildren === 'function') {
+      const rebuilt = normalizedValues.map((value) => {
+        const btn = createMinuteSegmentButton(value, dataKey);
+        bindSegmentClickHandler(btn, dataKey, onSelect);
+        return btn;
+      });
+      container.replaceChildren(...rebuilt);
+      return;
+    }
+
+    for (const btn of currentButtons) {
+      bindSegmentClickHandler(btn, dataKey, onSelect);
+    }
+  }
+
+  function applyMinuteSegmentGroup({
+    switchEl,
+    groupEl,
+    container,
+    enabled,
+    selectedValue,
+    allowedValues,
+    dataKey,
+    onSelect,
+  }) {
+    const isEnabled = Boolean(enabled);
+    setSwitchState(switchEl, isEnabled, false);
+    groupEl?.setAttribute?.('aria-disabled', String(!isEnabled));
+    syncMinuteSegmentOptions(container, allowedValues, dataKey, onSelect);
+    for (const btn of getChildrenArray(container)) {
+      btn.disabled = !isEnabled;
+      const selected = Number(btn.dataset?.[dataKey]) === Number(selectedValue);
+      btn.setAttribute?.('aria-pressed', String(selected));
+    }
+  }
+
+  const selectBreakInterval = (intervalMinutes) => (
+    runSetting('break-reminder', () => window.electronAPI?.setBreakReminder?.({ intervalMinutes }))
+  );
+
+  const selectScreensaverThreshold = (idleThresholdMinutes) => (
+    runSetting('screensaver', () => window.electronAPI?.setScreensaver?.({ idleThresholdMinutes }))
+  );
+
   function renderCityStatus() {
     if (!cityStatusEl) return;
     if (!cityStatusState) {
@@ -208,26 +299,30 @@
 
     // Companion: Break Reminder
     if (snapshot.breakReminder) {
-      const enabled = Boolean(snapshot.breakReminder.enabled);
-      setSwitchState(breakReminderSwitch, enabled, false);
-      breakIntervalsGroupEl?.setAttribute?.('aria-disabled', String(!enabled));
-      for (const btn of getChildrenArray(breakIntervalsContainer)) {
-        btn.disabled = !enabled;
-        const selected = Number(btn.dataset?.interval) === Number(snapshot.breakReminder.intervalMinutes);
-        btn.setAttribute?.('aria-pressed', String(selected));
-      }
+      applyMinuteSegmentGroup({
+        switchEl: breakReminderSwitch,
+        groupEl: breakIntervalsGroupEl,
+        container: breakIntervalsContainer,
+        enabled: snapshot.breakReminder.enabled,
+        selectedValue: snapshot.breakReminder.intervalMinutes,
+        allowedValues: snapshot.breakReminder.allowedIntervals,
+        dataKey: 'interval',
+        onSelect: selectBreakInterval,
+      });
     }
 
     // Companion: Sweet Screensaver
     if (snapshot.screensaver) {
-      const enabled = Boolean(snapshot.screensaver.enabled);
-      setSwitchState(screensaverSwitch, enabled, false);
-      screensaverThresholdsGroupEl?.setAttribute?.('aria-disabled', String(!enabled));
-      for (const btn of getChildrenArray(screensaverThresholdsContainer)) {
-        btn.disabled = !enabled;
-        const selected = Number(btn.dataset?.threshold) === Number(snapshot.screensaver.idleThresholdMinutes);
-        btn.setAttribute?.('aria-pressed', String(selected));
-      }
+      applyMinuteSegmentGroup({
+        switchEl: screensaverSwitch,
+        groupEl: screensaverThresholdsGroupEl,
+        container: screensaverThresholdsContainer,
+        enabled: snapshot.screensaver.enabled,
+        selectedValue: snapshot.screensaver.idleThresholdMinutes,
+        allowedValues: snapshot.screensaver.allowedThresholds,
+        dataKey: 'threshold',
+        onSelect: selectScreensaverThreshold,
+      });
     }
 
     // System: Language
@@ -238,8 +333,9 @@
 
     // System: Auto Launch
     if (snapshot.autoLaunch) {
-      setSwitchState(autoLaunchSwitch, snapshot.autoLaunch.enabled, false);
       const pendingApproval = Boolean(snapshot.autoLaunch.pendingApproval);
+      // macOS requires-approval keeps enabled=false while preference=true; keep switch on so user can revoke it.
+      setSwitchState(autoLaunchSwitch, Boolean(snapshot.autoLaunch.enabled || pendingApproval), false);
       if (pendingApproval) {
         setAutoLaunchStatus('settingsAutoLaunchPendingApproval', 'settings-inline-status--warning');
       } else if (autoLaunchStatusState?.key === 'settingsAutoLaunchPendingApproval') {
@@ -470,13 +566,7 @@
     });
   }
 
-  for (const btn of getChildrenArray(breakIntervalsContainer)) {
-    btn.addEventListener('click', async () => {
-      if (btn.disabled) return;
-      const intervalMinutes = Number(btn.dataset?.interval);
-      await runSetting('break-reminder', () => window.electronAPI?.setBreakReminder?.({ intervalMinutes }));
-    });
-  }
+  syncMinuteSegmentOptions(breakIntervalsContainer, null, 'interval', selectBreakInterval);
 
   if (screensaverSwitch) {
     screensaverSwitch.addEventListener('click', async () => {
@@ -486,13 +576,7 @@
     });
   }
 
-  for (const btn of getChildrenArray(screensaverThresholdsContainer)) {
-    btn.addEventListener('click', async () => {
-      if (btn.disabled) return;
-      const idleThresholdMinutes = Number(btn.dataset?.threshold);
-      await runSetting('screensaver', () => window.electronAPI?.setScreensaver?.({ idleThresholdMinutes }));
-    });
-  }
+  syncMinuteSegmentOptions(screensaverThresholdsContainer, null, 'threshold', selectScreensaverThreshold);
 
   for (const btn of getChildrenArray(localeButtonsContainer)) {
     btn.addEventListener('click', async () => {

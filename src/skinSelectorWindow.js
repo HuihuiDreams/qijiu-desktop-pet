@@ -108,7 +108,9 @@ function renderGallery(items, { resetSelection = true } = {}) {
   }
 
   galleryEl.replaceChildren();
-  setStatus('');
+  if (resetSelection) {
+    setStatus('');
+  }
 
   if (lastItems.length === 0) {
     const empty = document.createElement('p');
