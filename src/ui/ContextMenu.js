@@ -296,9 +296,16 @@ class ContextMenu {
     }
     this.menuEl.classList.remove('context-menu--yueqi', 'context-menu--shenjiu');
     delete this.menuEl.dataset.petId;
-    document.body?.classList?.remove('weather-interaction-muted');
     this.currentPet = null;
 
+    // ESC 等方式关闭菜单时指针可能仍停在宠物上，此时不会再触发宠物的 mouseenter；
+    // 若直接恢复穿透，下一次点击会落到宠物下方的应用。保持可交互（不带 leaseMs，
+    // 同时取消菜单的 10 秒租约），交给宠物的 mouseleave 恢复穿透。
+    if (document.querySelector?.('.pet:hover')) {
+      window.electronAPI?.setIgnoreMouseEvents?.(false);
+      return;
+    }
+    document.body?.classList?.remove('weather-interaction-muted');
     window.electronAPI?.setIgnoreMouseEvents?.(true, { forward: true });
   }
 

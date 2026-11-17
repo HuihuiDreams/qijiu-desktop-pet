@@ -45,3 +45,4 @@ if (!pet.isDragging && !menuOpen && !panelOpen) {
 - `mouseleave` 守卫条件需要随 UI 元素增加而更新
 - 拖曳期间必须锁定非穿透状态直到 `mouseup`
 - **后续更新 (2026-06-30)**: 动态切换鼠标穿透的核心决策仍然有效，但早期 `mouseleave` 守卫示例不再覆盖全部实现细节。当前实现还包括 `leaseMs` 穿透租约、拖拽 watchdog、拖拽开始/结束通知、天气粒子交互静音，以及右键菜单等交互面的主动租约续期。新增交互元素仍应遵守默认穿透、交互期间解除穿透、关闭后恢复穿透的原则；具体边界以 `main.js` 的 `setMousePassthrough()`、`ipcContracts.js` 的鼠标穿透参数归一化、`PetRenderer.js` 和 `ContextMenu.js` 的当前实现为准。
+- **后续更新 (2026-11-17)**: "关闭/隐藏时恢复穿透"有一个例外：关闭时指针仍停在宠物上（拖拽结束、按 ESC 关闭右键菜单），不会再触发宠物的 `mouseenter`，直接恢复穿透会让下一次点击落到下层应用。`PetRenderer` 的拖拽结束路径与 `ContextMenu.hide()` 在这种情况下都改为发送不带 `leaseMs` 的 `setIgnoreMouseEvents(false)`（同时取消未到期租约），由宠物的 `mouseleave` 负责恢复穿透。
