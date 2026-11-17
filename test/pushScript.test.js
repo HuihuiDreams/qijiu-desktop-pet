@@ -90,3 +90,37 @@ test('push.ps1 reports a failed push through its exit code', () => {
     /Write-Host "Push failed\. Check network connectivity or Git conflicts\." -ForegroundColor Red\s*\n\s*exit 1/,
   );
 });
+
+test('push.sh refuses to run while unstaged untracked files exist', { skip: process.platform === 'win32' }, () => {
+  const repo = createScratchRepo();
+  try {
+    fs.writeFileSync(path.join(repo, 'scratch-notes.txt'), 'local draft\n');
+    const result = runPushScript(repo);
+    assert.equal(result.status, 1, result.stdout + result.stderr);
+    assert.match(result.stdout, /未跟踪文件/);
+    assert.match(result.stdout, /scratch-notes\.txt/);
+    assert.equal(git(repo, ['rev-list', '--count', 'HEAD']).trim(), '1', 'no commit may be created');
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('push.sh commits tracked changes and explicitly staged new files only', { skip: process.platform === 'win32' }, () => {
+  const repo = createScratchRepo();
+  try {
+    fs.writeFileSync(path.join(repo, 'new-feature.js'), 'module.exports = 1;\n');
+    git(repo, ['add', 'new-feature.js']);
+    // 没有配置 origin，推送会失败，但本地提交已经生成
+    runPushScript(repo);
+    const committed = git(repo, ['show', '--name-only', '--format=', 'HEAD']).trim().split('\n').sort();
+    assert.deepEqual(committed, ['CHANGELOG.md', 'new-feature.js']);
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test('push.ps1 stages tracked changes only and blocks on untracked files', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'push.ps1'), 'utf8');
+  assert.doesNotMatch(source, /^git add \.$/m);
+  assert.match(source, /\$untrackedFiles = git ls-files --others --exclude-standard\s*\n\s*if \(\$untrackedFiles\) \{[\s\S]*?exit 1\s*\n\s*\}\s*\ngit add -u/);
+});

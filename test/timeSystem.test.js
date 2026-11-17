@@ -139,6 +139,22 @@ test('TimeSystem.deserializePet restores saved zero coordinates', () => {
   assert.equal(pet.y, 0);
 });
 
+test('TimeSystem.deserializePet keeps defaults for non-finite or non-numeric stats', () => {
+  const pet = createPet('yueqi');
+  const timeSystem = new TimeSystem();
+
+  timeSystem.deserializePet(pet, {
+    stats: {
+      affection: '50',
+      hunger: null,
+      qi: Number.NaN,
+      mood: 0,
+    },
+  });
+
+  assert.deepEqual(pet.stats, { affection: 1, hunger: 2, qi: 3, mood: 0 });
+});
+
 test('TimeSystem.getOfflineTime validates timestamps and caps at 7 days', () => {
   const timeSystem = new TimeSystem();
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

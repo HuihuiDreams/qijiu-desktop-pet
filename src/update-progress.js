@@ -21,4 +21,4 @@ function renderProgress(payload) {
   metaEl.textContent = `${Math.round(percent)}%`;
 }
 
-window.updateProgressAPI.onProgress(renderProgress);
+window.updateProgressAPI?.onProgress?.(renderProgress);

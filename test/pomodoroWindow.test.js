@@ -364,3 +364,96 @@ test('pomodoro tooltip interactions: anchorName, Popover API show/hide, and Esca
   assert.equal(dec.style.anchorName, '');
 });
 
+
+function loadPomodoroWindowForMinutes() {
+  const vm = require('node:vm');
+  const elements = new Map();
+  function makeEl(id) {
+    const listeners = {};
+    return {
+      id,
+      value: '',
+      style: {},
+      dataset: {},
+      attributes: {},
+      listeners,
+      getAttribute(name) { return this.attributes[name]; },
+      setAttribute(name, val) { this.attributes[name] = val; },
+      removeAttribute(name) { delete this.attributes[name]; },
+      addEventListener(evt, fn) { listeners[evt] = fn; },
+      classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } },
+    };
+  }
+  const getEl = (id) => {
+    if (!elements.has(id)) elements.set(id, makeEl(id));
+    return elements.get(id);
+  };
+  let stateListener = null;
+  const startCalls = [];
+  const context = {
+    document: {
+      getElementById: getEl,
+      querySelector: (selector) => getEl(`query:${selector}`),
+      querySelectorAll: () => [],
+      addEventListener() {},
+    },
+    window: {
+      electronAPI: {
+        onPomodoroState(callback) { stateListener = callback; },
+        startPomodoro: async (minutes) => {
+          startCalls.push(minutes);
+          return { success: true, data: { status: 'running', durationMinutes: minutes, remainingMs: minutes * 60000 } };
+        },
+        setPomodoroAlwaysOnTop: async (enabled) => ({ success: true, data: { isAlwaysOnTop: enabled } }),
+      },
+    },
+    WindowI18n: { init() {} },
+    t: (key) => key,
+    setTimeout,
+    clearTimeout,
+    console,
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'src/pomodoroWindow.js'), 'utf8'), context);
+  return {
+    input: getEl('pomodoro-minutes'),
+    startBtn: getEl('pomodoro-start'),
+    pinBtn: getEl('pomodoro-pin'),
+    pushState: (state) => stateListener(state),
+    startCalls,
+  };
+}
+
+test('pomodoro idle state pushes do not overwrite minutes the user has edited', async () => {
+  const win = loadPomodoroWindowForMinutes();
+
+  win.pushState({ status: 'idle', lastPomodoroMinutes: 25 });
+  assert.equal(win.input.value, '25');
+
+  win.input.value = '40';
+  win.input.listeners.input();
+  // 换肤推送与置顶切换都会重新渲染空闲态
+  win.pushState({ status: 'idle', lastPomodoroMinutes: 25, skinId: 'other' });
+  await win.pinBtn.listeners.click();
+  assert.equal(win.input.value, '40');
+
+  await win.startBtn.listeners.click();
+  assert.deepEqual(win.startCalls, [40]);
+
+  // 会话结束回到空闲态后，重新以上次时长回填
+  win.pushState({ status: 'idle', lastPomodoroMinutes: 40 });
+  assert.equal(win.input.value, '40');
+  win.pushState({ status: 'idle', lastPomodoroMinutes: 30 });
+  assert.equal(win.input.value, '30');
+});
+
+test('pomodoro typed minutes are clamped to the same 1-240 range as the step buttons', async () => {
+  const win = loadPomodoroWindowForMinutes();
+
+  win.input.value = '999';
+  await win.startBtn.listeners.click();
+  win.pushState({ status: 'idle' });
+  win.input.value = '0';
+  await win.startBtn.listeners.click();
+
+  assert.deepEqual(win.startCalls, [240, 1]);
+});

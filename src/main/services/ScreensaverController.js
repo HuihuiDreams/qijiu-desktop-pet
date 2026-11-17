@@ -82,6 +82,9 @@ function createScreensaverController(deps = {}) {
   let onResumeHandler = null;
   let handleReadyHandler = null;
   let handleFinishedHandler = null;
+  // 最近一次发来 screensaver-ready 的主窗口 webContents。渲染层订阅屏保事件后才会发 ready，
+  // 在此之前发 screensaver-start 会被 preload 静默丢弃（preload 不缓冲事件）。
+  let readyRendererContents = null;
   let storeUnsubscribe = null;
 
   function getSettings() {
@@ -176,6 +179,13 @@ function createScreensaverController(deps = {}) {
 
     const mainWindow = getMainWindow();
     if (!mainWindow || mainWindow.isDestroyed()) {
+      state = 'blocked';
+      return;
+    }
+
+    // 只有接入了 ipcMain 才能收到 ready；未接入时无从判断，保持原行为。
+    // 已知限制：同一 webContents 重载期间仍视为就绪，重载后的 ready 会取消该会话。
+    if (handleReadyHandler && mainWindow.webContents !== readyRendererContents) {
       state = 'blocked';
       return;
     }
@@ -386,6 +396,7 @@ function createScreensaverController(deps = {}) {
       handleReadyHandler = (event) => {
         const mainWindow = getMainWindow();
         if (!isSenderMainWindow(event, mainWindow)) return;
+        readyRendererContents = mainWindow.webContents;
         if (state === 'active' || state === 'exiting') {
           cancelSession('renderer_reload');
         }

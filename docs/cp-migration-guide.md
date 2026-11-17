@@ -228,7 +228,6 @@ npm run qa:electron:smoke
 
 # 发布前，完成资源生成与配置检查后构建
 npm run protect:assets
-npm run verify:installer
 npm run build
 npm run verify:package
 ```

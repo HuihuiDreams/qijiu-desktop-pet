@@ -73,8 +73,12 @@ class OfflineReturnSystem {
    */
   handleOfflineReturn(offlineMs) {
     const [yueqi, shenjiu] = this.getPets();
-    this.nurtureSystemA.applyOfflineDecay(yueqi, offlineMs);
-    this.nurtureSystemB.applyOfflineDecay(shenjiu, offlineMs);
+    // 唤醒的墙钟差值与游戏循环的帧间隔都没经过存档加载路径的 7 天封顶，这里统一夹紧，
+    // 防止系统时钟大幅前跳时衰减循环空转。
+    const maxOfflineMs = this.CONFIG.MAX_OFFLINE_MS;
+    const decayMs = Number.isFinite(maxOfflineMs) ? Math.min(offlineMs, maxOfflineMs) : offlineMs;
+    this.nurtureSystemA.applyOfflineDecay(yueqi, decayMs);
+    this.nurtureSystemB.applyOfflineDecay(shenjiu, decayMs);
 
     // 用“距离用户上次可见”的真实时长计算时辰，而不是本次碎片化的 offlineMs。
     // 这避免了 macOS Dark Wake 将完整睡眠切割成碎片导致对白少报。
@@ -103,7 +107,10 @@ class OfflineReturnSystem {
       }
     }
 
-    this.saveCurrentState(); // saveCurrentState 内部刷新 lastVisibleTime（用户在场时）
+    // saveCurrentState 内部刷新 lastVisibleTime（用户在场时）；这里不等待结果，需自行兜住 rejection。
+    this.saveCurrentState().catch((error) => {
+      console.error('Offline return save failed:', error);
+    });
   }
 
   /**
@@ -161,7 +168,10 @@ class OfflineReturnSystem {
   // 改用 Electron powerMonitor 事件 + Date.now() 墙钟差值来结算离线衰减。
 
   handleSystemSuspend() {
-    this.saveCurrentState(); // 睡前即时存档，saveCurrentState 内部刷新 lastVisibleTime（文档可见时）
+    // 睡前即时存档，saveCurrentState 内部刷新 lastVisibleTime（文档可见时）
+    this.saveCurrentState().catch((error) => {
+      console.error('Save before system suspend failed:', error);
+    });
   }
 
   handleSystemResume(data) {

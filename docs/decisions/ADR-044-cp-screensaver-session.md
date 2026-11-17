@@ -57,6 +57,8 @@ Controller 使用专用设置、IPC 通道和 `ScreensaverEligibilityGuard`，�
 
 renderer 重载一律取消而不回放。
 
+**后续更新 (2026-11-17)**：preload 不缓冲 `screensaver-start`，渲染层订阅屏保事件后才会发送 `screensaver-ready`。`evaluateTrigger` 现在要求最近一次通过鉴权的 `screensaver-ready` 来自当前主窗口的 `webContents`，否则保持 `blocked`、不领取打扰租约，避免主进程会话 active 而渲染层从未播放。已知限制：同一 `webContents` 重载期间仍视为就绪，此时到达的会话由重载后的 `screensaver-ready` 以 `renderer_reload` 取消。
+
 ### 5. 场景布局与视觉层
 
 - 选择场景显示器时，基于两只宠物的视觉中点，在 `StageGeometry.walkAreas` 中定位对应显示器。

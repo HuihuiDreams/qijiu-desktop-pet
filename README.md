@@ -236,7 +236,6 @@ Windows 11 默认接电后约 5 分钟关屏/睡眠；如果想观看 5 分钟�
 | `npm ci` | 按 `package-lock.json` 安装锁定版本的项目依赖 |
 | `npx --no-install install-electron` | 下载并解压当前依赖版本对应的 Electron 二进制 |
 | `npm run build` | 使用 electron-builder 进行跨平台构建（Windows 下生成 `.exe`，macOS 下生成 `.dmg` 和 `.zip`） |
-| `npm run verify:installer` | 构建前检查 Windows 安装包所需的配置和脚本文件是否存在 |
 | `npm run verify:package` | 构建后检查 `dist` 中的 `app.asar` 是否误包含内部指引或工作目录 |
 | `npm run verify:signatures` | 在 Windows 上通过 PowerShell 验证 `dist` 中 `.exe` 文件的代码签名 |
 | `npm test` | 运行 Node.js 单元与行为测试（包含更新管理器逻辑测试） |

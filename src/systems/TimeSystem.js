@@ -43,10 +43,14 @@ class TimeSystem {
     pet.x = Number.isFinite(data.x) ? data.x : pet.x;
     pet.y = Number.isFinite(data.y) ? data.y : pet.y;
     if (data.stats) {
-      pet.stats.affection = data.stats.affection ?? pet.stats.affection;
-      pet.stats.hunger = data.stats.hunger ?? pet.stats.hunger;
-      pet.stats.qi = data.stats.qi ?? pet.stats.qi;
-      pet.stats.mood = data.stats.mood ?? pet.stats.mood;
+      // 只接受有限数值：字符串或损坏值进来后 modifyStat 会拼接或得到 NaN，clampStat 夹不住，
+      // 衰减与饥饿判定随之失效。null 也要拒绝，避免 Number(null) 变成 0。
+      for (const key of ['affection', 'hunger', 'qi', 'mood']) {
+        const value = data.stats[key];
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          pet.stats[key] = value;
+        }
+      }
     }
   }
 

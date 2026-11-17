@@ -52,7 +52,9 @@ class WeatherAwarenessSystem {
   updateLocalTimePhase(currentTimestampMs = Date.now()) {
     // 粗粒度节流：如果距离上次计算还不到 10 秒（10000ms），直接跳过
     // 这样在 60FPS 的游戏循环中，每 600 帧才会分配一个短命的 Date 对象，几乎消除了 GC 负担
-    if (currentTimestampMs - this._lastCheckTimestamp < 10000) {
+    // 差值为负说明系统时钟回拨（NTP 校时或手动改钟），不能继续节流，否则要等追平回拨量才会重算时段。
+    const elapsedSinceCheck = currentTimestampMs - this._lastCheckTimestamp;
+    if (elapsedSinceCheck >= 0 && elapsedSinceCheck < 10000) {
       return;
     }
     this._lastCheckTimestamp = currentTimestampMs;

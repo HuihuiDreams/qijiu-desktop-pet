@@ -236,6 +236,6 @@ if (typeof window?.addEventListener === 'function') {
   });
 }
 
-window.electronAPI.onStatusWindowData(renderStatus);
+window.electronAPI?.onStatusWindowData?.(renderStatus);
 
 WindowI18n.init(() => { if (lastRenderData) { renderStatus(lastRenderData, { forceRebuild: true }); } });

@@ -459,3 +459,43 @@ test('flushPendingReturnBubble clears residual caught bubbles before scheduling 
     ]);
   });
 });
+
+test('handleOfflineReturn caps the decay duration at CONFIG.MAX_OFFLINE_MS', () => {
+  const { deps, decayCalls } = makeDeps({
+    CONFIG: { DECAY_INTERVAL: 60000, MAX_OFFLINE_MS: 7 * 24 * 60 * 60 * 1000 },
+  });
+  const system = new OfflineReturnSystem(deps);
+
+  system.handleSystemResume({ offlineMs: 365 * 24 * 60 * 60 * 1000 });
+
+  assert.deepEqual(decayCalls.A, [['yueqi', 7 * 24 * 60 * 60 * 1000]]);
+  assert.deepEqual(decayCalls.B, [['shenjiu', 7 * 24 * 60 * 60 * 1000]]);
+});
+
+test('fire-and-forget saves on offline return and suspend do not leak rejections', async () => {
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args);
+  const unhandled = [];
+  const onUnhandled = (reason) => unhandled.push(reason);
+  process.on('unhandledRejection', onUnhandled);
+  try {
+    const { deps } = makeDeps({
+      timeSystem: {
+        save: () => Promise.reject(new Error('disk full')),
+        deserializePet: () => {},
+      },
+    });
+    const system = new OfflineReturnSystem(deps);
+
+    system.handleOfflineReturn(120000);
+    system.handleSystemSuspend();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.deepEqual(unhandled, []);
+    assert.equal(errors.length, 2);
+  } finally {
+    process.off('unhandledRejection', onUnhandled);
+    console.error = originalError;
+  }
+});

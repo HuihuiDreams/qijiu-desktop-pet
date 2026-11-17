@@ -33,6 +33,7 @@ const progressFillEl = document.getElementById('pomodoro-progress-fill');
 
 let currentState = { ...DEFAULT_POMODORO_STATE };
 let hasCompletedCeremonyPlayed = false;
+let minutesInputEdited = false; // 空闲态下用户改过时长后，状态推送不再回填输入框
 
 function playMeditationChime() {
   try {
@@ -171,7 +172,10 @@ function renderState(nextState) {
   };
 
   const defaultMinutes = currentState.lastPomodoroMinutes || currentState.durationMinutes || 25;
-  if (currentState.status === 'idle') {
+  // 换肤、置顶等任何状态推送都会走到这里；用户已改过但尚未开始的时长不能被覆盖。
+  if (currentState.status !== 'idle') {
+    minutesInputEdited = false;
+  } else if (!minutesInputEdited) {
     minutesInput.value = String(defaultMinutes);
   }
 
@@ -197,13 +201,15 @@ function renderState(nextState) {
 }
 
 function getInputMinutes() {
-  return Math.floor(Number(minutesInput.value));
+  const minutes = Math.floor(Number(minutesInput.value));
+  return Number.isFinite(minutes) ? Math.min(240, Math.max(1, minutes)) : minutes;
 }
 
 function changeMinutes(delta) {
   const current = Number.isFinite(getInputMinutes()) ? getInputMinutes() : 25;
   const next = Math.min(240, Math.max(1, current + delta));
   minutesInput.value = String(next);
+  minutesInputEdited = true;
 }
 
 async function refreshState() {
@@ -211,6 +217,9 @@ async function refreshState() {
   renderState(unwrapResult(result));
 }
 
+minutesInput.addEventListener('input', () => {
+  minutesInputEdited = true;
+});
 decreaseBtn.addEventListener('click', () => changeMinutes(-5));
 increaseBtn.addEventListener('click', () => changeMinutes(5));
 
@@ -252,7 +261,7 @@ pinBtn.addEventListener('click', async () => {
   }
 });
 
-window.electronAPI.onPomodoroState((state) => {
+window.electronAPI?.onPomodoroState?.((state) => {
   renderState(state);
 });
 
