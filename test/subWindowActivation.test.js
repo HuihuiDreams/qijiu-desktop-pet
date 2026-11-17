@@ -251,20 +251,41 @@ test('SettingsWindow: activates with screen-saver pulse, skipTransformProcessTyp
       assert.deepEqual(focusCalls[0], { steal: true });
     }
 
-    // 3. Pulse timer drops to false after 180ms
+    // 3. Stays screen-saver past 180ms while focused, then drops on blur/minimize/hide
     t.mock.timers.tick(200);
+    assert.equal(win.alwaysOnTop, true);
+    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+
+    win.blur();
+    win.emit('blur');
     assert.equal(win.alwaysOnTop, false);
 
     // 4. Repeated open while focused does not steal focus again
+    win.focus();
+    win.emit('focus');
     const previousFocusCallsCount = focusCalls.length;
     mod.openSettingsWindow();
     assert.equal(focusCalls.length, previousFocusCallsCount);
 
-    // 5. Native restore triggers pulse
+    // 5. Unfocused native restore pulses to screen-saver and falls back after 180ms
+    win.blur();
+    win.emit('blur');
     win.emit('restore');
     assert.equal(win.alwaysOnTop, true);
     assert.equal(win.alwaysOnTopLevel, 'screen-saver');
     t.mock.timers.tick(200);
+    assert.equal(win.alwaysOnTop, false);
+
+    // 6. Minimize and hide drop alwaysOnTop immediately
+    win.focus();
+    win.emit('focus');
+    assert.equal(win.alwaysOnTop, true);
+    win.emit('minimize');
+    assert.equal(win.alwaysOnTop, false);
+
+    win.emit('focus');
+    assert.equal(win.alwaysOnTop, true);
+    win.emit('hide');
     assert.equal(win.alwaysOnTop, false);
 
     mod.closeSettingsWindow();

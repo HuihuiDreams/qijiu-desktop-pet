@@ -32,6 +32,18 @@ test.describe('unified settings window', () => {
     await settingsWindow.waitForLoadState('load', { timeout: 15000 });
     await settingsWindow.waitForTimeout(250);
 
+    // Focused settings window must stay screen-saver past the 180ms pulse so mainWindow never covers it
+    const focusedTopState = await electronApp.evaluate(() => {
+      const wm = process.mainModule.require('./src/main/windows/WindowManager');
+      return {
+        focused: Boolean(wm.settingsWindow?.isFocused?.()),
+        alwaysOnTop: Boolean(wm.settingsWindow?.isAlwaysOnTop?.()),
+      };
+    });
+    if (focusedTopState.focused) {
+      expect(focusedTopState.alwaysOnTop).toBe(true);
+    }
+
     // Tab 1 active & zero vertical overflow
     await expect(settingsWindow.locator('#tab-appearance')).toHaveAttribute('aria-selected', 'true');
     const tab1Overflow = await settingsWindow.evaluate(() => {
