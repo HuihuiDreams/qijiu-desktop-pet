@@ -16,7 +16,11 @@
   - [x] `build-installer.yml` 的 Windows 与 macOS 作业在 `npm ci` 后、`electron-builder` 前运行 `npm test` 与 `npm run test:integration`，与 `release-preflight.yml` 对齐；E2E 与安全审计仍只在预检中运行。
   - [x] `test/buildInstallerWorkflow.test.js` 断言两个作业的步骤顺序；`docs/git-workflow.md` 同步。
   - [ ] 【CI 待验证】下次运行 `Build Installers` 时确认两个平台的测试步骤通过。
-- [ ] **Task 3：右键菜单关闭后指针仍在宠物上时恢复点击穿透**
+- [x] **Task 3：右键菜单关闭后指针仍在宠物上时恢复点击穿透**
+  - [x] `ContextMenu.hide()` 在 `document.querySelector('.pet:hover')` 命中时发送不带 `leaseMs` 的 `setIgnoreMouseEvents(false)`（取消菜单的 10 秒租约）并保留天气交互静音，交给宠物 `mouseleave` 恢复穿透；与 `PetRenderer` 拖拽结束的 `:hover` 守卫一致。
+  - [x] `test/contextMenuBehavior.test.js` 覆盖指针仍在宠物上时保持可交互；[ADR-002](../decisions/ADR-002-mouse-clickthrough-strategy.md) 补充后续更新。
+  - [ ] 未处理：菜单打开期间指针停在宠物上（不在菜单上）超过 10 秒，菜单租约到期后同样会恢复穿透。需要时单独处理。
+  - [ ] 【macOS / Windows 待人工验证】右键宠物打开菜单，指针不动按 ESC，再左键点宠物：应触发宠物对话，而不是点到下层应用；随后移开指针，桌面恢复可点击。
 - [ ] **Task 4：屏保启动早于 `interactionOverlayActive` 声明时抛 TDZ 错误**
 - [ ] **Task 5：`PomodoroService` 缺少行为测试**
 

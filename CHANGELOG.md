@@ -21,6 +21,7 @@
 - **统一设置窗口聚焦期被桌宠覆盖层压住修复 (`SettingsWindow Kept Above Pet Overlay While Focused`)**：修复 `SettingsWindow` 在 180ms 置顶脉冲结束后无条件调用 `setAlwaysOnTop(false)` 退回普通窗口层级，导致持续处于 `screen-saver` 级的透明主窗口压在设置对话框上方并截走重叠区域点击的问题；改为在窗口聚焦期间持续保持 `screen-saver` 级以纳入 `PetWindow.keepPetWindowOnTop()` 子窗重排，在 `blur`、`minimize`、`hide` 时立即回落普通层级（未实际取得焦点时仍按 180ms 兜底回落），并更新 `settingsWindow.test.js`、`subWindowActivation.test.js`、`settingsWindow.spec.js`、[ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `docs/structure.md`。
 - **统一设置城市状态插值特殊替换符修复 (`Literal City Interpolation in Settings Status`)**：修复 `src/settingsWindow.js` 中 `renderCityStatus()` 使用 `text.replace('{city}', city)` 字符串替换语义导致城市文本中的 `$&` / `$'` 等替换标记被展开的问题，改为函数式替换 `() => cityStatusState.city` 并补充回归测试。
 - **离线检查更新重复弹出错误框修复 (`Deduplicated Updater Error Dialogs`)**：`electron-updater` 在检查或下载更新失败时会先 `emit('error')` 再 reject 同一个错误对象，`updateManager.js` 的事件回调与调用方 `catch` 各执行一次 `handleError`，导致断网检查更新时叠出两个相同的错误框并重复记录日志；`handleError` 现按错误对象身份去重（与既有 404 闩锁并存），补充检查失败、下载失败与不同错误分别提示的回归测试，并同步更新 `docs/structure.md`。
+- **右键菜单关闭后点击穿透到下层应用修复 (`Context Menu Hide Keeps Hovered Pet Interactive`)**：`ContextMenu.hide()` 原先无条件恢复 `setIgnoreMouseEvents(true, { forward: true })`，按 ESC 关闭菜单时指针往往仍停在宠物上，宠物的 `mouseenter` 不会再次触发，下一次点击会穿透到宠物下方的应用；现在指针仍悬停在宠物上时改发不带 `leaseMs` 的 `setIgnoreMouseEvents(false)`（同时取消菜单的 10 秒租约）并保留天气交互静音，交给宠物 `mouseleave` 恢复穿透，与拖拽结束路径的 `:hover` 守卫一致；补充回归测试并更新 [ADR-002](docs/decisions/ADR-002-mouse-clickthrough-strategy.md)。
 
 ## [0.12.0] - 2026-11-16
 

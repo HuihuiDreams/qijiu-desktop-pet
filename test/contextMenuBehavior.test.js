@@ -223,6 +223,25 @@ test('ContextMenu.hide restores click-through directly', () => withContextMenuHa
   assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
 }));
 
+test('ContextMenu.hide keeps the window interactive while the pointer is still over a pet', () => withContextMenuHarness(({ menu, mouseCalls, bodyClassList }) => {
+  const selectors = [];
+  global.document.querySelector = (selector) => {
+    selectors.push(selector);
+    return selector === '.pet:hover' ? {} : null;
+  };
+  const contextMenu = new ContextMenu({});
+  contextMenu.show(createPet(), 120, 180);
+
+  contextMenu.hide();
+
+  assert.deepEqual(selectors, ['.pet:hover']);
+  assert.equal(menu.classList.contains('hidden'), true);
+  assert.equal(contextMenu.currentPet, null);
+  // 不带 leaseMs 的调用会取消菜单打开时下发的 10 秒租约
+  assert.deepEqual(mouseCalls.at(-1), [false]);
+  assert.equal(bodyClassList.contains('weather-interaction-muted'), true);
+}));
+
 test('ContextMenu.handleAction runs nurture actions and status callbacks', () => withContextMenuHarness(() => {
   const nurtureCalls = [];
   const contextMenu = new ContextMenu({
