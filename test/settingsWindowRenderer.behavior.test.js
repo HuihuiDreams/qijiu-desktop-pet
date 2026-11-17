@@ -232,7 +232,7 @@ function loadSettingsRenderer(options = {}) {
     },
     window: {
       electronAPI,
-      t: (key) => key,
+      t: options.t || ((key) => key),
       addEventListener: (type, fn) => {
         windowListeners[type] = windowListeners[type] || [];
         windowListeners[type].push(fn);
@@ -815,4 +815,25 @@ test('segment buttons rebuild from snapshot allowedIntervals/allowedThresholds a
   );
   assert.equal(breakButtons[0].getAttribute('aria-pressed'), 'true');
   assert.equal(thresholdButtons[0].getAttribute('aria-pressed'), 'true');
+});
+
+test('city status interpolation inserts replacement-like tokens literally', async () => {
+  const specialCity = "Saint $& $' $$ City";
+  const env = loadSettingsRenderer({
+    snapshot: { weather: { enabled: true, city: '' } },
+    t: (key) => (key === 'citySettingSuccess' ? 'Set to {city}' : key),
+    setCityName: async () => ({
+      success: true,
+      data: {
+        city: specialCity,
+        snapshot: makeSnapshot({ weather: { enabled: true, city: specialCity } }),
+      },
+    }),
+  });
+  await flush();
+
+  env.elements.get('city-input').value = specialCity;
+  await Promise.all(env.elements.get('city-confirm').dispatch('click'));
+
+  assert.equal(env.elements.get('city-status').textContent, `Set to ${specialCity}`);
 });

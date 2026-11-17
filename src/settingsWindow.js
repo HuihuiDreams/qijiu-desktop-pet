@@ -174,7 +174,7 @@
     }
     let text = translate(cityStatusState.key);
     if (cityStatusState.city) {
-      text = text.replace('{city}', cityStatusState.city);
+      text = text.replace('{city}', () => cityStatusState.city);
     }
     cityStatusEl.textContent = text;
     cityStatusEl.className = 'city-status';
