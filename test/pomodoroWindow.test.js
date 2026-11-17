@@ -416,6 +416,8 @@ function loadPomodoroWindowForMinutes() {
   vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'src/pomodoroWindow.js'), 'utf8'), context);
   return {
     input: getEl('pomodoro-minutes'),
+    increaseBtn: getEl('pomodoro-increase'),
+    decreaseBtn: getEl('pomodoro-decrease'),
     startBtn: getEl('pomodoro-start'),
     pinBtn: getEl('pomodoro-pin'),
     pushState: (state) => stateListener(state),
@@ -456,4 +458,14 @@ test('pomodoro typed minutes are clamped to the same 1-240 range as the step but
   await win.startBtn.listeners.click();
 
   assert.deepEqual(win.startCalls, [240, 1]);
+
+  // 空输入不按 Number("") === 0 夹紧成 1：步进从 25 起算，启动交给主进程回退默认/上次时长
+  win.pushState({ status: 'idle' });
+  win.input.value = '';
+  win.increaseBtn.listeners.click();
+  assert.equal(win.input.value, '30');
+
+  win.input.value = '   ';
+  await win.startBtn.listeners.click();
+  assert.equal(Number.isNaN(win.startCalls[2]), true);
 });
