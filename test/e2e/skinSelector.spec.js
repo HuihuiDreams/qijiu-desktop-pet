@@ -3,6 +3,23 @@
 const { test, expect } = require('@playwright/test');
 const { launchApp, closeApp } = require('./helpers/electron');
 
+async function openSkinSelectorReady(electronApp) {
+  const [selectorWindow] = await Promise.all([
+    electronApp.waitForEvent('window', { timeout: 15000 }),
+    electronApp.evaluate(async ({ app }) => {
+      app.openSkinSelectorForQA();
+    }),
+  ]);
+  await selectorWindow.waitForLoadState('load', { timeout: 15000 });
+  // Wait for both initial WindowI18n.getLocale() sync and skin-selector-data render before clicking cards.
+  await selectorWindow.waitForFunction(
+    () => document.documentElement.hasAttribute('data-locale') && document.querySelectorAll('.skin-card').length >= 4,
+    null,
+    { timeout: 15000 },
+  );
+  return selectorWindow;
+}
+
 test.describe('skin selector', () => {
   let electronApp;
   let userDataDir;
@@ -138,10 +155,7 @@ test.describe('skin selector', () => {
 
   test('reopening an active preview keeps the highlighted card and confirms that skin', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
-    const [selectorWindow] = await Promise.all([
-      electronApp.waitForEvent('window', { timeout: 15000 }),
-      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
-    ]);
+    const selectorWindow = await openSkinSelectorReady(electronApp);
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
@@ -159,10 +173,7 @@ test.describe('skin selector', () => {
 
   test('required image failure shows a confirmation error and keeps the original saved skin', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
-    const [selectorWindow] = await Promise.all([
-      electronApp.waitForEvent('window', { timeout: 15000 }),
-      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
-    ]);
+    const selectorWindow = await openSkinSelectorReady(electronApp);
     await appWindow.evaluate(() => {
       window.__qaOriginalImage = window.Image;
       window.Image = class {
@@ -190,10 +201,7 @@ test.describe('skin selector', () => {
 
   test('another working window and the native tray popup keep the preview session open', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
-    const [selectorWindow] = await Promise.all([
-      electronApp.waitForEvent('window'),
-      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
-    ]);
+    const selectorWindow = await openSkinSelectorReady(electronApp);
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
@@ -205,6 +213,7 @@ test.describe('skin selector', () => {
       });
       app.__qaWorkingWindow = workingWindow;
       await workingWindow.loadURL('about:blank');
+      workingWindow.show();
       workingWindow.focus();
     });
     await expect.poll(() => electronApp.evaluate(({ app }) => app.__qaWorkingWindow.isFocused())).toBe(true);
@@ -225,6 +234,13 @@ test.describe('skin selector', () => {
       app.__qaWorkingWindow.close();
       delete app.__qaWorkingWindow;
       app.openSkinSelectorForQA();
+    });
+    // Wait for the 180ms screen-saver top pulse to fall back before minimizing.
+    await expect.poll(
+      () => electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.isAlwaysOnTop()),
+      { timeout: 5000 },
+    ).toBe(false);
+    await electronApp.evaluate(() => {
       process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.minimize();
     });
     await expect.poll(() => electronApp.evaluate(() => process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow.isMinimized())).toBe(true);
@@ -243,10 +259,7 @@ test.describe('skin selector', () => {
 
   test('closing the native selector window cancels its preview', async () => {
     await appWindow.waitForFunction(() => Boolean(window.__DEBUG_SKIN_MANAGER));
-    const [selectorWindow] = await Promise.all([
-      electronApp.waitForEvent('window'),
-      electronApp.evaluate(({ app }) => app.openSkinSelectorForQA()),
-    ]);
+    const selectorWindow = await openSkinSelectorReady(electronApp);
     const birdsCard = selectorWindow.locator('.skin-card[data-skin-id="birds"]');
     await birdsCard.click();
     await expect(birdsCard).toHaveAttribute('aria-pressed', 'true');
