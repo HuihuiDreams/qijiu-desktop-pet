@@ -350,7 +350,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 灵力：随时间下降，可通过修炼或互动恢复。
 - 心情：受饥饿、灵力、交互和主动照顾影响。
 
-`TimeSystem` 负责时间差计算和离线衰减。应用重启后会根据上次保存时间计算离线变化，并将结果应用到宠物数值；存档中的属性值只接受有限数值，否则保留默认值。`OfflineReturnSystem.handleOfflineReturn` 是唤醒、存档加载与游戏循环时间跳跃三条路径的统一入口，衰减时长统一封顶 `CONFIG.MAX_OFFLINE_MS`（7 天）。
+`TimeSystem` 负责时间差计算和离线衰减。应用重启后会根据上次保存时间计算离线变化，并将结果应用到宠物数值；存档中的属性值只接受有限数值并钳制到 `0–100`，否则保留默认值。`OfflineReturnSystem.handleOfflineReturn` 是唤醒、存档加载与游戏循环时间跳跃三条路径的统一入口，衰减时长统一封顶 `CONFIG.MAX_OFFLINE_MS`（7 天）。
 
 ### 3.7 双人互动
 

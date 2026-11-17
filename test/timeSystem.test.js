@@ -139,7 +139,7 @@ test('TimeSystem.deserializePet restores saved zero coordinates', () => {
   assert.equal(pet.y, 0);
 });
 
-test('TimeSystem.deserializePet keeps defaults for non-finite or non-numeric stats', () => {
+test('TimeSystem.deserializePet keeps defaults for non-finite stats and clamps finite out-of-range stats', () => {
   const pet = createPet('yueqi');
   const timeSystem = new TimeSystem();
 
@@ -153,6 +153,17 @@ test('TimeSystem.deserializePet keeps defaults for non-finite or non-numeric sta
   });
 
   assert.deepEqual(pet.stats, { affection: 1, hunger: 2, qi: 3, mood: 0 });
+
+  timeSystem.deserializePet(pet, {
+    stats: {
+      affection: 150,
+      hunger: -20,
+      qi: Number.POSITIVE_INFINITY,
+      mood: 45,
+    },
+  });
+
+  assert.deepEqual(pet.stats, { affection: 100, hunger: 0, qi: 3, mood: 45 });
 });
 
 test('TimeSystem.getOfflineTime validates timestamps and caps at 7 days', () => {

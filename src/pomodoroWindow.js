@@ -201,7 +201,9 @@ function renderState(nextState) {
 }
 
 function getInputMinutes() {
-  const minutes = Math.floor(Number(minutesInput.value));
+  const raw = String(minutesInput.value ?? '').trim();
+  if (!raw) return Number.NaN;
+  const minutes = Math.floor(Number(raw));
   return Number.isFinite(minutes) ? Math.min(240, Math.max(1, minutes)) : minutes;
 }
 

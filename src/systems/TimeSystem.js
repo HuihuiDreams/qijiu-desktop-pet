@@ -48,7 +48,7 @@ class TimeSystem {
       for (const key of ['affection', 'hunger', 'qi', 'mood']) {
         const value = data.stats[key];
         if (typeof value === 'number' && Number.isFinite(value)) {
-          pet.stats[key] = value;
+          pet.stats[key] = Math.max(0, Math.min(100, value));
         }
       }
     }
