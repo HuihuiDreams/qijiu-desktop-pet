@@ -269,6 +269,9 @@ function createUpdateManager(options = {}) {
   let t = (k) => k;
   let initialized = false;
   let checkNotFoundHandled = false;
+  // electron-updater 失败时既 emit('error') 又 reject 同一个错误对象，
+  // 事件回调和调用方 catch 会各调一次 handleError，按对象身份去重。
+  let lastHandledError = null;
   let state = cloneState(DEFAULT_UPDATE_STATE);
 
   function setState(patch) {
@@ -346,6 +349,10 @@ function createUpdateManager(options = {}) {
   }
 
   async function handleError(error) {
+    if (error && typeof error === 'object') {
+      if (error === lastHandledError) return;
+      lastHandledError = error;
+    }
     if (isNotFoundError(error) && checkNotFoundHandled) {
       return;
     }
