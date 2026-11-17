@@ -21,7 +21,9 @@
   - [x] `test/contextMenuBehavior.test.js` 覆盖指针仍在宠物上时保持可交互；[ADR-002](../decisions/ADR-002-mouse-clickthrough-strategy.md) 补充后续更新。
   - [ ] 未处理：菜单打开期间指针停在宠物上（不在菜单上）超过 10 秒，菜单租约到期后同样会恢复穿透。需要时单独处理。
   - [ ] 【macOS / Windows 待人工验证】右键宠物打开菜单，指针不动按 ESC，再左键点宠物：应触发宠物对话，而不是点到下层应用；随后移开指针，桌面恢复可点击。
-- [ ] **Task 4：屏保启动早于 `interactionOverlayActive` 声明时抛 TDZ 错误**
+- [x] **Task 4：屏保启动早于 `interactionOverlayActive` 声明时抛 TDZ 错误**
+  - [x] `src/app.js` 把 `let interactionOverlayActive` 移到 `clearInteractionOverlay` 定义之前，早于 `screensaverSystem.init()`。复核结论：异常发生在 IPC 回调内，不会中断启动，后果是屏保缺少居中、粒子层和起始位置记录，用户输入后正常结束。
+  - [x] `test/interactionOverlayFlagOrder.test.js` 断言声明先于所有引用与屏保订阅。
 - [ ] **Task 5：`PomodoroService` 缺少行为测试**
 
 ## 复核后不采纳的建议
