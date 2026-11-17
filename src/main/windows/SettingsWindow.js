@@ -48,6 +48,17 @@ function getInitialSettingsWindowBounds() {
   };
 }
 
+function clearSettingsWindowTop() {
+  if (settingsTopPulseTimer) {
+    clearTimeout(settingsTopPulseTimer);
+    settingsTopPulseTimer = null;
+  }
+  const win = windowManager.settingsWindow;
+  if (win && !win.isDestroyed() && typeof win.setAlwaysOnTop === 'function') {
+    win.setAlwaysOnTop(false);
+  }
+}
+
 function pulseSettingsWindowTop() {
   if (settingsTopPulseTimer) {
     clearTimeout(settingsTopPulseTimer);
@@ -62,10 +73,14 @@ function pulseSettingsWindowTop() {
   if (typeof win.moveTop === 'function') {
     win.moveTop();
   }
+  // 仅在窗口未实际持有焦点时按 180ms 回落普通层级；聚焦期间持续保持 screen-saver 级，
+  // 防止主透明宠物窗口在 180ms 后或 3 秒置顶巡检时压住正在操作的设置对话框。
   settingsTopPulseTimer = setTimeout(() => {
     settingsTopPulseTimer = null;
     const currentWin = windowManager.settingsWindow;
-    if (currentWin && !currentWin.isDestroyed() && typeof currentWin.setAlwaysOnTop === 'function') {
+    if (!currentWin || currentWin.isDestroyed()) return;
+    if (typeof currentWin.isFocused === 'function' && currentWin.isFocused()) return;
+    if (typeof currentWin.setAlwaysOnTop === 'function') {
       currentWin.setAlwaysOnTop(false);
     }
   }, SETTINGS_TOP_PULSE_MS);
@@ -131,6 +146,15 @@ function createSettingsWindow(initialTab = 'appearance') {
   });
   win.on('restore', () => {
     pulseSettingsWindowTop();
+  });
+  win.on('blur', () => {
+    clearSettingsWindowTop();
+  });
+  win.on('minimize', () => {
+    clearSettingsWindowTop();
+  });
+  win.on('hide', () => {
+    clearSettingsWindowTop();
   });
   win.on('close', () => {
     if (settingsCloseInProgress) return;

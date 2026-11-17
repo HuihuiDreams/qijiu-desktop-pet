@@ -242,12 +242,22 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
       args: ['companion'],
     });
 
-    // Top pulse & macOS app.focus({ steal: true })
+    // Top promotion & macOS app.focus({ steal: true }): stays screen-saver while focused,
+    // drops on blur so external apps can cover it, and returns on focus.
     assert.equal(win.alwaysOnTop, true);
     assert.equal(win.alwaysOnTopLevel, 'screen-saver');
     assert.deepEqual(focusCalls, [{ steal: true }]);
     t.mock.timers.tick(200);
-    assert.equal(win.alwaysOnTop, false);
+    assert.equal(win.alwaysOnTop, true, 'focused settings window must stay screen-saver past 180ms');
+
+    win.blur();
+    win.emit('blur');
+    assert.equal(win.alwaysOnTop, false, 'blur must drop alwaysOnTop so other apps cover settings');
+
+    win.focus();
+    win.emit('focus');
+    assert.equal(win.alwaysOnTop, true);
+    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
 
     // Reopen existing focused instance switches tab without stealing focus again
     const win2 = mod.openSettingsWindow('system');
@@ -434,6 +444,129 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
     assert.equal(settingsWin.closeCalls, 1, 'closing mainWindow must close settingsWindow');
   } finally {
     Module._load = originalLoad;
+    delete require.cache[PET_WINDOW_PATH];
+  }
+});
+
+test('SettingsWindow: keeps screen-saver above PetWindow while focused and drops on blur/minimize/hide or unfocused pulse', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
+  const FakeBrowserWindow = createFakeBrowserWindowClass();
+  const order = [];
+  const windowManager = {
+    mainWindow: null,
+    statusWindow: null,
+    pomodoroWindow: null,
+    skinSelectorWindow: null,
+    settingsWindow: null,
+    updateProgressWindow: null,
+  };
+
+  class TrackingBrowserWindow extends FakeBrowserWindow {
+    moveTop() {
+      order.push(this === windowManager.mainWindow ? 'mainWindow' : 'settingsWindow');
+    }
+  }
+
+  delete require.cache[SETTINGS_WINDOW_PATH];
+  delete require.cache[PET_WINDOW_PATH];
+  const originalLoad = Module._load;
+  Module._load = function mockLoader(request, parent, isMain) {
+    if (parent?.filename === SETTINGS_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { focus: () => {} },
+          BrowserWindow: TrackingBrowserWindow,
+          screen: {
+            getCursorScreenPoint: () => ({ x: 0, y: 0 }),
+            getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1600, height: 900 } }),
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === '../services/PetScaleService') return { flushPreview: () => 100 };
+    }
+    if (parent?.filename === PET_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { on: () => {} },
+          BrowserWindow: TrackingBrowserWindow,
+          ipcMain: { on: () => {} },
+          screen: {
+            getPrimaryDisplay: () => ({ id: 'primary' }),
+            on: () => {},
+            removeListener: () => {},
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === './UpdateProgressWindow') return { closeUpdateProgressWindow: () => {} };
+      if (request.includes('FinalSaveService')) return { installFinalSaveBeforeClose: () => {} };
+      if (request.includes('IpcSenderAuthorization')) return { isSenderMainWindow: () => true };
+      if (request.includes('StartupCachePolicy')) return { shouldClearStartupCache: () => false };
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  try {
+    const SettingsWindow = require(SETTINGS_WINDOW_PATH);
+    const PetWindow = require(PET_WINDOW_PATH);
+    SettingsWindow.init({ flushPetScalePreview: () => 100 });
+    PetWindow.init({
+      DisplayService: {
+        setCurrentPetDisplay: () => {},
+        getDesktopWindowBounds: () => ({ x: 0, y: 0, width: 1600, height: 900 }),
+        lockPetWindowToBounds: () => {},
+        sendScreenInfo: () => {},
+        stopDragPoll: () => {},
+        displayFitScheduler: { schedule: () => {}, clear: () => {} },
+      },
+      WindowAwarenessService: {
+        sendActiveWindowInfo: () => {},
+        getLastPayload: () => ({}),
+        getNativePayload: () => ({}),
+        stopActiveWindowAwareness: () => {},
+        startActiveWindowAwareness: () => {},
+      },
+      PetVisibilityService: { isPetCurrentlyHidden: () => false, sendPetVisibility: () => {} },
+      MeetingDetectorController: { startMeetingDetector: () => {} },
+      WeatherSyncController: { updateWeatherSyncSettings: () => {}, getWeatherSyncSettings: () => ({}) },
+      app: { isPackaged: true, getVersion: () => '1.0.0', commandLine: { hasSwitch: () => false } },
+      StoreManager: { getStore: () => ({ get: () => '1.0.0', set: () => {} }) },
+    });
+
+    PetWindow.createWindow();
+    const settingsWin = SettingsWindow.openSettingsWindow('appearance');
+
+    // Past the 180ms pulse while focused, SettingsWindow stays screen-saver and re-raises above mainWindow
+    t.mock.timers.tick(200);
+    assert.equal(settingsWin.isAlwaysOnTop(), true);
+    assert.equal(settingsWin.alwaysOnTopLevel, 'screen-saver');
+
+    order.length = 0;
+    PetWindow.keepPetWindowOnTop();
+    assert.deepEqual(order, ['mainWindow', 'settingsWindow']);
+
+    // Blur, minimize, and hide each drop alwaysOnTop
+    for (const evt of ['blur', 'minimize', 'hide']) {
+      settingsWin.focus();
+      settingsWin.emit('focus');
+      assert.equal(settingsWin.isAlwaysOnTop(), true);
+      settingsWin.blur();
+      settingsWin.emit(evt);
+      assert.equal(settingsWin.isAlwaysOnTop(), false, `${evt} must drop alwaysOnTop`);
+    }
+
+    // Unfocused show/restore still falls back to normal level after 180ms
+    settingsWin.blur();
+    settingsWin.emit('show');
+    assert.equal(settingsWin.isAlwaysOnTop(), true);
+    t.mock.timers.tick(200);
+    assert.equal(settingsWin.isAlwaysOnTop(), false);
+
+    windowManager.mainWindow.emit('closed');
+  } finally {
+    Module._load = originalLoad;
+    delete require.cache[SETTINGS_WINDOW_PATH];
     delete require.cache[PET_WINDOW_PATH];
   }
 });

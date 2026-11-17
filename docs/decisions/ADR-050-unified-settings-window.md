@@ -22,7 +22,7 @@ Accepted
 
 2. **3 标签统一设置窗口 (`SettingsWindow`) 与生命周期**：
    - 新增 [SettingsWindow.js](../../src/main/windows/SettingsWindow.js)，创建默认 `520×456`（位置与宽高均按当前显示器 `workArea` 安全夹紧：标准屏幕下 3 个标签页含“高甜屏保”在内的全部卡片一屏免滚动展示；极端小屏或高 DPI 缩小至 `workArea` 尺寸后由 `.settings-tabpanel` 的 `overflow-y: auto` 内部滚动兜底访问）的透明无边框单实例窗口（`alwaysOnTop: false`、`minimizable: true`、`hasShadow: false`、`resizable: false`）。
-   - 窗口唤起、复用或恢复时执行 180ms `screen-saver` 脉冲置顶并在 macOS 上守卫式调用 `app.focus({ steal: true })`，超时回落普通层级；不因 `blur` 自动隐藏。
+   - 窗口唤起、复用或恢复时提升至 `screen-saver` 层级并在 macOS 上守卫式调用 `app.focus({ steal: true })`；**聚焦期间持续保持 `screen-saver` 级**，由 `PetWindow.keepPetWindowOnTop()` 在 3 秒巡检中连同其他置顶子窗排在透明主窗之上（防止桌宠精灵、气泡与粒子压住或截断设置窗点击）；失去焦点（`blur`）、最小化（`minimize`）或隐藏（`hide`）时立即回落 `alwaysOnTop: false` 以允许外部应用正常遮挡（若显示/恢复时未实际取得焦点，则在 180ms 后兜底回落普通层级）；不因 `blur` 自动隐藏。
    - 界面采用顶部 3 标签结构：**外观**（宠物体型滑块 `50%~150%` 含恢复默认、当前皮肤展示与“打开选肤画廊”按钮、界面感知开关及平台不支持说明）、**陪伴**（天气同步开关与城市设置表单、久坐提醒开关与 `[30, 45, 60, 90, 120]` 分钟间隔、高甜屏保开关与 `[1, 3, 5, 10, 15, 30]` 分钟等待时间）、**系统**（`中文` / `English` / `日本語` 固定母语标签、开机自动启动开关与 macOS `requires-approval` 待批准提示）。
    - 选肤画廊保留 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 独立 `800×520` 窗口与 `app.openSkinSelectorForQA`。仅当通过设置窗触发 `settings-open-skin-selector` 时标记 `returnFocusToSettings`，在选肤窗关闭后安全恢复设置窗焦点并派发 `settings-restore-skin-focus`，从托盘直接开选肤窗不误唤回设置窗。
    - [PetWindow.js](../../src/main/windows/PetWindow.js) 在 `closed` 与 Windows 全屏 RDP 抑制时连带管理 `settingsWindow`；`SettingsWindow` 在自身 `close` 时调用 [PetScaleService.js](../../src/main/services/PetScaleService.js) 的 `flushPreview()` 落盘未提交预览值。
