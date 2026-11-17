@@ -265,6 +265,21 @@ test('SettingsService.init safely replaces existing IPC handlers when called rep
   assert.ok(snapshot && typeof snapshot === 'object');
 });
 
+test('SettingsService clearIpcHandlers matches every ipc.handle registration and stays after init', () => {
+  const source = fs.readFileSync(SETTINGS_SERVICE_PATH, 'utf8');
+  const handled = Array.from(source.matchAll(/ipc\.handle\('(settings-[^']+)'/g), (m) => m[1]);
+  const clearBlock = source.match(/function clearIpcHandlers\(ipc\) \{[\s\S]*?\n\}/);
+  assert.ok(clearBlock, 'clearIpcHandlers must exist in SettingsService.js');
+  const cleared = Array.from(clearBlock[0].matchAll(/'(settings-[^']+)'/g), (m) => m[1]);
+
+  assert.ok(handled.length > 0);
+  assert.deepEqual([...new Set(cleared)].sort(), [...new Set(handled)].sort());
+  assert.ok(
+    source.indexOf('function clearIpcHandlers') > source.indexOf('function init('),
+    'clearIpcHandlers must remain after init() so ipcPermissionMatrix scans ipc.handle() registrations first',
+  );
+});
+
 test('SettingsService.getSnapshot returns all 7 config groups, confirmed skin, and platform flags', async () => {
   const fixture = createSettingsServiceFixture({
     locale: 'en',
