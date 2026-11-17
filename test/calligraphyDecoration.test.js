@@ -22,6 +22,24 @@ test('settings windows keep only the Qijiu seal alongside localized titles', () 
   assert.match(css, /pointer-events:\s*none/);
 });
 
+test('settings.css pairs both vertical names as a non-interactive ink watermark', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'src', 'settings.css'), 'utf8');
+
+  const shared = css.match(/\.settings-body::before,\s*\.settings-body::after\s*\{([^}]*)\}/)?.[1] || '';
+  assert.match(shared, /pointer-events:\s*none/);
+  assert.match(shared, /z-index:\s*-1/);
+  assert.match(shared, /mask-composite:\s*intersect/);
+  assert.match(shared, /animation:\s*settingsNameInk\b/);
+  assert.match(css, /\.settings-body::before\s*\{[^}]*calligraphy-yqy\.webp/);
+  assert.match(css, /\.settings-body::after\s*\{[^}]*calligraphy-sqq\.webp/);
+  assert.match(css, /html\[data-locale="en"\]\s+\.settings-body::before,\s*html\[data-locale="en"\]\s+\.settings-body::after\s*\{[^}]*opacity:\s*0\.045/);
+  assert.match(css, /@keyframes settingsNameInk\s*\{/);
+
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?animation:\s*none)/)?.[1] || '';
+  assert.match(reduced, /\.settings-body::before/);
+  assert.match(reduced, /\.settings-body::after/);
+});
+
 test('all required calligraphy webp assets exist in src/assets', () => {
   const assets = [
     'calligraphy-yqy.webp',

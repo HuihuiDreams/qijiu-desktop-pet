@@ -189,11 +189,11 @@ qijiu-desktop-pet/
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
 │  ├─ settings.html                     # 统一设置窗口 HTML（520×456，3 标签页），使用严格 CSP
-│  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
+│  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条、左右下角「岳清源 / 沈清秋」竖排书法底纹（打开时落笔遮罩扫出，不拦截输入）与减动效覆盖
 │  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交（拖动期间不接受快照回写）、按控件串行的设置提交与 IPC 失败回读快照、城市异步校验与状态同步
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式
-│  ├─ settings-calligraphy.css          # 选肤与统一设置窗口共用的金色书法标题样式；保留三语标题，无竖排书法底纹，装饰不拦截输入
+│  ├─ settings-calligraphy.css          # 选肤与统一设置窗口共用的金色书法标题样式；保留三语标题；此文件不含竖排书法底纹（选肤窗口只用「七九」印，设置窗口底纹见 settings.css），装饰不拦截输入
 │  ├─ skinSelectorWindow.js             # 皮肤画廊渲染、实时预览与确定/取消流程、画师名次级展示、键盘关闭与 i18n 更新
 │  ├─ update-progress.html              # 更新进度窗口 HTML，使用严格 CSP 和外部资源
 │  ├─ update-progress.css               # 更新进度窗口样式

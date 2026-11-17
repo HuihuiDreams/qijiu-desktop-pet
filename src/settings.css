@@ -656,8 +656,59 @@ input {
   outline-offset: 2px;
 }
 
+/* ── Paired name watermark (岳清源 / 沈清秋) ──
+   The settings window serves both pets, so both names stand at the lower
+   corners like a couplet. Fixed to .settings-body so cards scroll over them. */
+
+.settings-body::before,
+.settings-body::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  z-index: -1;
+  width: 68px;
+  height: 122px;
+  background: var(--color-jade-deep);
+  /* Layer 1: brush reveal sweep; layer 2: the calligraphy itself. */
+  mask-image: linear-gradient(#000 72%, transparent), var(--settings-name-ink);
+  mask-position: top, bottom;
+  mask-size: 100% 140%, contain;
+  mask-repeat: no-repeat;
+  mask-composite: intersect;
+  opacity: 0.09;
+  pointer-events: none;
+  animation: settingsNameInk 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.18s backwards;
+}
+
+.settings-body::before {
+  left: 6px;
+  --settings-name-ink: url('./assets/calligraphy-yqy.webp');
+}
+
+.settings-body::after {
+  right: 6px;
+  --settings-name-ink: url('./assets/calligraphy-sqq.webp');
+  animation-delay: 0.42s;
+}
+
+html[data-locale="en"] .settings-body::before,
+html[data-locale="en"] .settings-body::after {
+  opacity: 0.045;
+}
+
+@keyframes settingsNameInk {
+  from {
+    mask-size: 100% 0%, contain;
+  }
+  to {
+    mask-size: 100% 140%, contain;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .settings-panel,
+  .settings-body::before,
+  .settings-body::after,
   .city-status--searching {
     animation: none;
   }
