@@ -43,13 +43,14 @@ test('relative links in the maintained docs resolve to existing files', () => {
   assert.deepEqual(broken, []);
 });
 
-test('CHANGELOG links to the archived 2026-10-06 review documents at their archive location', () => {
+test('CHANGELOG links to archived review documents at their archive location', () => {
   const changelog = fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8');
 
   for (const name of [
     'code-review-report-2026-10-06.md',
     'code-review-recheck-2026-10-06.md',
     'code-review-fix-plan-2026-10-06.md',
+    'code-review-audit-verification-2026-11-13.md',
   ]) {
     assert.ok(fs.existsSync(path.join(ROOT, 'docs', 'archive', name)), `${name} must exist in docs/archive`);
     assert.ok(changelog.includes(`](docs/archive/${name})`), `CHANGELOG must link ${name} under docs/archive`);

@@ -217,7 +217,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
   ```
 
 - **False-Positive / Override Notes**: Normal Open-Meteo geocoding and forecast JSON payloads are under 10 KB, so a 256 KB cap has zero impact on normal operation.
-- **Status / Resolution**: `weatherSyncService.js` now enforces `MAX_RESPONSE_BYTES = 256 * 1024` in both transports (the Electron net path aborts the request, the HTTPS fallback destroys it) and the HTTPS fallback also handles `res` stream errors. Covered by `test/weatherSyncService.test.js` (audit L7, see [code-review-audit-verification-2026-11-13.md](code-review-audit-verification-2026-11-13.md)).
+- **Status / Resolution**: `weatherSyncService.js` now enforces `MAX_RESPONSE_BYTES = 256 * 1024` in both transports (the Electron net path aborts the request, the HTTPS fallback destroys it) and the HTTPS fallback also handles `res` stream errors. Covered by `test/weatherSyncService.test.js` (audit L7, see [code-review-audit-verification-2026-11-13.md](archive/code-review-audit-verification-2026-11-13.md)).
 
 ---
 
