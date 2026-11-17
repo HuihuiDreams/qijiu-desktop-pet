@@ -265,6 +265,52 @@ test('metadata not found only shows the latest-version message once', async () =
   assert.equal(messages[0].title, 'updateNotAvailTitle');
 });
 
+test('check failure emitted and rethrown by electron-updater shows one error dialog', async () => {
+  const networkError = Object.assign(new Error('net::ERR_INTERNET_DISCONNECTED'), { code: 'ENOTFOUND' });
+  const { manager, messages, logErrors } = createHarness({
+    checkForUpdates: async (updater) => {
+      updater.emit('error', networkError);
+      throw networkError;
+    },
+  });
+
+  await manager.checkForUpdatesFromTray();
+  await tick();
+
+  assert.equal(logErrors.length, 1);
+  assert.equal(messages.filter((message) => message.title === 'updateErrTitle').length, 1);
+  assert.equal(manager._getState().error, 'updateErrNetwork');
+});
+
+test('download failure emitted and rethrown by electron-updater shows one error dialog', async () => {
+  const downloadError = Object.assign(new Error('Cannot download installer'), { code: 'ECONNRESET' });
+  const { updater, messages, logErrors } = createHarness({
+    responses: [{ response: 0 }],
+    downloadUpdate: async (instance) => {
+      instance.emit('error', downloadError);
+      throw downloadError;
+    },
+  });
+
+  updater.emit('update-available', { version: '0.1.9' });
+  await tick();
+  await tick();
+
+  assert.equal(logErrors.length, 1);
+  assert.equal(messages.filter((message) => message.title === 'updateErrTitle').length, 1);
+});
+
+test('distinct update errors are each reported', async () => {
+  const { updater, messages } = createHarness();
+
+  updater.emit('error', new Error('first failure'));
+  await tick();
+  updater.emit('error', new Error('second failure'));
+  await tick();
+
+  assert.equal(messages.filter((message) => message.title === 'updateErrTitle').length, 2);
+});
+
 test('update-downloaded asks before quit and install', async () => {
   const verifiedDownload = createVerifiedDownloadInfo({ version: '0.1.8' });
   const { updater, messages, progressEvents } = createHarness({
