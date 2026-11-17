@@ -15,6 +15,12 @@ function setStatus(message = '') {
   statusEl.textContent = message;
 }
 
+// 按 dataset 比对而不是拼 CSS 选择器：skinId 含引号或反斜杠时拼出的选择器会抛 SyntaxError，
+// 在 setLoading 里抛错会让 previewInFlight 卡在 true，确认/取消/关闭全部失效。
+function findCardBySkinId(skinId) {
+  return Array.from(galleryEl.querySelectorAll('.skin-card'))
+    .find((card) => card.dataset.skinId === skinId) || null;
+}
 function setLoading(loading, targetSkinId = null) {
   previewInFlight = loading;
   loadingSkinId = loading ? targetSkinId : null;
@@ -22,9 +28,7 @@ function setLoading(loading, targetSkinId = null) {
   if (cancelBtn) cancelBtn.disabled = loading;
   if (closeBtn) closeBtn.disabled = loading;
 
-  const targetCard = targetSkinId
-    ? galleryEl.querySelector(`.skin-card[data-skin-id="${targetSkinId}"]`)
-    : null;
+  const targetCard = targetSkinId ? findCardBySkinId(targetSkinId) : null;
 
   galleryEl.querySelectorAll('.skin-card').forEach((card) => {
     card.disabled = loading;
@@ -188,7 +192,7 @@ function renderGallery(items, { resetSelection = true } = {}) {
       closeBtn.focus();
     }
   } else if (focusedSkinId) {
-    const restoredCard = galleryEl.querySelector(`.skin-card[data-skin-id="${focusedSkinId}"]`);
+    const restoredCard = findCardBySkinId(focusedSkinId);
     if (typeof restoredCard?.focus === 'function') {
       restoredCard.focus();
     }
@@ -237,7 +241,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-window.skinSelectorAPI.onData((items, options) => renderGallery(items, options));
+window.skinSelectorAPI?.onData?.((items, options) => renderGallery(items, options));
 
 requestAnimationFrame(() => {
   if (!document.activeElement?.closest?.('.skin-card')) {

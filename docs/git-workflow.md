@@ -74,7 +74,7 @@ git diff --cached
 
 行为变更先更新 `test/` 中的对应测试，运行聚焦检查和 `npm test`；真实 Electron 集成检查按需使用 `npm run test:e2e`。同步相关结构文档或 ADR。纯文档修改核对路径、命令及说明即可。
 
-完成检查后使用下文的项目推送脚本。两个脚本都会执行 `git add .` 并推送当前分支到 `origin HEAD`，因此运行前须确认当前分支及工作区全部改动属于本次原子提交；脚本不会替你拆分无关改动，也不会自动运行测试。
+完成检查后使用下文的项目推送脚本。两个脚本都会执行 `git add -u` 暂存全部已跟踪文件的修改，并推送当前分支到 `origin HEAD`，因此运行前须确认当前分支及已跟踪文件的全部改动属于本次原子提交；新增文件须先手动 `git add <路径>`，工作区仍有未暂存的未跟踪文件时脚本会列出它们并停止；脚本不会替你拆分无关改动，也不会自动运行测试。
 
 ---
 
@@ -104,8 +104,8 @@ macOS / Linux / WSL 在 Bash 中运行：
 该脚本的工作流逻辑：
 1. 拦截检查：自动检测 `git status` 中是否包含 `CHANGELOG.md`。
 2. 如果未包含，脚本会拦截提交，并自动用系统默认编辑器打开 `CHANGELOG.md`，强制要求你填写更新记录。
-3. 填写保存后重新运行，脚本执行 `git add .`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
-4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp` 执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。
+3. 填写保存后重新运行，脚本先检查是否存在未暂存的未跟踪文件（有则列出并停止，需要提交的先 `git add <路径>`，其余删除或加入 `.gitignore`），再执行 `git add -u`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
+4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp` 执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。提交失败或推送失败时脚本以非零退出码结束，便于外层工具判断结果。
 
 脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。脚本打印的 `[WIP]` 模板是旧提示，实际应按 `[Unreleased]` 规范填写。
 
@@ -145,7 +145,6 @@ Windows 本地检查：
 
 ```powershell
 npm test
-npm run verify:installer
 npm audit --omit=dev --audit-level=high
 npm run protect:assets
 $env:CSC_IDENTITY_AUTO_DISCOVERY='false'
@@ -163,7 +162,7 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder --mac --dir --publish nev
 npm run verify:package
 ```
 
-`verify:installer` 检查 Windows 构建所需配置与脚本是否存在，不校验成品安装包。直接调用 `npx electron-builder` 不会执行 npm 的 `prebuild`，因此必须先生成受保护皮肤资源。`verify:package` 在构建后检查 `dist/**/app.asar`，拒绝将内部指引或工作目录打入应用；它不替代下载完整性或代码签名验证。
+直接调用 `npx electron-builder` 不会执行 npm 的 `prebuild`，因此必须先生成受保护皮肤资源。`verify:package` 在构建后检查 `dist/**/app.asar`，拒绝将内部指引或工作目录打入应用；它不替代下载完整性或代码签名验证。
 
 macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet`，并且 `CFBundleExecutable` 也是 `DeskPet`。CI 会自动做这项检查；本地若改动了 `package.json`、`scripts/afterPack.js` 或 macOS 打包配置，也应手动确认。
 
@@ -180,7 +179,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 - 目标 GitHub tag 是否已经存在。
 - 根目录三份 `readme*.txt` 是否存在。
 - Windows 签名 secrets 是否存在；缺失时只提示将发布未签名 Windows 安装包。
-- Windows 单元测试、集成测试（`npm run test:integration`）、安装包前置检查、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
+- Windows 单元测试、集成测试（`npm run test:integration`）、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
 - macOS 单元测试、集成测试（`npm run test:integration`）、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build、包内容检查，以及 `DeskPet` 包内可执行文件元数据检查。
 
 工作流默认令牌为只读（`contents: read`），只有仅在手动运行时才会执行的 `sync-version` 作业声明了 `contents: write`，因此 pull request 触发的 `npm ci`、测试和构建脚本拿不到可写令牌。

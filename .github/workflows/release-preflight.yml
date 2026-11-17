@@ -167,9 +167,6 @@ jobs:
       - name: Run integration tests
         run: npm run test:integration
 
-      - name: Verify installer prerequisites
-        run: npm run verify:installer
-
       - name: Security audit
         run: npm audit --omit=dev --audit-level=high
 

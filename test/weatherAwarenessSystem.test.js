@@ -399,3 +399,18 @@ test('WeatherAwarenessSystem - Local Time Phase', async (t) => {
     assert.notStrictEqual(state3, state4, 'timePhase change should invalidate cached state object');
   });
 });
+
+test('WeatherAwarenessSystem recomputes the time phase right after a system clock rollback', () => {
+  const system = new WeatherAwarenessSystem(CONFIG);
+  let mockDate = new Date(2026, 0, 1, 21, 0, 0);
+  system._getCurrentDate = () => mockDate;
+  const rolledBackFrom = new Date(2026, 0, 1, 21, 0, 0).getTime();
+
+  system.updateLocalTimePhase(rolledBackFrom);
+  assert.strictEqual(system.getCurrentState().timePhase, 'evening');
+
+  // 时钟被拨回到当天 12:00：差值为负，不能被 10 秒节流挡住
+  mockDate = new Date(2026, 0, 1, 12, 0, 0);
+  system.updateLocalTimePhase(mockDate.getTime());
+  assert.strictEqual(system.getCurrentState().timePhase, 'day');
+});

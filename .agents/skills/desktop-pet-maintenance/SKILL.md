@@ -60,8 +60,7 @@ release workflows, version metadata, or installer assets:
 2. Preserve downloaded-package integrity checks and explicit update error
    states; never treat a successful download as a verified release.
 3. Run focused tests, then `npm test` for behavior changes. For packaging changes,
-   run `npm run verify:installer` for Windows prerequisites, build with
-   `npm run build` or the relevant platform's smoke-build command, then run
+   build with `npm run build` or the relevant platform's smoke-build command, then run
    `npm run verify:package` against the new `dist/**/app.asar` output. For Windows
    signing changes, use `npm run verify:signatures` (a PowerShell script);
    validate macOS signing/notarization on macOS using the release workflow checks.

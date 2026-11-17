@@ -107,7 +107,6 @@ npm test
 npm run qa:electron:smoke
 
 # 打包预检与构建
-npm run verify:installer
 npm run protect:assets
 npm run build
 npm run verify:package

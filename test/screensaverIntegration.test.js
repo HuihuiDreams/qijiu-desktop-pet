@@ -230,6 +230,7 @@ test('Screensaver Integration - Cancellation hooks & lifecycle events', async (t
     controller.updateSettings({ enabled: true, idleThresholdMinutes: 5 });
     controller.start();
 
+    mockIpc.emit('screensaver-ready', { sender: mockWin.window.webContents });
     controller._poll();
     assert.equal(controller.getState().state, 'active');
 

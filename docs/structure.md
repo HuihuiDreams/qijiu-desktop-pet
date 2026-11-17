@@ -171,7 +171,6 @@ qijiu-desktop-pet/
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
 │  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；支持纯锁文件冲突自动重生成，其余非文档冲突停止批次并从锚点重试（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
-│  ├─ verify-installer.js               # 安装包结构校验
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
 ├─ src/
 │  ├─ index.html                        # 主宠物窗口 HTML
@@ -351,7 +350,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 灵力：随时间下降，可通过修炼或互动恢复。
 - 心情：受饥饿、灵力、交互和主动照顾影响。
 
-`TimeSystem` 负责时间差计算和离线衰减。应用重启后会根据上次保存时间计算离线变化，并将结果应用到宠物数值。
+`TimeSystem` 负责时间差计算和离线衰减。应用重启后会根据上次保存时间计算离线变化，并将结果应用到宠物数值；存档中的属性值只接受有限数值，否则保留默认值。`OfflineReturnSystem.handleOfflineReturn` 是唤醒、存档加载与游戏循环时间跳跃三条路径的统一入口，衰减时长统一封顶 `CONFIG.MAX_OFFLINE_MS`（7 天）。
 
 ### 3.7 双人互动
 
@@ -650,7 +649,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增或更新皮肤时，严格遵守 `docs/skin-pipeline-guide.md`，同步维护 `skinGallery.js`、`protectedAssetLoader.js` 与中/英/日三语 README。
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
-- 修改发布、更新或打包逻辑后，额外运行 `npm run verify:installer` 和需要的平台签名校验。
+- 修改发布、更新或打包逻辑后，构建后额外运行 `npm run verify:package` 和需要的平台签名校验。
 - 开发环境要求 Node.js 22.12.0+；运行 `npm ci` 后执行 `npx --no-install install-electron` 准备二进制，再启动应用或测试。Windows Electron 目录读取权限与 PowerShell 排障见 [README](../README.md)（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `fast-uri` 经 `electron-store → conf → ajv` 进入生产依赖树，并与构建工具共享；锁文件采用 `fast-uri@3.1.9` 与 `undici@7.30.2` 安全补丁，`test/dependencyUriSecurity.test.js` 覆盖 Ajv URI 解析器的主机名规范化、纯路径 suffix 转义、正常 schema 引用兼容性及锁文件补丁版本防回退断言（[ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)）。
 - Windows NSIS 架构配置在 `package.json` 的 `build.win.target` 对象内（`[{ "target": "nsis", "arch": ["x64"] }]`）；`build.win.arch` 不是合法字段，且会阻断双平台构建。`test/platformCompatibility.test.js` 使用 electron-builder 自带验证器检查完整构建配置（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。

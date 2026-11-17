@@ -400,6 +400,8 @@ test('ScreensaverController - IPC sender authentication and renderer-reload hand
   });
 
   controller.start();
+  // 渲染层就绪（inactive 时收到 ready 是无操作），之后才允许启动屏保
+  ipcMain.emit('screensaver-ready', { sender: mainWindow.webContents });
   controller._poll();
   assert.equal(controller.getState().state, 'active');
 
@@ -679,6 +681,7 @@ test('ScreensaverController - renderer completion releases the active screensave
   });
 
   controller.start();
+  ipcMain.emit('screensaver-ready', { sender: mainWindow.webContents });
   controller._poll();
   assert.equal(controller.getState().state, 'active');
   assert.equal(coordinator.getCurrentHolder(), 'screensaver');
@@ -775,4 +778,25 @@ test('ScreensaverController - screensaver-ready while inactive is a safe no-op',
 
   assert.equal(controller.getState().state, 'inactive');
   assert.equal(mainWindow.sentEvents.length, 0);
+});
+
+test('ScreensaverController - does not start a session before the renderer reports screensaver-ready', () => {
+  const { mainWindow, ipcMain, coordinator, controller } = createActiveScreensaverFixture({ ipc: true });
+  controller.start();
+
+  controller._poll();
+  assert.equal(controller.getState().state, 'blocked');
+  assert.equal(mainWindow.sentEvents.some((event) => event.channel === 'screensaver-start'), false);
+  assert.equal(coordinator.getCurrentHolder(), null, 'the interruption lease must not be taken while waiting');
+
+  // 未鉴权的 ready 不算数
+  ipcMain.emit('screensaver-ready', { sender: {} });
+  controller._poll();
+  assert.equal(controller.getState().state, 'blocked');
+
+  ipcMain.emit('screensaver-ready', { sender: mainWindow.webContents });
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+  assert.equal(mainWindow.sentEvents.at(-1).channel, 'screensaver-start');
+  controller.dispose();
 });

@@ -65,7 +65,18 @@ fi
 # 如果包含 CHANGELOG.md，则执行正常的提交和上传逻辑
 echo -e "${GREEN}✅ 检测到 CHANGELOG.md 已更新。准备提交流程...${NC}"
 
-git add .
+# 只暂存已跟踪文件的修改。未跟踪文件必须先由调用方显式 git add，
+# 避免本机草稿或杂项文件搭车进入公共仓库的提交。
+UNTRACKED_FILES=$(git ls-files --others --exclude-standard)
+if [ -n "$UNTRACKED_FILES" ]; then
+    echo -e "${RED}==========================================${NC}"
+    echo -e "${RED}❌ 拦截 Push: 工作区存在未暂存的未跟踪文件：${NC}"
+    echo "$UNTRACKED_FILES"
+    echo -e "${YELLOW}需要提交的请先 git add <路径>；其余请删除或加入 .gitignore。${NC}"
+    echo -e "${RED}==========================================${NC}"
+    exit 1
+fi
+git add -u
 
 # 安全检查：防止将未被忽略的扫描产物或内部工作区误提交（排除受版本控制的 .agents/skills/ 专属规范）
 if git diff --cached --name-only --diff-filter=ACMR | grep -E '^(\.codex/|\.agents/|security-scans/)' | grep -v '^\.agents/skills/'; then

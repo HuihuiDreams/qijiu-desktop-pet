@@ -35,7 +35,18 @@ if (-not ($status -match "CHANGELOG\.md")) {
 # CHANGELOG.md is present, so continue with commit and push.
 Write-Host "CHANGELOG.md detected. Preparing commit..." -ForegroundColor Green
 
-git add .
+# Stage tracked changes only. Untracked files must be staged explicitly with git add first,
+# so local drafts and stray files never ride along into a commit on the public repository.
+$untrackedFiles = git ls-files --others --exclude-standard
+if ($untrackedFiles) {
+    Write-Host "==========================================" -ForegroundColor Red
+    Write-Host "Push blocked: the working tree has untracked files that are not staged:" -ForegroundColor Red
+    $untrackedFiles | ForEach-Object { Write-Host $_ }
+    Write-Host "Run git add <path> for files that belong in the commit; delete or .gitignore the rest." -ForegroundColor Yellow
+    Write-Host "==========================================" -ForegroundColor Red
+    exit 1
+}
+git add -u
 
 # Prevent internal workspaces and scan output from being committed (allowing version-controlled .agents/skills/).
 $stagedSensitive = git diff --cached --name-only --diff-filter=ACMR | Where-Object { $_ -match "(^\.codex/|^\.agents/|^security-scans/)" -and $_ -notmatch "^\.agents/skills/" }

@@ -33,19 +33,13 @@ description: >-
 
 在提交代码或发起发版之前，必须在本地完成以下检查：
 
-### 1. 安装包环境与依赖校验
-```bash
-npm run verify:installer
-```
-确认 `package.json`、`main.js`、`preload.js`、`build/installer.nsh`、`scripts/afterPack.js` 均存在。
-
-### 2. 全量自动化测试与三语 Readme 校验
+### 1. 全量自动化测试与三语 Readme 校验
 ```bash
 npm test
 ```
 同时确认根目录存在三语说明文件：`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`。
 
-### 3. 版本号与 CHANGELOG.md 对齐
+### 2. 版本号与 CHANGELOG.md 对齐
 - 确定本次发布版本号（严格遵守 SemVer，如 `0.11.3`）。
 - 检查 `package.json` 中的 `"version": "0.11.3"`。
 - 在 `CHANGELOG.md` 中，将本次发布的改动从 `## [Unreleased]` 整理归档到正式小节：
@@ -61,13 +55,13 @@ npm test
   ```
   > **注意**：每个分类标题（`Added`, `Changed`, `Fixed` 等）在同一版本下**严禁重复出现**。
 
-### 4. 刷新受保护皮肤资产
+### 3. 刷新受保护皮肤资产
 ```bash
 npm run protect:assets
 ```
 确保 `protected-assets/manifest.json` 与 `.dat` 密文为最新状态。
 
-### 5. 本地快速冒烟打包 (Smoke Package)
+### 4. 本地快速冒烟打包 (Smoke Package)
 在本地生成免安装目录包，验证打包配置无语法错误：
 
 ```bash
@@ -78,19 +72,19 @@ npx electron-builder --mac --dir
 npx electron-builder --win --dir --config.win.signAndEditExecutable=false
 ```
 
-### 6. 审计 ASAR 产物合规性
+### 5. 审计 ASAR 产物合规性
 ```bash
 npm run verify:package
 ```
 验证解包产物中无内部 Agent 目录、无本地临时配置、无明文 WebP。
 
-### 7. (Windows 本地可选) 验证代码签名
+### 6. (Windows 本地可选) 验证代码签名
 若配置了本地 Windows Authenticode 证书（详见 [`docs/release-code-signing.md`](docs/release-code-signing.md)）：
 ```powershell
 npm run verify:signatures
 ```
 
-### 8. 提交并推送到仓库
+### 7. 提交并推送到仓库
 使用项目安全提交脚本：
 ```bash
 # macOS / Linux

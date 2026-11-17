@@ -543,3 +543,39 @@ test('renderGallery preserves active status text on resetSelection: false rebuil
   env.sendData(items, { resetSelection: true });
   assert.equal(env.elements.get('skin-selector-status').textContent, '');
 });
+
+test('previewing a skin id containing quotes or backslashes does not wedge the selector', async () => {
+  let resolvePreview;
+  const env = createMockSkinSelectorEnvironment({
+    api: {
+      previewSkin: () => new Promise((resolve) => { resolvePreview = resolve; }),
+    },
+  });
+  // 模拟 Chromium：拼进属性选择器的值里含未转义的引号或反斜杠时 querySelector 抛 SyntaxError
+  const originalQuerySelector = env.galleryEl.querySelector;
+  env.galleryEl.querySelector = function guardedQuerySelector(selector) {
+    const match = selector.match(/\[data-skin-id="(.*)"\]/);
+    if (match && /["\\]/.test(match[1])) {
+      throw new SyntaxError(`'${selector}' is not a valid selector.`);
+    }
+    return originalQuerySelector.call(this, selector);
+  };
+  const oddId = 'custom"skin\\one';
+  env.sendData([
+    { id: 'skin-1', skinLabel: 'Skin One', isCurrent: true, previewUrl: '' },
+    { id: oddId, skinLabel: 'Odd Skin', isCurrent: false, previewUrl: '' },
+  ]);
+  const cards = env.galleryEl.querySelectorAll('.skin-card');
+
+  cards[1].click();
+  assert.equal(cards[1].classList.contains('skin-card--loading'), true);
+
+  resolvePreview({ success: true });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(env.confirmBtn.disabled, false);
+  assert.equal(env.cancelBtn.disabled, false);
+  assert.equal(env.closeBtn.disabled, false);
+  assert.equal(env.getActiveElement(), cards[1]);
+  assert.equal(vm.runInContext('previewInFlight', env.context), false);
+});

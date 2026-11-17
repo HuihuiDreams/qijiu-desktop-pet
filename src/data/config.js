@@ -41,6 +41,7 @@ const CONFIG = {
 
   // === 养成数值 - 自然消耗 (Nurture - Decay) ===
   DECAY_INTERVAL: 300000,             // 结算周期：每5分钟
+  MAX_OFFLINE_MS: 7 * 24 * 60 * 60 * 1000, // 单次离线结算封顶 7 天（约 2016 个周期），与 TimeSystem.getOfflineTime 的存档封顶一致
   HUNGER_DECAY: 2,                    // 每个周期减少的饱腹度
   QI_DECAY: 2,                        // 每个周期减少的灵力
   MOOD_DECAY: 2,                      // 每个周期减少的心境
