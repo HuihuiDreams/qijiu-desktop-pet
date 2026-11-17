@@ -13,6 +13,7 @@
 - **统一设置窗口宽高按工作区安全夹紧 (`SettingsWindow Dimensions Clamped to WorkArea`)**：修复 `SettingsWindow.getInitialSettingsWindowBounds()` 仅夹紧 `x`/`y` 坐标而保持固定 `520×456` 尺寸、在高 DPI 或小尺寸工作区下窗口底部超出工作区且不触发 `.settings-tabpanel` 内部滚动的问题；现同步按 `display.workArea` 夹紧初始宽高并同步更新 [ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `test/settingsWindow.test.js`。
 - **设置页档位列表由快照驱动及 IPC 幂等清理 (`Settings Allowed-Lists Snapshot Sync & Idempotent IPC Init`)**：`src/settingsWindow.js` 改为根据快照中的 `breakReminder.allowedIntervals` 与 `screensaver.allowedThresholds` 动态对齐分段按钮（避免与 `src/settings.html` 静态列表漂移）；`SettingsService.init()` 注册 `settings-*` handler 前先调用 `removeHandler()`，防止重复初始化时触发 Electron 二次注册异常；补充对应测试。
 - **选肤弹窗 E2E 初始化与状态清理竞态修复 (`Skin Selector E2E Locale Init & Status Preservation`)**：`src/skinSelectorWindow.js` 的 `renderGallery` 仅在 `resetSelection: true` 时清空 `#skin-selector-status`，避免异步 `WindowI18n.init` 或语言刷新重建卡片时误清错误提示；`test/e2e/skinSelector.spec.js` 在交互前显式等待 `data-locale` 与卡片就绪、并在最小化前等待 180ms 置顶脉冲回落。
+- **CP 同步锁文件重生成静默丢升级修复 (`Prevent Silent Dependency Downgrade During CP Sync Lockfile Regeneration`)**：收紧 `scripts/sync-to-cp.js` 的 `canRegenerateLockfileConflict` 准入条件，要求提交确实修改了 `package.json` 的依赖声明字段（不再放行仅改 `scripts` 等非依赖字段的提交）；并在执行 `npm install --package-lock-only --ignore-scripts` 后通过 `findDroppedLockfileUpgrades` 核对来源 `package-lock.json` 中新增或升级的依赖版本是否保留在重生成结果中，若被既有锁版本留旧或缺失则回滚并阻塞同步，同步更新 `test/syncToCp.test.js`、`docs/git-workflow.md` 与 [ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)。
 
 ## [0.12.0] - 2026-11-16
 

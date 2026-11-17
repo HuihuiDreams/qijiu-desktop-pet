@@ -1564,7 +1564,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         2
       )}\n`;
 
-    const makeLock = (identity, asarPkgVer, nestedPkgName, nestedPkgVer) =>
+    const makeLock = (identity, asarPkgVer, nestedPkgName, nestedPkgVer, extraPackages = {}) =>
       `${JSON.stringify(
         {
           name: identity.name,
@@ -1582,6 +1582,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
             [`node_modules/@electron/asar/node_modules/${nestedPkgName}`]: {
               version: nestedPkgVer,
             },
+            ...extraPackages,
           },
         },
         null,
@@ -1744,8 +1745,261 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       assert.equal(multiConflictResult.results[0].blocked, true);
       assert.match(multiConflictResult.results[0].reason, /package-lock\.json/);
       assert.match(multiConflictResult.results[0].reason, /src\/shared\.js/);
+
+      // 4. Non-dependency package.json edit (e.g. scripts) + lockfile conflict must NOT regenerate
+      git(repo, ['checkout', 'main']);
+      git(repo, ['reset', '--hard', asarBumpSha]);
+      fs.writeFileSync(
+        path.join(repo, 'package.json'),
+        makePkg(mainId, '^4.3.2', { scripts: { test: 'node --test' } })
+      );
+      fs.writeFileSync(
+        path.join(repo, 'package-lock.json'),
+        makeLock(mainId, '4.3.2', 'minimatch', '11.0.8', {
+          'node_modules/minimist': { version: '1.2.8' },
+        })
+      );
+      git(repo, ['add', 'package.json', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore: add test script and bump minimist to 1.2.8']);
+      const scriptPlusMinimistSha = git(repo, ['rev-parse', 'HEAD']);
+
+      // Ensure CP has minimist 1.2.7 so package-lock.json conflicts cleanly on cherry-pick
+      git(repo, ['checkout', 'cp/crowley-aziraphale']);
+      git(repo, ['reset', '--hard', cpHeadWithDivergedMin]);
+      fs.writeFileSync(
+        path.join(repo, 'package-lock.json'),
+        makeLock(cpId, '4.3.2', 'minimatch', '11.0.7', {
+          'node_modules/minimist': { version: '1.2.7' },
+        })
+      );
+      git(repo, ['add', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore: cp minimist 1.2.7']);
+      const cpHeadWithMinimist127 = git(repo, ['rev-parse', 'HEAD']);
+      git(repo, ['push', 'origin', 'cp/crowley-aziraphale']);
+
+      git(repo, ['checkout', 'main']);
+      let scriptOnlyRegenCalls = 0;
+      const scriptOnlyResult = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: scriptPlusMinimistSha,
+        dryRun: false,
+        lockfileUpdater: () => {
+          scriptOnlyRegenCalls += 1;
+        },
+        installRunner: () => {},
+        testRunner: () => {},
+      });
+      assert.equal(scriptOnlyRegenCalls, 0, 'Must not regenerate when package.json only changed non-dependency fields');
+      assert.equal(scriptOnlyResult.results[0].blocked, true);
+      assert.equal(scriptOnlyResult.results[0].status, '⚠️ 代码冲突跳过');
+      git(repo, ['fetch', 'origin']);
+      assert.equal(git(repo, ['rev-parse', cpRef]), cpHeadWithMinimist127);
+
+      // 5. Dependency change in package.json + source lockfile bumps minimist 1.2.6 -> 1.2.8:
+      // CP already has minimist 1.2.7 (triggering a 3-way lockfile conflict); if lockfileUpdater keeps
+      // 1.2.7 instead of 1.2.8, sync & --verify MUST block and rollback
+      git(repo, ['checkout', 'main']);
+      git(repo, ['reset', '--hard', asarBumpSha]);
+      fs.writeFileSync(
+        path.join(repo, 'package-lock.json'),
+        makeLock(mainId, '4.3.2', 'minimatch', '11.0.8', {
+          'node_modules/minimist': { version: '1.2.6' },
+        })
+      );
+      git(repo, ['add', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore: baseline minimist 1.2.6']);
+
+      fs.writeFileSync(path.join(repo, 'package.json'), makePkg(mainId, '^4.3.4'));
+      fs.writeFileSync(
+        path.join(repo, 'package-lock.json'),
+        makeLock(mainId, '4.3.4', 'minimatch', '11.0.8', {
+          'node_modules/minimist': { version: '1.2.8' },
+        })
+      );
+      git(repo, ['add', 'package.json', 'package-lock.json']);
+      git(repo, ['commit', '-m', 'chore(deps): bump asar 4.3.4 and minimist 1.2.8']);
+      const droppedUpgradeSha = git(repo, ['rev-parse', 'HEAD']);
+
+      let droppedInstallCalls = 0;
+      let droppedTestCalls = 0;
+      const droppedUpgradeVerify = await syncCommitsToCp({
+        repoRoot: repo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: droppedUpgradeSha,
+        verifyOnly: true,
+        lockfileUpdater: (cwd) => {
+          // Simulate npm keeping satisfied transitive minimist@1.2.7 from CP's lockfile
+          fs.writeFileSync(
+            path.join(cwd, 'package-lock.json'),
+            makeLock(cpId, '4.3.4', 'minimatch', '11.0.8', {
+              'node_modules/minimist': { version: '1.2.7' },
+            })
+          );
+        },
+        installRunner: () => {
+          droppedInstallCalls += 1;
+        },
+        testRunner: () => {
+          droppedTestCalls += 1;
+        },
+      });
+      assert.equal(droppedUpgradeVerify.results[0].blocked, true);
+      assert.equal(droppedUpgradeVerify.results[0].status, '⚠️ 代码冲突跳过');
+      assert.match(droppedUpgradeVerify.results[0].reason, /未保留来源锁文件中的依赖升级/);
+      assert.match(droppedUpgradeVerify.results[0].reason, /minimist/);
+      assert.equal(droppedInstallCalls, 0, 'Must abort before install/test when upgrade is dropped');
+      assert.equal(droppedTestCalls, 0, 'Must abort before install/test when upgrade is dropped');
+      git(repo, ['fetch', 'origin']);
+      assert.equal(git(repo, ['rev-parse', cpRef]), cpHeadWithMinimist127);
     } finally {
       fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
+  await t.test('findDroppedLockfileUpgrades validates hoisting, stale nested majors, and malformed lockfiles', () => {
+    const { findDroppedLockfileUpgrades } = require('../scripts/sync-to-cp');
+
+    const baseBefore = {
+      packages: {
+        '': { name: 'desktop-pet', version: '0.12.0' },
+        'node_modules/@electron/asar': { version: '4.3.1' },
+        'node_modules/minimist': { version: '1.2.7' },
+        'node_modules/glob': { version: '14.0.6' },
+        'node_modules/@electron/asar/node_modules/glob': { version: '13.0.6' },
+      },
+    };
+    const baseAfter = {
+      packages: {
+        '': { name: 'desktop-pet', version: '0.12.0' },
+        'node_modules/@electron/asar': { version: '4.3.2' },
+        'node_modules/@electron/asar/node_modules/minimatch': { version: '11.0.8' },
+        'node_modules/minimist': { version: '1.2.8' },
+        'node_modules/glob': { version: '14.0.6' },
+        'node_modules/@electron/asar/node_modules/glob': { version: '13.0.7' },
+      },
+    };
+
+    // Valid regeneration: nested minimatch hoisted to root and patch-bumped to 11.0.9, all bumps preserved
+    assert.deepEqual(
+      findDroppedLockfileUpgrades({
+        sourceBeforeLock: baseBefore,
+        sourceAfterLock: baseAfter,
+        regeneratedLock: {
+          packages: {
+            '': { name: 'good-omens-desktop-pet', version: '1.0.0' },
+            'node_modules/@electron/asar': { version: '4.3.2' },
+            'node_modules/minimatch': { version: '11.0.9' },
+            'node_modules/minimist': { version: '1.2.8' },
+            'node_modules/glob': { version: '14.0.6' },
+            'node_modules/@electron/asar/node_modules/glob': { version: '13.0.7' },
+          },
+        },
+      }),
+      []
+    );
+
+    // Nested glob@13.0.6 stayed stale even though root glob@14.0.6 exists; root minimist also stayed 1.2.7
+    const staleIssues = findDroppedLockfileUpgrades({
+      sourceBeforeLock: baseBefore,
+      sourceAfterLock: baseAfter,
+      regeneratedLock: {
+        packages: {
+          '': { name: 'good-omens-desktop-pet', version: '1.0.0' },
+          'node_modules/@electron/asar': { version: '4.3.2' },
+          'node_modules/minimatch': { version: '11.0.8' },
+          'node_modules/minimist': { version: '1.2.7' },
+          'node_modules/glob': { version: '14.0.6' },
+          'node_modules/@electron/asar/node_modules/glob': { version: '13.0.6' },
+        },
+      },
+    });
+    assert.equal(staleIssues.length, 2);
+    assert.ok(staleIssues.some((msg) => msg.includes('node_modules/minimist')));
+    assert.ok(staleIssues.some((msg) => msg.includes('node_modules/@electron/asar/node_modules/glob')));
+
+    // Nested minimist on CP still at 1.2.7 when main upgraded hoisted node_modules/minimist to 1.2.8
+    const nestedStaleIssues = findDroppedLockfileUpgrades({
+      sourceBeforeLock: baseBefore,
+      sourceAfterLock: baseAfter,
+      regeneratedLock: {
+        packages: {
+          '': { name: 'good-omens-desktop-pet', version: '1.0.0' },
+          'node_modules/@electron/asar': { version: '4.3.2' },
+          'node_modules/minimatch': { version: '11.0.8' },
+          'node_modules/foo/node_modules/minimist': { version: '1.2.7' },
+          'node_modules/glob': { version: '14.0.6' },
+          'node_modules/@electron/asar/node_modules/glob': { version: '13.0.7' },
+        },
+      },
+    });
+    assert.equal(nestedStaleIssues.length, 1);
+    assert.match(nestedStaleIssues[0], /node_modules\/minimist/);
+
+    // Lockfile missing packages map fails closed
+    assert.equal(
+      findDroppedLockfileUpgrades({
+        sourceBeforeLock: baseBefore,
+        sourceAfterLock: baseAfter,
+        regeneratedLock: { lockfileVersion: 1 },
+      }).length,
+      1
+    );
+  });
+
+  await t.test('hasPackageJsonDependencyChange ignores scripts/key-order edits and detects overrides changes', () => {
+    const { hasPackageJsonDependencyChange } = require('../scripts/sync-to-cp');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-pkg-dep-change-'));
+    try {
+      git(tmpDir, ['init']);
+      git(tmpDir, ['config', 'user.name', 'Test']);
+      git(tmpDir, ['config', 'user.email', 'test@example.com']);
+
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          name: 'demo',
+          version: '1.0.0',
+          dependencies: { a: '1.0.0', b: '2.0.0' },
+        }, null, 2)
+      );
+      git(tmpDir, ['add', 'package.json']);
+      git(tmpDir, ['commit', '-m', 'init']);
+      const rootSha = git(tmpDir, ['rev-parse', 'HEAD']);
+      assert.equal(hasPackageJsonDependencyChange(tmpDir, rootSha), false, 'root commit has no parent');
+
+      // Reorder dependency keys + edit scripts only -> false
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          name: 'demo',
+          version: '1.0.0',
+          scripts: { lint: 'eslint .' },
+          dependencies: { b: '2.0.0', a: '1.0.0' },
+        }, null, 2)
+      );
+      git(tmpDir, ['add', 'package.json']);
+      git(tmpDir, ['commit', '-m', 'chore: scripts and reorder keys']);
+      const reorderSha = git(tmpDir, ['rev-parse', 'HEAD']);
+      assert.equal(hasPackageJsonDependencyChange(tmpDir, reorderSha), false);
+
+      // Add overrides -> true
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({
+          name: 'demo',
+          version: '1.0.0',
+          scripts: { lint: 'eslint .' },
+          dependencies: { b: '2.0.0', a: '1.0.0' },
+          overrides: { minimist: '1.2.8' },
+        }, null, 2)
+      );
+      git(tmpDir, ['add', 'package.json']);
+      git(tmpDir, ['commit', '-m', 'chore(deps): add minimist override']);
+      const overrideSha = git(tmpDir, ['rev-parse', 'HEAD']);
+      assert.equal(hasPackageJsonDependencyChange(tmpDir, overrideSha), true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
 });

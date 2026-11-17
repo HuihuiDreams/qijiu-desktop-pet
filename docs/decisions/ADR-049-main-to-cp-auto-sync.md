@@ -20,7 +20,7 @@ Accepted
 8. **合并提交**：按 main 第一父提交遍历；合并提交作为一个整体，以第一父提交为基准评估与 cherry-pick，保留冲突解决结果。被合并提交中的显式跳过指令同样拒绝整个合并提交。
 9. **仅属于 main 的工作文档**：`MAIN_ONLY_WORKING_DOC_FILES`（目前是 `docs/plan/audit-verification-remediation-plan.md`）与同步基建文件一样，在 cherry-pick 时被丢弃，且只改动它们的提交判定为不适用。该文件只记录 main 的修复进度，目标分支没有它；被整体跳过的提交（如修改 workflow 的提交）对它的改动丢失后，后续提交的上下文就会在目标分支冲突。
 10. **文档冲突不阻塞代码同步**：`docs/**/*.md` 在目标分支有意分叉（例如好兆头分支没有 `docs/git-workflow.md` 的同步章节），cherry-pick 时这类文件的冲突改为保留目标分支版本，代码部分照常同步，并在报告的说明里列出被跳过的文档。非文档文件的冲突仍然回滚当前提交并停止批次。
-11. **纯锁文件冲突自动重生成**：当分支间传递依赖锁定版本轻微漂移导致 `package-lock.json` 冲突时，若 `package.json` 已在本提交中修改且无冲突、唯一剩余的非文档/非日志冲突仅为 `package-lock.json`，且目标分支与来源提交均存在该锁文件，则在恢复目标分支锁文件与好兆头包身份后运行 `npm install --package-lock-only --ignore-scripts` 就地重生成锁文件，并由后续 `npm ci` 与 `npm test` 门禁验证；未修改 `package.json` 的纯锁文件提交或伴随其他文件冲突时仍回滚并停止批次，防止传递依赖安全更新被静默丢弃。
+11. **纯锁文件冲突自动重生成**：当分支间传递依赖锁定版本轻微漂移导致 `package-lock.json` 冲突时，若 `package.json` 的依赖声明字段（`dependencies` / `devDependencies` / `overrides` 等，不含纯 `scripts` 或元信息修改）在本提交中实际发生变更且无冲突、唯一剩余的非文档/非日志冲突仅为 `package-lock.json`，且目标分支与来源提交均存在该锁文件，则在恢复目标分支锁文件与好兆头包身份后运行 `npm install --package-lock-only --ignore-scripts` 就地重生成锁文件，并核对来源提交 `package-lock.json` 中新增或升级的依赖版本均已保留在重生成后的锁文件中，最后再交由 `npm ci` 与 `npm test` 门禁验证；若来源依赖升级未保留（如 npm 保留了满足范围的旧传递依赖）、仅修改了 `package.json` 非依赖字段、属于纯锁文件升级或伴随其他文件冲突，则回滚并阻塞本次同步。
 
 ## Alternatives Considered
 以下取舍均来自上文 Context 与 Decision 的理由，此处集中列出被放弃的方案：

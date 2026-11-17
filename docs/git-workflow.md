@@ -137,7 +137,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 3. **`CHANGELOG.md` 与包身份智能合并**：
    - 自动以全文上下文（`-U100000`）提取本次提交在 `CHANGELOG.md` 的 `## [Unreleased]` 下**新增**的日志条目，过滤含七九专属文案（`岳七` / `沈九` / `苍穹静修` 等）的 bullet，按分类（`Added` / `Changed` / `Fixed` / `Removed` / `Security`）无冲突并入好兆头分支的 `CHANGELOG.md`（注：仅同步新增 bullet 条目，若提交改写或删除了已有 bullet，则整份 CHANGELOG 变更都不同步、保留好兆头分支原样，以免产生重复条目），且保证不产生重复分类标题。
    - 当提交涉及 `package.json` 或 `package-lock.json` 依赖更新时，自动保护并还原好兆头分支专属的应用身份（`good-omens-desktop-pet`、`1.0.0`、`com.deskpet.good-omens` 等）。
-   - 当 `package.json` 合并无冲突、commit 确实修改了 `package.json`，且唯一剩余的非文档/非日志冲突是 `package-lock.json` 时，自动检出目标分支锁文件与好兆头包身份并执行 `npm install --package-lock-only --ignore-scripts` 就地重生成锁文件，再交由 `npm ci` 与 `npm test` 门禁验证；未修改 `package.json` 的纯锁文件冲突或伴随其他文件冲突时仍阻塞回滚。
+   - 当 `package.json` 合并无冲突、commit 确实修改了 `package.json` 中的依赖解析字段（`dependencies` / `devDependencies` / `optionalDependencies` / `peerDependencies` / `peerDependenciesMeta` / `bundleDependencies` / `bundledDependencies` / `overrides` / `workspaces`），且唯一剩余的非文档/非日志冲突是 `package-lock.json` 时，自动检出目标分支锁文件与好兆头包身份并执行 `npm install --package-lock-only --ignore-scripts` 就地重生成锁文件，随后校验来源提交在 `package-lock.json` 中新增或升级的包版本是否全部保留（若有任何升级被旧锁文件吞掉则立即回滚阻塞），再交由 `npm ci` 与 `npm test` 门禁验证；仅修改 `scripts` 等非依赖字段的 `package.json` 改动、未修改 `package.json` 的纯锁文件冲突或伴随其他文件冲突时仍阻塞回滚。
 4. **临时 Worktree 隔离、单提交回滚与单元测试门禁**：
    - 全程在临时 `git worktree` 中执行合并与验证，绝不切换或污染当前主工作区分支。
    - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，回滚该条提交并停止批次，工作流标记失败；后续运行从最后同步标记重试，尚无标记时从共同祖先恢复。每条验证通过后立即向远端推送，并在 GitHub Actions Summary 输出报告。

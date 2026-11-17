@@ -842,9 +842,225 @@ function runNpmCommand(args, cwd, env = process.env) {
   });
 }
 
+const DEPENDENCY_PACKAGE_FIELDS = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+  'peerDependenciesMeta',
+  'bundleDependencies',
+  'bundledDependencies',
+  'overrides',
+  'workspaces',
+];
+
+function canonicalizeJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map(canonicalizeJsonValue);
+  }
+  if (value && typeof value === 'object') {
+    const sorted = {};
+    for (const key of Object.keys(value).sort()) {
+      sorted[key] = canonicalizeJsonValue(value[key]);
+    }
+    return sorted;
+  }
+  return value;
+}
+
+function readJsonAtGitRev(cwd, rev, filePath) {
+  try {
+    const content = runGit(['show', `${rev}:${filePath}`], { cwd });
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+function hasPackageJsonDependencyChange(repoRoot, commitSha) {
+  const afterPkg = readJsonAtGitRev(repoRoot, commitSha, 'package.json');
+  const beforePkg = readJsonAtGitRev(repoRoot, `${commitSha}^`, 'package.json');
+  if (!afterPkg || !beforePkg) {
+    return false;
+  }
+  return DEPENDENCY_PACKAGE_FIELDS.some(
+    (field) =>
+      JSON.stringify(canonicalizeJsonValue(beforePkg[field] ?? null)) !==
+      JSON.stringify(canonicalizeJsonValue(afterPkg[field] ?? null))
+  );
+}
+
+function parseSemver(versionStr) {
+  if (typeof versionStr !== 'string') return null;
+  const match = versionStr
+    .trim()
+    .match(/^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/);
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    prerelease: match[4] || null,
+  };
+}
+
+function comparePrerelease(preA, preB) {
+  const partsA = preA.split('.');
+  const partsB = preB.split('.');
+  const len = Math.max(partsA.length, partsB.length);
+  for (let i = 0; i < len; i++) {
+    const a = partsA[i];
+    const b = partsB[i];
+    if (a === undefined) return -1;
+    if (b === undefined) return 1;
+    if (a === b) continue;
+    const numA = /^\d+$/.test(a) ? Number(a) : null;
+    const numB = /^\d+$/.test(b) ? Number(b) : null;
+    if (numA !== null && numB !== null) return numA - numB;
+    if (numA !== null && numB === null) return -1;
+    if (numA === null && numB !== null) return 1;
+    return a < b ? -1 : 1;
+  }
+  return 0;
+}
+
+function compareSemver(versionA, versionB) {
+  const a = parseSemver(versionA);
+  const b = parseSemver(versionB);
+  if (!a || !b) return null;
+  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
+  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
+  if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
+  if (!a.prerelease && b.prerelease) return 1;
+  if (a.prerelease && !b.prerelease) return -1;
+  if (a.prerelease && b.prerelease) {
+    return comparePrerelease(a.prerelease, b.prerelease);
+  }
+  return 0;
+}
+
+function extractPackageNameFromLockPath(lockPath) {
+  const marker = 'node_modules/';
+  const idx = lockPath.lastIndexOf(marker);
+  if (idx === -1) return null;
+  return lockPath.slice(idx + marker.length) || null;
+}
+
+function getCandidateLockPaths(lockPath) {
+  const pkgName = extractPackageNameFromLockPath(lockPath);
+  if (!pkgName) return [lockPath];
+  const marker = 'node_modules/';
+  const candidates = [];
+  let searchEnd = lockPath.length;
+  while (searchEnd > 0) {
+    const idx = lockPath.lastIndexOf(marker, searchEnd - 1);
+    if (idx === -1) break;
+    candidates.push(`${lockPath.slice(0, idx)}${marker}${pkgName}`);
+    searchEnd = idx;
+  }
+  return candidates;
+}
+
+function findDroppedLockfileUpgrades({
+  sourceBeforeLock,
+  sourceAfterLock,
+  regeneratedLock,
+}) {
+  if (!sourceAfterLock?.packages || typeof sourceAfterLock.packages !== 'object') {
+    return ['来源 package-lock.json 缺少 packages 字段，无法校验升级'];
+  }
+  if (!regeneratedLock?.packages || typeof regeneratedLock.packages !== 'object') {
+    return ['重生成后的 package-lock.json 缺少 packages 字段，无法校验升级'];
+  }
+
+  const beforePackages =
+    sourceBeforeLock?.packages && typeof sourceBeforeLock.packages === 'object'
+      ? sourceBeforeLock.packages
+      : {};
+  const afterPackages = sourceAfterLock.packages;
+  const regenPackages = regeneratedLock.packages;
+
+  const issues = [];
+  for (const [lockPath, afterEntry] of Object.entries(afterPackages)) {
+    if (lockPath === '' || typeof afterEntry?.version !== 'string') continue;
+
+    const beforeEntry = beforePackages[lockPath];
+    const isAdded = !beforeEntry || typeof beforeEntry.version !== 'string';
+    if (!isAdded && beforeEntry.version === afterEntry.version) continue;
+
+    const sourceChangeCmp = isAdded
+      ? 1
+      : compareSemver(afterEntry.version, beforeEntry.version);
+    const expectsAtLeastSource = isAdded || sourceChangeCmp === 1;
+    const pkgName = extractPackageNameFromLockPath(lockPath);
+    const candidates = getCandidateLockPaths(lockPath);
+
+    let resolvedEntry = null;
+    for (const candidatePath of candidates) {
+      const entry = regenPackages[candidatePath];
+      if (entry && typeof entry.version === 'string') {
+        resolvedEntry = entry;
+        break;
+      }
+    }
+
+    if (resolvedEntry) {
+      if (expectsAtLeastSource) {
+        const cmp = compareSemver(resolvedEntry.version, afterEntry.version);
+        if (cmp === null ? resolvedEntry.version !== afterEntry.version : cmp < 0) {
+          issues.push(`${lockPath} (来源 ${afterEntry.version}, 重生成 ${resolvedEntry.version})`);
+        }
+      } else if (resolvedEntry.version !== afterEntry.version) {
+        issues.push(`${lockPath} (来源 ${afterEntry.version}, 重生成 ${resolvedEntry.version})`);
+      }
+      continue;
+    }
+
+    // Root hoisted entry may remain nested under dependents in CP's lockfile.
+    const sameNameEntries = pkgName
+      ? Object.entries(regenPackages)
+          .filter(([k, v]) => k !== '' && extractPackageNameFromLockPath(k) === pkgName && typeof v?.version === 'string')
+          .map(([, v]) => v.version)
+      : [];
+
+    if (sameNameEntries.length === 0) {
+      issues.push(`${lockPath} (来源 ${afterEntry.version}, 重生成后缺失)`);
+      continue;
+    }
+
+    const isRootPackagePath = lockPath === `node_modules/${pkgName}`;
+    if (!isRootPackagePath) {
+      issues.push(`${lockPath} (来源 ${afterEntry.version}, 作用域内未解析)`);
+      continue;
+    }
+
+    if (expectsAtLeastSource) {
+      const targetParsed = parseSemver(afterEntry.version);
+      const hasStaleSameMajor = sameNameEntries.some((ver) => {
+        const parsed = parseSemver(ver);
+        if (!targetParsed || !parsed || parsed.major !== targetParsed.major) return false;
+        const cmp = compareSemver(ver, afterEntry.version);
+        return cmp !== null && cmp < 0;
+      });
+      const hasSatisfying = sameNameEntries.some((ver) => {
+        const cmp = compareSemver(ver, afterEntry.version);
+        return cmp === null ? ver === afterEntry.version : cmp >= 0;
+      });
+      if (hasStaleSameMajor || !hasSatisfying) {
+        issues.push(`${lockPath} (来源 ${afterEntry.version}, 重生成 [${sameNameEntries.join(', ')}])`);
+      }
+    } else if (!sameNameEntries.includes(afterEntry.version)) {
+      issues.push(`${lockPath} (来源 ${afterEntry.version}, 重生成 [${sameNameEntries.join(', ')}])`);
+    }
+  }
+
+  return issues;
+}
+
 /**
  * Only regenerate `package-lock.json` when it is the sole remaining non-doc/non-changelog conflict
- * and the commit also updated `package.json` cleanly (so transitive-only lockfile bumps are never silently dropped).
+ * and the commit also changed dependency declarations in `package.json` (so script-only or
+ * transitive-only lockfile bumps cannot bypass upgrade checks).
  */
 function canRegenerateLockfileConflict({
   nonChangelogConflicts,
@@ -861,6 +1077,9 @@ function canRegenerateLockfileConflict({
     return false;
   }
   if (!fs.existsSync(path.join(worktreeDir, 'package.json'))) {
+    return false;
+  }
+  if (!hasPackageJsonDependencyChange(repoRoot, commitSha)) {
     return false;
   }
   const existsInCheckpoint = Boolean(
@@ -1181,6 +1400,21 @@ async function syncCommitsToCp({
         }
         try {
           lockfileUpdater(worktreeDir);
+          const sourceAfterLock = readJsonAtGitRev(repoRoot, sha, 'package-lock.json');
+          const sourceBeforeLock = readJsonAtGitRev(repoRoot, `${sha}^`, 'package-lock.json') || {
+            packages: {},
+          };
+          const regeneratedLock = JSON.parse(
+            fs.readFileSync(path.join(worktreeDir, 'package-lock.json'), 'utf8')
+          );
+          const droppedUpgrades = findDroppedLockfileUpgrades({
+            sourceBeforeLock,
+            sourceAfterLock,
+            regeneratedLock,
+          });
+          if (droppedUpgrades.length > 0) {
+            throw new Error(`未保留来源锁文件中的依赖升级: ${droppedUpgrades.join('; ')}`);
+          }
           runGit(['add', 'package.json', 'package-lock.json'], { cwd: worktreeDir });
           regeneratedLockfile = true;
         } catch (err) {
@@ -1476,6 +1710,8 @@ module.exports = {
   extractPackageIdentity,
   applyPackageIdentity,
   applyPackageLockIdentity,
+  hasPackageJsonDependencyChange,
+  findDroppedLockfileUpgrades,
   resolveCommitsToEvaluate,
   resolveSyncCliOptions,
   findLastSyncedMainCommit,
