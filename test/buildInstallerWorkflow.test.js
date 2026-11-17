@@ -26,3 +26,23 @@ test('Windows and macOS jobs both tolerate the other platform creating the draft
   assert.ok(macStart >= 0, 'macOS draft release creation must exist');
   assert.match(source.slice(macStart, macStart + 200), /\|\| gh release view "\$TAG"/);
 });
+
+test('Windows and macOS installer jobs run unit and integration tests before electron-builder', () => {
+  const windowsStart = source.indexOf('name: Build NSIS installer');
+  const macStart = source.indexOf('name: Build macOS installer');
+  assert.ok(windowsStart >= 0 && macStart > windowsStart, 'both installer jobs must exist');
+  const jobs = {
+    windows: source.slice(windowsStart, macStart),
+    macos: source.slice(macStart),
+  };
+  for (const [platform, job] of Object.entries(jobs)) {
+    const install = job.indexOf('run: npm ci');
+    const unit = job.indexOf('run: npm test');
+    const integration = job.indexOf('run: npm run test:integration');
+    const build = job.indexOf('npx electron-builder');
+    assert.ok(install >= 0, `${platform}: npm ci must exist`);
+    assert.ok(unit > install, `${platform}: npm test must run after npm ci`);
+    assert.ok(integration > unit, `${platform}: integration tests must run after unit tests`);
+    assert.ok(build > integration, `${platform}: electron-builder must run after tests`);
+  }
+});

@@ -12,7 +12,10 @@
   - [x] `updateManager.js` 的 `handleError` 按错误对象身份去重（`lastHandledError`）。electron-updater 6.8.11 在 `checkForUpdates`（`AppUpdater.js:271-272`）和 `downloadUpdate`（`AppUpdater.js:453/469`）失败时都先 `emit('error')` 再 reject 同一个对象。
   - [x] `test/updateManager.test.js` 覆盖检查失败、下载失败各只弹一次，以及不同错误对象仍分别提示。
   - [ ] 【Windows 待验证】打包版断网点「检查更新」只出现一个错误框。
-- [ ] **Task 2：发布流水线构建安装包前不跑测试**
+- [x] **Task 2：发布流水线构建安装包前不跑测试**
+  - [x] `build-installer.yml` 的 Windows 与 macOS 作业在 `npm ci` 后、`electron-builder` 前运行 `npm test` 与 `npm run test:integration`，与 `release-preflight.yml` 对齐；E2E 与安全审计仍只在预检中运行。
+  - [x] `test/buildInstallerWorkflow.test.js` 断言两个作业的步骤顺序；`docs/git-workflow.md` 同步。
+  - [ ] 【CI 待验证】下次运行 `Build Installers` 时确认两个平台的测试步骤通过。
 - [ ] **Task 3：右键菜单关闭后指针仍在宠物上时恢复点击穿透**
 - [ ] **Task 4：屏保启动早于 `interactionOverlayActive` 声明时抛 TDZ 错误**
 - [ ] **Task 5：`PomodoroService` 缺少行为测试**

@@ -96,6 +96,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
+
       - name: Detect signing mode
         shell: pwsh
         run: |
@@ -281,6 +287,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Generate protected skin assets
         run: npm run protect:assets
