@@ -250,7 +250,10 @@
   });
 
   // 清除当前互动覆盖层：皮肤切换与久坐提醒触发前都需要先清掉正在显示的覆盖层。
-  // 定义为具名函数声明（整体提升），供下方多处按引用共享，不必关心声明书写顺序。
+  // 定义为具名函数声明（整体提升），供下方多处按引用共享。
+  // 它读写的 interactionOverlayActive 必须在任何可能调用它的系统（尤其是屏保 IPC 订阅）
+  // 注册之前声明，否则早到的 screensaver-start 会在 let 暂时性死区内抛 ReferenceError。
+  let interactionOverlayActive = false; // 记录是否当前正在显示互动覆盖层
   function clearInteractionOverlay() {
     if (interactionOverlayActive) {
       interactionOverlayActive = false;
@@ -353,8 +356,6 @@
   window.electronAPI.onToggleStatusPanel(() => {
     statusBar.toggle(yueqi, shenjiu);
   });
-
-  let interactionOverlayActive = false; // 记录是否当前正在显示互动覆盖层
 
   window.electronAPI.onTogglePause((paused) => {
     isUserPaused = Boolean(paused);
