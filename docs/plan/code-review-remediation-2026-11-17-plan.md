@@ -24,7 +24,9 @@
 - [x] **Task 4：屏保启动早于 `interactionOverlayActive` 声明时抛 TDZ 错误**
   - [x] `src/app.js` 把 `let interactionOverlayActive` 移到 `clearInteractionOverlay` 定义之前，早于 `screensaverSystem.init()`。复核结论：异常发生在 IPC 回调内，不会中断启动，后果是屏保缺少居中、粒子层和起始位置记录，用户输入后正常结束。
   - [x] `test/interactionOverlayFlagOrder.test.js` 断言声明先于所有引用与屏保订阅。
-- [ ] **Task 5：`PomodoroService` 缺少行为测试**
+- [x] **Task 5：`PomodoroService` 缺少行为测试**
+  - [x] 新增 `test/pomodoroService.test.js`（`mock.timers` 驱动 `setInterval` 与 `Date`）：完成后 ticker 自停、恢复宠物焦点并刷新托盘各一次；重复启动只保留一个 ticker；停止后不再推送；超范围分钟数归一化后落盘；窗口销毁时跳过推送。复核结论：此前 `appLifecycle.behavior.test.js` 把整个模块 mock 掉，实际覆盖为 0。
+  - [x] 变异验证：删掉 `startPomodoroTicker` 开头的 `stopPomodoroTicker()` 或完成分支里的 `stopPomodoroTicker()`，对应用例都会失败。
 
 ## 复核后不采纳的建议
 

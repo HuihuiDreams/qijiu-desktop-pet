@@ -542,6 +542,7 @@ npm run test:e2e:ci
 - `test/trayManager.test.js`：托盘菜单结构、各菜单项交互、语言切换与番茄钟托盘标签状态流转（依赖 `getPomodoroSnapshot()` 驱动 running/completed/idle 三种标签）。
 - `test/petWindow.test.js`：宠物窗口 IPC 注册、`set-ignore-mouse-events` 发件方鉴权与鼠标穿透开关归一化。
 - `test/skinService.test.js`：皮肤扫描/缓存、当前皮肤状态、选肤器请求鉴权与番茄钟素材解析。
+- `test/pomodoroService.test.js`：番茄钟 ticker 生命周期（完成后自停并恢复宠物焦点、刷新托盘，重复启动只保留一个 ticker，停止后不再推送）、分钟数归一化落盘与番茄钟窗口销毁时跳过推送。
 
 ### 4.3 其他自动化覆盖
 
