@@ -519,10 +519,11 @@ DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗
 npm test
 ```
 
-Playwright/Electron 字体检查使用独立运行器，避免被 Node.js test runner 误加载：
+Playwright/Electron E2E 与字体检查使用独立运行器，避免被 Node.js test runner 误加载（`test:e2e:ci` 运行无原生弹窗依赖的核心 E2E 子集并接入 `Release Preflight`）：
 
 ```bash
 npm run test:font
+npm run test:e2e:ci
 ```
 
 ### 4.1 单元测试

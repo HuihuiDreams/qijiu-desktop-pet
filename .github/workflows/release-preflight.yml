@@ -164,6 +164,9 @@ jobs:
       - name: Run integration tests
         run: npm run test:integration
 
+      - name: Run core Electron E2E tests
+        run: npm run test:e2e:ci
+
       - name: Verify installer prerequisites
         run: npm run verify:installer
 
@@ -209,6 +212,9 @@ jobs:
 
       - name: Run integration tests
         run: npm run test:integration
+
+      - name: Run core Electron E2E tests
+        run: npm run test:e2e:ci
 
       - name: Security audit
         run: npm audit --omit=dev --audit-level=high

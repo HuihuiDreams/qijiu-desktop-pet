@@ -11,6 +11,7 @@
     "check:adrs": "node scripts/check_adrs.js",
     "test:font": "playwright test font.spec.js",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test startup.spec.js settingsWindow.spec.js ipcIsolation.spec.js font.spec.js",
     "qa:electron:smoke": "node tools/playwright-electron-smoke.js",
     "qa:electron:performance": "node tools/measure-electron-performance.js",
     "protect:assets": "node scripts/protect-assets.js",

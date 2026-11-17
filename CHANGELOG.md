@@ -6,6 +6,7 @@
 
 ### Changed
 - **文档与用户说明对齐托盘菜单及统一设置结构 (`README & User Readme Feature Order Aligned With Tray & Settings`)**：重排 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 的功能章节顺序，按托盘菜单（苍穹静修 → 选择皮肤与显示）及统一设置「外观与交互 → 陪伴与守护 → 系统偏好」顺序（界面感知 → 天气感知与时空同步 → 久坐提醒 → CP 高甜屏保 → 会议自动隐藏 → 更新说明 → 养成数值）组织；并同步更新 `README.md` 中过时的托盘菜单列表与设置入口描述为 `⚙️ 设置…` 三标签页路径。
+- **Release Preflight 双平台接入核心 Electron E2E (`Core Electron E2E in Windows & macOS Release Preflight`)**：新增 `npm run test:e2e:ci` 运行无原生托盘弹窗/焦点抢占依赖的核心 E2E 用例（`startup.spec.js`、`settingsWindow.spec.js`、`ipcIsolation.spec.js`、`font.spec.js`），并接入 `.github/workflows/release-preflight.yml` 的 Windows 与 macOS 预检作业；同步更新 `test/releasePreflightWorkflow.test.js`、`docs/git-workflow.md` 与 `docs/structure.md`（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
 
 ### Fixed
 - **macOS 待批准自启动开关无法关闭修复 (`macOS Pending-Approval Auto-Launch Toggle Off`)**：修复 macOS 登录项处于 `requires-approval`（`enabled: false, preference: true, pendingApproval: true`）时，`src/settingsWindow.js` 仅按 `enabled` 渲染 `aria-checked="false"`，导致点击开关执行 `!isSwitchOn()` 始终送出 `true` 而无法撤销偏好的问题；开关展示改为 `enabled || pendingApproval`（不影响 Windows 任务管理器禁用时保持关闭态的判断），点击即可正常取消待批准请求，补充渲染与服务层回归测试。

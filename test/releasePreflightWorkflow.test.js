@@ -73,3 +73,8 @@ test('the Windows and macOS preflight jobs both run the integration tests', () =
   assert.match(jobs.preflight, /run: npm run test:integration/);
   assert.match(jobs['preflight-mac'], /run: npm run test:integration/);
 });
+
+test('the Windows and macOS preflight jobs both run the core Electron E2E suite', () => {
+  assert.match(jobs.preflight, /run: npm run test:e2e:ci/);
+  assert.match(jobs['preflight-mac'], /run: npm run test:e2e:ci/);
+});
