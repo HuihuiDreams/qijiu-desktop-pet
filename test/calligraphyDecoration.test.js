@@ -28,11 +28,12 @@ test('settings.css pairs both vertical names as a non-interactive ink watermark'
   const shared = css.match(/\.settings-body::before,\s*\.settings-body::after\s*\{([^}]*)\}/)?.[1] || '';
   assert.match(shared, /pointer-events:\s*none/);
   assert.match(shared, /z-index:\s*-1/);
+  assert.match(shared, /background:\s*var\(--color-ink\)/);
   assert.match(shared, /mask-composite:\s*intersect/);
   assert.match(shared, /animation:\s*settingsNameInk\b/);
   assert.match(css, /\.settings-body::before\s*\{[^}]*calligraphy-yqy\.webp/);
   assert.match(css, /\.settings-body::after\s*\{[^}]*calligraphy-sqq\.webp/);
-  assert.match(css, /html\[data-locale="en"\]\s+\.settings-body::before,\s*html\[data-locale="en"\]\s+\.settings-body::after\s*\{[^}]*opacity:\s*0\.045/);
+  assert.doesNotMatch(css, /html\[data-locale="en"\]\s+\.settings-body/);
   assert.match(css, /@keyframes settingsNameInk\s*\{/);
 
   const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?animation:\s*none)/)?.[1] || '';
