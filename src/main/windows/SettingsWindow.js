@@ -22,12 +22,18 @@ function normalizeSettingsTab(tab) {
   return VALID_SETTINGS_TABS.has(tab) ? tab : 'appearance';
 }
 
+function clampBoundLength(preferred, available) {
+  return Number.isFinite(available) && available > 0
+    ? Math.max(1, Math.min(preferred, Math.floor(available)))
+    : preferred;
+}
+
 function getInitialSettingsWindowBounds() {
-  const width = SETTINGS_WINDOW_WIDTH;
-  const height = SETTINGS_WINDOW_HEIGHT;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+  const width = clampBoundLength(SETTINGS_WINDOW_WIDTH, areaWidth);
+  const height = clampBoundLength(SETTINGS_WINDOW_HEIGHT, areaHeight);
 
   const rawX = Math.round(x + (areaWidth - width) / 2);
   const rawY = Math.round(y + (areaHeight - height) / 2);

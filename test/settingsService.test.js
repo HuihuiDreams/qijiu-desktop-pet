@@ -12,11 +12,20 @@ const BREAK_REMINDER_CONTROLLER_PATH = require.resolve('../src/main/services/Bre
 const LOCALE_SERVICE_PATH = require.resolve('../src/main/services/LocaleService');
 const SKIN_SERVICE_PATH = require.resolve('../src/main/services/SkinService');
 
-function createFakeIpcMain() {
+function createFakeIpcMain({ throwOnDuplicateHandle = false } = {}) {
   const handlers = new Map();
+  const removedChannels = [];
   return {
     handlers,
+    removedChannels,
+    removeHandler(channel) {
+      removedChannels.push(channel);
+      handlers.delete(channel);
+    },
     handle(channel, handler) {
+      if (throwOnDuplicateHandle && handlers.has(channel)) {
+        throw new Error(`Attempted to register a second handler for '${channel}'`);
+      }
       handlers.set(channel, handler);
     },
     on() {},
@@ -67,7 +76,7 @@ function createFakeStore(initialData = {}) {
 }
 
 function createSettingsServiceFixture(overrides = {}) {
-  const ipcMain = createFakeIpcMain();
+  const ipcMain = createFakeIpcMain({ throwOnDuplicateHandle: Boolean(overrides.throwOnDuplicateHandle) });
   const settingsWindow = createFakeWindow(10);
   const otherWindow = createFakeWindow(20);
   const store = createFakeStore(overrides.initialStore || {});
@@ -238,6 +247,22 @@ test('SettingsService rejects unauthorized callers across every settings-* IPC c
   const destroyedRes = await ipcMain.invoke('settings-reset-pet-scale', { sender: settingsWindow.webContents });
   assert.equal(destroyedRes.success, false);
   assert.equal(destroyedRes.error.code, 'FORBIDDEN');
+});
+
+test('SettingsService.init safely replaces existing IPC handlers when called repeatedly', async () => {
+  const fixture = createSettingsServiceFixture({ throwOnDuplicateHandle: true });
+  const originalChannels = Array.from(fixture.ipcMain.handlers.keys());
+  assert.equal(originalChannels.length, 13);
+
+  fixture.SettingsService.init({
+    ipcMain: fixture.ipcMain,
+    windowManager: fixture.windowManager,
+    StoreManager: { getStore: () => fixture.store },
+  });
+
+  assert.deepEqual(fixture.ipcMain.removedChannels.slice(-13), originalChannels);
+  const snapshot = await fixture.ipcMain.invoke('settings-get-snapshot', fixture.settingsEvent);
+  assert.ok(snapshot && typeof snapshot === 'object');
 });
 
 test('SettingsService.getSnapshot returns all 7 config groups, confirmed skin, and platform flags', async () => {

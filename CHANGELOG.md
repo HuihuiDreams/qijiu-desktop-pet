@@ -7,6 +7,12 @@
 ### Changed
 - **文档与用户说明对齐托盘菜单及统一设置结构 (`README & User Readme Feature Order Aligned With Tray & Settings`)**：重排 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 的功能章节顺序，按托盘菜单（苍穹静修 → 选择皮肤与显示）及统一设置「外观与交互 → 陪伴与守护 → 系统偏好」顺序（界面感知 → 天气感知与时空同步 → 久坐提醒 → CP 高甜屏保 → 会议自动隐藏 → 更新说明 → 养成数值）组织；并同步更新 `README.md` 中过时的托盘菜单列表与设置入口描述为 `⚙️ 设置…` 三标签页路径。
 
+### Fixed
+- **macOS 待批准自启动开关无法关闭修复 (`macOS Pending-Approval Auto-Launch Toggle Off`)**：修复 macOS 登录项处于 `requires-approval`（`enabled: false, preference: true, pendingApproval: true`）时，`src/settingsWindow.js` 仅按 `enabled` 渲染 `aria-checked="false"`，导致点击开关执行 `!isSwitchOn()` 始终送出 `true` 而无法撤销偏好的问题；开关展示改为 `enabled || pendingApproval`（不影响 Windows 任务管理器禁用时保持关闭态的判断），点击即可正常取消待批准请求，补充渲染与服务层回归测试。
+- **统一设置窗口宽高按工作区安全夹紧 (`SettingsWindow Dimensions Clamped to WorkArea`)**：修复 `SettingsWindow.getInitialSettingsWindowBounds()` 仅夹紧 `x`/`y` 坐标而保持固定 `520×456` 尺寸、在高 DPI 或小尺寸工作区下窗口底部超出工作区且不触发 `.settings-tabpanel` 内部滚动的问题；现同步按 `display.workArea` 夹紧初始宽高并同步更新 [ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `test/settingsWindow.test.js`。
+- **设置页档位列表由快照驱动及 IPC 幂等清理 (`Settings Allowed-Lists Snapshot Sync & Idempotent IPC Init`)**：`src/settingsWindow.js` 改为根据快照中的 `breakReminder.allowedIntervals` 与 `screensaver.allowedThresholds` 动态对齐分段按钮（避免与 `src/settings.html` 静态列表漂移）；`SettingsService.init()` 注册 `settings-*` handler 前先调用 `removeHandler()`，防止重复初始化时触发 Electron 二次注册异常；补充对应测试。
+- **选肤弹窗 E2E 初始化与状态清理竞态修复 (`Skin Selector E2E Locale Init & Status Preservation`)**：`src/skinSelectorWindow.js` 的 `renderGallery` 仅在 `resetSelection: true` 时清空 `#skin-selector-status`，避免异步 `WindowI18n.init` 或语言刷新重建卡片时误清错误提示；`test/e2e/skinSelector.spec.js` 在交互前显式等待 `data-locale` 与卡片就绪、并在最小化前等待 180ms 置顶脉冲回落。
+
 ## [0.12.0] - 2026-11-16
 
 ### Added

@@ -64,6 +64,16 @@ function createFakeElement(id, dataset = {}) {
     querySelectorAll() {
       return this.children;
     },
+    append(...items) {
+      for (const item of items) {
+        if (typeof item === 'string') continue;
+        this.children.push(item);
+      }
+    },
+    replaceChildren(...items) {
+      this.children.length = 0;
+      this.children.push(...items);
+    },
     focus() {
       if (this.disabled) return;
       this.focused = true;
@@ -218,6 +228,7 @@ function loadSettingsRenderer(options = {}) {
   const sandbox = {
     document: {
       getElementById: (id) => elements.get(id) || null,
+      ...(options.withCreateElement ? { createElement: (tag) => createFakeElement(tag) } : {}),
     },
     window: {
       electronAPI,
@@ -457,20 +468,72 @@ test('autoLaunch reverts on failure and displays pendingApproval notice', async 
   assert.equal(failingEnv.elements.get('auto-launch-status').textContent, 'settingsAutoLaunchError');
 
   const pendingEnv = loadSettingsRenderer({
-    changeAutoLaunch: async () => ({
-      success: true,
-      data: {
-        enabled: false,
-        pendingApproval: true,
-        snapshot: makeSnapshot({
-          autoLaunch: { enabled: false, preference: true, pendingApproval: true },
-        }),
-      },
-    }),
+    changeAutoLaunch: async (enabled) => {
+      const next = Boolean(enabled);
+      if (next) {
+        return {
+          success: true,
+          data: {
+            enabled: false,
+            pendingApproval: true,
+            snapshot: makeSnapshot({
+              autoLaunch: { enabled: false, preference: true, pendingApproval: true },
+            }),
+          },
+        };
+      }
+      return {
+        success: true,
+        data: {
+          enabled: false,
+          pendingApproval: false,
+          snapshot: makeSnapshot({
+            autoLaunch: { enabled: false, preference: false, pendingApproval: false },
+          }),
+        },
+      };
+    },
   });
   await new Promise((r) => setImmediate(r));
-  await Promise.all(pendingEnv.elements.get('auto-launch-switch').dispatch('click'));
+  const pendingSwitch = pendingEnv.elements.get('auto-launch-switch');
+  await Promise.all(pendingSwitch.dispatch('click'));
+  assert.equal(pendingSwitch.getAttribute('aria-checked'), 'true');
   assert.equal(pendingEnv.elements.get('auto-launch-status').textContent, 'settingsAutoLaunchPendingApproval');
+
+  // Clicking again while pendingApproval must request false and clear the pending notice
+  await Promise.all(pendingSwitch.dispatch('click'));
+  assert.equal(pendingSwitch.getAttribute('aria-checked'), 'false');
+  assert.equal(pendingEnv.elements.get('auto-launch-status').textContent, '');
+});
+
+test('autoLaunch opened in macOS pendingApproval state renders on and can be toggled off', async () => {
+  const sentValues = [];
+  const env = loadSettingsRenderer({
+    snapshot: { autoLaunch: { enabled: false, preference: true, pendingApproval: true } },
+    changeAutoLaunch: async (enabled) => {
+      sentValues.push(enabled);
+      return {
+        success: true,
+        data: {
+          enabled: false,
+          pendingApproval: false,
+          snapshot: makeSnapshot({
+            autoLaunch: { enabled: false, preference: false, pendingApproval: false },
+          }),
+        },
+      };
+    },
+  });
+  await new Promise((r) => setImmediate(r));
+
+  const sw = env.elements.get('auto-launch-switch');
+  assert.equal(sw.getAttribute('aria-checked'), 'true');
+  assert.equal(env.elements.get('auto-launch-status').textContent, 'settingsAutoLaunchPendingApproval');
+
+  await Promise.all(sw.dispatch('click'));
+  assert.deepEqual(sentValues, [false]);
+  assert.equal(sw.getAttribute('aria-checked'), 'false');
+  assert.equal(env.elements.get('auto-launch-status').textContent, '');
 });
 
 test('locale switch, external push updates, and skin selector focus restoration', async () => {
@@ -714,4 +777,42 @@ test('rapid auto-launch clicks where the first fails and the second succeeds cle
   await Promise.all([...firstClick, ...secondClick]);
   assert.equal(sw.getAttribute('aria-checked'), 'true');
   assert.equal(env.elements.get('auto-launch-status').textContent, '');
+});
+
+test('segment buttons rebuild from snapshot allowedIntervals/allowedThresholds and static HTML matches backend lists', async () => {
+  const html = readSource('src/settings.html');
+  const { SCREENSAVER_ALLOWED_IDLE_MINUTES } = require('../src/main/services/screensaverAllowedMinutes');
+  const htmlIntervals = Array.from(html.matchAll(/data-interval="(\d+)"/g), (m) => Number(m[1]));
+  const htmlThresholds = Array.from(html.matchAll(/data-threshold="(\d+)"/g), (m) => Number(m[1]));
+  assert.deepEqual(htmlIntervals, [30, 45, 60, 90, 120]);
+  assert.deepEqual(htmlThresholds, [...SCREENSAVER_ALLOWED_IDLE_MINUTES]);
+
+  const env = loadSettingsRenderer({
+    withCreateElement: true,
+    snapshot: {
+      breakReminder: { enabled: true, intervalMinutes: 45, allowedIntervals: [15, 45, 75] },
+      screensaver: { enabled: true, idleThresholdMinutes: 10, allowedThresholds: [2, 10] },
+    },
+  });
+  await flush();
+
+  const breakButtons = env.elements.get('break-reminder-intervals').children;
+  const thresholdButtons = env.elements.get('screensaver-thresholds').children;
+  assert.deepEqual(breakButtons.map((b) => Number(b.dataset.interval)), [15, 45, 75]);
+  assert.deepEqual(thresholdButtons.map((b) => Number(b.dataset.threshold)), [2, 10]);
+  assert.equal(breakButtons[1].getAttribute('aria-pressed'), 'true');
+  assert.equal(thresholdButtons[1].getAttribute('aria-pressed'), 'true');
+
+  await Promise.all(breakButtons[0].dispatch('click'));
+  await Promise.all(thresholdButtons[0].dispatch('click'));
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(env.calls.filter(([name]) => name === 'setBreakReminder'))),
+    [['setBreakReminder', { intervalMinutes: 15 }]],
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(env.calls.filter(([name]) => name === 'setScreensaver'))),
+    [['setScreensaver', { idleThresholdMinutes: 2 }]],
+  );
+  assert.equal(breakButtons[0].getAttribute('aria-pressed'), 'true');
+  assert.equal(thresholdButtons[0].getAttribute('aria-pressed'), 'true');
 });

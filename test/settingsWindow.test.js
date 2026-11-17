@@ -213,8 +213,9 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
   try {
     const win = mod.openSettingsWindow('companion');
     assert.equal(windowManager.settingsWindow, win);
-    assert.equal(win.options.width, 520);
-    assert.equal(win.options.height, 456);
+    // WorkArea smaller than preferred 520x456 clamps both dimensions and origin into workArea
+    assert.equal(win.options.width, 400);
+    assert.equal(win.options.height, 360);
     assert.equal(win.options.transparent, true);
     assert.equal(win.options.frame, false);
     assert.equal(win.options.alwaysOnTop, false);
@@ -225,7 +226,6 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
     assert.equal(win.options.webPreferences.contextIsolation, true);
     assert.equal(win.options.webPreferences.nodeIntegration, false);
 
-    // WorkArea smaller than window clamps safely to workArea origin (x: 100, y: 50)
     assert.equal(win.options.x, 100);
     assert.equal(win.options.y, 50);
 
@@ -273,6 +273,8 @@ test('SettingsWindow: native close flushes pending pet scale preview once', () =
   const { mod, windowManager, flushCalls } = loadSettingsWindowHarness();
   try {
     const win = mod.openSettingsWindow();
+    assert.equal(win.options.width, 520);
+    assert.equal(win.options.height, 456);
     win.close();
     assert.deepEqual(flushCalls, ['flushPreview']);
     assert.equal(windowManager.settingsWindow, null);

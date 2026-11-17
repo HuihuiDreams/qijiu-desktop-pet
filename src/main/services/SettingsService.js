@@ -135,6 +135,7 @@ function init(dependencies = {}) {
   const ipc = deps.ipcMain || electronIpcMain;
 
   if (ipc && typeof ipc.handle === 'function') {
+    clearIpcHandlers(ipc);
     ipc.handle('settings-get-snapshot', (event) => {
       if (!isSenderWindow(event, deps.windowManager?.settingsWindow)) return null;
       return getSnapshot();
@@ -417,6 +418,29 @@ function init(dependencies = {}) {
         storeUnsubscribers.push(unsub);
       }
     }
+  }
+}
+
+// Placed after init() so static IPC permission checks match the ipc.handle() registrations first.
+function clearIpcHandlers(ipc) {
+  if (!ipc || typeof ipc.removeHandler !== 'function') return;
+  const channels = [
+    'settings-get-snapshot',
+    'settings-preview-pet-scale',
+    'settings-commit-pet-scale',
+    'settings-reset-pet-scale',
+    'settings-set-window-awareness',
+    'settings-set-weather-enabled',
+    'settings-set-city-name',
+    'settings-set-break-reminder',
+    'settings-set-screensaver',
+    'settings-set-locale',
+    'settings-set-auto-launch',
+    'settings-open-skin-selector',
+    'settings-close-window',
+  ];
+  for (const channel of channels) {
+    ipc.removeHandler(channel);
   }
 }
 
