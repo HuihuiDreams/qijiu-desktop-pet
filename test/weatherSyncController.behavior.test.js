@@ -1020,3 +1020,90 @@ test('WeatherSyncController still schedules a 10-minute retry when the initial f
   await flushMicrotasks();
   assert.equal(fetchCalls, 2, 'retry must fire after the initial fetch throws');
 });
+
+function setupSupersedeScenario(t, fetchWeather) {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 6_000_000 });
+  const scheduled = [];
+  const mockedSetTimeout = globalThis.setTimeout;
+  t.mock.method(globalThis, 'setTimeout', (fn, ms, ...args) => {
+    scheduled.push({ fn, ms });
+    return mockedSetTimeout(fn, ms, ...args);
+  });
+
+  const Controller = loadFreshController({
+    ipcMain: createIpcMain(),
+    fetchWeather,
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  }, null);
+  Controller.init(deps);
+  return { Controller, scheduled, sent };
+}
+
+test('WeatherSyncController ignores a retry timer callback that fires after a newer startWeatherSync', async (t) => {
+  const fallback = { active: true, weatherCode: -1, fallback: true };
+  const live = { active: true, weatherCode: 3, fallback: false };
+  const responses = [fallback, fallback, live]; // first start: initial + cold-start handshake; second start: live
+  let fetchCalls = 0;
+  const { Controller, scheduled } = setupSupersedeScenario(t, async () => {
+    fetchCalls += 1;
+    return responses.shift();
+  });
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 2);
+  assert.equal(scheduled.length, 1);
+  const staleRetry = scheduled[0];
+  assert.equal(staleRetry.ms, 10 * 60 * 1000);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 3);
+  assert.equal(scheduled.length, 2, 'new start schedules its own timer');
+
+  await staleRetry.fn(); // simulate the old callback already dequeued when the new start ran
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 3, 'stale callback must not fetch');
+  assert.equal(scheduled.length, 2, 'stale callback must not schedule a timer');
+});
+
+test('WeatherSyncController drops an in-flight retry result when a newer startWeatherSync supersedes it', async (t) => {
+  const fallback = { active: true, weatherCode: -1, fallback: true };
+  const live = { active: true, weatherCode: 3, fallback: false };
+  const stale = { active: true, weatherCode: 99, fallback: false };
+  let releaseRetry;
+  const retryGate = new Promise((resolve) => { releaseRetry = resolve; });
+  const responses = [fallback, fallback, () => retryGate, live];
+  let fetchCalls = 0;
+  const { Controller, scheduled, sent } = setupSupersedeScenario(t, async () => {
+    fetchCalls += 1;
+    const next = responses.shift();
+    return typeof next === 'function' ? next() : next;
+  });
+
+  await Controller.startWeatherSync();
+  assert.equal(scheduled.length, 1);
+
+  const retryRun = scheduled[0].fn(); // retry callback now awaiting fetchWeather
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 3);
+
+  await Controller.startWeatherSync(); // supersedes the in-flight retry
+  assert.equal(fetchCalls, 4);
+  const timersAfterNewStart = scheduled.length;
+  const sentAfterNewStart = sent.length;
+
+  releaseRetry(stale);
+  await retryRun;
+  await flushMicrotasks();
+
+  assert.equal(scheduled.length, timersAfterNewStart, 'stale retry must not schedule a timer');
+  assert.equal(sent.length, sentAfterNewStart, 'stale retry result must not be sent');
+  assert.ok(!sent.some(([, payload]) => payload === stale));
+});
