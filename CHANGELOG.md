@@ -44,6 +44,7 @@
 - **Windows Release Preflight 接入集成测试 (`Windows Release Preflight Runs Integration Tests`)**：在 Windows 本机验证 `npm run test:integration`（19 个用例通过）后，在 `.github/workflows/release-preflight.yml` 的 Windows `preflight` 作业中新增 `npm run test:integration` 步骤，使两端预检检查对齐，并同步更新 `test/releasePreflightWorkflow.test.js`、`docs/git-workflow.md` 与发布技能说明；完整 CI 实跑仍待在 GitHub Actions 触发观察（[审核复核 M6](docs/code-review-audit-verification-2026-11-13.md)）。
 - **托盘菜单精简与设置入口收敛 (`Streamlined Tray Menu & Unified Settings Entry`)**：将调整大小、界面感知、天气同步及城市设置、久坐提醒及提醒间隔、高甜屏保及触发等待、界面语言与开机自动启动 7 项配置从系统托盘菜单迁入统一设置窗口，在 `TrayManager.js` 仅保留实时控制、状态面板、专注窗口、选肤入口、`⚙️ 设置…`、更新与生命周期项；并迁移受影响的单测与集成测试套件至 `SettingsWindow` / `SettingsService` 契约（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
 - **英文界面感知文案统一为 Window Sensing (`Unified English Window Sensing Wording`)**：统一设置窗口中的英文开关名称与不可用提示由 `Realm Awareness`（七九版修仙用语）改为 `Window Sensing`，与好兆头分支英文 readme 一致。
+- **基于 SkillOpt 迭代完善 AGENTS.md 开发规范 (`AGENTS.md Rules Refined via SkillOpt`)**：更新 `AGENTS.md`，补充外部审核/计划核查时的分支、基线、实测与误报排查要求，同步 `.agents/skills/` 本地技能清单与 `read_file` 引用，明确优先编写行为测试及文档/ADR 校验命令，并补全子窗口跨端叠层、三语 Electron 无溢出验证及 `push.sh` / `[skip-cp]` 文档同步约定。
 
 ### Fixed
 - **自启动服务 macOS 弃用选项清理 (`macOS Login Item Settings Deprecation Cleanup`)**：在 `src/main/services/AutoLaunchService.js` 中移除已在 Electron 44+ 中彻底废弃的 `openAsHidden: true` 参数（macOS Ventura 及以上已转由系统后台任务与通知统一调度），消除运行时控制台告警并保持静默自启动逻辑稳健。
