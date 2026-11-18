@@ -10,14 +10,18 @@ in this project.
 
 1. Think first: surface assumptions and trade-offs before coding. Ask questions
    when game logic, formulas, or scaling behavior is unclear. Prefer simpler
-   paths when they satisfy the requirement.
+   paths when they satisfy the requirement. When evaluating an external code
+   review, audit, or plan, verify the active branch (`main` vs
+   `cp/crowley-aziraphale`), commit baseline vs `HEAD`, exact file/line
+   citations, runtime facts (e.g. `process.versions`), missing context, and
+   actual test runs before agreeing or acting—never assume a report is free of
+   stale items or false positives.
 2. Use skills first: Before performing tasks like UI engineering, writing
    documentation, or debugging, you MUST proactively review the available agent
-   skills in your context and load the relevant skill instructions via `view_file` first:
-   - `debugging-and-error-recovery`: Load when investigating crashes, bugs, or OS-specific anomalies.
-   - `frontend-ui-engineering`: Load when modifying CSS, window styling, or interactive UI animations.
-   - `code-review-and-quality`: Load before completing PRs, release branches, or multi-file refactoring.
-   - `documentation-and-adrs`: Load when making architectural decisions or creating ADRs.
+   skills in your context and load the relevant `SKILL.md` via `read_file`
+   first (honoring any user-requested `/skill`):
+   - Project skills in `.agents/skills/`: `desktop-pet-maintenance` (renderer/main/IPC/display/skins), `skin-asset-pipeline` (sprites/WebP/encryption), `release-and-packaging` (builds/ASAR/signing/workflows).
+   - Global skills: `debugging-and-error-recovery`, `frontend-ui-engineering`, `game-ui-ux`, `code-review-and-quality`, `documentation-and-adrs`, and orchestration skills (`swarm`, `subagent-driven-development`).
 3. Keep changes simple: write the minimum code needed. Avoid speculative
    abstractions and premature object-oriented registry structures.
 4. Make surgical edits: modify only the lines needed. Match the existing style
@@ -25,10 +29,10 @@ in this project.
    your edits, and do not touch unrelated code.
 5. Goal-Driven Execution & Chain Verification: When executing multi-step tasks or `/goal` requests:
    - Solve exactly ONE issue or task at a time.
-   - After each atomic fix, proactively verify and update corresponding unit tests (`test/`). Run `npm test` or focused checks.
+   - After each atomic fix, proactively verify and update corresponding unit tests (`test/`). Write behavioral tests (with mocks, fake timers, or `FakeBrowserWindow`) rather than regex/source-matching assertions (`assert.match(source, ...)`), except for intentional static security/manifest invariants. Never claim tests pass or cover behavior without actually running them (`npm test`, plus `npm run test:integration` for IPC/service/window lifecycle changes).
    - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
      1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, so cross-platform agents (e.g. macOS / Windows) maintain exact progress visibility.
-     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`). Do not wait for user prompting.
+     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`), and verify with `npm run check:adrs` and `node --test test/docLinks.test.js`. Do not wait for user prompting.
    - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs. Never batch multiple phases into a mega-commit; this maintains clean bisectability and rollback checkpoints.
    - **Regression Prevention**: For security changes or complex refactors, always explicitly provide the user with manual verification steps to ensure no behavior degradation.
    - Never batch multiple tasks without completing the test and documentation verification loop for each step.
@@ -53,7 +57,7 @@ in this project.
    - Keep Electron `screen` event coalescing and min/max constraint bridging together.
    - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects so physical sizing stays consistent across screens.
-3. macOS vs Windows Window Management: When modifying window states (such as `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows like the pomodoro clock), account for macOS space isolation and fullscreen window rearrangement to prevent windows from being trapped or hidden across spaces.
+3. macOS vs Windows Window Management & Sub-Window UI: When modifying window states (such as `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows like settings, skin selector, or pomodoro clock), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen window rearrangement to prevent windows from being trapped, hidden, or flickering. For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e:ci` or Playwright measurement), not just fake-DOM unit tests.
 4. Input & Drag Behavior:
    - Default to `setIgnoreMouseEvents(true, { forward: true })`.
    - Toggle mouse events to `false` only while hovering interactive elements.
@@ -86,7 +90,7 @@ Before commit or push:
    - **CRITICAL**: Ensure headings are NEVER duplicated under the same version header (e.g., do not create two `Fixed` sections; merge them into one).
    - All entries under `Unreleased` MUST be placed directly beneath `## [Unreleased]` in clear Chinese (except code terms/proper nouns) and strictly separated from published release headers. Link ADRs when relevant (e.g. `[ADR-048](docs/decisions/ADR-048-modern-web-standards-adoption.md)`).
    - Run `./push.sh` (or `.\push.ps1`) early to catch CHANGELOG format errors during preflight validation before attempting push.
-2. Update docs when behavior changes: Keep `docs/structure.md` and relevant ADRs synchronized with architecture or runtime behavior changes.
+2. Update docs when behavior changes: Keep `docs/structure.md`, `docs/git-workflow.md`, `README.md` / `readme_*.txt`, relevant ADRs, and `package-lock.json` (when dependencies or `engines` change) synchronized with verified runtime behavior and versions.
 3. Use atomic commits with this message shape:
 
    ```text
@@ -95,4 +99,4 @@ Before commit or push:
    <body explaining why>
    ```
 
-4. Automated Push Checks: Use `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to commit/push changes so project safety checks run.
+4. Automated Push Checks: Use `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to commit/push changes so project safety checks run. Note that `push.sh`/`push.ps1` reject unstaged untracked files, run `npm run sync:cp -- --verify` on `main`, and accept `[skip-cp]` in the commit message for `main`-only changes that should not sync to `cp/crowley-aziraphale`.
