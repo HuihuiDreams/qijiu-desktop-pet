@@ -7,6 +7,7 @@
  */
 const {
   DEFAULT_WEATHER_SYNC_SETTINGS,
+  FALLBACK_TTL_MS,
   normalizeSettings: normalizeWeatherSyncSettings,
   fetchWeather,
   processSettingsChange,
@@ -19,7 +20,7 @@ const WEATHER_SYNC_LAST_PAYLOAD_TTL_MS = 2 * 60 * 60 * 1000;
 
 let deps = {};
 let weatherSyncSettings = { ...DEFAULT_WEATHER_SYNC_SETTINGS };
-let weatherSyncIntervalTimer = null;
+let weatherSyncTimer = null;
 let weatherSyncSettingsUpdateId = 0;
 let weatherSyncStartId = 0;
 let weatherSyncCityRequestId = 0;
@@ -91,12 +92,16 @@ function saveWeatherPayload(settings, payload) {
   });
 }
 
+function clearWeatherSyncTimer() {
+  if (weatherSyncTimer) {
+    clearTimeout(weatherSyncTimer);
+    weatherSyncTimer = null;
+  }
+}
+
 async function startWeatherSync() {
   const startId = ++weatherSyncStartId;
-  if (weatherSyncIntervalTimer) {
-    clearInterval(weatherSyncIntervalTimer);
-    weatherSyncIntervalTimer = null;
-  }
+  clearWeatherSyncTimer();
   const settings = weatherSyncSettings;
   if (!settings.enabled) {
     sendWeatherUpdate({ active: false });
@@ -106,26 +111,58 @@ async function startWeatherSync() {
   let cachedPayload = getStoredWeatherPayload(settings);
   if (cachedPayload) sendWeatherUpdate(cachedPayload);
 
-  const doFetch = async () => {
+  const normalIntervalMs = settings.refreshIntervalMinutes * 60 * 1000;
+  const retryIntervalMs = Math.min(normalIntervalMs, FALLBACK_TTL_MS);
+
+  const doFetch = async ({ isInitialFetch = false, bypassFallbackCache = false } = {}) => {
+    if (bypassFallbackCache) {
+      resetWeatherCache();
+    }
     let payload = await fetchWeather(settings);
-    if (startId !== weatherSyncStartId) return;
-    if (payload?.fallback === true && !cachedPayload) {
+    if (startId !== weatherSyncStartId) return null;
+    if (isInitialFetch && payload?.fallback === true && !cachedPayload) {
       resetWeatherCache();
       payload = await fetchWeather(settings);
-      if (startId !== weatherSyncStartId) return;
+      if (startId !== weatherSyncStartId) return null;
     }
     if (payload?.active === true && payload.fallback !== true) {
       saveWeatherPayload(settings, payload);
       cachedPayload = payload;
     }
-    if (payload?.fallback === true && cachedPayload) return;
-    sendWeatherUpdate(payload);
+    if (!(payload?.fallback === true && cachedPayload)) {
+      sendWeatherUpdate(payload);
+    }
+    return payload;
   };
 
-  await doFetch(); // immediately fetch
-  if (startId !== weatherSyncStartId) return;
-  const intervalMs = settings.refreshIntervalMinutes * 60 * 1000;
-  weatherSyncIntervalTimer = setInterval(doFetch, intervalMs);
+  const scheduleNext = (lastPayload) => {
+    if (startId !== weatherSyncStartId) return;
+    const isFallback = lastPayload?.fallback === true;
+    const delayMs = isFallback ? retryIntervalMs : normalIntervalMs;
+    clearWeatherSyncTimer();
+    weatherSyncTimer = setTimeout(async () => {
+      if (startId !== weatherSyncStartId) return;
+      weatherSyncTimer = null;
+      let nextPayload = null;
+      try {
+        // 退避定时器到期时重置服务层失败缓存，避免因时钟微弱抖动再次命中 FALLBACK_TTL_MS 跳过请求
+        nextPayload = await doFetch({ bypassFallbackCache: isFallback });
+      } catch (err) {
+        console.error('Scheduled weather fetch failed:', err);
+        nextPayload = { fallback: true };
+      }
+      scheduleNext(nextPayload);
+    }, delayMs);
+  };
+
+  let initialPayload = null;
+  try {
+    initialPayload = await doFetch({ isInitialFetch: true }); // immediately fetch
+  } catch (err) {
+    console.error('Initial weather fetch failed:', err);
+    initialPayload = { fallback: true };
+  }
+  scheduleNext(initialPayload);
 }
 
 async function setCityName(cityName) {

@@ -15,13 +15,19 @@ const DEFAULT_SETTINGS = {
 
 const _realSetInterval = global.setInterval;
 const _realClearInterval = global.clearInterval;
+const _realSetTimeout = global.setTimeout;
+const _realClearTimeout = global.clearTimeout;
 function stubTimers() {
   global.setInterval = () => 1;
   global.clearInterval = () => {};
+  global.setTimeout = () => ({ unref() {} });
+  global.clearTimeout = () => {};
 }
 function restoreTimers() {
   global.setInterval = _realSetInterval;
   global.clearInterval = _realClearInterval;
+  global.setTimeout = _realSetTimeout;
+  global.clearTimeout = _realClearTimeout;
 }
 
 function createIpcMain() {
@@ -40,7 +46,13 @@ function normalizeSettings(settings) {
   };
 }
 
-function loadFreshController({ ipcMain, fetchWeather, processSettingsChange, resetWeatherCache = () => {} }) {
+function loadFreshController({
+  ipcMain,
+  fetchWeather,
+  processSettingsChange,
+  resetWeatherCache = () => {},
+  FALLBACK_TTL_MS = 10 * 60 * 1000,
+}) {
   const originalLoad = Module._load;
   delete require.cache[CONTROLLER_PATH];
 
@@ -51,6 +63,7 @@ function loadFreshController({ ipcMain, fetchWeather, processSettingsChange, res
     if (parent?.filename === CONTROLLER_PATH && request === '../../../weatherSyncService') {
       return {
         DEFAULT_WEATHER_SYNC_SETTINGS: DEFAULT_SETTINGS,
+        FALLBACK_TTL_MS,
         normalizeSettings,
         fetchWeather,
         processSettingsChange,
@@ -226,14 +239,14 @@ test('WeatherSyncController keeps the newest asynchronous settings update and pu
   const ipcMain = createIpcMain();
   const pendingSettings = new Map();
   const fetchCalls = [];
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  const intervalCallbacks = [];
-  global.setInterval = (callback, intervalMs) => {
-    intervalCallbacks.push({ callback, intervalMs });
-    return intervalCallbacks.length;
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  const scheduledTimers = [];
+  global.setTimeout = (callback, delayMs) => {
+    scheduledTimers.push({ callback, delayMs });
+    return { id: scheduledTimers.length, unref() {} };
   };
-  global.clearInterval = () => {};
+  global.clearTimeout = () => {};
 
   try {
     const Controller = loadFreshController({
@@ -277,11 +290,11 @@ test('WeatherSyncController keeps the newest asynchronous settings update and pu
     assert.equal(storedSettings().city, 'New');
     assert.deepEqual(fetchCalls, ['New']);
     assert.deepEqual(sent, [['weather-update', { active: true, city: 'New' }]]);
-    assert.equal(intervalCallbacks.length, 1);
-    assert.equal(intervalCallbacks[0].intervalMs, 60 * 60 * 1000);
+    assert.equal(scheduledTimers.length, 1);
+    assert.equal(scheduledTimers[0].delayMs, 60 * 60 * 1000);
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
   }
 });
 
@@ -308,14 +321,14 @@ test('WeatherSyncController tells the renderer to deactivate weather without fet
 test('WeatherSyncController keeps only the newest interval when weather sync starts overlap', async () => {
   const ipcMain = createIpcMain();
   const pendingFetches = [];
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  const intervals = [];
-  global.setInterval = (callback, intervalMs) => {
-    intervals.push({ callback, intervalMs });
-    return intervals.length;
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  const timers = [];
+  global.setTimeout = (callback, delayMs) => {
+    timers.push({ callback, delayMs });
+    return { id: timers.length, unref() {} };
   };
-  global.clearInterval = () => {};
+  global.clearTimeout = () => {};
 
   try {
     const Controller = loadFreshController({
@@ -340,11 +353,11 @@ test('WeatherSyncController keeps only the newest interval when weather sync sta
     pendingFetches[1]({ active: true, city: 'Tokyo' });
     await Promise.all([firstStart, secondStart]);
 
-    assert.equal(intervals.length, 1);
-    assert.equal(intervals[0].intervalMs, 60 * 60 * 1000);
+    assert.equal(timers.length, 1);
+    assert.equal(timers[0].delayMs, 60 * 60 * 1000);
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
   }
 });
 
@@ -708,17 +721,17 @@ test('startWeatherSync clears an existing interval timer before starting a new o
   Controller.init(deps);
 
   let cleared = 0;
-  const originalSetInterval = global.setInterval;
-  const originalClearInterval = global.clearInterval;
-  global.setInterval = () => 1;
-  global.clearInterval = () => { cleared += 1; };
+  const originalSetTimeout = global.setTimeout;
+  const originalClearTimeout = global.clearTimeout;
+  global.setTimeout = () => ({ unref() {} });
+  global.clearTimeout = () => { cleared += 1; };
   try {
     await Controller.startWeatherSync();
     await Controller.startWeatherSync();
     assert.equal(cleared, 1);
   } finally {
-    global.setInterval = originalSetInterval;
-    global.clearInterval = originalClearInterval;
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
   }
 });
 
@@ -754,4 +767,256 @@ test('doFetch does not send weather-update when fetchWeather returns null', asyn
   } finally {
     restoreTimers();
   }
+});
+
+async function flushMicrotasks() {
+  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
+test('WeatherSyncController retries at FALLBACK_TTL_MS (10 min) when keeping cached payload after fallback, then returns to 60-min cadence', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1_000_000 });
+
+  const ipcMain = createIpcMain();
+  const cachedPayload = { active: true, weatherCode: 3, windSpeed: 13, temperature: -3.1, fallback: false };
+  const livePayload = { active: true, weatherCode: 85, windSpeed: 13.6, temperature: -3.2, fallback: false };
+  const periodicPayload = { active: true, weatherCode: 0, windSpeed: 5, temperature: -2.0, fallback: false };
+  const responses = [
+    { active: true, weatherCode: -1, fallback: true },
+    livePayload,
+    periodicPayload,
+  ];
+  let fetchCalls = 0;
+  let resetCalls = 0;
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {
+      fetchCalls += 1;
+      return responses.shift();
+    },
+    processSettingsChange: async (settings) => settings,
+    resetWeatherCache: () => { resetCalls += 1; },
+  });
+  const { deps, sent, storedValue } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  }, {
+    lat: 45.75,
+    lon: 126.65,
+    savedAt: Date.now(),
+    payload: cachedPayload,
+  });
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 1);
+  assert.equal(resetCalls, 0);
+  assert.deepEqual(sent, [['weather-update', cachedPayload]]);
+
+  t.mock.timers.tick(9 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 1, 'must not retry before 10-minute fallback window');
+
+  t.mock.timers.tick(1 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 2, 'must retry after 10 minutes instead of waiting 60 minutes');
+  assert.equal(resetCalls, 1, 'must clear service fallback cache before retrying');
+  assert.deepEqual(sent, [
+    ['weather-update', cachedPayload],
+    ['weather-update', livePayload],
+  ]);
+  assert.deepEqual(storedValue('weatherSyncLastPayload')?.payload, livePayload);
+
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 2, 'must return to normal 60-minute interval after recovery');
+
+  t.mock.timers.tick(50 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 3, 'must run normal periodic refresh 60 minutes after recovery');
+  assert.deepEqual(sent[2], ['weather-update', periodicPayload]);
+});
+
+test('WeatherSyncController retries every 10 minutes on consecutive fallbacks and switches to 10-minute retry when a periodic refresh falls back', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 2_000_000 });
+
+  const ipcMain = createIpcMain();
+  const initialPayload = { active: true, weatherCode: 3, windSpeed: 13, fallback: false };
+  const recoveredPayload = { active: true, weatherCode: 85, windSpeed: 14, fallback: false };
+  const responses = [
+    initialPayload,
+    { active: true, weatherCode: -1, fallback: true },
+    { active: true, weatherCode: -1, fallback: true },
+    recoveredPayload,
+  ];
+  let fetchCalls = 0;
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {
+      fetchCalls += 1;
+      return responses.shift();
+    },
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  });
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 1);
+  assert.deepEqual(sent, [['weather-update', initialPayload]]);
+
+  // Normal 60-minute refresh fails -> keeps initialPayload and enters 10-minute retry cadence
+  t.mock.timers.tick(60 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 2);
+  assert.deepEqual(sent, [['weather-update', initialPayload]]);
+
+  // First 10-minute retry also fails -> keeps initialPayload and schedules another 10-minute retry
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 3);
+  assert.deepEqual(sent, [['weather-update', initialPayload]]);
+
+  // Second 10-minute retry succeeds -> publishes recoveredPayload
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 4);
+  assert.deepEqual(sent, [
+    ['weather-update', initialPayload],
+    ['weather-update', recoveredPayload],
+  ]);
+});
+
+test('WeatherSyncController also retries at 10 minutes after cold-start fallbacks without cached payload', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 3_000_000 });
+
+  const ipcMain = createIpcMain();
+  const fallbackPayload = { active: true, weatherCode: -1, fallback: true };
+  const livePayload = { active: true, weatherCode: 85, fallback: false };
+  const responses = [
+    fallbackPayload,
+    fallbackPayload,
+    fallbackPayload,
+    livePayload,
+  ];
+  let fetchCalls = 0;
+
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {
+      fetchCalls += 1;
+      return responses.shift();
+    },
+    processSettingsChange: async (settings) => settings,
+  });
+  const { deps, sent, storedValue } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  });
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 2, 'cold start without cache performs initial attempt plus one immediate retry');
+  assert.deepEqual(sent, [['weather-update', fallbackPayload]]);
+
+  // First 10-minute scheduled retry performs a single request (no double cold-start hammering)
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 3);
+
+  // Second 10-minute scheduled retry recovers
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 4);
+  assert.deepEqual(sent[sent.length - 1], ['weather-update', livePayload]);
+  assert.deepEqual(storedValue('weatherSyncLastPayload')?.payload, livePayload);
+});
+
+test('WeatherSyncController cancels a pending 10-minute retry timer when weather sync is disabled', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 4_000_000 });
+
+  const ipcMain = createIpcMain();
+  let fetchCalls = 0;
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async () => {
+      fetchCalls += 1;
+      return { active: true, weatherCode: -1, fallback: true };
+    },
+    processSettingsChange: async (settings) => settings,
+  });
+  const initialSettings = {
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  };
+  const { deps } = createDependencies(initialSettings, {
+    lat: 45.75,
+    lon: 126.65,
+    savedAt: Date.now(),
+    payload: { active: true, weatherCode: 3, fallback: false },
+  });
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 1);
+
+  await Controller.updateWeatherSyncSettings({ ...initialSettings, enabled: false });
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+
+  assert.equal(fetchCalls, 1, 'cancelled retry timer must not run after disabling sync');
+});
+
+test('WeatherSyncController still schedules a 10-minute retry when the initial fetch throws', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 5_000_000 });
+  t.mock.method(console, 'error', () => {});
+
+  let fetchCalls = 0;
+  const Controller = loadFreshController({
+    ipcMain: createIpcMain(),
+    fetchWeather: async () => {
+      fetchCalls += 1;
+      if (fetchCalls === 1) throw new Error('boom');
+      return { active: true, weatherCode: 3, fallback: false };
+    },
+    processSettingsChange: async (settings) => settings,
+  });
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: 'Harbin',
+    lat: 45.75,
+    lon: 126.65,
+    refreshIntervalMinutes: 60,
+  };
+  const { deps } = createDependencies(settings, null);
+  Controller.init(deps);
+
+  await Controller.startWeatherSync();
+  assert.equal(fetchCalls, 1);
+
+  t.mock.timers.tick(10 * 60 * 1000);
+  await flushMicrotasks();
+  assert.equal(fetchCalls, 2, 'retry must fire after the initial fetch throws');
 });

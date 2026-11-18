@@ -125,7 +125,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()` 状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
-├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、周期同步定时器、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
+├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、单次链式周期与降级短退避（10 分钟）同步调度、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
 ├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
@@ -308,7 +308,7 @@ qijiu-desktop-pet/
 `WeatherParticleLayer` 在天气类型、强度、缩放、互动状态及宠物数量等输入不变时复用已有 DOM 节点，逐帧更新粒子组位置，并跳过位置不变时的重复样式写入；上述输入变化时清除并重建粒子层，隐藏、禁用或没有有效宠物时清理节点。`ScreensaverParticleLayer` 每次 `mount()` 清除并重建节点，最多生成 12 个爱心粒子，通过 CSS keyframe 动画控制 `opacity` 与 `transform`，减弱动态效果开启时不生成爱心粒子。两者均未实现预分配对象池。
 
 天气网络请求通过 Electron 的系统代理与证书信任链发送；为兼容 Windows 上经 Zscaler 检查的较慢首个响应，`weatherSyncService.js` 的超时为 10 秒，超过该时间才降级为无天气粒子的安全状态。
-`WeatherSyncController` 会按城市坐标短期保存最近一次成功的天气 payload；桌宠重启时先回放匹配的缓存再后台刷新，若首个请求在企业代理下暂时降级，会保留已回放的效果而不清空；首次运行尚无缓存时，控制器会在冷启动请求降级后清除失败缓存并自动重试一次，以适配 Zscaler 首次握手慢、后续连接快速的行为。
+`WeatherSyncController` 会按城市坐标短期保存最近一次成功的天气 payload；桌宠重启时先回放匹配的缓存再后台刷新，若首个请求在企业代理或瞬时超时下暂时降级，会保留已回放的效果而不清空；首次运行尚无缓存时，控制器会在冷启动请求降级后清除失败缓存并自动重试一次，以适配 Zscaler 首次握手慢、后续连接快速的行为。无论冷启动还是周期刷新，只要最终请求返回降级（包括保留旧缓存的情况），控制器都会改用 `FALLBACK_TTL_MS`（10 分钟）短周期 `setTimeout` 重试并在到期时重置服务层失败缓存，而非等满 `refreshIntervalMinutes`（60 分钟），待恢复成功后再切回正常刷新周期。
 
 ### 3.3 宠物实体与渲染
 
@@ -470,7 +470,7 @@ src/assets/{skinId}/
 - **局部天气渲染**：渲染进程收到天气特征（如 `rain`, `snow`, `clear`, `windy`, `thunderstorm`, `heat`）和时段后，通过 `data-weather` 和 `data-time-phase` 保留状态语义；雨雪、大风、雷暴和高温使用 `WeatherParticleLayer` 在桌宠附近创建有上限的局部粒子组，粒子容器尺寸、单体大小及关键帧位移距离通过 `--weather-effect-scale` 同步融合显示器 DPI 倍率与宠物体型比例（`pet.size / CONFIG.PET_SIZE`，50%~150% 实时跟随且不重建 DOM 节点）。雷暴表现为雨粒子叠加低频局部闪电（当主天气为 `thunderstorm` 时，系统与粒子层将 `windIntensity` 自动归一化为 `'none'`，不再叠加刮风风痕，避免画面要素过多变得杂乱），大风仅在非雷暴状态下表现为风痕粒子；非降水天气达到 33°C 时归一化为炎热 (`heat`)，表现为自底向上升腾的清透白银阳炎折射流线与底座 (`top: 94%~100%`) 真实呼吸热辐射场，同时配合中英日三语 `weather_heat` 专属对话台词。动画交给 CSS `transform`，切换、隐藏或禁用时立即清理。天气效果不改变整屏亮度、对比度或饱和度。
 - **高温光晕缩放**：底座光晕宽度使用相对粒子容器的 108% / 92%，容器已包含体型与 DPI 倍率，百分比宽度不再乘 `--weather-effect-scale`；像素高度、模糊半径和动画位移继续按该变量缩放。
 - **刮风强度分档**：`WeatherAwarenessSystem` 仅依据平均风速判断，低于 3.4 米/秒无风粒子；达到 3.4、5.5、8 米/秒时分别使用 `light`、`normal`、`heavy` 三档。Open-Meteo 输入单位为 km/h，对应阈值 12.24、19.8、28.8；阵风不参与分档，雷暴继续隐藏风粒子。
-- **静默降级策略**：遇到网络不通、DNS 无法解析或接口限流时，服务安静回退到纯本地时段模式；请求失败自动进入 TTL 退避；恢复休眠后不突发请求，绝不用错误弹窗打断用户的陪伴体验。
+- **静默降级策略**：遇到网络不通、DNS 无法解析或接口限流时，服务安静保留有效短期缓存或回退到纯本地时段模式；请求失败自动进入 `FALLBACK_TTL_MS`（10 分钟）短周期退避重试（不再等满 60 分钟刷新周期），恢复后切回正常周期；恢复休眠后不突发请求，绝不用错误弹窗打断用户的陪伴体验。
 - **并发边界**：设置变更可重叠触发首次拉取，但仅最新一次同步启动能下发结果和建立周期轮询；每个请求的超时与取消控制器均为局部资源，旧请求结算不会清理或中止后续请求。
 
 ### 3.15 安全边界

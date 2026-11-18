@@ -57,3 +57,6 @@ Accepted
 
 ### 2026-10-07: 保留尚未落盘的开关意图
 城市查询结算时改为合并控制器内存中的最新 `enabled` 和刷新间隔。开启同步可能仍在为旧城市地理编码，此时持久化设置尚未更新，不能以旧存档覆盖已显示在托盘上的新选择。城市结果接管后，旧设置请求只能被丢弃，其开关意图已合并至新城市，不会因查询完成顺序不同而丢失。
+
+### 2026-11-18: 天气请求降级后按短周期（10 分钟）重试
+`WeatherSyncController.startWeatherSync()` 将固定周期的 `setInterval` 改为按单次调度链驱动的 `setTimeout`：当单次天气拉取最终返回 `fallback: true` 时（包括启动或周期刷新失败后保留 `weatherSyncLastPayload` 旧缓存的场景），下次拉取按 `Math.min(refreshIntervalMinutes * 60 * 1000, FALLBACK_TTL_MS)`（默认 10 分钟）短周期重试，并在定时器到期时调用 `resetWeatherCache()` 绕过因时钟微小抖动残留的 `FALLBACK_TTL_MS` 服务层缓存；一旦某次重试成功拿到有效天气数据，即保存最新缓存、推送给渲染层并切回原本的 `refreshIntervalMinutes`（如 60 分钟）正常刷新周期。定时重试仅执行单次请求（不再重复冷启动二次握手），避免长时间离线时无意义双倍请求。
