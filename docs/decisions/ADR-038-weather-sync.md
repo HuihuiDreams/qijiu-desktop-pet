@@ -60,3 +60,6 @@ Accepted
 
 ### 2026-11-18: 天气请求降级后按短周期（10 分钟）重试
 `WeatherSyncController.startWeatherSync()` 将固定周期的 `setInterval` 改为按单次调度链驱动的 `setTimeout`：当单次天气拉取最终返回 `fallback: true` 时（包括启动或周期刷新失败后保留 `weatherSyncLastPayload` 旧缓存的场景），下次拉取按 `Math.min(refreshIntervalMinutes * 60 * 1000, FALLBACK_TTL_MS)`（默认 10 分钟）短周期重试，并在定时器到期时调用 `resetWeatherCache()` 绕过因时钟微小抖动残留的 `FALLBACK_TTL_MS` 服务层缓存；一旦某次重试成功拿到有效天气数据，即保存最新缓存、推送给渲染层并切回原本的 `refreshIntervalMinutes`（如 60 分钟）正常刷新周期。定时重试仅执行单次请求（不再重复冷启动二次握手），避免长时间离线时无意义双倍请求。
+
+### 2026-11-18: 更正「性能约束」中的超时与退避常量
+「Decision」第 4 条所列 `WEATHER_MIN_REFRESH_MINUTES`（30 分钟）、`WEATHER_TIMEOUT_MS`（4000ms）与 `WEATHER_BACKOFF_MS`（20 分钟）从未被生产代码引用，已从 `src/data/config.js` 移除，实际生效的值由 `weatherSyncService.js` 内部维护：请求超时为 `WEATHER_FETCH_TIMEOUT_MS`（10 秒，兼容企业代理下较慢的首个响应）、城市地理编码超时为 `GEOCODE_TIMEOUT_MS`（30 秒）、失败后的退避为 `FALLBACK_TTL_MS`（10 分钟，见上一条修订）、最短刷新间隔为 `MIN_REFRESH_INTERVAL_MINUTES`（30 分钟）。原正文保留为历史记录，以本条为准。
