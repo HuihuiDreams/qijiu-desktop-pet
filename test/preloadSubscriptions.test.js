@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const { setupElectronMock } = require('./helpers/mockElectron');
 
 const preloadSource = fs.readFileSync(path.join(__dirname, '..', 'preload.js'), 'utf8');
 
@@ -23,9 +24,7 @@ test('preload on* APIs return cleanup functions from subscribeIpc', () => {
     'screen-info',
     'active-window-info',
     'toggle-status-panel',
-    'status-window-data',
     'status-window-closed',
-    'pomodoro-state',
     'toggle-pause',
     'reset-positions',
     'toggle-pet-visibility',
@@ -60,10 +59,53 @@ test('preload exposes platform info through electronAPI', () => {
 
 test('preload exposes pomodoro command APIs through electronAPI', () => {
   assert.match(preloadSource, /openPomodoroWindow:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-open-window'\)/);
-  assert.match(preloadSource, /getPomodoroState:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-get-state'\)/);
-  assert.match(preloadSource, /startPomodoro:\s*\(minutes\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-start', minutes\)/);
-  assert.match(preloadSource, /stopPomodoro:\s*\(\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-stop'\)/);
-  assert.match(preloadSource, /setPomodoroAlwaysOnTop:\s*\(enabled\)\s*=>\s*ipcRenderer\.invoke\('pomodoro-set-always-on-top', enabled\)/);
+
+  const preloadPath = require.resolve('../preload.js');
+  delete require.cache[preloadPath];
+  const exposed = {};
+  const invokeCalls = [];
+  const restoreElectron = setupElectronMock({
+    contextBridge: {
+      exposeInMainWorld: (name, api) => {
+        exposed[name] = api;
+      },
+    },
+    ipcRenderer: {
+      invoke: (channel, ...args) => {
+        invokeCalls.push([channel, ...args]);
+      },
+      send: () => {},
+      on: () => {},
+      removeListener: () => {},
+    },
+  });
+
+  try {
+    require(preloadPath);
+  } finally {
+    restoreElectron();
+    delete require.cache[preloadPath];
+  }
+
+  assert.equal(typeof exposed.electronAPI?.openPomodoroWindow, 'function');
+  exposed.electronAPI.openPomodoroWindow();
+  assert.deepEqual(invokeCalls, [['pomodoro-open-window']]);
+
+  const removedSubWindowMethods = [
+    'closeStatusWindow',
+    'resizeStatusWindow',
+    'onStatusWindowData',
+    'getPomodoroState',
+    'startPomodoro',
+    'stopPomodoro',
+    'closePomodoroWindow',
+    'setPomodoroAlwaysOnTop',
+    'onPomodoroState',
+  ];
+  for (const method of removedSubWindowMethods) {
+    assert.equal(preloadSource.includes(`${method}:`), false, `${method} must not appear in preload.js`);
+    assert.equal(exposed.electronAPI[method], undefined, `${method} must not be exposed on main electronAPI`);
+  }
 });
 
 test('preload does not expose legacy city setting subwindow APIs', () => {
