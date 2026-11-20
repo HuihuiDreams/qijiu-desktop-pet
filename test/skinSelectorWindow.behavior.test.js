@@ -6,8 +6,10 @@ const test = require('node:test');
 
 const WINDOW_MODULE_PATH = require.resolve('../src/main/windows/SkinSelectorWindow');
 
-function loadFreshSkinSelectorWindow(extraDeps = {}) {
+function loadFreshSkinSelectorWindow(extraDeps = {}, options = {}) {
   const windowManager = { skinSelectorWindow: null };
+  const workArea = options.workArea || { x: 0, y: 0, width: 1600, height: 900 };
+  const cursorPoint = options.cursorPoint || { x: 0, y: 0 };
   const originalLoad = Module._load;
   delete require.cache[WINDOW_MODULE_PATH];
 
@@ -77,8 +79,8 @@ function loadFreshSkinSelectorWindow(extraDeps = {}) {
         app: { focus: () => {} },
         BrowserWindow: FakeBrowserWindow,
         screen: {
-          getCursorScreenPoint: () => ({ x: 0, y: 0 }),
-          getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1600, height: 900 } }),
+          getCursorScreenPoint: () => cursorPoint,
+          getDisplayNearestPoint: () => ({ workArea }),
         },
       };
     }
@@ -325,6 +327,38 @@ test('reopening a minimized selector restores the same preview session', () => {
   assert.equal(win.minimized, false);
   assert.equal(sentOptions.resetSelection, false);
   assert.equal(skinSelectorWindow.getSkinSelectorOriginalSkinId(), 'default');
+});
+
+test('getInitialSkinSelectorWindowBounds clamps dimensions and position to small workArea', () => {
+  const { skinSelectorWindow } = loadFreshSkinSelectorWindow(
+    {},
+    { workArea: { x: 100, y: 50, width: 640, height: 400 } },
+  );
+
+  const bounds = skinSelectorWindow.getInitialSkinSelectorWindowBounds();
+  assert.deepEqual(bounds, {
+    width: 640,
+    height: 400,
+    x: 100,
+    y: 50,
+  });
+
+  const win = skinSelectorWindow.createSkinSelectorWindow();
+  assert.equal(win.options.width, 640);
+  assert.equal(win.options.height, 400);
+  assert.equal(win.options.x, 100);
+  assert.equal(win.options.y, 50);
+
+  const { skinSelectorWindow: partialSelector } = loadFreshSkinSelectorWindow(
+    {},
+    { workArea: { x: 100, y: 50, width: 700, height: 600 } },
+  );
+  assert.deepEqual(partialSelector.getInitialSkinSelectorWindowBounds(), {
+    width: 700,
+    height: 520,
+    x: 100,
+    y: 90,
+  });
 });
 
 test('skin-selector.css applies content-visibility only to below-the-fold cards (n + 7)', () => {

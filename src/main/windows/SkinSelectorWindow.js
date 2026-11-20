@@ -2,6 +2,8 @@ const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
 const windowManager = require('./WindowManager');
 
+const SKIN_SELECTOR_WINDOW_WIDTH = 800;
+const SKIN_SELECTOR_WINDOW_HEIGHT = 520;
 const SKIN_SELECTOR_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
 const SKIN_SELECTOR_TOP_PULSE_MS = 180;
 let skinSelectorTopPulseTimer = null;
@@ -38,18 +40,29 @@ function pulseSkinSelectorWindowTop() {
   }, SKIN_SELECTOR_TOP_PULSE_MS);
 }
 
+function clampBoundLength(preferred, available) {
+  return Number.isFinite(available) && available > 0
+    ? Math.max(1, Math.min(preferred, Math.floor(available)))
+    : preferred;
+}
+
 function getInitialSkinSelectorWindowBounds() {
-  const width = 800;
-  const height = 520;
   const cursor = screen.getCursorScreenPoint();
   const display = screen.getDisplayNearestPoint(cursor);
   const { x, y, width: areaWidth, height: areaHeight } = display.workArea;
+  const width = clampBoundLength(SKIN_SELECTOR_WINDOW_WIDTH, areaWidth);
+  const height = clampBoundLength(SKIN_SELECTOR_WINDOW_HEIGHT, areaHeight);
+
+  const rawX = Math.round(x + (areaWidth - width) / 2);
+  const rawY = Math.round(y + (areaHeight - height) / 2);
+  const maxX = Math.max(x, x + areaWidth - width);
+  const maxY = Math.max(y, y + areaHeight - height);
 
   return {
     width,
     height,
-    x: Math.round(x + (areaWidth - width) / 2),
-    y: Math.round(y + (areaHeight - height) / 2),
+    x: Math.min(Math.max(rawX, x), maxX),
+    y: Math.min(Math.max(rawY, y), maxY),
   };
 }
 
@@ -208,6 +221,7 @@ function getSkinSelectorOriginalSkinId() {
 
 module.exports = {
   init,
+  getInitialSkinSelectorWindowBounds,
   createSkinSelectorWindow,
   openSkinSelectorWindow,
   closeSkinSelectorWindow,
