@@ -302,6 +302,8 @@ test('ContextMenu.handleAction queues the action instead of executing if the tar
 test('ContextMenu mouse events keep the menu interactive only while needed', () => withContextMenuHarness(({ menu, mouseCalls }) => {
   new ContextMenu({});
 
+  assert.equal(menu.listeners.mouseleave, undefined);
+
   menu.listeners.mouseenter();
   assert.deepEqual(mouseCalls.at(-1), [false, { leaseMs: 10000 }]);
 
@@ -310,12 +312,9 @@ test('ContextMenu mouse events keep the menu interactive only while needed', () 
   assert.deepEqual(mouseCalls.at(-1), [false, { leaseMs: 10000 }]);
 
   mouseCalls.length = 0;
-  menu.listeners.mouseleave();
-  assert.equal(mouseCalls.length, 0);
-
   menu.classList.add('hidden');
-  menu.listeners.mouseleave();
-  assert.deepEqual(mouseCalls.at(-1), [true, { forward: true }]);
+  menu.listeners.mousemove();
+  assert.equal(mouseCalls.length, 0);
 }));
 
 test('ContextMenu pointer and outside-click handlers trigger actions and close the menu', () => withContextMenuHarness(({ menu, items, mouseCalls }) => {

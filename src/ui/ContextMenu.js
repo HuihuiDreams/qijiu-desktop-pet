@@ -18,12 +18,6 @@ class ContextMenu {
     this.menuEl.addEventListener('mouseenter', () => {
       window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 10000 });
     });
-    this.menuEl.addEventListener('mouseleave', () => {
-      // 仅在菜单隐藏时才重新启用点击穿透
-      if (this.menuEl.classList.contains('hidden')) {
-        window.electronAPI.setIgnoreMouseEvents(true, { forward: true });
-      }
-    });
     this.menuEl.addEventListener('mousemove', () => {
       if (!this.menuEl.classList.contains('hidden')) {
         window.electronAPI.setIgnoreMouseEvents(false, { leaseMs: 10000 });
