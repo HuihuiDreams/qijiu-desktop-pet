@@ -260,4 +260,51 @@ test.describe('skin selector', () => {
     const saved = await appWindow.evaluate(() => window.electronAPI.loadData('petState'));
     expect(saved?.skinId ?? 'default').toBe('default');
   });
+  for (const locale of ['zh', 'en', 'ja']) {
+    test(`selector chrome stays inside the smallest clamped workArea window (${locale})`, async () => {
+      await appWindow.evaluate(async (nextLocale) => {
+        await window.electronAPI.setLocale(nextLocale);
+      }, locale);
+      const selectorWindow = await openSkinSelectorReady(electronApp);
+      // 640x400 is the smallest bounds getInitialSkinSelectorWindowBounds() produces in the clamp unit test.
+      await electronApp.evaluate(() => {
+        process.mainModule.require('./src/main/windows/WindowManager').skinSelectorWindow
+          .setContentSize(640, 400);
+      });
+      await expect.poll(() => selectorWindow.evaluate(() => window.innerWidth)).toBe(640);
+      await expect(selectorWindow.locator('html')).toHaveAttribute('data-locale', locale);
+
+      const metrics = await selectorWindow.evaluate(() => {
+        const doc = document.documentElement;
+        const inViewport = (selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return rect.top >= 0 && rect.left >= 0
+            && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+        };
+        const gallery = document.getElementById('skin-gallery');
+        return {
+          pageOverflowX: doc.scrollWidth > doc.clientWidth,
+          pageOverflowY: doc.scrollHeight > doc.clientHeight,
+          galleryOverflowX: gallery.scrollWidth > gallery.clientWidth,
+          galleryHeight: gallery.clientHeight,
+          closeVisible: inViewport('#skin-selector-close'),
+          cancelVisible: inViewport('#skin-selector-cancel'),
+          confirmVisible: inViewport('#skin-selector-confirm'),
+        };
+      });
+      expect(metrics).toMatchObject({
+        pageOverflowX: false,
+        pageOverflowY: false,
+        galleryOverflowX: false,
+        closeVisible: true,
+        cancelVisible: true,
+        confirmVisible: true,
+      });
+      expect(metrics.galleryHeight).toBeGreaterThan(100);
+
+      const closed = selectorWindow.waitForEvent('close');
+      await selectorWindow.locator('#skin-selector-cancel').click();
+      await closed;
+    });
+  }
 });
