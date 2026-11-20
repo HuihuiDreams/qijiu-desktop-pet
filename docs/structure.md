@@ -124,7 +124,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PetVisibilityService.js # 桌宠可见性状态机 init(deps) 模块：manual/meeting/pomodoro 三来源合并与优先级仲裁、走动暂停状态、get-pet-visibility-state IPC；不直接引入 Electron 模块，electron 能力全部经 deps 注入，可被 node --test 直接单测
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()` 状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
-├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
+├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器（运行中剩余分钟数变化与完成时刷新托盘菜单）、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
 ├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、单次链式周期与降级短退避（10 分钟）同步调度、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅（带自写 `isSavingWeatherSettings` 重入守卫）；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
 ├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
@@ -540,7 +540,7 @@ npm run test:font
 - `test/trayManager.test.js`：托盘菜单结构、各菜单项交互、语言切换与番茄钟托盘标签状态流转（依赖 `getPomodoroSnapshot()` 驱动 running/completed/idle 三种标签）。
 - `test/petWindow.test.js`：宠物窗口 IPC 注册、`set-ignore-mouse-events` 发件方鉴权与鼠标穿透开关归一化。
 - `test/skinService.test.js`：皮肤扫描/缓存、当前皮肤状态、选肤器请求鉴权与番茄钟素材解析。
-- `test/pomodoroService.test.js`：番茄钟 ticker 生命周期（完成后自停并恢复宠物焦点、刷新托盘，重复启动只保留一个 ticker，停止后不再推送）、分钟数归一化落盘与番茄钟窗口销毁时跳过推送。
+- `test/pomodoroService.test.js`：番茄钟 ticker 生命周期（完成后自停并恢复宠物焦点、运行中剩余分钟数跨分钟变更与完成时刷新托盘，重复启动只保留一个 ticker，停止后不再推送）、分钟数归一化落盘与番茄钟窗口销毁时跳过推送。
 
 ### 4.3 其他自动化覆盖
 

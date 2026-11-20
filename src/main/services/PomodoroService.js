@@ -11,8 +11,15 @@ const { POMODORO_LAST_MINUTES_KEY } = require('../constants');
 let deps = {};
 let pomodoroSystem = new PomodoroSystem();
 let pomodoroTickTimer = null;
+let lastTrayRemainingMinutes = null;
 let cachedPomodoroAssets = null;
 let cachedPomodoroAssetsSkinId = null;
+
+function getRunningTrayMinutes(snapshot) {
+  return snapshot?.status === 'running'
+    ? Math.max(1, Math.ceil(snapshot.remainingMs / 60000))
+    : null;
+}
 
 function init(dependencies) {
   deps = dependencies;
@@ -69,16 +76,24 @@ function stopPomodoroTicker() {
     clearInterval(pomodoroTickTimer);
     pomodoroTickTimer = null;
   }
+  lastTrayRemainingMinutes = null;
 }
 
 function startPomodoroTicker() {
   stopPomodoroTicker();
+  lastTrayRemainingMinutes = getRunningTrayMinutes(pomodoroSystem.getSnapshot());
   pomodoroTickTimer = setInterval(() => {
     const snapshot = getPomodoroSnapshot();
     sendPomodoroState();
     if (snapshot.status === 'completed') {
       stopPomodoroTicker();
       deps.PetVisibilityService.restorePomodoroPetFocus();
+      deps.trayManager.refreshTrayMenu();
+      return;
+    }
+    const currentMinutes = getRunningTrayMinutes(snapshot);
+    if (currentMinutes !== null && currentMinutes !== lastTrayRemainingMinutes) {
+      lastTrayRemainingMinutes = currentMinutes;
       deps.trayManager.refreshTrayMenu();
     }
   }, 1000);

@@ -118,3 +118,42 @@ test('state pushes are skipped while the pomodoro window is destroyed', async (t
 
   assert.deepEqual(sent, []);
 });
+
+test('a multi-minute session refreshes the tray menu once at each minute boundary and not on intermediate seconds', async (t) => {
+  const { service, calls, sent } = createHarness(t);
+
+  await service.startPomodoroSession(3);
+  assert.deepEqual(calls, ['enterFocus', 'refreshTray']);
+
+  // Remaining 2m59s..2m1s: intermediate seconds stay at 3m and must not refresh
+  t.mock.timers.tick(59_000);
+  assert.equal(calls.filter((call) => call === 'refreshTray').length, 1);
+
+  // Remaining drops to 2m0s (ceil drops 3 -> 2)
+  t.mock.timers.tick(1_000);
+  assert.equal(calls.filter((call) => call === 'refreshTray').length, 2);
+
+  // Remaining 1m59s..1m1s: intermediate seconds stay at 2m and must not refresh
+  t.mock.timers.tick(59_000);
+  assert.equal(calls.filter((call) => call === 'refreshTray').length, 2);
+
+  // Remaining drops to 1m0s (ceil drops 2 -> 1)
+  t.mock.timers.tick(1_000);
+  assert.equal(calls.filter((call) => call === 'refreshTray').length, 3);
+
+  // Remaining 59s..1s: intermediate seconds stay at 1m and must not refresh
+  t.mock.timers.tick(59_000);
+  assert.equal(calls.filter((call) => call === 'refreshTray').length, 3);
+
+  // Completion refreshes once more alongside restoreFocus
+  t.mock.timers.tick(1_000);
+  assert.deepEqual(sent.at(-1), ['pomodoro-state', 'completed']);
+  assert.deepEqual(calls, [
+    'enterFocus',
+    'refreshTray',
+    'refreshTray',
+    'refreshTray',
+    'restoreFocus',
+    'refreshTray',
+  ]);
+});
