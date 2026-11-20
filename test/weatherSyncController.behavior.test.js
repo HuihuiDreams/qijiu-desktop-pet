@@ -95,7 +95,14 @@ function createDependencies(initialSettings, initialWeatherCache) {
   };
   const store = {
     get: (key) => storeValues.get(key),
-    set: (key, value) => storeValues.set(key, value),
+    set: (key, value) => {
+      const prev = storeValues.get(key);
+      const changed = JSON.stringify(prev) !== JSON.stringify(value);
+      storeValues.set(key, value);
+      if (changed && typeof storeListeners[key] === 'function') {
+        storeListeners[key](value, prev);
+      }
+    },
     onDidChange: (key, listener) => { storeListeners[key] = listener; },
   };
   return {
@@ -1106,4 +1113,84 @@ test('WeatherSyncController drops an in-flight retry result when a newer startWe
   assert.equal(scheduled.length, timersAfterNewStart, 'stale retry must not schedule a timer');
   assert.equal(sent.length, sentAfterNewStart, 'stale retry result must not be sent');
   assert.ok(!sent.some(([, payload]) => payload === stale));
+});
+
+test('WeatherSyncController ignores synchronous store.onDidChange during self-writes while still reacting to external changes', async () => {
+  const ipcMain = createIpcMain();
+  let fetchCalls = 0;
+  let geocodeCalls = 0;
+  const Controller = loadFreshController({
+    ipcMain,
+    fetchWeather: async (settings) => {
+      fetchCalls += 1;
+      return { active: true, city: settings.city };
+    },
+    processSettingsChange: async (settings) => {
+      geocodeCalls += 1;
+      if (settings.city === 'Tokyo') {
+        return { ...settings, lat: 35.68, lon: 139.76 };
+      }
+      if (settings.city === 'Kyoto') {
+        return { ...settings, lat: 35.01, lon: 135.77 };
+      }
+      if (settings.city === 'Osaka') {
+        return { ...settings, lat: 34.69, lon: 135.50 };
+      }
+      return settings;
+    },
+  });
+
+  const { deps, storeListeners } = createDependencies({
+    ...DEFAULT_SETTINGS,
+    enabled: true,
+    city: '',
+  });
+  let settingsSetCalls = 0;
+  const store = deps.StoreManager.getStore();
+  const baseSet = store.set;
+  store.set = (key, value) => {
+    if (key === 'weatherSyncSettings') {
+      settingsSetCalls += 1;
+    }
+    return baseSet(key, value);
+  };
+  Controller.init(deps);
+
+  stubTimers();
+  try {
+    const cityResult = await Controller.setCityName('Tokyo');
+    await flushMicrotasks();
+    assert.deepEqual(cityResult, { success: true, city: 'Tokyo' });
+    assert.equal(fetchCalls, 1, 'setCityName must fetch once without self-write re-entrancy');
+    assert.equal(geocodeCalls, 1);
+    assert.equal(settingsSetCalls, 1);
+
+    await Controller.updateWeatherSyncSettings({
+      ...Controller.getWeatherSyncSettings(),
+      city: 'Kyoto',
+      lat: null,
+      lon: null,
+      refreshIntervalMinutes: 30,
+    });
+    await flushMicrotasks();
+    assert.equal(fetchCalls, 2, 'updateWeatherSyncSettings must fetch once without self-write re-entrancy');
+    assert.equal(geocodeCalls, 2);
+    assert.equal(settingsSetCalls, 2);
+
+    storeListeners.weatherSyncSettings({
+      ...DEFAULT_SETTINGS,
+      enabled: true,
+      city: 'Osaka',
+      lat: null,
+      lon: null,
+    });
+    await flushMicrotasks();
+    assert.equal(Controller.getWeatherSyncSettings().city, 'Osaka');
+    assert.equal(Controller.getWeatherSyncSettings().lat, 34.69);
+    assert.equal(fetchCalls, 3, 'external store.onDidChange must still trigger updateWeatherSyncSettings');
+    assert.equal(geocodeCalls, 3);
+    assert.equal(settingsSetCalls, 3);
+  } finally {
+    restoreTimers();
+  }
 });

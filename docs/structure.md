@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-11-16
+最后更新：2026-11-20
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -125,7 +125,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/PetScaleService.js      # 桌宠体型大小服务 init(deps) 模块：50%~150% 缩放持久化存储 (petScalePercent)、实时拖动预览/`confirm(percent)`/`flushPreview()` 状态机、get-pet-scale IPC 与 pet-scale-changed 广播
 ├─ src/main/services/MeetingDetectorController.js # 会议检测控制器 init(deps) 模块：meetingDetector 生命周期，deps 提供 PetVisibilityService 的 hidePetForMeeting/showPetAfterMeeting 回调
 ├─ src/main/services/PomodoroService.js # 番茄钟服务 init(deps) 模块：分钟数存取、皮肤素材缓存、tick 定时器、启停会话、状态快照与推送，deps 注入 SkinService/PetVisibilityService/pomodoroWindowModule/windowManager/trayManager/StoreManager
-├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、单次链式周期与降级短退避（10 分钟）同步调度、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
+├─ src/main/services/WeatherSyncController.js # 天气同步控制器 init(deps) 模块：设置存取、单次链式周期与降级短退避（10 分钟）同步调度、城市异步查询（`setCityName`）与最新开关仲裁（城市结算合并内存中尚未落盘的开关和刷新间隔）、store.onDidChange 订阅（带自写 `isSavingWeatherSettings` 重入守卫）；勿与根目录 weatherSyncService.js（网络请求/清洗）混淆
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
 ├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约

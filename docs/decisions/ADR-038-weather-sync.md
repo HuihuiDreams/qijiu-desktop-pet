@@ -63,3 +63,6 @@ Accepted
 
 ### 2026-11-18: 更正「性能约束」中的超时与退避常量
 「Decision」第 4 条所列 `WEATHER_MIN_REFRESH_MINUTES`（30 分钟）、`WEATHER_TIMEOUT_MS`（4000ms）与 `WEATHER_BACKOFF_MS`（20 分钟）从未被生产代码引用，已从 `src/data/config.js` 移除，实际生效的值由 `weatherSyncService.js` 内部维护：请求超时为 `WEATHER_FETCH_TIMEOUT_MS`（10 秒，兼容企业代理下较慢的首个响应）、城市地理编码超时为 `GEOCODE_TIMEOUT_MS`（30 秒）、失败后的退避为 `FALLBACK_TTL_MS`（10 分钟，见上一条修订）、最短刷新间隔为 `MIN_REFRESH_INTERVAL_MINUTES`（30 分钟）。原正文保留为历史记录，以本条为准。
+
+### 2026-11-20: 自写 `store.onDidChange` 同步重入守卫
+`WeatherSyncController.saveWeatherSyncSettings()` 在执行 `store.set('weatherSyncSettings', normalized)` 期间通过 `isSavingWeatherSettings`（`try/finally`）标记自写状态，使 `store.onDidChange` 监听器忽略本次自写触发的同步回调，避免在真实 `electron-store`（`conf`）中重入 `updateWeatherSyncSettings()` 造成重复写盘及中止首次在途天气请求；外部手动修改配置触发的 `store.onDidChange` 仍正常生效。

@@ -24,6 +24,7 @@ let weatherSyncTimer = null;
 let weatherSyncSettingsUpdateId = 0;
 let weatherSyncStartId = 0;
 let weatherSyncCityRequestId = 0;
+let isSavingWeatherSettings = false;
 
 function init(dependencies) {
   deps = dependencies;
@@ -32,8 +33,9 @@ function init(dependencies) {
   if (store) {
     // Listen to config changes if users open the editor and save it
     store.onDidChange(WEATHER_SYNC_STORE_KEY, (newValue) => {
-      // Ignore undefined/null newValue which can happen during atomic file writes
-      if (!newValue) return;
+      // Ignore undefined/null newValue which can happen during atomic file writes,
+      // and ignore self-triggered changes emitted synchronously by store.set().
+      if (!newValue || isSavingWeatherSettings) return;
       updateWeatherSyncSettings(newValue);
     });
   }
@@ -55,7 +57,12 @@ function saveWeatherSyncSettings(settings) {
   const store = deps.StoreManager.getStore();
   if (!store) return { ...DEFAULT_WEATHER_SYNC_SETTINGS };
   const normalized = normalizeWeatherSyncSettings(settings);
-  store.set(WEATHER_SYNC_STORE_KEY, normalized);
+  isSavingWeatherSettings = true;
+  try {
+    store.set(WEATHER_SYNC_STORE_KEY, normalized);
+  } finally {
+    isSavingWeatherSettings = false;
+  }
   return normalized;
 }
 
