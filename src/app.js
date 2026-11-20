@@ -285,6 +285,7 @@
     stageGeometry,
     getIsPaused: () => isPaused,
     clearInteractionOverlay,
+    interactionSystem,
     electronAPI: window.electronAPI,
     CONFIG,
     getDialogues: () => DIALOGUES,

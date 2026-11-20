@@ -216,12 +216,12 @@ qijiu-desktop-pet/
 │  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack)，复用 StageGeometry 的久坐提醒双宠居中布局并按其跨度扩展氛围层；连招采用固定顺序 shareFood → hug → kiss 过滤后循环播放：可用 Overlay >=2 时持续循环至用户输入或静默取消，零或一个时停在中心 idle_waiting；普通输入进入一次性 caught 展示至少 800ms CSS 文本 ! 并回位，caught/runningBack 对重复 input stop 幂等；提示与场景共同应用 DPI 缩放，支持皮肤 Overlay keys 校验跳过、runningBack 目标点 walkArea 夹紧与安全复位；CP 屏保 Overlay 使用 transform: translate(-50%, -50%) 将图片中心对齐场景中点，不依赖素材 intrinsic 宽高比；场景空间检查按体型与目标显示器倍率后的基准宽高适配并保留宽高各 40px 留白，场景缩放不足 0.65 时取消屏保；reset() 末尾触发 onScreensaverEnd（离线回归气泡的补发事件钩子，替代游戏循环 rAF 边沿检测）
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：串行加载与最新待执行请求队列、过时加载回写抑制、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
-│  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、与移动系统共用显示器归属的视觉缩放查询、支持 DPI 视觉尺寸的双宠居中布局、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
+│  │  ├─ StageGeometry.js               # 屏幕/可行走区域几何状态持有者：screenInfo 归一化、与移动系统共用显示器归属的视觉缩放查询、支持 DPI 视觉尺寸的双宠居中布局（未传 visualScale 时回退目标区域 scaleRatio）、菜单定位边界、宠物越界修正（app.js 拆分 Phase R2）
 │  │  ├─ TimeSystem.js                  # 时间流逝、离线衰减、周期保存
 │  │  ├─ WeatherAwarenessSystem.js      # 接收并应用主进程下发的天气和时段抽象 payload
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
 │  ├─ ui/
-│  │  ├─ BreakReminderPresenter.js      # 久坐提醒展示编排：瞬移面对面、暂停移动、按时序显示气泡、20秒自动消失，暴露 isActive()（app.js 拆分 Phase R3）
+│  │  ├─ BreakReminderPresenter.js      # 久坐提醒展示编排：取消进行中的自发互动、瞬移面对面并同步 targetX/targetY、暂停移动、按时序显示气泡、20秒自动消失，暴露 isActive()（app.js 拆分 Phase R3）
 │  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条

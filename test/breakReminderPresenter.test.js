@@ -224,3 +224,117 @@ test('dismiss() clears the auto-dismiss timer, restores idle state, and notifies
     assert.equal(bubbleTimer800.cleared, true);
   });
 });
+
+test('handleTriggered cancels active interactionSystem after clearing overlay and syncs pet targetX/targetY', () => {
+  withStubbedTimers(() => {
+    const events = [];
+    const yueqi = makePet('yueqi', { x: 10, y: 20, targetX: 400, targetY: 300 });
+    const shenjiu = makePet('shenjiu', { x: 50, y: 60, targetX: 120, targetY: 220 });
+    const interactionSystem = {
+      isInteracting: true,
+      interactionTimer: 1500,
+      currentInteraction: { key: 'hug' },
+      cancel() {
+        events.push('cancelInteraction');
+        this.isInteracting = false;
+        this.interactionTimer = 0;
+        this.currentInteraction = null;
+      },
+    };
+    const { deps } = makeDeps({
+      getPets: () => [yueqi, shenjiu],
+      clearInteractionOverlay: () => { events.push('clearOverlay'); },
+      interactionSystem,
+      stageGeometry: makeStageGeometry([
+        { x: 0, y: 0, width: 1000, height: 800, isPrimary: true },
+      ]),
+    });
+    const presenter = new BreakReminderPresenter(deps);
+
+    presenter.handleTriggered({});
+
+    assert.deepEqual(events, ['clearOverlay', 'cancelInteraction']);
+    assert.equal(interactionSystem.isInteracting, false);
+    assert.equal(interactionSystem.interactionTimer, 0);
+    assert.equal(interactionSystem.currentInteraction, null);
+    assert.equal(yueqi.targetX, yueqi.x);
+    assert.equal(yueqi.targetY, yueqi.y);
+    assert.equal(shenjiu.targetX, shenjiu.x);
+    assert.equal(shenjiu.targetY, shenjiu.y);
+    assert.deepEqual(
+      [{ x: yueqi.targetX, y: yueqi.targetY }, { x: shenjiu.targetX, y: shenjiu.targetY }],
+      [{ x: 308, y: 352 }, { x: 596, y: 352 }],
+    );
+  });
+});
+
+test('handleTriggered uses primary walkArea scaleRatio for pair spacing on mixed-DPI displays', () => {
+  withStubbedTimers(() => {
+    const { deps, yueqi, shenjiu } = makeDeps({
+      stageGeometry: makeStageGeometry([
+        { x: 0, y: 0, width: 1000, height: 800, scaleRatio: 1 },
+        { x: 1000, y: 0, width: 1000, height: 800, scaleRatio: 1.5, isPrimary: true },
+      ], 2000, 800),
+    });
+    const presenter = new BreakReminderPresenter(deps);
+
+    presenter.handleTriggered({});
+
+    // primary center = (1500, 400), scaled petSize = 96 * 1.5 = 144, spacing = 144 * 1.5 = 216
+    assert.deepEqual(
+      [{ x: yueqi.x, y: yueqi.y }, { x: shenjiu.x, y: shenjiu.y }],
+      [{ x: 1212, y: 328 }, { x: 1644, y: 328 }],
+    );
+  });
+});
+
+function makeInteractionSystemStub(state) {
+  return {
+    ...state,
+    cancel() {
+      this.isInteracting = false;
+      this.interactionTimer = 0;
+      this.currentInteraction = null;
+      this.cooldownTimer = 0;
+    },
+  };
+}
+
+test('handleTriggered gives an interrupted interaction the full cooldown so pets do not re-interact right after the reminder', () => {
+  withStubbedTimers(() => {
+    const interactionSystem = makeInteractionSystemStub({
+      isInteracting: true,
+      interactionTimer: 1500,
+      currentInteraction: { key: 'hug' },
+      cooldownTimer: 0,
+    });
+    const { deps } = makeDeps({
+      interactionSystem,
+      CONFIG: { PET_SIZE: 96, INTERACTION_COOLDOWN: 60000 },
+    });
+
+    new BreakReminderPresenter(deps).handleTriggered({});
+
+    assert.equal(interactionSystem.isInteracting, false);
+    assert.equal(interactionSystem.cooldownTimer, 60000);
+  });
+});
+
+test('handleTriggered preserves the remaining cooldown when no interaction was running', () => {
+  withStubbedTimers(() => {
+    const interactionSystem = makeInteractionSystemStub({
+      isInteracting: false,
+      interactionTimer: 0,
+      currentInteraction: null,
+      cooldownTimer: 12000,
+    });
+    const { deps } = makeDeps({
+      interactionSystem,
+      CONFIG: { PET_SIZE: 96, INTERACTION_COOLDOWN: 60000 },
+    });
+
+    new BreakReminderPresenter(deps).handleTriggered({});
+
+    assert.equal(interactionSystem.cooldownTimer, 12000);
+  });
+});

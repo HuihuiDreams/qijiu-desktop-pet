@@ -12,6 +12,7 @@
  *   - stageGeometry: StageGeometry 实例（读取 width/height/getWalkAreas）
  *   - getIsPaused(): () => boolean，桌宠是否处于暂停/隐藏状态
  *   - clearInteractionOverlay(): () => void，清除当前互动覆盖层的回调
+ *   - interactionSystem: InteractionSystem 实例（可选，触发时取消正在进行的自发互动）
  *   - electronAPI: window.electronAPI（dismissBreakReminder）
  *   - CONFIG: 全局配置对象（PET_SIZE）
  *   - getDialogues(): () => DIALOGUES，实时读取当前语言的对话文案池
@@ -29,6 +30,7 @@ class BreakReminderPresenter {
     this.clearInteractionOverlay = typeof deps.clearInteractionOverlay === 'function'
       ? deps.clearInteractionOverlay
       : () => {};
+    this.interactionSystem = deps.interactionSystem || null;
     this.electronAPI = deps.electronAPI;
     this.CONFIG = deps.CONFIG;
     this.getDialogues = typeof deps.getDialogues === 'function' ? deps.getDialogues : () => null;
@@ -74,6 +76,22 @@ class BreakReminderPresenter {
   }
 
   /**
+   * 终止进行中的自发互动。InteractionSystem.cancel() 会把冷却清零，
+   * 这里补回冷却，避免提醒结束后面对面的两只宠物立刻再次触发互动。
+   */
+  _cancelSpontaneousInteraction() {
+    const system = this.interactionSystem;
+    if (!system || typeof system.cancel !== 'function') return;
+    const cooldown = system.isInteracting
+      ? this.CONFIG.INTERACTION_COOLDOWN
+      : system.cooldownTimer;
+    system.cancel();
+    if (Number.isFinite(cooldown) && cooldown > 0) {
+      system.cooldownTimer = cooldown;
+    }
+  }
+
+  /**
    * 主进程触发久坐提醒时调用。
    */
   handleTriggered(_payload) {
@@ -91,6 +109,7 @@ class BreakReminderPresenter {
 
     // 清除现有互动覆盖层
     this.clearInteractionOverlay();
+    this._cancelSpontaneousInteraction();
     // 清除现有气泡
     this.dialogBubble.removeForPets([yueqi, shenjiu]);
 
@@ -111,6 +130,8 @@ class BreakReminderPresenter {
       const position = layout.positions[index];
       pet.x = position.x;
       pet.y = position.y;
+      pet.targetX = position.x;
+      pet.targetY = position.y;
       pet.direction = position.direction;
     });
 
