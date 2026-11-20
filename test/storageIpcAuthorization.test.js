@@ -155,3 +155,54 @@ test('startup skin restore keeps the saved skin when save-data arrives before th
     delete require.cache[skinServicePath];
   }
 });
+
+test('StorageIpc rejects non-plain-object petState payloads without writing to store', async () => {
+  const ipcMain = createIpcMain();
+  const mainSender = { isDestroyed: () => false };
+  const windowManager = {
+    mainWindow: {
+      isDestroyed: () => false,
+      webContents: mainSender,
+    },
+  };
+  const existingState = { skinId: 'default', hunger: 75 };
+  const storedValues = new Map([['petState', existingState]]);
+  let storeSetCalls = 0;
+
+  const StoreManager = require('../src/main/services/StoreManager');
+  const originals = { initStore: StoreManager.initStore, getStore: StoreManager.getStore };
+  StoreManager.initStore = async () => {};
+  StoreManager.getStore = () => ({
+    get: (key) => storedValues.get(key),
+    set: (key, value) => {
+      storeSetCalls += 1;
+      storedValues.set(key, value);
+    },
+  });
+
+  const modulePath = require.resolve('../src/main/services/StorageIpc');
+  delete require.cache[modulePath];
+  const restoreElectron = setupElectronMock({ ipcMain });
+
+  try {
+    const StorageIpc = require(modulePath);
+    restoreElectron();
+    StorageIpc.init({ windowManager });
+
+    const saveData = ipcMain.handlers.get('save-data');
+    const mainEvent = { sender: mainSender };
+
+    for (const invalidPayload of [null, undefined, 'corrupted', 42, true, []]) {
+      const result = await saveData(mainEvent, 'petState', invalidPayload);
+      assert.equal(result, false, `save-data must reject invalid petState payload: ${JSON.stringify(invalidPayload)}`);
+    }
+
+    assert.equal(storeSetCalls, 0, 'invalid petState payloads must not write to store');
+    assert.deepEqual(storedValues.get('petState'), existingState);
+  } finally {
+    restoreElectron();
+    StoreManager.initStore = originals.initStore;
+    StoreManager.getStore = originals.getStore;
+    delete require.cache[modulePath];
+  }
+});

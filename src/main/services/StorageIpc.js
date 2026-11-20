@@ -27,7 +27,8 @@ function init({ windowManager, getConfirmedSkinId }) {
       await StoreManager.initStore();
       const store = StoreManager.getStore();
       if (!store) return false;
-      if (key === 'petState' && value && typeof value === 'object') {
+      if (key === 'petState') {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
         const confirmedSkinId = typeof getConfirmedSkinId === 'function'
           ? getConfirmedSkinId()
           : value.skinId;

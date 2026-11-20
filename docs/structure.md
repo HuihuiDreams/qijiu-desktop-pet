@@ -134,7 +134,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 SettingsService 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
-├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data（save-data 强制钳制 petState.skinId 为已确认皮肤以防试穿泄漏）、set/get-auto-launch
+├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data（save-data 仅接受普通对象写入 petState 并强制钳制 petState.skinId 为已确认皮肤以防试穿泄漏）、set/get-auto-launch
 ├─ src/main/services/AutoLaunchService.js # 开机自启服务：基于 electron.app.setLoginItemSettings 的状态读写（含 macOS 待批准状态 `getAutoLaunchState()`）与统一结果包装
 ├─ src/main/services/StoreManager.js    # electron-store 统一初始化与单例管理器
 ├─ src/main/services/IpcSenderAuthorization.js # IPC 调用方安全鉴权：严格校验 event.sender 是否匹配目标 BrowserWindow，防止跨窗口或伪造调用
