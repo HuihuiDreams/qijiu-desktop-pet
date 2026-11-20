@@ -413,6 +413,73 @@ test('Windows provider reports maximized office window as not full-screen', asyn
   assert.equal(info.window.isFullScreen, false);
 });
 
+test('Windows provider surfaces a connection-bar sample resolved to the fullscreen RDP window', async () => {
+  const provider = createWindowsActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, JSON.stringify({
+        active: true,
+        id: '4242',
+        title: 'remote - Remote Desktop Connection',
+        ownerName: 'mstsc',
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+        isMinimized: false,
+        isMaximized: true,
+        isFullScreen: true,
+      }));
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+
+  assert.equal(info.active, true);
+  assert.equal(info.window.ownerName, 'mstsc');
+  assert.equal(info.window.isFullScreen, true);
+  assert.equal(info.window.isMinimized, false);
+});
+
+test('Windows provider reports a transient empty-owner sample without throwing', async () => {
+  const provider = createWindowsActiveWindowProvider({
+    execFile: (_file, _args, _options, callback) => {
+      callback(null, JSON.stringify({
+        active: true,
+        id: '9',
+        ownerName: null,
+        bounds: { x: 0, y: 0, width: 1920, height: 1080 },
+      }));
+    },
+  });
+
+  const info = await provider.getActiveWindowInfo();
+
+  assert.equal(info.active, true);
+  assert.equal(info.window.ownerName, '');
+  assert.equal(info.window.isFullScreen, false);
+});
+
+// The PowerShell logic cannot execute off Windows, so these are intentional static
+// invariants guarding the most failure-prone constructs; real behavior needs a manual
+// Windows RDP check (nested session + connection bar).
+test('Windows provider script keeps RDP detection invariants', async () => {
+  let script = '';
+  const provider = createWindowsActiveWindowProvider({
+    execFile: (_file, args, _options, callback) => {
+      script = args[args.length - 1];
+      callback(null, JSON.stringify({ active: false, reason: 'no-active-window' }));
+    },
+  });
+
+  await provider.getActiveWindowInfo();
+
+  assert.match(script, /BBarWindowClass/);
+  assert.match(script, /\$DWMWA_CLOAKED = \[uint32\]14/);
+  assert.match(script, /\$MAX_WINDOW_WALK = 512/);
+  assert.match(script, /\^\(mstsc\|msrdc\)\(\?:\\\.exe\)\?\$/);
+  assert.match(script, /Get-Process -Id \$pidValue/);
+  for (const header of script.match(/^function\s+[^\r\n]+/gm) || []) {
+    assert.doesNotMatch(header, /\[(?:RECT|MONITORINFO)\]/);
+  }
+});
+
 test('Windows provider parse failure still returns unavailable', async () => {
   const provider = createWindowsActiveWindowProvider({
     execFile: (_file, _args, _options, callback) => {
