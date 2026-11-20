@@ -143,9 +143,10 @@ class StageGeometry {
       ? rawFallbackPetSize
       : 96;
     const rawVisualScale = Number(options.visualScale);
+    const areaScale = Number(area?.scaleRatio);
     const visualScale = Number.isFinite(rawVisualScale) && rawVisualScale > 0
       ? rawVisualScale
-      : 1;
+      : (Number.isFinite(areaScale) && areaScale > 0 ? areaScale : 1);
     const petSize = (Number.isFinite(rawPetSize) && rawPetSize > 0 ? rawPetSize : fallbackPetSize)
       * visualScale;
     const centerX = area.x + area.width / 2;

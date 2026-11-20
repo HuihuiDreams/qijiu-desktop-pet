@@ -174,6 +174,25 @@ test('getCenteredPairLayout reuses the break-reminder primary-area center and sp
   ]);
 });
 
+test('getCenteredPairLayout falls back to the target area scaleRatio and lets an explicit visualScale win', () => {
+  const geometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
+  const area = { x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5, isPrimary: true };
+  geometry.applyScreenInfo({ width: 1200, height: 900, walkAreas: [area] });
+  const pets = [{ x: 0, y: 0, size: 96 }, { x: 0, y: 0, size: 96 }];
+
+  const fallback = geometry.getCenteredPairLayout(pets[0], pets[1]);
+  assert.equal(fallback.visualScale, 1.5);
+  assert.equal(fallback.petSize, 144);
+
+  const explicit = geometry.getCenteredPairLayout(pets[0], pets[1], null, { visualScale: 2 });
+  assert.equal(explicit.visualScale, 2);
+  assert.equal(explicit.petSize, 192);
+
+  const noRatio = new StageGeometry({ initialWidth: 1000, initialHeight: 800 });
+  noRatio.applyScreenInfo({ width: 1000, height: 800, walkAreas: [{ x: 0, y: 0, width: 1000, height: 800 }] });
+  assert.equal(noRatio.getCenteredPairLayout(pets[0], pets[1]).visualScale, 1);
+});
+
 test('getCenteredPairLayout centers scaled pet bounds when a visualScale is supplied', () => {
   const geometry = new StageGeometry({ initialWidth: 1200, initialHeight: 900 });
   const area = { x: 0, y: 0, width: 1200, height: 900, scaleRatio: 1.5 };

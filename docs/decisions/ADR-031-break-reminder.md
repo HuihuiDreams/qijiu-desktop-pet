@@ -64,3 +64,6 @@ Accepted
 
 ### 2026-11-13：设置变更与时钟回拨边界（审核复核 L6）
 `updateSettings()` 在提醒被关闭（`enabled: false`）时会取消仍在等待重试的延后定时器并清除 `reminderPending`，不再等 60 秒后的回调自行收尾；采样间隔 `rawElapsed` 增加 `Math.max(0, …)`，系统时钟回拨时按 0 累计，避免 `activeMs` 被扣减。详见 [审核复核 L6](../archive/code-review-audit-verification-2026-11-13.md)。
+
+### 2026-11-20：混合 DPI 间距缩放、自发互动取消与目标坐标同步
+`StageGeometry.getCenteredPairLayout()` 在未传入 `options.visualScale` 时优先回退目标区域 `area.scaleRatio`（再回退 `1`），使混合 DPI 主屏上的久坐提醒双宠间距与视觉体型一致；`BreakReminderPresenter.handleTriggered()` 注入并调用 `interactionSystem?.cancel?.()` 终止进行中的自发互动并同步 `pet.targetX` / `pet.targetY`，避免互动状态冻结或结束提醒后宠物沿旧目标漂移。`InteractionSystem.cancel()` 会清零冷却，因此 presenter 在取消后补回冷却：被打断的互动恢复完整 `INTERACTION_COOLDOWN`，未互动时保留原剩余冷却，避免提醒结束后面对面的两只宠物立刻再次触发互动。
