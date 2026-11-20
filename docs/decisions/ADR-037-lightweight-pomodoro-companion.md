@@ -114,3 +114,6 @@ Accepted
 
 ### 2026-10-06: 专注退出恢复暂停快照与可见性消息时序
 番茄钟恢复专注前暂停快照时，与 `toggle-pet-visibility` 携带的 `isPaused` 保持一致，并在渲染端将不可见性与用户暂停选择独立计算，防止番茄钟结束后的显示通知误清除专注前的用户暂停选择。
+
+### 2026-11-20: 托盘剩余分钟刷新
+`PomodoroService.startPomodoroTicker()` 补充运行态剩余分钟数（`Math.max(1, Math.ceil(remainingMs / 60000))`）变化检测，跨分钟边界时自动调用 `trayManager.refreshTrayMenu()` 更新托盘文案。
