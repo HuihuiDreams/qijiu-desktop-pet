@@ -117,3 +117,6 @@ Accepted
 
 ### 2026-11-20: 托盘剩余分钟刷新
 `PomodoroService.startPomodoroTicker()` 补充运行态剩余分钟数（`Math.max(1, Math.ceil(remainingMs / 60000))`）变化检测，跨分钟边界时自动调用 `trayManager.refreshTrayMenu()` 更新托盘文案。
+
+### 2026-11-20: 主窗口 `preload.js` 接口收敛
+从主窗口 `preload.js` 移除已迁入 `pomodoroPreload.js` 的 6 个子窗口专属 API（`getPomodoroState`、`startPomodoro`、`stopPomodoro`、`closePomodoroWindow`、`setPomodoroAlwaysOnTop`、`onPomodoroState`），主窗口仅保留 `openPomodoroWindow`；上述接口覆盖现由 `test/subWindowPreloadSecurity.test.js`（`pomodoroPreload.js`）与 `test/preloadSubscriptions.test.js`（主窗口隔离断言）分别守护。

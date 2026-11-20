@@ -91,8 +91,8 @@ graph TB
     end
 
     Preload["preload.js"] --> Renderer
-    Preload --> Status
-    Preload --> Pomodoro
+    StatusPreload["statusPreload.js"] --> Status
+    PomodoroPreload["pomodoroPreload.js"] --> Pomodoro
     SkinSelectorPreload["skinSelectorPreload.js"] --> SkinSelector
     SettingsPreload["settingsPreload.js"] --> Settings
     UpdatePreload["updateProgressPreload.js"] --> Update
@@ -140,7 +140,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/IpcSenderAuthorization.js # IPC 调用方安全鉴权：严格校验 event.sender 是否匹配目标 BrowserWindow，防止跨窗口或伪造调用
 ├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY）
 
-├─ preload.js                           # contextBridge 暴露 window.electronAPI，隔离渲染进程和主进程
+├─ preload.js                           # contextBridge 暴露主窗口专用 window.electronAPI，隔离渲染进程和主进程（不包含已迁入 statusPreload.js / pomodoroPreload.js 的子窗口专属方法）
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
 ├─ settingsPreload.js                   # 统一设置窗专用最小 preload：经 `window.electronAPI` 暴露的语义化窄接口（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），严禁暴露 `FORBIDDEN_SUBWINDOW_APIS`

@@ -68,3 +68,7 @@ Accepted
 ### 补充：`save-data` 的 `petState` 类型校验 (2026-11-20)
 
 `StorageIpc` 的 `save-data` 在持久化 `petState` 前校验其必须为非数组普通对象，拒绝 `null`、原始类型或数组载荷，避免异常参数覆盖既有宠物存档。
+
+### 补充：主窗口 `preload.js` 子窗口死接口移除 (2026-11-20)
+
+从主窗口 `preload.js` 移除已迁入 `statusPreload.js` 与 `pomodoroPreload.js` 的 9 个子窗口专属死方法（`closeStatusWindow`、`resizeStatusWindow`、`onStatusWindowData`、`getPomodoroState`、`startPomodoro`、`stopPomodoro`、`closePomodoroWindow`、`setPomodoroAlwaysOnTop`、`onPomodoroState`），主窗口仅保留 `openPomodoroWindow` 与状态窗显隐等主窗口必需能力。

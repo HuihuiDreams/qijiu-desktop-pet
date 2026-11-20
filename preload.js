@@ -23,17 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showStatusWindow: (data) => ipcRenderer.send('show-status-window', data),
   hideStatusWindow: () => ipcRenderer.send('hide-status-window'),
   updateStatusWindow: (data) => ipcRenderer.send('update-status-window', data),
-  closeStatusWindow: () => ipcRenderer.invoke('status-close-window'),
-  resizeStatusWindow: (size) => ipcRenderer.send('resize-status-window', size),
   openPomodoroWindow: () => ipcRenderer.invoke('pomodoro-open-window'),
-  getPomodoroState: () => ipcRenderer.invoke('pomodoro-get-state'),
-  startPomodoro: (minutes) => ipcRenderer.invoke('pomodoro-start', minutes),
-  stopPomodoro: () => ipcRenderer.invoke('pomodoro-stop'),
-  closePomodoroWindow: () => ipcRenderer.invoke('pomodoro-close-window'),
-  setPomodoroAlwaysOnTop: (enabled) => ipcRenderer.invoke('pomodoro-set-always-on-top', enabled),
-  onPomodoroState: (callback) => {
-    return subscribeIpc('pomodoro-state', (_event, data) => callback(data));
-  },
   onSaveBeforeQuit: (callback) => {
     const listener = async (_event, requestId) => {
       let success = false;
@@ -60,9 +50,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   onToggleStatusPanel: (callback) => {
     return subscribeIpc('toggle-status-panel', () => callback());
-  },
-  onStatusWindowData: (callback) => {
-    return subscribeIpc('status-window-data', (_event, data) => callback(data));
   },
   onStatusWindowClosed: (callback) => {
     return subscribeIpc('status-window-closed', () => callback());
