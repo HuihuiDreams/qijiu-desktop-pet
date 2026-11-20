@@ -64,9 +64,12 @@ function syncFullscreenRdpSuppression() {
   if (process.platform !== 'win32') return false;
 
   if (info?.active === true && info.window) {
-    fullscreenRdpSuppressed = !info.window.isMinimized
-      && info.window.isFullScreen === true
-      && /^(mstsc|msrdc)(?:\.exe)?$/i.test(info.window.ownerName || '');
+    const ownerName = typeof info.window.ownerName === 'string' ? info.window.ownerName.trim() : '';
+    if (ownerName || !fullscreenRdpSuppressed) {
+      fullscreenRdpSuppressed = !info.window.isMinimized
+        && info.window.isFullScreen === true
+        && /^(mstsc|msrdc)(?:\.exe)?$/i.test(ownerName);
+    }
   } else if (info?.reason === 'no-active-window') {
     fullscreenRdpSuppressed = false;
   }
@@ -77,7 +80,9 @@ function syncFullscreenRdpSuppression() {
       restoreSubWindowsAfterRdp.add(subWin);
       subWin.hide();
     }
-    win.setAlwaysOnTop(false);
+    if (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop()) {
+      win.setAlwaysOnTop(false);
+    }
     if (win.isVisible()) {
       restorePetWindowAfterRdp = true;
       win.hide();

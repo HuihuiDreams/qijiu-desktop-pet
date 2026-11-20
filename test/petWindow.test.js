@@ -416,6 +416,37 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
         assert.equal(win.alwaysOnTop, false);
         assert.equal(windowManager.statusWindow.visible, false);
 
+        // A transient empty ownerName while suppressed must not expose the pet over RDP,
+        // and repeated watcher ticks must not re-invoke setAlwaysOnTop(false) when already false.
+        let setAlwaysOnTopCalls = 0;
+        const originalSetAlwaysOnTop = win.setAlwaysOnTop.bind(win);
+        win.setAlwaysOnTop = (v, level) => {
+          setAlwaysOnTopCalls++;
+          originalSetAlwaysOnTop(v, level);
+        };
+        payload = { active: true, window: { ownerName: '', isFullScreen: false, isMinimized: false } };
+        PetWindow.onActiveWindowChanged();
+        PetWindow.keepPetWindowOnTop();
+        PetWindow.keepPetWindowOnTop();
+        assert.equal(win.visible, false);
+        assert.equal(win.alwaysOnTop, false);
+        assert.equal(windowManager.statusWindow.visible, false);
+        assert.equal(setAlwaysOnTopCalls, 0);
+
+        // Switching to a real non-RDP window immediately releases suppression and restores the pet.
+        payload = { active: true, window: { ownerName: 'chrome', isFullScreen: false } };
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, true);
+        assert.equal(win.alwaysOnTop, true);
+        assert.equal(win.focused, false);
+        assert.equal(windowManager.statusWindow.visible, true);
+
+        // Re-enter fullscreen RDP before testing the remaining transitions.
+        payload = { active: true, window: { ownerName, isFullScreen: true, isMinimized: false } };
+        PetWindow.onActiveWindowChanged();
+        assert.equal(win.visible, false);
+        assert.equal(win.alwaysOnTop, false);
+
         // A destroyed window must not be reopened on restoration.
         windowManager.pomodoroWindow.destroyed = true;
 

@@ -150,7 +150,7 @@ qijiu-desktop-pet/
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
-├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，通过 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 统一输出物理像素并避免重复 Add-Type 编译开销；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
+├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，通过 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 统一输出物理像素并避免重复 Add-Type 编译开销；过滤 DWM cloaked 窗口、副屏任务栏/IME/提示浮层，使用 QueryFullProcessImageName 读取进程名并回退 Get-Process，并将 BBarWindowClass 连接栏、GA_ROOTOWNER/同 PID 辅助窗口及前景句柄瞬时为空且 Z-order 顶层为全屏 RDP 的情形解析回全屏 RDP 窗口；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
 ├─ activeWindowAwareness.js             # 活动窗口 bounds（win32 经 screenToDipRect 单次归一化为 DIP）到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
@@ -281,7 +281,7 @@ qijiu-desktop-pet/
 `main.js` 仅是极简系统层入口：完成 `app.requestSingleInstanceLock()` 单实例锁与 QA userData 目录配置后调用 `AppLifecycle.init(app)`。`src/main/AppLifecycle.js` 收敛为薄编排层，在 `app.whenReady()` 内按依赖顺序对各 `init(deps)` 模块接线；下述具体职责由对应的服务/窗口/控制器模块承担（详见第 2 节目录树与 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
 - 创建透明、无边框、可置顶的主宠物窗口（`windows/PetWindow.js`，含点击穿透与置顶守卫）。
-- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化或切回本地应用后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败维持保护；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
+- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化或切回本地应用后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败或进程名瞬时为空维持保护，采样侧同步将连接栏 `BBarWindowClass`、同 PID 辅助/无标题栏全屏窗口及前景瞬时为 `NULL` 且顶层为全屏 RDP 的情形归并至全屏 RDP 窗口；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
 - 创建统一设置窗口，提供“外观 / 陪伴 / 系统”三标签页集中配置体型、选肤快捷跳转、界面感知、天气同步及城市地名解析（Geocoding）、久坐提醒及间隔、高甜屏保及等待、三语切换与开机自启（`windows/SettingsWindow.js` + `services/SettingsService.js`，见 [ADR-050](./decisions/ADR-050-unified-settings-window.md)）。
