@@ -64,3 +64,7 @@ Accepted
 本次将两层约束同时落地：三个子窗口分别改用专用最小 preload；所有 renderer 发起的特权 handler 在任何输入处理或副作用之前，通过 `IpcSenderAuthorization` 将 `event.sender` 绑定到当前仍存活的主窗口或所属子窗口。语言读取显式允许五个 DeskPet 业务窗口，语言修改和全局状态操作仅允许主窗口，子窗口只允许操作自身状态。未授权 `send` 被忽略，未授权 `invoke` 维持各既有接口的失败形状。
 
 选肤器继续使用既有 sender ID 鉴权和 `app.openSkinSelectorForQA` 主进程入口；QA 不获得通用 IPC 绕过能力。该设计同时由权限矩阵单测、伪造 sender 行为测试和 Electron E2E preload 暴露面检查守护。
+
+### 补充：`save-data` 的 `petState` 类型校验 (2026-11-20)
+
+`StorageIpc` 的 `save-data` 在持久化 `petState` 前校验其必须为非数组普通对象，拒绝 `null`、原始类型或数组载荷，避免异常参数覆盖既有宠物存档。
