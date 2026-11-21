@@ -403,7 +403,7 @@
 - 是否允许联网请求。
 - 离线 fallback 规则。
 - 天气状态到视觉表现的映射表。
-- **UI 优化（已实现）**：已增加可视化的城市名称输入框（参见 `src/city-setting.html` 独立配置界面），替代原本只能手动打开 `config.json` 填写的交互。
+- **UI 优化（已实现）**：已增加可视化的城市名称输入框（早期为 `src/city-setting.html` 独立小窗，现已由 ADR-050 整合至统一设置窗口 `src/settings.html`），替代原本只能手动打开 `config.json` 填写的交互。
 
 ---
 

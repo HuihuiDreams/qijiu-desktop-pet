@@ -1,6 +1,6 @@
 /**
  * src/main/services/screensaverAllowedMinutes.js
- * CP 屏保触发等待档位的唯一来源。供 ScreensaverController 与 TrayManager 共用。
+ * CP 屏保触发等待档位的唯一来源。供 ScreensaverController 与 SettingsService 共用。
  */
 
 const SCREENSAVER_ALLOWED_IDLE_MINUTES = Object.freeze([1, 3, 5, 10, 15, 30]);

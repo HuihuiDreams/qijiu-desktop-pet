@@ -91,7 +91,7 @@ Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to liv
 Changes save automatically on slider release, keyboard step, or window close; "Reset" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
 
 Calligraphy Details:
-Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold seal. The skin selector and unified settings windows show the same gold ornament beside their localized titles.
+Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold seal. The skin selector and unified settings windows show the same gold ornament beside their localized titles. The unified settings window also features vertical "岳清源" and "Shen Qingqiu (沈清秋)" calligraphic ink watermarks in its lower corners.
 
 ========================================
 🪟 Realm Awareness
@@ -111,7 +111,7 @@ Pets will automatically transition into morning, daytime, evening, or late night
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
 
 If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
-When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
+When it rains, snows, gets windy, thunders, or becomes hot (≥33°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================

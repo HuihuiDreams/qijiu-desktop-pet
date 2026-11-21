@@ -91,11 +91,11 @@ renderer 重载一律取消而不回放。
 
 ### 9. 触发等待档位
 
-- 触发等待档位收紧为白名单：`1 / 3 / 5 / 10 / 15 / 30` 分钟（默认 5 分钟）。
-- `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `TrayManager` 的唯一来源。
+- 触发等待档位收紧为白名单：`1 / 3 / 5 / 10 / 15 / 30` 分钟（默认 3 分钟）。
+- `screensaverAllowedMinutes.js` 作为 `ScreensaverController` 与 `SettingsService` 的唯一来源（不再经由 `TrayManager` 维护）。
 - 历史持久化值 `60` 在首次读取时迁移为 `30` 并回写 store；其他非白名单值回退默认。
-- 托盘子菜单从该唯一来源渲染六个 radio 项，不再写入单独的电源时间提示项。
-- 「Windows 关屏/睡眠时间须晚于所选等待时间、应用不读取或修改电源策略」的说明写入三语 README 的「CP 高甜屏保」一节，避免占用托盘菜单空间。
+- 「高甜屏保」开关与触发等待档位已按 [ADR-050](./ADR-050-unified-settings-window.md) 从托盘子菜单迁入统一设置窗口（`SettingsWindow`）的「陪伴与守护」标签页，由 `SettingsService` 统一校验并下发 `allowedThresholds` 渲染六个等待时间分段选项，不再写入单独的电源时间提示项。
+- 「Windows 关屏/睡眠时间须晚于所选等待时间、应用不读取或修改电源策略」的说明写入三语 README 的「CP 高甜屏保」一节，避免占用设置界面空间。
 
 ### 10. 平台策略
 

@@ -1,6 +1,6 @@
 # 更换 CP 的迁移指南
 
-本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。按 2026-10-08 的仓库实现整理；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
+本指南用于把岳七 × 沈九桌宠改成另一对角色，覆盖角色设定、素材、对白、互动、存档和独立发布。按 2026-11-21 的仓库实现整理；开始迁移时应重新核对下文引用的代码与 [docs/GLOSSARY.md](./GLOSSARY.md) 中的领域词汇规范。
 
 当前程序不是可直接导入任意 CP 的通用模板：角色 ID、素材路径和部分角色行为仍写在代码里。第一次迁移建议保留双人桌宠结构，先替换内容；需要完整重命名时，再单独完成 ID 迁移。
 
@@ -35,7 +35,7 @@
 
 | 方式 | 新功能如何同步 | 适用情况与代价 |
 | --- | --- | --- |
-| 同仓库、不同 CP 分支（现阶段建议） | 通用功能进入 `main`，各 `cp/<名称>` 分支合并 `main` | 适合第二对 CP 的初次迁移；长期分支差异会增加冲突，需要持续同步 |
+| 同仓库、不同 CP 分支（现阶段建议） | 通用功能进入 `main`，通过自动化同步（[`.github/workflows/sync-to-cp.yml`](../.github/workflows/sync-to-cp.yml) + [`scripts/sync-to-cp.js`](../scripts/sync-to-cp.js) / `npm run sync:cp`）挑拣或手动合并/`cherry-pick` 到 `cp/<名称>` | 适合在同仓库维护 CP 分支；常规通用改动可自动同步，但长期分支差异与 CP 专属功能仍需人工处理冲突与内容适配 |
 | 独立仓库或 fork | 保留上游关系，通过合并上游或 `cherry-pick` 引入提交 | 适合维护团队、权限或产品方向需要分开的情况；仍可共享功能，但需要额外维护上游接线与同步流程 |
 | 同一分支、不同 CP 配置和素材包（长期方向） | 通用代码只改一次，各 CP 使用自己的内容和构建配置 | 共享成本最低，但当前硬编码尚未提取，不能只加一个配置文件就直接实现 |
 
@@ -45,17 +45,25 @@
 - `cp/<新CP名称>`：从验证通过的 `main` 提交建立，主要修改角色素材、对白、配色、专属互动和独立发行配置。
 - 临时功能分支：通用改动完成验证后回到 `main`；新 CP 开发中发现的通用修复，也应单独整理回 `main`，再同步到其他 CP。
 
-**通用机制与 CP 专属内容尽量分开提交。** 例如新增提醒功能时，提醒计时、IPC 和窗口行为放在一个提交，七九专属对白与素材放在另一个提交。这样新 CP 引入机制时更容易保留自己的内容；不需要让每个 CP 重写提醒系统。
+**通用机制与 CP 专属内容尽量分开提交。** 例如新增提醒功能时，提醒计时、IPC 和窗口行为放在一个提交，七九专属对白与素材放在另一个提交。这样不仅便于人工合并，也能让自动化同步脚本（见 [ADR-049](./decisions/ADR-049-main-to-cp-auto-sync.md)）准确挑拣通用提交，并跳过标记了 `[skip-cp]` 或触及专属素材与对白的提交。
 
 ### 2.2 七九版新增功能后，如何同步到新 CP
 
-1. 在 `main` 完成功能和相关测试，记录哪些改动属于通用机制、哪些依赖七九设定。
-2. 确认新 CP 分支已有改动已保存并可回退，再把经过验证的 `main` 合并进 `cp/<名称>`。持续共享功能时优先定期合并，避免分支长期落后。
-3. 对冲突逐项核对：保留新 CP 的姓名、三语对白、素材映射、互动设定、应用身份、存档隔离和更新源，接入新的通用逻辑。不要对整个文件统一选择“保留本分支”或“采用上游”，两者都可能丢失需要的改动。
-4. 为新功能补齐新 CP 对应的三语文案和素材，适配角色专属行为；运行相关测试、`npm test`，并按第 8 节验收新功能和原有角色表现。
-5. 更新新 CP 的变更记录和用户说明。需要提交/推送时按 [Git 工作流](./git-workflow.md) 使用项目的 `push.ps1` / `push.sh`，每个 CP 的发行仍按第 7 节保持独立身份和更新链。
+当前仓库已通过 [`.github/workflows/sync-to-cp.yml`](../.github/workflows/sync-to-cp.yml) 与 [`scripts/sync-to-cp.js`](../scripts/sync-to-cp.js)（`npm run sync:cp`，详见 [ADR-049](./decisions/ADR-049-main-to-cp-auto-sync.md) 与 [Git 工作流](./git-workflow.md)）建立 `main` → `cp/<名称>`（默认目标为 `cp/crowley-aziraphale`）的自动同步机制：
 
-如果某个 CP 只需要一个已独立提交的功能，可以选择 `cherry-pick`，并记录来源提交及依赖。若日后还会合并整个 `main`，需检查重复引入和冲突；不要长期靠零散挑选提交代替正常同步。
+- **自动挑拣与过滤**：推送到 `main` 后，工作流会自动评估新增提交，将通用提交 `cherry-pick` 到 `cp/<名称>`；同步时会自动过滤 `CHANGELOG.md` 中含七九专属设定的条目并保留 CP 分支的包身份，在隔离 worktree 中运行 `npm test` 通过后再推送。
+- **自动跳过条件**：包含 `[skip-cp]`（或 `[no-cp-sync]`）标记、修改角色专属素材目录/文件（如 `src/assets/<skinId>/`、`calligraphy-*.webp`、`icon.*`）或专属对白（`src/data/dialogues.js`）以及修改 `.github/workflows/*` 的提交会被跳过（其中 workflow 文件变更受 `GITHUB_TOKEN` 权限限制需手动同步）。
+- **本地推送预检**：在 `main` 分支通过 `push.ps1` / `push.sh` 推送时，脚本会自动运行 `npm run sync:cp -- --verify` 在临时 worktree 中执行预检；若该改动仅限 `main`，可在 commit message 中补充 `[skip-cp]`，也可运行 `npm run sync:cp` 进行只读 `--dry-run` 预览。
+
+当需要向新设的 `cp/<名称>` 分支同步、自动同步因冲突/测试失败阻塞，或需要人工补充 CP 专属内容时，按以下步骤处理：
+
+1. 在 `main` 完成功能和相关测试，把通用机制与七九专属素材/对白拆开提交（纯主分支提交附带 `[skip-cp]`）。
+2. 若自动同步报告冲突、阻塞，或新 CP 分支尚未接入自动同步工作流，先确认 `cp/<名称>` 分支已有改动已保存并可回退，再手动执行 `cherry-pick` 或从 `main` 合并对齐。
+3. 对冲突逐项核对：保留新 CP 的姓名、三语对白、素材映射、互动设定、应用身份、存档隔离和更新源，接入新的通用逻辑。不要对整个文件统一选择“保留本分支”或“采用上游”，两者都可能丢失需要的改动。
+4. 为新功能补齐新 CP 对应的三语文案、专属素材和角色专属行为；运行相关测试、`npm test`，并按第 8 节验收新功能和原有角色表现。
+5. 更新新 CP 的变更记录（`CHANGELOG.md`）和用户说明。需要提交/推送时按 [Git 工作流](./git-workflow.md) 使用项目的 `push.ps1` / `push.sh`，每个 CP 的发行仍按第 7 节保持独立身份和更新链。
+
+若手动挑选单个已独立提交的功能（`cherry-pick`），需记录来源提交及依赖；若日后还会合并整个 `main`，应检查重复引入和冲突，避免长期靠零散手动挑拣代替基线同步。
 
 ### 2.3 逐步转向共享程序与 CP 内容包
 
@@ -93,8 +101,8 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 | [`src/ui/ContextMenu.js`](../src/ui/ContextMenu.js) | 角色菜单及喂食、打坐、关怀、休息的硬编码兜底文案 |
 | [`src/systems/AmbientDialogueSystem.js`](../src/systems/AmbientDialogueSystem.js) | 时段问候、低状态提醒、夜间梦话、角色联动及兜底文案 |
 | [`src/systems/InteractionSystem.js`](../src/systems/InteractionSystem.js)、[`src/debug.js`](../src/debug.js) | 吃撑互动与调试工具里的旧角色台词 |
-| [`src/index.html`](../src/index.html) 及其他子窗口 HTML | 页面标题、静态初始文字和 `data-i18n` 对应文案 |
-| [`src/index.css`](../src/index.css)、[`src/status.css`](../src/status.css)、[`src/stat-bar.css`](../src/stat-bar.css)、[`src/pomodoro.css`](../src/pomodoro.css)、[`src/effects.css`](../src/effects.css) | 角色配色、占位图、光晕、修仙装饰；按新主题需要调整 |
+| [`src/index.html`](../src/index.html)、[`src/settings.html`](../src/settings.html) 及其他子窗口 HTML | 页面标题、静态初始文字和 `data-i18n` 对应文案 |
+| [`src/index.css`](../src/index.css)、[`src/status.css`](../src/status.css)、[`src/stat-bar.css`](../src/stat-bar.css)、[`src/pomodoro.css`](../src/pomodoro.css)、[`src/settings.css`](../src/settings.css)、[`src/settings-calligraphy.css`](../src/settings-calligraphy.css)、[`src/effects.css`](../src/effects.css) | 角色配色、占位图、光晕、修仙装饰；其中统一设置窗口需同步检查下角竖排书法底纹（`calligraphy-yqy.webp` / `calligraphy-sqq.webp`）及标题印章装饰（`calligraphy-qj.webp`），按新主题需要调整 |
 | [`src/pet/SpriteView.js`](../src/pet/SpriteView.js) | 两名角色的状态图片和 `emojiMap`，避免缺图时出现原角色的标志性 emoji |
 
 **只改 config 里的名字不够。** 独立状态窗口 [`src/statusWindow.js`](../src/statusWindow.js) 会按角色 ID 拼出 `nameYueqi` / `nicknameYueqi` 等翻译键，优先使用字典的姓名。保留 ID 时，要把这些旧键的值改成新角色姓名；完整重命名时，要同步提供新 ID 对应的键。
@@ -136,8 +144,8 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 
 ### 4.2 当前素材脚本的限制
 
-- [`tools/run_trim.py`](../tools/run_trim.py) 的 `groups` 需要加入新素材的动画分组，再执行 `python tools/run_trim.py`。
-- [`scripts/convert_images.js`](../scripts/convert_images.js) 当前 `skinDirs` 只包含 `animal_ears` 和 `school_au`。转换新目录或 `default` 前必须修改处理范围，否则执行脚本不会处理它们。脚本优先用 `ffmpeg`，失败后尝试 `python3` + Pillow；确认本机命令可用，并检查每张输出，不能只看脚本是否退出。
+- [`tools/run_trim.py`](../tools/run_trim.py) 已支持直接通过命令行参数传入目标皮肤目录（macOS/Linux 用 `python3 tools/run_trim.py src/assets/<skinId>`，Windows 用 `python tools/run_trim.py src/assets/<skinId>`）；仅在不传参数时才回退到内置默认目录（`animal_ears` 与 `school_au`）。若完整重命名了 `yueqi` / `shenjiu` 子目录，仍需同步调整 `process_skin_directory()` 中的分组路径。
+- [`scripts/convert_images.js`](../scripts/convert_images.js) 同样已支持直接通过命令行参数传入目标皮肤目录（`node scripts/convert_images.js src/assets/<skinId>`），仅在未传参数时回退到内置默认目录（`animal_ears` 与 `school_au`）。脚本优先用 `ffmpeg`，失败后按平台调用 Pillow 备选路径（Windows 使用 `python`，macOS/Linux 使用 `python3`）；确认本机命令可用，并检查每张输出，不能只看脚本是否退出。
 - [`test/assetDimensions.test.js`](../test/assetDimensions.test.js) 有固定皮肤列表和特定皮肤断言。更换皮肤目录时同步更新覆盖范围，避免新目录没有被检查。
 
 ### 4.3 同步皮肤映射和受保护资源
@@ -147,7 +155,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 3. 核对 [`skinGallery.js`](../skinGallery.js) 的预览文件候选和 `default/kiss.webp` 兜底；若命名约定未变，可保留代码。画师署名应与新素材匹配。
 4. 核对 [`protectedAssetLoader.js`](../protectedAssetLoader.js) 的 asset ID 校验、加载与回退。现有字母、数字、下划线和连字符命名通常无需改加载器；不要为了新路径放宽目录穿越防护。素材清单由 [`scripts/protect-assets.js`](../scripts/protect-assets.js) 生成，不手工修改。
 5. 执行 `npm run protect:assets` 并重启开发应用，检查清单只包含准备发行的皮肤。旧清单优先于明文扫描，改图或加皮肤后不刷新会看到旧内容。
-6. 该生成脚本不会清除以前生成但已经无引用的 `.dat`。独立发行前，在确认备份并核对目录后清理旧生成输出，再重新生成；同时移除不再发行的旧素材目录，否则会再次被收集。
+6. [`scripts/protect-assets.js`](../scripts/protect-assets.js) 在生成 `manifest.json` 后会自动调用 `removeStaleEncryptedFiles()`，清除 `protected-assets/` 中已不在清单内的孤立 `.dat` 文件。独立发行前，只需确认已保留外部备份并从 `src/assets/` 中移除不再发行的旧明文皮肤目录，再重新执行 `npm run protect:assets` 即可。
 7. 同步 [`readme_zh.txt`](../readme_zh.txt)、[`readme_en.txt`](../readme_en.txt)、[`readme_ja.txt`](../readme_ja.txt) 的皮肤说明与署名。所有加载图片的子窗口 CSP 继续允许 `pet-asset:`。
 
 `npm run build` 会通过 npm 的 `prebuild` 生成受保护资源；直接运行 `npx electron-builder` 时，应先显式运行 `npm run protect:assets`。

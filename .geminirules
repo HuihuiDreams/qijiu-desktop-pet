@@ -4,17 +4,19 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 
 ## Core Principles
 
-1. **Think First**: Surface assumptions and trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths.
-2. **Use Skills First**: Before writing code, documentation, or designing architecture, you MUST proactively review your available skills list and invoke the appropriate skill via `view_file` (`debugging-and-error-recovery` for system/bug anomalies, `frontend-ui-engineering` for UI/CSS/animation, `code-review-and-quality` for pre-merge/refactoring, `documentation-and-adrs` for ADRs).
+1. **Think First**: Surface assumptions and trade-offs before coding. Ask questions if game logic, formulas, or scaling is unclear. Suggest simpler paths. When evaluating an external code review, audit, or plan, verify the active branch (`main` vs `cp/crowley-aziraphale`), commit baseline vs `HEAD`, exact file/line citations, runtime facts (e.g., `process.versions`), missing context, and actual test runs before agreeing or acting—never assume a report is free of stale items or false positives.
+2. **Use Skills First**: Before writing code, documentation, or designing architecture, you MUST proactively review your available skills and read the relevant `SKILL.md` via `read_file`:
+   - Project skills (`.agents/skills/`): `desktop-pet-maintenance` (renderer/main/IPC/display/skins), `skin-asset-pipeline` (sprites/WebP/encryption), `release-and-packaging` (builds/ASAR/signing/workflows).
+   - Global skills: `debugging-and-error-recovery`, `frontend-ui-engineering`, `game-ui-ux`, `code-review-and-quality`, `documentation-and-adrs`, and orchestration skills (`swarm`, `subagent-driven-development`).
 3. **Simplicity First**: Write minimum code. Avoid speculative abstractions or premature OOP registry structures.
 4. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
 5. **Goal-Driven & Chain Verification**: When executing multi-step tasks (`/goal` or multi-bug fixes):
    - Solve exactly ONE problem at a time.
-   - After each atomic fix, verify and update corresponding unit tests (`test/`), run `npm test` or focused checks.
+   - After each atomic fix, verify and update corresponding unit tests (`test/`). Prefer behavioral tests (mocks, fake timers, `FakeBrowserWindow`) over regex/source-matching assertions (`assert.match(source, ...)`), except for intentional static security/manifest invariants. Run `npm test` (plus `npm run test:integration` for IPC/service/window lifecycle changes).
    - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
      1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, ensuring cross-platform agents (macOS / Windows) stay in sync.
-     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`).
-   - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs to maintain clean bisectability and rollback checkpoints.
+     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`), and verify with `npm run check:adrs` and `node --test test/docLinks.test.js`.
+   - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs to maintain clean bisectability and rollback checkpoints. Provide manual verification steps for security changes or complex refactors.
    - Never batch changes without running intermediate verification and updating docs for each step.
 
 ## Technical Constraints
@@ -23,18 +25,20 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
    - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
    - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
-   - IPC Authorization: All sensitive operations (skin changes, asset loading, filesystem requests) must be validated inside `main.js` IPC handlers.
+   - IPC Authorization: Validate all sensitive operations (skin changes, asset loading, filesystem requests) inside `main.js` IPC handlers. When restricting sender IDs, retain E2E QA entry points (`app.openSkinSelectorForQA`, `app.openSettingsForQA`).
 2. **Game Loop & Time Skew (`src/app.js`)**:
    - Must wrap step iterations in `try/catch` to prevent renderer crashes.
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
-   - Sleep/Resume Guard: When calculating elapsed time or greetings across frames, clamp or check time deltas to prevent system sleep/wake jumps (e.g., macOS Dark Wake) from causing erroneous state transitions.
+   - Sleep/Resume Guard: Clamp or validate time deltas across sleep/wake (e.g., macOS Dark Wake) to prevent erroneous transitions.
+   - External API Metrics: Strictly validate numeric fields (e.g., weather coordinates/temperatures) with `firstFiniteNumber` to prevent implicit `Number(null)` -> `0` coercion.
 3. **Multi-Display & DPI**:
    - Coordinate conversion via `displayBounds.js`.
    - Window refit/debounce behavior via `displayFit.js`; keep Electron `screen` event coalescing and min/max constraint bridging together.
    - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects to maintain consistent physical sizing across screens.
-4. **macOS vs Windows Window Management**:
-   - When modifying window `alwaysOnTop` or visibility during fullscreen/space transitions (including sub-windows like pomodoro), account for macOS space isolation to prevent windows from being trapped or hidden.
+4. **macOS vs Windows Window Management & Sub-Window UI**:
+   - When modifying `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows (settings, skin selector, pomodoro), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen rearrangement to prevent trapped, hidden, or flickering windows.
+   - For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e:ci` or Playwright measurement), not just fake-DOM unit tests.
 5. **Input & Drag**:
    - Default: `setIgnoreMouseEvents(true, { forward: true })`. Toggle to `false` only on hover of interactive elements.
    - Set `isDragging = true` on drag, pausing `MovementSystem` and `InteractionSystem`.
@@ -42,13 +46,19 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Asset Pipeline & Skin System (`src/assets/`, `skinGallery.js`)
 
 1. **Pipeline Adherence**: Strictly follow `docs/skin-pipeline-guide.md` when modifying skins/sprites (`webp` format, `walk_left`/`walk_right` prefixes).
-2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`).
+2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`); ensure sub-window HTML CSPs allow `pet-asset:`.
 3. **Skin Selector State Machine**: Support `isPreview` workflow (preview without committing; cancel safely restores previous skin).
+
+## Browser Support & Web Standards Policy
+
+1. **Runtime & Zero Polyfills**: Target Electron 45+ (Chromium 156+) directly with zero external polyfills, component libraries, or CDN scripts/styles (strict CSP).
+2. **Native Web Standards**: Use Popover API (`popover="manual"`), CSS Anchor Positioning, Relative Color Syntax (`rgb(from ...)`), `@starting-style` / `allow-discrete`, `content-visibility: auto` + `contain-intrinsic-size`, standard ARIA semantics (`role="meter"`, `aria-disabled="true"`), and `@media (prefers-reduced-motion: reduce)`.
+3. **Fake-DOM Test Compatibility**: Guard modern web API calls in renderer JS (`showPopover`, `hidePopover`, `getAnimations`) with feature detection or optional chaining (`?.()`) + fallback timers so Node.js fake-DOM tests run cleanly.
 
 ## Git Workflow & Versioning
 
 Before commit/push:
-1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) without duplicate headings under the same version. Entries under `Unreleased` must be written in clear Chinese (except code terms/proper nouns), strictly placed beneath `## [Unreleased]`, and link ADRs when relevant.
-2. **Update docs when behavior changes**: Keep `docs/structure.md` and relevant ADRs in sync.
+1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) without duplicate headings under the same version. Keep `Unreleased` entries in oldest-to-newest order, written in clear Chinese (except code terms/proper nouns), strictly beneath `## [Unreleased]`, and link ADRs when relevant.
+2. **Update docs when behavior changes**: Keep `docs/structure.md`, `docs/git-workflow.md`, `README.md`/`readme_*.txt`, relevant ADRs, and `package-lock.json` (when dependencies/`engines` change) in sync.
 3. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
-4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) early to catch preflight format validation issues.
+4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) early to catch preflight format validation issues. Both reject unstaged untracked files, run `npm run sync:cp -- --verify` on `main`, and accept `[skip-cp]` for `main`-only changes.
