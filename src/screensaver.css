@@ -1,6 +1,6 @@
 /**
  * src/screensaver.css
- * CP 屏保渲染视觉层与被抓包提示样式。
+ * CP 屏保渲染视觉层：叠加图、暖光与心形粒子动画及减少动态效果回退。
  */
 
 .screensaver-overlay-image {

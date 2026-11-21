@@ -167,7 +167,7 @@ qijiu-desktop-pet/
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ playwright.config.js               # Playwright 配置：E2E 目录 test/e2e，串行运行 Electron 用例
 ├─ package-lock.json                    # npm 锁文件
-├─ AGENTS.md / CLAUDE.md / .geminirules  # 各 Agent 工具读取的项目指令（Codex、Claude Code、Gemini）
+├─ AGENTS.md / .geminirules             # 各 Agent 工具读取的项目指令（Codex、Gemini；本地 CLAUDE.md 被 gitignore，不入库）
 ├─ CHANGELOG.md                         # 版本变更记录
 ├─ README.md / readme*.txt              # 用户说明与中英日说明文本，包含体型预览/保存、书法装饰与静修完成音效及演出
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
@@ -188,7 +188,7 @@ qijiu-desktop-pet/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
 │  ├─ effects.css                       # 天气与粒子动效独立样式
-│  ├─ screensaver.css                   # CP 屏保渲染视觉层与被抓包提示样式
+│  ├─ screensaver.css                   # CP 屏保渲染视觉层：叠加图、暖光与心形粒子动画及减少动态效果回退
 │  ├─ context-menu.css                  # 右键菜单样式；中/日文书法标题保留仅视觉隐藏的文字姓名供读屏访问
 │  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用

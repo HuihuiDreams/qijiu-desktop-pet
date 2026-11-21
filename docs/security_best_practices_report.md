@@ -114,7 +114,7 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
   ```
 
 - **Impact**: Although `StorageIpc.js` verifies `isSenderMainWindow`, enforces `ALLOWED_STORE_KEYS` (`['autoLaunch', 'petState', 'locale', 'breakReminderSettings', 'lastPomodoroMinutes']`), rejects `petState` values that are not non-array objects, and overrides `petState.skinId` with the main-process `confirmedSkinId`, it does not validate the nested fields or byte size of `value` before writing to `electron-store`. A compromised or malfunctioning main renderer could persist arbitrarily large objects or malformed state types to `config.json`, causing startup deserialization failures or disk amplification. Similarly, `StatusWindow.js` relays `data` from `mainWindow` to `statusWindow` without normalizing fields such as `pet.image` (consumed by `icon.src = pet.image` in `src/statusWindow.js:51`, mitigated by `src/status.html:7` CSP `img-src 'self' data: pet-asset:`).
-- **Fix**: Add lightweight per-key validators in `ipcContracts.js` (e.g., boolean check for `autoLaunch`, supported locale check for `locale`, finite integer check for `lastPomodoroMinutes`, and a serialized JSON byte ceiling such as 64 KB for `petState` and `breakReminder`) before calling `store.set(key, value)`. Normalize `status-window-data` payloads in `ipcContracts.js` before forwarding to `statusWindow`.
+- **Fix**: Add lightweight per-key validators in `ipcContracts.js` (e.g., boolean check for `autoLaunch`, supported locale check for `locale`, finite integer check for `lastPomodoroMinutes`, and a serialized JSON byte ceiling such as 64 KB for `petState` and `breakReminderSettings`) before calling `store.set(key, value)`. Normalize `status-window-data` payloads in `ipcContracts.js` before forwarding to `statusWindow`.
 - **False-Positive / Override Notes**: Exploiting this requires prior code execution inside `mainWindow` (`isSenderMainWindow`), and `petState.skinId` privilege escalation is already blocked at `src/main/services/StorageIpc.js:30-41`.
 - **Status / Resolution**: Partially mitigated. Since commit `8c9c837`, `save-data` rejects `petState` values that are not non-array objects (`src/main/services/StorageIpc.js:31`). Nested field validation, a byte size ceiling, and normalization of status window payloads remain open.
 
@@ -233,8 +233,8 @@ The codebase demonstrates a strong security posture and defense-in-depth across 
     (error, stdout, stderr) => {
   ```
 
-- **Impact**: `getSafeChildProcessEnv()` (`meetingDetector.js:83-100`) already pins `PATH` to `/usr/bin:/bin:/usr/sbin` on non-Windows platforms (`meetingDetector.js:97`), mitigating `PATH` hijacking (`TH-03`). However, whereas `meetingDetector.js:61-68` resolves `/usr/bin/pgrep` and `/usr/sbin/lsof` via `getSystemBinaryPath()`, `activeWindowProvider.js:574` passes bare `'pmset'`.
-- **Fix**: Add a `pmset` branch to `getSystemBinaryPath()` in `meetingDetector.js` that resolves `/usr/bin/pmset`, the same way it already handles `pgrep` and `lsof` (`meetingDetector.js:61-68`), and call `pmset` through the resolved path in `createMacActiveWindowProvider`. Update any test that asserts the bare `'pmset'` command.
+- **Impact**: `getSafeChildProcessEnv()` (`meetingDetector.js:83-100`) already pins `PATH` to `/usr/bin:/bin:/usr/sbin` on non-Windows platforms (`meetingDetector.js:97`), mitigating `PATH` hijacking (`TH-03`). However, whereas `meetingDetector.js:61-70` resolves `/usr/bin/pgrep` and `/usr/sbin/lsof` via `getSystemBinaryPath()`, `activeWindowProvider.js:574` passes bare `'pmset'`.
+- **Fix**: Add a `pmset` branch to `getSystemBinaryPath()` in `meetingDetector.js` that resolves `/usr/bin/pmset`, the same way it already handles `pgrep` and `lsof` (`meetingDetector.js:61-70`), and call `pmset` through the resolved path in `createMacActiveWindowProvider`. Update any test that asserts the bare `'pmset'` command.
 
 ---
 

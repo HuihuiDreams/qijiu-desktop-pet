@@ -25,7 +25,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
    - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
    - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
-   - IPC Authorization: Validate all sensitive operations (skin changes, asset loading, filesystem requests) inside `main.js` IPC handlers. When restricting sender IDs, retain E2E QA entry points (`app.openSkinSelectorForQA`, `app.openSettingsForQA`).
+   - IPC Authorization: Validate all sensitive operations (skin changes, asset loading, filesystem requests) inside main-process IPC handlers (`src/main/services/*`, `src/main/windows/*`, `src/main/DisplayService.js`; channel contracts in `ipcContracts.js`). When restricting sender IDs, retain E2E QA entry points (`app.openSkinSelectorForQA`, `app.openSettingsForQA`).
 2. **Game Loop & Time Skew (`src/app.js`)**:
    - Must wrap step iterations in `try/catch` to prevent renderer crashes.
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
@@ -38,7 +38,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects to maintain consistent physical sizing across screens.
 4. **macOS vs Windows Window Management & Sub-Window UI**:
    - When modifying `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows (settings, skin selector, pomodoro), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen rearrangement to prevent trapped, hidden, or flickering windows.
-   - For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e:ci` or Playwright measurement), not just fake-DOM unit tests.
+   - For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e` or Playwright measurement; `test:e2e:ci` only runs the startup, settings window, IPC isolation, and font specs), not just fake-DOM unit tests.
 5. **Input & Drag**:
    - Default: `setIgnoreMouseEvents(true, { forward: true })`. Toggle to `false` only on hover of interactive elements.
    - Set `isDragging = true` on drag, pausing `MovementSystem` and `InteractionSystem`.
@@ -46,7 +46,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Asset Pipeline & Skin System (`src/assets/`, `skinGallery.js`)
 
 1. **Pipeline Adherence**: Strictly follow `docs/skin-pipeline-guide.md` when modifying skins/sprites (`webp` format, `walk_left`/`walk_right` prefixes).
-2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`); ensure sub-window HTML CSPs allow `pet-asset:`.
+2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`); when a sub-window loads `pet-asset://` resources, its HTML CSP must allow `pet-asset:`.
 3. **Skin Selector State Machine**: Support `isPreview` workflow (preview without committing; cancel safely restores previous skin).
 
 ## Browser Support & Web Standards Policy

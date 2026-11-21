@@ -91,7 +91,7 @@ Open "⚙️ Settings… -> Appearance" from the tray and drag the slider to liv
 Changes save automatically on slider release, keyboard step, or window close; "Reset" restores 100% immediately. The Appearance tab also shows your current skin and a shortcut to open the Skin Selector.
 
 Calligraphy Details:
-Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold seal. The skin selector and unified settings windows show the same gold ornament beside their localized titles. The unified settings window also features vertical "岳清源" and "Shen Qingqiu (沈清秋)" calligraphic ink watermarks in its lower corners.
+Character menus and the status panel use calligraphic character names in Chinese and Japanese, and retain English names in English, with faint ink backgrounds. The status panel also has a gold seal. The skin selector and unified settings windows show the same gold ornament beside their localized titles. The unified settings window also features vertical "Yue Qingyuan (岳清源)" and "Shen Qingqiu (沈清秋)" calligraphic ink watermarks in its lower corners.
 
 ========================================
 🪟 Realm Awareness
