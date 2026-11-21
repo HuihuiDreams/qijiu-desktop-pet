@@ -113,11 +113,11 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 |-- .agents/skills/skin-asset-pipeline/SKILL.md      # 皮肤素材处理与图片转换流水线技能
 |-- .agents/skills/release-and-packaging/SKILL.md    # 发布打包与签名合规流水线技能
 |-- .github/dependabot.yml              # Dependabot 依赖更新配置：每周一定时检测 npm 依赖并提 PR，无自动合并
-|-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建、发布预检与 CP 分支自动同步）
+|-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建与发布预检）
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
 ├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 330 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数；模块级可变状态仅有 `screensaverController`、`interruptionCoordinator` 两个，由 `initScreensaverSystem()` 赋值
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
-├─ src/main/TrayManager.js              # 系统托盘管理：精简托盘菜单（实时行为控制、状态/静修/选肤/统一设置入口、更新与退出）
+├─ src/main/TrayManager.js              # 系统托盘管理：精简托盘菜单（实时行为控制、状态/旧书店伴读/选肤/统一设置入口、更新与退出）
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗、统一设置窗、更新进度窗)
 ├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
@@ -167,9 +167,9 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
 ├─ playwright.config.js               # Playwright 配置：E2E 目录 test/e2e，串行运行 Electron 用例
 ├─ package-lock.json                    # npm 锁文件
-├─ AGENTS.md / CLAUDE.md / .geminirules  # 各 Agent 工具读取的项目指令（Codex、Claude Code、Gemini）
+├─ AGENTS.md / .geminirules             # 各 Agent 工具读取的项目指令（Codex、Gemini；本地 CLAUDE.md 被 gitignore，不入库）
 ├─ CHANGELOG.md                         # 版本变更记录
-├─ README.md / readme*.txt              # 用户说明与中英日说明文本，包含体型预览/保存、书法装饰与静修完成音效及演出
+├─ README.md / readme*.txt              # 用户说明与中英日说明文本，包含体型实时预览、旧书店伴读（番茄钟）完成铃声与羽毛演出
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
 ├─ build/
 │  └─ installer.nsh                     # Windows NSIS 安装器定制脚本
@@ -187,7 +187,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
 │  ├─ effects.css                       # 天气与粒子动效独立样式
-│  ├─ screensaver.css                   # CP 屏保渲染视觉层与被抓包提示样式
+│  ├─ screensaver.css                   # CP 屏保渲染视觉层：叠加图、暖光与心形粒子动画及减少动态效果回退
 │  ├─ context-menu.css                  # 右键菜单样式；中/日文书法标题保留仅视觉隐藏的文字姓名供读屏访问
 │  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
@@ -508,7 +508,7 @@ DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗
   番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
 - **CSS 锚点定位 (Anchor Positioning)**：
   提示框收起时保留当前按钮锚点，等待 `getAnimations()` 返回的退场动画结束后再清理，避免仍在 Top Layer 的提示框跳至窗口左上角；每次显示或收起递增版本，过期动画完成回调不能移除新提示框的锚点。无动画 API 或无活跃动画时立即清理，旧按钮的失焦事件不关闭新按钮的提示框。
-  番茄钟静修窗口基于 CSS Anchor Positioning（`position-anchor: --pomodoro-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准。
+  番茄钟（旧书店伴读）窗口基于 CSS Anchor Positioning（`position-anchor: --pomodoro-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准。
 - **CSS 相对颜色语法 (Relative Color Syntax)**：
   `src/index.css` 设计令牌采用 `rgb(from var(--color-*) r g b / <alpha>)` 规范，从基准玉色、仙金、丹砂与墨色动态派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。
 - **`content-visibility: auto` 与占位尺寸保护**：

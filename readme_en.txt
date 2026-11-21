@@ -158,7 +158,7 @@ Open it from the tray menu with "📖 Bookshop Study"; while running, the tray m
 Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
 After you start, Crowley and Aziraphale enter the countdown window, which displays the timer, progress bar, and a joint miracle illustration. Concentric rings with an angelic golden starburst gently pulse at the center of the dial.
 The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the countdown ends, an antique brass shop door bell chime plays as white angel and black demon wing feathers drift down and a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+When the countdown ends, a two-tone antique brass shop door bell chime plays as white angel and black demon wing feathers drift down and a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
 The window supports "Begin Study", "End Early", and "Done" actions. Click "Done", stop early, or close the window to return the pets to their previous visibility and walking state.
 
 ========================================
@@ -213,10 +213,10 @@ If the current system does not support it, the setting displays an unavailable n
 ========================================
 
 Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
-During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
+During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with a high Bond, they might trigger a sweet linked dream dialogue.
 
 If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
-When it rains, snows, gets windy, thunders, or becomes hot (≥33°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
+When it rains, snows, gets windy, thunders, or becomes hot (≥33°C), lightweight local particle or glow effects appear near the pets. Rain falls as a Creation meteor shower, thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
