@@ -170,11 +170,11 @@ macOS 打包后需要确认 `GoodOmensDeskPet.app` 包内真实可执行文件�
 
 在 GitHub Actions 手动运行 `Release Preflight`：
 
-- `version`: 填目标 SemVer 版本，可写 `1.0.0` 或 `v1.0.0`（工作流会匹配/拼装 `go-v` tag 前缀）。
+- `version`: 填目标 SemVer 版本，可写 `1.0.0`、`v1.0.0` 或 `go-v1.0.0`（工作流会匹配/拼装 `go-v` tag 前缀）。
 
 这个 workflow 也会在相关 pull request 上自动运行。手动运行时，它会验证：
 
-- 输入版本是否为 `X.Y.Z` 或 `vX.Y.Z`（不接受预发布或构建元数据），以及 `package.json` 是否匹配；不一致时由独立的 `sync-version` 作业同步两个版本文件并推送版本提交，Windows 预检作业随后检出分支最新提交并再次确认版本一致。
+- 输入版本是否为 `X.Y.Z`、`vX.Y.Z` 或 `go-vX.Y.Z`（不接受预发布或构建元数据），以及 `package.json` 是否匹配；不一致时由独立的 `sync-version` 作业同步两个版本文件并推送版本提交，Windows 预检作业随后检出分支最新提交并再次确认版本一致。
 - `CHANGELOG.md` 是否包含目标版本段落（`## [go-vX.Y.Z]` 或 `## [X.Y.Z]`）。
 - 目标 GitHub tag（`go-vX.Y.Z`）是否已经存在。
 - 根目录三份 `readme*.txt` 是否存在。

@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
@@ -72,4 +73,46 @@ test('the macOS preflight job waits for sync-version and checks out the synced c
 test('the Windows and macOS preflight jobs both run the integration tests', () => {
   assert.match(jobs.preflight, /run: npm run test:integration/);
   assert.match(jobs['preflight-mac'], /run: npm run test:integration/);
+});
+
+test('sync-version normalizes go-v and v prefixes symmetrically before SemVer validation', (t) => {
+  const syncJob = jobs['sync-version'];
+  assert.match(syncJob, /\[\[ "\$\{VERSION\}" == go-v\* \]\]/);
+  assert.match(syncJob, /VERSION="\$\{VERSION#go-v\}"/);
+  assert.match(syncJob, /elif \[\[ "\$\{VERSION\}" == v\* \]\]/);
+
+  const match = syncJob.match(
+    /VERSION="\$\{INPUT_VERSION\/\/\[\[:space:\]\]\/\}"[\s\S]*?if \[\[ ! "\$\{VERSION\}" =~ \^\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$ \]\]; then[\s\S]*?\n {10}fi/,
+  );
+  assert.ok(match, 'sync-version job must contain the expected version normalization and validation block');
+
+  const bashCheck = spawnSync('bash', ['-c', 'echo ok'], { encoding: 'utf8' });
+  if (bashCheck.error || bashCheck.status !== 0) {
+    t.skip('bash is not available on this host to execute the sync-version snippet');
+    return;
+  }
+
+  const snippet = `${match[0].replace(/^ {10}/gm, '')}\nprintf '%s' "\${VERSION}"`;
+
+  for (const [input, expected] of [
+    ['1.0.0', '1.0.0'],
+    ['v1.0.0', '1.0.0'],
+    ['go-v1.0.0', '1.0.0'],
+    ['  go-v1.2.3  ', '1.2.3'],
+  ]) {
+    const res = spawnSync('bash', ['-c', snippet], {
+      env: { ...process.env, INPUT_VERSION: input },
+      encoding: 'utf8',
+    });
+    assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
+    assert.equal(res.stdout, expected);
+  }
+
+  for (const invalidInput of ['go-vv1.0.0', 'v1.0.0-beta.1', 'go-1.0.0', '']) {
+    const res = spawnSync('bash', ['-c', snippet], {
+      env: { ...process.env, INPUT_VERSION: invalidInput },
+      encoding: 'utf8',
+    });
+    assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
+  }
 });

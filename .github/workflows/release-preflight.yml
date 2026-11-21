@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to validate, for example 0.3.0 or v0.3.0'
+        description: 'Release version to validate, for example 1.0.0, v1.0.0, or go-v1.0.0'
         required: true
         type: string
   pull_request:
@@ -51,7 +51,11 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           VERSION="${INPUT_VERSION//[[:space:]]/}"
-          VERSION="${VERSION#v}"
+          if [[ "${VERSION}" == go-v* ]]; then
+            VERSION="${VERSION#go-v}"
+          elif [[ "${VERSION}" == v* ]]; then
+            VERSION="${VERSION#v}"
+          fi
           if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Version must be SemVer without prerelease/build metadata, got '${INPUT_VERSION}'."
             exit 1
