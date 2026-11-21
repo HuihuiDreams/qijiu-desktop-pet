@@ -190,9 +190,9 @@ macOS 打包后需要确认 `GoodOmensDeskPet.app` 包内真实可执行文件�
 
 `Release Preflight` 通过后，手动运行 `Build Installers`：
 
-- `version`: 填同一个版本，可写 `1.0.0` 或 `v1.0.0`。
+- `version`: 填同一个版本，可写 `1.0.0`、`v1.0.0` 或 `go-v1.0.0`，解析规则与 `Release Preflight` 相同（只裁剪首尾空白，单次剥离 `go-v` 或 `v` 前缀）。
 
-手动运行时，workflow 会先执行 `create-release-tag`：
+手动运行时，workflow 会先执行 `create-release-tag`，由其中的 `Resolve release tag` 步骤统一解析版本并以作业输出 `tag` 交给两个平台的构建 job（tag 推送触发时直接校验推送的 tag 名）：
 
 - 要求输入版本与 `package.json` 的 `version` 对应。
 - 如果 `go-vX.Y.Z` tag 不存在，会在当前提交上创建并推送。

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version to tag, for example 0.3.0 or v0.3.0'
+        description: 'Release version to tag, for example 1.0.0, v1.0.0, or go-v1.0.0'
         required: true
         type: string
   push:
@@ -22,8 +22,33 @@ jobs:
   create-release-tag:
     name: Create release tag
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve-tag.outputs.tag }}
 
     steps:
+      # 唯一的版本解析入口：手动触发用输入版本，tag 推送用 tag 名；
+      # 与 Release Preflight 相同，只裁剪首尾空白并单次剥离 go-v 或 v 前缀
+      - name: Resolve release tag
+        id: resolve-tag
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          RAW_VERSION="${INPUT_VERSION:-${REF_NAME}}"
+          VERSION="${RAW_VERSION#"${RAW_VERSION%%[![:space:]]*}"}"
+          VERSION="${VERSION%"${VERSION##*[![:space:]]}"}"
+          if [[ "${VERSION}" == go-v* ]]; then
+            VERSION="${VERSION#go-v}"
+          elif [[ "${VERSION}" == v* ]]; then
+            VERSION="${VERSION#v}"
+          fi
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be SemVer without prerelease/build metadata, got '${RAW_VERSION}'."
+            exit 1
+          fi
+          echo "tag=go-v${VERSION}" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout repository
         if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v6
@@ -34,15 +59,9 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ steps.resolve-tag.outputs.tag }}
         run: |
-          VERSION="${INPUT_VERSION}"
-          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: ${VERSION}"
-            exit 1
-          fi
-          TAG="${VERSION#v}"
-          TAG="go-v${TAG}"
+          TAG="${RELEASE_TAG}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
           EXPECTED_TAG="go-v${PACKAGE_VERSION}"
           HEAD_SHA="$(git rev-parse HEAD)"
@@ -67,23 +86,12 @@ jobs:
       - name: Ensure draft GitHub Release exists
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ steps.resolve-tag.outputs.tag }}
           REPO_NAME: ${{ env.RELEASE_REPO }}
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION="${INPUT_VERSION}"
-          if [ -z "$VERSION" ]; then
-            TAG="${REF_NAME}"
-          else
-            TAG="${VERSION#v}"
-            TAG="go-v${TAG}"
-          fi
-          if [[ ! "$TAG" =~ ^go-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match go-v* semver format, got '$TAG'."
-            exit 1
-          fi
+          TAG="${RELEASE_TAG}"
           REPO="${REPO_NAME}"
           if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             gh release create "$TAG" --draft --repo "$REPO" --title "$TAG" --notes "Release $TAG"
@@ -96,6 +104,7 @@ jobs:
     runs-on: windows-latest
     env:
       SIGNING_ENABLED: 'false'
+      RELEASE_TAG: ${{ needs.create-release-tag.outputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -106,14 +115,8 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ($version -notmatch '^v?\d+\.\d+\.\d+$') {
-            throw "Invalid version format: $version"
-          }
-          $tag = "go-v" + ($version -replace '^v', '')
+          $tag = $env:RELEASE_TAG
           git fetch origin "refs/tags/$tag:refs/tags/$tag"
           git checkout $tag
 
@@ -178,20 +181,10 @@ jobs:
       - name: Upload Windows release assets
         shell: pwsh
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ env.RELEASE_REPO }}
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = "go-v" + ($version -replace '^v', '')
-          }
-          if ($tag -notmatch '^go-v\d+\.\d+\.\d+$') {
-            throw "Tag must match go-v* semver format, got '$tag'."
-          }
+          $tag = $env:RELEASE_TAG
           $repo = $env:REPO_NAME
 
           $assets = Get-ChildItem -Path dist -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.blockmap' -or $_.Name -eq 'latest.yml' -or $_.Name -eq 'UNSIGNED-RELEASE.txt' } | Select-Object -ExpandProperty FullName
@@ -205,19 +198,9 @@ jobs:
       - name: Upload readme files to GitHub Release
         shell: pwsh
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = "go-v" + ($version -replace '^v', '')
-          }
-          if ($tag -notmatch '^go-v\d+\.\d+\.\d+$') {
-            throw "Tag must match go-v* semver format, got '$tag'."
-          }
+          $tag = $env:RELEASE_TAG
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
           gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --repo "$env:RELEASE_REPO" --clobber
 
@@ -241,6 +224,8 @@ jobs:
     needs: create-release-tag
     if: needs.create-release-tag.result == 'success'
     runs-on: macos-latest
+    env:
+      RELEASE_TAG: ${{ needs.create-release-tag.outputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -251,16 +236,8 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: bash
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${INPUT_VERSION}"
-          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: ${VERSION}"
-            exit 1
-          fi
-          TAG="${VERSION#v}"
-          TAG="go-v${TAG}"
+          TAG="${RELEASE_TAG}"
           git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
           git checkout "$TAG"
 
@@ -330,25 +307,13 @@ jobs:
       - name: Upload validated macOS release assets
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ env.RELEASE_REPO }}
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           set -euo pipefail
           shopt -s nullglob
 
-          VERSION="${INPUT_VERSION}"
-          if [ -z "$VERSION" ]; then
-            TAG="${REF_NAME}"
-          else
-            TAG="${VERSION#v}"
-            TAG="go-v${TAG}"
-          fi
-          if [[ ! "$TAG" =~ ^go-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match go-v* semver format, got '$TAG'."
-            exit 1
-          fi
+          TAG="${RELEASE_TAG}"
           REPO="${REPO_NAME}"
 
           assets=(dist/*.dmg dist/*.zip dist/*.blockmap)

@@ -126,7 +126,7 @@ npm run verify:signatures
 * **网页端**：
   1. 进入 GitHub 仓库 -> **Actions** -> 选择 **Build Installers**。
   2. 点击 **Run workflow**。
-  3. 输入确认的版本号（如 `1.0.0` 或 `v1.0.0`）。
+  3. 输入确认的版本号（如 `1.0.0`、`v1.0.0` 或 `go-v1.0.0`，与 Preflight 相同）。
 * **GitHub CLI (`gh`)**：
   ```bash
   gh workflow run build-installer.yml -f version="1.0.0"
