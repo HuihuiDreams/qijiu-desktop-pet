@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-11-20
+最后更新：2026-11-21
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -90,6 +90,12 @@ graph TB
         SettingsHtml["src/settings.html + settings.css"] --> SettingsJs["src/settingsWindow.js"]
     end
 
+    subgraph Update["Update Progress Renderer Process"]
+        UpdateHtml["src/update-progress.html + update-progress.css"] --> UpdateJs["src/update-progress.js"]
+    end
+
+    IPC["IPC 通道（ipcMain / preload）"]
+
     Preload["preload.js"] --> Renderer
     StatusPreload["statusPreload.js"] --> Status
     PomodoroPreload["pomodoroPreload.js"] --> Pomodoro
@@ -109,7 +115,7 @@ qijiu-desktop-pet/
 |-- .github/dependabot.yml              # Dependabot 依赖更新配置：每周一定时检测 npm 依赖并提 PR，无自动合并
 |-- .github/workflows/                 # GitHub Actions 自动化工作流（安装包构建、发布预检与 CP 分支自动同步）
 ├─ main.js                              # Electron 主进程极简入口：仅包含单实例锁与 QA 目录配置，调用 AppLifecycle.init()
-├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 300 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数、零模块级可变状态
+├─ src/main/AppLifecycle.js             # 主进程薄编排层（约 330 行）：顶部特权 scheme/Chromium 内存参数/应用菜单禁用引导代码 + 7 个职责清晰的静态方法拆分 whenReady 逻辑 + class AppLifecycle.init() 按依赖顺序调用各模块 init(deps)；零 ipcMain 调用、零业务函数；模块级可变状态仅有 `screensaverController`、`interruptionCoordinator` 两个，由 `initScreensaverSystem()` 赋值
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
 ├─ src/main/TrayManager.js              # 系统托盘管理：精简托盘菜单（实时行为控制、状态/静修/选肤/统一设置入口、更新与退出）
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗、统一设置窗、更新进度窗)
@@ -131,7 +137,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
 ├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；直接将 WindowAwarenessService 已转换为 DIP 的 window.bounds 与完整 display.bounds/workArea 比较（适配混合 DPI 多屏且避免消费端重复除以 scaleFactor）；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
-├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting/session-finished -> inactive / blocked)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
+├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting -> inactive / blocked；渲染进程发出 `screensaver-finished` 时经 finishSession 回到 inactive)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 SettingsService 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
 ├─ src/main/services/StorageIpc.js      # 存储 IPC 模块：electron-store key 安全白名单、save-data/load-data（save-data 仅接受普通对象写入 petState 并强制钳制 petState.skinId 为已确认皮肤以防试穿泄漏）、set/get-auto-launch
@@ -147,6 +153,8 @@ qijiu-desktop-pet/
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
+├─ protectedAssetLoader.js            # 受保护皮肤资源加载：manifest 校验、AES-256-GCM 解密、SHA-256 完整性校验与 LRU 缓存
+├─ protectedAssetProtocol.js          # `pet-asset://` 协议处理器，异步加载受保护皮肤资源（见下方「受保护皮肤资产」）
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
@@ -157,7 +165,9 @@ qijiu-desktop-pet/
 ├─ meetingDetector.js                   # 会议自动隐藏检测：已知会议进程 + UDP 端点数量轮询与防抖状态机
 ├─ weatherSyncService.js                # 天气感知与时空同步服务主进程：网络请求、缓存、节流和降级
 ├─ package.json                         # npm 脚本、Electron Builder 配置、依赖声明
+├─ playwright.config.js               # Playwright 配置：E2E 目录 test/e2e，串行运行 Electron 用例
 ├─ package-lock.json                    # npm 锁文件
+├─ AGENTS.md / CLAUDE.md / .geminirules  # 各 Agent 工具读取的项目指令（Codex、Claude Code、Gemini）
 ├─ CHANGELOG.md                         # 版本变更记录
 ├─ README.md / readme*.txt              # 用户说明与中英日说明文本，包含体型预览/保存、书法装饰与静修完成音效及演出
 ├─ push.sh / push.ps1                    # 推送前验证与 Git 推送辅助脚本
@@ -172,11 +182,13 @@ qijiu-desktop-pet/
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
 │  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；支持纯锁文件冲突自动重生成，其余非文档冲突停止批次并从锚点重试（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
+│  ├─ verify-package-contents.js        # 打包后扫描 app.asar 是否混入禁止路径（如 .agents、.claude、AGENTS.md、backups），`npm run verify:package` 调用
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
 ├─ src/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
 │  ├─ effects.css                       # 天气与粒子动效独立样式
+│  ├─ screensaver.css                   # CP 屏保渲染视觉层与被抓包提示样式
 │  ├─ context-menu.css                  # 右键菜单样式；中/日文书法标题保留仅视觉隐藏的文字姓名供读屏访问
 │  ├─ dialog-bubble.css                 # 对话气泡样式
 │  ├─ stat-bar.css                      # 状态进度条独立样式组件，供主窗口与状态窗口复用
@@ -228,9 +240,12 @@ qijiu-desktop-pet/
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
 │  │  ├─ WeatherParticleLayer.js        # 局部天气粒子数量限制与节点管理：输入不变时复用节点，配置变化时清除并重建，隐藏或禁用时清理；容器尺寸与 --weather-effect-scale 同步融合显示器 DPI 与宠物体型缩放倍率（50%~150%）
 │  │  └─ ScreensaverParticleLayer.js      # CP 屏保爱心氛围粒子与暖光氛围层（每次 mount 清除并重建节点，最多 12 个爱心粒子，跟随场景与目标显示器 DPI 组合缩放，节点上限 <= 20，支持 reduced-motion，CSS keyframe 纯 transform/opacity 动画）
+│  ├─ utils/
+│  │  └─ windowI18n.js                  # 子窗口共用的 i18n 样板：刷新 `window.t` 与 `data-i18n*`，同步 `data-tooltip` / `aria-label`
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
 │     ├─ calligraphy-*.webp             # 水墨书法题签、纵向暗纹与闲章（中日文 UI 微装饰）
+│     ├─ fonts/                         # `index.css` 的 `@font-face` 字体子集（MaShanZheng、ShipporiMincho、YujiSyuku，woff2）及 YujiSyuku 的 OFL 许可证
 │     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
 │     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
 │     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
@@ -243,16 +258,20 @@ qijiu-desktop-pet/
 │  │  ├─ petScale.integration.test.js   # 体型缩放端到端集成测试（授权校验、设置读取、拖动预览广播、确认持久化、恢复默认与关窗刷盘）
 │  │  ├─ skinLifecycle.integration.test.js # 选肤器端到端集成测试（真实窗口双向装配、换肤预览、加载汇报、确认落盘、取消安全回滚与鉴权拦截）
 │  │  └─ storage.integration.test.js    # 存储 IPC 白名单、持久化读写与 skinId 强制归一化安全集成测试
-│  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，涵盖启动、右键菜单、选肤画廊、统一设置窗口（settingsWindow.spec.js）、子窗 preload 隔离（ipcIsolation.spec.js）及日语字体验证（font.spec.js，可由 test:font 独立运行）
+│  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，涵盖启动、右键菜单、久坐提醒（breakReminder.spec.js）、选肤画廊、统一设置窗口（settingsWindow.spec.js）、子窗 preload 隔离（ipcIsolation.spec.js）及日语字体验证（font.spec.js，可由 test:font 独立运行）
+│  ├─ helpers/                          # 测试辅助：sourceCorpus.js（统一的主进程源码读取入口）、mockElectron.js（拦截 require('electron') 的替身）
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
 │  ├─ measure-electron-performance.js   # Electron 性能采样 CLI：参数校验、JSON 输出及 dev/packaged 入口
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
+│  ├─ playwright-electron-smoke.js      # Playwright 启动 Electron 的冒烟检查（隔离临时 userData，`npm run qa:electron:smoke`）
 │  ├─ performance/
 │  │  ├─ electronRunner.js              # Playwright Electron 启动、隔离 profile、环境/进程采样和场景汇总
 │  │  ├─ measureStartup.js               # dev 启动探针运行器：隔离重复启动并汇总 clearCache/load 代理指标
+│  │  ├─ measureStartupCache.js          # 启动缓存场景的热启动序列（预热一次后重复 5 次采样）
 │  │  ├─ metrics.js                     # 帧、Long Task 与分进程 CPU/内存的确定性统计函数
+│  │  ├─ probeUtils.js                   # 轮询等待启动探针完成（waitForCompleteProbe）
 │  │  ├─ recomputeBaseline.js            # 从原始 runs 独立复算重复样本与天气 CPU 增量
 │  │  ├─ scenarios.js                    # 空闲/行走/天气场景驱动及 renderer rAF/Long Task 采样
 │  │  ├─ startupProbeMain.js             # 在真实 main.js 前安装无侵入启动计时探针
@@ -266,12 +285,12 @@ qijiu-desktop-pet/
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
    ├─ release-code-signing.md           # 代码签名说明
-   ├─ troubleshooting.txt               # 故障排查记录/草稿
+   ├─ skin-pipeline-guide.md            # 皮肤素材处理标准流程（PNG 转 WebP、透明通道与画幅归一化）
+   ├─ security_best_practices_report.md # 安全最佳实践审查报告
    ├─ skin_assets_requirements.*        # 皮肤资源命名和尺寸要求
    ├─ decisions/                        # 架构决策记录 ADR
    ├─ plan/                             # 功能规划和任务拆分
-   ├─ archive/                          # 已归档计划、交接、历史 review 和本地更新测试配置
-   └─ source-assets/                    # 源素材备份，不随应用打包
+   └─ archive/                          # 已归档计划、交接、历史 review、故障排查记录（troubleshooting.txt）和本地更新测试配置
 ```
 
 ## 3. 运行时关键机制
@@ -432,7 +451,7 @@ src/assets/{skinId}/
   - Windows：检查前台窗口是否全屏；非最大化窗口覆盖完整显示器时视为演示窗口，命中则延后 60 秒重试。活动窗口采样已在 `WindowAwarenessService` 中以 `screen.screenToDipRect(null, rect)` 将物理矩形一次性归一化为 DIP（首参 `null` 让 Electron 按窗口所在显示器换算），`PresentationGuard` 直接使用统一后的 DIP 坐标进行比较，不再对同一矩形二次缩放或转换。
   - 不保存窗口标题、进程名或 URL。
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
-- 配置通过 `electron-store` 持久化，托盘菜单提供开关和间隔（30/45/60/90/120 分钟）选择。
+- 配置通过 `electron-store` 持久化，统一设置窗口的「陪伴与守护」标签页提供开关和间隔（30/45/60/90/120 分钟）选择。
 
 ### 3.12 会议自动隐藏
 
@@ -662,6 +681,6 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - `scripts/protect-assets.js` 从 `src/assets/{skinId}/**/*.webp` 生成 `protected-assets/manifest.json` 和加密后的 `protected-assets/*.dat`，重新生成时会清理 manifest 之外的残留 `.dat`，避免已删除或改名的素材仍被打进安装包。
 - `protectedAssetLoader.js` 校验 `skin/{skinId}/...webp` manifest 资源 ID，在主进程中解密 AES-256-GCM 数据，并校验 size 与 SHA-256 完整性。
 - `protectedAssetLoader.js` 对已解密资源使用有大小上限的内存 LRU 缓存，并对 manifest 结果及缺失检查 (`manifestNotFound`) 实施全内存缓冲，避免运行期或番茄钟心跳触发重复读盘和解密。
-- `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，配合 `loadProtectedAssetAsync` 的异步读盘与在途请求 (`inFlightLoads`) 去重机制，支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与双修/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
+- `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，调用 `protectedAssetLoader.js` 的异步 `loadProtectedAsset`（`fs.promises.readFile` 读盘，在途请求 `inFlightLoads` 去重同在该文件），支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与双修/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
 - renderer 运行时代码应使用 `pet-asset://skin/...` URL 加载皮肤 WebP，不能直接使用 Node 文件系统 API。源素材仍保留在 `src/assets/` 便于编辑；打包产物排除明文皮肤 WebP，并包含 `protected-assets/`；运行时不读取的托盘模板图标 `src/assets/iconTemplate*.png`（托盘图标由 `TrayManager.createTrayIconBuffer` 在代码中生成）同样不进入 `app.asar`，源文件保留在仓库中。
 - 架构决策见 `docs/decisions/ADR-040-encrypted-skin-assets.md`。
