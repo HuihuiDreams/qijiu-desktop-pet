@@ -174,22 +174,12 @@ function findPowerShellExecutable() {
   return null;
 }
 
-test('sync-version and preflight normalize go-v and v prefixes symmetrically before SemVer validation', () => {
-  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
-  assert.match(syncScript, /\[\[ "\$\{VERSION\}" == go-v\* \]\]/);
-  assert.match(syncScript, /VERSION="\$\{VERSION#go-v\}"/);
-  assert.match(syncScript, /elif \[\[ "\$\{VERSION\}" == v\* \]\]/);
-  assert.doesNotMatch(syncScript, /INPUT_VERSION\/\/\[\[:space:\]\]/);
-  assert.ok(syncScript.includes('\nPACKAGE_VERSION='), 'sync-version script must compare against package.json after validation');
-
-  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
-  assert.match(metaScript, /\$version\s*=\s*\$inputVersion\.Trim\(\)/);
-  assert.match(metaScript, /\$version\.StartsWith\('go-v'\)/);
-  assert.match(metaScript, /elseif\s*\(\$version\.StartsWith\('v'\)\)/);
-  assert.ok(metaScript.includes('\n$packageVersion ='), 'Validate release metadata script must compare against package.json after validation');
-});
-
 test('sync-version bash snippet normalizes valid versions and rejects invalid or spaced ones', (t) => {
+  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
+  const cutoff = syncScript.indexOf('\nPACKAGE_VERSION=');
+  assert.ok(cutoff > 0, 'sync-version script must validate the input before reading package.json');
+  const snippet = `${syncScript.slice(0, cutoff)}\nprintf '%s' "\${VERSION}"`;
+
   const bashCheck = spawnSync('bash', ['-c', 'printf "%s" "${INPUT_VERSION}"'], {
     env: buildBashEnv('probe'),
     encoding: 'utf8',
@@ -198,11 +188,6 @@ test('sync-version bash snippet normalizes valid versions and rejects invalid or
     t.skip('bash with INPUT_VERSION env forwarding is not available on this host');
     return;
   }
-
-  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
-  const cutoff = syncScript.indexOf('\nPACKAGE_VERSION=');
-  assert.ok(cutoff > 0);
-  const snippet = `${syncScript.slice(0, cutoff)}\nprintf '%s' "\${VERSION}"`;
 
   for (const [input, expected] of VALID_VERSION_INPUTS) {
     const res = spawnSync('bash', ['-c', snippet], {
@@ -223,17 +208,17 @@ test('sync-version bash snippet normalizes valid versions and rejects invalid or
 });
 
 test('Validate release metadata PowerShell snippet matches sync-version normalization rules', (t) => {
+  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
+  const cutoff = metaScript.indexOf('\n$packageVersion =');
+  assert.ok(cutoff > 0, 'Validate release metadata script must validate the input before reading package.json');
+  const snippet = `${metaScript.slice(0, cutoff)}\n[Console]::Write($version)`;
+  const encoded = encodePowerShellCommand(snippet);
+
   const psExe = findPowerShellExecutable();
   if (!psExe) {
     t.skip('PowerShell (pwsh / powershell.exe) is not available on this host');
     return;
   }
-
-  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
-  const cutoff = metaScript.indexOf('\n$packageVersion =');
-  assert.ok(cutoff > 0);
-  const snippet = `${metaScript.slice(0, cutoff)}\n[Console]::Write($version)`;
-  const encoded = encodePowerShellCommand(snippet);
 
   for (const [input, expected] of VALID_VERSION_INPUTS) {
     const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
