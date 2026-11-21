@@ -1,33 +1,17 @@
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const test = require('node:test');
+const {
+  VALID_VERSION_INPUTS,
+  INVALID_VERSION_INPUTS,
+  loadWorkflow,
+  extractStepRunBlock,
+  buildBashEnv,
+  bashForwardsEnv,
+} = require('./helpers/workflowScripts');
 
-const source = fs.readFileSync(
-  path.join(__dirname, '..', '.github', 'workflows', 'release-preflight.yml'),
-  'utf8',
-).replace(/\r\n/g, '\n').replace(/^\s*#.*$/gm, ''); // 注释里会提到 contents: write，断言只看实际配置
-
-function splitTopLevelAndJobs(text) {
-  const jobsIndex = text.indexOf('\njobs:\n');
-  assert.ok(jobsIndex >= 0, 'workflow must define jobs');
-  const header = text.slice(0, jobsIndex);
-  const body = text.slice(jobsIndex + '\njobs:\n'.length);
-  const jobs = {};
-  let current = null;
-  for (const line of body.split('\n')) {
-    const match = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
-    if (match) {
-      current = match[1];
-      jobs[current] = [];
-    } else if (current) {
-      jobs[current].push(line);
-    }
-  }
-  return { header, jobs: Object.fromEntries(Object.entries(jobs).map(([name, lines]) => [name, lines.join('\n')])) };
-}
-
-const { header, jobs } = splitTopLevelAndJobs(source);
+// loadWorkflow 会去掉注释行：注释里会提到 contents: write，断言只看实际配置
+const { header, jobs } = loadWorkflow('release-preflight.yml');
 
 test('release preflight defaults to a read-only token so pull_request jobs cannot write', () => {
   assert.match(header, /^permissions:\n {2}contents: read$/m);
@@ -77,4 +61,83 @@ test('the Windows and macOS preflight jobs both run the integration tests', () =
 test('the Windows and macOS preflight jobs both run the core Electron E2E suite', () => {
   assert.match(jobs.preflight, /run: npm run test:e2e:ci/);
   assert.match(jobs['preflight-mac'], /run: npm run test:e2e:ci/);
+});
+
+function encodePowerShellCommand(script) {
+  return Buffer.from(script, 'utf16le').toString('base64');
+}
+
+function findPowerShellExecutable() {
+  const candidates = process.platform === 'win32' ? ['pwsh', 'powershell.exe'] : ['pwsh'];
+  const probe = encodePowerShellCommand('[Console]::Write($env:INPUT_VERSION)');
+  for (const exe of candidates) {
+    const res = spawnSync(exe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', probe], {
+      env: { ...process.env, INPUT_VERSION: 'probe' },
+      encoding: 'utf8',
+    });
+    if (!res.error && res.status === 0 && res.stdout === 'probe') {
+      return exe;
+    }
+  }
+  return null;
+}
+
+test('sync-version bash snippet trims only surrounding whitespace before SemVer validation', (t) => {
+  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
+  const cutoff = syncScript.indexOf('\nPACKAGE_VERSION=');
+  assert.ok(cutoff > 0, 'sync-version script must validate the input before reading package.json');
+  const snippet = `${syncScript.slice(0, cutoff)}\nprintf '%s' "\${VERSION}"`;
+
+  if (!bashForwardsEnv()) {
+    t.skip('bash with INPUT_VERSION env forwarding is not available on this host');
+    return;
+  }
+
+  for (const [input, expected] of VALID_VERSION_INPUTS) {
+    const res = spawnSync('bash', ['-c', snippet], {
+      env: buildBashEnv({ INPUT_VERSION: input }),
+      encoding: 'utf8',
+    });
+    assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
+    assert.equal(res.stdout, expected);
+  }
+
+  for (const invalidInput of INVALID_VERSION_INPUTS) {
+    const res = spawnSync('bash', ['-c', snippet], {
+      env: buildBashEnv({ INPUT_VERSION: invalidInput }),
+      encoding: 'utf8',
+    });
+    assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
+  }
+});
+
+test('Validate release metadata PowerShell snippet matches sync-version normalization rules', (t) => {
+  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
+  const cutoff = metaScript.indexOf('\n$packageVersion =');
+  assert.ok(cutoff > 0, 'Validate release metadata script must validate the input before reading package.json');
+  const snippet = `${metaScript.slice(0, cutoff)}\n[Console]::Write($version)`;
+  const encoded = encodePowerShellCommand(snippet);
+
+  const psExe = findPowerShellExecutable();
+  if (!psExe) {
+    t.skip('PowerShell (pwsh / powershell.exe) is not available on this host');
+    return;
+  }
+
+  for (const [input, expected] of VALID_VERSION_INPUTS) {
+    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
+      env: { ...process.env, INPUT_VERSION: input },
+      encoding: 'utf8',
+    });
+    assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
+    assert.equal(res.stdout, expected);
+  }
+
+  for (const invalidInput of INVALID_VERSION_INPUTS) {
+    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
+      env: { ...process.env, INPUT_VERSION: invalidInput },
+      encoding: 'utf8',
+    });
+    assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
+  }
 });

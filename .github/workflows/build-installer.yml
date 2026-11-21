@@ -17,27 +17,43 @@ permissions:
 jobs:
   create-release-tag:
     name: Create release tag
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve-tag.outputs.tag }}
 
     steps:
+      # 唯一的版本解析入口：手动触发用输入版本，tag 推送用 tag 名；
+      # 与 Release Preflight 相同，只裁剪首尾空白并单次剥离 v 前缀
+      - name: Resolve release tag
+        id: resolve-tag
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          RAW_VERSION="${INPUT_VERSION:-${REF_NAME}}"
+          VERSION="${RAW_VERSION#"${RAW_VERSION%%[![:space:]]*}"}"
+          VERSION="${VERSION%"${VERSION##*[![:space:]]}"}"
+          VERSION="${VERSION#v}"
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be SemVer without prerelease/build metadata, got '${RAW_VERSION}'."
+            exit 1
+          fi
+          echo "tag=v${VERSION}" >> "${GITHUB_OUTPUT}"
+
       - name: Checkout repository
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Create and push tag
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ steps.resolve-tag.outputs.tag }}
         run: |
-          VERSION="${INPUT_VERSION}"
-          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: ${VERSION}"
-            exit 1
-          fi
-          TAG="${VERSION#v}"
-          TAG="v${TAG}"
+          TAG="${RELEASE_TAG}"
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
           EXPECTED_TAG="v${PACKAGE_VERSION}"
           HEAD_SHA="$(git rev-parse HEAD)"
@@ -62,10 +78,11 @@ jobs:
   build-windows-installer:
     name: Build NSIS installer
     needs: create-release-tag
-    if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && needs.create-release-tag.result == 'success'))
+    if: needs.create-release-tag.result == 'success'
     runs-on: windows-latest
     env:
       SIGNING_ENABLED: 'false'
+      RELEASE_TAG: ${{ needs.create-release-tag.outputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -76,14 +93,8 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: pwsh
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ($version -notmatch '^v?\d+\.\d+\.\d+$') {
-            throw "Invalid version format: $version"
-          }
-          $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
+          $tag = $env:RELEASE_TAG
           git fetch origin "refs/tags/$tag:refs/tags/$tag"
           git checkout $tag
 
@@ -154,20 +165,10 @@ jobs:
       - name: Upload Windows release assets
         shell: pwsh
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
-          }
-          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
-            throw "Tag must match v* semver format, got '$tag'."
-          }
+          $tag = $env:RELEASE_TAG
           $repo = $env:REPO_NAME
 
           $viewResult = gh release view $tag --repo $repo 2>&1
@@ -193,39 +194,19 @@ jobs:
       - name: Upload readme files to GitHub Release
         shell: pwsh
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
-          }
-          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
-            throw "Tag must match v* semver format, got '$tag'."
-          }
+          $tag = $env:RELEASE_TAG
           Write-Host "Uploading readme files to GitHub Release for tag $tag..."
           gh release upload $tag readme_zh.txt readme_en.txt readme_ja.txt --clobber
 
       - name: Remove auto-generated source code archives
         shell: pwsh
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $version = $env:INPUT_VERSION
-          if ([string]::IsNullOrWhiteSpace($version)) {
-            $tag = $env:REF_NAME
-          } else {
-            $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
-          }
-          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
-            throw "Tag must match v* semver format, got '$tag'."
-          }
+          $tag = $env:RELEASE_TAG
           $repo = $env:REPO_NAME
           $assets = gh release view $tag --repo $repo --json assets --jq '.assets[].name'
           foreach ($asset in $assets -split "`n") {
@@ -254,8 +235,10 @@ jobs:
   build-macos-installer:
     name: Build macOS installer
     needs: create-release-tag
-    if: always() && ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && needs.create-release-tag.result == 'success'))
+    if: needs.create-release-tag.result == 'success'
     runs-on: macos-latest
+    env:
+      RELEASE_TAG: ${{ needs.create-release-tag.outputs.tag }}
 
     steps:
       - name: Checkout repository
@@ -266,16 +249,8 @@ jobs:
       - name: Checkout release tag for manual run
         if: github.event_name == 'workflow_dispatch'
         shell: bash
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${INPUT_VERSION}"
-          if [[ ! "${VERSION}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Invalid version format: ${VERSION}"
-            exit 1
-          fi
-          TAG="${VERSION#v}"
-          TAG="v${TAG}"
+          TAG="${RELEASE_TAG}"
           git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
           git checkout "$TAG"
 
@@ -351,25 +326,13 @@ jobs:
       - name: Upload validated macOS release assets
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           shopt -s nullglob
 
-          VERSION="${INPUT_VERSION}"
-          if [ -z "$VERSION" ]; then
-            TAG="${REF_NAME}"
-          else
-            TAG="${VERSION#v}"
-            TAG="v${TAG}"
-          fi
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match v* semver format, got '$TAG'."
-            exit 1
-          fi
+          TAG="${RELEASE_TAG}"
           REPO="${REPO_NAME}"
 
           if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
@@ -392,22 +355,10 @@ jobs:
       - name: Remove auto-generated source code archives
         shell: bash
         env:
-          INPUT_VERSION: ${{ inputs.version }}
-          REF_NAME: ${{ github.ref_name }}
           REPO_NAME: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION="${INPUT_VERSION}"
-          if [ -z "$VERSION" ]; then
-            TAG="${REF_NAME}"
-          else
-            TAG="${VERSION#v}"
-            TAG="v${TAG}"
-          fi
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Tag must match v* semver format, got '$TAG'."
-            exit 1
-          fi
+          TAG="${RELEASE_TAG}"
           REPO="${REPO_NAME}"
           for asset in $(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name'); do
             if echo "$asset" | grep -iqE '^.*source.*code.*\.(zip|tar\.gz)$'; then
