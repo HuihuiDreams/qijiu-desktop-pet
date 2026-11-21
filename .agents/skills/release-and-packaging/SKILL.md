@@ -104,7 +104,7 @@ npm run verify:signatures
 * **网页端**：
   1. 进入 GitHub 仓库 -> **Actions** -> 选择 **Release Preflight**。
   2. 点击 **Run workflow**。
-  3. 在 `Release version to validate` 输入框中填入版本号（例如 `1.0.0` 或 `v1.0.0`）。
+  3. 在 `Release version to validate` 输入框中填入版本号（例如 `1.0.0`、`v1.0.0` 或 `go-v1.0.0`）。
 * **GitHub CLI (`gh`)**：
   ```bash
   gh workflow run release-preflight.yml -f version="1.0.0"

@@ -50,7 +50,8 @@ jobs:
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${INPUT_VERSION//[[:space:]]/}"
+          VERSION="${INPUT_VERSION#"${INPUT_VERSION%%[![:space:]]*}"}"
+          VERSION="${VERSION%"${VERSION##*[![:space:]]}"}"
           if [[ "${VERSION}" == go-v* ]]; then
             VERSION="${VERSION#go-v}"
           elif [[ "${VERSION}" == v* ]]; then

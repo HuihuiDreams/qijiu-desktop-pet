@@ -75,32 +75,168 @@ test('the Windows and macOS preflight jobs both run the integration tests', () =
   assert.match(jobs['preflight-mac'], /run: npm run test:integration/);
 });
 
-test('sync-version normalizes go-v and v prefixes symmetrically before SemVer validation', (t) => {
-  const syncJob = jobs['sync-version'];
-  assert.match(syncJob, /\[\[ "\$\{VERSION\}" == go-v\* \]\]/);
-  assert.match(syncJob, /VERSION="\$\{VERSION#go-v\}"/);
-  assert.match(syncJob, /elif \[\[ "\$\{VERSION\}" == v\* \]\]/);
+const VALID_VERSION_INPUTS = [
+  ['1.0.0', '1.0.0'],
+  ['v1.0.0', '1.0.0'],
+  ['go-v1.0.0', '1.0.0'],
+  ['  go-v1.2.3  ', '1.2.3'],
+  ['\t v1.2.3\t ', '1.2.3'],
+];
 
-  const match = syncJob.match(
-    /VERSION="\$\{INPUT_VERSION\/\/\[\[:space:\]\]\/\}"[\s\S]*?if \[\[ ! "\$\{VERSION\}" =~ \^\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$ \]\]; then[\s\S]*?\n {10}fi/,
-  );
-  assert.ok(match, 'sync-version job must contain the expected version normalization and validation block');
+const INVALID_VERSION_INPUTS = [
+  'go-vv1.0.0',
+  'vgo-v1.0.0',
+  'go-vgo-v1.0.0',
+  'go-v 1.0.0',
+  '1. 0.0',
+  'v1.0.0-beta.1',
+  'go-v1.0.0+build.1',
+  'go-1.0.0',
+  '   ',
+  '',
+];
 
-  const bashCheck = spawnSync('bash', ['-c', 'echo ok'], { encoding: 'utf8' });
-  if (bashCheck.error || bashCheck.status !== 0) {
-    t.skip('bash is not available on this host to execute the sync-version snippet');
+function extractStepRunBlock(jobBody, stepName) {
+  const lines = jobBody.split('\n');
+  const escapedName = stepName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const stepPattern = new RegExp(`^(\\s*)-\\s+name:\\s*${escapedName}\\s*$`);
+  const stepIndex = lines.findIndex((line) => stepPattern.test(line));
+  assert.ok(stepIndex >= 0, `Step "${stepName}" must exist`);
+
+  const stepIndent = stepPattern.exec(lines[stepIndex])[1].length;
+  let runIndent = -1;
+  let runStart = -1;
+
+  for (let i = stepIndex + 1; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '') continue;
+    const indent = line.match(/^\s*/)[0].length;
+    if (indent <= stepIndent) break;
+    const runMatch = line.match(/^(\s*)run:\s*\|-?\s*$/);
+    if (runMatch) {
+      runIndent = runMatch[1].length;
+      runStart = i + 1;
+      break;
+    }
+  }
+
+  assert.ok(runStart >= 0, `Step "${stepName}" must define a multiline run block`);
+
+  const blockLines = [];
+  for (let i = runStart; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.trim() === '') {
+      blockLines.push('');
+      continue;
+    }
+    const indent = line.match(/^\s*/)[0].length;
+    if (indent <= runIndent) break;
+    blockLines.push(line);
+  }
+
+  while (blockLines.length > 0 && blockLines[blockLines.length - 1] === '') {
+    blockLines.pop();
+  }
+
+  const minIndent = blockLines
+    .filter((line) => line.trim() !== '')
+    .reduce((min, line) => Math.min(min, line.match(/^\s*/)[0].length), Infinity);
+  assert.ok(Number.isFinite(minIndent), `Step "${stepName}" run block must not be empty`);
+
+  return blockLines.map((line) => (line === '' ? '' : line.slice(minIndent))).join('\n');
+}
+
+function buildBashEnv(inputVersion) {
+  const env = { ...process.env, INPUT_VERSION: inputVersion };
+  if (process.platform === 'win32') {
+    // 若 Windows 上的 bash 解析到 WSL，必须经 WSLENV 透传 INPUT_VERSION
+    env.WSLENV = process.env.WSLENV ? `${process.env.WSLENV}:INPUT_VERSION/u` : 'INPUT_VERSION/u';
+  }
+  return env;
+}
+
+function encodePowerShellCommand(script) {
+  return Buffer.from(script, 'utf16le').toString('base64');
+}
+
+function findPowerShellExecutable() {
+  const candidates = process.platform === 'win32' ? ['pwsh', 'powershell.exe'] : ['pwsh'];
+  const probe = encodePowerShellCommand('[Console]::Write($env:INPUT_VERSION)');
+  for (const exe of candidates) {
+    const res = spawnSync(exe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', probe], {
+      env: { ...process.env, INPUT_VERSION: 'probe' },
+      encoding: 'utf8',
+    });
+    if (!res.error && res.status === 0 && res.stdout === 'probe') {
+      return exe;
+    }
+  }
+  return null;
+}
+
+test('sync-version and preflight normalize go-v and v prefixes symmetrically before SemVer validation', () => {
+  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
+  assert.match(syncScript, /\[\[ "\$\{VERSION\}" == go-v\* \]\]/);
+  assert.match(syncScript, /VERSION="\$\{VERSION#go-v\}"/);
+  assert.match(syncScript, /elif \[\[ "\$\{VERSION\}" == v\* \]\]/);
+  assert.doesNotMatch(syncScript, /INPUT_VERSION\/\/\[\[:space:\]\]/);
+  assert.ok(syncScript.includes('\nPACKAGE_VERSION='), 'sync-version script must compare against package.json after validation');
+
+  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
+  assert.match(metaScript, /\$version\s*=\s*\$inputVersion\.Trim\(\)/);
+  assert.match(metaScript, /\$version\.StartsWith\('go-v'\)/);
+  assert.match(metaScript, /elseif\s*\(\$version\.StartsWith\('v'\)\)/);
+  assert.ok(metaScript.includes('\n$packageVersion ='), 'Validate release metadata script must compare against package.json after validation');
+});
+
+test('sync-version bash snippet normalizes valid versions and rejects invalid or spaced ones', (t) => {
+  const bashCheck = spawnSync('bash', ['-c', 'printf "%s" "${INPUT_VERSION}"'], {
+    env: buildBashEnv('probe'),
+    encoding: 'utf8',
+  });
+  if (bashCheck.error || bashCheck.status !== 0 || bashCheck.stdout !== 'probe') {
+    t.skip('bash with INPUT_VERSION env forwarding is not available on this host');
     return;
   }
 
-  const snippet = `${match[0].replace(/^ {10}/gm, '')}\nprintf '%s' "\${VERSION}"`;
+  const syncScript = extractStepRunBlock(jobs['sync-version'], 'Sync package versions with the requested release');
+  const cutoff = syncScript.indexOf('\nPACKAGE_VERSION=');
+  assert.ok(cutoff > 0);
+  const snippet = `${syncScript.slice(0, cutoff)}\nprintf '%s' "\${VERSION}"`;
 
-  for (const [input, expected] of [
-    ['1.0.0', '1.0.0'],
-    ['v1.0.0', '1.0.0'],
-    ['go-v1.0.0', '1.0.0'],
-    ['  go-v1.2.3  ', '1.2.3'],
-  ]) {
+  for (const [input, expected] of VALID_VERSION_INPUTS) {
     const res = spawnSync('bash', ['-c', snippet], {
+      env: buildBashEnv(input),
+      encoding: 'utf8',
+    });
+    assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
+    assert.equal(res.stdout, expected);
+  }
+
+  for (const invalidInput of INVALID_VERSION_INPUTS) {
+    const res = spawnSync('bash', ['-c', snippet], {
+      env: buildBashEnv(invalidInput),
+      encoding: 'utf8',
+    });
+    assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
+  }
+});
+
+test('Validate release metadata PowerShell snippet matches sync-version normalization rules', (t) => {
+  const psExe = findPowerShellExecutable();
+  if (!psExe) {
+    t.skip('PowerShell (pwsh / powershell.exe) is not available on this host');
+    return;
+  }
+
+  const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
+  const cutoff = metaScript.indexOf('\n$packageVersion =');
+  assert.ok(cutoff > 0);
+  const snippet = `${metaScript.slice(0, cutoff)}\n[Console]::Write($version)`;
+  const encoded = encodePowerShellCommand(snippet);
+
+  for (const [input, expected] of VALID_VERSION_INPUTS) {
+    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
       env: { ...process.env, INPUT_VERSION: input },
       encoding: 'utf8',
     });
@@ -108,8 +244,8 @@ test('sync-version normalizes go-v and v prefixes symmetrically before SemVer va
     assert.equal(res.stdout, expected);
   }
 
-  for (const invalidInput of ['go-vv1.0.0', 'v1.0.0-beta.1', 'go-1.0.0', '']) {
-    const res = spawnSync('bash', ['-c', snippet], {
+  for (const invalidInput of INVALID_VERSION_INPUTS) {
+    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
       env: { ...process.env, INPUT_VERSION: invalidInput },
       encoding: 'utf8',
     });
