@@ -27,13 +27,31 @@ test('build installers parses the version input in exactly one step and shares t
   }
 });
 
+test('on Windows the bash env forwards GITHUB_OUTPUT to WSL as a translated path', (t) => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform');
+  const originalWslEnv = process.env.WSLENV;
+  t.after(() => {
+    Object.defineProperty(process, 'platform', platform);
+    if (originalWslEnv === undefined) delete process.env.WSLENV;
+    else process.env.WSLENV = originalWslEnv;
+  });
+  Object.defineProperty(process, 'platform', { ...platform, value: 'win32' });
+  delete process.env.WSLENV;
+
+  const env = buildBashEnv({ INPUT_VERSION: '1.0.0', GITHUB_OUTPUT: 'C:\\Temp\\github_output' }, ['GITHUB_OUTPUT']);
+  assert.equal(env.WSLENV, 'INPUT_VERSION/u:GITHUB_OUTPUT/up');
+
+  process.env.WSLENV = 'EXISTING/u';
+  assert.equal(buildBashEnv({ REF_NAME: 'go-v1.0.0' }).WSLENV, 'EXISTING/u:REF_NAME/u');
+});
+
 function runResolve(t, vars) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'build-installer-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const outputFile = path.join(dir, 'github_output');
   fs.writeFileSync(outputFile, '');
   const res = spawnSync('bash', ['-c', resolveScript], {
-    env: buildBashEnv({ ...vars, GITHUB_OUTPUT: outputFile }),
+    env: buildBashEnv({ ...vars, GITHUB_OUTPUT: outputFile }, ['GITHUB_OUTPUT']),
     encoding: 'utf8',
   });
   return { status: res.status, stderr: res.stderr, output: fs.readFileSync(outputFile, 'utf8') };

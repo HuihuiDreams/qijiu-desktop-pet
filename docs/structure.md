@@ -254,7 +254,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  │  ├─ skinLifecycle.integration.test.js # 选肤器端到端集成测试（真实窗口双向装配、换肤预览、加载汇报、确认落盘、取消安全回滚与鉴权拦截）
 │  │  └─ storage.integration.test.js    # 存储 IPC 白名单、持久化读写与 skinId 强制归一化安全集成测试
 │  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，涵盖启动、右键菜单、久坐提醒（breakReminder.spec.js）、选肤画廊、统一设置窗口（settingsWindow.spec.js）、子窗 preload 隔离（ipcIsolation.spec.js）及日语字体验证（font.spec.js，可由 test:font 独立运行）
-│  ├─ helpers/                          # 测试辅助：sourceCorpus.js（统一的主进程源码读取入口）、mockElectron.js（拦截 require('electron') 的替身）、workflowScripts.js（按步骤提取 GitHub Actions 脚本并以共用版本输入用例实际执行，供 `releasePreflightWorkflow.test.js` 与 `buildInstallerWorkflow.test.js` 使用）
+│  ├─ helpers/                          # 测试辅助：sourceCorpus.js（统一的主进程源码读取入口）、mockElectron.js（拦截 require('electron') 的替身）、workflowScripts.js（按步骤提取 GitHub Actions 脚本并以共用版本输入用例实际执行，Windows 上经 `WSLENV` 透传变量并转换文件路径，供 `releasePreflightWorkflow.test.js` 与 `buildInstallerWorkflow.test.js` 使用）
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具

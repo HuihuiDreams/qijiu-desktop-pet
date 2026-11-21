@@ -115,12 +115,16 @@ function extractStepRunBlock(jobBody, stepName) {
 /**
  * Builds the child env for running a workflow bash snippet.
  * @param {Record<string, string>} vars
+ * @param {string[]} [pathVars] names in `vars` whose values are file paths
  */
-function buildBashEnv(vars) {
+function buildBashEnv(vars, pathVars = []) {
   const env = { ...process.env, ...vars };
   if (process.platform === 'win32') {
-    // 若 Windows 上的 bash 解析到 WSL，必须经 WSLENV 透传这些变量
-    const forwarded = Object.keys(vars).map((name) => `${name}/u`).join(':');
+    // 若 Windows 上的 bash 解析到 WSL，必须经 WSLENV 透传这些变量；
+    // 文件路径还要加 p 标记，把 C:\... 转成 /mnt/c/...，否则 WSL 会把它当成相对文件名
+    const forwarded = Object.keys(vars)
+      .map((name) => `${name}/${pathVars.includes(name) ? 'up' : 'u'}`)
+      .join(':');
     env.WSLENV = process.env.WSLENV ? `${process.env.WSLENV}:${forwarded}` : forwarded;
   }
   return env;
