@@ -68,3 +68,8 @@ Accepted
 - 手动检查互动：在亲吻、拥抱或喂食进行时拖动滑块或缩至较小体型（如 50%~70%），确认当前互动图立即等比缩放，气泡跟随头部且当水平间距不足时自动上下错落避让（岳七气泡抬升，沈九气泡保持原位），杜绝文字相互重叠遮挡；放大或无冲突时恢复左右平排，取消恢复原图尺寸，互动与气泡按原时间结束。
 - 手动检查键盘：预览一个非默认值后，用 Tab 聚焦“取消”“关闭”“恢复默认”“确定”并分别按 Enter，确认仅执行对应动作；非按钮区域 Enter 保存，Esc 回滚，保存后重启仍恢复已确认尺寸。
 - 2026-10-15 已用独立临时存档在 Windows Electron 验证四个按钮的原生 Enter 行为，并注入 `scaleRatio = 2/3` 验证实际 DOM 脚底坐标、互动图缩放、气泡节点复用及取消回滚，无页面异常或游戏循环错误。本次移动约束修复另在实际混合 DPI 副屏（`scaleRatio = 2/3`）通过原生滑块及取消按钮验证 100% → 150% → 50% → 取消：DOM 脚底恒为 1248、保持任务栏平台附着并恢复原位置；取消后继续水平行走，以及不携带 DPI 的活动窗口平台预览和 Esc 回滚也通过。macOS 尚需按以上步骤验收。
+
+## Amendments
+
+### 2026-11-21: 独立体型调节窗口与独占 IPC 通道由统一设置窗口取代
+根据 [ADR-050](./ADR-050-unified-settings-window.md)，本 ADR 第 4 节所述的独立体型调节窗口载体（原 `PetScaleWindow` 及其独立 preload/HTML/CSS/渲染脚本）与独占 IPC 通道（`pet-scale-get-settings`、`pet-scale-preview`、`pet-scale-confirm`、`pet-scale-cancel`）已被取代并下线，相关入口与持久化收口至统一设置窗口（`SettingsWindow`、`SettingsService`、`settingsPreload.js`，拖动 `input` 实时预览并在 `change` / 关窗时落盘）。本 ADR 第 1～3 节确立的逻辑尺寸驱动（`pet.size`）、脚底底边中点锚定算法（`Bottom-Center Anchoring`）、`StageGeometry` / `MovementSystem` DPI 几何校验与伴生 UI/字号分层机制继续有效。

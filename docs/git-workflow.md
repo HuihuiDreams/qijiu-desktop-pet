@@ -105,9 +105,9 @@ macOS / Linux / WSL 在 Bash 中运行：
 1. 拦截检查：自动检测 `git status` 中是否包含 `CHANGELOG.md`。
 2. 如果未包含，脚本会拦截提交，并自动用系统默认编辑器打开 `CHANGELOG.md`，强制要求你填写更新记录。
 3. 填写保存后重新运行，脚本先检查是否存在未暂存的未跟踪文件（有则列出并停止，需要提交的先 `git add <路径>`，其余删除或加入 `.gitignore`），再执行 `git add -u`，检查暂存区新增或修改的 `.codex/`、`.agents/`、`security-scans/` 文件；`.agents/skills/` 是允许纳入版本管理的例外。发现受限制路径时会执行 `git reset` 取消暂存并停止。
-4. 检查通过后执行 `git commit -m "你的信息"`。在 `main` 分支上会自动调用 `npm run sync:cp` 执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；预检通过后执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。提交失败或推送失败时脚本以非零退出码结束，便于外层工具判断结果。
+4. 检查通过后执行 `git commit -m "你的信息"`。仅在 `main` 分支上会自动调用 `npm run sync:cp`（该脚本仅定义于 `main`，`cp/crowley-aziraphale` 分支无此脚本）执行好兆头分支自动同步预检（干跑校验）；若该提交在好兆头分支存在代码冲突或测试失败，脚本会自动 `git reset HEAD~1` 撤销本地提交并提示在提交信息中增加 `[skip-cp]`（紧急情况下可设置 `SKIP_SYNC_CHECK=1` 绕过）；在 `cp/crowley-aziraphale` 等其余分支直接跳过同步预检并执行 `git push origin HEAD`（推送当前分支）。WSL 中 Bash Git 推送失败且存在 `git.exe` 时，`push.sh` 会尝试通过 Windows Git 凭据重试。提交失败或推送失败时脚本以非零退出码结束，便于外层工具判断结果。
 
-脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。脚本打印的 `[WIP]` 模板是旧提示，实际应按 `[Unreleased]` 规范填写。
+脚本只检查 `CHANGELOG.md` 是否出现在文件状态中，不校验中文条目、分类、提交信息或测试结果。
 
 ---
 
@@ -134,7 +134,7 @@ macOS / Linux / WSL 在 Bash 中运行：
 
 发布前先在仓库中准备好版本和文档：
 
-1. 将 `[Unreleased]` 中本次发布的条目移入目标版本段落，例如 `## [0.8.4] - 2026-06-29`，保留新的空 `[Unreleased]`；按 `Added`、`Changed`、`Fixed`、`Removed`、`Security` 归类，每个分类标题只出现一次。
+1. 将 `[Unreleased]` 中本次发布的条目移入目标版本段落，例如 `## [go-v1.0.0] - 2026-11-01`（或旧格式 `## [1.0.0]`），保留新的空 `[Unreleased]`；按 `Added`、`Changed`、`Fixed`、`Removed`、`Security` 归类，每个分类标题只出现一次。
 2. 同步根目录 `README.md` 与 `readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 的用户说明，其中三份 `.txt` 会作为 Release 资产上传。
 3. 如果发布策略、打包行为或更新机制变化，更新相关文档或 ADR，例如 `docs/release-code-signing.md`、`docs/decisions/ADR-020-windows-release-and-code-signing.md`、`docs/decisions/ADR-026-macos-manual-update-executable-name.md`。
 4. 本地使用 `npm version <version> --no-git-tag-version --allow-same-version` 同步 `package.json` 与 `package-lock.json`，然后通过项目推送脚本提交准备改动。`Release Preflight` 手动运行时，若 `package.json` 与输入版本不一致，会自动执行该命令并推送版本同步提交；若两者已一致，它不会单独检查锁文件版本，因此仍需本地核对锁文件。
@@ -164,19 +164,19 @@ npm run verify:package
 
 直接调用 `npx electron-builder` 不会执行 npm 的 `prebuild`，因此必须先生成受保护皮肤资源。`verify:package` 在构建后检查 `dist/**/app.asar`，拒绝将内部指引或工作目录打入应用；它不替代下载完整性或代码签名验证。
 
-macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet`，并且 `CFBundleExecutable` 也是 `DeskPet`。CI 会自动做这项检查；本地若改动了 `package.json`、`scripts/afterPack.js` 或 macOS 打包配置，也应手动确认。
+macOS 打包后需要确认 `GoodOmensDeskPet.app` 包内真实可执行文件名仍是 `DeskPet`，并且 `CFBundleExecutable` 也是 `DeskPet`。CI 会自动做这项检查；本地若改动了 `package.json`、`scripts/afterPack.js` 或 macOS 打包配置，也应手动确认。
 
 ### 3. 运行 Release Preflight
 
 在 GitHub Actions 手动运行 `Release Preflight`：
 
-- `version`: 填目标版本，可写 `0.8.4` 或 `v0.8.4`。
+- `version`: 填目标 SemVer 版本，可写 `1.0.0` 或 `v1.0.0`（工作流会匹配/拼装 `go-v` tag 前缀）。
 
 这个 workflow 也会在相关 pull request 上自动运行。手动运行时，它会验证：
 
 - 输入版本是否为 `X.Y.Z` 或 `vX.Y.Z`（不接受预发布或构建元数据），以及 `package.json` 是否匹配；不一致时由独立的 `sync-version` 作业同步两个版本文件并推送版本提交，Windows 预检作业随后检出分支最新提交并再次确认版本一致。
-- `CHANGELOG.md` 是否包含目标版本段落。
-- 目标 GitHub tag 是否已经存在。
+- `CHANGELOG.md` 是否包含目标版本段落（`## [go-vX.Y.Z]` 或 `## [X.Y.Z]`）。
+- 目标 GitHub tag（`go-vX.Y.Z`）是否已经存在。
 - 根目录三份 `readme*.txt` 是否存在。
 - Windows 签名 secrets 是否存在；缺失时只提示将发布未签名 Windows 安装包。
 - Windows 单元测试、集成测试（`npm run test:integration`）、生产依赖安全审计、受保护皮肤资源生成、未签名 `--dir` smoke build 和包内容检查。
@@ -190,12 +190,12 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 
 `Release Preflight` 通过后，手动运行 `Build Installers`：
 
-- `version`: 填同一个版本，可写 `0.8.4` 或 `v0.8.4`。
+- `version`: 填同一个版本，可写 `1.0.0` 或 `v1.0.0`。
 
 手动运行时，workflow 会先执行 `create-release-tag`：
 
 - 要求输入版本与 `package.json` 的 `version` 对应。
-- 如果 `vX.Y.Z` tag 不存在，会在当前提交上创建并推送。
+- 如果 `go-vX.Y.Z` tag 不存在，会在当前提交上创建并推送。
 - 如果 tag 已存在，会复用已有 tag，两个平台的构建 job 会检出该 tag；不会将 tag 移到本次所选提交。运行前必须确认 tag 指向预检通过的源码。
 
 随后 workflow 会同时构建：
@@ -203,7 +203,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 - Windows NSIS 安装包。
 - macOS DMG 和 ZIP。
 
-直接推送 `v*` tag 也可以触发同一套构建 job。
+直接推送 `go-v*` tag 也可以触发同一套构建 job。
 
 两个平台都先生成受保护皮肤资源，以 `--publish never` 构建，再检查包内容。随后通过 `gh release upload --clobber` 上传资产；Release 不存在时创建草稿，已存在时保留其原状态，同名资产会被覆盖。重新运行已公开版本的构建前，应确认是否确实需要替换资产。
 
@@ -220,7 +220,7 @@ Windows 使用 `electron-builder --publish never` 生成安装包，由 GitHub C
 
 Windows Release 资产应至少包含：
 
-- `desktop-pet-setup-<version>.exe`
+- `good-omens-pet-setup-<version>.exe`
 - `.blockmap`
 - `latest.yml`
 - `readme_zh.txt`
@@ -234,8 +234,8 @@ macOS 当前没有 Apple Developer ID 签名和公证流程；workflow 关闭证
 
 macOS Release 资产应至少包含：
 
-- `desktop-pet-setup-<version>-x64.dmg`
-- `desktop-pet-setup-<version>-arm64.dmg`
+- `good-omens-pet-setup-<version>-x64.dmg`
+- `good-omens-pet-setup-<version>-arm64.dmg`
 - 对应架构的 `.zip`
 - `latest-mac.yml`
 - `readme_zh.txt`
@@ -247,7 +247,7 @@ macOS 手动更新说明必须保持一致：
 1. 先从托盘菜单完全退出当前应用。
 2. 下载新版 DMG。
 3. 将应用拖入 Applications 并替换旧版本。
-4. 如果首次打开被 Gatekeeper 拦截，再在“系统设置 -> 隐私与安全性”中允许打开，或按说明运行 `xattr -cr /Applications/七九爱宠.app`。
+4. 如果首次打开被 Gatekeeper 拦截，再在“系统设置 -> 隐私与安全性”中允许打开，或按说明运行 `xattr -cr /Applications/GoodOmensDeskPet.app`。
 
 ### 7. 发布后的更新验证
 
@@ -280,4 +280,4 @@ macOS：
 - macOS 启动失败：优先检查包内可执行文件是否为 `DeskPet`，以及用户是否先退出旧版本再覆盖安装。
 - 包内容检查失败：检查 `package.json` 的打包排除规则，修正后重新生成并验证产物，避免分发包含内部工作目录的包。
 - 构建成功但用户检查不到新版：确认两个平台的资产和更新元数据齐全，且 Release 已从草稿手动发布。
-- 源码压缩包：workflow 只能删除上传资产列表中名称匹配 `source code` 的文件；[GitHub 自动提供的源码链接](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)（`Source code (zip)` / `Source code (tar.gz)`） 不属于普通上传资产，不能靠该步骤移除。下载说明应明确让用户选择 `.exe` 或对应架构的 `.dmg`。
+- 源码压缩包：[GitHub 自动提供的源码链接](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)（`Source code (zip)` / `Source code (tar.gz)`）属于平台自动生成条目，不能作为 Release 资产删除。下载说明应明确让用户选择 `.exe` 或对应架构的 `.dmg`。

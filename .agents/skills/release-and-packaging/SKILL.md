@@ -40,11 +40,11 @@ npm test
 同时确认根目录存在三语说明文件：`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt`。
 
 ### 2. 版本号与 CHANGELOG.md 对齐
-- 确定本次发布版本号（严格遵守 SemVer，如 `0.11.3`）。
-- 检查 `package.json` 中的 `"version": "0.11.3"`。
+- 确定本次发布版本号（严格遵守 SemVer，如 `1.0.0`）。
+- 检查 `package.json` 中的 `"version": "1.0.0"`。
 - 在 `CHANGELOG.md` 中，将本次发布的改动从 `## [Unreleased]` 整理归档到正式小节：
   ```markdown
-  ## [0.11.3] - YYYY-MM-DD
+  ## [go-v1.0.0] - YYYY-MM-DD
   
   ### Added
   - ...
@@ -88,30 +88,30 @@ npm run verify:signatures
 使用项目安全提交脚本：
 ```bash
 # macOS / Linux
-./push.sh "chore(release): prepare v0.11.3"
+./push.sh "chore(release): prepare go-v1.0.0"
 
 # Windows PowerShell
-.\push.ps1 "chore(release): prepare v0.11.3"
+.\push.ps1 "chore(release): prepare go-v1.0.0"
 ```
 
 ---
 
 ## 阶段二：云端双平台终检守卫 (Release Preflight)
 
-代码推送到 `main` 后，在正式构建安装包前，触发 GitHub Actions 的 Preflight 工作流进行 Windows + macOS 跨平台终检。
+代码推送到发布分支（如 `cp/crowley-aziraphale`）后，在正式构建安装包前，触发 GitHub Actions 的 Preflight 工作流进行 Windows + macOS 跨平台终检。
 
 ### 触发方式
 * **网页端**：
   1. 进入 GitHub 仓库 -> **Actions** -> 选择 **Release Preflight**。
   2. 点击 **Run workflow**。
-  3. 在 `Release version to validate` 输入框中填入版本号（例如 `0.11.3`）。
+  3. 在 `Release version to validate` 输入框中填入版本号（例如 `1.0.0` 或 `v1.0.0`）。
 * **GitHub CLI (`gh`)**：
   ```bash
-  gh workflow run release-preflight.yml -f version="0.11.3"
+  gh workflow run release-preflight.yml -f version="1.0.0"
   ```
 
 ### Preflight 自动执行的校验
-1. **版本与元数据**：验证 SemVer 格式；检查 `CHANGELOG.md` 是否存在 `## [0.11.3]`；若 `package.json` 版本不一致，由独立的只在手动触发时运行的 `sync-version` 作业（唯一持有 `contents: write` 的作业）提交并推回仓库，Windows 预检作业随后检出最新提交并再次确认版本一致。
+1. **版本与元数据**：验证 SemVer 格式；检查 `CHANGELOG.md` 是否存在 `## [go-v1.0.0]`（或旧格式 `## [1.0.0]`）；若 `package.json` 版本不一致，由独立的只在手动触发时运行的 `sync-version` 作业（唯一持有 `contents: write` 的作业）提交并推回仓库，Windows 预检作业随后检出最新提交并再次确认版本一致。
 2. **签名机密探测**：检测 `WIN_CSC_LINK` 与 `WIN_CSC_KEY_PASSWORD`，确认是否具备已签名构建条件。
 3. **Windows 虚拟机 (`windows-latest`)**：执行 `npm ci`、`npm test`、`npm run test:integration`、`npm audit`、`npm run protect:assets`、构建 Windows smoke package 并运行 `npm run verify:package`。
 4. **macOS 虚拟机 (`macos-latest`)**：执行 `npm ci`、`npm test`、`npm run test:integration`、`npm audit`、`npm run protect:assets`、构建 macOS smoke package、运行 `npm run verify:package`，并通过 `plutil` 严格核验 `GoodOmensDeskPet.app` 内的 `DeskPet` 可执行文件名与 plist 元数据。
@@ -126,20 +126,20 @@ npm run verify:signatures
 * **网页端**：
   1. 进入 GitHub 仓库 -> **Actions** -> 选择 **Build Installers**。
   2. 点击 **Run workflow**。
-  3. 输入确认的版本号（如 `0.11.3`）。
+  3. 输入确认的版本号（如 `1.0.0` 或 `v1.0.0`）。
 * **GitHub CLI (`gh`)**：
   ```bash
-  gh workflow run build-installer.yml -f version="0.11.3"
+  gh workflow run build-installer.yml -f version="1.0.0"
   ```
 
 ### 产物与交付
-1. **自动打 Tag**：工作流会自动创建并推送 `v0.11.3` Git Tag。
+1. **自动打 Tag**：工作流会自动创建并推送 `go-v1.0.0`（`go-v<version>` 前缀）Git Tag。
 2. **Windows 交付物**：
-   - `good-omens-pet-setup-0.11.3.exe` (NSIS 安装程序)
+   - `good-omens-pet-setup-1.0.0.exe` (NSIS 安装程序)
    - `latest.yml` (自动更新元数据)
 3. **macOS 交付物**：
-   - `good-omens-pet-setup-0.11.3-x64.dmg` / `.zip`
-   - `good-omens-pet-setup-0.11.3-arm64.dmg` / `.zip`
+   - `good-omens-pet-setup-1.0.0-x64.dmg` / `.zip`
+   - `good-omens-pet-setup-1.0.0-arm64.dmg` / `.zip`
    - `latest-mac.yml` (自动更新元数据)
 4. **GitHub Release**：产物将自动上传至对应的 GitHub Release 草稿或公开发布页。
 
@@ -152,5 +152,5 @@ npm run verify:signatures
 | `Forbidden internal files found in packaged app` | 打包产物中混入了 `.agents`、`.claude`、`.codex` 等本地配置 | 检查 `package.json` 的 `build.files` 排除项，并运行 `npm run verify:package` 定位具体违规文件 |
 | `Expected CFBundleExecutable to be DeskPet, got: GoodOmensDeskPet` | macOS 打包后未完成可执行文件重命名 | 检查 `scripts/afterPack.js` 是否被 `package.json` 的 `afterPack` 正确挂载，并确认 `plutil` 执行权限 |
 | macOS 启动闪退 `Permission Denied (1100)` | 修改 `Info.plist` 后未重新进行 ad-hoc 签名 | 确保 `scripts/afterPack.js` 中包含 `codesign --force --deep --sign -` 逻辑 |
-| `CHANGELOG.md is missing a '## [x.y.z]' release section` | Preflight 无法在更新日志中找到对应版本段落 | 检查 `CHANGELOG.md` 标题格式，必须为 `## [0.11.3]`，且不要有多余的前缀或空格 |
+| `CHANGELOG.md is missing a '## [go-v<version>]' or '## [<version>]' release section` | Preflight 无法在更新日志中找到对应版本段落 | 检查 `CHANGELOG.md` 标题格式，必须为 `## [go-v<version>]` 或 `## [<version>]`（如 `## [go-v1.0.0]`），且不要有多余的前缀或空格 |
 | `Cannot resolve trusted Windows PowerShell path` | Windows 宿主环境缺失 `SystemRoot` 环境变量 | 确保运行环境为合法的 Windows 宿主，检查系统环境变量 `SystemRoot` 是否指向 `C:\Windows` |

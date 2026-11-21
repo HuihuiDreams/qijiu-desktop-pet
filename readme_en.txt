@@ -32,7 +32,7 @@ This app supports both Windows and macOS:
 After launch, both characters will appear on your desktop.
 
 - Drag a character: hold the left mouse button and drag them to your preferred position.
-- Open a character menu: right-click a character to use actions such as "🥐 Treat", "💤 Nap", "🪴 Tending Plants" (Crowley) / "📖 Reading" (Aziraphale), "🤚 Angel's Care" (right-click Crowley) / "🤚 Demon's Favor" (right-click Aziraphale).
+- Open a character menu: right-click a character to use actions such as "🥐 Feed Delicacies", "💤 Rest", "🪴 Tending Plants" (Crowley) / "📖 Reading" (Aziraphale), "🤚 Angel's Fondness" (right-click Crowley) / "🤚 Crowley's Care" (right-click Aziraphale).
 - Open the tray menu: right-click the green tray icon in the lower-right system tray for more settings.
 
 The tray menu lets you:
@@ -56,7 +56,7 @@ To switch languages, open "⚙️ Settings… -> System" from the tray menu and 
 📊 Pet Status
 ========================================
 
-The status panel shows four main stats: ❤️ Bond, 🍖 Satiety, ✨ Miracle, and ☕ Mood.
+The status panel shows four main stats: ❤️ Bond, 🍖 Satiety, ✨ Miracle Energy, and ☕ Mood.
 These stats change slowly over time: natural consumption is calculated every 5 minutes.
 Even if you close the app, some consumption will be calculated from offline time the next time you open it.
 
@@ -67,8 +67,8 @@ Natural consumption:
 - Decreases by 1 every 2 hours.
 
 Ways to increase it:
-- Right-click Crowley and choose "🤚 Angel's Care".
-- Right-click Aziraphale and choose "🤚 Demon's Favor".
+- Right-click Crowley and choose "🤚 Angel's Fondness".
+- Right-click Aziraphale and choose "🤚 Crowley's Care".
 - It may also increase when the two walk close enough to trigger an interaction.
 
 Higher bond unlocks closer interactions:
@@ -85,10 +85,10 @@ Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 How to restore:
-- Right-click a character and choose "🥐 Treat" to restore 25 Satiety.
+- Right-click a character and choose "🥐 Feed Delicacies" to restore 25 Satiety.
 
 Notes:
-- Choosing "💤 Nap" consumes 10 Satiety, and restores 15 Mood and 10 Miracle.
+- Choosing "💤 Rest" consumes 10 Satiety, and restores 15 Mood and 10 Miracle Energy.
 - Below 30 Satiety, the character enters a hungry state and Mood drops faster.
 - Below 25 Satiety, an orange warning glow appears around the character.
 
@@ -98,29 +98,29 @@ Crowley loses 5 Satiety, and Aziraphale restores 10 Satiety.
 Share Food only triggers when Crowley has at least 5 Satiety, so he will not keep feeding Aziraphale after his Satiety has bottomed out.
 If they spend a lot of time together, Crowley may get hungry faster.
 
-3. ✨ Miracle
+3. ✨ Miracle Energy
 
-Miracle represents a character's energy and miracle power.
-When Miracle is too low, Mood becomes easier to lose.
+Miracle Energy represents a character's energy and miracle power.
+When Miracle Energy is too low, Mood becomes easier to lose.
 
 Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 How to restore:
-- Right-click Crowley and choose "🪴 Tending Plants", or right-click Aziraphale and choose "📖 Reading": they focus for 30 seconds and restore 1 Miracle per second.
-- Right-click a character and choose "💤 Nap": restores 10 Miracle and 15 Mood, and consumes 10 Satiety.
+- Right-click Crowley and choose "🪴 Tending Plants", or right-click Aziraphale and choose "📖 Reading": they focus for 30 seconds and restore 1 Miracle Energy per second.
+- Right-click a character and choose "💤 Rest": restores 10 Miracle Energy and 15 Mood, and consumes 10 Satiety.
 
-Miracle Together (consumes Miracle):
-- When the two interact and trigger "Miracle Together", both characters spend 10 Miracle (only triggers when both have at least 10 Miracle) in exchange for a big boost of +12 Mood and +6 Bond.
+Miracle Together (consumes Miracle Energy):
+- When the two interact and trigger "Miracle Together", both characters spend 10 Miracle Energy (only triggers when both have at least 10 Miracle Energy) in exchange for a big boost of +12 Mood and +6 Bond.
 
-Why tending plants or reading restores Miracle:
+Why tending plants or reading restores Miracle Energy:
 - 🪴 Crowley (Demon) · Tending Plants:
   In Good Omens lore, Crowley terrorizes his houseplants with a spray bottle ("GROW BETTER!"), leaving them the greenest and most terrified in London. This is the demon's signature decompression ritual. Venting frustration and asserting evil authority calms his turbulent demonic energy, refocusing his mind to rapidly gather miracle power.
 - 📖 Aziraphale (Angel) · Reading:
   Aziraphale runs an antiquarian bookshop in Soho (A.Z. Fell and Co.) and treasures centuries of human literature. Sitting in his armchair with spectacles, sipping tea while absorbed in rare first editions, grants him absolute peace and detachment from worldly noise. This pure, tranquil focus harmonizes with heavenly grace to restore divine miracle energy.
 
 Note:
-- Below 20 Miracle, Mood drops faster.
+- Below 20 Miracle Energy, Mood drops faster.
 
 4. ☕ Mood
 
@@ -131,11 +131,11 @@ Natural consumption:
 - Decreases by 2 every 5 minutes.
 
 Extra consumption:
-- Mood drops faster when Satiety is below 30 or Miracle is below 20.
+- Mood drops faster when Satiety is below 30 or Miracle Energy is below 20.
 
 Ways to improve it:
-- "🥐 Treat"
-- "🤚 Angel's Care" or "🤚 Demon's Favor"
+- "🥐 Feed Delicacies"
+- "🤚 Angel's Fondness" or "🤚 Crowley's Care"
 - Let the two characters interact naturally.
 
 ========================================
@@ -144,7 +144,7 @@ Ways to improve it:
 
 You can also judge their status visually without keeping the status panel open:
 
-- Golden / green glow: tending plants or reading, Miracle will recover.
+- Golden / green glow: tending plants or reading, Miracle Energy will recover.
 - Orange glow: Satiety is below 25, feed them soon.
 - Semi-transparent body: Mood is below 25, they need company, food, or care.
 
@@ -158,7 +158,7 @@ Open it from the tray menu with "📖 Bookshop Study"; while running, the tray m
 Enter the focus duration in minutes. The input defaults to the last duration you used; the first run or invalid input falls back to 25 minutes.
 After you start, Crowley and Aziraphale enter the countdown window, which displays the timer, progress bar, and a joint miracle illustration. Concentric rings with an angelic golden starburst gently pulse at the center of the dial.
 The Pomodoro window is pinned on top by default. Use "Unpin" or "Pin on top" in the window header to toggle it.
-When the countdown ends, a resonant bookshop wind-chime and bell chime plays as a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
+When the countdown ends, an antique brass shop door bell chime plays as white angel and black demon wing feathers drift down and a double-circle angelic seal expands with ripples, followed by a kissing illustration and an encouraging message. The dial and completion animations are simplified when your system's reduced-motion setting is enabled.
 The window supports "Begin Study", "End Early", and "Done" actions. Click "Done", stop early, or close the window to return the pets to their previous visibility and walking state.
 
 ========================================
@@ -216,7 +216,7 @@ Pets will automatically transition into morning, daytime, evening, or late night
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
 
 If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
-When it rains, snows, gets windy, thunders, or becomes hot (≥35°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
+When it rains, snows, gets windy, thunders, or becomes hot (≥33°C), lightweight local particle or glow effects appear near the pets. Thunderstorms render rain with brief lightning flashes, windy weather adds slanted airflow wisps, and hot weather creates pulsing heatwave glows with rising shimmering heat particles at the characters' feet. Characters may also trigger weather-specific dialogue.
 If weather sync is disabled or offline, time-based atmosphere changes still apply.
 
 ========================================
@@ -259,7 +259,7 @@ Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 
 💡 Tips
 ========================================
 
-1. Remember to offer "🥐 Treat": being too hungry affects Nap and Mood.
+1. Remember to offer "🥐 Feed Delicacies": being too hungry affects Rest and Mood.
 2. Try dragging them closer: interactions are easier within 180 pixels.
 3. Interactions have a 1-minute cooldown: they will not trigger again immediately.
 4. Interaction poses separate automatically: even if you drag them onto the same spot, the app nudges them apart when an interaction starts so kiss, hug, greet, and other animations do not overlap badly.

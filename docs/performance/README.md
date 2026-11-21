@@ -49,7 +49,7 @@ CPU 百分比来自相邻 `app.getAppMetrics()` 调用之间的区间，首次�
 ## 测量纪律
 
 正式报告必须记录设备、驱动、电源模式、显示器、dev/packaged 和 GPU 状态。相同场景
-至少重复 3 次，保存原始 JSON，并使用 `docs/plan/performance-optimization-plan.md` 中
+至少重复 3 次，保存原始 JSON，并使用 `docs/archive/performance-optimization-plan.md` 中
 的统一协议和分流门槛。不要使用真实用户 profile，也不要根据单次最佳结果实施优化。
 
 ## 基线校验与报告

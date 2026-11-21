@@ -1,10 +1,10 @@
 # DeskPet 项目结构与架构说明
 
-本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
+本文档记录当前 GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
 最后更新：2026-11-21
 
-审查记录：[2026-10-06 全仓库代码审查复核报告](./code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
+审查记录：[2026-10-06 全仓库代码审查复核报告](./archive/code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
 角色迁移：[更换 CP 的迁移指南](./cp-migration-guide.md)，说明同仓库 CP 分支维护与通用功能同步，以及替换岳七与沈九为其他角色时的素材、文案、互动、存档与独立发布步骤。
 
@@ -108,7 +108,7 @@ graph TB
 ## 2. 目录结构
 
 ```text
-qijiu-desktop-pet/
+GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 |-- .agents/skills/desktop-pet-maintenance/SKILL.md  # 项目级维护与验证技能
 |-- .agents/skills/skin-asset-pipeline/SKILL.md      # 皮肤素材处理与图片转换流水线技能
 |-- .agents/skills/release-and-packaging/SKILL.md    # 发布打包与签名合规流水线技能
@@ -180,7 +180,6 @@ qijiu-desktop-pet/
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
-│  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；支持纯锁文件冲突自动重生成，其余非文档冲突停止批次并从锚点重试（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-package-contents.js        # 打包后扫描 app.asar 是否混入禁止路径（如 .agents、.claude、AGENTS.md、backups），`npm run verify:package` 调用
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
@@ -199,8 +198,8 @@ qijiu-desktop-pet/
 │  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
 │  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
-│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含表盘“七九”暗金底心（三语深浅一致，含减弱动态模式）与静修圆满落印/灵气波纹动效
-│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态与 Web Audio 铜磬敲钟仪式
+│  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含双层同心细圈与天使金星芒表盘（含减弱动态模式）与天使白羽/恶魔黑羽飘落、印章及波纹仪式动效
+│  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态（天使白羽/恶魔黑羽飘落仪式）与 Web Audio 古董书店黄铜门铃音效（`playAntiqueShopBellChime`）
 │  ├─ settings.html                     # 统一设置窗口 HTML（520×456，3 标签页），使用严格 CSP
 │  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
 │  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交（拖动期间不接受快照回写）、按控件串行的设置提交与 IPC 失败回读快照、城市异步校验与状态同步
@@ -244,12 +243,8 @@ qijiu-desktop-pet/
 │  │  └─ windowI18n.js                  # 子窗口共用的 i18n 样板：刷新 `window.t` 与 `data-i18n*`，同步 `data-tooltip` / `aria-label`
 │  └─ assets/
 │     ├─ icon.ico / icon.icns / icon.png # 应用图标与托盘图标资源
-│     ├─ calligraphy-*.webp             # 水墨书法题签、纵向暗纹与闲章（中日文 UI 微装饰）
-│     ├─ fonts/                         # `index.css` 的 `@font-face` 字体子集（MaShanZheng、ShipporiMincho、YujiSyuku，woff2）及 YujiSyuku 的 OFL 许可证
-│     ├─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
-│     ├─ birds/                         # birds 皮肤：同一资源契约下的替换皮肤
-│     ├─ animal_ears/                   # animal_ears 皮肤：兽耳角色皮肤
-│     └─ school_au/                     # school_au 皮肤：校园 AU 角色皮肤
+│     ├─ fonts/                         # `index.css` 的 `@font-face` 字体子集（`Cinzel-Subset.woff2`、`CormorantGaramond-Subset.woff2`、`EBGaramond-Subset.woff2`、`MaShanZheng-Subset.woff2`、`ShipporiMincho-Subset.woff2`、`YujiSyuku-Subset.woff2`）及对应的 6 份 OFL 许可证（`Cinzel-OFL.txt`、`CormorantGaramond-OFL.txt`、`EBGaramond-OFL.txt`、`MaShanZheng-OFL.txt`、`ShipporiMincho-OFL.txt`、`YujiSyuku-OFL.txt`）
+│     └─ default/                       # 默认皮肤：基础动作、互动动作、双角色行走帧
 ├─ test/
 │  ├─ *.test.js                         # Node.js test runner：单元与行为测试 (npm test)
 │  ├─ integration/                      # 跨模块/IPC 轻量级集成测试套件 (npm run test:integration)；通过模拟 IPC 调度、窗口事件记录与 StoreManager 内存存储，验证多窗口状态机、安全拦截与持久化闭环
@@ -263,6 +258,7 @@ qijiu-desktop-pet/
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
+│  ├─ generate_good_omens_icons.py      # 从 hug.png / hug.webp 生成好兆头圆章应用图标（icon.png / icon.ico / icon.icns）
 │  ├─ measure-electron-performance.js   # Electron 性能采样 CLI：参数校验、JSON 输出及 dev/packaged 入口
 │  ├─ measure-meeting-udp.js            # 会议应用 UDP 端点观测脚本，用于校准检测阈值
 │  ├─ playwright-electron-smoke.js      # Playwright 启动 Electron 的冒烟检查（隔离临时 userData，`npm run qa:electron:smoke`）
@@ -280,17 +276,16 @@ qijiu-desktop-pet/
 │  └─ trim_sprites.py                   # 精灵图透明边裁剪工具
 └─ docs/
    ├─ structure.md                      # 本文档
-   ├─ GLOSSARY.md                       # 领域词汇表：统一修仙养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
+   ├─ GLOSSARY.md                       # 领域词汇表：统一好兆头角色养成、CP 互动、空间感知与伴工情境等领域核心概念与术语规范
    ├─ cp-migration-guide.md             # 更换 CP：角色、素材、对白、互动与独立发布迁移指南
    ├─ performance/                      # Electron 性能采样说明与基线报告（仅追踪 README.md 与基线 Markdown 报告，原始 JSON 被 gitignore）
    ├─ git-workflow.md                   # 统一的 Git 提交、推送与发布流程
    ├─ release-code-signing.md           # 代码签名说明
    ├─ skin-pipeline-guide.md            # 皮肤素材处理标准流程（PNG 转 WebP、透明通道与画幅归一化）
-   ├─ security_best_practices_report.md # 安全最佳实践审查报告
    ├─ skin_assets_requirements.*        # 皮肤资源命名和尺寸要求
    ├─ decisions/                        # 架构决策记录 ADR
    ├─ plan/                             # 功能规划和任务拆分
-   └─ archive/                          # 已归档计划、交接、历史 review、故障排查记录（troubleshooting.txt）和本地更新测试配置
+   └─ archive/                          # 已归档计划、交接、历史 review、安全最佳实践审查报告（security_best_practices_report.md 等）、故障排查记录（troubleshooting.txt）和本地更新测试配置
 ```
 
 ## 3. 运行时关键机制
@@ -402,7 +397,7 @@ src/assets/{skinId}/
    └─ walk_left01.webp ... walk_right04.webp
 ```
 
-`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
+`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单或统一设置窗口打开选肤画廊（`SkinSelectorWindow`）触发预览与确认事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
 
 `SkinManager` 换肤时启用 `SpriteView.attach` 的 `validateRequired` 校验，区分必要立绘/走动帧与可选状态动作图片：必要资源加载失败时先恢复上一套成功应用的宠物立绘、走动帧、图片比例、状态图片和叠加层路径，并通过默认挂载重置动画缓存；`SkinManager.currentSkinId` 仅在加载成功后更新。原加载错误继续传递至 `SkinSwitchController` 和主进程，确认失败时保持已确认皮肤及存档不变；回选已确认皮肤也校验本次预览结果，可选动作图片缺失继续降级。应用初次挂载默认图片仍允许降级，避免图片损坏阻断启动。选肤器使用现有多语言错误提示显示确认失败。
 
@@ -658,7 +653,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-046](./decisions/ADR-046-electron-mock-testing-strategy.md)：主进程测试的 Electron Mock 拦截策略。
 - [ADR-047](./decisions/ADR-047-pet-scale-setting.md)：桌宠体型缩放调节与脚底中点锚定（50%~150% 缩放、脚底锚定与拖动实时预览；窗口形态已由 ADR-050 整合）。
 - [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
-- [ADR-049](./decisions/ADR-049-main-to-cp-auto-sync.md)：主分支向好兆头分支自动同步。
+- ADR-049（仅存于 main 分支）：主分支向好兆头分支自动同步。
 - [ADR-050](./decisions/ADR-050-unified-settings-window.md)：统一设置窗口与托盘菜单精简（3 Tab 架构、托盘入口收敛、即时自动保存与城市异步校验混合模型、最小权限 preload 与旧独立设置窗下线）。
 
 ## 6. 维护提示
@@ -670,7 +665,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - 新增 IPC 时，同步检查 `preload.js` 暴露面、主进程 handler 权限校验和测试覆盖。
 - 修改 game loop、移动、多屏或保存逻辑后，至少运行 `npm test`。
 - 修改发布、更新或打包逻辑后，构建后额外运行 `npm run verify:package` 和需要的平台签名校验。
-- 开发环境要求 Node.js 22.12.0+；运行 `npm ci` 后执行 `npx --no-install install-electron` 准备二进制，再启动应用或测试。Windows Electron 目录读取权限与 PowerShell 排障见 [README](../README.md)（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
+- 开发环境要求 Node.js 22.12.0+；运行 `npm ci` 后执行 `npx --no-install install-electron` 准备二进制，再启动应用或测试。`docs/skin-pipeline-guide.md` 含 WindowsApps Python 排障说明，Node 22.12.0+ / `npm ci` / `install-electron` 开发环境准备见 [README](../README.md)（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `fast-uri` 经 `electron-store → conf → ajv` 进入生产依赖树，并与构建工具共享；锁文件采用 `fast-uri@3.1.9` 与 `undici@7.30.2` 安全补丁，`test/dependencyUriSecurity.test.js` 覆盖 Ajv URI 解析器的主机名规范化、纯路径 suffix 转义、正常 schema 引用兼容性及锁文件补丁版本防回退断言（[ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)）。
 - Windows NSIS 架构配置在 `package.json` 的 `build.win.target` 对象内（`[{ "target": "nsis", "arch": ["x64"] }]`）；`build.win.arch` 不是合法字段，且会阻断双平台构建。`test/platformCompatibility.test.js` 使用 electron-builder 自带验证器检查完整构建配置（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
@@ -682,5 +677,5 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - `protectedAssetLoader.js` 校验 `skin/{skinId}/...webp` manifest 资源 ID，在主进程中解密 AES-256-GCM 数据，并校验 size 与 SHA-256 完整性。
 - `protectedAssetLoader.js` 对已解密资源使用有大小上限的内存 LRU 缓存，并对 manifest 结果及缺失检查 (`manifestNotFound`) 实施全内存缓冲，避免运行期或番茄钟心跳触发重复读盘和解密。
 - `protectedAssetProtocol.js` 注册 Electron 异步 `pet-asset://skin/...` 协议处理器，调用 `protectedAssetLoader.js` 的异步 `loadProtectedAsset`（`fs.promises.readFile` 读盘，在途请求 `inFlightLoads` 去重同在该文件），支持 `SkinManager`、`SpriteView`、`PetRenderer` 与番茄钟窗口无阻塞高效加载运行时皮肤图片。渲染进程切换皮肤时并发预加载两宠与双修/亲亲覆盖层贴图，并严格清理 `Image` 预加载对象的 DOM 事件监听器以防内存残留。
-- renderer 运行时代码应使用 `pet-asset://skin/...` URL 加载皮肤 WebP，不能直接使用 Node 文件系统 API。源素材仍保留在 `src/assets/` 便于编辑；打包产物排除明文皮肤 WebP，并包含 `protected-assets/`；运行时不读取的托盘模板图标 `src/assets/iconTemplate*.png`（托盘图标由 `TrayManager.createTrayIconBuffer` 在代码中生成）同样不进入 `app.asar`，源文件保留在仓库中。
+- renderer 运行时代码应使用 `pet-asset://skin/...` URL 加载皮肤 WebP，不能直接使用 Node 文件系统 API。源素材仍保留在 `src/assets/` 便于编辑；打包产物排除明文皮肤 WebP，并包含 `protected-assets/`；托盘图标由 `TrayManager.createTrayIconBuffer` 在代码中生成，`src/assets/iconTemplate*.png` 已从本分支移除，而 `package.json` 的 `build.files` 仍保留 `!src/assets/iconTemplate*.png` 排除规则作为防护。
 - 架构决策见 `docs/decisions/ADR-040-encrypted-skin-assets.md`。

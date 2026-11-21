@@ -66,3 +66,6 @@ Accepted
 
 ### 2026-11-20: 自写 `store.onDidChange` 同步重入守卫
 `WeatherSyncController.saveWeatherSyncSettings()` 在执行 `store.set('weatherSyncSettings', normalized)` 期间通过 `isSavingWeatherSettings`（`try/finally`）标记自写状态，使 `store.onDidChange` 监听器忽略本次自写触发的同步回调，避免在真实 `electron-store`（`conf`）中重入 `updateWeatherSyncSettings()` 造成重复写盘及中止首次在途天气请求；外部手动修改配置触发的 `store.onDidChange` 仍正常生效。
+
+### 2026-11-21: 更正极端高温 (`heat`) 判定温度阈值
+`WeatherAwarenessSystem.temperatureToBand()`（`src/systems/WeatherAwarenessSystem.js`）实际生效的 `'hot'` 判定阈值为 `>= 33°C`（`< 33` 为 `'warm'`，达到或超过 `33°C` 即进入 `'hot'` 并触发 `'heat'`），取代「Consequences」中 2026-07-10 历史记录的 `≥35℃` 说明。原正文保留为历史记录，以本条为准。

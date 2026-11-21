@@ -45,3 +45,8 @@ Accepted
 - **正面影响**：提供了明显更好的用户体验，具有即时的视觉反馈（如“搜索中...”、“设置为东京”或“未找到城市”）。
 - **正面影响**：使设计与应用程序的其余部分（如番茄钟和状态窗口）保持一致。
 - **负面影响**：略微增加了主进程窗口管理的复杂性，增加了一个需要跟踪和清理的浮动窗口。
+
+## Amendments
+
+### 2026-11-21: 独立窗口载体与独占 IPC 通道由统一设置窗口取代
+根据 [ADR-050](./ADR-050-unified-settings-window.md)，本 ADR 中的独立城市设置窗口载体（原 `CitySettingWindow` 及其独立 preload/HTML/CSS/渲染脚本）与独占 IPC 通道（`close-city-setting-window`、`get-city-settings`、`set-city-name`）已被取代并下线，统一收口至 `SettingsWindow`、`SettingsService` 与 `settingsPreload.js` 提供的 `settings-*` 聚合通道。原独立窗口与旧通道不再使用，但底层 Open-Meteo 城市地理编码验证、隐私边界与并发仲裁策略继续有效。

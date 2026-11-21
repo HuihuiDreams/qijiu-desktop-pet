@@ -41,6 +41,7 @@ npm run build
 ```powershell
 $env:WIN_CSC_LINK = "C:\path\to\windows-code-signing.pfx"
 $env:WIN_CSC_KEY_PASSWORD = "certificate-password"
+npm run protect:assets
 npx electron-builder --config.win.signAndEditExecutable=true
 npm run verify:signatures
 ```

@@ -32,7 +32,7 @@ in this project.
    - After each atomic fix, proactively verify and update corresponding unit tests (`test/`). Write behavioral tests (with mocks, fake timers, or `FakeBrowserWindow`) rather than regex/source-matching assertions (`assert.match(source, ...)`), except for intentional static security/manifest invariants. Never claim tests pass or cover behavior without actually running them (`npm test`, plus `npm run test:integration` for IPC/service/window lifecycle changes).
    - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
      1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, so cross-platform agents (e.g. macOS / Windows) maintain exact progress visibility.
-     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`), and verify with `npm run check:adrs` and `node --test test/docLinks.test.js`. Do not wait for user prompting.
+     2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`), and verify with `npm run check:adrs`. Do not wait for user prompting.
    - **Phase-based Atomic Commits**: For multi-phase plans, create an atomic commit at the end of each completed phase/task together with its tests, plan checkbox updates, and docs. Never batch multiple phases into a mega-commit; this maintains clean bisectability and rollback checkpoints.
    - **Regression Prevention**: For security changes or complex refactors, always explicitly provide the user with manual verification steps to ensure no behavior degradation.
    - Never batch multiple tasks without completing the test and documentation verification loop for each step.
@@ -57,7 +57,7 @@ in this project.
    - Keep Electron `screen` event coalescing and min/max constraint bridging together.
    - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects so physical sizing stays consistent across screens.
-3. macOS vs Windows Window Management & Sub-Window UI: When modifying window states (such as `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows like settings, skin selector, or pomodoro clock), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen window rearrangement to prevent windows from being trapped, hidden, or flickering. For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e:ci` or Playwright measurement), not just fake-DOM unit tests.
+3. macOS vs Windows Window Management & Sub-Window UI: When modifying window states (such as `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows like settings, skin selector, or pomodoro clock), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen window rearrangement to prevent windows from being trapped, hidden, or flickering. For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e` or Playwright measurement), not just fake-DOM unit tests.
 4. Input & Drag Behavior:
    - Default to `setIgnoreMouseEvents(true, { forward: true })`.
    - Toggle mouse events to `false` only while hovering interactive elements.
@@ -99,4 +99,4 @@ Before commit or push:
    <body explaining why>
    ```
 
-4. Automated Push Checks: Use `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to commit/push changes so project safety checks run. Note that `push.sh`/`push.ps1` reject unstaged untracked files, run `npm run sync:cp -- --verify` on `main`, and accept `[skip-cp]` in the commit message for `main`-only changes that should not sync to `cp/crowley-aziraphale`.
+4. Automated Push Checks: Use `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) to commit/push changes so project safety checks run. Note that `push.sh`/`push.ps1` reject unstaged untracked files, run `npm run sync:cp` on `main` only (this script is not present on `cp/crowley-aziraphale`), and accept `[skip-cp]` in the commit message for `main`-only changes that should not sync to `cp/crowley-aziraphale`.
