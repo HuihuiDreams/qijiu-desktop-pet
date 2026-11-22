@@ -111,12 +111,44 @@ test('sync-version bash snippet trims only surrounding whitespace before SemVer 
   }
 });
 
+/**
+ * Runs a PowerShell snippet once per input inside a single process and reports
+ * whether it completed and what `$version` ended up as. Starting pwsh takes about
+ * half a second, so one process per input made this the slowest unit test.
+ * A `throw` in the snippet counts as a rejection, the same as in the workflow step.
+ * @returns {{ ok: boolean, value: string | null }[]}
+ */
+function runPowerShellSnippetForInputs(psExe, snippet, inputs) {
+  const runner = [
+    "$ErrorActionPreference = 'Stop'",
+    '$snippet = [ScriptBlock]::Create($env:WORKFLOW_SNIPPET)',
+    '$results = foreach ($case in (ConvertFrom-Json $env:VERSION_CASES)) {',
+    '  $env:INPUT_VERSION = $case',
+    '  $version = $null',
+    '  try {',
+    '    . $snippet',
+    '    [pscustomobject]@{ ok = $true; value = $version }',
+    '  } catch {',
+    '    [pscustomobject]@{ ok = $false; value = $_.Exception.Message }',
+    '  }',
+    '}',
+    '[Console]::Write((ConvertTo-Json -InputObject @($results) -Compress))',
+  ].join('\n');
+  const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encodePowerShellCommand(runner)], {
+    env: { ...process.env, WORKFLOW_SNIPPET: snippet, VERSION_CASES: JSON.stringify(inputs) },
+    encoding: 'utf8',
+  });
+  assert.equal(res.status, 0, `PowerShell runner failed: ${res.stderr}`);
+  const results = JSON.parse(res.stdout);
+  assert.equal(results.length, inputs.length, 'PowerShell runner must report every input');
+  return results;
+}
+
 test('Validate release metadata PowerShell snippet matches sync-version normalization rules', (t) => {
   const metaScript = extractStepRunBlock(jobs.preflight, 'Validate release metadata');
   const cutoff = metaScript.indexOf('\n$packageVersion =');
   assert.ok(cutoff > 0, 'Validate release metadata script must validate the input before reading package.json');
-  const snippet = `${metaScript.slice(0, cutoff)}\n[Console]::Write($version)`;
-  const encoded = encodePowerShellCommand(snippet);
+  const snippet = metaScript.slice(0, cutoff);
 
   const psExe = findPowerShellExecutable();
   if (!psExe) {
@@ -124,20 +156,17 @@ test('Validate release metadata PowerShell snippet matches sync-version normaliz
     return;
   }
 
-  for (const [input, expected] of VALID_VERSION_INPUTS) {
-    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
-      env: { ...process.env, INPUT_VERSION: input },
-      encoding: 'utf8',
-    });
-    assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
-    assert.equal(res.stdout, expected);
-  }
+  const validInputs = VALID_VERSION_INPUTS.map(([input]) => input);
+  const results = runPowerShellSnippetForInputs(psExe, snippet, [...validInputs, ...INVALID_VERSION_INPUTS]);
 
-  for (const invalidInput of INVALID_VERSION_INPUTS) {
-    const res = spawnSync(psExe, ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
-      env: { ...process.env, INPUT_VERSION: invalidInput },
-      encoding: 'utf8',
-    });
-    assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
-  }
+  VALID_VERSION_INPUTS.forEach(([input, expected], index) => {
+    const result = results[index];
+    assert.equal(result.ok, true, `Expected '${input}' to succeed, got: ${result.value}`);
+    assert.equal(result.value, expected);
+  });
+
+  INVALID_VERSION_INPUTS.forEach((invalidInput, index) => {
+    const result = results[validInputs.length + index];
+    assert.equal(result.ok, false, `Expected '${invalidInput}' to be rejected, got '${result.value}'`);
+  });
 });
