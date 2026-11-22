@@ -251,7 +251,7 @@ Remove-Item Env:DESKTOP_PET_USER_DATA_DIR
 3. **全链路专用 Tag 前缀规避碰撞（如 `go-v1.0.0`）**：
    - 若双方都使用标准的 `v1.0.0`，在共享源码仓库中必定发生 Git Tag 冲突或 Actions 误复用旧 tag。
    - 新 CP 必须采用专属 Tag 前缀（如 `go-v*`），并联动适配全链路：
-     - **构建工作流 (`build-installer.yml`)**：`push.tags` 改为 `'go-v*'`；版本只在 `create-release-tag` 的 `Resolve release tag` 步骤解析一次（输入为空时回退到推送的 tag 名），与预检相同地裁剪首尾空白并单次剥离 `go-v` 或 `v` 前缀，校验 `X.Y.Z` 后以作业输出 `tag`（`go-vX.Y.Z`）交给 Windows/macOS 构建 Job；草稿 Release（`gh release create --draft`）统一在上游 `create-release-tag` Job 中预先创建一次，避免 Windows/macOS 并行构建任务上传资产时发生并发创建竞态；
+     - **构建工作流 (`build-installer.yml`)**：`push.tags` 改为 `'go-v*'`；版本只在 `create-release-tag` 的 `Resolve release tag` 步骤解析一次（按 `github.event_name` 区分：手动触发只读输入版本，为空时直接报错而不回退到分支或 tag 名；tag 推送读推送的 tag 名），与预检相同地裁剪首尾空白并单次剥离 `go-v` 或 `v` 前缀，校验 `X.Y.Z` 后以作业输出 `tag`（`go-vX.Y.Z`）交给 Windows/macOS 构建 Job；草稿 Release（`gh release create --draft`）统一在上游 `create-release-tag` Job 中预先创建一次，避免 Windows/macOS 并行构建任务上传资产时发生并发创建竞态；
      - **预检工作流 (`release-preflight.yml`)**：默认令牌权限为 `contents: read`（PR 触发时不持写权限）；仅在手动 `workflow_dispatch` 时运行隔离的 `sync-version` 作业（声明 `contents: write`），在 `package.json` 版本不一致时自动同步 `package.json` / `package-lock.json` 并推送提交，随后检出最新提交复核版本一致。`sync-version` 与 `Validate release metadata` 输入均支持剥离 `go-v` 或 `v` 前缀（与 `build-installer.yml` 一致），CHANGELOG 标题检测支持 `## [go-v$version]` 与 `## [$version]`，远端 tag 检测检查 `go-v$version`；
      - **客户端手动检查更新 (`updateManager.js`)**：macOS 手动更新检测版本解析需同时兼容带前缀的 tag，将 `data.tag_name.replace(/^v/, '')` 升级为 `data.tag_name.replace(/^(?:go-)?v/, '')`；
      - **测试套件 (`test/updateManager.test.js`)**：补充带前缀 tag（如 `go-v2.0.0`）的解析回归断言。

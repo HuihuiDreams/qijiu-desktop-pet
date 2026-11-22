@@ -26,16 +26,21 @@ jobs:
       tag: ${{ steps.resolve-tag.outputs.tag }}
 
     steps:
-      # 唯一的版本解析入口：手动触发用输入版本，tag 推送用 tag 名；
+      # 唯一的版本解析入口：手动触发只用输入版本（为空也不回退到分支或 tag 名），tag 推送用 tag 名；
       # 与 Release Preflight 相同，只裁剪首尾空白并单次剥离 go-v 或 v 前缀
       - name: Resolve release tag
         id: resolve-tag
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           INPUT_VERSION: ${{ inputs.version }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          RAW_VERSION="${INPUT_VERSION:-${REF_NAME}}"
+          if [[ "${EVENT_NAME}" == workflow_dispatch ]]; then
+            RAW_VERSION="${INPUT_VERSION}"
+          else
+            RAW_VERSION="${REF_NAME}"
+          fi
           VERSION="${RAW_VERSION#"${RAW_VERSION%%[![:space:]]*}"}"
           VERSION="${VERSION%"${VERSION##*[![:space:]]}"}"
           if [[ "${VERSION}" == go-v* ]]; then

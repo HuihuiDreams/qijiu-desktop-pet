@@ -57,7 +57,7 @@ function runResolve(t, vars) {
     env: buildBashEnv({ ...vars, GITHUB_OUTPUT: outputFile }, ['GITHUB_OUTPUT']),
     encoding: 'utf8',
   });
-  return { status: res.status, stderr: res.stderr, output: fs.readFileSync(outputFile, 'utf8') };
+  return { status: res.status, stdout: res.stdout, stderr: res.stderr, output: fs.readFileSync(outputFile, 'utf8') };
 }
 
 test('Resolve release tag accepts the same manual inputs as Release Preflight', (t) => {
@@ -69,30 +69,45 @@ test('Resolve release tag accepts the same manual inputs as Release Preflight', 
   // 手动触发时 github.ref_name 是分支名，不能被当作版本回退
   const REF_NAME = 'cp/crowley-aziraphale';
   for (const [input, expected] of VALID_VERSION_INPUTS) {
-    const res = runResolve(t, { INPUT_VERSION: input, REF_NAME });
+    const res = runResolve(t, { EVENT_NAME: 'workflow_dispatch', INPUT_VERSION: input, REF_NAME });
     assert.equal(res.status, 0, `Expected '${input}' to succeed, got stderr: ${res.stderr}`);
     assert.equal(res.output, `tag=go-v${expected}\n`);
   }
 
   for (const invalidInput of INVALID_VERSION_INPUTS) {
-    const res = runResolve(t, { INPUT_VERSION: invalidInput, REF_NAME });
+    const res = runResolve(t, { EVENT_NAME: 'workflow_dispatch', INPUT_VERSION: invalidInput, REF_NAME });
     assert.notEqual(res.status, 0, `Expected '${invalidInput}' to be rejected`);
     assert.equal(res.output, '', `Rejected '${invalidInput}' must not write a tag output`);
   }
 });
 
-test('Resolve release tag uses the pushed go-v tag when there is no manual input', (t) => {
+test('Resolve release tag rejects an empty manual input even when run on a go-v tag ref', (t) => {
   if (!bashForwardsEnv()) {
     t.skip('bash with env forwarding is not available on this host');
     return;
   }
 
-  const pushed = runResolve(t, { INPUT_VERSION: '', REF_NAME: 'go-v1.2.3' });
+  // gh workflow run --ref go-v1.2.3 -f version= 时 ref_name 恰好是合法 tag，也不能被当作输入版本
+  for (const refName of ['cp/crowley-aziraphale', 'go-v1.2.3']) {
+    const res = runResolve(t, { EVENT_NAME: 'workflow_dispatch', INPUT_VERSION: '', REF_NAME: refName });
+    assert.notEqual(res.status, 0, `Expected empty input on '${refName}' to be rejected`);
+    assert.equal(res.output, '');
+    assert.match(res.stdout, /got ''\./, 'the error must report the empty input, not the ref name');
+  }
+});
+
+test('Resolve release tag uses the pushed go-v tag on a tag push', (t) => {
+  if (!bashForwardsEnv()) {
+    t.skip('bash with env forwarding is not available on this host');
+    return;
+  }
+
+  const pushed = runResolve(t, { EVENT_NAME: 'push', INPUT_VERSION: '', REF_NAME: 'go-v1.2.3' });
   assert.equal(pushed.status, 0, pushed.stderr);
   assert.equal(pushed.output, 'tag=go-v1.2.3\n');
 
   for (const refName of ['go-v1.2.3-rc.1', 'go-vfoo']) {
-    const res = runResolve(t, { INPUT_VERSION: '', REF_NAME: refName });
+    const res = runResolve(t, { EVENT_NAME: 'push', INPUT_VERSION: '', REF_NAME: refName });
     assert.notEqual(res.status, 0, `Expected pushed tag '${refName}' to be rejected`);
     assert.equal(res.output, '');
   }
