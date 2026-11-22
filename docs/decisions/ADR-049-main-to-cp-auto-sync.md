@@ -35,4 +35,5 @@ Accepted
 
 ## Consequences
 - 被判定不适用的提交不会推进同步锚点，会在最多 50 个提交的窗口内被重复评估；更大积压需用 `workflow_dispatch` 的 `commits` 参数手动补跑。
+- 性能优化（2026-11-22）：`scripts/sync-to-cp.js` 在遍历提交前通过单次 `git log` 批量预读取已同步 `(cherry picked from commit <sha>)` 集合与候选提交元数据（含作者、父节点与变更文件），并仅在敏感共享文件校验或实际触发 AI 复核时延迟拉取 `git show` diff，减少大量重复子进程派生开销。变更文件列表使用 `--no-renames`，改名提交同时列出新旧路径，专属文件改名后仍会被拦截；合并提交只列第一父提交带入的文件，与 `cherry-pick -m 1` 实际应用的内容一致。批量读取失败时逐个提交用同一组参数重读，两条路径的判定结果相同。
 - 详细流程见 [docs/git-workflow.md](../git-workflow.md)。

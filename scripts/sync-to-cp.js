@@ -642,17 +642,86 @@ function runGit(args, options = {}) {
   }).trim();
 }
 
-function isCommitAlreadyOnBranch(targetRef, sha, cwd) {
+function collectSyncedMainShas(targetRef, cwd) {
+  const synced = new Set();
   try {
-    const byCherryMark = runGit(
-      ['log', targetRef, '--grep', `(cherry picked from commit ${sha})`, '--oneline', '-n', '1'],
+    const logBodies = runGit(
+      ['log', targetRef, '--grep=cherry picked from commit', '--format=%B'],
       { cwd }
     );
-    if (byCherryMark) return true;
+    if (!logBodies) return synced;
+    const regex = /\(cherry picked from commit ([0-9a-f]{7,40})\)/gi;
+    let match;
+    while ((match = regex.exec(logBodies)) !== null) {
+      synced.add(match[1].toLowerCase());
+    }
   } catch {
     // Ignore git log lookup errors
   }
-  return false;
+  return synced;
+}
+
+/**
+ * Read subject, body, author, merge flag and changed files for the given commits with one `git log`.
+ * `--no-renames` keeps both sides of a rename so a CP-exclusive file moved to a shared path is still
+ * detected; `--first-parent -m` lists only what a merge brings into main, matching `cherry-pick -m 1`.
+ * Throws when git fails.
+ */
+function readCommitMetadata(commits, cwd) {
+  const metadataMap = new Map();
+  const raw = runGit(
+    [
+      'log',
+      '--no-walk=unsorted',
+      '--root',
+      '--first-parent',
+      '-m',
+      '--no-renames',
+      '--name-only',
+      '--format=%x1e%H%x00%P%x00%s%x00%b%x00%an%x00%ae%x00',
+      ...commits,
+    ],
+    { cwd }
+  );
+  for (const block of raw.split('\x1e')) {
+    if (!block) continue;
+    const [
+      shaPart = '',
+      parentsPart = '',
+      subjectPart = '',
+      bodyPart = '',
+      authorNamePart = '',
+      authorEmailPart = '',
+      filesPart = '',
+    ] = block.split('\0');
+    const fullSha = shaPart.trim();
+    if (!fullSha) continue;
+    const parents = parentsPart.trim().split(/\s+/).filter(Boolean);
+    metadataMap.set(fullSha, {
+      subject: subjectPart.trim(),
+      body: bodyPart.trim(),
+      isMerge: parents.length > 1,
+      authorName: authorNamePart.trim(),
+      authorEmail: authorEmailPart.trim(),
+      files: filesPart.split(/\r?\n/).map((line) => line.trim()).filter(Boolean),
+    });
+  }
+  return metadataMap;
+}
+
+function batchReadCommitMetadata(commits, cwd) {
+  const metadataMap = new Map();
+  const chunkSize = 100;
+  for (let i = 0; i < commits.length; i += chunkSize) {
+    try {
+      for (const [sha, meta] of readCommitMetadata(commits.slice(i, i + chunkSize), cwd)) {
+        metadataMap.set(sha, meta);
+      }
+    } catch {
+      // Commits from a failed chunk are re-read one by one in the sync loop
+    }
+  }
+  return metadataMap;
 }
 
 /**
@@ -1168,23 +1237,20 @@ async function syncCommitsToCp({
   let dependenciesInstalled = false;
 
   try {
+    const checkRef = effectiveDryRun ? targetRemoteRef : 'HEAD';
+    const checkCwd = effectiveDryRun ? repoRoot : worktreeDir;
+    const alreadySyncedShas = collectSyncedMainShas(checkRef, checkCwd);
+    const commitMetaMap = batchReadCommitMetadata(commits, repoRoot);
+
     for (const sha of commits) {
-      const subject = runGit(['show', '-s', '--format=%s', sha], { cwd: repoRoot });
-      const body = runGit(['show', '-s', '--format=%b', sha], { cwd: repoRoot });
-      const parentLine = runGit(['rev-list', '--parents', '-n', '1', sha], { cwd: repoRoot });
-      const isMerge = parentLine.split(/\s+/).length > 2;
+      const meta = commitMetaMap.get(sha) || readCommitMetadata([sha], repoRoot).get(sha);
+      if (!meta) throw new Error(`Unable to read commit metadata for ${sha}`);
+      const { subject, body, isMerge, files } = meta;
       const mergedMessages = isMerge
         ? runGit(['log', '--format=%B', `${sha}^1..${sha}`], { cwd: repoRoot })
         : '';
-      const filesOutput = runGit(['diff-tree', '-m', '--first-parent', '--no-commit-id', '--name-only', '-r', sha], {
-        cwd: repoRoot,
-      });
-      const files = filesOutput ? filesOutput.split(/\r?\n/).filter(Boolean) : [];
 
-      const checkRef = effectiveDryRun ? targetRemoteRef : 'HEAD';
-      const checkCwd = effectiveDryRun ? repoRoot : worktreeDir;
-
-      if (isCommitAlreadyOnBranch(checkRef, sha, checkCwd)) {
+      if (alreadySyncedShas.has(sha.toLowerCase())) {
         results.push({
           sha,
           subject,
@@ -1196,16 +1262,11 @@ async function syncCommitsToCp({
       }
 
       const nonChangelogFiles = files.filter((f) => f !== 'CHANGELOG.md');
-      let codeDiff = '';
-      if (nonChangelogFiles.length > 0) {
-        codeDiff = runGit(['show', '--first-parent', '--format=', sha, '--', ...nonChangelogFiles], {
-          cwd: repoRoot,
-        });
-      }
-
       const sensitiveFiles = nonChangelogFiles.filter((f) => SENSITIVE_SHARED_FILE_REGEX.test(f));
+      const fullMessageForSkip = `${subject}\n${body}\n${mergedMessages}`;
+      const hasExplicitSkip = /\[(skip-cp|no-cp-sync|qijiu-only)\]/i.test(fullMessageForSkip);
       let sensitiveDiff = '';
-      if (sensitiveFiles.length > 0) {
+      if (sensitiveFiles.length > 0 && !hasExplicitSkip) {
         sensitiveDiff = runGit(['show', '--first-parent', '--format=', sha, '--', ...sensitiveFiles], {
           cwd: repoRoot,
         });
@@ -1215,12 +1276,18 @@ async function syncCommitsToCp({
         subject,
         body: `${body}\n${mergedMessages}`,
         files,
-        codeDiff,
         sensitiveDiff,
       });
 
       let aiVerdict = { evaluated: false };
-      if (heuristic.applicable && (heuristic.needsAiReview || alwaysAi)) {
+      const hasAiToken = Boolean(env.GITHUB_TOKEN || env.GH_TOKEN);
+      if (heuristic.applicable && (heuristic.needsAiReview || alwaysAi) && hasAiToken && typeof fetchImpl === 'function') {
+        let codeDiff = '';
+        if (nonChangelogFiles.length > 0) {
+          codeDiff = runGit(['show', '--first-parent', '--format=', sha, '--', ...nonChangelogFiles], {
+            cwd: repoRoot,
+          });
+        }
         aiVerdict = await evaluateCommitWithAi({
           subject,
           body: `${body}\n${mergedMessages}`,
@@ -1540,15 +1607,12 @@ async function syncCommitsToCp({
 
       // Commit the cherry-picked changes preserving original author and appending cherry-pick reference
       const commitMsg = `${subject}\n\n${body ? `${body.trim()}\n\n` : ''}(cherry picked from commit ${sha})`;
-      const authorName = runGit(['show', '-s', '--format=%an', sha], { cwd: repoRoot });
-      const authorEmail = runGit(['show', '-s', '--format=%ae', sha], { cwd: repoRoot });
-
       runGit(['commit', '-m', commitMsg], {
         cwd: worktreeDir,
         env: {
           ...env,
-          GIT_AUTHOR_NAME: authorName,
-          GIT_AUTHOR_EMAIL: authorEmail,
+          GIT_AUTHOR_NAME: meta.authorName,
+          GIT_AUTHOR_EMAIL: meta.authorEmail,
           GIT_COMMITTER_NAME: env.GIT_COMMITTER_NAME || 'github-actions[bot]',
           GIT_COMMITTER_EMAIL:
             env.GIT_COMMITTER_EMAIL || '41898282+github-actions[bot]@users.noreply.github.com',
@@ -1715,7 +1779,6 @@ module.exports = {
   resolveCommitsToEvaluate,
   resolveSyncCliOptions,
   findLastSyncedMainCommit,
-  isCommitAlreadyOnBranch,
   formatSyncSummaryMarkdown,
   syncCommitsToCp,
   MAIN_ONLY_SYNC_INFRA_FILES,

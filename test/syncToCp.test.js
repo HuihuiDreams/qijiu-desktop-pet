@@ -19,7 +19,6 @@ const {
   formatSyncSummaryMarkdown,
   resolveCommitsToEvaluate,
   resolveSyncCliOptions,
-  isCommitAlreadyOnBranch,
   syncCommitsToCp,
   MAIN_ONLY_SYNC_INFRA_FILES,
 } = require('../scripts/sync-to-cp.js');
@@ -39,6 +38,32 @@ function git(cwd, args) {
       GIT_COMMITTER_EMAIL: 'committer@example.com',
     },
   }).trim();
+}
+
+function commitEmptyBatch(cwd, count, messageFn) {
+  const branch = git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD']);
+  const headSha = git(cwd, ['rev-parse', 'HEAD']);
+  const treeSha = git(cwd, ['rev-parse', 'HEAD^{tree}']);
+  const stream = [];
+  for (let i = 0; i < count; i += 1) {
+    const msg = `${messageFn(i)}\n`;
+    stream.push(
+      `commit refs/heads/${branch}`,
+      `mark :${i + 1}`,
+      `author Test Author <author@example.com> ${1700000000 + i} +0000`,
+      `committer Test Committer <committer@example.com> ${1700000000 + i} +0000`,
+      `data ${Buffer.byteLength(msg)}`,
+      msg,
+      i === 0 ? `from ${headSha}` : `from :${i}`,
+      `M 040000 ${treeSha} ""`,
+      ''
+    );
+  }
+  execFileSync('git', ['fast-import', '--quiet'], {
+    cwd,
+    input: stream.join('\n'),
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
 }
 
 test('authenticated git keeps credentials out of command failures', () => {
@@ -105,6 +130,72 @@ test('syncs the resolved merge result relative to the main branch', async () => 
     assert.equal(skipped.syncedCount, 0);
     assert.match(skipped.results[0].verdict, /explicit-skip/);
     assert.throws(() => git(repo, ['show', 'origin/cp/crowley-aziraphale:private.js']));
+  } finally {
+    fs.rmSync(tmpBase, { recursive: true, force: true });
+  }
+});
+
+test('dry run classifies renames, merges, and already-synced commits from batched metadata', async () => {
+  const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-cp-metadata-'));
+  const repo = path.join(tmpBase, 'local');
+  try {
+    git(tmpBase, ['init', '--bare', path.join(tmpBase, 'remote.git')]);
+    git(tmpBase, ['init', repo]);
+    git(repo, ['remote', 'add', 'origin', path.join(tmpBase, 'remote.git')]);
+    fs.mkdirSync(path.join(repo, 'src', 'data'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'src', 'assets', 'skin'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'data', 'dialogues.js'), 'module.exports = ["line one", "line two"];\n');
+    fs.writeFileSync(path.join(repo, 'src', 'assets', 'skin', 'walk_left.webp'), 'base sprite\n');
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'base\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'base']);
+    git(repo, ['branch', '-M', 'main']);
+    git(repo, ['push', 'origin', 'main:cp/crowley-aziraphale']);
+
+    // A rename keeps the CP-exclusive source path in the file list
+    git(repo, ['mv', 'src/data/dialogues.js', 'src/data/lines.js']);
+    git(repo, ['commit', '-m', 'refactor: move dialogue data']);
+    const renameSha = git(repo, ['rev-parse', 'HEAD']);
+
+    // A merge is judged by what it brings into main, not by main-side changes since the fork
+    git(repo, ['checkout', '-b', 'feature']);
+    fs.writeFileSync(path.join(repo, 'feature.js'), 'feature\n');
+    git(repo, ['add', '.']);
+    git(repo, ['commit', '-m', 'feat: add feature module']);
+    git(repo, ['checkout', 'main']);
+    fs.writeFileSync(path.join(repo, 'src', 'assets', 'skin', 'walk_left.webp'), 'main sprite\n');
+    git(repo, ['commit', '-am', 'art: redraw sprite']);
+    git(repo, ['merge', '--no-ff', 'feature', '-m', 'merge feature']);
+    const mergeSha = git(repo, ['rev-parse', 'HEAD']);
+
+    // Only the cherry-pick marker counts as already synced; a repeated subject does not
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'first fix\n');
+    git(repo, ['commit', '-am', 'fix: common typo']);
+    const syncedSha = git(repo, ['rev-parse', 'HEAD']);
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'second fix\n');
+    git(repo, ['commit', '-am', 'fix: common typo']);
+    const repeatedSubjectSha = git(repo, ['rev-parse', 'HEAD']);
+
+    git(repo, ['fetch', 'origin']);
+    git(repo, ['checkout', '-b', 'cp-local', 'origin/cp/crowley-aziraphale']);
+    fs.writeFileSync(path.join(repo, 'shared.js'), 'first fix\n');
+    git(repo, ['commit', '-am', `fix: common typo\n\n(cherry picked from commit ${syncedSha})`]);
+    git(repo, ['push', 'origin', 'cp-local:cp/crowley-aziraphale']);
+    git(repo, ['checkout', 'main']);
+
+    const { results } = await syncCommitsToCp({
+      repoRoot: repo,
+      manualCommitsArg: [renameSha, mergeSha, syncedSha, repeatedSubjectSha].join(','),
+      dryRun: true,
+      env: {},
+    });
+    const bySha = new Map(results.map((result) => [result.sha, result]));
+
+    assert.match(bySha.get(renameSha).verdict, /cp-exclusive-files/);
+    assert.match(bySha.get(renameSha).reason, /src\/data\/dialogues\.js/);
+    assert.equal(bySha.get(mergeSha).status, '🔍 Dry-Run 通过');
+    assert.equal(bySha.get(syncedSha).verdict, '已存在');
+    assert.equal(bySha.get(repeatedSubjectSha).status, '🔍 Dry-Run 通过');
   } finally {
     fs.rmSync(tmpBase, { recursive: true, force: true });
   }
@@ -850,9 +941,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       assert.match(brandingRun.summaryMarkdown, /自动同步报告/);
 
       // 4. A backlog above the cap keeps the OLDEST commits
-      for (let i = 0; i < 51; i += 1) {
-        git(repo, ['commit', '--allow-empty', '-m', `chore: backlog ${i}`]);
-      }
+      commitEmptyBatch(repo, 51, (i) => `chore: backlog ${i}`);
       const backlogHead = git(repo, ['rev-parse', 'HEAD']);
       const warn = console.warn;
       console.warn = () => {};
@@ -875,7 +964,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     }
   });
 
-  await t.test('sync improvements: no duplicate title swallow, visible AI failure, brand filtered changelog, per-commit push', async () => {
+  await t.test('sync improvements: visible AI failure, brand filtered changelog, per-commit push', async () => {
     const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'deskpet-sync-improvements-'));
     const bareRemote = path.join(tmpBase, 'remote.git');
     const repo = path.join(tmpBase, 'local');
@@ -927,15 +1016,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
 
       git(repo, ['checkout', 'main']);
 
-      // 1. Verify isCommitAlreadyOnBranch does NOT treat commits with same subject as already on branch
-      const dummySha = 'abcdef0123456789abcdef0123456789abcdef01';
-      assert.equal(
-        isCommitAlreadyOnBranch(cpRef, dummySha, repo),
-        false,
-        'Different SHA with duplicate title must not be skipped as already on branch'
-      );
-
-      // 2. Verify AI failure transparency in verdictLabel
+      // 1. Verify AI failure transparency in verdictLabel
       fs.writeFileSync(
         path.join(repo, 'package.json'),
         `${JSON.stringify({ ...basePkg, dependencies: { 'new-dep': '1.0.0' } }, null, 2)}\n`
@@ -963,7 +1044,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       );
       assert.match(aiFailureDryRun.summaryMarkdown, /GitHub Models HTTP 500/);
 
-      // 3. Verify CHANGELOG QiJiu branding filtering and per-commit immediate push
+      // 2. Verify CHANGELOG QiJiu branding filtering and per-commit immediate push
       fs.writeFileSync(path.join(repo, 'src', 'tool1.js'), 'module.exports = 1;\n');
       fs.writeFileSync(
         path.join(repo, 'CHANGELOG.md'),
@@ -1425,9 +1506,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
       const baseSha = git(repo, ['rev-parse', 'HEAD']);
 
       // Create 54 backlog commits already on origin/main (e.g. skipped by [skip-cp] so anchor never moved)
-      for (let i = 1; i <= 54; i += 1) {
-        git(repo, ['commit', '--allow-empty', '-m', `chore: backlog commit ${i} [skip-cp]`]);
-      }
+      commitEmptyBatch(repo, 54, (i) => `chore: backlog commit ${i + 1} [skip-cp]`);
       git(repo, ['push', 'origin', 'main']);
 
       // 55th commit (local unpushed HEAD) modifies util.js
@@ -1500,9 +1579,7 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
         git(massiveBase, ['push', 'origin', 'main:cp/crowley-aziraphale']);
         const massiveBaseSha = git(massiveBase, ['rev-parse', 'HEAD']);
 
-        for (let i = 1; i <= 119; i += 1) {
-          git(massiveBase, ['commit', '--allow-empty', '-m', `chore: massive unpushed ${i} [skip-cp]`]);
-        }
+        commitEmptyBatch(massiveBase, 119, (i) => `chore: massive unpushed ${i + 1} [skip-cp]`);
         fs.writeFileSync(path.join(massiveBase, 'src', 'massive.js'), 'module.exports = 120;\n');
         git(massiveBase, ['add', '.']);
         git(massiveBase, ['commit', '-m', 'feat: massive commit 120 (HEAD)']);
