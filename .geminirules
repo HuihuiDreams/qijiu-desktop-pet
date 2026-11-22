@@ -23,7 +23,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
    - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
    - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
-   - IPC Authorization: All sensitive operations (skin changes, asset loading, filesystem requests) must be validated inside `main.js` IPC handlers.
+   - IPC Authorization: All sensitive operations (skin changes, asset loading, filesystem requests) must be validated inside main-process IPC handlers (`src/main/services/*`, `src/main/windows/*`, `src/main/DisplayService.js`; channel contracts in `ipcContracts.js`).
 2. **Game Loop & Time Skew (`src/app.js`)**:
    - Must wrap step iterations in `try/catch` to prevent renderer crashes.
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
