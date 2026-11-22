@@ -10,7 +10,7 @@ Accepted
 使用 `performance-optimization` 技能对桌面宠物可视化选择皮肤窗口（Skin Selector Window）及切肤全链路进行了多层级测评与反模式诊断。
 
 核心测量与现状说明：
-1. **轻量与高响应速度**：选肤窗口在首次创建（`150ms ~ 350ms`）后采用 `hide()` 复用策略；配合 `pet-asset:` 协议层为 `webp` 图片附加的 `Cache-Control: public, max-age=31536000, immutable` 强缓存及 `loadProtectedAssetAsync` 的 `inFlightLoads` 去重机制，再次呼唤选肤窗口的响应时间（INP/LCP）能够控制在 `16ms` 以内，对 `app.js` 的游戏主循环与交互帧率无卡顿影响。
+1. **轻量与高响应速度**：选肤窗口在首次创建（`150ms ~ 350ms`）后采用 `hide()` 复用策略；配合 `pet-asset:` 协议层为 `webp` 图片附加的 `Cache-Control: public, max-age=31536000, immutable` 强缓存及 `loadProtectedAsset`（原名 `loadProtectedAssetAsync`，2026-08-03 `2df4351` 起更名）的 `inFlightLoads` 去重机制，再次呼唤选肤窗口的响应时间（INP/LCP）能够控制在 `16ms` 以内，对 `app.js` 的游戏主循环与交互帧率无卡顿影响。
 2. **两类性能提升瓶颈识别**：
    - **当下即存在的冗余计算（与皮肤数量无关）**：卡片点击预览（`previewSkin` $\rightarrow$ `selectSkin` $\rightarrow$ `mainWindow` 渲染侧 `applySkinById` $\rightarrow$ 回发 `set-current-skin` IPC）不仅会在主进程连续向系统申请并重建原生托盘上下文菜单 `Menu.buildFromTemplate` **2 次**，还在试穿期每次点击都会执行主窗口的 `saveCurrentState()` 写盘存档。
    - **面向未来皮肤增多（10～30+ 套长列表）的扩展瓶颈**：卡片封面 `<img>` 标签缺失 `loading="lazy"` 与 `decoding="async"` 属性；隐藏状态下的 `skinSelectorWindow` 在遇到托盘切换多语言 (`locale-changed`) 时，仍会在后台接收数据并全量重建卡片 DOM；开发或未加密模式下每次扫描需在主线程执行多达 $4N$ 次同步 `fs.existsSync`。
