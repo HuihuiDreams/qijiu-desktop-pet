@@ -21,8 +21,11 @@ test('build installers parses the version input in exactly one step and shares t
   assert.deepEqual(parsers, ['create-release-tag']);
   assert.equal(jobs['create-release-tag'].split('inputs.version').length - 1, 1, 'only the resolve step may read inputs.version');
   assert.match(jobs['create-release-tag'], /outputs:\n {6}tag: \$\{\{ steps\.resolve-tag\.outputs\.tag \}\}/);
+  // tag 推送时也要运行 create-release-tag，否则构建 job 拿不到解析后的 tag
+  assert.doesNotMatch(jobs['create-release-tag'], /^ {4}if:/m);
   for (const name of ['build-windows-installer', 'build-macos-installer']) {
     assert.match(jobs[name], /needs: create-release-tag/);
+    assert.match(jobs[name], /if: needs\.create-release-tag\.result == 'success'/);
     assert.match(jobs[name], /RELEASE_TAG: \$\{\{ needs\.create-release-tag\.outputs\.tag \}\}/, `${name} must use the resolved tag`);
   }
 });
