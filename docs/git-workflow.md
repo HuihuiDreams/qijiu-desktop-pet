@@ -228,7 +228,7 @@ macOS 打包后需要确认 `.app` 包内真实可执行文件名仍是 `DeskPet
 
 * `version`: 填同一个版本，可写 `0.8.4` 或 `v0.8.4`，解析规则与 `Release Preflight` 相同（只裁剪首尾空白，单次剥离 `v` 前缀）。
 
-手动运行时，workflow 会先执行 `create-release-tag`，由其中的 `Resolve release tag` 步骤统一解析版本并以作业输出 `tag` 交给两个平台的构建 job（tag 推送触发时同一步骤直接校验推送的 tag 名）：
+手动运行时，workflow 会先执行 `create-release-tag`，由其中的 `Resolve release tag` 步骤统一解析版本并以作业输出 `tag` 交给两个平台的构建 job（手动运行只读 `version` 输入，即使在 tag 上运行也不会把 tag 名当作版本；tag 推送触发时同一步骤直接校验推送的 tag 名）：
 
 * 要求输入版本与 `package.json` 的 `version` 对应。
 * 如果 `vX.Y.Z` tag 不存在，会在当前提交上创建并推送。
