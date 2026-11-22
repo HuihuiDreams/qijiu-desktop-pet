@@ -233,23 +233,47 @@ class WeatherParticleLayer {
   _applyGroupStyle(group, index, width, height, left, top, opacity, visibility, effectScale) {
     if (!this._lastPositions) this._lastPositions = [];
     if (!this._lastGroupScales) this._lastGroupScales = [];
-    const cacheKey = `${width}_${height}_${left}_${top}_${opacity}_${visibility}_${effectScale}`;
-    if (this._lastPositions[index] === cacheKey) return;
-    this._lastPositions[index] = cacheKey;
+    if (!this._lastPositions[index]) {
+      this._lastPositions[index] = { width: null, height: null, left: null, top: null, opacity: null, visibility: null };
+    }
+    const prev = this._lastPositions[index];
 
     if (opacity === '0') {
-      group.style.opacity = '0';
-      group.style.visibility = 'hidden';
-    } else {
-      if (Number.isFinite(effectScale) && effectScale > 0 && this._lastGroupScales[index] !== effectScale) {
-        group.style.setProperty('--weather-effect-scale', effectScale);
-        this._lastGroupScales[index] = effectScale;
+      if (prev.opacity !== '0') {
+        group.style.opacity = '0';
+        prev.opacity = '0';
       }
+      if (prev.visibility !== 'hidden') {
+        group.style.visibility = 'hidden';
+        prev.visibility = 'hidden';
+      }
+      return;
+    }
+
+    if (Number.isFinite(effectScale) && effectScale > 0 && this._lastGroupScales[index] !== effectScale) {
+      group.style.setProperty('--weather-effect-scale', effectScale);
+      this._lastGroupScales[index] = effectScale;
+    }
+    if (prev.width !== width) {
       group.style.width = `${width}px`;
+      prev.width = width;
+    }
+    if (prev.height !== height) {
       group.style.height = `${height}px`;
+      prev.height = height;
+    }
+    if (prev.left !== left || prev.top !== top) {
       group.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      prev.left = left;
+      prev.top = top;
+    }
+    if (prev.opacity !== '1') {
       group.style.opacity = '1';
+      prev.opacity = '1';
+    }
+    if (prev.visibility !== 'visible') {
       group.style.visibility = 'visible';
+      prev.visibility = 'visible';
     }
   }
 

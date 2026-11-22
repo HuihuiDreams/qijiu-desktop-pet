@@ -460,6 +460,19 @@
   await skinSwitchController.applySkinById(savedState?.skinId || 'default', { persist: false });
 
   let migrationCooldown = 0; // macOS: 跨屏迁移冷却时间
+  let renderedBodyWeather = null;
+  let renderedBodyTimePhase = null;
+
+  const syncBodyWeatherDataset = (weatherKind, timePhase) => {
+    if (renderedBodyWeather !== weatherKind) {
+      document.body.dataset.weather = weatherKind;
+      renderedBodyWeather = weatherKind;
+    }
+    if (renderedBodyTimePhase !== timePhase) {
+      document.body.dataset.timePhase = timePhase;
+      renderedBodyTimePhase = timePhase;
+    }
+  };
 
   // === 游戏主循环 ===
   lastTime = performance.now();
@@ -513,12 +526,7 @@
           yueqi.weatherKind = weatherState.weatherKind;
           shenjiu.weatherKind = weatherState.weatherKind;
 
-          if (document.body.dataset.weather !== weatherState.weatherKind) {
-            document.body.dataset.weather = weatherState.weatherKind;
-          }
-          if (document.body.dataset.timePhase !== weatherState.timePhase) {
-            document.body.dataset.timePhase = weatherState.timePhase;
-          }
+          syncBodyWeatherDataset(weatherState.weatherKind, weatherState.timePhase);
 
           movementSystem.setSurfacePlatforms(getSurfacePlatforms(Date.now()));
           movementSystem.update(yueqi, deltaMs);
@@ -663,8 +671,7 @@
         ...payload,
       });
       const state = weatherAwarenessSystem.getCurrentState();
-      document.body.dataset.weather = state.weatherKind;
-      document.body.dataset.timePhase = state.timePhase;
+      syncBodyWeatherDataset(state.weatherKind, state.timePhase);
       yueqi.timePhase = state.timePhase;
       shenjiu.timePhase = state.timePhase;
       yueqi.weatherKind = state.weatherKind;
@@ -692,8 +699,7 @@
     clear() {
       weatherAwarenessSystem.setWeatherPayload({ active: false });
       const state = weatherAwarenessSystem.getCurrentState();
-      document.body.dataset.weather = state.weatherKind;
-      document.body.dataset.timePhase = state.timePhase;
+      syncBodyWeatherDataset(state.weatherKind, state.timePhase);
       yueqi.weatherKind = state.weatherKind;
       shenjiu.weatherKind = state.weatherKind;
       weatherParticleLayer.clear();

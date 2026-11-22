@@ -325,7 +325,7 @@ qijiu-desktop-pet/
 
 天气 IPC 订阅在异步语言初始化前建立；若 `WeatherSyncController` 的首次 `weather-update` 早于 `WeatherAwarenessSystem` 创建，`app.js` 会暂存该 payload 并在系统就绪后立即应用，避免首次天气粒子状态丢失。
 
-`WeatherParticleLayer` 在天气类型、强度、缩放、互动状态及宠物数量等输入不变时复用已有 DOM 节点，逐帧更新粒子组位置，并跳过位置不变时的重复样式写入；上述输入变化时清除并重建粒子层，隐藏、禁用或没有有效宠物时清理节点。`ScreensaverParticleLayer` 每次 `mount()` 清除并重建节点，最多生成 12 个爱心粒子，通过 CSS keyframe 动画控制 `opacity` 与 `transform`，减弱动态效果开启时不生成爱心粒子。两者均未实现预分配对象池。
+`WeatherParticleLayer` 在天气类型、强度、缩放、互动状态及宠物数量等输入不变时复用已有 DOM 节点，逐帧更新粒子组位置，并按属性跳过未变化的样式写入（宠物行走时只更新 `transform`）；上述输入变化时清除并重建粒子层，隐藏、禁用或没有有效宠物时清理节点。`ScreensaverParticleLayer` 每次 `mount()` 清除并重建节点，最多生成 12 个爱心粒子，通过 CSS keyframe 动画控制 `opacity` 与 `transform`，减弱动态效果开启时不生成爱心粒子。两者均未实现预分配对象池。
 
 天气网络请求通过 Electron 的系统代理与证书信任链发送；为兼容 Windows 上经 Zscaler 检查的较慢首个响应，`weatherSyncService.js` 的超时为 10 秒，超过该时间才降级为无天气粒子的安全状态。
 `WeatherSyncController` 会按城市坐标短期保存最近一次成功的天气 payload；桌宠重启时先回放匹配的缓存再后台刷新，若首个请求在企业代理或瞬时超时下暂时降级，会保留已回放的效果而不清空；首次运行尚无缓存时，控制器会在冷启动请求降级后清除失败缓存并自动重试一次，以适配 Zscaler 首次握手慢、后续连接快速的行为。无论冷启动还是周期刷新，只要最终请求返回降级（包括保留旧缓存的情况），控制器都会改用 `FALLBACK_TTL_MS`（10 分钟）短周期 `setTimeout` 重试并在到期时重置服务层失败缓存，而非等满 `refreshIntervalMinutes`（60 分钟），待恢复成功后再切回正常刷新周期。
