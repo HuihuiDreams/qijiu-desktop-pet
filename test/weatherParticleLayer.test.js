@@ -527,3 +527,36 @@ test('WeatherParticleLayer scales group bounds and --weather-effect-scale with p
   }
 });
 
+test('WeatherParticleLayer only writes transform when pet moves without size or weather changes', () => {
+  const root = createFakeElement();
+  global.document = {
+    createElement() {
+      return createFakeElement();
+    },
+    getElementById() {
+      return null;
+    },
+  };
+
+  try {
+    const layer = new WeatherParticleLayer(root, { PET_SIZE: 96, WEATHER_RAIN_PARTICLE_MAX: 10 });
+    const pets = [{ x: 100, y: 120, size: 96 }];
+
+    layer.sync({ weatherKind: 'rain', intensity: 'normal' }, { visible: true, scaleRatio: 1, pets });
+    const groupEl = root.children[0].children[0];
+    const writesBeforeMove = groupEl.style._writeCount;
+
+    pets[0].x = 124;
+    pets[0].y = 136;
+    layer.sync({ weatherKind: 'rain', intensity: 'normal' }, { visible: true, scaleRatio: 1, pets });
+
+    assert.equal(
+      groupEl.style._writeCount - writesBeforeMove,
+      1,
+      'Only group.style.transform should be written when only pet coordinates change',
+    );
+    assert.match(groupEl.style.transform, /^translate3d\(/);
+  } finally {
+    delete global.document;
+  }
+});

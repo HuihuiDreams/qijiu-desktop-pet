@@ -46,6 +46,18 @@ class MovementSystem {
     this.activePlatform = null;
     this.surfacePlatforms = [];
     this._lastSurfacePlatformsInput = null;
+    this._cachedWalkAreasRef = null;
+    this._cachedWalkAreasLen = -1;
+    this._cachedSurfacePlatformsRef = null;
+    this._cachedSurfacePlatformsLen = -1;
+    this._cachedScreenWidth = null;
+    this._cachedScreenHeight = null;
+    this._cachedTaskbarHeight = null;
+    this._cachedEffectiveWalkAreas = null;
+    this._cachedMovementAreasAll = null;
+    this._cachedMovementAreasExcludingActive = null;
+    this._cachedRawSurfaceArea = null;
+    this._cachedNormalizedSurfaceArea = null;
   }
 
   /**
@@ -101,8 +113,40 @@ class MovementSystem {
     };
   }
 
+  _ensureAreaCaches() {
+    const taskbarHeight = typeof CONFIG !== 'undefined' ? (CONFIG.TASKBAR_HEIGHT || 0) : 0;
+    if (
+      this._cachedEffectiveWalkAreas
+      && this._cachedWalkAreasRef === this.walkAreas
+      && this._cachedWalkAreasLen === this.walkAreas.length
+      && this._cachedSurfacePlatformsRef === this.surfacePlatforms
+      && this._cachedSurfacePlatformsLen === this.surfacePlatforms.length
+      && this._cachedScreenWidth === this.screenWidth
+      && this._cachedScreenHeight === this.screenHeight
+      && this._cachedTaskbarHeight === taskbarHeight
+    ) {
+      return;
+    }
+
+    this._cachedEffectiveWalkAreas = this.walkAreas.length > 0 ? this.walkAreas : [this.getFallbackWalkArea()];
+    this._cachedMovementAreasAll = this.surfacePlatforms.length > 0
+      ? [...this.surfacePlatforms, ...this._cachedEffectiveWalkAreas]
+      : this._cachedEffectiveWalkAreas;
+    this._cachedMovementAreasExcludingActive = this._cachedMovementAreasAll.filter(
+      (area) => !this.isActiveWindowPlatform(area),
+    );
+    this._cachedWalkAreasRef = this.walkAreas;
+    this._cachedWalkAreasLen = this.walkAreas.length;
+    this._cachedSurfacePlatformsRef = this.surfacePlatforms;
+    this._cachedSurfacePlatformsLen = this.surfacePlatforms.length;
+    this._cachedScreenWidth = this.screenWidth;
+    this._cachedScreenHeight = this.screenHeight;
+    this._cachedTaskbarHeight = taskbarHeight;
+  }
+
   getWalkAreas() {
-    return this.walkAreas.length > 0 ? this.walkAreas : [this.getFallbackWalkArea()];
+    this._ensureAreaCaches();
+    return this._cachedEffectiveWalkAreas;
   }
 
   setActivePlatform(platform) {
@@ -147,13 +191,10 @@ class MovementSystem {
   }
 
   getMovementAreas(options = {}) {
-    const areas = this.surfacePlatforms.length > 0
-      ? [...this.surfacePlatforms, ...this.getWalkAreas()]
-      : this.getWalkAreas();
-    if (options.excludeActiveWindowPlatform) {
-      return areas.filter((area) => !this.isActiveWindowPlatform(area));
-    }
-    return areas;
+    this._ensureAreaCaches();
+    return options.excludeActiveWindowPlatform
+      ? this._cachedMovementAreasExcludingActive
+      : this._cachedMovementAreasAll;
   }
 
   clampToRange(value, min, max) {
@@ -214,28 +255,26 @@ class MovementSystem {
     if (!this.isSurfacePlatform(area)) return this.getTargetRange(area, pet, margin);
 
     // 活动窗口平台不携带 DPI；平台与可行走区域必须使用同一屏幕的视觉尺寸。
-    const reachableRanges = this.getWalkAreas()
-      .map((walkArea) => {
-        const visualScale = this.getScaleRatioForArea(walkArea);
-        const size = pet.size * visualScale;
-        const range = this.getTargetRange(area, pet, margin, visualScale);
-        return {
-          minX: Math.max(range.minX, walkArea.x),
-          maxX: Math.min(range.maxX, walkArea.x + walkArea.width - size),
-          minY: Math.max(range.minY, walkArea.y),
-          maxY: Math.min(range.maxY, walkArea.y + walkArea.height - size),
-        };
-      })
-      .filter((candidate) => (
-        candidate.minX <= candidate.maxX
-        && candidate.minY <= candidate.maxY
-      ))
-      .sort((a, b) => (
-        (b.maxX - b.minX) * (b.maxY - b.minY)
-        - (a.maxX - a.minX) * (a.maxY - a.minY)
-      ));
+    let bestRange = null;
+    let bestArea = -1;
+    for (const walkArea of this.getWalkAreas()) {
+      const visualScale = this.getScaleRatioForArea(walkArea);
+      const size = pet.size * visualScale;
+      const range = this.getTargetRange(area, pet, margin, visualScale);
+      const minX = Math.max(range.minX, walkArea.x);
+      const maxX = Math.min(range.maxX, walkArea.x + walkArea.width - size);
+      const minY = Math.max(range.minY, walkArea.y);
+      const maxY = Math.min(range.maxY, walkArea.y + walkArea.height - size);
+      if (minX <= maxX && minY <= maxY) {
+        const candidateArea = (maxX - minX) * (maxY - minY);
+        if (candidateArea > bestArea) {
+          bestArea = candidateArea;
+          bestRange = { minX, maxX, minY, maxY };
+        }
+      }
+    }
 
-    return reachableRanges[0] || null;
+    return bestRange;
   }
 
   getMovementAreasForPet(pet, margin = 0, options = {}) {
@@ -273,10 +312,38 @@ class MovementSystem {
       && a.height === b.height;
   }
 
+  _normalizeSingleSurfaceArea(area) {
+    const cached = this._cachedRawSurfaceArea;
+    if (
+      cached
+      && cached.x === area.x
+      && cached.y === area.y
+      && cached.width === area.width
+      && cached.height === area.height
+      && cached.scaleRatio === area.scaleRatio
+      && cached.source === area.source
+      && cached.isPrimary === area.isPrimary
+    ) {
+      return this._cachedNormalizedSurfaceArea;
+    }
+    const normalized = this.normalizeWalkAreas([area])[0] || null;
+    this._cachedRawSurfaceArea = {
+      x: area.x,
+      y: area.y,
+      width: area.width,
+      height: area.height,
+      scaleRatio: area.scaleRatio,
+      source: area.source,
+      isPrimary: area.isPrimary,
+    };
+    this._cachedNormalizedSurfaceArea = normalized;
+    return normalized;
+  }
+
   findMatchingWalkArea(area, pet = null) {
     if (!area) return null;
     if (this.isSurfacePlatform(area)) {
-      const normalizedArea = this.normalizeWalkAreas([area])[0] || null;
+      const normalizedArea = this._normalizeSingleSurfaceArea(area);
       if (!normalizedArea) return null;
       if (pet && !this.getReachableTargetRange(normalizedArea, pet, 0)) return null;
       return normalizedArea;
@@ -341,8 +408,9 @@ class MovementSystem {
     let bestPosition = null;
     let bestDistance = Infinity;
 
-    for (const area of this.getMovementAreasForPet(pet, 0)) {
+    for (const area of this.getMovementAreas()) {
       const range = this.getReachableTargetRange(area, pet, 0);
+      if (!range) continue;
       const clampedX = this.clampToRange(x, range.minX, range.maxX);
       const clampedY = this.clampToRange(y, range.minY, range.maxY);
       const distance = (clampedX - x) ** 2 + (clampedY - y) ** 2;

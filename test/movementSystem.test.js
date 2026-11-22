@@ -664,3 +664,50 @@ test('MovementSystem.setSurfacePlatforms dirty checks platform inputs and preser
   assert.equal(movementSystem.activePlatform, null);
 });
 
+test('MovementSystem caches getWalkAreas and getMovementAreas until screen or surface platforms change', () => {
+  const movementSystem = new MovementSystem(1920, 1080);
+
+  const initialWalkAreas = movementSystem.getWalkAreas();
+  const initialMovementAreas = movementSystem.getMovementAreas();
+  const initialExcludedAreas = movementSystem.getMovementAreas({ excludeActiveWindowPlatform: true });
+
+  assert.strictEqual(movementSystem.getWalkAreas(), initialWalkAreas);
+  assert.strictEqual(movementSystem.getMovementAreas(), initialMovementAreas);
+  assert.strictEqual(movementSystem.getMovementAreas({ excludeActiveWindowPlatform: true }), initialExcludedAreas);
+
+  movementSystem.setSurfacePlatforms([
+    { x: 0, y: 1000, width: 1920, height: 40, source: 'taskbar-edge', isPrimary: true },
+    { x: 200, y: 300, width: 800, height: 30, source: 'active-window-top' },
+  ]);
+
+  const withSurfaceMovement = movementSystem.getMovementAreas();
+  const withSurfaceExcluded = movementSystem.getMovementAreas({ excludeActiveWindowPlatform: true });
+  assert.notStrictEqual(withSurfaceMovement, initialMovementAreas);
+  assert.equal(withSurfaceMovement.length, 3);
+  assert.equal(withSurfaceExcluded.length, 2);
+  assert.strictEqual(movementSystem.getMovementAreas(), withSurfaceMovement);
+  assert.strictEqual(movementSystem.getMovementAreas({ excludeActiveWindowPlatform: true }), withSurfaceExcluded);
+
+  movementSystem.setScreenSize(2560, 1440, [
+    { x: 0, y: 0, width: 2560, height: 1400, scaleRatio: 1, isPrimary: true },
+  ]);
+  const updatedWalkAreas = movementSystem.getWalkAreas();
+  assert.notStrictEqual(updatedWalkAreas, initialWalkAreas);
+  assert.notStrictEqual(movementSystem.getMovementAreas(), withSurfaceMovement);
+  assert.strictEqual(movementSystem.getWalkAreas(), updatedWalkAreas);
+});
+
+test('MovementSystem.setSurfacePlatforms detects in-place changes to the same input array', () => {
+  const movementSystem = new MovementSystem(1920, 1080);
+  const platforms = [{ x: 200, y: 300, width: 800, height: 30, source: 'active-window-top' }];
+
+  movementSystem.setSurfacePlatforms(platforms);
+  const cachedMovementAreas = movementSystem.getMovementAreas();
+
+  platforms[0].x = 600;
+  movementSystem.setSurfacePlatforms(platforms);
+
+  assert.equal(movementSystem.activePlatform.x, 600);
+  assert.notStrictEqual(movementSystem.getMovementAreas(), cachedMovementAreas);
+  assert.equal(movementSystem.getMovementAreas()[0].x, 600);
+});
