@@ -29,7 +29,7 @@ Electron 的 `alwaysOnTop: true` 配置在绝大多数场景下可以正常工�
 4. **`moveTop()` 配合调用**：在 `setAlwaysOnTop` 之后额外调用 `moveTop()`，强制将窗口移至同层级中的最顶层。
 5. **`focusable: false`**：将窗口设置为不可聚焦，防止宠物窗口因意外获得焦点而与用户当前操作的程序产生竞争。
 6. **`setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`**：使窗口在所有虚拟桌面和全屏应用场景下均可见（主要对 macOS 生效，Windows 环境作为保留配置）。
-7. **子窗口焦点顺序**：通过应用级窗口焦点事件即时记录顺序，覆盖首次轮询前的快速切换；主窗口抬升后按最近焦点顺序依次抬升可见置顶子窗口，焦点切到其他应用时保留该顺序。
+7. **子窗口焦点顺序与层叠分层**：通过应用级窗口焦点事件即时记录顺序，覆盖首次轮询前的快速切换；主窗口（`'screen-saver'` 级）与高于宠物的子窗口（置顶的 `PomodoroWindow`、180ms 脉冲期内的 `SkinSelectorWindow`）保持既有顺序——主窗口抬升后按最近焦点顺序依次抬升这类可见置顶子窗口，焦点切到其他应用时保留该顺序。`StatusWindow`（常驻）与 `SettingsWindow`（聚焦期间）则使用 `'pop-up-menu'` 级并位于主窗口之下，使桌宠与右键菜单（`#context-menu`）始终覆盖在状态与设置窗口之上，同时这两扇窗口仍高于普通应用、Dock、任务栏与全屏空间；二者在打开、聚焦、显示、恢复、拖动（`moved`）及 Windows 下的鼠标/触控点击（`input-event`）时会回调 `keepPetWindowOnTop()`，确保 Win32 `HWND_TOPMOST` 激活后主透明窗口仍处于其上方且不抢占键盘焦点；Windows 全屏 RDP 抑制仍统一覆盖全部处于 `alwaysOnTop` 状态的桌宠子窗口。
 
 ### Windows 全屏 RDP 例外（2026-11-09）
 
@@ -54,9 +54,9 @@ API 依据：[Electron BrowserWindow](https://www.electronjs.org/docs/latest/api
 - **优点：** 实现简单，无额外维护成本。
 - **缺点：** 无法应对全屏应用、UAC 弹窗等场景导致的层级重排。实测存在用户可感知的"消失"问题。
 
-### 使用更高层级（如 `'pop-up-menu'` 或 `'torn-off-menu'`）
-- **优点：** 可能在 macOS 上更有效。
-- **缺点：** 在 Windows 上行为与 `'screen-saver'` 差异不大，且 `'screen-saver'` 已经足够；更高层级可能在某些场景下影响系统交互逻辑。
+### 全窗口统一使用 `'pop-up-menu'` 或 `'torn-off-menu'` 替代 `'screen-saver'`
+- **优点：** 所有窗口处于同一更温和的层级，看似更容易统一管理。
+- **缺点：** 在 macOS（`NSWindowLevel`）中，`'torn-off-menu'`（3）与 `'pop-up-menu'`（101）实际**低于** `'screen-saver'`（1000），主宠物窗口统一降级会削弱对部分全屏或高优先级系统浮层的覆盖；在 Windows 上这些层级均映射至 `HWND_TOPMOST` 差异不大。因此主窗口、置顶番茄钟与选肤脉冲窗仍保持 `'screen-saver'`，仅 `StatusWindow` 与聚焦期 `SettingsWindow` 使用 `'pop-up-menu'` 位于主窗口之下。
 
 ### 监听系统事件（如 `app.on('browser-window-blur')`）而非窗口 `blur`
 - **优点：** 事件粒度更细。

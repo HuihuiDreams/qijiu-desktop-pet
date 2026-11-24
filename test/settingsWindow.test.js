@@ -242,13 +242,13 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
       args: ['companion'],
     });
 
-    // Top promotion & macOS app.focus({ steal: true }): stays screen-saver while focused,
+    // Top promotion & macOS app.focus({ steal: true }): stays pop-up-menu while focused,
     // drops on blur so external apps can cover it, and returns on focus.
     assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+    assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
     assert.deepEqual(focusCalls, [{ steal: true }]);
     t.mock.timers.tick(200);
-    assert.equal(win.alwaysOnTop, true, 'focused settings window must stay screen-saver past 180ms');
+    assert.equal(win.alwaysOnTop, true, 'focused settings window must stay pop-up-menu past 180ms');
 
     win.blur();
     win.emit('blur');
@@ -257,7 +257,7 @@ test('SettingsWindow: single instance reuse, initialTab switch, workArea clampin
     win.focus();
     win.emit('focus');
     assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
+    assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
 
     // Reopen existing focused instance switches tab without stealing focus again
     const win2 = mod.openSettingsWindow('system');
@@ -363,7 +363,7 @@ test('SkinSelectorWindow: returnFocusToSettings isolates settings-launched vs tr
   }
 });
 
-test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when mainWindow closes', () => {
+test('PetWindow: keeps settingsWindow below PetWindow while retaining RDP suppression and close cleanup', () => {
   const FakeBrowserWindow = createFakeBrowserWindowClass();
   const windowManager = {
     mainWindow: null,
@@ -373,6 +373,7 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
     settingsWindow: null,
     updateProgressWindow: null,
   };
+  let nativePayload = {};
 
   delete require.cache[PET_WINDOW_PATH];
   const originalLoad = Module._load;
@@ -399,6 +400,7 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
     return originalLoad.call(this, request, parent, isMain);
   };
 
+  const origPlatform = process.platform;
   try {
     const PetWindow = require(PET_WINDOW_PATH);
     PetWindow.init({
@@ -413,7 +415,7 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
       WindowAwarenessService: {
         sendActiveWindowInfo: () => {},
         getLastPayload: () => ({}),
-        getNativePayload: () => ({}),
+        getNativePayload: () => nativePayload,
         stopActiveWindowAwareness: () => {},
         startActiveWindowAwareness: () => {},
       },
@@ -438,17 +440,27 @@ test('PetWindow: includes settingsWindow in getPetSubWindows and closes it when 
     windowManager.settingsWindow = settingsWin;
 
     PetWindow.keepPetWindowOnTop();
-    assert.equal(moveTopCalled, 1, 'settingsWindow must be included in keepPetWindowOnTop sub-window ordering');
+    assert.equal(moveTopCalled, 0, 'settingsWindow must stay below PetWindow during keepPetWindowOnTop');
+
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    nativePayload = { active: true, window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false } };
+    PetWindow.onActiveWindowChanged();
+    assert.equal(settingsWin.visible, false, 'fullscreen RDP suppression must still hide alwaysOnTop settingsWindow');
+
+    nativePayload = { active: false, reason: 'no-active-window' };
+    PetWindow.onActiveWindowChanged();
+    assert.equal(settingsWin.visible, true, 'leaving RDP must still restore suppressed settingsWindow');
 
     windowManager.mainWindow.emit('closed');
     assert.equal(settingsWin.closeCalls, 1, 'closing mainWindow must close settingsWindow');
   } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
     Module._load = originalLoad;
     delete require.cache[PET_WINDOW_PATH];
   }
 });
 
-test('SettingsWindow: keeps screen-saver above PetWindow while focused and drops on blur/minimize/hide or unfocused pulse', (t) => {
+test('SettingsWindow: keeps pop-up-menu below PetWindow while focused and drops on blur/minimize/hide or unfocused pulse', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
   const FakeBrowserWindow = createFakeBrowserWindowClass();
   const order = [];
@@ -507,10 +519,14 @@ test('SettingsWindow: keeps screen-saver above PetWindow while focused and drops
     return originalLoad.call(this, request, parent, isMain);
   };
 
+  const origPlatform = process.platform;
   try {
     const SettingsWindow = require(SETTINGS_WINDOW_PATH);
     const PetWindow = require(PET_WINDOW_PATH);
-    SettingsWindow.init({ flushPetScalePreview: () => 100 });
+    SettingsWindow.init({
+      flushPetScalePreview: () => 100,
+      keepPetWindowOnTop: PetWindow.keepPetWindowOnTop,
+    });
     PetWindow.init({
       DisplayService: {
         setCurrentPetDisplay: () => {},
@@ -535,16 +551,46 @@ test('SettingsWindow: keeps screen-saver above PetWindow while focused and drops
     });
 
     PetWindow.createWindow();
+    order.length = 0;
     const settingsWin = SettingsWindow.openSettingsWindow('appearance');
+    assert.equal(order.at(-1), 'mainWindow', 'openSettingsWindow must re-assert mainWindow above settingsWindow');
 
-    // Past the 180ms pulse while focused, SettingsWindow stays screen-saver and re-raises above mainWindow
+    // Past the 180ms pulse while focused, SettingsWindow stays pop-up-menu and PetWindow stays above it
     t.mock.timers.tick(200);
     assert.equal(settingsWin.isAlwaysOnTop(), true);
-    assert.equal(settingsWin.alwaysOnTopLevel, 'screen-saver');
+    assert.equal(settingsWin.alwaysOnTopLevel, 'pop-up-menu');
 
     order.length = 0;
     PetWindow.keepPetWindowOnTop();
-    assert.deepEqual(order, ['mainWindow', 'settingsWindow']);
+    assert.deepEqual(order, ['mainWindow']);
+
+    order.length = 0;
+    settingsWin.emit('focus');
+    assert.equal(order.at(-1), 'mainWindow', 'focus must re-assert mainWindow above settingsWindow');
+
+    order.length = 0;
+    settingsWin.emit('moved');
+    assert.equal(order.at(-1), 'mainWindow', 'moved must re-assert mainWindow above settingsWindow');
+
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    order.length = 0;
+    settingsWin.emitWebContents('input-event', {}, { type: 'mouseDown' });
+    assert.equal(order.at(-1), 'mainWindow', 'win32 mouseDown must re-assert mainWindow above settingsWindow');
+
+    order.length = 0;
+    settingsWin.emitWebContents('input-event', {}, { type: 'touchStart' });
+    assert.equal(order.at(-1), 'mainWindow', 'win32 touchStart must re-assert mainWindow above settingsWindow');
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+
+    // Blurred/unpinned settings window must not invoke keepPetWindowOnTop on moved/input-event
+    settingsWin.blur();
+    settingsWin.emit('blur');
+    order.length = 0;
+    settingsWin.emit('moved');
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    settingsWin.emitWebContents('input-event', {}, { type: 'mouseDown' });
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+    assert.deepEqual(order, [], 'unpinned settingsWindow must skip pet re-assertion on moved/input-event');
 
     // Blur, minimize, and hide each drop alwaysOnTop
     for (const evt of ['blur', 'minimize', 'hide']) {
@@ -565,6 +611,7 @@ test('SettingsWindow: keeps screen-saver above PetWindow while focused and drops
 
     windowManager.mainWindow.emit('closed');
   } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
     Module._load = originalLoad;
     delete require.cache[SETTINGS_WINDOW_PATH];
     delete require.cache[PET_WINDOW_PATH];

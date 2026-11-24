@@ -4,12 +4,18 @@ const { normalizeStatusWindowSize } = require('../../../ipcContracts');
 const windowManager = require('./WindowManager');
 const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAuthorization');
 
-const STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL = 'pop-up-menu';
 let deps = {};
 let lastStatusWindowData = null;
 
-function init(dependencies) {
-  deps = dependencies;
+function keepPetAboveStatusWindow() {
+  if (typeof deps.keepPetWindowOnTop === 'function') {
+    deps.keepPetWindowOnTop();
+  }
+}
+
+function init(dependencies = {}) {
+  deps = dependencies || {};
 
   ipcMain.on('show-status-window', (event, data) => {
     if (!isSenderMainWindow(event, windowManager.mainWindow)) return;
@@ -119,6 +125,15 @@ function createStatusWindow() {
   windowManager.statusWindow.webContents.on('did-finish-load', () => sendStatusWindowData());
   windowManager.statusWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   windowManager.statusWindow.webContents.on('will-navigate', (event) => event.preventDefault());
+  windowManager.statusWindow.webContents.on?.('input-event', (_event, input) => {
+    if (process.platform === 'win32' && (input?.type === 'mouseDown' || input?.type === 'touchStart')) {
+      keepPetAboveStatusWindow();
+    }
+  });
+  windowManager.statusWindow.on('focus', keepPetAboveStatusWindow);
+  windowManager.statusWindow.on('show', keepPetAboveStatusWindow);
+  windowManager.statusWindow.on('restore', keepPetAboveStatusWindow);
+  windowManager.statusWindow.on('moved', keepPetAboveStatusWindow);
   windowManager.statusWindow.on('closed', () => {
     windowManager.statusWindow = null;
     if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) {
@@ -150,6 +165,7 @@ function openStatusWindow() {
   if (typeof win.focus === 'function') {
     win.focus();
   }
+  keepPetAboveStatusWindow();
   sendStatusWindowData();
   return win;
 }
