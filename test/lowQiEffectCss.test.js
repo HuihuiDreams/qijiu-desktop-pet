@@ -4,6 +4,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const effectsCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'effects.css'), 'utf8');
+const indexCss = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.css'), 'utf8');
 
 function extractRuleBody(css, selectorPattern) {
   const match = css.match(new RegExp(`${selectorPattern}\\s*\\{([^}]*)\\}`, 's'));
@@ -55,13 +56,29 @@ test('low-qi animations use only GPU-composited transform and opacity (no drop-s
   }
 });
 
-test('low-qi visuals derive Qi color tokens and scale wisps/sparks with --pet-size', () => {
-  assert.match(effectsCss, /rgb\(from\s+var\(--color-qi,\s*#7c3aad\)\s+r\s+g\s+b\s*\//);
+test('low-qi visuals separate demon crimson and angel gold tokens and scale wisps/sparks with --pet-size', () => {
+  assert.match(indexCss, /--color-crowley:\s*#8f1d24;/i);
+  assert.match(indexCss, /--color-aziraphale:\s*#c59b27;/i);
+
+  const demonRule = extractRuleBody(effectsCss, '\\.pet--yueqi \\.pet-qi-depletion');
+  assert.match(demonRule, /--qi-depletion-color:\s*var\(--color-crowley,\s*#8f1d24\);/);
+  assert.match(demonRule, /--qi-depletion-wisp-highlight:/);
+  assert.match(demonRule, /--qi-depletion-spark-highlight:/);
+
+  const angelRule = extractRuleBody(effectsCss, '\\.pet--shenjiu \\.pet-qi-depletion');
+  assert.match(angelRule, /--qi-depletion-color:\s*var\(--color-aziraphale,\s*#c59b27\);/);
+  assert.match(angelRule, /--qi-depletion-wisp-highlight:/);
+  assert.match(angelRule, /--qi-depletion-spark-highlight:/);
+
+  assert.match(effectsCss, /rgb\(from\s+var\(--qi-depletion-color,\s*#c59b27\)\s+r\s+g\s+b\s*\//);
+  assert.doesNotMatch(effectsCss, /#7c3aad|202,\s*162,\s*244|244,\s*232,\s*255/i);
   const wispRule = extractRuleBody(effectsCss, '\\.pet-qi-wisp');
+  assert.match(wispRule, /var\(--qi-depletion-wisp-highlight/);
   assert.match(wispRule, /var\(--pet-size,\s*96px\)/);
   assert.match(wispRule, /pointer-events:\s*none;/);
 
   const sparkRule = extractRuleBody(effectsCss, '\\.pet-qi-spark');
+  assert.match(sparkRule, /var\(--qi-depletion-spark-highlight/);
   assert.match(sparkRule, /var\(--pet-size,\s*96px\)/);
   assert.match(sparkRule, /pointer-events:\s*none;/);
 });

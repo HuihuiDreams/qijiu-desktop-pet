@@ -86,11 +86,26 @@
    GPU-only (transform + opacity); no drop-shadow animation per ADR-034
    ============================================ */
 .pet-qi-depletion {
+  --qi-depletion-color: var(--color-aziraphale, #c59b27);
+  --qi-depletion-wisp-highlight: rgba(244, 218, 138, 0.58);
+  --qi-depletion-spark-highlight: rgba(255, 244, 214, 0.92);
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: -1;
   contain: layout style;
+}
+
+.pet--yueqi .pet-qi-depletion {
+  --qi-depletion-color: var(--color-crowley, #8f1d24);
+  --qi-depletion-wisp-highlight: rgba(218, 86, 94, 0.62);
+  --qi-depletion-spark-highlight: rgba(255, 218, 220, 0.92);
+}
+
+.pet--shenjiu .pet-qi-depletion {
+  --qi-depletion-color: var(--color-aziraphale, #c59b27);
+  --qi-depletion-wisp-highlight: rgba(244, 218, 138, 0.58);
+  --qi-depletion-spark-highlight: rgba(255, 244, 214, 0.92);
 }
 
 .pet--meditating .pet-qi-depletion,
@@ -110,13 +125,13 @@
   pointer-events: none;
   background: radial-gradient(
     ellipse 56% 52% at 50% 52%,
-    rgb(from var(--color-qi, #7c3aad) r g b / 0.24) 0%,
-    rgb(from var(--color-qi, #7c3aad) r g b / 0.1) 52%,
+    rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.24) 0%,
+    rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.1) 52%,
     transparent 78%
   );
   border: 1.5px dashed transparent;
-  border-bottom-color: rgb(from var(--color-qi, #7c3aad) r g b / 0.56);
-  border-top-color: rgb(from var(--color-qi, #7c3aad) r g b / 0.18);
+  border-bottom-color: rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.56);
+  border-top-color: rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.18);
   will-change: transform, opacity;
   animation: qiPoolWane 4.4s ease-in-out infinite;
 }
@@ -132,8 +147,8 @@
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(202, 162, 244, 0.58) 36%,
-    rgb(from var(--color-qi, #7c3aad) r g b / 0.36) 72%,
+    var(--qi-depletion-wisp-highlight, rgba(244, 218, 138, 0.58)) 36%,
+    rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.36) 72%,
     transparent 100%
   );
   will-change: transform, opacity;
@@ -170,8 +185,8 @@
   opacity: 0;
   background: linear-gradient(
     180deg,
-    rgba(244, 232, 255, 0.92) 0%,
-    rgb(from var(--color-qi, #7c3aad) r g b / 0.85) 65%,
+    var(--qi-depletion-spark-highlight, rgba(255, 244, 214, 0.92)) 0%,
+    rgb(from var(--qi-depletion-color, #c59b27) r g b / 0.85) 65%,
     transparent 100%
   );
   will-change: transform, opacity;

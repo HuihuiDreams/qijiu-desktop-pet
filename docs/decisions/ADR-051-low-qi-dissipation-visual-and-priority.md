@@ -17,10 +17,10 @@ DeskPet 的修仙养成体系包含饱腹（`hunger`）、灵力（`qi`）、心
 ## Decision
 1. **采用「灵脉散逸」视觉语言（纯 CSS/DOM，无额外切图依赖）**：
    - 在宠物容器 `.pet` 内、`.pet-body` 后方（`z-index: -1`，`pointer-events: none`）定义 `.pet-qi-depletion` 图层：
-     - **脚下虚弱灵晕（`.pet-qi-pool`）**：平铺在角色脚底的浅紫虚线光晕，缓慢缩张明灭（`qiPoolWane`）。
-     - **身侧紫烟灵缕（`.pet-qi-wisp--1..2`）**：两条沿身体左右向上飘散、拉长并消解的淡紫渐隐烟缕（`qiWispRise`）。
+     - **脚下虚弱灵晕（`.pet-qi-pool`）**：平铺在角色脚底的虚线光晕，缓慢缩张明灭（`qiPoolWane`）。
+     - **身侧灵缕（`.pet-qi-wisp--1..2`）**：两条沿身体左右向上飘散、拉长并消解的渐隐烟缕（`qiWispRise`）。
      - **柳叶灵芒碎屑（`.pet-qi-spark--1..3`）**：三枚尖头柳叶形碎芒垂直上浮并缩隐（`qiSparkDissipate`）。
-   - 主色通过 CSS 相对颜色语法（[ADR-048](./ADR-048-modern-web-standards-adoption.md)）派生自 `--color-qi`（`#7c3aad`），宽度与飘散位移以 `--pet-size` 计算，并随 `.pet` 继承显示器 `scaleRatio`。
+   - 角色配色经 `.pet-qi-depletion` 的局部令牌（`--qi-depletion-color` 与高光令牌）并通过 CSS 相对颜色语法（[ADR-048](./ADR-048-modern-web-standards-adoption.md)）按角色区分：恶魔克劳利（`.pet--yueqi`）派生自 `--color-crowley`（`#8f1d24`，绯红/酒红），天使亚茨拉斐尔（`.pet--shenjiu`）派生自 `--color-aziraphale`（`#c59b27`，古董金）；宽度与飘散位移以 `--pet-size` 计算，并随 `.pet` 继承显示器 `scaleRatio`。
 2. **严格执行懒挂载与纯 GPU 合成动效**：
    - `PetRenderer.update()` 通过 `_renderedLowQi` Dirty Check 控制 `.pet-qi-depletion` 的按需挂载与卸载：仅在需要展示低灵力提示的跃迁帧创建/移除节点，健康态或抑制态保持 0 额外 DOM 节点与 0 合成层开销。
    - 容器声明 `contain: layout style` 与 `pointer-events: none`（不扩张鼠标命中区域），`src/effects.css` 内全部关键帧仅动画 `transform` 与 `opacity`。
@@ -33,11 +33,11 @@ DeskPet 的修仙养成体系包含饱腹（`hunger`）、灵力（`qi`）、心
 ### 1. 交错双椭圆虚环 + 圆形微粒（环绕轨道构图）
 - **Pros**：与 `effects.css` 中的 `.qi-aura` 椭圆光环属于同一几何家族。
 - **Cons**：实际在 Electron 中渲染并截图审视后，两条交叉斜椭圆配圆点在视觉上高度像“电子绕原子核运转”，无法传达灵力枯竭、向外消散的修仙意象。
-- **Rejected**：替换为脚下平置虚晕 + 向上飘散的紫烟灵缕与柳叶碎芒，消除轨道/电子联想。
+- **Rejected**：替换为脚下平置虚晕 + 向上飘散的灵缕与柳叶碎芒，消除轨道/电子联想。
 
 ### 2. 饥饿与低灵力视觉同时叠加展示
 - **Pros**：玩家可同时看到饥饿和低灵力两项低值提示。
-- **Cons**：实际叠加预览时，饥饿自带的暖橙外发光与 `hungry` 气泡立绘再叠上紫色灵烟/碎芒，整体桌面小人周围略显杂乱，且与 `DialogBubble.showStatWarning` 的「饥饿优先」直觉不一致。
+- **Cons**：实际叠加预览时，饥饿自带的暖橙外发光与 `hungry` 气泡立绘再叠上灵烟/碎芒，整体桌面小人周围略显杂乱，且与 `DialogBubble.showStatWarning` 的「饥饿优先」直觉不一致。
 - **Rejected**：改为与台词一致的饥饿优先，同时直接跳过 `.pet-qi-depletion` 挂载以减少饥饿期间的 DOM 与合成层开销。
 
 ### 3. 对 `.pet-image` 叠加动态 `drop-shadow` 或修改本体透明度

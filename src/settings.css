@@ -298,6 +298,7 @@ input {
 
 .settings-scale-value {
   color: var(--settings-gilt-ink);
+  /* Pin Cinzel instead of --font-display: zh/ja --font-display resolves to Ma Shan Zheng / Yuji Syuku, whose subsets lack '%' */
   font-family: 'Cinzel', 'Cormorant Garamond', 'EB Garamond', Georgia, serif;
   font-size: 18.5px;
   font-weight: 700;
