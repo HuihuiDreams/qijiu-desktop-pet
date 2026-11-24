@@ -3,6 +3,22 @@
 const { test, expect } = require('@playwright/test');
 const { launchApp, closeApp } = require('./helpers/electron');
 
+async function openSkinSelectorReady(electronApp) {
+  const [selectorWindow] = await Promise.all([
+    electronApp.waitForEvent('window', { timeout: 15000 }),
+    electronApp.evaluate(async ({ app }) => {
+      app.openSkinSelectorForQA();
+    }),
+  ]);
+  await selectorWindow.waitForLoadState('load', { timeout: 15000 });
+  await selectorWindow.waitForFunction(
+    () => document.documentElement.hasAttribute('data-locale') && document.querySelectorAll('.skin-card').length >= 1,
+    null,
+    { timeout: 15000 },
+  );
+  return selectorWindow;
+}
+
 test.describe('skin selector', () => {
   let electronApp;
   let userDataDir;
