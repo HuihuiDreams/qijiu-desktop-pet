@@ -153,9 +153,7 @@ class PetRenderer {
     // 初始化状态缓存，避免每帧重复操作 classList
     pet._renderedState = null;
     pet._renderedHungry = null;
-    pet._renderedLowQi = null;
     pet._renderedLowMood = null;
-    pet._qiDepletionEl = null;
     const setWeatherInteractionMuted = (muted) => {
       document.body?.classList?.toggle('weather-interaction-muted', muted);
     };
@@ -316,77 +314,12 @@ class PetRenderer {
       pet._renderedHungry = isHungry;
     }
 
-    const isLowQi = typeof pet.isLowQi === 'function' ? Boolean(pet.isLowQi()) : false;
-    const showLowQi = isLowQi && !isHungry;
-    if (pet._renderedLowQi !== showLowQi) {
-      this._syncLowQiEffect(pet, el, showLowQi);
-      pet._renderedLowQi = showLowQi;
-    }
-
     const isLowMood = pet.isLowMood();
     if (pet._renderedLowMood !== isLowMood) {
       if (isLowMood) el.classList.add('pet--low-mood');
       else el.classList.remove('pet--low-mood');
       pet._renderedLowMood = isLowMood;
     }
-  }
-
-  /**
-   * 按需挂载或卸载「灵脉散逸」低灵力视觉层，健康状态保持零额外 DOM 与合成层开销。
-   */
-  _syncLowQiEffect(pet, el, isLowQi) {
-    if (isLowQi) {
-      el.classList.add('pet--low-qi');
-      if (!pet._qiDepletionEl) {
-        const layer = this._createLowQiDepletionElement(el);
-        if (layer) {
-          el.appendChild(layer);
-          pet._qiDepletionEl = layer;
-        }
-      }
-      return;
-    }
-
-    el.classList.remove('pet--low-qi');
-    if (pet._qiDepletionEl) {
-      if (typeof pet._qiDepletionEl.remove === 'function') {
-        pet._qiDepletionEl.remove();
-      } else if (typeof el.removeChild === 'function') {
-        el.removeChild(pet._qiDepletionEl);
-      }
-      pet._qiDepletionEl = null;
-    }
-  }
-
-  _createLowQiDepletionElement(el) {
-    const doc = el.ownerDocument || (typeof document !== 'undefined' ? document : null);
-    if (!doc || typeof doc.createElement !== 'function' || typeof el.appendChild !== 'function') {
-      return null;
-    }
-
-    const layer = doc.createElement('div');
-    layer.className = 'pet-qi-depletion';
-    if (typeof layer.setAttribute === 'function') {
-      layer.setAttribute('aria-hidden', 'true');
-    }
-
-    const pool = doc.createElement('div');
-    pool.className = 'pet-qi-pool';
-    layer.appendChild(pool);
-
-    for (let i = 1; i <= 2; i++) {
-      const wisp = doc.createElement('span');
-      wisp.className = `pet-qi-wisp pet-qi-wisp--${i}`;
-      layer.appendChild(wisp);
-    }
-
-    for (let i = 1; i <= 3; i++) {
-      const spark = doc.createElement('span');
-      spark.className = `pet-qi-spark pet-qi-spark--${i}`;
-      layer.appendChild(spark);
-    }
-
-    return layer;
   }
 
 

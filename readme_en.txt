@@ -146,7 +146,6 @@ You can also judge their status visually without keeping the status panel open:
 
 - Golden / green glow: tending plants or reading, Miracle Energy will recover.
 - Orange glow: Satiety is below 25, feed them soon.
-- Faint ground ring with rising wisps (crimson for Crowley / gold for Aziraphale): Miracle Energy is below 20; restore it via "🪴 Tending Plants", "📖 Reading", or "💤 Rest" (orange glow takes priority if also hungry).
 - Semi-transparent body: Mood is below 25, they need company, food, or care.
 
 ========================================

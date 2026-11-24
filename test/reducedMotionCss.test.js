@@ -59,15 +59,3 @@ test('index.css preserves pet resident animations under reduced motion (locks in
   assert.match(css, /@keyframes interactJoy/);
   assert.match(css, /@keyframes moodFade/);
 });
-
-test('effects.css stops low-qi pool animation and hides rising wisps/sparks under reduced motion', () => {
-  const css = readSource('src/effects.css');
-  assert.match(
-    css,
-    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.pet-qi-pool\s*\{[\s\S]*?animation:\s*none;/
-  );
-  assert.match(
-    css,
-    /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{[\s\S]*?\.pet-qi-wisp,\s*\.pet-qi-spark\s*\{[\s\S]*?display:\s*none;[\s\S]*?animation:\s*none;/
-  );
-});
