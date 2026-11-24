@@ -340,8 +340,8 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 - `DisplayService.js` 读取 Electron `screen` 信息并设置主窗口覆盖虚拟桌面。
 - `displayBounds.js` 将各显示器 `workArea` 转为相对主窗口的 `walkAreas`；`StageGeometry` 使用其中的主屏标记计算托盘重置位置，确保 Windows 多屏环境回到主屏中部。
 - `displayFit.js` 将 `display-added`、`display-removed` 和 `display-metrics-changed` 的短时间连发合并为一次窗口适配，避免 macOS 数位板驱动等场景下出现多次可见 resize。
-- `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退。目标范围与完整边界判定使用候选显示器的 `pet.size * scaleRatio`；平台在每个候选 `walkArea` 内按该屏 DPI 计算脚底高度和可达交集，不依赖活动窗口平台携带 DPI。跨屏桥接复用目标可达范围，保持缩放、取消回滚及后续行走的几何约束一致。
-- `StageGeometry.getVisualScaleForPet()` 与移动系统共用显示器归属：优先匹配能容纳完整视觉边界的 `walkArea`，跨屏过渡时回退原逻辑中心判定，避免 DPI 比例小于 0.5 时贴边宠物误用默认或邻屏比例。
+- `MovementSystem` 根据 `walkAreas` 选择目标点、跨屏移动、边界修正和不可达区域回退（[ADR-022](./decisions/ADR-022-multi-display-support-boundary.md)）。目标范围与完整边界判定使用候选显示器的 `pet.size * scaleRatio`；平台在每个候选 `walkArea` 内按该屏 DPI 计算脚底高度和可达交集，不依赖活动窗口平台携带 DPI。`_getSeamLayout()` 按布局缓存可达范围、首尾严密相接且具备共享横轴可达通道 `[corridorMin, corridorMax]` 的水平/垂直相邻接缝（`_getAxisSeamCorridor()`，排除重叠区间与纯对角接触）以及多屏最短路 `nextHopMatrix`（随 `_ensureAreaCaches()` 失效重建）；跨屏行走时 `_resolveCrossDisplayStep()` 与 `_applySeamGate()` 就地更新 `_navState` 实现帧内零对象与零闭包分配（[ADR-012](./decisions/ADR-012-render-performance-optimization.md)），引导斜向或三屏串联及表面平台跨屏路径对齐接缝出入口公共通道，并在合法跨接缝期间（`canStraddleAdjacentWalkAreas()`）将坐标钳制于 `[seamMin, seamMax] × [corridorMin, corridorMax]` 而跳过单屏裁剪，消除不等高/不等宽屏幕不可见空洞越界与最近点裁剪反向弹回循环（分离显示器仍由 `bridgeToTargetArea()` 桥接目标可达范围）；位置步进、桥接或裁剪完成后（及 `idle → walking` 起走结合接缝首跳 `step.x - pet.x` 时）统一由 `_syncPetDirection()` 按实际水平位移同步 `direction`（纯垂直位移保留原朝向），保持缩放、取消回滚及后续行走的几何约束一致。
+- `StageGeometry.getVisualScaleForPet()` 委托 `MovementSystem.getMovementScaleForPet()` 共用显示器归属：优先匹配能容纳完整视觉边界的 `walkArea`；脱离单屏完整边界后无条件匹配活跃接缝并将归属限制在接缝两侧屏幕内（避免 `< 1` 分数倍率下未缩放中心越界误回退默认 `1.0` 或邻屏比例），非接缝过渡时回退原逻辑中心判定，且在跨越相连混合 DPI 接缝而较大倍率会使视觉边界超出公共通道或邻屏末端时限制为接缝较小倍率 `activeSeam.minScale`。
 - 当显示器布局、缩放或窗口位置变化时，主进程重新发送屏幕信息，渲染进程调用可达性修正逻辑把宠物拉回有效区域。
 
 ### 3.5 Surface Awareness

@@ -711,3 +711,675 @@ test('MovementSystem.setSurfacePlatforms detects in-place changes to the same in
   assert.notStrictEqual(movementSystem.getMovementAreas(), cachedMovementAreas);
   assert.equal(movementSystem.getMovementAreas()[0].x, 600);
 });
+
+test('walking across an adjacent higher-DPI left display seam does not snap back right while facing left', () => {
+  const movementSystem = new MovementSystem(4480, 1440, [
+    { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1 },
+  ]);
+  const pet = {
+    x: 2570,
+    y: 500,
+    targetX: 2300,
+    targetY: 500,
+    targetArea: { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    size: 96,
+    speed: 1.2,
+    state: 'walking',
+    direction: 'left',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 400 && pet.state === 'walking'; i += 1) {
+    const prevX = pet.x;
+    movementSystem.update(pet, 16.666);
+    assert.ok(pet.x <= prevX, `expected westward step at frame ${i}, got ${prevX} -> ${pet.x}`);
+    if (pet.state === 'walking') {
+      assert.equal(pet.direction, 'left');
+    }
+  }
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.x, 2300);
+});
+
+test('walking across an adjacent lower-DPI left display seam does not snap back left while facing right', () => {
+  const movementSystem = new MovementSystem(4480, 1440, [
+    { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 2 / 3 },
+    { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1, isPrimary: true },
+  ]);
+  const pet = {
+    x: 2490,
+    y: 500,
+    targetX: 2700,
+    targetY: 500,
+    targetArea: { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1, isPrimary: true },
+    size: 96,
+    speed: 1.2,
+    state: 'walking',
+    direction: 'right',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 400 && pet.state === 'walking'; i += 1) {
+    const prevX = pet.x;
+    movementSystem.update(pet, 16.666);
+    assert.ok(pet.x >= prevX, `expected eastward step at frame ${i}, got ${prevX} -> ${pet.x}`);
+    if (pet.state === 'walking') {
+      assert.equal(pet.direction, 'right');
+    }
+  }
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.x, 2700);
+});
+
+test('vertical movement preserves right facing direction instead of forcing left when dx is zero', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 0, y: 0, width: 1920, height: 1040, scaleRatio: 1 },
+  ]);
+  const pet = {
+    x: 500,
+    y: 300,
+    targetX: 500,
+    targetY: 100,
+    size: 96,
+    speed: 10,
+    state: 'idle',
+    direction: 'right',
+    idleTimer: 0,
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  movementSystem.randomTarget = (targetPet) => {
+    targetPet.targetX = 500;
+    targetPet.targetY = 100;
+  };
+
+  movementSystem.update(pet, 16);
+  assert.equal(pet.state, 'walking');
+  assert.equal(pet.direction, 'right');
+
+  movementSystem.update(pet, 16);
+  assert.equal(pet.x, 500);
+  assert.equal(pet.direction, 'right');
+});
+
+test('direction reflects actual horizontal displacement when arrival clamping moves a pet rightward', () => {
+  const movementSystem = new MovementSystem(1920, 1080, [
+    { x: 200, y: 0, width: 1720, height: 1040, scaleRatio: 1 },
+  ]);
+  const pet = {
+    x: 100,
+    y: 495,
+    targetX: 100,
+    targetY: 500,
+    size: 96,
+    speed: 10,
+    state: 'walking',
+    direction: 'left',
+  };
+
+  movementSystem.moveTowardTarget(pet, 16);
+
+  assert.equal(pet.x, 200);
+  assert.equal(pet.direction, 'right');
+});
+
+test('walking across an adjacent higher-DPI top display seam does not snap back downward', () => {
+  const movementSystem = new MovementSystem(1920, 2160, [
+    { x: 0, y: 0, width: 1920, height: 1080, scaleRatio: 1.5, isPrimary: true },
+    { x: 0, y: 1080, width: 1920, height: 1080, scaleRatio: 1 },
+  ]);
+  const pet = {
+    x: 500,
+    y: 1090,
+    targetX: 500,
+    targetY: 900,
+    targetArea: { x: 0, y: 0, width: 1920, height: 1080, scaleRatio: 1.5, isPrimary: true },
+    size: 96,
+    speed: 1.2,
+    state: 'walking',
+    direction: 'left',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 400 && pet.state === 'walking'; i += 1) {
+    const prevY = pet.y;
+    movementSystem.update(pet, 16.666);
+    assert.ok(pet.y <= prevY, `expected northward step at frame ${i}, got ${prevY} -> ${pet.y}`);
+  }
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.y, 900);
+});
+
+test('diagonal walk from shorter secondary display to taller higher-DPI primary display never snaps back or protrudes into void', () => {
+  const walkAreas = [
+    { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1 },
+  ];
+  const movementSystem = new MovementSystem(4480, 1440, walkAreas);
+  const pet = {
+    x: 2580,
+    y: 964,
+    targetX: 2100,
+    targetY: 1276,
+    targetArea: walkAreas[0],
+    size: 96,
+    speed: 1.2,
+    state: 'walking',
+    direction: 'left',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 600 && pet.state === 'walking'; i += 1) {
+    const prevX = pet.x;
+    movementSystem.update(pet, 16.666);
+    assert.ok(pet.x <= prevX, `expected non-increasing x at frame ${i}, got ${prevX} -> ${pet.x}`);
+    assert.equal(pet.direction, 'left', `expected left direction at frame ${i}`);
+    if (pet.x + 96 > 2560) {
+      assert.ok(
+        pet.y + 96 <= 1080 + 1e-7,
+        `expected pet to stay above y=1080 while overlapping right display at frame ${i}, got (${pet.x}, ${pet.y})`,
+      );
+    }
+    const visualSize = pet.size * movementSystem.getMovementScaleForPet(pet);
+    if (pet.x + visualSize > 2560 + 1e-7) {
+      assert.ok(pet.y + visualSize <= 1080 + 1e-7);
+    }
+  }
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.x, 2100);
+  assert.equal(pet.y, 1276);
+  assert.equal(pet.direction, 'left');
+});
+
+test('diagonal walks from taller primary display to shorter secondary display slide into corridor without x snap-back', () => {
+  const cases = [
+    {
+      label: '1.5x -> 1.0x',
+      walkAreas: [
+        { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+        { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1 },
+      ],
+      startX: 2400,
+      startY: 1200,
+      targetX: 2700,
+      targetY: 964,
+    },
+    {
+      label: '1.0x -> 1.0x',
+      walkAreas: [
+        { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1, isPrimary: true },
+        { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1 },
+      ],
+      startX: 2464,
+      startY: 1040,
+      targetX: 2700,
+      targetY: 984,
+    },
+  ];
+
+  for (const scenario of cases) {
+    const movementSystem = new MovementSystem(4480, 1440, scenario.walkAreas);
+    const pet = {
+      x: scenario.startX,
+      y: scenario.startY,
+      targetX: scenario.targetX,
+      targetY: scenario.targetY,
+      targetArea: scenario.walkAreas[1],
+      size: 96,
+      speed: 1.2,
+      state: 'walking',
+      direction: 'right',
+      isDragging: false,
+      isBusy: () => false,
+      setState(newState) {
+        this.state = newState;
+      },
+    };
+
+    for (let i = 0; i < 600 && pet.state === 'walking'; i += 1) {
+      const prevX = pet.x;
+      movementSystem.update(pet, 16.666);
+      assert.ok(
+        pet.x >= prevX - 1e-9,
+        `${scenario.label}: expected non-decreasing x at frame ${i}, got ${prevX} -> ${pet.x}`,
+      );
+      assert.equal(pet.direction, 'right', `${scenario.label}: expected right direction at frame ${i}`);
+      const visualSize = pet.size * movementSystem.getMovementScaleForPet(pet);
+      if (pet.x + visualSize > 2560 + 1e-7) {
+        assert.ok(
+          pet.y + visualSize <= 1080 + 1e-7,
+          `${scenario.label}: expected pet to stay out of void below right display at frame ${i}`,
+        );
+      }
+    }
+
+    assert.equal(pet.state, 'idle', `${scenario.label}: expected arrival at idle`);
+    assert.equal(pet.x, scenario.targetX);
+    assert.equal(pet.y, scenario.targetY);
+    assert.equal(pet.direction, 'right');
+  }
+});
+
+test('diagonal walks across vertical unequal-width mixed-DPI display seams transition cleanly in both directions', () => {
+  const walkAreas = [
+    { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    { x: 0, y: 1440, width: 1920, height: 1080, scaleRatio: 1 },
+  ];
+
+  // Top (wider, 1.5x) -> Bottom (narrower, 1.0x)
+  {
+    const movementSystem = new MovementSystem(2560, 2520, walkAreas);
+    const pet = {
+      x: 2200,
+      y: 1260,
+      targetX: 1600,
+      targetY: 1700,
+      targetArea: walkAreas[1],
+      size: 96,
+      speed: 1.5,
+      state: 'walking',
+      direction: 'left',
+      isDragging: false,
+      isBusy: () => false,
+      setState(newState) {
+        this.state = newState;
+      },
+    };
+
+    for (let i = 0; i < 800 && pet.state === 'walking'; i += 1) {
+      const prevX = pet.x;
+      const prevY = pet.y;
+      movementSystem.update(pet, 16.666);
+      assert.ok(pet.y >= prevY - 1e-9, `top->bottom expected non-decreasing y at frame ${i}`);
+      assert.ok(pet.x <= prevX + 1e-9, `top->bottom expected non-increasing x at frame ${i}`);
+      assert.equal(pet.direction, 'left');
+      const visualSize = pet.size * movementSystem.getMovementScaleForPet(pet);
+      if (pet.y + visualSize > 1440 + 1e-7) {
+        assert.ok(pet.x + visualSize <= 1920 + 1e-7);
+      }
+    }
+
+    assert.equal(pet.state, 'idle');
+    assert.equal(pet.x, 1600);
+    assert.equal(pet.y, 1700);
+  }
+
+  // Bottom (narrower, 1.0x) -> Top (wider, 1.5x)
+  {
+    const movementSystem = new MovementSystem(2560, 2520, walkAreas);
+    const pet = {
+      x: 1800,
+      y: 1500,
+      targetX: 2300,
+      targetY: 900,
+      targetArea: walkAreas[0],
+      size: 96,
+      speed: 1.5,
+      state: 'walking',
+      direction: 'right',
+      isDragging: false,
+      isBusy: () => false,
+      setState(newState) {
+        this.state = newState;
+      },
+    };
+
+    for (let i = 0; i < 800 && pet.state === 'walking'; i += 1) {
+      const prevX = pet.x;
+      const prevY = pet.y;
+      movementSystem.update(pet, 16.666);
+      assert.ok(pet.y <= prevY + 1e-9, `bottom->top expected non-increasing y at frame ${i}`);
+      assert.ok(pet.x >= prevX - 1e-9, `bottom->top expected non-decreasing x at frame ${i}`);
+      assert.equal(pet.direction, 'right');
+      const visualSize = pet.size * movementSystem.getMovementScaleForPet(pet);
+      if (pet.y + visualSize > 1440 + 1e-7) {
+        assert.ok(pet.x + visualSize <= 1920 + 1e-7);
+      }
+    }
+
+    assert.equal(pet.state, 'idle');
+    assert.equal(pet.x, 2300);
+    assert.equal(pet.y, 900);
+  }
+});
+
+test('cross-display mixed-DPI walks reach active-window-top and taskbar-edge platforms without seam snap-back', () => {
+  const walkAreas = [
+    { x: 0, y: 0, width: 2560, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    { x: 2560, y: 0, width: 1920, height: 1080, scaleRatio: 1 },
+  ];
+  const activePlatform = {
+    x: 2800,
+    y: 300,
+    width: 700,
+    height: 48,
+    source: 'active-window-top',
+  };
+  const taskbarPlatform = {
+    x: 2560,
+    y: 1056,
+    width: 1920,
+    height: 48,
+    source: 'taskbar-edge',
+  };
+  const movementSystem = new MovementSystem(4480, 1440, walkAreas);
+  movementSystem.setSurfacePlatforms([taskbarPlatform, activePlatform]);
+
+  for (const platform of [activePlatform, taskbarPlatform]) {
+    const range = movementSystem.getReachableTargetRange(platform, { size: 96 }, 0);
+    const pet = {
+      x: 2380,
+      y: 1180,
+      targetX: range.minX + 120,
+      targetY: range.minY,
+      targetArea: platform,
+      size: 96,
+      speed: 1.8,
+      state: 'walking',
+      direction: 'right',
+      isDragging: false,
+      isBusy: () => false,
+      setState(newState) {
+        this.state = newState;
+      },
+    };
+
+    for (let i = 0; i < 800 && pet.state === 'walking'; i += 1) {
+      const prevX = pet.x;
+      movementSystem.update(pet, 16.666);
+      assert.ok(pet.x >= prevX - 1e-9, `${platform.source}: expected eastward progress at frame ${i}`);
+      assert.equal(pet.direction, 'right');
+    }
+
+    assert.equal(pet.state, 'idle');
+    assert.equal(pet.x, range.minX + 120);
+    assert.equal(pet.y, range.minY);
+  }
+});
+
+test('3-display chained mixed-DPI walk crosses both seams cleanly and separated displays still bridge gaps', () => {
+  const chainedAreas = [
+    { x: 0, y: 0, width: 1200, height: 1440, scaleRatio: 1.5, isPrimary: true },
+    { x: 1200, y: 0, width: 1200, height: 1080, scaleRatio: 1 },
+    { x: 2400, y: 0, width: 1200, height: 1440, scaleRatio: 2 / 3 },
+  ];
+  const chainedSystem = new MovementSystem(3600, 1440, chainedAreas);
+  const chainedPet = {
+    x: 900,
+    y: 1200,
+    targetX: 2800,
+    targetY: 1200,
+    targetArea: chainedAreas[2],
+    size: 96,
+    speed: 2,
+    state: 'walking',
+    direction: 'right',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 1500 && chainedPet.state === 'walking'; i += 1) {
+    const prevX = chainedPet.x;
+    chainedSystem.update(chainedPet, 16.666);
+    assert.ok(chainedPet.x >= prevX - 1e-9, `expected non-decreasing x at frame ${i}`);
+    assert.equal(chainedPet.direction, 'right');
+    const visualSize = chainedPet.size * chainedSystem.getMovementScaleForPet(chainedPet);
+    const cornersInside = [
+      [chainedPet.x, chainedPet.y],
+      [chainedPet.x + visualSize, chainedPet.y],
+      [chainedPet.x, chainedPet.y + visualSize],
+      [chainedPet.x + visualSize, chainedPet.y + visualSize],
+    ].every(([px, py]) => chainedAreas.some((area) => (
+      px >= area.x - 1e-6
+      && px <= area.x + area.width + 1e-6
+      && py >= area.y - 1e-6
+      && py <= area.y + area.height + 1e-6
+    )));
+    assert.equal(cornersInside, true, `expected pet visual bounds inside union of displays at frame ${i}`);
+  }
+
+  assert.equal(chainedPet.state, 'idle');
+  assert.equal(chainedPet.x, 2800);
+  assert.equal(chainedPet.y, 1200);
+
+  // Separated-display gap bridging regression at normal walking speed
+  const separatedAreas = [
+    { x: 0, y: 0, width: 1920, height: 1080, scaleRatio: 1.5, isPrimary: true },
+    { x: 2400, y: 200, width: 1920, height: 1080, scaleRatio: 1 },
+  ];
+  const separatedSystem = new MovementSystem(4320, 1280, separatedAreas);
+  const separatedPet = {
+    x: 1700,
+    y: 400,
+    targetX: 2600,
+    targetY: 500,
+    targetArea: separatedAreas[1],
+    size: 96,
+    speed: 2,
+    state: 'walking',
+    direction: 'right',
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  for (let i = 0; i < 600 && separatedPet.state === 'walking'; i += 1) {
+    separatedSystem.update(separatedPet, 16.666);
+    assert.equal(separatedPet.direction, 'right');
+    assert.equal(
+      separatedPet.x <= 1920 - 144 + 1e-7 || separatedPet.x >= 2400 - 1e-7,
+      true,
+      `expected pet not to linger in coordinate gap at frame ${i}: x=${separatedPet.x}`,
+    );
+  }
+
+  assert.equal(separatedPet.state, 'idle');
+  assert.equal(separatedPet.x, 2600);
+  assert.equal(separatedPet.y, 500);
+});
+
+test('_isStraddlingAxisSeam requires end-to-start seam adjacency and a valid shared cross corridor', () => {
+  const movementSystem = new MovementSystem(4480, 2160);
+  const xAxis = MovementSystem.SEAM_STRADDLE_AXES[0];
+
+  // Overlapping x intervals must not count as a touching seam
+  const overlapA = { x: 0, y: 0, width: 2000, height: 1080, scaleRatio: 1 };
+  const overlapB = { x: 1800, y: 0, width: 2000, height: 1080, scaleRatio: 1 };
+  assert.equal(
+    movementSystem._isStraddlingAxisSeam(
+      { x: 1850, y: 300, size: 96 },
+      overlapA,
+      movementSystem.getReachableTargetRange(overlapA, { size: 96 }, 0),
+      overlapB,
+      movementSystem.getReachableTargetRange(overlapB, { size: 96 }, 0),
+      96,
+      xAxis,
+    ),
+    false,
+  );
+
+  // Corner-only contact (0px cross overlap) must not count as a valid corridor
+  const cornerA = { x: 0, y: 0, width: 1920, height: 1080, scaleRatio: 1 };
+  const cornerB = { x: 1920, y: 1080, width: 1920, height: 1080, scaleRatio: 1 };
+  assert.equal(
+    movementSystem._isStraddlingAxisSeam(
+      { x: 1872, y: 1032, size: 96 },
+      cornerA,
+      movementSystem.getReachableTargetRange(cornerA, { size: 96 }, 0),
+      cornerB,
+      movementSystem.getReachableTargetRange(cornerB, { size: 96 }, 0),
+      96,
+      xAxis,
+    ),
+    false,
+  );
+});
+
+test('fractional sub-1x DPI seam transitions keep valid display scale and canStraddleAdjacentWalkAreas state without void protrusion', () => {
+  const scenarios = [
+    {
+      label: '1x + 1/3x',
+      width: 2920,
+      height: 1080,
+      walkAreas: [
+        { x: 0, y: 0, width: 1920, height: 1080, scaleRatio: 1, isPrimary: true },
+        { x: 1920, y: 0, width: 1000, height: 600, scaleRatio: 1 / 3 },
+      ],
+      allowedScales: [1, 1 / 3],
+      startX: 1700,
+      startY: 900,
+      targetX: 1930,
+      targetY: 568,
+      speed: 1.5,
+      seamSample: { x: 1872, y: 568, size: 96 },
+      voidSample: { x: 1872, y: 580, size: 96 },
+    },
+    {
+      label: '2/3x + 1/3x',
+      width: 2100,
+      height: 800,
+      walkAreas: [
+        { x: 0, y: 0, width: 1200, height: 800, scaleRatio: 2 / 3, isPrimary: true },
+        { x: 1200, y: 0, width: 900, height: 600, scaleRatio: 1 / 3 },
+      ],
+      allowedScales: [2 / 3, 1 / 3],
+      startX: 1100,
+      startY: 700,
+      targetX: 1210,
+      targetY: 568,
+      speed: 1.2,
+      seamSample: { x: 1160, y: 568, size: 96 },
+      voidSample: { x: 1160, y: 580, size: 96 },
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const movementSystem = new MovementSystem(scenario.width, scenario.height, scenario.walkAreas);
+    assert.equal(movementSystem.canStraddleAdjacentWalkAreas(scenario.seamSample), true);
+    assert.equal(movementSystem.canStraddleAdjacentWalkAreas(scenario.voidSample), false);
+
+    const pet = {
+      x: scenario.startX,
+      y: scenario.startY,
+      targetX: scenario.targetX,
+      targetY: scenario.targetY,
+      targetArea: scenario.walkAreas[1],
+      size: 96,
+      speed: scenario.speed,
+      state: 'walking',
+      direction: 'right',
+      isDragging: false,
+      isBusy: () => false,
+      setState(newState) {
+        this.state = newState;
+      },
+    };
+
+    for (let i = 0; i < 800 && pet.state === 'walking'; i += 1) {
+      movementSystem.update(pet, 16.666);
+      const scale = movementSystem.getMovementScaleForPet(pet);
+      assert.ok(
+        scenario.allowedScales.some((allowed) => Math.abs(scale - allowed) <= 1e-9),
+        `${scenario.label}: unexpected scale ${scale} at frame ${i} (${pet.x}, ${pet.y})`,
+      );
+      const visualSize = pet.size * scale;
+      const cornersInside = [
+        [pet.x, pet.y],
+        [pet.x + visualSize, pet.y],
+        [pet.x, pet.y + visualSize],
+        [pet.x + visualSize, pet.y + visualSize],
+      ].every(([px, py]) => scenario.walkAreas.some((area) => (
+        px >= area.x - 1e-6
+        && px <= area.x + area.width + 1e-6
+        && py >= area.y - 1e-6
+        && py <= area.y + area.height + 1e-6
+      )));
+      assert.equal(
+        cornersInside,
+        true,
+        `${scenario.label}: visual bounds protruded outside walkAreas at frame ${i} (${pet.x}, ${pet.y}) scale=${scale}`,
+      );
+    }
+
+    assert.equal(pet.state, 'idle');
+    assert.equal(pet.x, scenario.targetX);
+    assert.equal(pet.y, scenario.targetY);
+  }
+});
+
+test('idle to walking sets initial direction from the first seam detour waypoint instead of flipping on frame 1', () => {
+  const walkAreas = [
+    { x: 0, y: 0, width: 1600, height: 900, scaleRatio: 2 / 3, isPrimary: true },
+    { x: 200, y: 900, width: 1000, height: 800, scaleRatio: 1.5 },
+    { x: 0, y: 1700, width: 1600, height: 900, scaleRatio: 2 },
+  ];
+  const movementSystem = new MovementSystem(1600, 2600, walkAreas);
+  const pet = {
+    x: 1312,
+    y: 2035,
+    size: 144,
+    speed: 12,
+    state: 'idle',
+    direction: 'right',
+    idleTimer: 0,
+    isDragging: false,
+    isBusy: () => false,
+    setState(newState) {
+      this.state = newState;
+    },
+  };
+
+  movementSystem.randomTarget = (targetPet) => {
+    targetPet.targetArea = walkAreas[0];
+    targetPet.targetX = 1504;
+    targetPet.targetY = 804;
+  };
+
+  // Frame 0: idle -> walking must already face left toward the middle corridor [200, 984]
+  movementSystem.update(pet, 16.666);
+  assert.equal(pet.state, 'walking');
+  assert.equal(pet.direction, 'left');
+
+  // Frame 1: continues moving left without a 1-frame direction flip
+  movementSystem.update(pet, 16.666);
+  assert.ok(pet.x < 1312);
+  assert.equal(pet.direction, 'left');
+
+  for (let i = 0; i < 600 && pet.state === 'walking'; i += 1) {
+    movementSystem.update(pet, 16.666);
+  }
+
+  assert.equal(pet.state, 'idle');
+  assert.equal(pet.x, 1504);
+  assert.equal(pet.y, 804);
+});
