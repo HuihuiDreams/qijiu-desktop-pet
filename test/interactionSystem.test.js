@@ -123,6 +123,58 @@ test('InteractionSystem - getPresentation shareFood overfeed', () => {
   delete global.window;
 });
 
+test('InteractionSystem - pickPairedDialogue returns a whole pair with the same weight as one solo line', () => {
+  const pool = {
+    yueqi: ['solo-y1', 'solo-y2', 'solo-y3'],
+    shenjiu: ['solo-s1', 'solo-s2', 'solo-s3'],
+    pairs: [{ yueqi: 'pair-y', shenjiu: 'pair-s' }],
+  };
+  const orig = Math.random;
+  try {
+    // 3 句单句 + 1 组配对：roll * 4 < 1 时抽中配对
+    Math.random = () => 0.24;
+    assert.deepStrictEqual(InteractionSystem.pickPairedDialogue(pool), { yueqi: 'pair-y', shenjiu: 'pair-s' });
+
+    Math.random = () => 0.25;
+    assert.strictEqual(InteractionSystem.pickPairedDialogue(pool), null);
+  } finally {
+    Math.random = orig;
+  }
+
+  assert.strictEqual(InteractionSystem.pickPairedDialogue({ yueqi: ['a'], shenjiu: ['b'] }), null);
+  assert.strictEqual(InteractionSystem.pickPairedDialogue({ yueqi: ['a'], shenjiu: ['b'], pairs: [] }), null);
+  assert.strictEqual(InteractionSystem.pickPairedDialogue(null), null);
+});
+
+test('InteractionSystem - getPresentation shareFood returns the paired dialogue when the pair is drawn', () => {
+  const system = new InteractionSystem();
+  const petA = new MockPet();
+  const petB = new MockPet();
+  petB.stats.hunger = 50;
+  global.window = {
+    DIALOGUES: {
+      shareFood: {
+        yueqi: ['solo-y'],
+        shenjiu: ['solo-s'],
+        pairs: [{ yueqi: 'pair-y', shenjiu: 'pair-s' }],
+      },
+    },
+  };
+  const orig = Math.random;
+  try {
+    Math.random = () => 0;
+    const presentation = system.getPresentation(petA, petB, { key: 'shareFood', hungerB: 20 });
+    assert.strictEqual(presentation.overlayKey, 'shareFood');
+    assert.deepStrictEqual(presentation.dialogue, { yueqi: 'pair-y', shenjiu: 'pair-s' });
+
+    Math.random = () => 0.99;
+    assert.strictEqual(system.getPresentation(petA, petB, { key: 'shareFood', hungerB: 20 }).dialogue, null);
+  } finally {
+    Math.random = orig;
+    delete global.window;
+  }
+});
+
 test('InteractionSystem - cancel clears interaction state cleanly', () => {
   const system = new InteractionSystem();
   system.isInteracting = true;

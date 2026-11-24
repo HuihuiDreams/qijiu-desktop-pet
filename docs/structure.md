@@ -220,7 +220,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  │  └─ SpriteView.js                  # 基于状态的图片帧播放、预加载和切换稳定性处理
 │  ├─ systems/
 │  │  ├─ AmbientDialogueSystem.js       # 闲聊/状态警告/深夜梦话节奏调度：update(deltaMs) 每帧推进两个计时器（app.js 拆分 Phase R3）
-│  │  ├─ InteractionSystem.js           # 双人距离检测、CP 互动、冷却、互动效果
+│  │  ├─ InteractionSystem.js           # 双人距离检测、CP 互动、冷却、互动效果、成对台词抽取（`pickPairedDialogue`）
 │  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制；按目标区域 DPI 的视觉尺寸计算平台高度、边界与跨屏落点
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible()/isScreensaverActive() 便于测试）；回归气泡经 scheduleReturnBubbles() 的 1.5s/3s 两条 setTimeout 在触发前重检屏保状态（屏保打断时保留 pendingReturnBubble 并递增 returnBubbleSequenceId 使旧回调失效，全部触发成功即释放），屏保结束（onScreensaverEnd → flushPendingReturnBubble）补发暂存气泡（并在补发前清除残留被抓包气泡以防叠加）；saveCurrentState()（自动保存/退出保存）在保存前刷新 lastVisibleTime，防止长时间使用后退出重开时时辰计算基于陈旧时间戳导致误报
@@ -376,6 +376,7 @@ Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR
 - 拖拽中不触发互动，避免误判。
 - 互动动作会锁定双方动作状态，避免移动系统立即覆盖。
 - 互动有全局冷却，防止短时间重复触发。
+- 台词池可选的 `pairs` 字段存放必须成对出现的双人对白（如 `shareFood` 的 “Temptation accomplished.”）。`InteractionSystem.pickPairedDialogue()` 让每组配对与一句单句同权重参与抽取，抽中时通过 `getPresentation()` 的 `dialogue` 整组下发给覆盖层气泡，未抽中时两人各自从 `yueqi` / `shenjiu` 单句池随机抽取（[ADR-024](./decisions/ADR-024-i18n-multilingual-support.md)）。
 - 对话气泡由 `DialogBubble` 渲染，文本来自 `dialogues.js` 和 i18n 字典；普通气泡限制长英文宽度、允许换行，具备顶部视口碰撞感知与自动向下翻转（`.dialog-bubble--flipped`），并在与现有普通气泡重叠时向外（朝上时向上，朝下时向下）错开。碰撞检测包含另一宠物相反朝向的气泡，通过 `getPlacementRect()` 排除气泡入退场动画变换，并依父级显示缩放换算布局与堆叠偏移；缺少布局度量的假 DOM 回退到 `getBoundingClientRect()`（[ADR-024](./decisions/ADR-024-i18n-multilingual-support.md)）。
 
 ### 3.8 皮肤系统

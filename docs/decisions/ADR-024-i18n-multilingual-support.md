@@ -95,3 +95,6 @@ HTML 中通过 `data-i18n="key"` 属性标记需要翻译的元素，`applyI18n(
 
 ### 2026-10-06: 托盘语言切换保留选肤试穿状态 (R7)
 主进程 `AppLifecycle.initTray` 中透传 `sendSkinSelectorData` 参数，并在 `SkinSelectorWindow.sendSkinSelectorData` 中合并传入选项，使托盘切换语言时下发的 `{ resetSelection: false }` 不被丢弃。选肤器窗口接收语言变更刷新展示时可靠保留当前试穿中的临时选中卡片与高亮状态，避免界面被错误重置为已保存皮肤。
+
+### 2026-11-24: 台词池新增可选的成对对白字段 `pairs`
+`shareFood` 的《好兆头》经典对白（克劳利 “Let me tempt you to a spot of lunch?” 与亚茨拉斐尔 “Temptation accomplished.”）必须成对出现，而 `yueqi` / `shenjiu` 两个单句数组由调用方各自随机抽取，无法保证配对。因此台词池可额外提供 `pairs: [{ yueqi, shenjiu }]`，`zh`、`en`、`ja` 与 `_DIALOGUES_ZH_FALLBACK` 需同步维护。`InteractionSystem.pickPairedDialogue(pool)` 让每组配对与一句单句同权重参与抽取，抽中时由 `getPresentation()` 的 `dialogue` 整组返回；配对台词不放进单句数组，避免与其他台词错配。目前只有覆盖层互动（`app.js` 覆盖层分支与 `debug.js` 的 `testInteraction`）读取该字段，`DialogBubble.showInteraction()` 仍只使用单句数组。

@@ -120,10 +120,25 @@ class InteractionSystem {
       };
     }
 
+    const pool = (typeof window !== 'undefined' && window.DIALOGUES?.[interaction.key]) || null;
     return {
       overlayKey: interaction.key,
-      dialogue: null,
+      dialogue: InteractionSystem.pickPairedDialogue(pool),
     };
+  }
+
+  /**
+   * 台词池的 `pairs` 是必须成对出现的双人对白。每组配对与 `yueqi` 中的一句单句同权重参与抽取：
+   * 抽中时整组返回；否则返回 null，由调用方各自从 `yueqi` / `shenjiu` 随机抽单句。
+   * 配对台词不放进单句池，因此不会与其他台词错配。目前只在覆盖层互动（app.js 覆盖层分支）中使用。
+   */
+  static pickPairedDialogue(pool) {
+    const pairs = Array.isArray(pool?.pairs) ? pool.pairs : [];
+    if (pairs.length === 0) return null;
+    const soloCount = Array.isArray(pool.yueqi) ? pool.yueqi.length : 0;
+    if (Math.random() * (soloCount + pairs.length) >= pairs.length) return null;
+    const pair = pairs[Math.floor(Math.random() * pairs.length)];
+    return { yueqi: pair.yueqi, shenjiu: pair.shenjiu };
   }
 
   /**

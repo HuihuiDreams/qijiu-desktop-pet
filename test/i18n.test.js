@@ -169,28 +169,37 @@ test('classic nightingale dialogues are integrated into hug and linked dream acr
   assert.ok(dialoguesSource.includes('谁说没有夜莺了'));
 });
 
-test('classic "Temptation accomplished." dialogue is integrated into shareFood across locales', () => {
+test('classic "Temptation accomplished." exchange is a shareFood pair in every locale and the zh fallback', () => {
   const { I18N } = require('../src/data/i18n.js');
-  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
+  const vm = require('node:vm');
+  const context = { window: {} };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8'), context);
 
-  // en keeps the original English quote
-  assert.ok(I18N.en.dialogues.shareFood.yueqi.some((l) => l.includes('Let me tempt you to a spot of lunch')));
-  assert.ok(I18N.en.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished.')));
+  const expectedPairs = {
+    en: ['Let me tempt you to a spot of lunch, Angel?', 'Temptation accomplished. Don\'t mind if I do, my dear!'],
+    zh: ['让我用一顿美餐诱惑你一下如何，天使？', '诱惑成功！那我就不客气地享用啦，亲爱的。'],
+    ja: ['極上の食事で誘惑してやろうか、天使？', '誘惑完了、だね！ありがたくいただくとしよう。'],
+    zhFallback: ['让我用一顿美餐诱惑你一下如何，天使？', '诱惑成功！那我就不客气地享用啦，亲爱的。'],
+  };
+  const pools = {
+    en: I18N.en.dialogues.shareFood,
+    zh: I18N.zh.dialogues.shareFood,
+    ja: I18N.ja.dialogues.shareFood,
+    zhFallback: context.window.DIALOGUES.shareFood,
+  };
 
-  // zh and ja use pure localized translations without mixing English
-  assert.ok(I18N.zh.dialogues.shareFood.yueqi.some((l) => l.includes('诱惑你一下')));
-  assert.ok(I18N.zh.dialogues.shareFood.shenjiu.some((l) => l.includes('诱惑成功！')));
-  assert.equal(I18N.zh.dialogues.shareFood.yueqi.some((l) => l.includes('Temptation accomplished')), false);
-  assert.equal(I18N.zh.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished')), false);
-
-  assert.ok(I18N.ja.dialogues.shareFood.yueqi.some((l) => l.includes('誘惑してやろうか')));
-  assert.ok(I18N.ja.dialogues.shareFood.shenjiu.some((l) => l.includes('誘惑完了、だね！')));
-  assert.equal(I18N.ja.dialogues.shareFood.yueqi.some((l) => l.includes('Temptation accomplished')), false);
-  assert.equal(I18N.ja.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished')), false);
-
-  // fallback in dialogues.js
-  assert.ok(dialoguesSource.includes('让我用一顿美餐诱惑你一下如何，天使？'));
-  assert.ok(dialoguesSource.includes('诱惑成功！那我就不客气地享用啦，亲爱的。'));
+  for (const [name, [yueqiLine, shenjiuLine]] of Object.entries(expectedPairs)) {
+    const pool = pools[name];
+    assert.deepEqual(
+      Array.from(pool.pairs, (pair) => ({ ...pair })),
+      [{ yueqi: yueqiLine, shenjiu: shenjiuLine }],
+      `${name} shareFood.pairs should hold the paired exchange`,
+    );
+    // 配对台词不得留在单句池，否则会与其他台词随机错配
+    assert.equal(pool.yueqi.includes(yueqiLine), false, `${name} yueqi solo pool must not contain the paired line`);
+    assert.equal(pool.shenjiu.includes(shenjiuLine), false, `${name} shenjiu solo pool must not contain the paired line`);
+  }
 });
 
 

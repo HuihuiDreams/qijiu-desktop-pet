@@ -53,6 +53,7 @@ window.testInteraction = function (type = 'kiss') {
 
   // 用正确的坐标在图片人物头顶生成气泡
   const pool = (typeof DIALOGUES !== 'undefined') ? DIALOGUES[type] : null;
+  debugDialogue = debugDialogue || InteractionSystem.pickPairedDialogue(pool);
   const shenjuText = debugDialogue?.shenjiu || (pool?.shenjiu?.length
     ? pool.shenjiu[Math.floor(Math.random() * pool.shenjiu.length)]
     : null);

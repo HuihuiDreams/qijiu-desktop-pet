@@ -219,13 +219,15 @@ const I18N = {
           '刚从巴黎给你带回来的温热羊角面包，趁热吃吧，天使。',
           '丽兹酒店最后一块可丽饼特意给你留着呢，拿着吧。',
           '喏，吃点甜的提提神。',
-          '让我用一顿美餐诱惑你一下如何，天使？',
         ],
         shenjiu: [
           '哦，太棒了！你快把我宠坏了，克劳利！',
           '你真不该这么破费的……但我还是开开心心地收下啦！',
           '唔，简直是天赐美味！你的品味太棒了，亲爱的。',
-          '诱惑成功！那我就不客气地享用啦，亲爱的。',
+        ],
+        // 成对出现的经典对白，由 InteractionSystem.pickPairedDialogue 整组抽取
+        pairs: [
+          { yueqi: '让我用一顿美餐诱惑你一下如何，天使？', shenjiu: '诱惑成功！那我就不客气地享用啦，亲爱的。' },
         ],
       },
       cultivate: {
@@ -626,13 +628,14 @@ const I18N = {
           'Brought you a warm croissant straight from Paris. Eat up, Angel.',
           'Saved the last crepe from the Ritz for you. Take it.',
           'Here. Something sweet to keep your spirits up.',
-          'Let me tempt you to a spot of lunch, Angel?',
         ],
         shenjiu: [
           'Oh, wonderful! You spoil me rotten, Crowley!',
           'You really shouldn\'t have... but I shall happily accept!',
           'Mmm, heavenly! You have exquisite taste, my dear.',
-          'Temptation accomplished. Don\'t mind if I do, my dear!',
+        ],
+        pairs: [
+          { yueqi: 'Let me tempt you to a spot of lunch, Angel?', shenjiu: 'Temptation accomplished. Don\'t mind if I do, my dear!' },
         ],
       },
       cultivate: {
@@ -1025,13 +1028,14 @@ const I18N = {
           'パリの焼き立てクロワッサンだ。食えよ、天使。',
           'リッツの特製クレープだ。お前の分を取っておいた。',
           'ほら、甘いものだ。遠慮するな。',
-          '極上の食事で誘惑してやろうか、天使？',
         ],
         shenjiu: [
           'まあ！素晴らしいよ、クロウリー！いただきます！',
           '君は本当に私を甘やかすのが上手いねえ…',
           'んん〜っ！至福の味だ…！',
-          '誘惑完了、だね！ありがたくいただくとしよう。',
+        ],
+        pairs: [
+          { yueqi: '極上の食事で誘惑してやろうか、天使？', shenjiu: '誘惑完了、だね！ありがたくいただくとしよう。' },
         ],
       },
       cultivate: {
