@@ -61,4 +61,3 @@
 | ADR-048 | 桌面渲染层现代 Web 标准采纳 (Modern Web Standards Adoption in Desktop Renderer) | Accepted | 2026-10-22 | [ADR-048-modern-web-standards-adoption.md](./ADR-048-modern-web-standards-adoption.md) |
 | ADR-049 | 主分支向好兆头分支自动同步 | Accepted | 2026-11-07 | [ADR-049-main-to-cp-auto-sync.md](./ADR-049-main-to-cp-auto-sync.md) |
 | ADR-050 | 统一设置窗口与托盘菜单精简 | Accepted | 2026-11-16 | [ADR-050-unified-settings-window.md](./ADR-050-unified-settings-window.md) |
-| ADR-051 | 灵力低下「灵脉散逸」视觉效果与低状态优先级 | Accepted | 2026-11-24 | [ADR-051-low-qi-dissipation-visual-and-priority.md](./ADR-051-low-qi-dissipation-visual-and-priority.md) |
