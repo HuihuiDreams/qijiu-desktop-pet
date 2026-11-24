@@ -98,7 +98,7 @@ Accepted
 ## Consequences
 - `walkAreas` 现在是富对象，至少包含 `{ x, y, width, height, scaleRatio }`。
 - 后续任何围绕小人定位的视觉元素，都应复用同一套显示器 scale 逻辑，不应直接写 `pet.x + pet.size / 2`。
-- 跨屏自动行走允许在显示器之间的不可见坐标空洞上做桥接；同屏移动和到达目标后仍必须 clamp 回可见工作区。
+- 跨屏自动行走区分分离屏幕空洞与相连屏幕接缝：分离显示器之间继续通过 `bridgeToTargetArea()` 跨越不可见坐标空洞；首尾严密相接（排除重叠区间与纯对角接触）且存在共享横轴可达通道 `[corridorMin, corridorMax]` 的水平/垂直 `walkAreas` 由 `_getAxisSeamCorridor()` 识别，并由 `_getSeamLayout()` 按布局缓存接缝与多屏最短路 `nextHopMatrix`（随 `_ensureAreaCaches()` 失效重建，配合就地更新 `_navState` 的 `_resolveCrossDisplayStep()` / `_applySeamGate()` 保持帧内零对象与零闭包分配，见 [ADR-012](./ADR-012-render-performance-optimization.md)）。斜向或串联多跳跨屏（含三屏链路及 `active-window-top` / `taskbar-edge` 表面平台，见 [ADR-030](./ADR-030-window-awareness.md) 与 [docs/structure.md](../structure.md)）先对齐接缝出入口公共通道再越过接缝，合法跨接缝期间（`canStraddleAdjacentWalkAreas()`）将坐标钳制在 `[seamMin, seamMax] × [corridorMin, corridorMax]` 而不回退单屏 `clampPetToWalkAreas()`（同时 `getMovementScaleForPet()` 在脱离单屏完整边界后无条件匹配活跃接缝并将候选屏限制在接缝两侧屏幕内，防止 `< 1` 分数倍率下未缩放中心越界误回退 `1.0`，且在较大倍率会超出公共通道或邻屏末端时限制为 `activeSeam.minScale`），避免不等高/不等宽屏幕越入不可见空洞或被欧氏最近点反向弹回死循环；同屏移动和到达目标后仍必须 clamp 回可见工作区，且 `moveTowardTarget()` 与 `idle → walking` 统一由 `_syncPetDirection()` 按实际步进水平位移（起走存在跨屏接缝首跳时按 `step.x - pet.x`，否则按 `pet.targetX - pet.x`）更新 `pet.direction`，水平零位移保留原朝向。
 - 拖拽释放、重置位置、读取存档和屏幕信息变化后，都应调用同一套可达性修正，避免遗留坐标停在不可见区域。
 - 单元测试需要覆盖：
   - 虚拟桌面边界计算。

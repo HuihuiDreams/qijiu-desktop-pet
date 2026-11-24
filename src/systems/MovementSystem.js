@@ -2,6 +2,29 @@
  * MovementSystem — 移动系统。处理随机行走、发呆等待以及屏幕边界检测。
  */
 class MovementSystem {
+  static SEAM_STRADDLE_AXES = [
+    {
+      coord: 'x',
+      span: 'width',
+      minKey: 'minX',
+      maxKey: 'maxX',
+      crossCoord: 'y',
+      crossSpan: 'height',
+      crossMinKey: 'minY',
+      crossMaxKey: 'maxY',
+    },
+    {
+      coord: 'y',
+      span: 'height',
+      minKey: 'minY',
+      maxKey: 'maxY',
+      crossCoord: 'x',
+      crossSpan: 'width',
+      crossMinKey: 'minX',
+      crossMaxKey: 'maxX',
+    },
+  ];
+
   static getEdgeMigrationDirection(pet, screenWidth, screenHeight, adjacentDisplays, options = {}) {
     if (!pet || !adjacentDisplays || pet.isDragging || pet.state !== 'walking') return null;
 
@@ -58,6 +81,10 @@ class MovementSystem {
     this._cachedMovementAreasExcludingActive = null;
     this._cachedRawSurfaceArea = null;
     this._cachedNormalizedSurfaceArea = null;
+    this._cachedSeamLayout = null;
+    this._cachedSeamLayoutAreas = null;
+    this._cachedSeamLayoutPetSize = null;
+    this._navState = { kind: 'same', x: 0, y: 0, fromIdx: -1, destIdx: -1 };
   }
 
   /**
@@ -142,6 +169,7 @@ class MovementSystem {
     this._cachedScreenWidth = this.screenWidth;
     this._cachedScreenHeight = this.screenHeight;
     this._cachedTaskbarHeight = taskbarHeight;
+    this._cachedSeamLayout = null;
   }
 
   getWalkAreas() {
@@ -370,19 +398,49 @@ class MovementSystem {
   }
 
   getMovementScaleForPet(pet) {
+    const { walkAreas, ranges, seams } = this._getSeamLayout(pet);
+    // 小比例屏幕的逻辑中心可能越界；跨屏过渡时再沿用中心点判定。
+    const boundsIdx = this._findBoundsRangeIndex(pet.x, pet.y, ranges);
+    if (boundsIdx >= 0) {
+      return this.getScaleRatioForArea(walkAreas[boundsIdx]);
+    }
+
     const centerX = pet.x + pet.size / 2;
     const centerY = pet.y + pet.size / 2;
-    const areas = this.getWalkAreas();
-    // 小比例屏幕的逻辑中心可能越界；跨屏过渡时再沿用中心点判定。
-    const walkArea = this.findAreaContainingPetBounds(pet, pet.x, pet.y, areas)
-      || areas.find((area) => (
+    let centerArea = null;
+    for (let i = 0; i < walkAreas.length; i += 1) {
+      const area = walkAreas[i];
+      if (
         centerX >= area.x
         && centerX <= area.x + area.width
         && centerY >= area.y
         && centerY <= area.y + area.height
-      ));
+      ) {
+        centerArea = area;
+        break;
+      }
+    }
 
-    return this.getScaleRatioForArea(walkArea);
+    const activeSeam = this._findSeamAt(pet.x, pet.y, seams);
+    if (activeSeam) {
+      const seamArea = (centerArea === activeSeam.firstArea || centerArea === activeSeam.secondArea)
+        ? centerArea
+        : (
+          pet[activeSeam.coord] + (pet.size * activeSeam.minScale) / 2 <= activeSeam.seamMax
+            ? activeSeam.firstArea
+            : activeSeam.secondArea
+        );
+      const seamScale = this.getScaleRatioForArea(seamArea);
+      if (
+        pet[activeSeam.crossCoord] + pet.size * seamScale > activeSeam.commonMaxCrossEnd + 1e-7
+        || pet[activeSeam.coord] + pet.size * seamScale > activeSeam.secondEnd + 1e-7
+      ) {
+        return activeSeam.minScale;
+      }
+      return seamScale;
+    }
+
+    return this.getScaleRatioForArea(centerArea);
   }
 
   clampTargetToArea(pet, area) {
@@ -583,10 +641,367 @@ class MovementSystem {
       Math.random() * (CONFIG.IDLE_DURATION_MAX - CONFIG.IDLE_DURATION_MIN);
   }
 
+  _syncPetDirection(pet, deltaX) {
+    if (deltaX > 1e-9) {
+      pet.direction = 'right';
+    } else if (deltaX < -1e-9) {
+      pet.direction = 'left';
+    }
+  }
+
+  _isPositionInRange(x, y, range, epsilon = 1e-7) {
+    return Boolean(range)
+      && range.minX <= range.maxX + epsilon
+      && range.minY <= range.maxY + epsilon
+      && x >= range.minX - epsilon
+      && x <= range.maxX + epsilon
+      && y >= range.minY - epsilon
+      && y <= range.maxY + epsilon;
+  }
+
+  _getAxisSeamCorridor(areaA, rangeA, areaB, rangeB, minVisualSize, axis) {
+    const epsilon = 1e-7;
+    if (
+      !areaA || !areaB || !rangeA || !rangeB
+      || rangeA.minX > rangeA.maxX + epsilon
+      || rangeA.minY > rangeA.maxY + epsilon
+      || rangeB.minX > rangeB.maxX + epsilon
+      || rangeB.minY > rangeB.maxY + epsilon
+    ) {
+      return null;
+    }
+
+    const {
+      coord, span, minKey, maxKey, crossCoord, crossSpan, crossMinKey, crossMaxKey,
+    } = axis;
+    const aTouchesB = Math.abs((areaA[coord] + areaA[span]) - areaB[coord]) <= epsilon;
+    if (!aTouchesB && Math.abs((areaB[coord] + areaB[span]) - areaA[coord]) > epsilon) {
+      return null;
+    }
+
+    const firstArea = aTouchesB ? areaA : areaB;
+    const firstRange = aTouchesB ? rangeA : rangeB;
+    const secondArea = aTouchesB ? areaB : areaA;
+    const secondRange = aTouchesB ? rangeB : rangeA;
+    const commonMinCross = Math.max(firstArea[crossCoord], secondArea[crossCoord]);
+    const commonMaxCrossEnd = Math.min(
+      firstArea[crossCoord] + firstArea[crossSpan],
+      secondArea[crossCoord] + secondArea[crossSpan],
+    );
+    const corridorMin = Math.max(firstRange[crossMinKey], secondRange[crossMinKey]);
+    const corridorMax = Math.min(firstRange[crossMaxKey], secondRange[crossMaxKey]);
+    if (
+      commonMaxCrossEnd - commonMinCross < minVisualSize - epsilon
+      || corridorMin > corridorMax + epsilon
+    ) {
+      return null;
+    }
+
+    return {
+      coord,
+      crossCoord,
+      firstArea,
+      secondArea,
+      seamMin: firstRange[maxKey],
+      seamMax: secondRange[minKey],
+      corridorMin,
+      corridorMax,
+      commonMaxCrossEnd,
+      secondEnd: secondArea[coord] + secondArea[span],
+      minScale: Math.min(
+        this.getScaleRatioForArea(firstArea),
+        this.getScaleRatioForArea(secondArea),
+      ),
+    };
+  }
+
+  _isStraddlingAxisSeam(pet, areaA, rangeA, areaB, rangeB, minVisualSize, axis) {
+    const epsilon = 1e-7;
+    const seam = this._getAxisSeamCorridor(areaA, rangeA, areaB, rangeB, minVisualSize, axis);
+    return Boolean(seam)
+      && pet[seam.coord] >= seam.seamMin - epsilon
+      && pet[seam.coord] <= seam.seamMax + epsilon
+      && pet[seam.crossCoord] >= seam.corridorMin - epsilon
+      && pet[seam.crossCoord] <= seam.corridorMax + epsilon;
+  }
+
+  _getSeamLayout(pet) {
+    const walkAreas = this.getWalkAreas();
+    const petSize = pet.size;
+    if (
+      this._cachedSeamLayout
+      && this._cachedSeamLayoutAreas === walkAreas
+      && this._cachedSeamLayoutPetSize === petSize
+    ) {
+      return this._cachedSeamLayout;
+    }
+
+    const count = walkAreas.length;
+    const sizeProbe = { size: petSize };
+    const ranges = walkAreas.map((area) => this.getReachableTargetRange(area, sizeProbe, 0));
+    const seams = [];
+    const distMatrix = Array.from({ length: count }, () => new Array(count).fill(Infinity));
+    const nextHopMatrix = Array.from({ length: count }, () => new Array(count).fill(null));
+
+    if (count >= 2) {
+      const scales = walkAreas.map((area) => this.getScaleRatioForArea(area));
+      const adjacency = Array.from({ length: count }, () => []);
+
+      for (let i = 0; i < count; i += 1) {
+        if (!ranges[i]) continue;
+        for (let j = i + 1; j < count; j += 1) {
+          if (!ranges[j]) continue;
+          const minVisualSize = petSize * Math.min(scales[i], scales[j]);
+          for (const axis of MovementSystem.SEAM_STRADDLE_AXES) {
+            const seam = this._getAxisSeamCorridor(
+              walkAreas[i],
+              ranges[i],
+              walkAreas[j],
+              ranges[j],
+              minVisualSize,
+              axis,
+            );
+            if (!seam) continue;
+            seam.firstIdx = seam.firstArea === walkAreas[i] ? i : j;
+            seam.secondIdx = seam.firstIdx === i ? j : i;
+            seams.push(seam);
+            adjacency[seam.firstIdx].push({ neighborIdx: seam.secondIdx, seam, dir: 1 });
+            adjacency[seam.secondIdx].push({ neighborIdx: seam.firstIdx, seam, dir: -1 });
+          }
+        }
+      }
+
+      for (let destIdx = 0; destIdx < count; destIdx += 1) {
+        distMatrix[destIdx][destIdx] = 0;
+        const queue = [destIdx];
+        for (let head = 0; head < queue.length; head += 1) {
+          const current = queue[head];
+          for (const edge of adjacency[current]) {
+            if (distMatrix[edge.neighborIdx][destIdx] === Infinity) {
+              distMatrix[edge.neighborIdx][destIdx] = distMatrix[current][destIdx] + 1;
+              nextHopMatrix[edge.neighborIdx][destIdx] = {
+                toIdx: current,
+                seam: edge.seam,
+                dir: -edge.dir,
+              };
+              queue.push(edge.neighborIdx);
+            }
+          }
+        }
+      }
+    }
+
+    this._cachedSeamLayout = { walkAreas, ranges, seams, distMatrix, nextHopMatrix };
+    this._cachedSeamLayoutAreas = walkAreas;
+    this._cachedSeamLayoutPetSize = petSize;
+    return this._cachedSeamLayout;
+  }
+
+  _findSeamAt(x, y, seams, tolerance = 1e-7) {
+    for (let i = 0; i < seams.length; i += 1) {
+      const seam = seams[i];
+      const primary = seam.coord === 'x' ? x : y;
+      const cross = seam.coord === 'x' ? y : x;
+      if (
+        primary >= seam.seamMin - tolerance
+        && primary <= seam.seamMax + tolerance
+        && cross >= seam.corridorMin - tolerance
+        && cross <= seam.corridorMax + tolerance
+      ) {
+        return seam;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 混合 DPI 相邻屏幕接缝的物理过渡区间（前屏 maxX/maxY 到后屏 minX/minY）可能同时落在两个单屏合法范围之外；
+   * 只要宠物正沿任意一对相连 walkAreas 的有效公共通道合法跨屏、未伸入不可见空洞，就不应在过渡中途被最近点裁剪弹回原屏。
+   */
+  canStraddleAdjacentWalkAreas(pet) {
+    const layout = this._getSeamLayout(pet);
+    return Boolean(this._findSeamAt(pet.x, pet.y, layout.seams));
+  }
+
+  _findBoundsRangeIndex(x, y, ranges) {
+    for (let i = 0; i < ranges.length; i += 1) {
+      if (this._isPositionInRange(x, y, ranges[i])) return i;
+    }
+    return -1;
+  }
+
+  _findWalkAreaIndexForPosition(pet, x, y, walkAreas, ranges) {
+    const boundsIdx = this._findBoundsRangeIndex(x, y, ranges);
+    if (boundsIdx >= 0) return boundsIdx;
+
+    const centerX = x + pet.size / 2;
+    const centerY = y + pet.size / 2;
+    for (let i = 0; i < walkAreas.length; i += 1) {
+      const area = walkAreas[i];
+      if (
+        centerX >= area.x && centerX <= area.x + area.width
+        && centerY >= area.y && centerY <= area.y + area.height
+      ) {
+        return i;
+      }
+    }
+
+    let bestIndex = -1;
+    let bestDistance = Infinity;
+    for (let i = 0; i < walkAreas.length; i += 1) {
+      const range = ranges[i];
+      if (!range) continue;
+      const dx = this.clampToRange(x, range.minX, range.maxX) - x;
+      const dy = this.clampToRange(y, range.minY, range.maxY) - y;
+      const distance = dx * dx + dy * dy;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    }
+    return bestIndex;
+  }
+
+  _applySeamGate(seam, dir, petPrimary, petCross, gateCoord, checkOnGate, state) {
+    const epsilon = 1e-7;
+    let crossAtGate = null;
+    if (checkOnGate && Math.abs(gateCoord - petPrimary) <= epsilon) {
+      if (petCross < seam.corridorMin - epsilon || petCross > seam.corridorMax + epsilon) {
+        crossAtGate = petCross;
+      }
+    } else if (dir * (gateCoord - petPrimary) > epsilon) {
+      const denom = state.x - petPrimary;
+      const t = dir * denom > epsilon ? this.clampToRange((gateCoord - petPrimary) / denom, 0, 1) : 1;
+      const candidate = petCross + t * (state.y - petCross);
+      if (candidate < seam.corridorMin || candidate > seam.corridorMax) {
+        crossAtGate = candidate;
+      }
+    }
+    if (crossAtGate !== null) {
+      const bound = crossAtGate < seam.corridorMin ? seam.corridorMin : seam.corridorMax;
+      state.x = dir > 0 ? Math.max(petPrimary, gateCoord) : Math.min(petPrimary, gateCoord);
+      state.y = Math.abs(bound - petCross) <= epsilon ? petCross : bound;
+    }
+  }
+
+  _resolveCrossDisplayStep(pet, layout) {
+    const state = this._navState;
+    const { walkAreas, ranges, seams, distMatrix, nextHopMatrix } = layout;
+    const destIdx = this._findWalkAreaIndexForPosition(pet, pet.targetX, pet.targetY, walkAreas, ranges);
+    if (destIdx < 0 || this._isPositionInRange(pet.x, pet.y, ranges[destIdx])) {
+      state.kind = 'same';
+      state.x = pet.targetX;
+      state.y = pet.targetY;
+      return state;
+    }
+
+    let toIdx = -1;
+    let seam = null;
+    let dir = 0;
+    const boundsIdx = this._findBoundsRangeIndex(pet.x, pet.y, ranges);
+    if (boundsIdx >= 0) {
+      const hop = nextHopMatrix[boundsIdx][destIdx];
+      if (!hop) {
+        state.kind = 'gap';
+        state.fromIdx = boundsIdx;
+        state.destIdx = destIdx;
+        return state;
+      }
+      toIdx = hop.toIdx;
+      seam = hop.seam;
+      dir = hop.dir;
+    } else {
+      for (let i = 0; i < seams.length; i += 1) {
+        const s = seams[i];
+        const primary = s.coord === 'x' ? pet.x : pet.y;
+        const cross = s.coord === 'x' ? pet.y : pet.x;
+        if (
+          primary < s.seamMin - 1e-7 || primary > s.seamMax + 1e-7
+          || cross < s.corridorMin - 1e-7 || cross > s.corridorMax + 1e-7
+        ) {
+          continue;
+        }
+        const d1 = distMatrix[s.firstIdx][destIdx];
+        const d2 = distMatrix[s.secondIdx][destIdx];
+        if (!Number.isFinite(d1) && !Number.isFinite(d2)) continue;
+        let chooseSecond = d2 < d1;
+        if (d2 === d1) {
+          const r1 = ranges[s.firstIdx];
+          const r2 = ranges[s.secondIdx];
+          const dist1 = (this.clampToRange(pet.targetX, r1.minX, r1.maxX) - pet.targetX) ** 2
+            + (this.clampToRange(pet.targetY, r1.minY, r1.maxY) - pet.targetY) ** 2;
+          const dist2 = (this.clampToRange(pet.targetX, r2.minX, r2.maxX) - pet.targetX) ** 2
+            + (this.clampToRange(pet.targetY, r2.minY, r2.maxY) - pet.targetY) ** 2;
+          chooseSecond = dist2 <= dist1;
+        }
+        toIdx = chooseSecond ? s.secondIdx : s.firstIdx;
+        seam = s;
+        dir = chooseSecond ? 1 : -1;
+        break;
+      }
+
+      if (!seam) {
+        const fallbackIdx = this._findWalkAreaIndexForPosition(pet, pet.x, pet.y, walkAreas, ranges);
+        if (fallbackIdx < 0 || fallbackIdx === destIdx) {
+          state.kind = 'same';
+          state.x = pet.targetX;
+          state.y = pet.targetY;
+          return state;
+        }
+        const hop = nextHopMatrix[fallbackIdx][destIdx];
+        if (!hop) {
+          state.kind = 'gap';
+          state.fromIdx = fallbackIdx;
+          state.destIdx = destIdx;
+          return state;
+        }
+        toIdx = hop.toIdx;
+        seam = hop.seam;
+        dir = hop.dir;
+      }
+    }
+
+    let goalX = pet.targetX;
+    let goalY = pet.targetY;
+    const following = toIdx !== destIdx ? nextHopMatrix[toIdx][destIdx] : null;
+    if (following) {
+      const fSeam = following.seam;
+      const nextEntry = following.dir > 0 ? fSeam.seamMin : fSeam.seamMax;
+      const nextCross = this.clampToRange(
+        fSeam.coord === 'x' ? pet.targetY : pet.targetX,
+        fSeam.corridorMin,
+        fSeam.corridorMax,
+      );
+      const toRange = ranges[toIdx];
+      goalX = this.clampToRange(fSeam.coord === 'x' ? nextEntry : nextCross, toRange.minX, toRange.maxX);
+      goalY = this.clampToRange(fSeam.coord === 'x' ? nextCross : nextEntry, toRange.minY, toRange.maxY);
+    }
+
+    const isX = seam.coord === 'x';
+    const petPrimary = isX ? pet.x : pet.y;
+    const petCross = isX ? pet.y : pet.x;
+    const entryCoord = dir > 0 ? seam.seamMin : seam.seamMax;
+    const exitCoord = dir > 0 ? seam.seamMax : seam.seamMin;
+
+    // 暂用 state.x / state.y 存放 (effPrimary, effCross)，避免热路径闭包和临时对象分配
+    state.x = isX ? goalX : goalY;
+    state.y = isX ? goalY : goalX;
+    this._applySeamGate(seam, dir, petPrimary, petCross, exitCoord, false, state);
+    this._applySeamGate(seam, dir, petPrimary, petCross, entryCoord, true, state);
+
+    const effPrimary = state.x;
+    const effCross = state.y;
+    state.kind = 'seam';
+    state.x = isX ? effPrimary : effCross;
+    state.y = isX ? effCross : effPrimary;
+    return state;
+  }
+
   /**
    * 将宠物向目标位置移动。当到达时返回 true。
    */
   moveTowardTarget(pet, deltaMs) {
+    const prevX = pet.x;
     const dx = pet.targetX - pet.x;
     const dy = pet.targetY - pet.y;
     const dist = Math.hypot(dx, dy);
@@ -600,36 +1015,106 @@ class MovementSystem {
       pet.x = pet.targetX;
       pet.y = pet.targetY;
       this.clampPetToWalkAreas(pet);
+      this._syncPetDirection(pet, pet.x - prevX);
       return true;
     }
 
-    // 向量归一化然后移动
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const nextX = pet.x + nx * moveDist;
-    const nextY = pet.y + ny * moveDist;
-    const currentArea = this.findAreaContainingPetBounds(pet) || this.findAreaContainingPet(pet);
-    const nextArea = this.findAreaContainingPetBounds(pet, nextX, nextY)
-      || this.findAreaContainingPet(pet, nextX, nextY);
     const targetArea = this.resolveTargetArea(pet);
-    const isCrossDisplayMove = currentArea && targetArea && !this.sameArea(currentArea, targetArea);
-    let bridgedDisplayGap = false;
+    const layout = this._getSeamLayout(pet);
+    const { walkAreas, ranges, seams } = layout;
+    const stepState = (walkAreas.length >= 2 && targetArea)
+      ? this._resolveCrossDisplayStep(pet, layout)
+      : null;
 
-    if (currentArea && !nextArea && isCrossDisplayMove) {
-      this.bridgeToTargetArea(pet, currentArea, targetArea);
-      bridgedDisplayGap = true;
-    } else {
-      pet.x = nextX;
-      pet.y = nextY;
+    if (stepState?.kind === 'seam') {
+      let remaining = moveDist;
+      for (let step = 0; step < 4 && remaining > 1e-9; step += 1) {
+        const current = step === 0 ? stepState : this._resolveCrossDisplayStep(pet, layout);
+        if (current.kind === 'gap') break;
+        const wdx = current.x - pet.x;
+        const wdy = current.y - pet.y;
+        const wdist = Math.hypot(wdx, wdy);
+        if (wdist <= 1e-9) break;
+        if (wdist <= remaining) {
+          pet.x = current.x;
+          pet.y = current.y;
+          remaining -= wdist;
+          if (current.x === pet.targetX && current.y === pet.targetY) break;
+        } else {
+          pet.x += (wdx / wdist) * remaining;
+          pet.y += (wdy / wdist) * remaining;
+          remaining = 0;
+        }
+      }
+
+      if (this._findBoundsRangeIndex(pet.x, pet.y, ranges) < 0) {
+        const activeSeam = this._findSeamAt(pet.x, pet.y, seams, 1e-5);
+        if (activeSeam) {
+          pet[activeSeam.coord] = this.clampToRange(
+            pet[activeSeam.coord],
+            activeSeam.seamMin,
+            activeSeam.seamMax,
+          );
+          pet[activeSeam.crossCoord] = this.clampToRange(
+            pet[activeSeam.crossCoord],
+            activeSeam.corridorMin,
+            activeSeam.corridorMax,
+          );
+        } else {
+          this.clampPetToWalkAreas(pet);
+        }
+      }
+
+      this._syncPetDirection(pet, pet.x - prevX);
+      return false;
     }
 
-    const areaAfterMove = this.findAreaContainingPet(pet);
-    if (!isCrossDisplayMove || bridgedDisplayGap || this.sameArea(areaAfterMove, targetArea)) {
+    const stepDx = pet.targetX - pet.x;
+    const stepDy = pet.targetY - pet.y;
+    const stepDist = Math.hypot(stepDx, stepDy);
+    const actualStep = Math.min(moveDist, stepDist);
+    const nextX = stepDist > 0 ? pet.x + (stepDx / stepDist) * actualStep : pet.x;
+    const nextY = stepDist > 0 ? pet.y + (stepDy / stepDist) * actualStep : pet.y;
+
+    if (stepState?.kind === 'gap') {
+      const epsilon = 1e-7;
+      const currentWalkArea = walkAreas[stepState.fromIdx];
+      const currentRange = ranges[stepState.fromIdx];
+      const destWalkArea = walkAreas[stepState.destIdx];
+      const nextInBounds = this._findBoundsRangeIndex(nextX, nextY, ranges) >= 0;
+      const nextInSeam = !nextInBounds && Boolean(this._findSeamAt(nextX, nextY, seams));
+      const crossedFacingEdge = Boolean(currentWalkArea && currentRange && destWalkArea) && (
+        (destWalkArea.x >= currentWalkArea.x + currentWalkArea.width - epsilon
+          && nextX > currentRange.maxX + epsilon)
+        || (destWalkArea.x + destWalkArea.width <= currentWalkArea.x + epsilon
+          && nextX < currentRange.minX - epsilon)
+        || (destWalkArea.y >= currentWalkArea.y + currentWalkArea.height - epsilon
+          && nextY > currentRange.maxY + epsilon)
+        || (destWalkArea.y + destWalkArea.height <= currentWalkArea.y + epsilon
+          && nextY < currentRange.minY - epsilon)
+      );
+
+      if (
+        currentWalkArea
+        && !nextInBounds
+        && !nextInSeam
+        && (crossedFacingEdge || !this.findAreaContainingPet(pet, nextX, nextY))
+      ) {
+        this.bridgeToTargetArea(pet, currentWalkArea, targetArea);
+        this.clampPetToWalkAreas(pet);
+        this._syncPetDirection(pet, pet.x - prevX);
+        return false;
+      }
+    }
+
+    pet.x = nextX;
+    pet.y = nextY;
+    if (this._findBoundsRangeIndex(pet.x, pet.y, ranges) < 0 && !this.canStraddleAdjacentWalkAreas(pet)) {
       this.clampPetToWalkAreas(pet);
     }
 
-    // 更新朝向
-    pet.direction = dx > 0 ? 'right' : 'left';
+    // 按实际水平位移更新朝向（纯垂直位移时保持原朝向）
+    this._syncPetDirection(pet, pet.x - prevX);
 
     return false;
   }
@@ -655,7 +1140,14 @@ class MovementSystem {
 
           // 发呆结束，设置新目标开始行走
           this.randomTarget(pet);
-          pet.direction = pet.targetX > pet.x ? 'right' : 'left';
+          const layout = this._getSeamLayout(pet);
+          const step = layout.walkAreas.length >= 2
+            ? this._resolveCrossDisplayStep(pet, layout)
+            : null;
+          const initialDeltaX = (step?.kind === 'seam' && Math.abs(step.x - pet.x) > 1e-9)
+            ? step.x - pet.x
+            : pet.targetX - pet.x;
+          this._syncPetDirection(pet, initialDeltaX);
           pet.setState('walking');
         }
         break;
