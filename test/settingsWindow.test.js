@@ -568,11 +568,16 @@ test('SettingsWindow: keeps pop-up-menu below PetWindow while focused and drops 
     settingsWin.emit('focus');
     assert.equal(order.at(-1), 'mainWindow', 'focus must re-assert mainWindow above settingsWindow');
 
+    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
     order.length = 0;
     settingsWin.emit('moved');
-    assert.equal(order.at(-1), 'mainWindow', 'moved must re-assert mainWindow above settingsWindow');
+    assert.deepEqual(order, [], 'darwin moved (alias of move) must not re-assert mainWindow on every move');
 
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    order.length = 0;
+    settingsWin.emit('moved');
+    assert.equal(order.at(-1), 'mainWindow', 'win32 moved must re-assert mainWindow above settingsWindow');
+
     order.length = 0;
     settingsWin.emitWebContents('input-event', {}, { type: 'mouseDown' });
     assert.equal(order.at(-1), 'mainWindow', 'win32 mouseDown must re-assert mainWindow above settingsWindow');
@@ -586,8 +591,8 @@ test('SettingsWindow: keeps pop-up-menu below PetWindow while focused and drops 
     settingsWin.blur();
     settingsWin.emit('blur');
     order.length = 0;
-    settingsWin.emit('moved');
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    settingsWin.emit('moved');
     settingsWin.emitWebContents('input-event', {}, { type: 'mouseDown' });
     Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
     assert.deepEqual(order, [], 'unpinned settingsWindow must skip pet re-assertion on moved/input-event');

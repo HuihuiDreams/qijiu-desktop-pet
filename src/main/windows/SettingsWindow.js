@@ -163,8 +163,9 @@ function createSettingsWindow(initialTab = 'appearance') {
   win.on('restore', () => {
     pulseSettingsWindowTop();
   });
+  // macOS 上 moved 是 move 的别名，拖动时逐帧触发；macOS 由窗口层级保证顺序，只在 Windows 重申
   win.on('moved', () => {
-    if (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop()) {
+    if (process.platform === 'win32' && (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop())) {
       keepPetAboveSettingsWindow();
     }
   });
