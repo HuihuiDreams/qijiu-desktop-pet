@@ -1,8 +1,174 @@
 const contentEl = document.getElementById('status-content');
 const closeBtn = document.getElementById('status-close');
+const tooltipEl = document.getElementById('status-tooltip');
 
 
 let lastRenderData = null;
+let activeTooltipTarget = null;
+let hideTooltipTimeout = null;
+let tooltipVersion = 0;
+
+function translate(key, fallback = key) {
+  if (typeof t === 'function') {
+    return t(key);
+  }
+  return fallback;
+}
+
+function setAttr(el, name, value) {
+  if (typeof el?.setAttribute === 'function') {
+    el.setAttribute(name, String(value));
+  }
+}
+
+function removeAttr(el, name) {
+  if (typeof el?.removeAttribute === 'function') {
+    el.removeAttribute(name);
+  } else if (el?.attributes) {
+    delete el.attributes[name];
+  }
+}
+
+function isPopoverOpen(el) {
+  if (!el) return false;
+  try {
+    return typeof el.matches === 'function' ? el.matches(':popover-open') : false;
+  } catch (_) {
+    return false;
+  }
+}
+
+function showTooltip(target) {
+  if (!tooltipEl || !target) return;
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+    hideTooltipTimeout = null;
+  }
+
+  const tooltipText = target.dataset?.tooltip || target.getAttribute?.('data-tooltip');
+  if (!tooltipText) return;
+
+  tooltipVersion++;
+  if (activeTooltipTarget && activeTooltipTarget !== target && activeTooltipTarget.style) {
+    activeTooltipTarget.style.anchorName = '';
+  }
+  activeTooltipTarget = target;
+  if (target.style) {
+    target.style.anchorName = '--status-tooltip-anchor';
+  }
+  tooltipEl.textContent = tooltipText;
+
+  if (typeof tooltipEl.showPopover === 'function') {
+    try {
+      if (!isPopoverOpen(tooltipEl)) {
+        tooltipEl.showPopover();
+      }
+    } catch (_) {}
+  }
+}
+
+function hideTooltip(target) {
+  if (!tooltipEl) return;
+  if (target && target !== activeTooltipTarget) return;
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+    hideTooltipTimeout = null;
+  }
+
+  const closingTarget = activeTooltipTarget;
+  const closingVersion = ++tooltipVersion;
+
+  if (typeof tooltipEl.hidePopover === 'function') {
+    try {
+      if (isPopoverOpen(tooltipEl)) {
+        tooltipEl.hidePopover();
+      }
+    } catch (_) {}
+  }
+
+  const clearAnchor = () => {
+    if (closingVersion !== tooltipVersion) return;
+    if (closingTarget?.style) closingTarget.style.anchorName = '';
+    activeTooltipTarget = null;
+  };
+
+  if (typeof tooltipEl.getAnimations === 'function') {
+    try {
+      const animations = tooltipEl.getAnimations();
+      if (animations?.length) {
+        Promise.allSettled(animations.map((animation) => Promise.resolve(animation.finished))).then(clearAnchor);
+        return;
+      }
+    } catch (_) {}
+  }
+  clearAnchor();
+}
+
+function scheduleHideTooltip(target, delay = 100) {
+  if (hideTooltipTimeout) {
+    clearTimeout(hideTooltipTimeout);
+  }
+  hideTooltipTimeout = setTimeout(() => {
+    hideTooltip(target);
+  }, delay);
+}
+
+function bindTooltipTarget(target) {
+  if (!target || typeof target.addEventListener !== 'function') return;
+  target.addEventListener('mouseenter', () => {
+    showTooltip(target);
+  });
+  target.addEventListener('mouseleave', () => {
+    scheduleHideTooltip(target, 100);
+  });
+  target.addEventListener('focusin', () => {
+    showTooltip(target);
+  });
+  target.addEventListener('focusout', () => {
+    hideTooltip(target);
+  });
+}
+
+if (tooltipEl && typeof tooltipEl.addEventListener === 'function') {
+  tooltipEl.addEventListener('mouseenter', () => {
+    if (hideTooltipTimeout) {
+      clearTimeout(hideTooltipTimeout);
+      hideTooltipTimeout = null;
+    }
+  });
+  tooltipEl.addEventListener('mouseleave', () => {
+    scheduleHideTooltip(activeTooltipTarget, 100);
+  });
+}
+
+function getStatTooltipText(petId, statKey) {
+  const isShenjiu = petId === 'shenjiu';
+  switch (statKey) {
+    case 'affection':
+      return isShenjiu
+        ? translate('statTipAffectionShenjiu', '右键「🤚 恶魔偏宠」或双人互动提升')
+        : translate('statTipAffectionYueqi', '右键「🤚 天使关怀」或双人互动提升');
+    case 'hunger':
+      return translate('statTipHunger', '右键「🥐 投喂美食」恢复');
+    case 'qi':
+      return isShenjiu
+        ? translate('statTipQiShenjiu', '右键「📖 静心研读」持续充能，或「💤 闭目小憩」小幅恢复')
+        : translate('statTipQiYueqi', '右键「🪴 照料植物」持续充能，或「💤 闭目小憩」小幅恢复');
+    case 'mood':
+      return isShenjiu
+        ? translate('statTipMoodShenjiu', '右键「💤 闭目小憩」「🥐 投喂美食」或「🤚 恶魔偏宠」提升')
+        : translate('statTipMoodYueqi', '右键「💤 闭目小憩」「🥐 投喂美食」或「🤚 天使关怀」提升');
+    default:
+      return '';
+  }
+}
+
+function isStatLow(statKey, value) {
+  if (statKey === 'hunger') return value < 25;
+  if (statKey === 'qi') return value < 20;
+  if (statKey === 'mood') return value < 25;
+  return false;
+}
 
 function getPetDisplayName(pet) {
   const nameKey = 'name' + pet.id.charAt(0).toUpperCase() + pet.id.slice(1);
@@ -24,10 +190,10 @@ function renderPetStats(pet) {
   const displayName = getPetDisplayName(pet);
 
   const STAT_LABELS = {
-    affection: '❤️ ' + t('statAffection'),
-    hunger: '🍖 ' + t('statHunger'),
-    qi: '🧘🏻‍♂️ ' + t('statQi'),
-    mood: '✨ ' + t('statMood'),
+    affection: '❤️ ' + translate('statAffection'),
+    hunger: '🍖 ' + translate('statHunger'),
+    qi: '✨ ' + translate('statQi'),
+    mood: '☕ ' + translate('statMood'),
   };
 
   const block = document.createElement('article');
@@ -67,14 +233,20 @@ function renderPetStats(pet) {
     const value = Math.max(0, Math.min(100, Number(pet.stats?.[key]) || 0));
     const row = document.createElement('div');
     row.className = 'stat-row';
+    if (row.dataset) {
+      row.dataset.stat = key;
+      row.dataset.tooltip = getStatTooltipText(pet.id, key);
+    }
+    setAttr(row, 'tabindex', '0');
+    if (isStatLow(key, value)) {
+      setAttr(row, 'data-low', 'true');
+    }
 
     const labelId = `stat-label-${pet.id}-${key}`;
     const labelEl = document.createElement('span');
     labelEl.className = 'stat-label';
     labelEl.id = labelId;
-    if (typeof labelEl.setAttribute === 'function') {
-      labelEl.setAttribute('id', labelId);
-    }
+    setAttr(labelEl, 'id', labelId);
     labelEl.textContent = label;
 
     const bar = document.createElement('div');
@@ -97,6 +269,7 @@ function renderPetStats(pet) {
     valueEl.textContent = String(value);
 
     row.append(labelEl, bar, valueEl);
+    bindTooltipTarget(row);
     block.appendChild(row);
   });
 
@@ -156,15 +329,49 @@ function updatePetStatsBlock(block, pet) {
     }
     const targetRow = rows.find((r) => findByClass(r, `stat-bar-fill--${key}`));
     if (targetRow) {
-      const bar = findByClass(targetRow, 'stat-bar');
-      if (bar && typeof bar.setAttribute === 'function') {
-        bar.setAttribute('aria-valuenow', `${value}`);
+      const nextTip = getStatTooltipText(pet.id, key);
+      if (targetRow.dataset) {
+        targetRow.dataset.tooltip = nextTip;
       }
+      if (activeTooltipTarget === targetRow && tooltipEl && isPopoverOpen(tooltipEl)) {
+        tooltipEl.textContent = nextTip;
+      }
+      if (isStatLow(key, value)) {
+        setAttr(targetRow, 'data-low', 'true');
+      } else {
+        removeAttr(targetRow, 'data-low');
+      }
+
+      const bar = findByClass(targetRow, 'stat-bar');
+      setAttr(bar, 'aria-valuenow', `${value}`);
       const valueEl = findByClass(targetRow, 'stat-value');
       if (valueEl && valueEl.textContent !== String(value)) {
         valueEl.textContent = String(value);
       }
     }
+  });
+}
+
+function scheduleStatusWindowResize() {
+  requestAnimationFrame(() => {
+    const panel = document.querySelector ? document.querySelector('.status-panel') : null;
+    if (!panel) return;
+
+    // Use scrollWidth (content's intrinsic width) rather than
+    // getBoundingClientRect().width (which is constrained by the parent).
+    //
+    // The panel has `width: max-content` in CSS, so its size is driven by
+    // content, not by the Electron window. scrollWidth therefore stays
+    // stable across setContentSize() calls — no feedback loop.
+    //
+    // getBoundingClientRect().width on a `width:100%` panel would grow with
+    // the window on every resize tick, causing infinite drift on Windows.
+    const panelWidth = panel.scrollWidth;
+    const panelHeight = panel.scrollHeight;
+    window.electronAPI?.resizeStatusWindow?.({
+      width: panelWidth + BODY_PADDING,
+      height: panelHeight + BODY_PADDING,
+    });
   });
 }
 
@@ -190,31 +397,14 @@ function renderStatus(data, options = {}) {
     return;
   }
 
+  hideTooltip();
+
   // 初始加载、宠物列表变动或语言切换时全量重建结构并重新测量尺寸
   contentEl.replaceChildren(...pets.map(renderPetStats));
-  requestAnimationFrame(() => {
-    const panel = document.querySelector ? document.querySelector('.status-panel') : null;
-    if (!panel) return;
-
-    // Use scrollWidth (content's intrinsic width) rather than
-    // getBoundingClientRect().width (which is constrained by the parent).
-    //
-    // The panel has `width: max-content` in CSS, so its size is driven by
-    // content, not by the Electron window. scrollWidth therefore stays
-    // stable across setContentSize() calls — no feedback loop.
-    //
-    // getBoundingClientRect().width on a `width:100%` panel would grow with
-    // the window on every resize tick, causing infinite drift on Windows.
-    const panelWidth = panel.scrollWidth;
-    const panelHeight = panel.scrollHeight;
-    window.electronAPI?.resizeStatusWindow?.({
-      width: panelWidth + BODY_PADDING,
-      height: panelHeight + BODY_PADDING,
-    });
-  });
+  scheduleStatusWindowResize();
 }
 
-if (closeBtn) {
+if (closeBtn && typeof closeBtn.addEventListener === 'function') {
   closeBtn.addEventListener('click', () => {
     window.electronAPI?.closeStatusWindow?.();
   });
@@ -224,6 +414,10 @@ if (typeof window?.addEventListener === 'function') {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       e.preventDefault?.();
+      if (isPopoverOpen(tooltipEl)) {
+        hideTooltip();
+        return;
+      }
       window.electronAPI?.closeStatusWindow?.();
     }
   });

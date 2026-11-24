@@ -26,11 +26,11 @@ DeskPet 运行在 Electron 45+（内置 Chromium 156+ 运行时）之上，原�
 我们决定在 DeskPet 渲染层全面采纳现代 Web 原生标准（Modern Web Standards），建立 **Electron 45+ 原生 Chromium 基线**，执行**零外部 Polyfill（Zero External Polyfill）策略**，并在 JavaScript 侧通过可选链与类型守卫实现对 Node.js 桩测试环境（Fake DOM）的**渐进降级兼容器**：
 
 1. **Popover API 与 CSS Anchor Positioning 锚点定位**：
-   - 番茄钟窗口的 Tooltip（`#pomodoro-tooltip`）声明 `popover="manual"` 与 `role="tooltip"`，通过原生 Top Layer 提升层级，彻底移除 `getBoundingClientRect()` 与 `offsetHeight`。
-   - 样式层采用 CSS 锚点定位规范：`position-anchor: --pomodoro-tooltip-anchor; position-area: block-end; position-try-fallbacks: flip-block;`，由浏览器排版引擎原生接管空间感知与边界翻转。
-   - 提示框退场时保持按钮锚点直到 `getAnimations()` 的动画完成，避免 Top Layer 退场期间定位丢失；显示/收起版本校验阻止过期清理影响快速重显，缺少动画 API 或无活跃动画时立即清理。
+   - 番茄钟窗口（`#pomodoro-tooltip`）与状态面板窗口（`#status-tooltip`）的 Tooltip 均声明 `popover="manual"` 与 `role="tooltip"`，通过原生 Top Layer 提升层级，彻底移除 `getBoundingClientRect()` 与 `offsetHeight`。
+   - 样式层采用 CSS 锚点定位规范：`position-anchor: --pomodoro-tooltip-anchor` / `--status-tooltip-anchor`、`position-area: block-end; position-try-fallbacks: flip-block;`，由浏览器排版引擎原生接管空间感知与边界翻转。
+   - 提示框退场时保持锚点直到 `getAnimations()` 的动画完成，避免 Top Layer 退场期间定位丢失；显示/收起版本校验阻止过期清理影响快速重显，缺少动画 API 或无活跃动画时立即清理。
    - 移除 HTML 原生 `title` 属性，在 `windowI18n.js` 中将翻译文本同步到 `data-tooltip` 与 `aria-label`，避免系统双重提示冲突。
-   - 补充 `Escape` 键监听、Tooltip 悬停保持（Hoverable）与焦点触发（Persistent），全面满足 WCAG 1.4.13 标准。
+   - 补充 `Escape` 键监听（状态窗口在 Tooltip 打开时优先关闭 Tooltip，再次按 `Escape` 关闭窗口）、Tooltip 悬停保持（Hoverable）与焦点触发（Persistent），全面满足 WCAG 1.4.13 标准。
 2. **`content-visibility: auto` 与占位尺寸保护**：
    - 在 `src/skin-selector.css` 中严格遵循 `defer-rendering-heavy-content` 指南，仅对首屏视口（前 6 张卡片）以外的离屏卡片应用延迟渲染：`.skin-card:nth-child(n + 7) { content-visibility: auto; contain-intrinsic-size: auto none auto 182px; }`。
    - 确立 `auto none auto 182px` 占位，兼顾未访问前的高度兜底与访问后的真实高度记忆，杜绝滚动 CLS；将悬浮样式收窄为 `.skin-card:hover:not(:disabled)`，防止加载锁定状态误触发浮动动效。
@@ -47,9 +47,9 @@ DeskPet 运行在 Electron 45+（内置 Chromium 156+ 运行时）之上，原�
    - 使用 `:popover-open`、`@starting-style`、`transition-property: opacity, transform, display, overlay;` 及 `transition-behavior: allow-discrete;` 实现流畅的水墨展开与收起动效。
    - 维持 `ContextMenu.js` 与 `PetRenderer.js` 的 `.hidden` 类同步与 `setIgnoreMouseEvents` 协调，增加 `Escape` 全局收起监听，确保透明窗口桌面穿透稳定可靠。
 6. **ARIA Meter 语义化与减动效适配**：
-   - 遵循 Simplicity First 原则，保留 `.stat-bar` 原生 `<div>` 容器以完整维持 `.stat-bar-fill::after` 水墨流光高光伪元素与 `0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` 弹簧回弹物理过渡。
+   - 遵循 Simplicity First 原则，保留 `.stat-bar` 原生 `<div>` 容器以完整维持 `.stat-bar-fill::after` 水墨流光高光伪元素与 `0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` 弹簧回弹物理过渡；状态行 `.stat-row` 采用 CSS `subgrid`（`grid-template-columns: subgrid`）维持四行对齐并提供独立的悬停/聚焦盒模型以承载 `tabindex="0"` 与 `--status-tooltip-anchor`。
    - 在容器上补充标准 ARIA 属性：`role="meter"`、`aria-valuemin="0"`、`aria-valuemax="100"`、`aria-valuenow="${value}"`，并生成唯一标签 ID（`stat-label-${pet.id}-${key}`）通过 `aria-labelledby` 关联。
-   - 在各组件 CSS（气泡、右键菜单、状态条）中全面补充 `@media (prefers-reduced-motion: reduce)`，系统开启减动效时关闭剧烈位移与回弹物理动效。
+   - 在各组件 CSS（气泡、右键菜单、状态条与状态窗）中全面补充 `@media (prefers-reduced-motion: reduce)`，系统开启减动效时关闭剧烈位移与回弹物理动效。
 7. **零 Polyfill 约束与测试环境优雅降级**：
    - 严禁引入外部 polyfill、第三方组件库或网络 CDN 脚本，确保应用符合严苛的 Content Security Policy（CSP）和极简无依赖打包体积。
    - 渲染层调用现代浏览器 API（如 `showPopover()`、`hidePopover()`、`getAnimations()`）时，统一采用可选链（`el.showPopover?.()`）或类型守卫（`typeof el.showPopover === 'function'`），使得 Node.js test runner 中的轻量级 Fake DOM 桩对象无需模拟完整的 Chromium 特性即可 100% 稳定运行。

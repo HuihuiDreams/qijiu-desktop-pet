@@ -168,7 +168,35 @@ body {
 }
 
 .stat-row {
-  display: contents;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 6px;
+  cursor: help;
+  transition: background 0.18s ease;
+}
+
+.stat-row:hover,
+.stat-row:focus-visible {
+  background: rgb(from var(--color-brass, #b38743) r g b / 0.11);
+}
+
+.stat-row:focus-visible {
+  outline: 2px solid rgb(from var(--color-brass, #b38743) r g b / 0.6);
+  outline-offset: 1px;
+}
+
+.stat-row[data-low="true"] {
+  background: rgb(from var(--color-crowley, #8f1d24) r g b / 0.08);
+}
+
+.stat-row[data-low="true"] .stat-label,
+.stat-row[data-low="true"] .stat-value {
+  color: var(--color-crowley, #8f1d24);
+  font-weight: 600;
 }
 
 .stat-label {
@@ -194,8 +222,68 @@ body {
   text-align: left;
 }
 
+.status-tooltip {
+  position: fixed;
+  position-anchor: --status-tooltip-anchor;
+  position-area: block-end;
+  position-try-fallbacks: flip-block;
+  justify-self: anchor-center;
+  inset: auto;
+  margin: 6px 0;
+  padding: 6px 10px;
+  max-width: min(290px, calc(100vw - 36px));
+  background: rgba(26, 24, 30, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgb(from var(--color-brass, #b38743) r g b / 0.35);
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: normal;
+  text-align: center;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+}
+
+.status-tooltip:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .status-tooltip:popover-open {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .status-panel {
     animation: none;
+  }
+
+  .stat-row {
+    transition: none;
+  }
+
+  .status-tooltip {
+    transition-duration: 0.01ms;
+    transform: none;
+  }
+
+  .status-tooltip:popover-open {
+    transform: none;
+  }
+
+  @starting-style {
+    .status-tooltip:popover-open {
+      transform: none;
+    }
   }
 }

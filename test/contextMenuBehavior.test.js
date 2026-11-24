@@ -503,3 +503,151 @@ test('src/index.html context menu uses popover="manual" and semantic button item
     assert.doesNotMatch(item, /role="menuitem"/);
   }
 });
+
+test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint with urgency cues', () => {
+  const originalDocument = global.document;
+  const originalWindow = global.window;
+
+  function makeStructuredItem(action, labelI18n, hintI18n) {
+    const label = createElement({
+      classNames: ['menu-item-label'],
+      dataset: labelI18n ? { i18n: labelI18n } : {},
+    });
+    const hint = hintI18n
+      ? createElement({ classNames: ['menu-item-hint'], dataset: { i18n: hintI18n } })
+      : null;
+    const item = createElement({
+      classNames: ['menu-item'],
+      dataset: { action },
+    });
+    item.children.push(label);
+    if (hint) item.children.push(hint);
+    item.querySelector = (selector) => {
+      if (selector === '.menu-item-label') return label;
+      if (selector === '.menu-item-hint') return hint;
+      return null;
+    };
+    return { item, label, hint };
+  }
+
+  const structured = {
+    feed: makeStructuredItem('feed', 'feed', 'menuHintFeed'),
+    meditate: makeStructuredItem('meditate', 'meditate', 'menuHintMeditate'),
+    pet: makeStructuredItem('pet', null, 'menuHintPet'),
+    rest: makeStructuredItem('rest', 'rest', 'menuHintRest'),
+    status: makeStructuredItem('status', 'status', null),
+  };
+  const items = Object.values(structured).map((s) => s.item);
+  const i18nNodes = items.flatMap((it) => it.children.filter((c) => c.dataset?.i18n));
+  const menu = createElement({ id: 'context-menu', classNames: ['hidden'] });
+  const header = createElement({ id: 'menu-header' });
+  menu.showPopover = () => {};
+  menu.hidePopover = () => {};
+  menu.querySelector = (selector) => {
+    const m = selector.match(/\.menu-item\[data-action="([^"]+)"\]/);
+    return m ? (structured[m[1]]?.item || null) : null;
+  };
+  menu.querySelectorAll = (selector) => {
+    if (selector === '.menu-item' || selector === '.menu-item[data-action]') return items;
+    if (selector === '[data-i18n]') return i18nNodes;
+    return [];
+  };
+
+  global.document = {
+    body: { classList: createClassList() },
+    getElementById: (id) => (id === 'context-menu' ? menu : id === 'menu-header' ? header : null),
+    createElement: (tag) => createElement({ classNames: tag === 'img' ? ['status-pet-icon'] : [] }),
+    addEventListener: () => {},
+  };
+  const dict = {
+    nameYueqi: '克劳利',
+    nameShenjiu: '亚茨拉斐尔',
+    feed: '🥐 投喂美食',
+    meditate: '✨ 施展奇迹',
+    meditateYueqi: '🪴 照料植物',
+    meditateShenjiu: '📖 静心研读',
+    petYueqi: '🤚 天使关怀',
+    petShenjiu: '🤚 恶魔偏宠',
+    rest: '💤 闭目小憩',
+    status: '📊 查看状态',
+    menuHintFeed: '饱腹+',
+    menuHintMeditate: '奇迹+',
+    menuHintPet: '默契+',
+    menuHintRest: '心情+',
+    menuHintFeedUrgent: '偏低 · 饱腹+',
+    menuHintMeditateUrgent: '偏低 · 奇迹+',
+    menuHintRestUrgent: '偏低 · 心情+',
+  };
+  global.window = {
+    innerWidth: 800,
+    innerHeight: 600,
+    addEventListener: () => {},
+    t: (k) => dict[k] || k,
+    electronAPI: { setIgnoreMouseEvents: () => {} },
+  };
+
+  try {
+    const cm = new ContextMenu({}, () => 1, () => ({ x: 0, y: 0, width: 800, height: 600 }));
+
+    // 1. Low Qi Crowley: meditate highlighted with urgent badge while preserving character label
+    cm.show(createPet({
+      id: 'yueqi',
+      stats: { hunger: 80, qi: 15, mood: 80 },
+      isHungry: () => false,
+      isLowQi: () => true,
+      isLowMood: () => false,
+    }), 100, 100);
+    assert.equal(structured.meditate.label.textContent, '🪴 照料植物');
+    assert.equal(structured.meditate.hint.textContent, '偏低 · 奇迹+');
+    assert.equal(structured.meditate.item.classList.contains('menu-item--urgent'), true);
+    assert.equal(structured.meditate.item.getAttribute('data-urgent'), 'true');
+    assert.equal(structured.feed.hint.textContent, '饱腹+');
+    assert.equal(structured.feed.item.classList.contains('menu-item--urgent'), false);
+
+    // 2. Low Mood + too hungry to rest (hunger < 15): feed is urgent, rest urgency suppressed
+    cm.show(createPet({
+      id: 'shenjiu',
+      stats: { hunger: 10, qi: 80, mood: 15 },
+      isHungry: () => true,
+      isLowQi: () => false,
+      isLowMood: () => true,
+    }), 100, 100);
+    assert.equal(structured.meditate.label.textContent, '📖 静心研读');
+    assert.equal(structured.meditate.hint.textContent, '奇迹+');
+    assert.equal(structured.meditate.item.classList.contains('menu-item--urgent'), false);
+    assert.equal(structured.feed.item.classList.contains('menu-item--urgent'), true);
+    assert.equal(structured.feed.hint.textContent, '偏低 · 饱腹+');
+    assert.equal(structured.rest.item.classList.contains('menu-item--urgent'), false);
+    assert.equal(structured.rest.hint.textContent, '心情+');
+
+    // 3. Low Mood + enough hunger: rest is urgent
+    cm.show(createPet({
+      id: 'shenjiu',
+      stats: { hunger: 60, qi: 80, mood: 15 },
+      isHungry: () => false,
+      isLowQi: () => false,
+      isLowMood: () => true,
+    }), 100, 100);
+    assert.equal(structured.rest.item.classList.contains('menu-item--urgent'), true);
+    assert.equal(structured.rest.hint.textContent, '偏低 · 心情+');
+
+    // 4. Busy pet: urgency suppressed and items disabled
+    cm.show(createPet({
+      id: 'yueqi',
+      isBusy: () => true,
+      stats: { hunger: 10, qi: 10, mood: 10 },
+      isHungry: () => true,
+      isLowQi: () => true,
+      isLowMood: () => true,
+    }), 100, 100);
+    for (const action of ['feed', 'meditate', 'rest']) {
+      assert.equal(structured[action].item.classList.contains('menu-item--urgent'), false);
+      assert.equal(structured[action].item.getAttribute('data-urgent'), null);
+      assert.equal(structured[action].item.getAttribute('aria-disabled'), 'true');
+    }
+    assert.equal(structured.meditate.hint.textContent, '奇迹+');
+  } finally {
+    global.document = originalDocument;
+    global.window = originalWindow;
+  }
+});

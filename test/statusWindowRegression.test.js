@@ -276,3 +276,174 @@ test('status.css contains migrated status-panel layout, animation, and keyframes
   assert.match(css, /\.pet-status-block:hover\s*\{[\s\S]*?border-color:\s*var\(--color-glass-border\);/);
 });
 
+test('statusWindow.js aligns qi/mood icons and handles anchor-positioned stat tooltips and Escape priority', () => {
+  function makeInteractiveElement(tagName, id = '') {
+    const attributes = {};
+    const classNames = new Set();
+    const children = [];
+    const listeners = {};
+    return {
+      tagName,
+      id,
+      className: '',
+      style: {},
+      dataset: {},
+      children,
+      attributes,
+      listeners,
+      popoverOpen: false,
+      classList: {
+        add: (...c) => c.forEach((name) => classNames.add(name)),
+        remove: (...c) => c.forEach((name) => classNames.delete(name)),
+        contains: (c) => classNames.has(c),
+      },
+      addEventListener(type, fn) {
+        listeners[type] = fn;
+      },
+      setAttribute(name, val) {
+        attributes[name] = String(val);
+      },
+      getAttribute(name) {
+        return attributes[name];
+      },
+      removeAttribute(name) {
+        delete attributes[name];
+      },
+      appendChild(child) {
+        children.push(child);
+        return child;
+      },
+      append(...items) {
+        children.push(...items);
+      },
+      replaceChildren(...items) {
+        children.length = 0;
+        children.push(...items);
+      },
+      showPopover() {
+        this.popoverOpen = true;
+      },
+      hidePopover() {
+        this.popoverOpen = false;
+      },
+      matches(selector) {
+        return selector === ':popover-open' ? this.popoverOpen : false;
+      },
+      querySelector() {
+        return null;
+      },
+      querySelectorAll() {
+        return [];
+      },
+    };
+  }
+
+  let onDataCallback;
+  let closed = false;
+  let keydownHandler;
+  const contentEl = makeInteractiveElement('div', 'status-content');
+  const closeBtn = makeInteractiveElement('button', 'status-close');
+  const tooltipEl = makeInteractiveElement('div', 'status-tooltip');
+
+  const dict = {
+    statAffection: '默契',
+    statHunger: '饱腹',
+    statQi: '奇迹能量',
+    statMood: '心情',
+    statTipQiYueqi: '右键「🪴 照料植物」持续充能',
+    statTipQiShenjiu: '右键「📖 静心研读」持续充能',
+  };
+
+  const context = {
+    document: {
+      getElementById(id) {
+        if (id === 'status-content') return contentEl;
+        if (id === 'status-close') return closeBtn;
+        if (id === 'status-tooltip') return tooltipEl;
+        return null;
+      },
+      createElement(tag) {
+        return makeInteractiveElement(tag);
+      },
+      querySelector() {
+        return null;
+      },
+    },
+    window: {
+      electronAPI: {
+        onStatusWindowData(cb) {
+          onDataCallback = cb;
+        },
+        resizeStatusWindow() {},
+        closeStatusWindow() {
+          closed = true;
+        },
+      },
+      addEventListener(type, fn) {
+        if (type === 'keydown') keydownHandler = fn;
+      },
+    },
+    WindowI18n: { init() {} },
+    t: (key) => dict[key] || key,
+    requestAnimationFrame(cb) {
+      cb();
+    },
+    Math,
+    Number,
+    String,
+    Object,
+    Array,
+    Promise,
+    setTimeout,
+    clearTimeout,
+  };
+
+  vm.runInNewContext(readSource('src/statusWindow.js'), context);
+
+  onDataCallback({
+    pets: [
+      { id: 'yueqi', name: '克劳利', stats: { affection: 50, hunger: 80, qi: 15, mood: 70 } },
+      { id: 'shenjiu', name: '亚茨拉斐尔', stats: { affection: 50, hunger: 80, qi: 80, mood: 70 } },
+    ],
+  });
+
+  const yueqiBlock = contentEl.children[0];
+  const shenjiuBlock = contentEl.children[1];
+  const yueqiQiRow = yueqiBlock.children.find((c) => c.dataset?.stat === 'qi');
+  const yueqiMoodRow = yueqiBlock.children.find((c) => c.dataset?.stat === 'mood');
+  const shenjiuQiRow = shenjiuBlock.children.find((c) => c.dataset?.stat === 'qi');
+
+  const yueqiQiLabel = yueqiQiRow.children.find((c) => c.className === 'stat-label');
+  const yueqiMoodLabel = yueqiMoodRow.children.find((c) => c.className === 'stat-label');
+  assert.equal(yueqiQiLabel.textContent, '✨ 奇迹能量');
+  assert.equal(yueqiMoodLabel.textContent, '☕ 心情');
+  assert.doesNotMatch(yueqiQiLabel.textContent, /🧘🏻‍♂️/);
+  assert.equal(yueqiQiRow.getAttribute('data-low'), 'true');
+  assert.equal(shenjiuQiRow.getAttribute('data-low'), undefined);
+  assert.equal(yueqiQiRow.dataset.tooltip, '右键「🪴 照料植物」持续充能');
+  assert.equal(shenjiuQiRow.dataset.tooltip, '右键「📖 静心研读」持续充能');
+
+  // Focusing a row opens the anchor-positioned popover tooltip
+  yueqiQiRow.listeners.focusin();
+  assert.equal(tooltipEl.popoverOpen, true);
+  assert.equal(yueqiQiRow.style.anchorName, '--status-tooltip-anchor');
+  assert.equal(tooltipEl.textContent, '右键「🪴 照料植物」持续充能');
+
+  // First Escape closes only the open tooltip, not the window
+  keydownHandler({ key: 'Escape', preventDefault() {} });
+  assert.equal(tooltipEl.popoverOpen, false);
+  assert.equal(closed, false);
+
+  // Second Escape closes the status window
+  keydownHandler({ key: 'Escape', preventDefault() {} });
+  assert.equal(closed, true);
+
+  // Hovering opens tooltip and focusout hides it
+  shenjiuQiRow.listeners.mouseenter();
+  assert.equal(tooltipEl.popoverOpen, true);
+  assert.equal(shenjiuQiRow.style.anchorName, '--status-tooltip-anchor');
+  assert.equal(tooltipEl.textContent, '右键「📖 静心研读」持续充能');
+  shenjiuQiRow.listeners.focusout();
+  assert.equal(tooltipEl.popoverOpen, false);
+});
+

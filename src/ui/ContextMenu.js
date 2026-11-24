@@ -206,36 +206,99 @@ class ContextMenu {
     textSpan.textContent = ` ${displayName}`;
     this.headerEl.appendChild(textSpan);
 
+    const translate = (key, fallback) => {
+      if (window.t) {
+        const translated = window.t(key);
+        if (translated && translated !== key) return translated;
+      }
+      return fallback;
+    };
+
+    // 先刷新带 data-i18n 属性的菜单标签与提示，再按当前角色覆写个性化条目与紧急状态
+    this.menuEl.querySelectorAll('[data-i18n]').forEach(el => {
+      if (window.t) el.textContent = window.t(el.dataset.i18n);
+    });
+
     // 动态更新抚摸/关怀动作的菜单文本（语言敏感）
     const petActionEl = this.menuEl.querySelector('.menu-item[data-action="pet"]');
     if (petActionEl) {
       const key = pet.id === 'shenjiu' ? 'petShenjiu' : 'petYueqi';
-      petActionEl.textContent = window.t ? window.t(key) : (pet.id === 'shenjiu' ? '🤚 恶魔偏宠' : '🤚 天使关怀');
+      const petLabelEl = petActionEl.querySelector?.('.menu-item-label') || petActionEl;
+      petLabelEl.textContent = window.t ? window.t(key) : (pet.id === 'shenjiu' ? '🤚 恶魔偏宠' : '🤚 天使关怀');
     }
-
-    // 刷新其他带 data-i18n 属性的菜单项
-    this.menuEl.querySelectorAll('[data-i18n]').forEach(el => {
-      if (window.t) el.textContent = window.t(el.dataset.i18n);
-    });
 
     const meditateActionEl = this.menuEl.querySelector('.menu-item[data-action="meditate"]');
     if (meditateActionEl) {
       const key = pet.id === 'shenjiu' ? 'meditateShenjiu' : 'meditateYueqi';
       const text = window.t ? window.t(key) : null;
       if (text && text !== key) {
-        meditateActionEl.textContent = text;
+        const meditateLabelEl = meditateActionEl.querySelector?.('.menu-item-label') || meditateActionEl;
+        meditateLabelEl.textContent = text;
       }
     }
 
-    // 更新禁用状态与 ARIA 状态
+    const isBusy = Boolean(pet.isBusy?.());
+    const isHungry = typeof pet.isHungry === 'function' ? Boolean(pet.isHungry()) : Number(pet.stats?.hunger) < 25;
+    const isLowQi = typeof pet.isLowQi === 'function' ? Boolean(pet.isLowQi()) : Number(pet.stats?.qi) < 20;
+    const isLowMood = typeof pet.isLowMood === 'function' ? Boolean(pet.isLowMood()) : Number(pet.stats?.mood) < 25;
+    const minRestHunger = ((typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.REST_HUNGER_COST)) ? CONFIG.REST_HUNGER_COST : 10) + 5;
+    const canRest = pet.stats?.hunger === undefined || Number(pet.stats.hunger) >= minRestHunger;
+
+    const actionHints = {
+      feed: {
+        urgent: !isBusy && isHungry,
+        key: 'menuHintFeed',
+        fallback: '饱腹+',
+        urgentKey: 'menuHintFeedUrgent',
+        urgentFallback: '偏低 · 饱腹+',
+      },
+      meditate: {
+        urgent: !isBusy && isLowQi,
+        key: 'menuHintMeditate',
+        fallback: '奇迹+',
+        urgentKey: 'menuHintMeditateUrgent',
+        urgentFallback: '偏低 · 奇迹+',
+      },
+      pet: {
+        urgent: false,
+        key: 'menuHintPet',
+        fallback: '默契+',
+      },
+      rest: {
+        urgent: !isBusy && isLowMood && canRest,
+        key: 'menuHintRest',
+        fallback: '心情+',
+        urgentKey: 'menuHintRestUrgent',
+        urgentFallback: '偏低 · 心情+',
+      },
+    };
+
+    // 更新禁用状态、ARIA 状态、效果徽标与低状态引导高亮
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
       item.classList.remove('disabled');
+      item.classList.remove('menu-item--urgent');
       if (typeof item.removeAttribute === 'function') {
         item.removeAttribute('aria-disabled');
+        item.removeAttribute('data-urgent');
+      }
+
+      const action = item.dataset?.action;
+      const hintConfig = action ? actionHints[action] : null;
+      if (hintConfig) {
+        const hintEl = item.querySelector?.('.menu-item-hint');
+        if (hintConfig.urgent) {
+          item.classList.add('menu-item--urgent');
+          item.setAttribute?.('data-urgent', 'true');
+          if (hintEl) {
+            hintEl.textContent = translate(hintConfig.urgentKey, hintConfig.urgentFallback);
+          }
+        } else if (hintEl) {
+          hintEl.textContent = translate(hintConfig.key, hintConfig.fallback);
+        }
       }
     });
 
-    if (pet.isBusy()) {
+    if (isBusy) {
       // 宠物忙碌时禁用除了查看状态外的所有动作
       this.menuEl.querySelectorAll('.menu-item[data-action]').forEach(item => {
         if (item.dataset.action !== 'status') {

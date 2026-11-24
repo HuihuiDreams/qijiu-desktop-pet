@@ -32,7 +32,7 @@ This app supports both Windows and macOS:
 After launch, both characters will appear on your desktop.
 
 - Drag a character: hold the left mouse button and drag them to your preferred position.
-- Open a character menu: right-click a character to use actions such as "🥐 Feed Delicacies", "💤 Rest", "🪴 Tending Plants" (Crowley) / "📖 Reading" (Aziraphale), "🤚 Angel's Fondness" (right-click Crowley) / "🤚 Crowley's Care" (right-click Aziraphale).
+- Open a character menu: right-click a character to use actions such as "🥐 Feed Delicacies" (Satiety+), "💤 Rest" (Mood+), "🪴 Tending Plants" (Crowley, Miracle+) / "📖 Reading" (Aziraphale, Miracle+), "🤚 Angel's Fondness" (right-click Crowley, Bond+) / "🤚 Crowley's Care" (right-click Aziraphale, Bond+). When a stat drops low, its matching recovery action is automatically highlighted as "Low".
 - Open the tray menu: right-click the green tray icon in the lower-right system tray for more settings.
 
 The tray menu lets you:
@@ -56,7 +56,7 @@ To switch languages, open "⚙️ Settings… -> System" from the tray menu and 
 📊 Pet Status
 ========================================
 
-The status panel shows four main stats: ❤️ Bond, 🍖 Satiety, ✨ Miracle Energy, and ☕ Mood.
+The status panel shows four main stats: ❤️ Bond, 🍖 Satiety, ✨ Miracle Energy, and ☕ Mood (hover or focus any stat row to view its recovery tip; critically low stats are highlighted directly on their row).
 These stats change slowly over time: natural consumption is calculated every 5 minutes.
 Even if you close the app, some consumption will be calculated from offline time the next time you open it.
 

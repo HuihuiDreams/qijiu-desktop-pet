@@ -349,3 +349,97 @@ test('statusWindow.js updates existing DOM blocks in-place without replaceChildr
   assert.equal(replaceChildrenCount, 2, 'Switching between image and emoji avatar mode must rebuild DOM');
   assert.equal(resizeCount, 2, 'Full rebuild must re-measure and resize window');
 });
+
+test('statusWindow.js toggles data-low in-place without .pet-status-hints or extra resize calls', () => {
+  let onDataCallback;
+  let resizeCount = 0;
+  let replaceChildrenCount = 0;
+
+  const contentEl = createMockElement('div');
+  const originalReplaceChildren = contentEl.replaceChildren.bind(contentEl);
+  contentEl.replaceChildren = (...items) => {
+    replaceChildrenCount++;
+    return originalReplaceChildren(...items);
+  };
+  const closeBtn = createMockElement('button');
+
+  const context = {
+    document: {
+      getElementById(id) {
+        if (id === 'status-content') return contentEl;
+        if (id === 'status-close') return closeBtn;
+        return null;
+      },
+      createElement(tag) {
+        return createMockElement(tag);
+      },
+      querySelector() {
+        return { scrollWidth: 340, scrollHeight: 320 };
+      },
+    },
+    window: {
+      electronAPI: {
+        onStatusWindowData(cb) {
+          onDataCallback = cb;
+        },
+        resizeStatusWindow() {
+          resizeCount++;
+        },
+        closeStatusWindow() {},
+      },
+    },
+    WindowI18n: { init() {} },
+    t: (key) => key,
+    requestAnimationFrame(cb) {
+      cb();
+    },
+    Math,
+    Number,
+    String,
+    Object,
+    Array,
+  };
+
+  vm.runInNewContext(readSource('src/statusWindow.js'), context);
+
+  // 1. Healthy initial render -> no .pet-status-hints, 1 rebuild, 1 resize
+  onDataCallback({
+    pets: [
+      { id: 'yueqi', name: '克劳利', image: 'left.webp', stats: { affection: 50, hunger: 80, qi: 60, mood: 80 } },
+      { id: 'shenjiu', name: '亚茨拉斐尔', image: 'right.webp', stats: { affection: 50, hunger: 80, qi: 60, mood: 80 } },
+    ],
+  });
+  const yueqiBlock = contentEl.children[0];
+  assert.equal(yueqiBlock.querySelector('.pet-status-hints'), null);
+  assert.equal(replaceChildrenCount, 1);
+  assert.equal(resizeCount, 1);
+
+  const findRow = (block, key) => Array.from(block.children).find((c) => c.dataset?.stat === key);
+
+  // 2. Drop multiple stats low -> data-low updates in-place with NO rebuild and NO resize
+  onDataCallback({
+    pets: [
+      { id: 'yueqi', name: '克劳利', image: 'left.webp', stats: { affection: 50, hunger: 10, qi: 12, mood: 10 } },
+      { id: 'shenjiu', name: '亚茨拉斐尔', image: 'right.webp', stats: { affection: 50, hunger: 80, qi: 60, mood: 80 } },
+    ],
+  });
+  assert.equal(yueqiBlock.querySelector('.pet-status-hints'), null);
+  assert.equal(findRow(yueqiBlock, 'hunger').getAttribute('data-low'), 'true');
+  assert.equal(findRow(yueqiBlock, 'qi').getAttribute('data-low'), 'true');
+  assert.equal(findRow(yueqiBlock, 'mood').getAttribute('data-low'), 'true');
+  assert.equal(replaceChildrenCount, 1, 'Low-stat updates must run in-place without contentEl rebuild');
+  assert.equal(resizeCount, 1, 'Low-stat updates must NOT expand or resize the status window');
+
+  // 3. Recover stats -> data-low cleared in-place with NO resize
+  onDataCallback({
+    pets: [
+      { id: 'yueqi', name: '克劳利', image: 'left.webp', stats: { affection: 50, hunger: 60, qi: 35, mood: 60 } },
+      { id: 'shenjiu', name: '亚茨拉斐尔', image: 'right.webp', stats: { affection: 50, hunger: 80, qi: 60, mood: 80 } },
+    ],
+  });
+  assert.equal(findRow(yueqiBlock, 'hunger').getAttribute('data-low'), undefined);
+  assert.equal(findRow(yueqiBlock, 'qi').getAttribute('data-low'), undefined);
+  assert.equal(findRow(yueqiBlock, 'mood').getAttribute('data-low'), undefined);
+  assert.equal(replaceChildrenCount, 1);
+  assert.equal(resizeCount, 1);
+});

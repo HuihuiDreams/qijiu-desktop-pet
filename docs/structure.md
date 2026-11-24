@@ -194,9 +194,9 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  ├─ app.js                            # 渲染进程组合根：初始化、game loop、保存、皮肤切换、状态同步；渲染进程巨石文件拆分（ADR-042 Phase R1 起）逐步收敛为薄编排层
 │  ├─ i18nHelpers.js                    # 渲染进程 i18n 纯函数辅助：getI18nDictionaries/translateUi/getI18nUi/applyI18n，locale → zh → key 回退链，无可变状态
 │  ├─ debug.js                          # 开发调试入口：测试交互、屏幕信息等；仅当 `window.electronAPI.debugToolsEnabled` 为真时定义控制台辅助函数。该开关由 `PetWindow` 在未打包运行时通过 `additionalArguments` 下发、`preload.js` 读取；`app.js` 挂载的 `window.__DEBUG_*` 数据对象不受影响，打包版性能基线（`tools/performance`）依赖它们
-│  ├─ status.html                       # 独立状态窗口 HTML
-│  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn 与悬停交互，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
-│  ├─ statusWindow.js                   # 独立状态窗口渲染和 i18n 更新
+│  ├─ status.html                       # 独立状态窗口 HTML（含 `#status-tooltip` Top Layer 恢复提示）
+│  ├─ status.css                        # 独立状态窗口样式，包含居中定位、入场动画 panelSlideIn、CSS subgrid 状态行与 `#status-tooltip` 锚点定位，复用 index.css 的 .xianxia-panel 基类；书法标题保留可读屏的文字姓名
+│  ├─ statusWindow.js                   # 独立状态窗口渲染、属性悬停/聚焦恢复提示、低状态行标记与 i18n 更新
 │  ├─ pomodoro.html                     # 独立番茄钟窗口 HTML
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含双层同心细圈与天使金星芒表盘（含减弱动态模式）与天使白羽/恶魔黑羽飘落、印章及波纹仪式动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态（天使白羽/恶魔黑羽飘落仪式）与 Web Audio 古董书店黄铜门铃音效（`playAntiqueShopBellChime`）
@@ -234,7 +234,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
 │  ├─ ui/
 │  │  ├─ BreakReminderPresenter.js      # 久坐提醒展示编排：取消进行中的自发互动、瞬移面对面并同步 targetX/targetY、暂停移动、按时序显示气泡、20秒自动消失，暴露 isActive()（app.js 拆分 Phase R3）
-│  │  ├─ ContextMenu.js                 # 渲染进程右键菜单
+│  │  ├─ ContextMenu.js                 # 渲染进程右键菜单（含角色专属动作标签、属性效果徽标与低状态优先高亮）
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
 │  │  ├─ WeatherParticleLayer.js        # 局部天气粒子数量限制与节点管理：输入不变时复用节点，配置变化时清除并重建，隐藏或禁用时清理；容器尺寸与 --weather-effect-scale 同步融合显示器 DPI 与宠物体型缩放倍率（50%~150%）
@@ -506,10 +506,10 @@ src/assets/{skinId}/
 DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗口全面落地现代 Web 原生标准规范，淘汰老旧 Hack 与强制回流逻辑，严格执行**零外部 Polyfill（Zero External Polyfill）**原则：
 
 - **Popover API 与 Top Layer 原生顶层提升**：
-  番茄钟悬浮提示（`#pomodoro-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键快速收起，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
+  番茄钟悬浮提示（`#pomodoro-tooltip`）、状态面板属性指引提示（`#status-tooltip`）与主窗口右键互动菜单（`#context-menu`）均升级为原生 `popover="manual"`，由浏览器提升至顶级 Top Layer 渲染，彻底淘汰 `z-index: 9999` 恶性竞争与层叠上下文穿透异常；通过 `:popover-open`、`@starting-style` 与 `transition-behavior: allow-discrete` 实现平滑的水墨出入场离散过渡；与 `PetRenderer.js` 严格联动保持 `.hidden` 类同步，并绑定 `Escape` 键优先收起浮层，严密捍卫桌面透明点击穿透（`setIgnoreMouseEvents`）协调机制。
 - **CSS 锚点定位 (Anchor Positioning)**：
-  提示框收起时保留当前按钮锚点，等待 `getAnimations()` 返回的退场动画结束后再清理，避免仍在 Top Layer 的提示框跳至窗口左上角；每次显示或收起递增版本，过期动画完成回调不能移除新提示框的锚点。无动画 API 或无活跃动画时立即清理，旧按钮的失焦事件不关闭新按钮的提示框。
-  番茄钟（旧书店伴读）窗口基于 CSS Anchor Positioning（`position-anchor: --pomodoro-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准。
+  提示框收起时保留当前锚点，等待 `getAnimations()` 返回的退场动画结束后再清理，避免仍在 Top Layer 的提示框跳至窗口左上角；每次显示或收起递增版本，过期动画完成回调不能移除新提示框的锚点。无动画 API 或无活跃动画时立即清理，旧目标的失焦事件不关闭新目标的提示框。
+  番茄钟（旧书店伴读）窗口与状态面板窗口基于 CSS Anchor Positioning（`--pomodoro-tooltip-anchor` / `--status-tooltip-anchor`、`position-area: block-end`、`position-try-fallbacks: flip-block`）接管 Tooltip 的空间感知与自动翻转，彻底消灭 `getBoundingClientRect()` 与 `offsetHeight` 引发的同步强制布局回流（Layout Thrashing）；移除 HTML 静态 `title` 属性，通过 `windowI18n.js` 将文案映射至 `data-tooltip` 与 `aria-label`，避免系统黄色默认提示冲突，完全满足 WCAG 1.4.13 标准；状态面板借助 CSS `subgrid` 行容器（`.stat-row`）保持列对齐并直接作为锚点与键盘 `tabindex="0"` 聚焦目标。
 - **CSS 相对颜色语法 (Relative Color Syntax)**：
   `src/index.css` 设计令牌采用 `rgb(from var(--color-*) r g b / <alpha>)` 规范，从基准玉色、仙金、丹砂与墨色动态派生半透明色彩与发光阴影，消除硬编码 RGB 重复定义并保留设计师精调实色 Token。
 - **`content-visibility: auto` 与占位尺寸保护**：
@@ -519,7 +519,7 @@ DeskPet 依托 Electron 45+（Chromium 156+ 运行时基线），在各渲染窗
 - **无障碍语义化 (ARIA) 与按钮语义**：
   状态进度条容器保留原生 `<div>` 以保证水墨流光高光伪元素与弹簧回弹物理过渡，原地赋予 `role="meter"`、`aria-valuenow` 与基于唯一 ID 的 `aria-labelledby`；右键菜单项升级为原生 `<button type="button">`，忙碌状态使用 `aria-disabled="true"` 保持可聚焦性与读屏可访问性。统一设置与状态窗口标题采用语义化 `<h1>`，设置窗口顶部标签采用 Roving `tabindex` 键盘漫游，开关使用 `role="switch"` + `aria-checked`，分段按钮使用非纯色 `aria-pressed` 高亮，城市输入框接入 `aria-describedby` 与动态 `aria-invalid` 反馈，体型滑块使用 `aria-labelledby` 指向标签并同步 `aria-valuetext`；换肤画廊具备智能首次卡片聚焦与多语言重建焦点恢复，支持卡片间 `ArrowLeft`/`ArrowRight`/`Home`/`End` 线性键盘漫游与预览加载态焦点保护。
 - **状态面板事件驱动就地更新与 IPC 降频**：
-  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow` 与文本数值，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
+  `src/ui/StatusBar.js` 维护快照哈希缓存，仅在宠物数值实际变动时向主进程发送 IPC 更新，彻底消除静止状态下的 1 秒轮询开销；`src/statusWindow.js` 引入就地 DOM 差量更新机制（`updatePetStatsBlock`），当宠物列表结构未发生改变时，直接更新对应进度条的 `.style.width`、`aria-valuenow`、数值、`data-tooltip` 与低状态 `data-low` 标记，完全消除每秒 `replaceChildren()` 导致的 DOM 销毁与文本选区丢失，且仅在首屏加载、列表变动或语言切换时才触发窗口 `resizeStatusWindow`，消除每秒重复测量与窗口重排性能开销。
 - **子窗口关闭按钮与操作按钮视觉设计系统规范**：
   各子窗口（`status.html`、`settings.html`、`pomodoro.html`、`skin-selector.html`）统一采用 24x24 矢量 SVG 线条关闭按钮，悬停态统合为灵玉绿水墨微光反馈（`var(--color-jade-mist)` / `var(--color-jade-deep)`）；确定与取消按钮统一为灵玉-仙金渐变主按钮与半透明次按钮层级，各可交互按钮均配置全局统一的 `:focus-visible` 焦点环。
 - **主窗口与独立状态窗口 DOM 及样式解耦**：

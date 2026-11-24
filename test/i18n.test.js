@@ -202,4 +202,47 @@ test('classic "Temptation accomplished." exchange is a shareFood pair in every l
   }
 });
 
+test('menu effect hints, status tooltips, and low-stat hints exist across locales and lowQi points to plants/reading', () => {
+  const { I18N } = require('../src/data/i18n.js');
+  const vm = require('node:vm');
+  const context = { window: {} };
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8'), context);
+
+  const requiredHintKeys = [
+    'menuHintFeed',
+    'menuHintMeditate',
+    'menuHintPet',
+    'menuHintRest',
+    'menuHintFeedUrgent',
+    'menuHintMeditateUrgent',
+    'menuHintRestUrgent',
+    'statTipAffectionYueqi',
+    'statTipAffectionShenjiu',
+    'statTipHunger',
+    'statTipQiYueqi',
+    'statTipQiShenjiu',
+    'statTipMoodYueqi',
+    'statTipMoodShenjiu',
+  ];
+
+  for (const locale of LOCALES) {
+    for (const key of requiredHintKeys) {
+      assert.equal(typeof I18N[locale].ui[key], 'string', `${locale}.ui.${key} must be a string`);
+      assert.ok(I18N[locale].ui[key].trim().length > 0, `${locale}.ui.${key} must be non-empty`);
+    }
+  }
+
+  // lowQi lines must explicitly direct players to plant-tending (Crowley) / reading (Aziraphale), never rest/瞑想
+  assert.ok(I18N.zh.dialogues.lowQi.yueqi.every(l => /植物|盆栽/.test(l)));
+  assert.ok(I18N.zh.dialogues.lowQi.shenjiu.every(l => /研读|读会儿书/.test(l)));
+  assert.ok(context.window.DIALOGUES.lowQi.yueqi.every(l => /植物|盆栽/.test(l)));
+  assert.ok(context.window.DIALOGUES.lowQi.shenjiu.every(l => /研读|读会儿书/.test(l)));
+
+  assert.ok(I18N.en.dialogues.lowQi.yueqi.every(l => /plant/i.test(l)));
+  assert.ok(I18N.en.dialogues.lowQi.shenjiu.every(l => /reading/i.test(l) && !/\brest\b/i.test(l)));
+
+  assert.ok(I18N.ja.dialogues.lowQi.yueqi.every(l => l.includes('植物の世話')));
+  assert.ok(I18N.ja.dialogues.lowQi.shenjiu.every(l => l.includes('熟読') && !l.includes('瞑想')));
+});
 

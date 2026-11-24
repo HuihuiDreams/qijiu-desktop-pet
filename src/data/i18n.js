@@ -29,6 +29,13 @@ const I18N = {
       petShenjiu: '🤚 恶魔偏宠',
       rest: '💤 闭目小憩',
       status: '📊 查看状态',
+      menuHintFeed: '饱腹+',
+      menuHintMeditate: '奇迹+',
+      menuHintPet: '默契+',
+      menuHintRest: '心情+',
+      menuHintFeedUrgent: '偏低 · 饱腹+',
+      menuHintMeditateUrgent: '偏低 · 奇迹+',
+      menuHintRestUrgent: '偏低 · 心情+',
 
       // 状态面板
       statusTitle: '桌宠状态',
@@ -36,6 +43,13 @@ const I18N = {
       statHunger: '饱腹',
       statQi: '奇迹能量',
       statMood: '心情',
+      statTipAffectionYueqi: '右键「🤚 天使关怀」或双人互动提升',
+      statTipAffectionShenjiu: '右键「🤚 恶魔偏宠」或双人互动提升',
+      statTipHunger: '右键「🥐 投喂美食」恢复',
+      statTipQiYueqi: '右键「🪴 照料植物」持续充能，或「💤 闭目小憩」小幅恢复',
+      statTipQiShenjiu: '右键「📖 静心研读」持续充能，或「💤 闭目小憩」小幅恢复',
+      statTipMoodYueqi: '右键「💤 闭目小憩」「🥐 投喂美食」或「🤚 天使关怀」提升',
+      statTipMoodShenjiu: '右键「💤 闭目小憩」「🥐 投喂美食」或「🤚 恶魔偏宠」提升',
 
       // 宠物名
       nameYueqi: '克劳利',
@@ -349,8 +363,14 @@ const I18N = {
         shenjiu: ['…肚子刚才很不争气地咕咕叫了一声。', '好想吃刚出炉热气腾腾的法式黄油羊角面包…'],
       },
       lowQi: {
-        yueqi: ['奇迹能量槽快见底了…', '得去给那群橡皮树训话好好充充能。'],
-        shenjiu: ['奇迹之力消耗得差不多了…', '该陷在扶手椅里读会儿书好好休整了。'],
+        yueqi: [
+          '奇迹能量快见底了…得去照料那群盆栽训训话充能。',
+          '恶魔魔力快耗尽了，拿喷水壶去照料植物恢复一下吧。',
+        ],
+        shenjiu: [
+          '奇迹能量消耗得差不多了…该静心研读会儿古籍充能了。',
+          '圣光之力有些透支了，去扶手椅上读会儿书恢复奇迹吧。',
+        ],
       },
       lowMood: {
         yueqi: ['地狱总部那些蠢货又发来一堆官僚备忘录催业绩…', '…天使，陪我说说话，分散下注意力。'],
@@ -438,6 +458,13 @@ const I18N = {
       petShenjiu: '🤚 Crowley\'s Care',
       rest: '💤 Rest',
       status: '📊 Status',
+      menuHintFeed: 'Satiety+',
+      menuHintMeditate: 'Miracle+',
+      menuHintPet: 'Bond+',
+      menuHintRest: 'Mood+',
+      menuHintFeedUrgent: 'Low · Satiety+',
+      menuHintMeditateUrgent: 'Low · Miracle+',
+      menuHintRestUrgent: 'Low · Mood+',
 
       // Status panel
       statusTitle: 'Pet Status',
@@ -445,6 +472,13 @@ const I18N = {
       statHunger: 'Satiety',
       statQi: 'Miracle Energy',
       statMood: 'Mood',
+      statTipAffectionYueqi: 'Right-click "🤚 Angel\'s Fondness" or pair interactions',
+      statTipAffectionShenjiu: 'Right-click "🤚 Crowley\'s Care" or pair interactions',
+      statTipHunger: 'Right-click "🥐 Feed Delicacies" to restore',
+      statTipQiYueqi: 'Right-click "🪴 Tending Plants" to recharge, or "💤 Rest"',
+      statTipQiShenjiu: 'Right-click "📖 Reading" to recharge, or "💤 Rest"',
+      statTipMoodYueqi: 'Right-click "💤 Rest", "🥐 Feed Delicacies", or "🤚 Angel\'s Fondness"',
+      statTipMoodShenjiu: 'Right-click "💤 Rest", "🥐 Feed Delicacies", or "🤚 Crowley\'s Care"',
 
       // Pet names
       nameYueqi: 'Crowley',
@@ -749,8 +783,14 @@ const I18N = {
         shenjiu: ['My stomach is making rather un-angelic noises...', 'I believe it is high time for afternoon tea.'],
       },
       lowQi: {
-        yueqi: ['Demonic energy running dangerously low...', 'Need a recharge. Miracles don\'t perform themselves.'],
-        shenjiu: ['My angelic grace feels rather depleted...', 'A quiet moment of rest is needed to restore my strength.'],
+        yueqi: [
+          'Miracle energy running low... Time to tend the houseplants for a recharge.',
+          'Demonic power\'s nearly spent. Better grab the spray bottle and tend my plants.',
+        ],
+        shenjiu: [
+          'My miracle energy feels depleted... Some quiet reading will restore my grace.',
+          'Angelic grace is running low. A spell of reading in my armchair should recharge it.',
+        ],
       },
       lowMood: {
         yueqi: ['Bored and thoroughly irritated. Might go cause minor havoc.', 'Leave me alone for five minutes.'],
@@ -838,6 +878,13 @@ const I18N = {
       petShenjiu: '🤚 悪魔の寵愛',
       rest: '💤 静かな休息',
       status: '📊 状態の確認',
+      menuHintFeed: '満腹+',
+      menuHintMeditate: '奇跡+',
+      menuHintPet: '親愛+',
+      menuHintRest: '気分+',
+      menuHintFeedUrgent: '不足 · 満腹+',
+      menuHintMeditateUrgent: '不足 · 奇跡+',
+      menuHintRestUrgent: '不足 · 気分+',
 
       // 状態パネル
       statusTitle: 'ステータス',
@@ -845,6 +892,13 @@ const I18N = {
       statHunger: '満腹度',
       statQi: '奇跡の力',
       statMood: '気分',
+      statTipAffectionYueqi: '右クリック「🤚 天使の慈愛」または二人の交流で上昇',
+      statTipAffectionShenjiu: '右クリック「🤚 悪魔の寵愛」または二人の交流で上昇',
+      statTipHunger: '右クリック「🥐 極上の食事」で回復',
+      statTipQiYueqi: '右クリック「🪴 植物の世話」で集中回復（または「💤 静かな休息」）',
+      statTipQiShenjiu: '右クリック「📖 古書の熟読」で集中回復（または「💤 静かな休息」）',
+      statTipMoodYueqi: '右クリック「💤 静かな休息」「🥐 極上の食事」「🤚 天使の慈愛」で上昇',
+      statTipMoodShenjiu: '右クリック「💤 静かな休息」「🥐 極上の食事」「🤚 悪魔の寵愛」で上昇',
 
       // ペット名
       nameYueqi: 'クロウリー',
@@ -1149,8 +1203,14 @@ const I18N = {
         shenjiu: ['お腹が天使らしからぬ音を立ててしまったよ…', 'そろそろスコーンと紅茶をいただかないとね。'],
       },
       lowQi: {
-        yueqi: ['悪魔のエネルギーが切れかけてる…', '少しチャージが必要だな。奇跡もタダじゃない。'],
-        shenjiu: ['恩寵が少し薄れてきたようだ…', '静かに瞑想して力を取り戻さなければ。'],
+        yueqi: [
+          '奇跡の力が切れかけてる…観葉植物の世話をしてチャージするか。',
+          '悪魔の魔力が底をつきそうだ。霧吹きで植物の世話をして整えないとな。',
+        ],
+        shenjiu: [
+          '奇跡の力が薄れてきたようだ…古書を熟読して恩寵を満たさなければ。',
+          '聖なる力が少し足りないね。肘掛け椅子で古書の熟読をして回復しよう。',
+        ],
       },
       lowMood: {
         yueqi: ['退屈でイライラする。何か悪戯でも仕掛けてやるか。', '5分だけでいい、放っておいてくれ。'],
