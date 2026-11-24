@@ -59,13 +59,11 @@ test.describe('unified settings window', () => {
     const appearanceStyles = await settingsWindow.evaluate(() => {
       const skinBtn = getComputedStyle(document.getElementById('settings-open-skin-button'));
       const switchTrack = getComputedStyle(document.querySelector('#window-awareness-switch .settings-switch-track'));
-      const scaleVal = getComputedStyle(document.querySelector('.settings-scale-value'));
       return {
         skinBtnBg: skinBtn.backgroundImage,
         skinBtnBorder: skinBtn.borderColor,
         switchBg: switchTrack.backgroundImage,
         switchBorder: switchTrack.borderColor,
-        scaleFont: scaleVal.fontFamily,
       };
     });
     for (const value of [
@@ -77,7 +75,20 @@ test.describe('unified settings window', () => {
       expect(value).not.toContain('110, 198, 160');
       expect(value).not.toContain('61, 139, 107');
     }
-    expect(appearanceStyles.scaleFont).toContain('Cinzel');
+
+    // The scale readout must actually render with the bundled Cinzel face in every locale.
+    // A computed font-family check would still pass if the font failed to load and fell back.
+    const cdp = await settingsWindow.context().newCDPSession(settingsWindow);
+    await cdp.send('DOM.enable');
+    await cdp.send('CSS.enable');
+    const scaleReadoutFonts = async () => {
+      await settingsWindow.evaluate(() => document.fonts.ready);
+      const { root } = await cdp.send('DOM.getDocument');
+      const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector: '#scale-current-value' });
+      const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+      return fonts.map((font) => font.familyName);
+    };
+    expect(await scaleReadoutFonts()).toEqual(['Cinzel']);
 
     // Keyboard ArrowRight -> Companion tab & zero overflow
     await settingsWindow.locator('#tab-appearance').focus();
@@ -123,7 +134,10 @@ test.describe('unified settings window', () => {
         );
         expect(hasOverflow, `${locale} ${panelId} should not overflow vertically`).toBe(false);
       }
+      await settingsWindow.locator('#tab-appearance').click();
+      expect(await scaleReadoutFonts(), `${locale} scale readout should render in Cinzel`).toEqual(['Cinzel']);
     }
+    await cdp.detach();
 
     // Escape keydown closes the settings window cleanly
     const closedPromise = settingsWindow.waitForEvent('close', { timeout: 10000 });
