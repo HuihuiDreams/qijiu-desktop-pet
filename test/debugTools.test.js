@@ -11,7 +11,9 @@ test('testInteraction defaults to a valid overlay type', () => {
   assert.match(debugSource, /validOverlayTypes\.includes\(type\)/);
 });
 
-test('debug tools expose weather effect console helpers', () => {
+test('debug tools expose weather and low-stat console helpers', () => {
+  assert.match(debugSource, /window\.testHungry = function/);
+  assert.match(debugSource, /window\.testLowQi = function/);
   assert.match(debugSource, /window\.testWeatherClear = function/);
   assert.match(debugSource, /window\.testWeatherCloudy = function/);
   assert.match(debugSource, /window\.testWeatherRain = function \(intensity = 'heavy'\)/);

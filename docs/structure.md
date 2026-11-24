@@ -186,7 +186,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 ├─ src/
 │  ├─ index.html                        # 主宠物窗口 HTML
 │  ├─ index.css                         # 主窗口样式、动画和 UI 布局
-│  ├─ effects.css                       # 天气与粒子动效独立样式
+│  ├─ effects.css                       # 天气、灵气光环与低灵力「灵脉散逸」动效独立样式（纯 GPU transform/opacity，含减弱动态模式回退）
 │  ├─ screensaver.css                   # CP 屏保渲染视觉层：叠加图、暖光与心形粒子动画及减少动态效果回退
 │  ├─ context-menu.css                  # 右键菜单样式；中/日文书法标题保留仅视觉隐藏的文字姓名供读屏访问
 │  ├─ dialog-bubble.css                 # 对话气泡样式
@@ -216,7 +216,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  │  └─ i18n.js                        # zh / en / ja 多语言字典
 │  ├─ pet/
 │  │  ├─ Pet.js                         # 宠物实体状态：位置、方向、数值、动作状态；applyScale 接收当前显示器 scaleRatio，按视觉尺寸差锚定脚底并同步移动目标
-│  │  ├─ PetRenderer.js                 # 宠物 DOM 渲染、交互事件绑定、拖拽入口；体型预览/回滚时复用现有互动叠加图和气泡更新几何位置，保留动画与气泡到期时间
+│  │  ├─ PetRenderer.js                 # 宠物 DOM 渲染、交互事件绑定、拖拽入口与按需挂载/卸载的低灵力「灵脉散逸」图层；体型预览/回滚时复用现有互动叠加图和气泡更新几何位置，保留动画与气泡到期时间
 │  │  └─ SpriteView.js                  # 基于状态的图片帧播放、预加载和切换稳定性处理
 │  ├─ systems/
 │  │  ├─ AmbientDialogueSystem.js       # 闲聊/状态警告/深夜梦话节奏调度：update(deltaMs) 每帧推进两个计时器（app.js 拆分 Phase R3）
@@ -567,7 +567,7 @@ npm run test:font
 - `NurtureSystem` 和 `TimeSystem` 数值衰减、保存和离线变化。
 - `SkinManager`、托盘皮肤扫描和渲染集成。
 - `skinGallery.js` 的封面回退和画廊元数据契约，以及选肤窗 IPC 发件窗口授权、托盘入口和专用 preload。
-- `PetRenderer`、`DialogBubble`、i18n fallback 和 HTML 注入防护。
+- `PetRenderer`（含低灵力图层按需挂载/销毁 Dirty Check 与 `test/lowQiEffectCss.test.js` 动效性能/减弱动态约束）、`DialogBubble`、i18n fallback 和 HTML 注入防护。
 - `updateManager.js` 更新状态、错误分类和菜单状态。
 - `breakReminderService.js` 计时、空闲重置、延后和配置归一化。
 - `src/main/services/PresentationGuard.js` 跨平台全屏检测和打扰守卫边界。
@@ -655,6 +655,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - [ADR-048](./decisions/ADR-048-modern-web-standards-adoption.md)：桌面渲染层现代 Web 标准采纳（Popover API、CSS 锚点定位、相对颜色语法、`content-visibility` 离屏优化、`@starting-style` 离散过渡及 ARIA meter 语义化）。
 - ADR-049（仅存于 main 分支）：主分支向好兆头分支自动同步。
 - [ADR-050](./decisions/ADR-050-unified-settings-window.md)：统一设置窗口与托盘菜单精简（3 Tab 架构、托盘入口收敛、即时自动保存与城市异步校验混合模型、最小权限 preload 与旧独立设置窗下线）。
+- [ADR-051](./decisions/ADR-051-low-qi-dissipation-visual-and-priority.md)：灵力低下「灵脉散逸」视觉效果与低状态优先级（脚下虚晕 + 上升灵烟/柳叶碎芒、按需挂载与纯 GPU 动效、饥饿优先于低灵力）。
 
 ## 6. 维护提示
 

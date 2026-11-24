@@ -382,6 +382,26 @@ window.testHungry = function() {
   }, 5000);
 };
 
+window.testLowQi = function (petId = 'shenjiu', durationMs = 5000) {
+  if (!window.__DEBUG_PETS) {
+    console.warn('[debug] 调试变量未就绪，请确保应用已完全启动');
+    return;
+  }
+
+  const target = petId === 'yueqi' ? window.__DEBUG_PETS.yueqi : window.__DEBUG_PETS.shenjiu;
+  const originalQi = target.stats.qi;
+  target.stats.qi = 10;
+
+  console.log(`[debug] 已将 ${target.nickname || target.id} 的灵力设置为 10，应显示「灵脉散逸」低灵力视觉效果。${durationMs > 0 ? `${durationMs}ms 后自动恢复。` : ''}`);
+
+  if (durationMs > 0) {
+    setTimeout(() => {
+      target.stats.qi = originalQi;
+      console.log(`[debug] 已恢复 ${target.nickname || target.id} 的灵力为 ${originalQi}。`);
+    }, durationMs);
+  }
+};
+
 /**
  * 久坐提醒调试入口。
  * 在 DevTools Console 中调用 testBreakReminder() 即可触发。
@@ -469,7 +489,7 @@ window.clearWeatherEffect = function () {
 };
 
 
-console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testBreakReminder(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
+console.log('[debug] 调试工具已加载。在 DevTools Console 输入 testGreet(), testKiss(), testHug(), testCultivate(), testShareFood(), testHungry(), testLowQi(), testBreakReminder(), testWeatherRain(), testWeatherSnow(), testWeatherWindy(), testWeatherThunderstorm(), debugTaskbarPlatforms() 或 testTaskbarAwareness() 来测试效果。');
 
 } // End of debugToolsEnabled check
 
