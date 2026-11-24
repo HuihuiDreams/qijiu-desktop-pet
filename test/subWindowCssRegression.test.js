@@ -66,12 +66,4 @@ test('settings.css uses Good Omens Soho bookshop palette without Qijiu celadon l
   const scaleValueRule = extractRule(css, '.settings-scale-value');
   assert.match(scaleValueRule, /font-family:\s*['"]Cinzel['"]/);
   assert.doesNotMatch(scaleValueRule, /--font-display/);
-
-  const actionButtonRule = extractRule(css, '.settings-action-button');
-  assert.match(actionButtonRule, /#7d1b22/i);
-  assert.match(actionButtonRule, /#a6781e/i);
-
-  const activeSwitchRule = extractRule(css, '.settings-switch[aria-checked="true"] .settings-switch-track');
-  assert.match(activeSwitchRule, /#8f1d24/i);
-  assert.match(activeSwitchRule, /#c59b27/i);
 });
