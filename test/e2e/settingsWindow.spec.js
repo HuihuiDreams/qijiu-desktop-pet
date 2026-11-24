@@ -32,14 +32,17 @@ test.describe('unified settings window', () => {
     await settingsWindow.waitForLoadState('load', { timeout: 15000 });
     await settingsWindow.waitForTimeout(250);
 
-    // Focused settings window must stay screen-saver past the 180ms pulse so mainWindow never covers it
+    // Focused settings window stays alwaysOnTop (pop-up-menu) past the 180ms pulse so external apps
+    // do not cover it while mainWindow remains above it (screen-saver)
     const focusedTopState = await electronApp.evaluate(() => {
       const wm = process.mainModule.require('./src/main/windows/WindowManager');
       return {
         focused: Boolean(wm.settingsWindow?.isFocused?.()),
         alwaysOnTop: Boolean(wm.settingsWindow?.isAlwaysOnTop?.()),
+        mainAlwaysOnTop: Boolean(wm.mainWindow?.isAlwaysOnTop?.()),
       };
     });
+    expect(focusedTopState.mainAlwaysOnTop).toBe(true);
     if (focusedTopState.focused) {
       expect(focusedTopState.alwaysOnTop).toBe(true);
     }

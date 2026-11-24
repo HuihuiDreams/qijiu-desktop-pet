@@ -238,10 +238,12 @@ class AppLifecycle {
 
   static initSubWindowsAndIpc() {
     statusWindowModule.init({
-      refreshTrayMenu: () => trayManager.refreshTrayMenu()
+      refreshTrayMenu: () => trayManager.refreshTrayMenu(),
+      keepPetWindowOnTop: petWindowModule.keepPetWindowOnTop,
     });
     settingsWindowModule.init({
       flushPetScalePreview: PetScaleService.flushPreview,
+      keepPetWindowOnTop: petWindowModule.keepPetWindowOnTop,
     });
     PetScaleService.init({
       windowManager,

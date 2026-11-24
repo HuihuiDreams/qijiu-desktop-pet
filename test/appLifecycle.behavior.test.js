@@ -61,7 +61,7 @@ function createHarness() {
     skinSelectorWindowModule: createCallableModule('skinSelectorWindowModule', ['init', 'openSkinSelectorWindow', 'sendSkinSelectorData'], calls),
     pomodoroWindowModule: createCallableModule('pomodoroWindowModule', ['init', 'openPomodoroWindow'], calls),
     updateProgressWindowModule: createCallableModule('updateProgressWindowModule', ['init', 'showUpdateProgressWindow', 'setUpdateProgress', 'closeUpdateProgressWindow'], calls),
-    petWindowModule: createCallableModule('petWindowModule', ['init', 'createWindow', 'showExistingInstance'], calls),
+    petWindowModule: createCallableModule('petWindowModule', ['init', 'createWindow', 'showExistingInstance', 'keepPetWindowOnTop', 'onActiveWindowChanged'], calls),
     trayManager: createCallableModule('trayManager', ['init', 'createTray', 'refreshTrayMenu', 'trayT', 'trayText'], calls),
   };
   services.BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS = [30, 60];
@@ -160,6 +160,11 @@ test('AppLifecycle initializes services before creating the pet window and tears
     assert.ok(indexOfCall(harness.calls, 'SettingsService.init') > createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'PetScaleService.init') > createWindowIndex);
     assert.ok(indexOfCall(harness.calls, 'trayManager.createTray') > createWindowIndex);
+
+    const statusInitCall = harness.calls.find(([name]) => name === 'statusWindowModule.init');
+    assert.equal(statusInitCall?.[1]?.keepPetWindowOnTop, harness.services.petWindowModule.keepPetWindowOnTop);
+    const settingsInitCall = harness.calls.find(([name]) => name === 'settingsWindowModule.init');
+    assert.equal(settingsInitCall?.[1]?.keepPetWindowOnTop, harness.services.petWindowModule.keepPetWindowOnTop);
 
     harness.appEvents['second-instance']();
     harness.appEvents['before-quit']();

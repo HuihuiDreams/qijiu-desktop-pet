@@ -24,8 +24,12 @@ function createHarness() {
       this.visibleOnAllWorkspaces = false;
       this.visibleOnAllWorkspacesOptions = null;
       this.listeners = {};
+      this.webContentsListeners = {};
       this.webContents = {
-        on: () => {},
+        on: (event, handler) => {
+          this.webContentsListeners[event] = this.webContentsListeners[event] || [];
+          this.webContentsListeners[event].push(handler);
+        },
         setWindowOpenHandler: () => {},
         send: () => {},
       };
@@ -38,6 +42,11 @@ function createHarness() {
 
     emit(event, ...args) {
       const handlers = this.listeners[event] || [];
+      for (const h of handlers) h(...args);
+    }
+
+    emitWebContents(event, ...args) {
+      const handlers = this.webContentsListeners[event] || [];
       for (const h of handlers) h(...args);
     }
 
@@ -78,6 +87,10 @@ function createHarness() {
     }
 
     moveTop() {}
+
+    isAlwaysOnTop() {
+      return Boolean(this.alwaysOnTop);
+    }
 
     setAlwaysOnTop(flag, level) {
       this.alwaysOnTop = Boolean(flag);
@@ -227,102 +240,155 @@ test('SkinSelectorWindow: activates with screen-saver pulse, skipTransformProces
   });
 });
 
-test('SettingsWindow: activates with screen-saver pulse, skipTransformProcessType, and guarded focus steal', (t) => {
+test('SettingsWindow: activates with pop-up-menu pulse, skipTransformProcessType, guarded focus steal, and pet re-assertion', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
+  const origPlatform = process.platform;
 
-  withMockedModule('../src/main/windows/SettingsWindow', ({ mod, windowManager, focusCalls }) => {
-    mod.init();
+  try {
+    withMockedModule('../src/main/windows/SettingsWindow', ({ mod, windowManager, focusCalls }) => {
+      let keepPetOnTopCalls = 0;
+      mod.init({
+        keepPetWindowOnTop: () => { keepPetOnTopCalls += 1; },
+      });
 
-    const win = mod.openSettingsWindow();
-    assert.equal(windowManager.settingsWindow, win);
+      const win = mod.openSettingsWindow();
+      assert.equal(windowManager.settingsWindow, win);
 
-    // 1. Workspace options and initial top pulse
-    assert.equal(win.visibleOnAllWorkspaces, true);
-    assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
-      visibleOnFullScreen: true,
-      skipTransformProcessType: true,
+      // 1. Workspace options and initial top pulse at pop-up-menu (below screen-saver pet window)
+      assert.equal(win.visibleOnAllWorkspaces, true);
+      assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+        visibleOnFullScreen: true,
+        skipTransformProcessType: true,
+      });
+      assert.equal(win.alwaysOnTop, true);
+      assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
+      assert.ok(keepPetOnTopCalls >= 1, 'opening SettingsWindow must keep pet window above it');
+
+      // 2. Darwin focus theft
+      if (origPlatform === 'darwin') {
+        assert.equal(focusCalls.length, 1);
+        assert.deepEqual(focusCalls[0], { steal: true });
+      }
+
+      // 3. Stays pop-up-menu past 180ms while focused, then drops on blur/minimize/hide
+      t.mock.timers.tick(200);
+      assert.equal(win.alwaysOnTop, true);
+      assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
+
+      const callsBeforeMoved = keepPetOnTopCalls;
+      win.emit('moved');
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 1);
+
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      win.emitWebContents('input-event', {}, { type: 'mouseDown' });
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 2);
+      win.emitWebContents('input-event', {}, { type: 'touchStart' });
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 3);
+
+      win.blur();
+      win.emit('blur');
+      assert.equal(win.alwaysOnTop, false);
+      const callsAfterBlur = keepPetOnTopCalls;
+      win.emit('moved');
+      win.emitWebContents('input-event', {}, { type: 'mouseDown' });
+      assert.equal(keepPetOnTopCalls, callsAfterBlur, 'unpinned SettingsWindow must skip keepPetWindowOnTop on moved/input-event');
+      Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+
+      // 4. Repeated open while focused does not steal focus again
+      win.focus();
+      const callsBeforeFocus = keepPetOnTopCalls;
+      win.emit('focus');
+      assert.equal(keepPetOnTopCalls, callsBeforeFocus + 1);
+      const previousFocusCallsCount = focusCalls.length;
+      mod.openSettingsWindow();
+      assert.equal(focusCalls.length, previousFocusCallsCount);
+
+      // 5. Unfocused native restore pulses to pop-up-menu, keeps pet on top, and falls back after 180ms
+      win.blur();
+      win.emit('blur');
+      const callsBeforeRestore = keepPetOnTopCalls;
+      win.emit('restore');
+      assert.equal(win.alwaysOnTop, true);
+      assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
+      assert.equal(keepPetOnTopCalls, callsBeforeRestore + 1);
+      t.mock.timers.tick(200);
+      assert.equal(win.alwaysOnTop, false);
+
+      // 6. Minimize and hide drop alwaysOnTop immediately
+      win.focus();
+      win.emit('focus');
+      assert.equal(win.alwaysOnTop, true);
+      win.emit('minimize');
+      assert.equal(win.alwaysOnTop, false);
+
+      win.emit('focus');
+      assert.equal(win.alwaysOnTop, true);
+      win.emit('hide');
+      assert.equal(win.alwaysOnTop, false);
+
+      mod.closeSettingsWindow();
     });
-    assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
-
-    // 2. Darwin focus theft
-    if (process.platform === 'darwin') {
-      assert.equal(focusCalls.length, 1);
-      assert.deepEqual(focusCalls[0], { steal: true });
-    }
-
-    // 3. Stays screen-saver past 180ms while focused, then drops on blur/minimize/hide
-    t.mock.timers.tick(200);
-    assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
-
-    win.blur();
-    win.emit('blur');
-    assert.equal(win.alwaysOnTop, false);
-
-    // 4. Repeated open while focused does not steal focus again
-    win.focus();
-    win.emit('focus');
-    const previousFocusCallsCount = focusCalls.length;
-    mod.openSettingsWindow();
-    assert.equal(focusCalls.length, previousFocusCallsCount);
-
-    // 5. Unfocused native restore pulses to screen-saver and falls back after 180ms
-    win.blur();
-    win.emit('blur');
-    win.emit('restore');
-    assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
-    t.mock.timers.tick(200);
-    assert.equal(win.alwaysOnTop, false);
-
-    // 6. Minimize and hide drop alwaysOnTop immediately
-    win.focus();
-    win.emit('focus');
-    assert.equal(win.alwaysOnTop, true);
-    win.emit('minimize');
-    assert.equal(win.alwaysOnTop, false);
-
-    win.emit('focus');
-    assert.equal(win.alwaysOnTop, true);
-    win.emit('hide');
-    assert.equal(win.alwaysOnTop, false);
-
-    mod.closeSettingsWindow();
-  });
+  } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+  }
 });
 
-test('StatusWindow: activates with permanent screen-saver level and skipTransformProcessType', () => {
-  withMockedModule('../src/main/windows/StatusWindow', ({ mod, windowManager, focusCalls }) => {
-    mod.init({
-      refreshTrayMenu: () => {},
-      getStatusData: () => ({ pets: [] }),
+test('StatusWindow: activates with permanent pop-up-menu level, skipTransformProcessType, and pet re-assertion', () => {
+  const origPlatform = process.platform;
+  try {
+    withMockedModule('../src/main/windows/StatusWindow', ({ mod, windowManager, focusCalls }) => {
+      let keepPetOnTopCalls = 0;
+      mod.init({
+        refreshTrayMenu: () => {},
+        getStatusData: () => ({ pets: [] }),
+        keepPetWindowOnTop: () => { keepPetOnTopCalls += 1; },
+      });
+
+      const win = mod.openStatusWindow();
+      assert.equal(windowManager.statusWindow, win);
+
+      // 1. Workspace options
+      assert.equal(win.visibleOnAllWorkspaces, true);
+      assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
+        visibleOnFullScreen: true,
+        skipTransformProcessType: true,
+      });
+
+      // 2. Permanent pop-up-menu level (below screen-saver pet window)
+      assert.equal(win.alwaysOnTop, true);
+      assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
+      assert.ok(keepPetOnTopCalls >= 1, 'opening StatusWindow must keep pet window above it');
+
+      const callsAfterOpen = keepPetOnTopCalls;
+      win.emit('focus');
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 1);
+      win.emit('show');
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 2);
+      win.emit('restore');
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 3);
+      win.emit('moved');
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 4);
+
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      win.emitWebContents('input-event', {}, { type: 'mouseDown' });
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 5);
+      win.emitWebContents('input-event', {}, { type: 'touchStart' });
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 6);
+      Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+
+      // 3. Focus steal guarded
+      if (origPlatform === 'darwin') {
+        assert.equal(focusCalls.length, 1);
+        assert.deepEqual(focusCalls[0], { steal: true });
+      }
+
+      const previousFocusCallsCount = focusCalls.length;
+      mod.openStatusWindow();
+      assert.equal(focusCalls.length, previousFocusCallsCount);
     });
-
-    const win = mod.openStatusWindow();
-    assert.equal(windowManager.statusWindow, win);
-
-    // 1. Workspace options
-    assert.equal(win.visibleOnAllWorkspaces, true);
-    assert.deepEqual(win.visibleOnAllWorkspacesOptions, {
-      visibleOnFullScreen: true,
-      skipTransformProcessType: true,
-    });
-
-    // 2. Permanent screen-saver level
-    assert.equal(win.alwaysOnTop, true);
-    assert.equal(win.alwaysOnTopLevel, 'screen-saver');
-
-    // 3. Focus steal guarded
-    if (process.platform === 'darwin') {
-      assert.equal(focusCalls.length, 1);
-      assert.deepEqual(focusCalls[0], { steal: true });
-    }
-
-    const previousFocusCallsCount = focusCalls.length;
-    mod.openStatusWindow();
-    assert.equal(focusCalls.length, previousFocusCallsCount);
-  });
+  } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+  }
 });
 
 test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', async () => {

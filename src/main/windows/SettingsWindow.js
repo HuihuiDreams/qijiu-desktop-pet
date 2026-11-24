@@ -5,7 +5,7 @@ const PetScaleService = require('../services/PetScaleService');
 
 const SETTINGS_WINDOW_WIDTH = 520;
 const SETTINGS_WINDOW_HEIGHT = 456;
-const SETTINGS_ALWAYS_ON_TOP_LEVEL = 'screen-saver';
+const SETTINGS_ALWAYS_ON_TOP_LEVEL = 'pop-up-menu';
 const SETTINGS_TOP_PULSE_MS = 180;
 const VALID_SETTINGS_TABS = new Set(['appearance', 'companion', 'system']);
 
@@ -48,6 +48,12 @@ function getInitialSettingsWindowBounds() {
   };
 }
 
+function keepPetAboveSettingsWindow() {
+  if (typeof deps.keepPetWindowOnTop === 'function') {
+    deps.keepPetWindowOnTop();
+  }
+}
+
 function clearSettingsWindowTop() {
   if (settingsTopPulseTimer) {
     clearTimeout(settingsTopPulseTimer);
@@ -73,8 +79,9 @@ function pulseSettingsWindowTop() {
   if (typeof win.moveTop === 'function') {
     win.moveTop();
   }
-  // 仅在窗口未实际持有焦点时按 180ms 回落普通层级；聚焦期间持续保持 screen-saver 级，
-  // 防止主透明宠物窗口在 180ms 后或 3 秒置顶巡检时压住正在操作的设置对话框。
+  keepPetAboveSettingsWindow();
+  // 仅在窗口未实际持有焦点时按 180ms 回落普通层级；聚焦期间保持 pop-up-menu 级
+  // （高于普通/全屏应用与状态窗口，同时让位于 screen-saver 级的主桌宠透明窗口及其右键菜单）。
   settingsTopPulseTimer = setTimeout(() => {
     settingsTopPulseTimer = null;
     const currentWin = windowManager.settingsWindow;
@@ -137,6 +144,15 @@ function createSettingsWindow(initialTab = 'appearance') {
   });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
+  win.webContents.on?.('input-event', (_event, input) => {
+    if (
+      process.platform === 'win32'
+      && (input?.type === 'mouseDown' || input?.type === 'touchStart')
+      && (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop())
+    ) {
+      keepPetAboveSettingsWindow();
+    }
+  });
 
   win.on('focus', () => {
     pulseSettingsWindowTop();
@@ -146,6 +162,11 @@ function createSettingsWindow(initialTab = 'appearance') {
   });
   win.on('restore', () => {
     pulseSettingsWindowTop();
+  });
+  win.on('moved', () => {
+    if (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop()) {
+      keepPetAboveSettingsWindow();
+    }
   });
   win.on('blur', () => {
     clearSettingsWindowTop();
@@ -191,6 +212,7 @@ function openSettingsWindow(initialTab = 'appearance') {
   }
   pulseSettingsWindowTop();
   win.focus();
+  keepPetAboveSettingsWindow();
 
   if (wasAlreadyCreated && win.webContents && !win.webContents.isDestroyed?.()) {
     win.webContents.send('settings-switch-tab', targetTab);

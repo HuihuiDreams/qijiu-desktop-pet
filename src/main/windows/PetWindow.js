@@ -54,6 +54,13 @@ function getPetSubWindows() {
   ];
 }
 
+function getSubWindowsAbovePet() {
+  return [
+    windowManager.pomodoroWindow,
+    windowManager.skinSelectorWindow,
+  ];
+}
+
 /**
  * 全屏 RDP 期间隐藏原生透明窗口和置顶子窗口，采样暂时失败时保留保护。
  * 不修改 renderer 的手动/会议/番茄钟隐藏状态。
@@ -122,7 +129,7 @@ function keepPetWindowOnTop() {
   windowManager.mainWindow.moveTop();
 
   const visibleTopWindows = [];
-  for (const subWin of getPetSubWindows()) {
+  for (const subWin of getSubWindowsAbovePet()) {
     if (!subWin || (typeof subWin.isDestroyed === 'function' ? subWin.isDestroyed() : false)) {
       continue;
     }

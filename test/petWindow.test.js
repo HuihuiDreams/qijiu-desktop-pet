@@ -299,74 +299,84 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     windowManager.settingsWindow = null;
   });
 
-  await t.test('keepPetWindowOnTop re-raises visible alwaysOnTop sub-windows and skips hidden/unpinned', () => {
+  await t.test('keepPetWindowOnTop re-raises above-pet sub-windows in focus order and keeps status/settings below pet', () => {
     windowManager.mainWindow = new MockBrowserWindow({});
     const moveTopCalls = [];
     windowManager.mainWindow.moveTop = () => { moveTopCalls.push('mainWindow'); };
 
-    // Visible & always-on-top sub-window (e.g. statusWindow)
+    // Visible & always-on-top statusWindow and settingsWindow must stay below mainWindow
     windowManager.statusWindow = new MockBrowserWindow({});
     windowManager.statusWindow.visible = true;
     windowManager.statusWindow.alwaysOnTop = true;
     windowManager.statusWindow.moveTop = () => { moveTopCalls.push('statusWindow'); };
 
-    // Visible & always-on-top sub-window (e.g. pinned pomodoroWindow)
+    windowManager.settingsWindow = new MockBrowserWindow({});
+    windowManager.settingsWindow.visible = true;
+    windowManager.settingsWindow.alwaysOnTop = true;
+    windowManager.settingsWindow.moveTop = () => { moveTopCalls.push('settingsWindow'); };
+
+    // Visible & always-on-top above-pet sub-windows (pomodoroWindow & skinSelectorWindow)
     windowManager.pomodoroWindow = new MockBrowserWindow({});
     windowManager.pomodoroWindow.visible = true;
     windowManager.pomodoroWindow.alwaysOnTop = true;
     windowManager.pomodoroWindow.moveTop = () => { moveTopCalls.push('pomodoroWindow'); };
 
-    // Hidden sub-window (visible = false)
     windowManager.skinSelectorWindow = new MockBrowserWindow({});
-    windowManager.skinSelectorWindow.visible = false;
+    windowManager.skinSelectorWindow.visible = true;
     windowManager.skinSelectorWindow.alwaysOnTop = true;
     windowManager.skinSelectorWindow.moveTop = () => { moveTopCalls.push('skinSelectorWindow'); };
 
-    // Unpinned sub-window (alwaysOnTop = false)
-    windowManager.settingsWindow = new MockBrowserWindow({});
-    windowManager.settingsWindow.visible = true;
-    windowManager.settingsWindow.alwaysOnTop = false;
-    windowManager.settingsWindow.moveTop = () => { moveTopCalls.push('settingsWindow'); };
-
     PetWindow.keepPetWindowOnTop();
 
-    assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'skinSelectorWindow']);
 
-    // Status was focused most recently; it must stay above the pinned pomodoro,
+    // Skin selector was focused most recently; it must stay above pinned pomodoro,
     // including after focus leaves the application.
     moveTopCalls.length = 0;
-    windowManager.statusWindow.focused = true;
-    windowManager.statusWindow.trigger('focus');
+    windowManager.skinSelectorWindow.focused = true;
+    windowManager.skinSelectorWindow.trigger('focus');
     PetWindow.keepPetWindowOnTop();
-    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'statusWindow']);
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'skinSelectorWindow']);
 
     moveTopCalls.length = 0;
-    windowManager.statusWindow.focused = false;
+    windowManager.skinSelectorWindow.focused = false;
     PetWindow.keepPetWindowOnTop();
-    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'statusWindow']);
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'pomodoroWindow', 'skinSelectorWindow']);
 
     moveTopCalls.length = 0;
     windowManager.pomodoroWindow.trigger('focus');
     PetWindow.keepPetWindowOnTop();
-    assert.deepEqual(moveTopCalls, ['mainWindow', 'statusWindow', 'pomodoroWindow']);
+    assert.deepEqual(moveTopCalls, ['mainWindow', 'skinSelectorWindow', 'pomodoroWindow']);
+
+    // Hidden or unpinned above-pet sub-windows are skipped
+    moveTopCalls.length = 0;
+    windowManager.skinSelectorWindow.visible = false;
+    windowManager.pomodoroWindow.alwaysOnTop = false;
+    PetWindow.keepPetWindowOnTop();
+    assert.deepEqual(moveTopCalls, ['mainWindow']);
   });
 
   await t.test('focus before the first watcher tick is retained after leaving the app', () => {
     windowManager.mainWindow = new MockBrowserWindow({});
     windowManager.statusWindow = new MockBrowserWindow({});
     windowManager.pomodoroWindow = new MockBrowserWindow({});
-    windowManager.skinSelectorWindow = null;
+    windowManager.skinSelectorWindow = new MockBrowserWindow({});
     windowManager.settingsWindow = null;
     const calls = [];
-    for (const [name, win] of [['status', windowManager.statusWindow], ['pomodoro', windowManager.pomodoroWindow]]) {
+    for (const [name, win] of [
+      ['status', windowManager.statusWindow],
+      ['pomodoro', windowManager.pomodoroWindow],
+      ['skinSelector', windowManager.skinSelectorWindow],
+    ]) {
       win.visible = true;
       win.alwaysOnTop = true;
       win.moveTop = () => calls.push(name);
     }
     mockAppListeners['browser-window-focus']({}, windowManager.pomodoroWindow);
+    mockAppListeners['browser-window-focus']({}, windowManager.skinSelectorWindow);
     mockAppListeners['browser-window-focus']({}, windowManager.statusWindow);
     PetWindow.keepPetWindowOnTop();
-    assert.deepEqual(calls, ['pomodoro', 'status']);
+    assert.deepEqual(calls, ['pomodoro', 'skinSelector']);
   });
 
   await t.test('fullscreen RDP hides the pet and prevents periodic or second-launch promotion until leaving RDP', () => {
