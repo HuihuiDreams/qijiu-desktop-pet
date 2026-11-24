@@ -201,7 +201,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  ├─ pomodoro.css                      # 番茄钟窗口差异样式，复用 .xianxia-panel 基类与设计令牌，包含双层同心细圈与天使金星芒表盘（含减弱动态模式）与天使白羽/恶魔黑羽飘落、印章及波纹仪式动效
 │  ├─ pomodoroWindow.js                 # 番茄钟窗口渲染、输入、置顶切换、完成态（天使白羽/恶魔黑羽飘落仪式）与 Web Audio 古董书店黄铜门铃音效（`playAntiqueShopBellChime`）
 │  ├─ settings.html                     # 统一设置窗口 HTML（520×456，3 标签页），使用严格 CSP
-│  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 基类与设计令牌，包含开关、分段控件、滑块、水墨滚动条与减动效覆盖
+│  ├─ settings.css                      # 统一设置窗口样式，复用 .xianxia-panel 古籍书店基类与好兆头设计令牌，包含开关、分段控件、滑块、黄铜滚动条与减动效覆盖
 │  ├─ settingsWindow.js                 # 统一设置窗口渲染、Roving tabindex、滑块实时预览/提交（拖动期间不接受快照回写）、按控件串行的设置提交与 IPC 失败回读快照、城市异步校验与状态同步
 │  ├─ skin-selector.html                # 皮肤画廊独立窗口 HTML，严格 CSP 允许 pet-asset 图片
 │  ├─ skin-selector.css                 # 皮肤画廊网格与修仙面板差异样式

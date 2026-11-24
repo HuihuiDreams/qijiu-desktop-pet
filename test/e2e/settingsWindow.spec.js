@@ -55,6 +55,30 @@ test.describe('unified settings window', () => {
     });
     expect(tab1Overflow).toBe(false);
 
+    // Computed styles on Appearance controls must reflect Good Omens claret/gold rather than Qijiu jade-green
+    const appearanceStyles = await settingsWindow.evaluate(() => {
+      const skinBtn = getComputedStyle(document.getElementById('settings-open-skin-button'));
+      const switchTrack = getComputedStyle(document.querySelector('#window-awareness-switch .settings-switch-track'));
+      const scaleVal = getComputedStyle(document.querySelector('.settings-scale-value'));
+      return {
+        skinBtnBg: skinBtn.backgroundImage,
+        skinBtnBorder: skinBtn.borderColor,
+        switchBg: switchTrack.backgroundImage,
+        switchBorder: switchTrack.borderColor,
+        scaleFont: scaleVal.fontFamily,
+      };
+    });
+    for (const value of [
+      appearanceStyles.skinBtnBg,
+      appearanceStyles.skinBtnBorder,
+      appearanceStyles.switchBg,
+      appearanceStyles.switchBorder,
+    ]) {
+      expect(value).not.toContain('110, 198, 160');
+      expect(value).not.toContain('61, 139, 107');
+    }
+    expect(appearanceStyles.scaleFont).toContain('Cinzel');
+
     // Keyboard ArrowRight -> Companion tab & zero overflow
     await settingsWindow.locator('#tab-appearance').focus();
     await settingsWindow.keyboard.press('ArrowRight');
@@ -73,6 +97,33 @@ test.describe('unified settings window', () => {
       return panel.scrollHeight > panel.clientHeight;
     });
     expect(tab3Overflow).toBe(false);
+
+    // Verify zero vertical overflow across en and ja locales on every tab as well
+    for (const locale of ['en', 'ja']) {
+      await settingsWindow.locator('#tab-system').click();
+      await settingsWindow.locator(`#locale-buttons button[data-locale="${locale}"]`).click();
+      await expect.poll(
+        () => settingsWindow.evaluate(() => document.documentElement.dataset.locale || document.documentElement.lang),
+        { message: `locale should switch to ${locale}` },
+      ).toBe(locale);
+
+      for (const [tabId, panelId] of [
+        ['tab-appearance', 'panel-appearance'],
+        ['tab-companion', 'panel-companion'],
+        ['tab-system', 'panel-system'],
+      ]) {
+        await settingsWindow.locator(`#${tabId}`).click();
+        await expect(settingsWindow.locator(`#${tabId}`)).toHaveAttribute('aria-selected', 'true');
+        const hasOverflow = await settingsWindow.evaluate(
+          (id) => {
+            const panel = document.getElementById(id);
+            return panel.scrollHeight > panel.clientHeight;
+          },
+          panelId,
+        );
+        expect(hasOverflow, `${locale} ${panelId} should not overflow vertically`).toBe(false);
+      }
+    }
 
     // Escape keydown closes the settings window cleanly
     const closedPromise = settingsWindow.waitForEvent('close', { timeout: 10000 });

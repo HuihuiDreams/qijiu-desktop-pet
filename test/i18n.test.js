@@ -75,6 +75,29 @@ test('pet interaction menu text aligns across locales for yueqi and shenjiu', ()
   assert.equal(DICTIONARY.ja.petShenjiu, '🤚 悪魔の寵愛');
 });
 
+test('Japanese context menu labels are unified as 5-character noun phrases', () => {
+  const expected = {
+    feed: '🥐 極上の食事',
+    meditate: '✨ 奇跡の発動',
+    meditateYueqi: '🪴 植物の世話',
+    meditateShenjiu: '📖 古書の熟読',
+    petYueqi: '🤚 天使の慈愛',
+    petShenjiu: '🤚 悪魔の寵愛',
+    rest: '💤 静かな休息',
+    status: '📊 状態の確認',
+  };
+
+  for (const [key, value] of Object.entries(expected)) {
+    assert.equal(DICTIONARY.ja[key], value);
+    const labelText = DICTIONARY.ja[key].split(' ').slice(1).join(' ');
+    assert.equal(
+      Array.from(labelText).length,
+      5,
+      `Expected Japanese menu label "${labelText}" (${key}) to be 5 characters`,
+    );
+  }
+});
+
 test('classic "Let there be light!" dialogue is integrated in cultivate and morning across locales', () => {
   const { I18N } = require('../src/data/i18n.js');
   const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
@@ -144,6 +167,30 @@ test('classic nightingale dialogues are integrated into hug and linked dream acr
 
   // fallback in dialogues.js
   assert.ok(dialoguesSource.includes('谁说没有夜莺了'));
+});
+
+test('classic "Temptation accomplished." dialogue is integrated into shareFood across locales', () => {
+  const { I18N } = require('../src/data/i18n.js');
+  const dialoguesSource = fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8');
+
+  // en keeps the original English quote
+  assert.ok(I18N.en.dialogues.shareFood.yueqi.some((l) => l.includes('Let me tempt you to a spot of lunch')));
+  assert.ok(I18N.en.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished.')));
+
+  // zh and ja use pure localized translations without mixing English
+  assert.ok(I18N.zh.dialogues.shareFood.yueqi.some((l) => l.includes('诱惑你一下')));
+  assert.ok(I18N.zh.dialogues.shareFood.shenjiu.some((l) => l.includes('诱惑成功！')));
+  assert.equal(I18N.zh.dialogues.shareFood.yueqi.some((l) => l.includes('Temptation accomplished')), false);
+  assert.equal(I18N.zh.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished')), false);
+
+  assert.ok(I18N.ja.dialogues.shareFood.yueqi.some((l) => l.includes('誘惑してやろうか')));
+  assert.ok(I18N.ja.dialogues.shareFood.shenjiu.some((l) => l.includes('誘惑完了、だね！')));
+  assert.equal(I18N.ja.dialogues.shareFood.yueqi.some((l) => l.includes('Temptation accomplished')), false);
+  assert.equal(I18N.ja.dialogues.shareFood.shenjiu.some((l) => l.includes('Temptation accomplished')), false);
+
+  // fallback in dialogues.js
+  assert.ok(dialoguesSource.includes('让我用一顿美餐诱惑你一下如何，天使？'));
+  assert.ok(dialoguesSource.includes('诱惑成功！那我就不客气地享用啦，亲爱的。'));
 });
 
 

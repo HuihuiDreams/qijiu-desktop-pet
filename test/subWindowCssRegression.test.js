@@ -45,3 +45,33 @@ test('update progress checking state keeps the fill width the sweep keyframes we
   // translateX 的百分比相对填充自身宽度，换算依据是 38%
   assert.match(readSource('src/update-progress.js'), /mode === 'checking' \? '38%'/);
 });
+
+test('settings.css uses Good Omens Soho bookshop palette without Qijiu celadon literals and renders scale in Roman serif numerals', () => {
+  const css = readSource('src/settings.css');
+
+  const forbiddenQijiuLiterals = [
+    /110\s*,\s*198\s*,\s*160/,
+    /61\s*,\s*139\s*,\s*107/,
+    /232\s*,\s*244\s*,\s*239/,
+    /84\s*,\s*106\s*,\s*123/,
+    /30\s*,\s*42\s*,\s*54/,
+    /#6ec6a0/i,
+    /#3d8b6b/i,
+    /#e8f4ef/i,
+  ];
+  for (const pattern of forbiddenQijiuLiterals) {
+    assert.doesNotMatch(css, pattern, `settings.css must not retain Qijiu color ${pattern}`);
+  }
+
+  const scaleValueRule = extractRule(css, '.settings-scale-value');
+  assert.match(scaleValueRule, /font-family:\s*['"]Cinzel['"]/);
+  assert.doesNotMatch(scaleValueRule, /--font-display/);
+
+  const actionButtonRule = extractRule(css, '.settings-action-button');
+  assert.match(actionButtonRule, /#7d1b22/i);
+  assert.match(actionButtonRule, /#a6781e/i);
+
+  const activeSwitchRule = extractRule(css, '.settings-switch[aria-checked="true"] .settings-switch-track');
+  assert.match(activeSwitchRule, /#8f1d24/i);
+  assert.match(activeSwitchRule, /#c59b27/i);
+});
