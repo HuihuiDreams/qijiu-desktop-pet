@@ -275,15 +275,24 @@ test('SettingsWindow: activates with pop-up-menu pulse, skipTransformProcessType
       assert.equal(win.alwaysOnTop, true);
       assert.equal(win.alwaysOnTopLevel, 'pop-up-menu');
 
+      // macOS relies on window levels; `moved` aliases `move` there, so no per-move re-assertion
       const callsBeforeMoved = keepPetOnTopCalls;
+      Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
       win.emit('moved');
-      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 1);
+      win.emitWebContents('input-event', {}, { type: 'mouseDown' });
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved, 'darwin must skip keepPetWindowOnTop on moved/input-event');
 
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      win.emit('moved');
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 1);
       win.emitWebContents('input-event', {}, { type: 'mouseDown' });
       assert.equal(keepPetOnTopCalls, callsBeforeMoved + 2);
       win.emitWebContents('input-event', {}, { type: 'touchStart' });
       assert.equal(keepPetOnTopCalls, callsBeforeMoved + 3);
+      for (const type of ['mouseMove', 'mouseUp', 'keyDown']) {
+        win.emitWebContents('input-event', {}, { type });
+      }
+      assert.equal(keepPetOnTopCalls, callsBeforeMoved + 3, 'only mouseDown/touchStart may re-assert pet window');
 
       win.blur();
       win.emit('blur');
@@ -366,14 +375,24 @@ test('StatusWindow: activates with permanent pop-up-menu level, skipTransformPro
       assert.equal(keepPetOnTopCalls, callsAfterOpen + 2);
       win.emit('restore');
       assert.equal(keepPetOnTopCalls, callsAfterOpen + 3);
+
+      // macOS relies on window levels; `moved` aliases `move` there, so no per-move re-assertion
+      Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
       win.emit('moved');
-      assert.equal(keepPetOnTopCalls, callsAfterOpen + 4);
+      win.emitWebContents('input-event', {}, { type: 'mouseDown' });
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 3, 'darwin must skip keepPetWindowOnTop on moved/input-event');
 
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      win.emit('moved');
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 4);
       win.emitWebContents('input-event', {}, { type: 'mouseDown' });
       assert.equal(keepPetOnTopCalls, callsAfterOpen + 5);
       win.emitWebContents('input-event', {}, { type: 'touchStart' });
       assert.equal(keepPetOnTopCalls, callsAfterOpen + 6);
+      for (const type of ['mouseMove', 'mouseUp', 'keyDown']) {
+        win.emitWebContents('input-event', {}, { type });
+      }
+      assert.equal(keepPetOnTopCalls, callsAfterOpen + 6, 'only mouseDown/touchStart may re-assert pet window');
       Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
 
       // 3. Focus steal guarded
