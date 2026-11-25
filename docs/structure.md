@@ -234,7 +234,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  │  └─ WindowAwarenessSystem.js       # 缓存活动窗口平台，供移动系统 O(1) 读取
 │  ├─ ui/
 │  │  ├─ BreakReminderPresenter.js      # 久坐提醒展示编排：取消进行中的自发互动、瞬移面对面并同步 targetX/targetY、暂停移动、按时序显示气泡、20秒自动消失，暴露 isActive()（app.js 拆分 Phase R3）
-│  │  ├─ ContextMenu.js                 # 渲染进程右键菜单（含角色专属动作标签、属性效果徽标与低状态优先高亮）
+│  │  ├─ ContextMenu.js                 # 渲染进程右键菜单（含角色专属动作标签与低状态提示高亮）
 │  │  ├─ DialogBubble.js                # 对话气泡
 │  │  ├─ StatusBar.js                   # 主窗口内嵌状态条
 │  │  ├─ WeatherParticleLayer.js        # 局部天气粒子数量限制与节点管理：输入不变时复用节点，配置变化时清除并重建，隐藏或禁用时清理；容器尺寸与 --weather-effect-scale 同步融合显示器 DPI 与宠物体型缩放倍率（50%~150%）

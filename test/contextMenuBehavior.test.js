@@ -504,18 +504,17 @@ test('src/index.html context menu uses popover="manual" and semantic button item
   }
 });
 
-test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint with urgency cues', () => {
+test('ContextMenu.show shows .menu-item-hint only for low stats and hides it otherwise', () => {
   const originalDocument = global.document;
   const originalWindow = global.window;
 
-  function makeStructuredItem(action, labelI18n, hintI18n) {
+  function makeStructuredItem(action, labelI18n, hasHint) {
     const label = createElement({
       classNames: ['menu-item-label'],
       dataset: labelI18n ? { i18n: labelI18n } : {},
     });
-    const hint = hintI18n
-      ? createElement({ classNames: ['menu-item-hint'], dataset: { i18n: hintI18n } })
-      : null;
+    const hint = hasHint ? createElement({ classNames: ['menu-item-hint'] }) : null;
+    if (hint) hint.hidden = true;
     const item = createElement({
       classNames: ['menu-item'],
       dataset: { action },
@@ -531,11 +530,11 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
   }
 
   const structured = {
-    feed: makeStructuredItem('feed', 'feed', 'menuHintFeed'),
-    meditate: makeStructuredItem('meditate', 'meditate', 'menuHintMeditate'),
-    pet: makeStructuredItem('pet', null, 'menuHintPet'),
-    rest: makeStructuredItem('rest', 'rest', 'menuHintRest'),
-    status: makeStructuredItem('status', 'status', null),
+    feed: makeStructuredItem('feed', 'feed', true),
+    meditate: makeStructuredItem('meditate', 'meditate', true),
+    pet: makeStructuredItem('pet', null, false),
+    rest: makeStructuredItem('rest', 'rest', true),
+    status: makeStructuredItem('status', 'status', false),
   };
   const items = Object.values(structured).map((s) => s.item);
   const i18nNodes = items.flatMap((it) => it.children.filter((c) => c.dataset?.i18n));
@@ -570,13 +569,9 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
     petShenjiu: '🤚 恶魔偏宠',
     rest: '💤 闭目小憩',
     status: '📊 查看状态',
-    menuHintFeed: '饱腹+',
-    menuHintMeditate: '奇迹+',
-    menuHintPet: '默契+',
-    menuHintRest: '心情+',
-    menuHintFeedUrgent: '偏低 · 饱腹+',
-    menuHintMeditateUrgent: '偏低 · 奇迹+',
-    menuHintRestUrgent: '偏低 · 心情+',
+    menuHintFeedUrgent: '饱腹偏低',
+    menuHintMeditateUrgent: '奇迹能量偏低',
+    menuHintRestUrgent: '心情偏低',
   };
   global.window = {
     innerWidth: 800,
@@ -598,10 +593,12 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
       isLowMood: () => false,
     }), 100, 100);
     assert.equal(structured.meditate.label.textContent, '🪴 照料植物');
-    assert.equal(structured.meditate.hint.textContent, '偏低 · 奇迹+');
+    assert.equal(structured.meditate.hint.textContent, '奇迹能量偏低');
+    assert.equal(structured.meditate.hint.hidden, false);
     assert.equal(structured.meditate.item.classList.contains('menu-item--urgent'), true);
     assert.equal(structured.meditate.item.getAttribute('data-urgent'), 'true');
-    assert.equal(structured.feed.hint.textContent, '饱腹+');
+    assert.equal(structured.feed.hint.textContent, '');
+    assert.equal(structured.feed.hint.hidden, true);
     assert.equal(structured.feed.item.classList.contains('menu-item--urgent'), false);
 
     // 2. Low Mood + too hungry to rest (hunger < 15): feed is urgent, rest urgency suppressed
@@ -613,12 +610,15 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
       isLowMood: () => true,
     }), 100, 100);
     assert.equal(structured.meditate.label.textContent, '📖 静心研读');
-    assert.equal(structured.meditate.hint.textContent, '奇迹+');
+    // meditate was urgent on the previous open; its hint must be cleared and hidden again
+    assert.equal(structured.meditate.hint.textContent, '');
+    assert.equal(structured.meditate.hint.hidden, true);
     assert.equal(structured.meditate.item.classList.contains('menu-item--urgent'), false);
     assert.equal(structured.feed.item.classList.contains('menu-item--urgent'), true);
-    assert.equal(structured.feed.hint.textContent, '偏低 · 饱腹+');
+    assert.equal(structured.feed.hint.textContent, '饱腹偏低');
+    assert.equal(structured.feed.hint.hidden, false);
     assert.equal(structured.rest.item.classList.contains('menu-item--urgent'), false);
-    assert.equal(structured.rest.hint.textContent, '心情+');
+    assert.equal(structured.rest.hint.hidden, true);
 
     // 3. Low Mood + enough hunger: rest is urgent
     cm.show(createPet({
@@ -629,7 +629,8 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
       isLowMood: () => true,
     }), 100, 100);
     assert.equal(structured.rest.item.classList.contains('menu-item--urgent'), true);
-    assert.equal(structured.rest.hint.textContent, '偏低 · 心情+');
+    assert.equal(structured.rest.hint.textContent, '心情偏低');
+    assert.equal(structured.rest.hint.hidden, false);
 
     // 4. Busy pet: urgency suppressed and items disabled
     cm.show(createPet({
@@ -644,8 +645,8 @@ test('ContextMenu.show updates structured .menu-item-label and .menu-item-hint w
       assert.equal(structured[action].item.classList.contains('menu-item--urgent'), false);
       assert.equal(structured[action].item.getAttribute('data-urgent'), null);
       assert.equal(structured[action].item.getAttribute('aria-disabled'), 'true');
+      assert.equal(structured[action].hint.hidden, true);
     }
-    assert.equal(structured.meditate.hint.textContent, '奇迹+');
   } finally {
     global.document = originalDocument;
     global.window = originalWindow;

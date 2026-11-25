@@ -183,12 +183,6 @@ button.menu-item {
   border-color: rgb(from var(--color-aziraphale-deep, #8c6d19) r g b / 0.45);
 }
 
-.menu-item.disabled .menu-item-hint,
-.menu-item[aria-disabled="true"] .menu-item-hint {
-  color: var(--menu-disabled-text);
-  background: transparent;
-  border-color: rgb(from var(--color-brass, #b38743) r g b / 0.18);
-}
 
 button.menu-item:focus-visible,
 .menu-item:focus-visible {

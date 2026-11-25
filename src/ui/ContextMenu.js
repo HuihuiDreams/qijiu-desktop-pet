@@ -214,7 +214,7 @@ class ContextMenu {
       return fallback;
     };
 
-    // 先刷新带 data-i18n 属性的菜单标签与提示，再按当前角色覆写个性化条目与紧急状态
+    // 先刷新带 data-i18n 属性的菜单标签，再按当前角色覆写个性化条目与紧急状态
     this.menuEl.querySelectorAll('[data-i18n]').forEach(el => {
       if (window.t) el.textContent = window.t(el.dataset.i18n);
     });
@@ -244,36 +244,14 @@ class ContextMenu {
     const minRestHunger = ((typeof CONFIG !== 'undefined' && Number.isFinite(CONFIG?.REST_HUNGER_COST)) ? CONFIG.REST_HUNGER_COST : 10) + 5;
     const canRest = pet.stats?.hunger === undefined || Number(pet.stats.hunger) >= minRestHunger;
 
-    const actionHints = {
-      feed: {
-        urgent: !isBusy && isHungry,
-        key: 'menuHintFeed',
-        fallback: '饱腹+',
-        urgentKey: 'menuHintFeedUrgent',
-        urgentFallback: '偏低 · 饱腹+',
-      },
-      meditate: {
-        urgent: !isBusy && isLowQi,
-        key: 'menuHintMeditate',
-        fallback: '奇迹+',
-        urgentKey: 'menuHintMeditateUrgent',
-        urgentFallback: '偏低 · 奇迹+',
-      },
-      pet: {
-        urgent: false,
-        key: 'menuHintPet',
-        fallback: '默契+',
-      },
-      rest: {
-        urgent: !isBusy && isLowMood && canRest,
-        key: 'menuHintRest',
-        fallback: '心情+',
-        urgentKey: 'menuHintRestUrgent',
-        urgentFallback: '偏低 · 心情+',
-      },
+    // 动作往往同时影响多项数值，菜单只在数值偏低时标出偏低的那一项，不列举动作效果
+    const lowStatHints = {
+      feed: { urgent: !isBusy && isHungry, key: 'menuHintFeedUrgent', fallback: '饱腹偏低' },
+      meditate: { urgent: !isBusy && isLowQi, key: 'menuHintMeditateUrgent', fallback: '奇迹能量偏低' },
+      rest: { urgent: !isBusy && isLowMood && canRest, key: 'menuHintRestUrgent', fallback: '心情偏低' },
     };
 
-    // 更新禁用状态、ARIA 状态、效果徽标与低状态引导高亮
+    // 更新禁用状态、ARIA 状态与低状态引导高亮
     this.menuEl.querySelectorAll('.menu-item').forEach(item => {
       item.classList.remove('disabled');
       item.classList.remove('menu-item--urgent');
@@ -283,18 +261,18 @@ class ContextMenu {
       }
 
       const action = item.dataset?.action;
-      const hintConfig = action ? actionHints[action] : null;
-      if (hintConfig) {
-        const hintEl = item.querySelector?.('.menu-item-hint');
-        if (hintConfig.urgent) {
-          item.classList.add('menu-item--urgent');
-          item.setAttribute?.('data-urgent', 'true');
-          if (hintEl) {
-            hintEl.textContent = translate(hintConfig.urgentKey, hintConfig.urgentFallback);
-          }
-        } else if (hintEl) {
+      const hintConfig = action ? lowStatHints[action] : null;
+      const hintEl = item.querySelector?.('.menu-item-hint');
+      if (hintConfig?.urgent) {
+        item.classList.add('menu-item--urgent');
+        item.setAttribute?.('data-urgent', 'true');
+        if (hintEl) {
           hintEl.textContent = translate(hintConfig.key, hintConfig.fallback);
+          hintEl.hidden = false;
         }
+      } else if (hintEl) {
+        hintEl.textContent = '';
+        hintEl.hidden = true;
       }
     });
 

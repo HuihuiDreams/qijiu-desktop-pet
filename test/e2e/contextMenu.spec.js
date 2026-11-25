@@ -82,29 +82,26 @@ test.describe('context menu', () => {
     expect(actions).toContain('pet');
   });
 
-  test('context menu badges, low-qi urgency, and status window tooltips fit without overflow across zh/en/ja', async () => {
+  test('context menu low-qi hint, hidden healthy hints, and status window tooltips fit without overflow across zh/en/ja', async () => {
     const expectedByLocale = {
       zh: {
         meditateYueqi: '🪴 照料植物',
         meditateShenjiu: '📖 静心研读',
-        hintNormal: '奇迹+',
-        hintUrgent: '偏低 · 奇迹+',
+        hintUrgent: '奇迹能量偏低',
         tipYueqiNeedle: '照料植物',
         tipShenjiuNeedle: '静心研读',
       },
       en: {
         meditateYueqi: '🪴 Tending Plants',
         meditateShenjiu: '📖 Reading',
-        hintNormal: 'Miracle+',
-        hintUrgent: 'Low · Miracle+',
+        hintUrgent: 'Low Miracle Energy',
         tipYueqiNeedle: 'Tending Plants',
         tipShenjiuNeedle: 'Reading',
       },
       ja: {
         meditateYueqi: '🪴 植物の世話',
         meditateShenjiu: '📖 古書の熟読',
-        hintNormal: '奇跡+',
-        hintUrgent: '不足 · 奇跡+',
+        hintUrgent: '奇跡の力が低め',
         tipYueqiNeedle: '植物の世話',
         tipShenjiuNeedle: '古書の熟読',
       },
@@ -213,12 +210,14 @@ test.describe('context menu', () => {
         return {
           labelText: med.querySelector('.menu-item-label')?.textContent,
           hintText: med.querySelector('.menu-item-hint')?.textContent,
+          hintHidden: med.querySelector('.menu-item-hint')?.hidden,
           urgent: med.getAttribute('data-urgent'),
           menuOverflowX: menu.scrollWidth > menu.clientWidth + 1,
         };
       });
       expect(shenjiuMenu.labelText).toBe(expected.meditateShenjiu);
-      expect(shenjiuMenu.hintText).toBe(expected.hintNormal);
+      expect(shenjiuMenu.hintText).toBe('');
+      expect(shenjiuMenu.hintHidden).toBe(true);
       expect(shenjiuMenu.urgent).toBeNull();
       expect(shenjiuMenu.menuOverflowX).toBe(false);
 

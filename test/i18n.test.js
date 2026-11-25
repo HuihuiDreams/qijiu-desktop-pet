@@ -202,7 +202,7 @@ test('classic "Temptation accomplished." exchange is a shareFood pair in every l
   }
 });
 
-test('menu effect hints, status tooltips, and low-stat hints exist across locales and lowQi points to plants/reading', () => {
+test('menu low-stat hints and status tooltips exist across locales and lowQi points to plants/reading', () => {
   const { I18N } = require('../src/data/i18n.js');
   const vm = require('node:vm');
   const context = { window: {} };
@@ -210,10 +210,6 @@ test('menu effect hints, status tooltips, and low-stat hints exist across locale
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', 'data', 'dialogues.js'), 'utf8'), context);
 
   const requiredHintKeys = [
-    'menuHintFeed',
-    'menuHintMeditate',
-    'menuHintPet',
-    'menuHintRest',
     'menuHintFeedUrgent',
     'menuHintMeditateUrgent',
     'menuHintRestUrgent',
