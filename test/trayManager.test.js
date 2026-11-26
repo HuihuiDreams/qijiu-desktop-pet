@@ -237,4 +237,21 @@ test('TrayManager - Streamlined Menu Coverage', async (t) => {
     assert.equal(pauseItem.enabled, false);
     assert.equal(hideItem.enabled, false);
   });
+
+  await t.test('status panel label treats a panel hidden for fullscreen RDP as open', () => {
+    const deps = createMockDeps();
+    let hiddenForRdp = true;
+    const statusWindow = { isDestroyed: () => false, isVisible: () => false };
+    deps.windowManager = { statusWindow };
+    deps.isHiddenForFullscreenRdp = (win) => win === statusWindow && hiddenForRdp;
+    TrayManager.init(deps);
+    TrayManager.createTray();
+    const findLabel = (key) => mockLastMenu.find(i => i.label && i.label.includes(key));
+    assert.ok(findLabel('trayHideStatusPanel'), 'RDP-hidden panel must offer "hide" to match the renderer toggle');
+
+    hiddenForRdp = false;
+    TrayManager.refreshTrayMenu();
+    assert.ok(findLabel('trayShowStatusPanel'));
+    assert.equal(findLabel('trayHideStatusPanel'), undefined);
+  });
 });

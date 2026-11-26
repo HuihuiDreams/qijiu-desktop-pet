@@ -62,6 +62,8 @@ function updateStatusWindow(data) {
 
 function hideStatusWindow() {
   if (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed()) {
+    // 全屏 RDP 期间面板已被临时隐藏；用户此时关闭面板，退出 RDP 后不应再恢复它
+    deps.forgetFullscreenRdpRestore?.(windowManager.statusWindow);
     windowManager.statusWindow.hide();
     deps.refreshTrayMenu();
   }

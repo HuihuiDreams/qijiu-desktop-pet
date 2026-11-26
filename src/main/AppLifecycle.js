@@ -230,6 +230,7 @@ class AppLifecycle {
       getCurrentPetDisplay: DisplayService.getCurrentPetDisplay,
       migrateWindowToDisplay: DisplayService.migrateWindowToDisplay,
       checkForUpdatesFromTray,
+      isHiddenForFullscreenRdp: petWindowModule.isHiddenForFullscreenRdp,
       windowManager,
     });
     trayManager.createTray();
@@ -239,6 +240,7 @@ class AppLifecycle {
     statusWindowModule.init({
       refreshTrayMenu: () => trayManager.refreshTrayMenu(),
       keepPetWindowOnTop: petWindowModule.keepPetWindowOnTop,
+      forgetFullscreenRdpRestore: petWindowModule.forgetFullscreenRdpRestore,
     });
     settingsWindowModule.init({
       flushPetScalePreview: PetScaleService.flushPreview,

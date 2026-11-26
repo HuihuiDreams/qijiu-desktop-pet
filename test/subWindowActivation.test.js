@@ -410,6 +410,25 @@ test('StatusWindow: activates with permanent pop-up-menu level, skipTransformPro
   }
 });
 
+test('StatusWindow: closing the panel drops its fullscreen RDP restore before refreshing the tray', () => {
+  withMockedModule('../src/main/windows/StatusWindow', ({ mod, windowManager }) => {
+    const events = [];
+    mod.init({
+      refreshTrayMenu: () => events.push('refreshTrayMenu'),
+      keepPetWindowOnTop: () => {},
+      forgetFullscreenRdpRestore: (win) => events.push(['forget', win]),
+    });
+    const win = mod.openStatusWindow();
+    win.hide = () => { win.visible = false; events.push('hide'); };
+    events.length = 0;
+
+    mod.hideStatusWindow();
+
+    assert.deepEqual(events, [['forget', win], 'hide', 'refreshTrayMenu']);
+    assert.equal(windowManager.statusWindow.visible, false);
+  });
+});
+
 test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', async () => {
   await withMockedModule('../src/main/windows/PomodoroWindow', async ({ mod, windowManager, focusCalls, ipcHandlers }) => {
     mod.init({
