@@ -501,6 +501,76 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     }
   });
 
+  await t.test('a focused DeskPet sub-window opened during fullscreen RDP releases suppression instead of being hidden', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    try {
+      const deps = createMockDeps();
+      // The sampler skips DeskPet's own foreground window and walks down the Z-order to the
+      // fullscreen RDP, so the payload keeps reporting mstsc while a DeskPet sub-window has focus.
+      deps.WindowAwarenessService.getNativePayload = () => ({
+        active: true, window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false },
+      });
+      PetWindow.init(deps);
+      PetWindow.createWindow();
+      const win = windowManager.mainWindow;
+      win.visible = true;
+      const status = new MockBrowserWindow({});
+      status.visible = true;
+      status.alwaysOnTop = true;
+      windowManager.statusWindow = status;
+      PetWindow.onActiveWindowChanged();
+      assert.equal(win.visible, false);
+      assert.equal(status.visible, false);
+
+      // Settings opened from the tray on another display: shown, pulsed above and focused,
+      // then SettingsWindow re-asserts the pet through keepPetWindowOnTop().
+      const settings = new MockBrowserWindow({});
+      settings.visible = true;
+      settings.alwaysOnTop = true;
+      settings.focused = true;
+      windowManager.settingsWindow = settings;
+      PetWindow.keepPetWindowOnTop();
+      assert.equal(settings.visible, true);
+      assert.equal(win.visible, true);
+      assert.equal(win.alwaysOnTop, true);
+      assert.equal(status.visible, true);
+      assert.equal(status.focused, false);
+
+      // Later samples still report RDP; the focused sub-window keeps suppression released.
+      PetWindow.onActiveWindowChanged();
+      PetWindow.keepPetWindowOnTop();
+      assert.equal(settings.visible, true);
+      assert.equal(win.visible, true);
+
+      // Clicking back into the RDP session blurs the sub-window and re-applies suppression.
+      settings.focused = false;
+      settings.alwaysOnTop = false; // SettingsWindow drops its pulse level on blur
+      PetWindow.onActiveWindowChanged();
+      assert.equal(win.visible, false);
+      assert.equal(status.visible, false);
+      assert.equal(settings.visible, true, 'a normal-level window stays below the RDP and is left alone');
+
+      // Pomodoro opened from the tray (focused, pinned) survives the next sample as well.
+      const pomodoro = new MockBrowserWindow({});
+      pomodoro.visible = true;
+      pomodoro.alwaysOnTop = true;
+      pomodoro.focused = true;
+      windowManager.pomodoroWindow = pomodoro;
+      PetWindow.onActiveWindowChanged();
+      assert.equal(pomodoro.visible, true);
+      assert.equal(win.visible, true);
+      assert.equal(status.visible, true);
+
+      windowManager.statusWindow = null;
+      windowManager.pomodoroWindow = null;
+      windowManager.settingsWindow = null;
+      win.trigger('closed');
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
   await t.test('RDP suppression is Windows-only and excludes windowed/minimized RDP and other fullscreen apps', () => {
     const originalPlatform = process.platform;
     try {
