@@ -54,7 +54,13 @@ function init(dependencies) {
 
   breakReminderService = createBreakReminderService({
     powerMonitor,
-    presentationGuard,
+    presentationGuard: {
+      // Windows 全屏 RDP 期间主窗口被原生隐藏；关闭窗口感知行走时采样返回 disabled 不会推迟，
+      // 这里按全屏推迟，避免提醒发往不可见窗口后 20 秒自动消失。
+      canInterrupt: () => (deps.isFullscreenRdpSuppressed?.()
+        ? { canInterrupt: false, reason: 'fullscreen-rdp' }
+        : presentationGuard.canInterrupt()),
+    },
     settings: breakSettings,
     onReminderDue: (payload) => {
       // 桌宠隐藏时不提示

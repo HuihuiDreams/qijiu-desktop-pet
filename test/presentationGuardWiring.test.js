@@ -22,7 +22,7 @@ function loadFreshWindowAwarenessService(screen) {
 }
 
 // Execute the production wiring across WindowAwarenessService + AppLifecycle/BreakReminderController + PresentationGuard.
-function loadWiredGuard(mode, screen, windowAwareness) {
+function loadWiredGuard(mode, screen, windowAwareness, extraInitDeps = {}) {
   let guard;
   const electron = {
     app: { commandLine: { appendSwitch() {} } },
@@ -70,10 +70,28 @@ function loadWiredGuard(mode, screen, windowAwareness) {
       PetVisibilityService: { isPetCurrentlyHidden: () => false },
       WindowAwarenessService: windowAwareness,
       windowManager: {},
+      ...extraInitDeps,
     });
   }
   return guard;
 }
+
+test('break-reminder guard defers while fullscreen RDP hides the pet even with window awareness disabled', () => {
+  let rdpSuppressed = true;
+  // Windows keeps native RDP sampling, but break reminders read the renderer-facing disabled payload.
+  const windowAwareness = {
+    getLastPayload: () => ({ active: false, reason: 'disabled', window: null, platform: null }),
+  };
+  const guard = loadWiredGuard('break-reminder', { getAllDisplays: () => [] }, windowAwareness, {
+    isFullscreenRdpSuppressed: () => rdpSuppressed,
+  });
+
+  // The controller runs in a vm realm, so compare a plain copy instead of cross-realm prototypes.
+  assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: false, reason: 'fullscreen-rdp' });
+
+  rdpSuppressed = false;
+  assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: true, reason: null });
+});
 
 for (const mode of ['screensaver', 'break-reminder']) {
   test(`${mode} wiring converts physical bounds once in WindowAwarenessService without double conversion in guard`, async () => {

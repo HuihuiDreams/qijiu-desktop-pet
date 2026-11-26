@@ -592,6 +592,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
       windowManager.pomodoroWindow = pomodoro;
 
       PetWindow.onActiveWindowChanged();
+      assert.equal(PetWindow.isFullscreenRdpSuppressed(), true);
       assert.equal(status.visible, false);
       assert.equal(PetWindow.isHiddenForFullscreenRdp(status), true, 'hidden by RDP still counts as open');
       assert.equal(PetWindow.isHiddenForFullscreenRdp(windowManager.settingsWindow), false);
@@ -602,6 +603,7 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
 
       payload = { active: true, window: { ownerName: 'chrome', isFullScreen: false } };
       PetWindow.onActiveWindowChanged();
+      assert.equal(PetWindow.isFullscreenRdpSuppressed(), false);
       assert.equal(win.visible, true);
       assert.equal(status.visible, false, 'a panel closed during RDP must stay closed');
       assert.equal(pomodoro.visible, true, 'other RDP-hidden windows are still restored');
