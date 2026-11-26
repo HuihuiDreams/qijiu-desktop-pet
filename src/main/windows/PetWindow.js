@@ -80,6 +80,11 @@ function syncFullscreenRdpSuppression() {
   } else if (info?.reason === 'no-active-window') {
     fullscreenRdpSuppressed = false;
   }
+  // 采样会跳过桌宠自身进程的前台窗口并沿 Z-order 落到其下的全屏 RDP；桌宠子窗口持有焦点
+  // （如多屏下从托盘打开设置或番茄钟）说明用户已回到本地操作，不再视为 RDP 在前台。
+  if (fullscreenRdpSuppressed && getPetSubWindows().some((subWin) => subWin && !subWin.isDestroyed() && subWin.isFocused?.())) {
+    fullscreenRdpSuppressed = false;
+  }
 
   if (fullscreenRdpSuppressed) {
     for (const subWin of getPetSubWindows()) {
