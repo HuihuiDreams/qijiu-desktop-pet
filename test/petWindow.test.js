@@ -571,6 +571,50 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     }
   });
 
+  await t.test('a sub-window closed by the user during fullscreen RDP is not restored afterwards', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    try {
+      const deps = createMockDeps();
+      let payload = { active: true, window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false } };
+      deps.WindowAwarenessService.getNativePayload = () => payload;
+      PetWindow.init(deps);
+      PetWindow.createWindow();
+      const win = windowManager.mainWindow;
+      win.visible = true;
+      const status = new MockBrowserWindow({});
+      status.visible = true;
+      status.alwaysOnTop = true;
+      const pomodoro = new MockBrowserWindow({});
+      pomodoro.visible = true;
+      pomodoro.alwaysOnTop = true;
+      windowManager.statusWindow = status;
+      windowManager.pomodoroWindow = pomodoro;
+
+      PetWindow.onActiveWindowChanged();
+      assert.equal(status.visible, false);
+      assert.equal(PetWindow.isHiddenForFullscreenRdp(status), true, 'hidden by RDP still counts as open');
+      assert.equal(PetWindow.isHiddenForFullscreenRdp(windowManager.settingsWindow), false);
+
+      // The tray status toggle closes the panel while it is hidden for RDP.
+      PetWindow.forgetFullscreenRdpRestore(status);
+      assert.equal(PetWindow.isHiddenForFullscreenRdp(status), false);
+
+      payload = { active: true, window: { ownerName: 'chrome', isFullScreen: false } };
+      PetWindow.onActiveWindowChanged();
+      assert.equal(win.visible, true);
+      assert.equal(status.visible, false, 'a panel closed during RDP must stay closed');
+      assert.equal(pomodoro.visible, true, 'other RDP-hidden windows are still restored');
+      assert.equal(PetWindow.isHiddenForFullscreenRdp(pomodoro), false);
+
+      windowManager.statusWindow = null;
+      windowManager.pomodoroWindow = null;
+      win.trigger('closed');
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
   await t.test('RDP suppression is Windows-only and excludes windowed/minimized RDP and other fullscreen apps', () => {
     const originalPlatform = process.platform;
     try {

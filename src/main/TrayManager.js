@@ -41,6 +41,10 @@ function buildTrayMenu() {
   const updateMenuState = deps.getUpdateMenuState();
   const appVersion = app.getVersion();
   const { windowManager } = deps;
+  const { statusWindow } = windowManager;
+  // 全屏 RDP 临时隐藏的面板逻辑上仍是打开状态，标签与 renderer 的切换方向保持一致
+  const isStatusPanelOpen = Boolean(statusWindow && !statusWindow.isDestroyed()
+    && (statusWindow.isVisible() || deps.isHiddenForFullscreenRdp?.(statusWindow)));
 
   const menu = Menu.buildFromTemplate([
     {
@@ -50,7 +54,7 @@ function buildTrayMenu() {
     { type: 'separator' },
 
     {
-      label: (windowManager.statusWindow && !windowManager.statusWindow.isDestroyed() && windowManager.statusWindow.isVisible()) ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
+      label: isStatusPanelOpen ? trayMenuLabel('trayHideStatusPanel') : trayMenuLabel('trayShowStatusPanel'),
       click: () => {
         if (windowManager.mainWindow && !windowManager.mainWindow.isDestroyed()) windowManager.mainWindow.webContents.send('toggle-status-panel');
       },

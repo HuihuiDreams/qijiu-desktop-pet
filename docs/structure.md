@@ -295,7 +295,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 `main.js` 仅是极简系统层入口：完成 `app.requestSingleInstanceLock()` 单实例锁与 QA userData 目录配置后调用 `AppLifecycle.init(app)`。`src/main/AppLifecycle.js` 收敛为薄编排层，在 `app.whenReady()` 内按依赖顺序对各 `init(deps)` 模块接线；下述具体职责由对应的服务/窗口/控制器模块承担（详见第 2 节目录树与 [ADR-042](./decisions/ADR-042-main-and-renderer-module-decomposition.md)）：
 
 - 创建透明、无边框、可置顶的主宠物窗口（`windows/PetWindow.js`，含点击穿透与置顶守卫）。
-- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化、切回本地应用或任一桌宠子窗口获得焦点（采样会跳过桌宠自身前台窗口并落到其下的 RDP）后用 `showInactive()` 恢复仍存在的窗口，保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败或进程名瞬时为空维持保护，采样侧同步将连接栏 `BBarWindowClass`、同 PID 辅助/无标题栏全屏窗口及前景瞬时为 `NULL` 且顶层为全屏 RDP 的情形归并至全屏 RDP 窗口；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
+- Windows 前台 `mstsc` / `msrdc` 全屏时，复用窗口感知采样撤销宠物置顶并临时隐藏原生窗口及可见置顶子窗口，守卫与重复启动均不得重新抬升；退出全屏、最小化、切回本地应用或任一桌宠子窗口获得焦点（采样会跳过桌宠自身前台窗口并落到其下的 RDP）后用 `showInactive()` 恢复仍存在的窗口（抑制期间经托盘关闭的状态面板会移出恢复列表，托盘把因 RDP 临时隐藏的面板视为已打开），保留 renderer 的手动/会议/番茄钟隐藏状态。暂时采样失败或进程名瞬时为空维持保护，采样侧同步将连接栏 `BBarWindowClass`、同 PID 辅助/无标题栏全屏窗口及前景瞬时为 `NULL` 且顶层为全屏 RDP 的情形归并至全屏 RDP 窗口；窗口感知行走关闭及休眠恢复后仍保留采样，未改变 macOS 全屏 Space 策略（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)、[ADR-030](./decisions/ADR-030-window-awareness.md)）。
 - 创建独立状态窗口，并通过 IPC 接收渲染进程上报的数据（`windows/StatusWindow.js`）。
 - 创建独立番茄钟窗口，管理倒计时生命周期、置顶切换、上次时长偏好和桌面宠物的临时隐藏/恢复（`windows/PomodoroWindow.js` + `services/PomodoroService.js`）。
 - 创建统一设置窗口，提供“外观 / 陪伴 / 系统”三标签页集中配置体型、选肤快捷跳转、界面感知、天气同步及城市地名解析（Geocoding）、久坐提醒及间隔、高甜屏保及等待、三语切换与开机自启（`windows/SettingsWindow.js` + `services/SettingsService.js`，见 [ADR-050](./decisions/ADR-050-unified-settings-window.md)）。

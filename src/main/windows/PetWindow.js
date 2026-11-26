@@ -117,6 +117,20 @@ function syncFullscreenRdpSuppression() {
   return false;
 }
 
+/**
+ * 子窗口因全屏 RDP 被临时隐藏、待退出后恢复时，逻辑上仍处于打开状态（托盘标签据此显示）。
+ */
+function isHiddenForFullscreenRdp(subWin) {
+  return restoreSubWindowsAfterRdp.has(subWin);
+}
+
+/**
+ * 用户在 RDP 抑制期间主动关闭子窗口时调用，退出 RDP 后不再恢复它。
+ */
+function forgetFullscreenRdpRestore(subWin) {
+  restoreSubWindowsAfterRdp.delete(subWin);
+}
+
 function onActiveWindowChanged() {
   if (process.platform !== 'win32' || !windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
   const wasSuppressed = fullscreenRdpSuppressed;
@@ -354,6 +368,8 @@ module.exports = {
   createWindow,
   keepPetWindowOnTop,
   onActiveWindowChanged,
+  isHiddenForFullscreenRdp,
+  forgetFullscreenRdpRestore,
   setPetWindowMousePassthrough,
   startKeepOnTopWatcher,
   showExistingInstance,
