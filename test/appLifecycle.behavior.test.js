@@ -61,7 +61,7 @@ function createHarness() {
     skinSelectorWindowModule: createCallableModule('skinSelectorWindowModule', ['init', 'openSkinSelectorWindow', 'sendSkinSelectorData'], calls),
     pomodoroWindowModule: createCallableModule('pomodoroWindowModule', ['init', 'openPomodoroWindow'], calls),
     updateProgressWindowModule: createCallableModule('updateProgressWindowModule', ['init', 'showUpdateProgressWindow', 'setUpdateProgress', 'closeUpdateProgressWindow'], calls),
-    petWindowModule: createCallableModule('petWindowModule', ['init', 'createWindow', 'showExistingInstance', 'keepPetWindowOnTop', 'onActiveWindowChanged', 'isHiddenForFullscreenRdp', 'forgetFullscreenRdpRestore'], calls),
+    petWindowModule: createCallableModule('petWindowModule', ['init', 'createWindow', 'showExistingInstance', 'keepPetWindowOnTop', 'onActiveWindowChanged', 'isHiddenForFullscreenRdp', 'forgetFullscreenRdpRestore', 'isFullscreenRdpSuppressed'], calls),
     trayManager: createCallableModule('trayManager', ['init', 'createTray', 'refreshTrayMenu', 'trayT', 'trayText'], calls),
   };
   services.BreakReminderController.BREAK_REMINDER_TRAY_INTERVALS = [30, 60];
@@ -164,6 +164,8 @@ test('AppLifecycle initializes services before creating the pet window and tears
     const statusInitCall = harness.calls.find(([name]) => name === 'statusWindowModule.init');
     assert.equal(statusInitCall?.[1]?.keepPetWindowOnTop, harness.services.petWindowModule.keepPetWindowOnTop);
     assert.equal(statusInitCall?.[1]?.forgetFullscreenRdpRestore, harness.services.petWindowModule.forgetFullscreenRdpRestore);
+    const breakReminderInitCall = harness.calls.find(([name]) => name === 'BreakReminderController.init');
+    assert.equal(breakReminderInitCall?.[1]?.isFullscreenRdpSuppressed, harness.services.petWindowModule.isFullscreenRdpSuppressed);
     const trayInitCall = harness.calls.find(([name]) => name === 'trayManager.init');
     assert.equal(trayInitCall?.[1]?.isHiddenForFullscreenRdp, harness.services.petWindowModule.isHiddenForFullscreenRdp);
     const settingsInitCall = harness.calls.find(([name]) => name === 'settingsWindowModule.init');

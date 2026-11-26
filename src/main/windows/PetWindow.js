@@ -131,6 +131,13 @@ function forgetFullscreenRdpRestore(subWin) {
   restoreSubWindowsAfterRdp.delete(subWin);
 }
 
+/**
+ * 主透明窗口当前是否因全屏 RDP 被原生隐藏（久坐提醒据此推迟，避免发往不可见窗口）。
+ */
+function isFullscreenRdpSuppressed() {
+  return fullscreenRdpSuppressed;
+}
+
 function onActiveWindowChanged() {
   if (process.platform !== 'win32' || !windowManager.mainWindow || windowManager.mainWindow.isDestroyed()) return;
   const wasSuppressed = fullscreenRdpSuppressed;
@@ -370,6 +377,7 @@ module.exports = {
   onActiveWindowChanged,
   isHiddenForFullscreenRdp,
   forgetFullscreenRdpRestore,
+  isFullscreenRdpSuppressed,
   setPetWindowMousePassthrough,
   startKeepOnTopWatcher,
   showExistingInstance,

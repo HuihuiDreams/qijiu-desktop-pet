@@ -122,6 +122,7 @@ class AppLifecycle {
       windowManager,
       trayManager,
       interruptionCoordinator,
+      isFullscreenRdpSuppressed: petWindowModule.isFullscreenRdpSuppressed,
       onSettingsChanged: () => SettingsService.notifySettingsUpdated(),
     });
 
