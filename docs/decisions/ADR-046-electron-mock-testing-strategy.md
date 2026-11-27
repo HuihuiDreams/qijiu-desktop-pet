@@ -49,4 +49,4 @@ Accepted
 ## Amendments
 
 ### 2026-11-27：实际实现与「集中化 Mock 对象」的差异
-`test/helpers/mockElectron.js` 并未定义集中的 `MockApp`、`MockTray` 或 `MockWebContents`。它只导出 `setupElectronMock(mockObj)`：临时改写 `Module.prototype.require`，让 `require('electron')` 返回调用方传入的对象，并返回用于恢复的函数，应在 require 被测模块后立即调用。各测试文件按需自建 Electron 替身；目前 9 个测试文件使用 `setupElectronMock`，另有 12 个直接改写 `Module._load`（如 `test/appLifecycle.behavior.test.js`）。「Consequences」中关于清理钩子与 require 顺序的约束对两种写法同样适用。
+`test/helpers/mockElectron.js` 并未定义集中的 `MockApp`、`MockTray` 或 `MockWebContents`。它只导出 `setupElectronMock(mockObj)`：临时改写 `Module.prototype.require`，让 `require('electron')` 返回调用方传入的对象，并返回用于恢复的函数，应在 require 被测模块后立即调用。各测试文件按需自建 Electron 替身；目前 `test/` 下 9 个测试文件使用 `setupElectronMock`，另有 15 个直接改写 `Module._load`（如 `test/appLifecycle.behavior.test.js` 与 `test/integration/` 下的 3 个集成测试）。「Consequences」中关于清理钩子与 require 顺序的约束对两种写法同样适用。
