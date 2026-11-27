@@ -1,7 +1,7 @@
 # ADR-047: 桌宠体型大小缩放与渲染架构方案
 
 ## Status
-Accepted
+Accepted（第 4 节的独立体型调节窗口已被 [ADR-050](./ADR-050-unified-settings-window.md) 取代）
 
 ## Date
 2026-10-14
@@ -73,3 +73,6 @@ Accepted
 
 ### 2026-11-21: 独立体型调节窗口与独占 IPC 通道由统一设置窗口取代
 根据 [ADR-050](./ADR-050-unified-settings-window.md)，本 ADR 第 4 节所述的独立体型调节窗口载体（原 `PetScaleWindow` 及其独立 preload/HTML/CSS/渲染脚本）与独占 IPC 通道（`pet-scale-get-settings`、`pet-scale-preview`、`pet-scale-confirm`、`pet-scale-cancel`）已被取代并下线，相关入口与持久化收口至统一设置窗口（`SettingsWindow`、`SettingsService`、`settingsPreload.js`，拖动 `input` 实时预览并在 `change` / 关窗时落盘）。本 ADR 第 1～3 节确立的逻辑尺寸驱动（`pet.size`）、脚底底边中点锚定算法（`Bottom-Center Anchoring`）、`StageGeometry` / `MovementSystem` DPI 几何校验与伴生 UI/字号分层机制继续有效。
+
+### 2026-11-27：测试文件更新与恢复默认入口
+「Verification」中的 `test/petScaleWindowRenderer.behavior.test.js` 已随独立体型窗口下线而删除，统一设置窗口内的滑块行为由 `test/settingsWindowRenderer.behavior.test.js` 覆盖；「恢复默认」经 `settings-reset-pet-scale` 以默认值调用 `PetScaleService.confirm()`（[ADR-050](./ADR-050-unified-settings-window.md)）。

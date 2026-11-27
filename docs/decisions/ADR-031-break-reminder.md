@@ -64,3 +64,9 @@ Accepted
 
 ### 2026-11-13：设置变更与时钟回拨边界（审核复核 L6）
 `updateSettings()` 在提醒被关闭（`enabled: false`）时会取消仍在等待重试的延后定时器并清除 `reminderPending`，不再等 60 秒后的回调自行收尾；采样间隔 `rawElapsed` 增加 `Math.max(0, …)`，系统时钟回拨时按 0 累计，避免 `activeMs` 被扣减。详见 [审核复核 L6](../archive/code-review-audit-verification-2026-11-13.md)。
+
+### 2026-11-27：全屏 RDP 推迟、macOS 防休眠断言与模块位置
+- 「Consequences」中「关闭界面感知时 `PresentationGuard` 始终允许提醒」不再完全成立：Windows 全屏 RDP 原生隐藏主窗口期间，`BreakReminderController` 在调用守卫前先以 `fullscreen-rdp` 推迟提醒（`08562d1`），沿用 60 秒重试，避免提醒发往不可见窗口（[ADR-018](./ADR-018-always-on-top-reliability.md)）。其余情况下采样为 `disabled` 时仍放行。
+- 「Decision」第 3 条「macOS 不做全屏检测」已不准确：开启窗口感知时，macOS 每 30 秒读取 `pmset -g assertions`，存在 `PreventUserIdleDisplaySleep` 断言（全屏视频、演示等）时守卫按 `fullscreen` 推迟提醒（[ADR-030](./ADR-030-window-awareness.md)）。该方式不需要辅助功能权限；provider 不可用或尚无采样时仍放行。
+- 「Decision」第 5 条的开关与间隔已从托盘移到统一设置窗口「陪伴与守护」标签页（[ADR-050](./ADR-050-unified-settings-window.md)）。
+- 「架构边界」表中的 `presentationGuard.js` 现为 `src/main/services/PresentationGuard.js`，`main.js` 的生命周期、IPC 与配置职责现由 `src/main/services/BreakReminderController.js` 承担，渲染表现位于 `src/ui/BreakReminderPresenter.js`（[ADR-042](./ADR-042-main-and-renderer-module-decomposition.md)）。

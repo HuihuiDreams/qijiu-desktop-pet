@@ -1,7 +1,7 @@
 # ADR-039: 城市设置UI窗口
 
 ## Status
-Accepted
+Superseded by [ADR-050](./ADR-050-unified-settings-window.md)（窗口载体与 IPC 形态；本 ADR 的地理编码隐私与并发仲裁策略仍有效）
 
 ## Date
 2026-06-19
