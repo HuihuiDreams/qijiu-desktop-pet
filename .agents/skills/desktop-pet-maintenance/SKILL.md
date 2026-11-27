@@ -16,7 +16,8 @@ requested behavior and preserve the main/preload/renderer boundary.
   for native windows, persistence, IPC, display handling, or tray behavior.
 - Reuse `src/main/services/IpcSenderAuthorization.js` to validate IPC senders
   and validate sensitive arguments in the owning main-process handler. Retain
-  `app.openSkinSelectorForQA` in `AppLifecycle.js` when restricting skin IPC.
+  `app.openSkinSelectorForQA` and `app.openSettingsForQA` in `AppLifecycle.js`
+  when restricting skin or settings IPC.
 - Expose only safe renderer-facing APIs from `preload.js` and the dedicated
   sub-window preloads; do not use Node APIs directly in renderer code.
 - Keep `src/app.js` as the renderer composition root. Reuse `SkinSwitchController`
@@ -42,8 +43,10 @@ requested behavior and preserve the main/preload/renderer boundary.
   visible. Strictly validate external metrics (`firstFiniteNumber`) against `0`
   coercion, and suppress wind particles during thunderstorms.
 - For skins (`pet-asset://`), follow `docs/skin-pipeline-guide.md`, retain WebP
-  naming, ensure sub-window HTML CSP `img-src` allows `pet-asset:`, and synchronize
-  the gallery, protected loader, and three readmes.
+  naming, ensure every page that loads `pet-asset://` images allows `pet-asset:` in
+  its CSP `img-src`, register new skin IDs in the `SkinService.js` name/label/artist
+  maps and `src/data/i18n.js`, rerun `npm run protect:assets`, and update the three
+  readmes.
 - Preserve the skin preview-confirm workflow across `SkinService.js`,
   `SkinSwitchController`, and the selector window/preload. Preview with
   `isPreview: true` without persisting; confirm only the current successful load.
@@ -55,18 +58,23 @@ requested behavior and preserve the main/preload/renderer boundary.
 When touching `updateManager.js`, `updateProgressPreload.js`, electron-builder,
 release workflows, version metadata, or installer assets:
 
-1. Trace both Windows and macOS paths, including signing/notarization and
-   fullscreen/Space behavior where windows are involved.
+1. Trace both Windows and macOS paths, including Windows signing, macOS ad-hoc
+   signing, and fullscreen/Space behavior where windows are involved.
 2. Preserve downloaded-package integrity checks and explicit update error
    states; never treat a successful download as a verified release.
 3. Run focused tests, then `npm test` for behavior changes. For packaging changes,
    build with `npm run build` or the relevant platform's smoke-build command, then run
    `npm run verify:package` against the new `dist/**/app.asar` output. For Windows
-   signing changes, use `npm run verify:signatures` (a PowerShell script);
-   validate macOS signing/notarization on macOS using the release workflow checks.
+   signing changes, use `npm run verify:signatures` (a PowerShell script).
+   macOS release builds are not Developer ID signed or notarized
+   (`CSC_IDENTITY_AUTO_DISCOVERY: false`); `scripts/afterPack.js` only ad-hoc signs
+   and Release Preflight checks the `DeskPet` executable with `plutil`, so verify
+   macOS packaging on macOS.
 4. Check release workflows (`.github/workflows/`): run `npm run protect:assets` before
-   `electron-builder`, keep `retention-days: 7` on artifacts, and use `secrets['...']` bracket
-   syntax with `# noinspection` comments to prevent CI quota and IDE check errors.
+   `electron-builder`, keep `retention-days: 7` on artifacts, and reference repository
+   secrets such as `WIN_CSC_LINK` with `secrets['...']` bracket syntax plus `# noinspection`
+   comments to prevent CI quota and IDE check errors (the built-in `secrets.GITHUB_TOKEN`
+   keeps dot syntax).
 5. Document any platform-specific limitation or rollback step before declaring the change complete.
 
 ## Changelog ordering
