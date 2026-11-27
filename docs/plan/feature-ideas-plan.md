@@ -2,7 +2,7 @@
 
 > 状态：In Progress (部分功能已落地实现)  
 > 文档类型：Feature Candidate Pool，不是单个可执行 spec  
-> 最后更新：2026-06-27  
+> 最后更新：2026-11-27  
 > 适用范围：桌面宠物长期功能规划、优先级排序、后续 spec 拆分依据
 
 ---
@@ -39,7 +39,7 @@
 | 局部高甜屏保 (CP Screensaver) | 已实现 | 已落地完成并归档规范至 `docs/archive/cp-screensaver-plan.md` |
 | 系统状态映射 | 待确认 | 需要确认系统指标依赖、采样频率、跨平台支持 |
 | 天气 / 时空同步 | 已实现 | 已完成昼夜时段切换、天气感知及城市设置可视化界面 |
-| 皮肤 / 配件系统 | 已实现 | 已完成皮肤管理器与主界面交互，规范归档至 `docs/archive/skin-system-plan.md` |
+| 皮肤 / 配件系统 | 皮肤已实现，配件未实现 | 已完成皮肤管理器与主界面交互，规范归档至 `docs/archive/skin-system-plan.md`；局部配件与锚点尚无实现 |
 | 窗口感知交互 | 已实现 | 已完成窗口边缘行走与边界追踪，规范归档至 `docs/archive/window-awareness-plan.md` |
 | 随机奇遇与图鉴 | 待拆分 | 建议依赖 To-Do、互动、截图能力稳定后再做 |
 
@@ -330,9 +330,9 @@
 
 #### Feature 1：苍穹山派番茄钟
 
-已拆分为：
+已拆分并归档为：
 
-`docs/plan/cangqiong-pomodoro-plan.md`
+`docs/archive/cangqiong-pomodoro-plan.md`
 
 需要重点确认：
 
@@ -378,9 +378,9 @@
 
 #### Feature 4：窗口感知交互
 
-建议新建：
+已拆分并归档为：
 
-`docs/plan/window-awareness-plan.md`
+`docs/archive/window-awareness-plan.md`
 
 前置确认：
 
@@ -392,9 +392,9 @@
 
 #### Feature 5：时空同步系统
 
-已拆分为：
+已拆分并归档为：
 
-`docs/plan/time-weather-sync-plan.md`
+`docs/archive/time-weather-sync-plan.md`
 
 实现前重点确认：
 
@@ -417,7 +417,7 @@
 
 建议新建：
 
-`docs/plan/skin-accessory-system-plan.md`
+`docs/plan/skin-accessory-system-plan.md`（皮肤部分已按 `docs/archive/skin-system-plan.md` 落地，配件部分仍待拆分）
 
 前置确认：
 
@@ -627,7 +627,7 @@
 
 - [x] 更换皮肤后动作是否正常显示？
 - [x] 缺失素材时是否回退默认皮肤？
-- [x] 配件锚点是否稳定？
+- [ ] 配件锚点是否稳定？（配件系统尚未实现）
 - [ ] 图鉴解锁是否可持久化？
 - [ ] 自动快照是否不会截取用户整个桌面？
 
@@ -685,7 +685,7 @@
 2. `zongmen-task-todo-plan.md`
 3. `system-status-mapping-plan.md`
 4. `time-weather-sync-plan.md` （已落地实现）
-5. `skin-accessory-system-plan.md` （已落地并归档为 `skin-system-plan.md`）
+5. `skin-accessory-system-plan.md` （皮肤部分已落地并归档为 `docs/archive/skin-system-plan.md`，配件部分未实现）
 6. `window-awareness-plan.md` （已落地并归档）
 7. `gallery-memory-snapshot-plan.md`
 

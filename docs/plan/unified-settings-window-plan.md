@@ -1,7 +1,7 @@
 # Implementation Plan: 统一设置窗口与托盘菜单精简
 
 > 状态：代码、文档与自动化验收已完成（待人工实机与 Windows 跨平台验收）
-> 最后更新：2026-11-16
+> 最后更新：2026-11-27
 > 依据：`/game-ui-ux` 与 `/grill-me` 设计对齐
 
 ---
@@ -64,7 +64,7 @@
 
 - **窗口与生命周期**：
   - 新增 `src/main/windows/SettingsWindow.js`，在 [WindowManager.js](../../src/main/windows/WindowManager.js) 注册 `settingsWindow`。
-  - 参考 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 与 [ADR-041](../decisions/ADR-041-skin-selector-performance-and-scaling.md)：`520×456` 初始尺寸（坐标在 `display.workArea` 内做 `Math.max`/`Math.min` 安全区夹紧）、`transparent: true`、`frame: false`、`alwaysOnTop: false`、`minimizable: true`、`resizable: false`、`hasShadow: false`，打开/聚焦时执行 `180ms` `screen-saver` 级置顶脉冲后恢复 `alwaysOnTop: false`，并支持 macOS `app.focus({ steal: true })` 与全空间可见。
+  - 参考 [SkinSelectorWindow.js](../../src/main/windows/SkinSelectorWindow.js) 与 [ADR-041](../decisions/ADR-041-skin-selector-performance-and-scaling.md)：`520×456` 初始尺寸（坐标在 `display.workArea` 内做 `Math.max`/`Math.min` 安全区夹紧）、`transparent: true`、`frame: false`、`alwaysOnTop: false`、`minimizable: true`、`resizable: false`、`hasShadow: false`，打开/聚焦时提升为 `pop-up-menu` 级并在聚焦期间保持（低于 `screen-saver` 级桌宠主窗，打开、聚焦及 Windows 下拖动结束/点击时重申主窗置顶），`blur` / `minimize` / `hide` 或未实际取得焦点 180ms 后回落普通层级，并支持 macOS `app.focus({ steal: true })` 与全空间可见（最初实现为 180ms `screen-saver` 级脉冲，见 R10）。
   - 在 [PetWindow.js](../../src/main/windows/PetWindow.js) 中同时将 `windowManager.settingsWindow` 纳入 `getPetSubWindows()`（统一服务于 Windows 全屏 RDP 自动避让恢复与 3 秒 `keepPetWindowOnTop()` 子窗口焦点层级排序）及 `closed` 清理链（主窗口关闭时一并关闭，防止孤儿进程）。
   - `SettingsWindow` `close` 时若存在未落盘的体型 `previewPercent` 则兜底提交保存；通过 `returnFocusToSettings` 标识区分选肤窗入口：仅当从设置窗通过 `settings-open-skin-selector` 唤起 `SkinSelectorWindow` 时置为 `true`，在 `SkinSelectorWindow` `closed` 时若标识为真且设置窗未销毁、可见且未最小化，才聚焦设置窗并发送 `settings-restore-skin-focus`（随后重置标识），防止托盘直接选肤时误抢焦点。
 - **最小权限 Preload 与 IPC 鉴权**：
@@ -269,3 +269,4 @@
 - [x] **R7 清理托盘精简后的无调用方方法与孤立 i18n 键**：移除 `WeatherSyncController.getCitySettings`、`PetScaleService.hasPendingPreview` / `cancel`、`SkinSelectorWindow.set/getReturnFocusToSettings`、`BreakReminderController.setBreakReminderEnabled` / `setBreakReminderIntervalMinutes`、`LocaleService.setCurrentLocale` 及三语 24 个托盘/旧窗词条（保留 `getBreakReminderService`，供控制器测试清理定时器）。上文 Phase 1 条目中对 `getCitySettings()` / `hasPendingPreview()` 的描述为当时的设计记录。
 - [x] **R8 代码审核后稳定性、无障碍、文档与 E2E 补齐**：修复 `handleCityConfirm` 在 `disabled` 状态下先于 `finally` 调用 `focus()` 导致城市失败后焦点丢失的问题；清理 `autoLaunchSwitch` 串行成功分支的残留错误状态；移除 `<main>` 上的冗余 `aria-live="polite"` 并为开机自启开关补齐 `aria-describedby`；同步修正 `readme_zh.txt` / `readme_en.txt`、`CHANGELOG.md`（去除已删 `getCitySettings()` 并按由旧到新顺序重排 `Unreleased`）及 `docs/structure.md`；补充 fake-DOM/窗口单元回归断言、`ipcIsolation.spec.js` 与 `test/e2e/settingsWindow.spec.js` 实机 E2E 测试。
 - [x] **R9 0.12.0 发布后代码复核修复**：修复 macOS `requires-approval` 待批准态时 `autoLaunchSwitch` 误显示为关闭导致点击永远送出 `true` 而无法撤销的问题（改为 `enabled || pendingApproval`）；`SettingsWindow.getInitialSettingsWindowBounds()` 同步按 `display.workArea` 夹紧宽高（极端小屏/高 DPI 下配合 `.settings-tabpanel` 内部滚动）；渲染层同步消费快照 `breakReminder.allowedIntervals` / `screensaver.allowedThresholds`；`SettingsService.init()` 在 `ipc.handle` 前先 `removeHandler`；`release-preflight.yml` 双平台接入 `npm run test:e2e:ci`（`startup`、`settingsWindow`、`ipcIsolation`、`font`）；同步修复 `skinSelectorWindow.js` / `test/e2e/skinSelector.spec.js` 初始化 `getLocale()` 竞态。Task 4.2 仍保留待 Windows 实机人工验收。
+- [x] **R10 设置窗置顶层级两次调整**：`754e14a` 改为聚焦期间保持 `screen-saver` 级，避免桌宠透明主窗压住设置窗并截走点击；`8aa436c` 再改为 `pop-up-menu` 级，让桌宠与 `#context-menu` 始终显示在设置窗之上，并接受重叠区域点击归桌宠的取舍（[ADR-050](../decisions/ADR-050-unified-settings-window.md) 2026-11-24 修订）。

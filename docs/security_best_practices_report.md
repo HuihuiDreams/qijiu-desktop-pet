@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This security review audited the runtime application code of **DeskPet (`qijiu-desktop-pet`)** across its **Electron `^45.3.1` / Node.js CommonJS** main process, **context-isolated preload scripts**, and **Vanilla Browser JavaScript / HTML / CSS** renderer processes against frontend/JavaScript (`javascript-general-web-frontend-security.md`) and Electron security best practices, aligned with the repository's existing threat model ([threat model](archive/qijiu-desktop-pet-threat-model.md)) and architectural constraints (`AGENTS.md`).
+This security review audited the runtime application code of **DeskPet (`qijiu-desktop-pet`)** across its **Electron `^45.4.1` / Node.js CommonJS** main process, **context-isolated preload scripts**, and **Vanilla Browser JavaScript / HTML / CSS** renderer processes against frontend/JavaScript (`javascript-general-web-frontend-security.md`) and Electron security best practices, aligned with the repository's existing threat model ([threat model](archive/qijiu-desktop-pet-threat-model.md)) and architectural constraints (`AGENTS.md`).
 
 ### Existing Security Baseline (Verified Controls)
 

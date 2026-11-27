@@ -8,6 +8,7 @@
 - **设置服务 IPC 注册与清理一致性源码断言 (`SettingsService IPC Handle/Clear Sync Assertion`)**：在 `test/settingsService.test.js` 中新增源码扫描断言，确保 `SettingsService.js` 内所有 `ipc.handle('settings-*')` 通道均同步列于 `clearIpcHandlers()` 且清理函数保持在 `init()` 之后（避免破坏 `ipcPermissionMatrix.test.js` 的首现位置鉴权前缀扫描）。
 - **番茄钟服务行为测试 (`PomodoroService Behavior Tests`)**：新增 `test/pomodoroService.test.js`，用 `mock.timers` 覆盖 `PomodoroService` 的 ticker 生命周期（完成后自停、恢复宠物焦点并刷新托盘，重复启动不产生两个 ticker，停止后不再推送 `pomodoro-state`）、分钟数归一化落盘与番茄钟窗口销毁时跳过推送；此前该模块在 `appLifecycle.behavior.test.js` 中被整体 mock，没有任何直接测试。同步更新 `docs/structure.md` 测试清单。
 - **设置窗口双人书法水墨底纹 (`Settings Paired Calligraphy Watermark`)**：统一设置窗口由两只桌宠共用，因此在内容区左右下角分立「岳清源」「沈清秋」竖排书法（复用右键菜单素材），以 CSS `mask` 着深墨色（`--color-ink`）、透明度 0.15（中/英/日三语深浅一致，不在英文模式下变淡），固定于 `.settings-body` 下层，卡片滚动时底纹不动，且不拦截点击；打开窗口时两名依次以自上而下的「落笔」遮罩扫出（约 0.9 秒，沈清秋延后 0.24 秒），`prefers-reduced-motion` 下直接显示。规则仅写入 `settings.css`，选肤窗口共用的 `settings-calligraphy.css` 仍只保留「七九」印；补充 `test/calligraphyDecoration.test.js` 断言并同步 [ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `docs/structure.md`。
+
 ### Changed
 - **文档与用户说明对齐托盘菜单及统一设置结构 (`README & User Readme Feature Order Aligned With Tray & Settings`)**：重排 `README.md`、`readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 的功能章节顺序，按托盘菜单（苍穹静修 → 选择皮肤与显示）及统一设置「外观与交互 → 陪伴与守护 → 系统偏好」顺序（界面感知 → 天气感知与时空同步 → 久坐提醒 → CP 高甜屏保 → 会议自动隐藏 → 更新说明 → 养成数值）组织；并同步更新 `README.md` 中过时的托盘菜单列表与设置入口描述为 `⚙️ 设置…` 三标签页路径。
 - **Release Preflight 双平台接入核心 Electron E2E (`Core Electron E2E in Windows & macOS Release Preflight`)**：新增 `npm run test:e2e:ci` 运行无原生托盘弹窗/焦点抢占依赖的核心 E2E 用例（`startup.spec.js`、`settingsWindow.spec.js`、`ipcIsolation.spec.js`、`font.spec.js`），并接入 `.github/workflows/release-preflight.yml` 的 Windows 与 macOS 预检作业；同步更新 `test/releasePreflightWorkflow.test.js`、`docs/git-workflow.md` 与 `docs/structure.md`（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）。
@@ -25,7 +26,7 @@
 - **设置页档位列表由快照驱动及 IPC 幂等清理 (`Settings Allowed-Lists Snapshot Sync & Idempotent IPC Init`)**：`src/settingsWindow.js` 改为根据快照中的 `breakReminder.allowedIntervals` 与 `screensaver.allowedThresholds` 动态对齐分段按钮（避免与 `src/settings.html` 静态列表漂移）；`SettingsService.init()` 注册 `settings-*` handler 前先调用 `removeHandler()`，防止重复初始化时触发 Electron 二次注册异常；补充对应测试。
 - **选肤弹窗 E2E 初始化与状态清理竞态修复 (`Skin Selector E2E Locale Init & Status Preservation`)**：`src/skinSelectorWindow.js` 的 `renderGallery` 仅在 `resetSelection: true` 时清空 `#skin-selector-status`，避免异步 `WindowI18n.init` 或语言刷新重建卡片时误清错误提示；`test/e2e/skinSelector.spec.js` 在交互前显式等待 `data-locale` 与卡片就绪、并在最小化前等待 180ms 置顶脉冲回落。
 - **CP 同步锁文件重生成静默丢升级修复 (`Prevent Silent Dependency Downgrade During CP Sync Lockfile Regeneration`)**：收紧 `scripts/sync-to-cp.js` 的 `canRegenerateLockfileConflict` 准入条件，要求提交确实修改了 `package.json` 的依赖声明字段（不再放行仅改 `scripts` 等非依赖字段的提交）；并在执行 `npm install --package-lock-only --ignore-scripts` 后通过 `findDroppedLockfileUpgrades` 核对来源 `package-lock.json` 中新增或升级的依赖版本是否保留在重生成结果中，若被既有锁版本留旧或缺失则回滚并阻塞同步，同步更新 `test/syncToCp.test.js`、`docs/git-workflow.md` 与 [ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)。
-- **统一设置窗口聚焦期被桌宠覆盖层压住修复 (`SettingsWindow Kept Above Pet Overlay While Focused`)**：修复 `SettingsWindow` 在 180ms 置顶脉冲结束后无条件调用 `setAlwaysOnTop(false)` 退回普通窗口层级，导致持续处于 `screen-saver` 级的透明主窗口压在设置对话框上方并截走重叠区域点击的问题；改为在窗口聚焦期间持续保持 `screen-saver` 级以纳入 `PetWindow.keepPetWindowOnTop()` 子窗重排，在 `blur`、`minimize`、`hide` 时立即回落普通层级（未实际取得焦点时仍按 180ms 兜底回落），并更新 `settingsWindow.test.js`、`subWindowActivation.test.js`、`settingsWindow.spec.js`、[ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `docs/structure.md`。
+- **统一设置窗口聚焦期被桌宠覆盖层压住修复 (`SettingsWindow Kept Above Pet Overlay While Focused`)**：修复 `SettingsWindow` 在 180ms 置顶脉冲结束后无条件调用 `setAlwaysOnTop(false)` 退回普通窗口层级，导致持续处于 `screen-saver` 级的透明主窗口压在设置对话框上方并截走重叠区域点击的问题；改为在窗口聚焦期间持续保持 `screen-saver` 级以纳入 `PetWindow.keepPetWindowOnTop()` 子窗重排，在 `blur`、`minimize`、`hide` 时立即回落普通层级（未实际取得焦点时仍按 180ms 兜底回落），并更新 `settingsWindow.test.js`、`subWindowActivation.test.js`、`settingsWindow.spec.js`、[ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 与 `docs/structure.md`。该聚焦期 `screen-saver` 方案随后已被 `Changed` 中「桌宠与右键菜单显示在状态及设置窗口之上」改为 `pop-up-menu` 级。
 - **统一设置城市状态插值特殊替换符修复 (`Literal City Interpolation in Settings Status`)**：修复 `src/settingsWindow.js` 中 `renderCityStatus()` 使用 `text.replace('{city}', city)` 字符串替换语义导致城市文本中的 `$&` / `$'` 等替换标记被展开的问题，改为函数式替换 `() => cityStatusState.city` 并补充回归测试。
 - **离线检查更新重复弹出错误框修复 (`Deduplicated Updater Error Dialogs`)**：`electron-updater` 在检查或下载更新失败时会先 `emit('error')` 再 reject 同一个错误对象，`updateManager.js` 的事件回调与调用方 `catch` 各执行一次 `handleError`，导致断网检查更新时叠出两个相同的错误框并重复记录日志；`handleError` 现按错误对象身份去重（与既有 404 闩锁并存），补充检查失败、下载失败与不同错误分别提示的回归测试，并同步更新 `docs/structure.md`。
 - **右键菜单关闭后点击穿透到下层应用修复 (`Context Menu Hide Keeps Hovered Pet Interactive`)**：`ContextMenu.hide()` 原先无条件恢复 `setIgnoreMouseEvents(true, { forward: true })`，按 ESC 关闭菜单时指针往往仍停在宠物上，宠物的 `mouseenter` 不会再次触发，下一次点击会穿透到宠物下方的应用；现在指针仍悬停在宠物上时改发不带 `leaseMs` 的 `setIgnoreMouseEvents(false)`（同时取消菜单的 10 秒租约）并保留天气交互静音，交给宠物 `mouseleave` 恢复穿透，与拖拽结束路径的 `:hover` 守卫一致；补充回归测试并更新 [ADR-002](docs/decisions/ADR-002-mouse-clickthrough-strategy.md)。
@@ -55,6 +56,7 @@
 - **Agent 与贡献者指引对齐当前代码与脚本 (`Agent & Contributor Guidance Aligned With Code`)**：`AGENTS.md`、`.geminirules` 原先建议「尽早运行 `./push.sh` 发现 CHANGELOG 格式错误」，但推送脚本只检查 `CHANGELOG.md` 是否被修改，随后即 `git add -u`、提交并推送 `origin main`；现改为说明脚本不校验格式、不能当预检试跑、只在 `main` 使用。同步更正：主进程职责由 `src/main/AppLifecycle.js` 与 `src/main/windows/`、`src/main/services/` 等模块承担（`main.js` 只是入口）；新增皮肤需登记 `SkinService.js` 的 `SKIN_NAME_KEYS` / `SKIN_LABEL_KEYS` / `SKIN_ARTIST_KEYS` 与三语词条（`skinGallery.js`、`protectedAssetLoader.js` 无逐皮肤条目）；`isPreview` 预览确认流程位于 `SkinService.js` 与 `SkinSwitchController`；`firstFiniteNumber` 位于主进程 `weatherSyncService.js`；QA 入口补列 `app.openSettingsForQA`；三语溢出循环在 `test/e2e/skinSelector.spec.js`，不属于 `test:e2e:ci`；`npm test` 已包含集成测试；仅加载 `pet-asset://` 图片的页面需在 CSP 放行 `pet-asset:`；CHANGELOG 新条目追加到分类末尾。`.agents/skills/desktop-pet-maintenance/SKILL.md` 更正 macOS 构建仅 ad-hoc 签名、无公证检查，以及 `secrets.GITHUB_TOKEN` 保留点语法；`.agents/skills/skin-asset-pipeline/SKILL.md` 补充皮肤 ID 登记步骤并注明直接 `npx electron-builder` 不触发 `prebuild`；`docs/release-code-signing.md` 本地签名构建前补 `npm run protect:assets`；`docs/git-workflow.md` 删除过时的 `[WIP]` 模板说明并注明 `--verify` 只在临时 worktree 运行测试；`docs/cp-migration-guide.md` 注明 `main` 的推送脚本固定推送 `origin main`，新 CP 分支需改推 `HEAD`（[ADR-049](docs/decisions/ADR-049-main-to-cp-auto-sync.md)）。本次只改文档，不涉及代码行为。
 - **`docs/structure.md` 打扰守卫与模块清单对齐代码 (`Structure Doc Presentation Guard & Module Inventory Aligned`)**：原文称 macOS 久坐提醒「始终放行、不做全屏检测」、屏保「始终返回 `unsupported_platform`」、`activeWindowProvider.js` 在 macOS 返回不可用兜底；实际 macOS 在开启窗口感知时每 30 秒读取 `pmset -g assertions`，`PreventUserIdleDisplaySleep` 断言会让久坐提醒按 `fullscreen` 推迟、屏保按 60 秒缓存上限完整校验，`unsupported_platform` 只出现在 Linux 等其他平台。同步更正 `PresentationGuard` 的模式差异（仅屏保校验缓存年龄；屏保比对 `display.bounds`、久坐提醒优先比对 `display.workArea`）、久坐提醒在全屏 RDP 期间的 `fullscreen-rdp` 推迟、托盘只打开选肤窗而 `switch-skin` 由 `SkinService` 发送、`PomodoroSystem` 只由主进程加载、`FORBIDDEN_SUBWINDOW_APIS` 仅为测试清单；补列 `PomodoroWindow.js`、`PET_SCALE_STORE_KEY`、`PetWindow` 的全屏 RDP 抑制导出、架构图中的 `ScreensaverController` / `InterruptionCoordinator` / `AutoLaunchService` / `ScreensaverSystem` 与 `test/test_font.html`（[ADR-030](docs/decisions/ADR-030-window-awareness.md)、[ADR-031](docs/decisions/ADR-031-break-reminder.md)）。本次只改文档，不涉及代码行为。
 - **ADR 状态与修订对齐当前实现 (`ADR Statuses & Amendments Aligned With Code`)**：[ADR-039](docs/decisions/ADR-039-city-setting-ui-window.md) 状态改为 `Superseded by ADR-050` 并补记独立城市窗口及其 preload 接口已移除；[ADR-047](docs/decisions/ADR-047-pet-scale-setting.md) 注明第 4 节独立体型窗口由 [ADR-050](docs/decisions/ADR-050-unified-settings-window.md) 取代，并更正已删除的 `test/petScaleWindowRenderer.behavior.test.js` 引用；[ADR-031](docs/decisions/ADR-031-break-reminder.md) 补记全屏 RDP 期间的 `fullscreen-rdp` 推迟、macOS `PreventUserIdleDisplaySleep` 断言推迟、设置入口迁至统一设置窗口及当前模块位置；[ADR-046](docs/decisions/ADR-046-electron-mock-testing-strategy.md) 更正 `mockElectron.js` 只导出 `setupElectronMock()`、并无集中的 `MockApp` / `MockTray` / `MockWebContents`；[ADR-030](docs/decisions/ADR-030-window-awareness.md) 说明 22000ms 平台 TTL 是 10000ms 采样时代的取值；[ADR-035](docs/decisions/ADR-035-meeting-auto-hide.md) 注明 `meetingHidden` 现位于 `PetVisibilityService.js`；[ADR-044](docs/decisions/ADR-044-cp-screensaver-session.md) 去掉过时行号并注明 `challengerStep3_1.test.js` 已删除；`docs/decisions/README.md` 同步 ADR-039 状态。本次只改文档，不涉及代码行为。
+- **计划文档、更新日志格式与安全报告版本对齐 (`Plans, Changelog Format & Security Report Version Aligned`)**：`docs/plan/feature-ideas-plan.md` 取消勾选并无实现的「配件锚点是否稳定」，将「皮肤 / 配件系统」改为皮肤已实现、配件未实现，并把已归档的番茄钟、窗口感知与时空同步规范路径改指 `docs/archive/`；`docs/plan/unified-settings-window-plan.md` 的设置窗层级描述更新为当前 `pop-up-menu` 方案并补记 R10；`hub-feature-plan.md` 与 `zongmen-task-todo-plan.md` 补充状态头；本节「统一设置窗口聚焦期被桌宠覆盖层压住修复」条目注明其 `screen-saver` 方案已被 `Changed` 中的 `pop-up-menu` 调整取代（[ADR-050](docs/decisions/ADR-050-unified-settings-window.md)）；`[0.1.0]` 合并重复的三个 `### Added`，`[0.2.3]` 的非标准 `### Known Issues` 改为版本下的已知问题说明；`docs/security_best_practices_report.md` 的 Electron 版本更新为 `^45.4.1`。本次只改文档，不涉及代码行为。
 
 ### Removed
 - **移除未被引用的天气刷新、超时与退避常量 (`Remove Unused Weather Config Constants`)**：`CONFIG.WEATHER_MIN_REFRESH_MINUTES`（30 分钟）、`CONFIG.WEATHER_TIMEOUT_MS`（4000ms）与 `CONFIG.WEATHER_BACKOFF_MS`（20 分钟）从未被生产代码使用，真实的请求超时（10 秒）、失败退避（10 分钟）与最短刷新间隔（30 分钟）由 `weatherSyncService.js` 的 `WEATHER_FETCH_TIMEOUT_MS`、`FALLBACK_TTL_MS` 与 `MIN_REFRESH_INTERVAL_MINUTES` 决定，保留它们会误导读者；现从 `src/data/config.js` 与 `test/config.test.js` 移除，并在 [ADR-038](docs/decisions/ADR-038-weather-sync.md) 追加修订说明实际生效的常量。
@@ -1102,8 +1104,7 @@
 - 修复更新失败弹窗只显示笼统失败文案的问题；现在会识别嵌套网络错误、404 和下载中断，并在 GitHub 更新源不可达时给出更准确的原因摘要。
 - 修复开发态托盘菜单中重复显示两个“检查更新”入口的问题；安装态共用同一菜单模板，也会只保留一个更新入口。
 
-### Known Issues
-- **副屏不可见区域仍待排查**：桌宠已可拖曳到副屏并从副屏走回主屏，但仍可能走入副屏上视觉不可见的位置。后续需结合运行时坐标、`walkAreas`、`display.scaleFactor` 和实际皮肤可见尺寸继续定位。
+> 发布时已知问题：**副屏不可见区域仍待排查**：桌宠已可拖曳到副屏并从副屏走回主屏，但仍可能走入副屏上视觉不可见的位置。后续需结合运行时坐标、`walkAreas`、`display.scaleFactor` 和实际皮肤可见尺寸继续定位。
 
 ## [0.2.2] - 2026-05-13
 ### Added
@@ -1261,6 +1262,9 @@
   - 新增 `left_pat.png` / `right_pat.png` 并绑定至右键“关怀/撒娇”动作。
   - 新增 `left_cultivate.png` / `left_hungry.png` / `left_sleep.png` 以补全岳七的各种状态表现。
 - 扩充了宠物状态机，新增 `patted` (被抚摸) 状态，抚摸时角色不再四处走动，并停留 3 秒专门展示互动反馈图片。
+- 新增 `docs/skin_assets_requirements.csv`，详细整理了所有默认单人图、特殊状态帧与双人合体帧的美术需求与尺寸建议。
+- 新增架构决策记录：
+  - ADR-016: 前端视觉重构与水墨仙侠美学 (Frontend Visual Redesign)
 
 ### Changed
 - **前端视觉重构 (Frontend UI Redesign)**：基于 `frontend-design` 技能原则，对界面进行了“水墨仙侠”风格的全面升级 (ADR-016)：
@@ -1270,13 +1274,6 @@
   - **粒子与反馈 (Interaction Effects)**：互动触发时的单调 Emoji 飘浮升级为 3 个具有交错延迟、随机偏移和缩放的粒子群，并修正了 z-index 避免遮挡气泡文字。双人互动覆盖层增加了平滑的弹性缩放进出效果。
 - **主进程内存深度优化 (Memory Optimization)**：在 `main.js` 中禁用了 `site-isolation-trials` 和冗余多媒体按键特性，并将 V8 引擎的最大堆内存限制为 128MB，大幅降低闲置内存水位 (ADR-012)。
 - **数值调整**：降低角色行走速度 `MOVE_SPEED` 从 2.0 至 1.2，使走动表现更悠闲。
-
-### Added
-- 新增 `docs/skin_assets_requirements.csv`，详细整理了所有默认单人图、特殊状态帧与双人合体帧的美术需求与尺寸建议。
-
-### Added
-- 新增架构决策记录：
-  - ADR-016: 前端视觉重构与水墨仙侠美学 (Frontend Visual Redesign)
 
 ## [0.0.13] - 2026-05-01
 ### Added

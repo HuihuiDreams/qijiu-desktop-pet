@@ -1,5 +1,8 @@
 ﻿# 实施计划：宗门事务 To-Do List
 
+> 状态：Proposed（未开始，任务均未勾选）  
+> 最后更新：2026-06-09
+
 ## Spec Alignment
 
 ### Objective
