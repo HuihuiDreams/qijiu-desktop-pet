@@ -226,4 +226,19 @@ test('AppLifecycle forwards tray openSettingsWindow and openSkinSelector options
   }
 });
 
+test('AppLifecycle passes isFullscreenRdpSuppressed to StatusWindow and SettingsWindow', () => {
+  const harness = createHarness();
+  const { AppLifecycle, restore } = loadFreshLifecycle(harness);
+  try {
+    AppLifecycle.initSubWindowsAndIpc();
+    const statusInit = harness.calls.find(([name]) => name === 'statusWindowModule.init')?.[1];
+    const settingsInit = harness.calls.find(([name]) => name === 'settingsWindowModule.init')?.[1];
+
+    assert.equal(statusInit?.isFullscreenRdpSuppressed, harness.services.petWindowModule.isFullscreenRdpSuppressed);
+    assert.equal(settingsInit?.isFullscreenRdpSuppressed, harness.services.petWindowModule.isFullscreenRdpSuppressed);
+  } finally {
+    restore();
+  }
+});
+
 

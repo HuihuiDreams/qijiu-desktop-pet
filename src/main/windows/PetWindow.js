@@ -133,7 +133,7 @@ function forgetFullscreenRdpRestore(subWin) {
 }
 
 /**
- * 主透明窗口当前是否因全屏 RDP 被原生隐藏（久坐提醒据此推迟，避免发往不可见窗口）。
+ * 主透明窗口当前是否因全屏 RDP 被原生隐藏（供久坐提醒、CP 屏保与子窗口未持焦守卫判断）。
  */
 function isFullscreenRdpSuppressed() {
   return fullscreenRdpSuppressed;

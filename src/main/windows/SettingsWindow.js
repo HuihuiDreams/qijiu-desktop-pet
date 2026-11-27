@@ -50,6 +50,15 @@ function getInitialSettingsWindowBounds() {
 }
 
 function keepPetAboveSettingsWindow() {
+  const win = windowManager.settingsWindow;
+  if (
+    typeof deps.isFullscreenRdpSuppressed === 'function'
+    && deps.isFullscreenRdpSuppressed()
+    && typeof win?.isFocused === 'function'
+    && !win.isFocused()
+  ) {
+    return;
+  }
   if (typeof deps.keepPetWindowOnTop === 'function') {
     deps.keepPetWindowOnTop();
   }
