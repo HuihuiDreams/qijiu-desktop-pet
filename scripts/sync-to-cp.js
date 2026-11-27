@@ -1590,11 +1590,31 @@ async function syncCommitsToCp({
       // Collapse any temporary alignment commit back onto checkpointSha while keeping staged changes
       runGit(['reset', '--soft', checkpointSha], { cwd: worktreeDir });
 
-      // Prevent empty commits when patch content was already present on target branch
+      // Prevent empty commits or CHANGELOG-only ghost commits after skipping doc conflicts
       const stagedChangesAfterReset = runGit(['diff', '--cached', '--name-only'], {
         cwd: worktreeDir,
       });
-      if (!stagedChangesAfterReset) {
+      const stagedFilesAfterReset = stagedChangesAfterReset
+        ? stagedChangesAfterReset.split(/\r?\n/).filter(Boolean)
+        : [];
+      if (
+        skippedDocConflicts.length > 0 &&
+        stagedFilesAfterReset.every((file) => file === 'CHANGELOG.md')
+      ) {
+        runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
+        const changelogNote = stagedFilesAfterReset.includes('CHANGELOG.md')
+          ? '；无其余改动，未写入 CHANGELOG.md'
+          : '；无其余改动，跳过提交';
+        results.push({
+          sha,
+          subject,
+          verdict: '文档冲突跳过',
+          status: '⏭️ 跳过',
+          reason: `文档冲突已跳过（保留目标分支版本）: ${skippedDocConflicts.join(', ')}${changelogNote}`,
+        });
+        continue;
+      }
+      if (stagedFilesAfterReset.length === 0) {
         runGit(['reset', '--hard', checkpointSha], { cwd: worktreeDir });
         results.push({
           sha,

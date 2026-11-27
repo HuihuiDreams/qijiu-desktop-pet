@@ -185,7 +185,7 @@ qijiu-desktop-pet/
 │  ├─ protect-assets.js                 # 皮肤资源加密维护脚本
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
-│  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；支持纯锁文件冲突自动重生成，`docs/**/*.md`、`AGENTS.md`、`.geminirules` 冲突保留目标分支版本，其余冲突停止批次并从锚点重试（ADR-049）
+│  ├─ sync-to-cp.js                     # 沿 main 第一父提交评估并同步完整合并结果，安装目标锁文件依赖并测试；支持纯锁文件冲突自动重生成，`docs/**/*.md`、`AGENTS.md`、`.geminirules` 冲突保留目标分支版本（若仅余 `CHANGELOG.md` 则整条跳过而不写入日志），其余冲突停止批次并从锚点重试（ADR-049）
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
 │  ├─ verify-package-contents.js        # 打包后扫描 app.asar 是否混入禁止路径（如 .agents、.claude、.kiro、.vscode、.skillopt-sleep、AGENTS.md、backups、security-scans、test-results）或皮肤目录明文 WebP（`src/assets/<skin>/**/*.webp`），`npm run verify:package` 调用
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验

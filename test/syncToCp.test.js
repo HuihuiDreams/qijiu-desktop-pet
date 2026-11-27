@@ -1368,6 +1368,66 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     }
   });
 
+  await t.test('skips committing CHANGELOG-only patch when all non-changelog changes are skipped doc conflicts', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-doconly-integ-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const localRepo = path.join(tmpBase, 'local');
+    const structurePath = path.join(localRepo, 'docs', 'structure.md');
+    const changelogPath = path.join(localRepo, 'CHANGELOG.md');
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', localRepo]);
+      git(localRepo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.dirname(structurePath), { recursive: true });
+      fs.writeFileSync(structurePath, 'guard: shared text\n');
+      fs.writeFileSync(changelogPath, '## [Unreleased]\n\n### Fixed\n- old entry\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'chore: base']);
+      git(localRepo, ['branch', '-M', 'main']);
+      git(localRepo, ['push', '-u', 'origin', 'main']);
+
+      git(localRepo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      fs.writeFileSync(structurePath, 'guard: cp specific text\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'docs: cp structure']);
+      const cpPreSyncSha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      git(localRepo, ['checkout', 'main']);
+      fs.writeFileSync(structurePath, 'guard: main updated text\n');
+      fs.writeFileSync(changelogPath, '## [Unreleased]\n\n### Fixed\n- old entry\n- new doc entry\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'docs: update structure and changelog']);
+      const sha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', 'origin', 'main']);
+
+      const syncResult = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: sha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+
+      assert.equal(syncResult.syncedCount, 0);
+      assert.ok(!syncResult.results[0].blocked);
+      assert.equal(syncResult.results[0].status, '⏭️ 跳过');
+      assert.match(syncResult.results[0].reason, /文档冲突已跳过.*docs\/structure\.md/);
+      assert.match(syncResult.results[0].reason, /未写入 CHANGELOG\.md/);
+
+      git(localRepo, ['fetch', 'origin']);
+      const cpRef = 'origin/cp/crowley-aziraphale';
+      assert.equal(git(localRepo, ['rev-parse', cpRef]), cpPreSyncSha);
+      assert.equal(git(localRepo, ['show', `${cpRef}:docs/structure.md`]), 'guard: cp specific text');
+      assert.doesNotMatch(git(localRepo, ['show', `${cpRef}:CHANGELOG.md`]), /new doc entry/);
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
   await t.test('resolveSyncCliOptions enforces verifyOnly and protects against SYNC_PUSH env leakage', () => {
     // Defaults to dry-run
     assert.deepEqual(resolveSyncCliOptions([], {}), {

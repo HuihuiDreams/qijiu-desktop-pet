@@ -140,7 +140,7 @@ macOS / Linux / WSL 在 Bash 中运行：
    - 当 `package.json` 合并无冲突、commit 确实修改了 `package.json` 中的依赖解析字段（`dependencies` / `devDependencies` / `optionalDependencies` / `peerDependencies` / `peerDependenciesMeta` / `bundleDependencies` / `bundledDependencies` / `overrides` / `workspaces`），且唯一剩余的非文档/非日志冲突是 `package-lock.json` 时，自动检出目标分支锁文件与好兆头包身份并执行 `npm install --package-lock-only --ignore-scripts` 就地重生成锁文件，随后校验来源提交在 `package-lock.json` 中新增或升级的包版本是否全部保留（若有任何升级被旧锁文件吞掉则立即回滚阻塞），再交由 `npm ci` 与 `npm test` 门禁验证；仅修改 `scripts` 等非依赖字段的 `package.json` 改动、未修改 `package.json` 的纯锁文件冲突或伴随其他文件冲突时仍阻塞回滚。
 4. **临时 Worktree 隔离、单提交回滚与单元测试门禁**：
    - 全程在临时 `git worktree` 中执行合并与验证，绝不切换或污染当前主工作区分支。
-   - `docs/**/*.md`、`AGENTS.md` 与 `.geminirules` 的冲突保留好兆头分支版本，不阻塞同步，报告说明中会列出这些文件。
+   - `docs/**/*.md`、`AGENTS.md` 与 `.geminirules` 的冲突保留好兆头分支版本，不阻塞同步，报告说明中会列出这些文件；若跳过这些冲突后已无除 `CHANGELOG.md` 外的其余暂存改动，则回退并整条跳过（不写入 `CHANGELOG.md`），避免产生失实的纯日志提交。
    - 若某条提交在除 `CHANGELOG.md` 外的业务代码存在冲突，或者合并后安装依赖 / 运行 `npm test` 未通过，回滚该条提交并停止批次，工作流标记失败；后续运行从最后同步标记重试，尚无标记时从共同祖先恢复。每条验证通过后立即向远端推送，并在 GitHub Actions Summary 输出报告。
    - Windows 下以 `shell` 方式调用 `npm`（`npm.cmd`），本地 `--push` 可正常运行；`git` 输出缓冲上限为 64 MiB。
    - 本地运行 `npm run sync:cp` 默认采用安全的 `--dry-run` 预览模式；推送脚本使用 `npm run sync:cp -- --verify` 模式（在临时 worktree 中完整模拟 cherry-pick 与单元测试门禁，但不向远端推送，强制屏蔽 `SYNC_PUSH` 环境变量以杜绝误推，且积压超过 50 条时保证覆盖 `origin/main..HEAD`）；仅当显式传入 `npm run sync:cp -- --push` 时才会真正执行向远端分支的推送。
