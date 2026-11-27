@@ -186,7 +186,7 @@ GoodOmensDeskPet / good-omens-desktop-pet（DeskPet 好兆头分支）/
 │  ├─ run-tests.js                      # 单元、行为与集成测试统一运行入口 (npm test)
 │  ├─ run-integration-tests.js          # 跨模块集成测试独立运行入口 (npm run test:integration)
 │  ├─ set-win-icon.ps1                  # Windows 图标处理脚本
-│  ├─ verify-package-contents.js        # 打包后扫描 app.asar 是否混入禁止路径（如 .agents、.claude、.kiro、.vscode、.skillopt-sleep、AGENTS.md、backups、security-scans、test-results）或皮肤目录明文 WebP（`src/assets/<skin>/**/*.webp`），`npm run verify:package` 调用
+│  ├─ verify-package-contents.js        # 打包后扫描 app.asar 是否混入禁止路径（如 .agents、.claude、.kiro、.vscode、.skillopt-sleep、AGENTS.md、backups、dist-update-test、output、security-scans、test-results、__pycache__、.env*、证书/私钥文件）或皮肤目录明文 WebP（`src/assets/<skin>/**/*.webp`），`npm run verify:package` 调用
 │  └─ verify-signatures.ps1             # 签名/可执行文件校验
 ├─ src/
 │  ├─ index.html                        # 主宠物窗口 HTML
@@ -677,7 +677,7 @@ npm run qa:electron:performance -- --scenarios idle,walking,rain,wind,heat,thund
 - `fast-uri` 经 `electron-store → conf → ajv` 进入生产依赖树，并与构建工具共享；锁文件采用 `fast-uri@3.1.9` 与 `undici@7.30.2` 安全补丁，`test/dependencyUriSecurity.test.js` 覆盖 Ajv URI 解析器的主机名规范化、纯路径 suffix 转义、正常 schema 引用兼容性及锁文件补丁版本防回退断言（[ADR-029](./decisions/ADR-029-security-audit-and-local-hardening.md)）。
 - Windows NSIS 架构配置在 `package.json` 的 `build.win.target` 对象内（`[{ "target": "nsis", "arch": ["x64"] }]`）；`build.win.arch` 不是合法字段，且会阻断双平台构建。`test/platformCompatibility.test.js` 使用 electron-builder 自带验证器检查完整构建配置（[ADR-020](./decisions/ADR-020-windows-release-and-code-signing.md)）。
 - `.codex/tmp-*` 与 `.agents/`（`skills/` 除外，其为项目维护技能，随仓库提交）及 `security-scans/` 属于开发辅助与扫描临时产物，禁止作为源码提交。
-- electron-builder 不读取 `.gitignore`，因此 `build.files` 还显式排除 `.codex/`、`.agents/`、`.claude/`、`.kiro/`、`.skillopt-sleep/`、`.vscode/`、`.geminirules`、`AGENTS.md`、`CLAUDE.md`、`backups/`、`security-scans/` 与 `test-results/`；Windows 和 macOS 构建完成后由 `npm run verify:package` 扫描全部 `app.asar`，若上述内部文件或皮肤目录明文 WebP 残留，或没有生成可验证的包则立即失败。
+- electron-builder 不读取 `.gitignore`，因此 `build.files` 还显式排除 `.codex/`、`.agents/`、`.claude/`、`.kiro/`、`.skillopt-sleep/`、`.vscode/`、`.geminirules`、`AGENTS.md`、`CLAUDE.md`、`backups/`、`dist-update-test/`、`output/`、`security-scans/`、`test-results/`、`__pycache__/`、`.env*` 与证书/私钥文件（`*.pfx`/`*.p12`/`*.key`/`*.pem`/`*.cer`/`*.crt`/`*.der`）；Windows 和 macOS 构建完成后由 `npm run verify:package` 扫描全部 `app.asar`，若上述禁止文件或皮肤目录明文 WebP 残留，或没有生成可验证的包则立即失败。
 
 ## 受保护皮肤资产
 

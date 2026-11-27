@@ -16,7 +16,7 @@ description: >-
 
 1. **ASAR 产物内容隔离（防代码与敏感配置泄露）**
    - 最终打包的 `app.asar` 必须经过 [`scripts/verify-package-contents.js`](scripts/verify-package-contents.js) 严密审计。
-   - 严禁包含 `.agents/`、`.codex/`、`.claude/`、`.kiro/`、`.skillopt-sleep/`、`.vscode/`、`.geminirules`、`AGENTS.md`、`CLAUDE.md`、`backups/`、`security-scans/`、`test-results/` 以及皮肤目录下的明文 WebP（`src/assets/<skin>/**/*.webp`；`src/assets/` 根目录的书法水印 WebP 按设计明文打包）。
+   - 严禁包含 `.agents/`、`.codex/`、`.claude/`、`.kiro/`、`.skillopt-sleep/`、`.vscode/`、`.geminirules`、`AGENTS.md`、`CLAUDE.md`、`backups/`、`dist-update-test/`、`output/`、`security-scans/`、`test-results/`、`__pycache__/`、`.env*`、证书/私钥文件（`*.pfx`、`*.p12`、`*.key`、`*.pem`、`*.cer`、`*.crt`、`*.der`）以及皮肤目录下的明文 WebP（`src/assets/<skin>/**/*.webp`；`src/assets/` 根目录的书法水印 WebP 按设计明文打包）。
 2. **受保护皮肤资产机制**
    - 打包前必须运行 `npm run protect:assets` 生成 `protected-assets/` 密文；`package.json` 中的 `build.files` 会主动排除 `src/assets/*/*.webp` 明文图片（详见 [ADR-040](docs/decisions/ADR-040-encrypted-skin-assets.md)）。
 3. **macOS 二进制执行文件名 ASCII 规范化**
@@ -76,7 +76,7 @@ npx electron-builder --win --dir --config.win.signAndEditExecutable=false
 ```bash
 npm run verify:package
 ```
-验证解包产物中无内部 Agent / IDE 目录、无本地临时产物、无皮肤目录明文 WebP。
+验证解包产物中无内部 Agent / IDE 目录、无本地临时产物、无 `.env*` 或证书私钥、无皮肤目录明文 WebP。
 
 ### 6. (Windows 本地可选) 验证代码签名
 若配置了本地 Windows Authenticode 证书（详见 [`docs/release-code-signing.md`](docs/release-code-signing.md)）：
