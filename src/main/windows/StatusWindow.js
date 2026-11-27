@@ -7,6 +7,7 @@ const { isSenderMainWindow, isSenderWindow } = require('../services/IpcSenderAut
 const STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL = 'pop-up-menu';
 let deps = {};
 let lastStatusWindowData = null;
+let isOpeningStatusWindow = false;
 
 function keepPetAboveStatusWindow() {
   if (typeof deps.keepPetWindowOnTop === 'function') {
@@ -132,9 +133,12 @@ function createStatusWindow() {
       keepPetAboveStatusWindow();
     }
   });
-  windowManager.statusWindow.on('focus', keepPetAboveStatusWindow);
-  windowManager.statusWindow.on('show', keepPetAboveStatusWindow);
-  windowManager.statusWindow.on('restore', keepPetAboveStatusWindow);
+  const keepPetAboveWhenNotOpening = () => {
+    if (!isOpeningStatusWindow) keepPetAboveStatusWindow();
+  };
+  windowManager.statusWindow.on('focus', keepPetAboveWhenNotOpening);
+  windowManager.statusWindow.on('show', keepPetAboveWhenNotOpening);
+  windowManager.statusWindow.on('restore', keepPetAboveWhenNotOpening);
   // macOS 上 moved 是 move 的别名，拖动时逐帧触发；macOS 由窗口层级保证顺序，只在 Windows 重申
   windowManager.statusWindow.on('moved', () => {
     if (process.platform === 'win32') keepPetAboveStatusWindow();
@@ -155,20 +159,26 @@ function openStatusWindow() {
   if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
-  if (typeof win.isMinimized === 'function' && win.isMinimized()) {
-    win.restore();
-  }
-  if (!win.isVisible()) {
-    win.show();
-  }
-  if (typeof win.setAlwaysOnTop === 'function') {
-    win.setAlwaysOnTop(true, STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL);
-  }
-  if (typeof win.moveTop === 'function') {
-    win.moveTop();
-  }
-  if (typeof win.focus === 'function') {
-    win.focus();
+  // 先完成恢复、显示与聚焦再重申主窗置顶，避免全屏 RDP 抑制期间 show/restore 在 focus 之前隐藏状态窗。
+  isOpeningStatusWindow = true;
+  try {
+    if (typeof win.isMinimized === 'function' && win.isMinimized()) {
+      win.restore();
+    }
+    if (!win.isVisible()) {
+      win.show();
+    }
+    if (typeof win.setAlwaysOnTop === 'function') {
+      win.setAlwaysOnTop(true, STATUS_WINDOW_ALWAYS_ON_TOP_LEVEL);
+    }
+    if (typeof win.moveTop === 'function') {
+      win.moveTop();
+    }
+    if (typeof win.focus === 'function') {
+      win.focus();
+    }
+  } finally {
+    isOpeningStatusWindow = false;
   }
   keepPetAboveStatusWindow();
   sendStatusWindowData();

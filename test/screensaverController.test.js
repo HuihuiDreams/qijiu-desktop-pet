@@ -656,6 +656,42 @@ test('ScreensaverController - transient eligibility loss mid-session (stale_cach
   controller.dispose();
 });
 
+test('ScreensaverController - active session is cancelled when fullscreen-rdp suppression takes effect mid-session', () => {
+  const clock = createFakeClock();
+  const powerMonitor = createFakePowerMonitor(350);
+  const mainWindow = createFakeMainWindow();
+  const coordinator = createInterruptionCoordinator();
+  let rdpSuppressed = false;
+
+  const controller = createScreensaverController({
+    powerMonitor,
+    interruptionCoordinator: coordinator,
+    eligibilityGuard: {
+      canInterrupt: () => (rdpSuppressed
+        ? { canInterrupt: false, reason: 'fullscreen-rdp' }
+        : { canInterrupt: true, reason: null }),
+    },
+    getMainWindow: () => mainWindow,
+    now: clock.now,
+    setInterval: clock.setInterval,
+    clearInterval: clock.clearInterval,
+    settings: { enabled: true, idleThresholdMinutes: 5 },
+  });
+
+  controller.start();
+  controller._poll();
+  assert.equal(controller.getState().state, 'active');
+
+  rdpSuppressed = true;
+  controller._poll();
+  assert.equal(controller.getState().state, 'inactive');
+  assert.equal(coordinator.getCurrentHolder(), null);
+  const lastEvent = mainWindow.sentEvents[mainWindow.sentEvents.length - 1];
+  assert.equal(lastEvent.channel, 'screensaver-cancel');
+  assert.equal(lastEvent.payload.reason, 'fullscreen-rdp');
+  controller.dispose();
+});
+
 test('ScreensaverController - renderer completion releases the active screensaver lease', () => {
   const clock = createFakeClock();
   const powerMonitor = createFakePowerMonitor(300);

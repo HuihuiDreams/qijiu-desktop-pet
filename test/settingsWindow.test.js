@@ -622,3 +622,154 @@ test('SettingsWindow: keeps pop-up-menu below PetWindow while focused and drops 
     delete require.cache[PET_WINDOW_PATH];
   }
 });
+
+test('SettingsWindow: opening or re-focusing during fullscreen RDP focuses before keepPetWindowOnTop instead of hiding itself', () => {
+  const FakeBrowserWindow = createFakeBrowserWindowClass();
+  const windowManager = {
+    mainWindow: null,
+    statusWindow: null,
+    pomodoroWindow: null,
+    skinSelectorWindow: null,
+    settingsWindow: null,
+    updateProgressWindow: null,
+  };
+
+  // Model Win32 show/restore emitting before focus and focus() being a no-op on a hidden window.
+  class Win32RdpBrowserWindow extends FakeBrowserWindow {
+    show() {
+      this.visible = true;
+      this.emit('show');
+    }
+
+    restore() {
+      this.minimized = false;
+      this.emit('restore');
+    }
+
+    hide() {
+      this.visible = false;
+      this.focused = false;
+      this.emit('hide');
+    }
+
+    focus() {
+      if (!this.visible) return;
+      super.focus();
+      this.emit('focus');
+    }
+  }
+
+  delete require.cache[SETTINGS_WINDOW_PATH];
+  delete require.cache[PET_WINDOW_PATH];
+  const originalLoad = Module._load;
+  Module._load = function mockLoader(request, parent, isMain) {
+    if (parent?.filename === SETTINGS_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { focus: () => {} },
+          BrowserWindow: Win32RdpBrowserWindow,
+          screen: {
+            getCursorScreenPoint: () => ({ x: 0, y: 0 }),
+            getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1600, height: 900 } }),
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === '../services/PetScaleService') return { flushPreview: () => 100 };
+    }
+    if (parent?.filename === PET_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { on: () => {} },
+          BrowserWindow: Win32RdpBrowserWindow,
+          ipcMain: { on: () => {} },
+          screen: {
+            getPrimaryDisplay: () => ({ id: 'primary' }),
+            on: () => {},
+            removeListener: () => {},
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === './UpdateProgressWindow') return { closeUpdateProgressWindow: () => {} };
+      if (request.includes('FinalSaveService')) return { installFinalSaveBeforeClose: () => {} };
+      if (request.includes('IpcSenderAuthorization')) return { isSenderMainWindow: () => true };
+      if (request.includes('StartupCachePolicy')) return { shouldClearStartupCache: () => false };
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  const origPlatform = process.platform;
+  Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+  try {
+    const SettingsWindow = require(SETTINGS_WINDOW_PATH);
+    const PetWindow = require(PET_WINDOW_PATH);
+    SettingsWindow.init({
+      flushPetScalePreview: () => 100,
+      keepPetWindowOnTop: PetWindow.keepPetWindowOnTop,
+    });
+    PetWindow.init({
+      DisplayService: {
+        setCurrentPetDisplay: () => {},
+        getDesktopWindowBounds: () => ({ x: 0, y: 0, width: 1600, height: 900 }),
+        lockPetWindowToBounds: () => {},
+        sendScreenInfo: () => {},
+        stopDragPoll: () => {},
+        displayFitScheduler: { schedule: () => {}, clear: () => {} },
+      },
+      WindowAwarenessService: {
+        sendActiveWindowInfo: () => {},
+        getLastPayload: () => ({ active: false, reason: 'disabled', window: null, platform: null }),
+        getNativePayload: () => ({
+          active: true,
+          window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false },
+        }),
+        stopActiveWindowAwareness: () => {},
+        startActiveWindowAwareness: () => {},
+      },
+      PetVisibilityService: { isPetCurrentlyHidden: () => false, sendPetVisibility: () => {} },
+      MeetingDetectorController: { startMeetingDetector: () => {} },
+      WeatherSyncController: { updateWeatherSyncSettings: () => {}, getWeatherSyncSettings: () => ({}) },
+      app: { isPackaged: true, getVersion: () => '1.0.0', commandLine: { hasSwitch: () => false } },
+      StoreManager: { getStore: () => ({ get: () => '1.0.0', set: () => {} }) },
+    });
+
+    PetWindow.createWindow();
+    windowManager.mainWindow.visible = true;
+    PetWindow.onActiveWindowChanged();
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), true);
+    assert.equal(windowManager.mainWindow.isVisible(), false);
+
+    // 1. First open from tray during fullscreen RDP: show() emits before focus().
+    const settingsWin = SettingsWindow.openSettingsWindow('appearance');
+    assert.equal(settingsWin.isVisible(), true, 'first open must stay visible');
+    assert.equal(settingsWin.isFocused(), true, 'first open must receive focus');
+    assert.equal(settingsWin.isAlwaysOnTop(), true);
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), false);
+    assert.equal(windowManager.mainWindow.isVisible(), true);
+
+    // 2. Click back into fullscreen RDP: settings drops alwaysOnTop and stays visible on the other display.
+    settingsWin.blur();
+    settingsWin.emit('blur');
+    assert.equal(settingsWin.isAlwaysOnTop(), false);
+    PetWindow.onActiveWindowChanged();
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), true);
+    assert.equal(windowManager.mainWindow.isVisible(), false);
+    assert.equal(settingsWin.isVisible(), true);
+
+    // 3. Re-opening an already-visible unfocused settings window from tray must focus before pulsing top.
+    SettingsWindow.openSettingsWindow('companion');
+    assert.equal(settingsWin.isVisible(), true, 'already-visible settings window must not be hidden by RDP suppression');
+    assert.equal(settingsWin.isFocused(), true);
+    assert.equal(settingsWin.isAlwaysOnTop(), true);
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), false);
+    assert.equal(windowManager.mainWindow.isVisible(), true);
+
+    windowManager.mainWindow.emit('closed');
+  } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+    Module._load = originalLoad;
+    delete require.cache[SETTINGS_WINDOW_PATH];
+    delete require.cache[PET_WINDOW_PATH];
+  }
+});

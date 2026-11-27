@@ -429,6 +429,42 @@ test('StatusWindow: closing the panel drops its fullscreen RDP restore before re
   });
 });
 
+test('StatusWindow: openStatusWindow focuses before re-asserting PetWindow even if show/restore emit synchronously', () => {
+  withMockedModule('../src/main/windows/StatusWindow', ({ mod }) => {
+    const events = [];
+    let currentWin = null;
+    mod.init({
+      refreshTrayMenu: () => {},
+      keepPetWindowOnTop: () => events.push(['keepPetWindowOnTop', currentWin?.isFocused()]),
+    });
+    const win = mod.openStatusWindow();
+    currentWin = win;
+    win.blur();
+    win.visible = false;
+    win.minimized = true;
+    win.restore = () => {
+      win.minimized = false;
+      events.push('restore');
+      win.emit('restore');
+    };
+    win.show = () => {
+      win.visible = true;
+      events.push('show');
+      win.emit('show');
+    };
+    win.focus = () => {
+      win.focused = true;
+      events.push('focus');
+      win.emit('focus');
+    };
+    events.length = 0;
+
+    mod.openStatusWindow();
+
+    assert.deepEqual(events, ['restore', 'show', 'focus', ['keepPetWindowOnTop', true]]);
+  });
+});
+
 test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', async () => {
   await withMockedModule('../src/main/windows/PomodoroWindow', async ({ mod, windowManager, focusCalls, ipcHandlers }) => {
     mod.init({

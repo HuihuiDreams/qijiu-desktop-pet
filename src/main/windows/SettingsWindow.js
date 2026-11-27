@@ -11,6 +11,7 @@ const VALID_SETTINGS_TABS = new Set(['appearance', 'companion', 'system']);
 
 let settingsTopPulseTimer = null;
 let settingsCloseInProgress = false;
+let isOpeningSettingsWindow = false;
 let activeInitialTab = 'appearance';
 let deps = {};
 
@@ -154,15 +155,12 @@ function createSettingsWindow(initialTab = 'appearance') {
     }
   });
 
-  win.on('focus', () => {
-    pulseSettingsWindowTop();
-  });
-  win.on('show', () => {
-    pulseSettingsWindowTop();
-  });
-  win.on('restore', () => {
-    pulseSettingsWindowTop();
-  });
+  const pulseWhenNotOpening = () => {
+    if (!isOpeningSettingsWindow) pulseSettingsWindowTop();
+  };
+  win.on('focus', pulseWhenNotOpening);
+  win.on('show', pulseWhenNotOpening);
+  win.on('restore', pulseWhenNotOpening);
   // macOS 上 moved 是 move 的别名，拖动时逐帧触发；macOS 由窗口层级保证顺序，只在 Windows 重申
   win.on('moved', () => {
     if (process.platform === 'win32' && (typeof win.isAlwaysOnTop !== 'function' || win.isAlwaysOnTop())) {
@@ -207,13 +205,19 @@ function openSettingsWindow(initialTab = 'appearance') {
   if (process.platform === 'darwin' && typeof app?.focus === 'function' && (typeof win.isFocused !== 'function' || !win.isFocused())) {
     app.focus({ steal: true });
   }
-  if (win.isMinimized()) win.restore();
-  if (!win.isVisible()) {
-    win.show();
+  // 先完成恢复、显示与聚焦再置顶并重申主窗层级，避免全屏 RDP 抑制期间
+  // show/restore 或预置顶在 focus 之前回调 keepPetWindowOnTop() 把设置窗立即隐藏。
+  isOpeningSettingsWindow = true;
+  try {
+    if (win.isMinimized()) win.restore();
+    if (!win.isVisible()) {
+      win.show();
+    }
+    win.focus();
+  } finally {
+    isOpeningSettingsWindow = false;
   }
   pulseSettingsWindowTop();
-  win.focus();
-  keepPetAboveSettingsWindow();
 
   if (wasAlreadyCreated && win.webContents && !win.webContents.isDestroyed?.()) {
     win.webContents.send('settings-switch-tab', targetTab);
