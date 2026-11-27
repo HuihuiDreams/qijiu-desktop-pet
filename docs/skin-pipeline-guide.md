@@ -75,7 +75,7 @@ static SKIN_IMAGE_SCALES = {
 本项目采用了受保护皮肤资产机制（通过 `pet-asset://` 协议与 `protected-assets/*.dat` 密文加载，详见 `ADR-040`）。在转换完 WebP 后，你需要注意以下运行与构建行为：
 
 - **开发调试 (`npm run dev`)**：
-  - **新增全新皮肤**：先在 `src/main/services/SkinService.js` 的 `SKIN_NAME_KEYS`、`SKIN_LABEL_KEYS`、`SKIN_ARTIST_KEYS` 中登记皮肤 ID，并在 `src/data/i18n.js` 补齐三语名称与画师词条；未登记的 ID 不会出现在选肤画廊，`switch-skin` 也会拒绝。若本地已存在 `protected-assets/` 清单，可用皮肤列表以清单为准，新皮肤需运行一次 `npm run protect:assets` 才会出现；没有清单时，主进程按上述白名单扫描 `src/assets/`，并直接读取 `src/assets/<YOUR_SKIN_NAME>/*.webp` 明文图片，可以直接启动调试。
+  - **新增全新皮肤**：先在 `src/main/services/SkinService.js` 的 `SKIN_NAME_KEYS`、`SKIN_LABEL_KEYS`、`SKIN_ARTIST_KEYS` 中登记皮肤 ID，并在 `src/data/i18n.js` 补齐三语名称与画师词条，否则画廊只显示目录名且没有画师署名。若本地已存在 `protected-assets/` 清单（打包版本总是如此），可用皮肤列表以清单为准，新皮肤需运行一次 `npm run protect:assets` 才会出现；没有清单时，主进程只按上述白名单扫描 `src/assets/`，未登记的 ID 不会出现在选肤画廊，`switch-skin` 也会拒绝，已登记的皮肤则直接读取 `src/assets/<YOUR_SKIN_NAME>/*.webp` 明文图片，可以直接启动调试。
   - **修改已有皮肤（重要防坑）**：如果你是在调优修改**原本就已经存在**的皮肤 WebP（如 `default/left.webp`），并且本地由于之前的构建或生成操作已经存在了 `protected-assets/` 目录，主进程会优先匹配并加载密文缓存，这会导致你在 `npm run dev` 中看到的依然是修改前的旧图。此时只需手动执行一次加密更新命令即可刷新预览：
 
     ```powershell
