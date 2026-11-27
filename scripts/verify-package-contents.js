@@ -7,10 +7,19 @@ const FORBIDDEN_TOP_LEVEL_PATHS = [
   '.agents',
   '.claude',
   '.geminirules',
+  '.kiro',
+  '.skillopt-sleep',
+  '.vscode',
   'agents.md',
   'claude.md',
   'backups',
+  'security-scans',
+  'test-results',
 ];
+
+// 皮肤目录下的明文 WebP 只能以 protected-assets/ 密文形式发布（ADR-040）；
+// src/assets/ 根目录下的书法水印等共享 WebP 不受此限制。
+const PLAINTEXT_SKIN_WEBP_PATTERN = /^src\/assets\/[^/]+\/.+\.webp$/i;
 
 function normalizeAsarEntry(entry) {
   return String(entry).replace(/\\/g, '/').replace(/^\/+/, '');
@@ -21,7 +30,7 @@ function findForbiddenEntries(entries) {
     .map(normalizeAsarEntry)
     .filter((entry) => {
       const [topLevel] = entry.toLowerCase().split('/');
-      return FORBIDDEN_TOP_LEVEL_PATHS.includes(topLevel);
+      return FORBIDDEN_TOP_LEVEL_PATHS.includes(topLevel) || PLAINTEXT_SKIN_WEBP_PATTERN.test(entry);
     });
 }
 

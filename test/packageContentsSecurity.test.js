@@ -17,6 +17,12 @@ const REQUIRED_PACKAGE_EXCLUSIONS = [
   '!AGENTS.md',
   '!CLAUDE.md',
   '!backups/**', // 本地未跟踪的明文皮肤备份；electron-builder 不读取 .gitignore
+  // 本机 IDE / Agent 工作目录与 Playwright 输出，同样被 .gitignore 忽略但会被 electron-builder 打包
+  '!.kiro/**',
+  '!.skillopt-sleep/**',
+  '!.vscode/**',
+  '!security-scans/**',
+  '!test-results/**',
 ];
 
 test('electron-builder excludes internal agent files from app.asar', () => {
@@ -38,6 +44,15 @@ test('package content verifier recognizes internal paths on every platform', () 
       '/AGENTS.md',
       '/CLAUDE.md',
       '/backups/assets/default_qijiu/left.webp',
+      '/.kiro/steering/product.md',
+      '/.skillopt-sleep/antigravity_tasks.json',
+      '\\.vscode\\settings.json',
+      '/security-scans/threat_model.md',
+      '/test-results/.last-run.json',
+      '/src/assets/default/yueqi/idle.webp',
+      '/src/assets/school_au/shenjiu/walk_left_01.WEBP',
+      '/src/assets/calligraphy-qj.webp',
+      '/protected-assets/default/yueqi/idle.dat',
       '/src/app.js',
     ]),
     [
@@ -48,6 +63,13 @@ test('package content verifier recognizes internal paths on every platform', () 
       'AGENTS.md',
       'CLAUDE.md',
       'backups/assets/default_qijiu/left.webp',
+      '.kiro/steering/product.md',
+      '.skillopt-sleep/antigravity_tasks.json',
+      '.vscode/settings.json',
+      'security-scans/threat_model.md',
+      'test-results/.last-run.json',
+      'src/assets/default/yueqi/idle.webp',
+      'src/assets/school_au/shenjiu/walk_left_01.WEBP',
     ],
   );
 });
