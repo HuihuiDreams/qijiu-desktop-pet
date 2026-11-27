@@ -141,7 +141,7 @@ renderer 重载一律取消而不回放。
 
 **根因**
 
-`ScreensaverController` 进入 `active` 后改为 1 秒轮询，并在此轮询中重查 `ScreensaverEligibilityGuard`。Windows 活动窗口采样器的 `sampledAt` 取自 PowerShell 调用起始时间（`activeWindowProvider.js:200`），叠加 2 秒采样间隔（`ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000`）与 2 秒信任窗口（`DEFAULT_MAX_CACHE_AGE_MS = 2000`）后，缓存极易在 1 秒轮询边界内越过 2 秒阈值，返回 `stale_cache` / `provider-error` / `unknown-state` 等瞬态拒绝。
+`ScreensaverController` 进入 `active` 后改为 1 秒轮询，并在此轮询中重查 `ScreensaverEligibilityGuard`。Windows 活动窗口采样器的 `sampledAt` 取自 PowerShell 调用起始时间（`activeWindowProvider.js` 各采样函数开头的 `const sampledAt = Date.now()`），叠加 2 秒采样间隔（`ACTIVE_WINDOW_SAMPLE_INTERVAL_MS = 2000`）与 2 秒信任窗口（`DEFAULT_MAX_CACHE_AGE_MS = 2000`）后，缓存极易在 1 秒轮询边界内越过 2 秒阈值，返回 `stale_cache` / `provider-error` / `unknown-state` 等瞬态拒绝。
 
 `poll()` 中 active 分支「守卫返回不可中断即立即 `cancelSession`」的逻辑把这些瞬态采样间隙误当作资格变化，发送 `screensaver-cancel` 触发渲染器 `reset()`，导致演出被撕毁。
 
@@ -176,7 +176,7 @@ CP 屏保「被抓包」提示原先只有屏幕中央一个红色 `!` 文本节
 - 移除 `screensaver.css` 中孤立的 `.screensaver-caught-text` 样式与 `@keyframes screensaver-caught-pop` 动画。
 - `ScreensaverSystem.showCaughtIndicator` 重命名为 `showCaughtBubbles`，通过注入的 `dialogBubble` 渲染。
 - `Decision` 段落中「普通输入时，`!` 会先保留一次绘制机会、展示 800ms，并按目标显示器 DPI 定位后再回位」同步更新为「双宠头顶气泡，文案来自 i18n，展示 4000ms 后随回归气泡清理或自然消失，宠物在 800ms 停顿后开始回位」。
-- 相关单元测试（`challengerStep3_1.test.js` / `screensaverOverlay.test.js`）已改为断言 `dialogBubble.show` 调用而非 CSS 节点。
+- 相关单元测试（`challengerStep3_1.test.js` / `screensaverOverlay.test.js`）已改为断言 `dialogBubble.show` 调用而非 CSS 节点（`challengerStep3_1.test.js` 后于 `07231bb` 精简屏保测试时删除）。
 
 ### 2026-07-29: 屏保视觉与性能优化
 

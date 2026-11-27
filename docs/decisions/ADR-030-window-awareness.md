@@ -22,7 +22,7 @@ Accepted
 - 渲染进程 `WindowAwarenessSystem` 只缓存最新 payload，并用 O(1) 的 `getCurrentPlatform()` 给游戏循环读取。
 - `MovementSystem` 通过 `setSurfacePlatforms()` 接收活动窗口平台和任务栏/Dock 平台，只在 idle 重新选择目标时使用它们。
 
-Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms。该间隔使 CP 屏保能在 2 秒新鲜度守卫内安全读取缓存，同时避免 500–1000ms 的高频外部进程轮询。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms，覆盖两个采样周期再加少量余量。主进程会在窗口字段不变化时按采样间隔刷新同一 payload 的 `sampledAt`，避免去重后 renderer 长时间收不到 IPC，导致本来仍有效的窗口平台在 renderer 侧过期。
+Windows 使用轻量 PowerShell/User32 provider，当前采样间隔为 2000ms。该间隔使 CP 屏保能在 2 秒新鲜度守卫内安全读取缓存，同时避免 500–1000ms 的高频外部进程轮询。renderer 的 `WINDOW_AWARENESS_PLATFORM_TTL_MS` 必须大于采样间隔；当前设置为 22000ms：该值是在采样间隔为 10000ms 时按两个周期加余量设定的（`bcfe466`），2026-07-28 采样间隔缩短到 2000ms 后未再调整，现约覆盖 11 个采样周期。主进程会在窗口字段不变化时按采样间隔刷新同一 payload 的 `sampledAt`，避免去重后 renderer 长时间收不到 IPC，导致本来仍有效的窗口平台在 renderer 侧过期。
 
 macOS 使用 `pmset -g assertions` 检测 `PreventUserIdleDisplaySleep` 断言（通常由视频播放或演示触发），借此模拟 `isFullScreen` 状态，主要用于阻止 CP 屏保。macOS 的 `pmset` 采样间隔为 30000ms（Windows 为 2000ms）：由于 macOS 不提供窗口 bounds 参与边缘行走，降低采样频率只会让全屏断言的最坏检测延迟增加到约 30 秒。为保证屏保守卫仍能读到新鲜采样，`PresentationGuard` 在 macOS 的 screensaver 模式将缓存有效期放宽到 60000ms（覆盖两个采样周期）。该机制与媒体播放状态强绑定，暂停的视频会解除断言（允许屏保），部分非全屏视频会议（如 Zoom/Meet）可能会保持断言。macOS 的任务栏/Dock 平台可以独立工作，不依赖活动窗口权限。其它平台在活动窗口感知上返回 unavailable fallback。
 

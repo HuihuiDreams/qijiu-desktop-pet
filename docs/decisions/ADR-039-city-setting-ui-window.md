@@ -1,7 +1,7 @@
 # ADR-039: 城市设置UI窗口
 
 ## Status
-Accepted
+Superseded by [ADR-050](./ADR-050-unified-settings-window.md)（窗口载体与 IPC 形态；本 ADR 的地理编码隐私与并发仲裁策略仍有效）
 
 ## Date
 2026-06-19
@@ -45,3 +45,8 @@ Accepted
 - **正面影响**：提供了明显更好的用户体验，具有即时的视觉反馈（如“搜索中...”、“设置为东京”或“未找到城市”）。
 - **正面影响**：使设计与应用程序的其余部分（如番茄钟和状态窗口）保持一致。
 - **负面影响**：略微增加了主进程窗口管理的复杂性，增加了一个需要跟踪和清理的浮动窗口。
+
+## Amendments
+
+### 2026-11-27：窗口载体由 ADR-050 取代
+独立的 `citySettingWindow`、其 preload 接口 `getCitySettings` / `closeCitySettingWindow` 与对应 IPC 已在 0.12.0（`f729329`）移除。城市输入现位于统一设置窗口「陪伴与守护」标签页，经 `settings-*` IPC 由 `SettingsService` 校验后交给 `WeatherSyncController` 保存（[ADR-050](./ADR-050-unified-settings-window.md)）。本文其余正文保留为历史记录。

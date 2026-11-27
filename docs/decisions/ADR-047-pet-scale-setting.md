@@ -1,7 +1,7 @@
 # ADR-047: 桌宠体型大小缩放与渲染架构方案
 
 ## Status
-Accepted
+Accepted（第 4 节的独立体型调节窗口已被 [ADR-050](./ADR-050-unified-settings-window.md) 取代）
 
 ## Date
 2026-10-14
@@ -68,3 +68,8 @@ Accepted
 - 手动检查互动：在亲吻、拥抱或喂食进行时拖动滑块或缩至较小体型（如 50%~70%），确认当前互动图立即等比缩放，气泡跟随头部且当水平间距不足时自动上下错落避让（岳七气泡抬升，沈九气泡保持原位），杜绝文字相互重叠遮挡；放大或无冲突时恢复左右平排，取消恢复原图尺寸，互动与气泡按原时间结束。
 - 手动检查键盘：预览一个非默认值后，用 Tab 聚焦“取消”“关闭”“恢复默认”“确定”并分别按 Enter，确认仅执行对应动作；非按钮区域 Enter 保存，Esc 回滚，保存后重启仍恢复已确认尺寸。
 - 2026-10-15 已用独立临时存档在 Windows Electron 验证四个按钮的原生 Enter 行为，并注入 `scaleRatio = 2/3` 验证实际 DOM 脚底坐标、互动图缩放、气泡节点复用及取消回滚，无页面异常或游戏循环错误。本次移动约束修复另在实际混合 DPI 副屏（`scaleRatio = 2/3`）通过原生滑块及取消按钮验证 100% → 150% → 50% → 取消：DOM 脚底恒为 1248、保持任务栏平台附着并恢复原位置；取消后继续水平行走，以及不携带 DPI 的活动窗口平台预览和 Esc 回滚也通过。macOS 尚需按以上步骤验收。
+
+## Amendments
+
+### 2026-11-27：独立体型窗口移除
+「Decision」第 4 节描述的独立 `PetScaleWindow` 已在 0.12.0（`f729329`）移除，体型滑块现位于统一设置窗口「外观与交互」标签页，预览、确认与关窗刷盘仍由 `PetScaleService` 负责，「恢复默认」经 `settings-reset-pet-scale` 以默认值调用 `PetScaleService.confirm()`（[ADR-050](./ADR-050-unified-settings-window.md)）。「Verification」中的 `test/petScaleWindowRenderer.behavior.test.js` 随之删除，设置窗口内的滑块行为由 `test/settingsWindowRenderer.behavior.test.js` 覆盖，其余测试文件仍然有效。逻辑尺寸、脚底锚定与渲染分层的决策不变。

@@ -49,7 +49,7 @@
 | ADR-036 | CP 互动防交叠机制 | Accepted | 2026-06-08 | [ADR-036-cp-interaction-anti-overlap.md](./ADR-036-cp-interaction-anti-overlap.md) |
 | ADR-037 | 轻量番茄钟陪伴模式 | Accepted | 2026-06-17 | [ADR-037-lightweight-pomodoro-companion.md](./ADR-037-lightweight-pomodoro-companion.md) |
 | ADR-038 | 天气感知与时空同步系统架构与隐私边界 (Weather Sync System) | Accepted | 2026-06-18 | [ADR-038-weather-sync.md](./ADR-038-weather-sync.md) |
-| ADR-039 | 城市设置UI窗口（窗口形态已由 ADR-050 整合） | Accepted | 2026-06-19 | [ADR-039-city-setting-ui-window.md](./ADR-039-city-setting-ui-window.md) |
+| ADR-039 | 城市设置UI窗口（窗口形态已由 ADR-050 整合） | Superseded by ADR-050 | 2026-06-19 | [ADR-039-city-setting-ui-window.md](./ADR-039-city-setting-ui-window.md) |
 | ADR-040 | 加密皮肤资产 | Accepted | 2026-07-09 | [ADR-040-encrypted-skin-assets.md](./ADR-040-encrypted-skin-assets.md) |
 | ADR-041 | 选肤窗口性能测评与长远扩展优化策略 | Accepted | 2026-07-10 | [ADR-041-skin-selector-performance-and-scaling.md](./ADR-041-skin-selector-performance-and-scaling.md) |
 | ADR-042 | 主进程与渲染进程巨石文件拆分方案（Main & Renderer Module Decomposition） | Accepted | 2026-07-20 | [ADR-042-main-and-renderer-module-decomposition.md](./ADR-042-main-and-renderer-module-decomposition.md) |

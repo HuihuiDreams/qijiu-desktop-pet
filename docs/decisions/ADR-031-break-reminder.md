@@ -67,3 +67,9 @@ Accepted
 
 ### 2026-11-20：混合 DPI 间距缩放、自发互动取消与目标坐标同步
 `StageGeometry.getCenteredPairLayout()` 在未传入 `options.visualScale` 时优先回退目标区域 `area.scaleRatio`（再回退 `1`），使混合 DPI 主屏上的久坐提醒双宠间距与视觉体型一致；`BreakReminderPresenter.handleTriggered()` 注入并调用 `interactionSystem?.cancel?.()` 终止进行中的自发互动并同步 `pet.targetX` / `pet.targetY`，避免互动状态冻结或结束提醒后宠物沿旧目标漂移。`InteractionSystem.cancel()` 会清零冷却，因此 presenter 在取消后补回冷却：被打断的互动恢复完整 `INTERACTION_COOLDOWN`，未互动时保留原剩余冷却，避免提醒结束后面对面的两只宠物立刻再次触发互动。
+
+### 2026-11-27：全屏 RDP 推迟、macOS 防休眠断言与模块位置
+- 「Consequences」中「关闭界面感知时 `PresentationGuard` 始终允许提醒」不再完全成立：Windows 全屏 RDP 原生隐藏主窗口期间，`BreakReminderController` 在调用守卫前先以 `fullscreen-rdp` 推迟提醒（`4bb3af8`），沿用 60 秒重试，避免提醒发往不可见窗口（[ADR-018](./ADR-018-always-on-top-reliability.md)）。其余情况下采样为 `disabled` 时仍放行。
+- 「Decision」第 3 条「macOS 不做全屏检测」已不准确：开启窗口感知时，macOS 每 30 秒读取 `pmset -g assertions`，存在 `PreventUserIdleDisplaySleep` 断言（全屏视频、演示等）时守卫按 `fullscreen` 推迟提醒（[ADR-030](./ADR-030-window-awareness.md)）。该方式不需要辅助功能权限；provider 不可用或尚无采样时仍放行。
+- 「Decision」第 5 条的开关与间隔已从托盘移到统一设置窗口「陪伴与守护」标签页（[ADR-050](./ADR-050-unified-settings-window.md)）。
+- 「架构边界」表中的 `presentationGuard.js` 现为 `src/main/services/PresentationGuard.js`，`main.js` 的生命周期、IPC 与配置职责现由 `src/main/services/BreakReminderController.js` 承担，渲染表现位于 `src/ui/BreakReminderPresenter.js`（[ADR-042](./ADR-042-main-and-renderer-module-decomposition.md)）。
