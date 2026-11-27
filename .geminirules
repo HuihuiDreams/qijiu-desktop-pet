@@ -12,7 +12,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 4. **Surgical Edits**: Modify only lines needed. Match existing style (Vanilla JS, standard CSS). Remove orphaned code created by your edits; do not touch other unrelated code.
 5. **Goal-Driven & Chain Verification**: When executing multi-step tasks (`/goal` or multi-bug fixes):
    - Solve exactly ONE problem at a time.
-   - After each atomic fix, verify and update corresponding unit tests (`test/`). Prefer behavioral tests (mocks, fake timers, `FakeBrowserWindow`) over regex/source-matching assertions (`assert.match(source, ...)`), except for intentional static security/manifest invariants. Run `npm test` (plus `npm run test:integration` for IPC/service/window lifecycle changes).
+   - After each atomic fix, verify and update corresponding unit tests (`test/`). Prefer behavioral tests (mocks, fake timers, `FakeBrowserWindow`) over regex/source-matching assertions (`assert.match(source, ...)`), except for intentional static security/manifest invariants. Run `npm test` (it already includes `test/integration/`; `npm run test:integration` runs only the integration suite).
    - **Proactive Documentation & Plan Sync**: YOU MUST automatically:
      1. Check off completed items (`- [x]`) in the active `docs/plan/*.md` file immediately upon completing each task/phase, ensuring cross-platform agents (macOS / Windows) stay in sync.
      2. Update `CHANGELOG.md`, `docs/structure.md`, and relevant ADRs (`docs/decisions/`) in the same step, with explicit cross-links (`[ADR-xxx](docs/decisions/ADR-xxx.md)`), and verify with `npm run check:adrs`.
@@ -22,32 +22,32 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Technical Constraints
 
 1. **Process Separation & Security**:
-   - Main (`main.js`): System tasks, native window management, tray, IPC routes, `electron-store`.
-   - Preload (`preload.js`): Safe context bridge via `window.electronAPI`.
+   - Main: `main.js` is only the entry point; `src/main/AppLifecycle.js` composes windows (`src/main/windows/`), services, IPC and `electron-store` (`src/main/services/`), display handling (`src/main/DisplayService.js`) and the tray (`src/main/TrayManager.js`).
+   - Preload (`preload.js` and per-window preloads): Safe context bridge via `window.electronAPI`.
    - Renderer (`src/`): Game loop, systems, UI rendering. No direct Node API access.
    - IPC Authorization: Validate all sensitive operations (skin changes, asset loading, filesystem requests) inside main-process IPC handlers (`src/main/services/*`, `src/main/windows/*`, `src/main/DisplayService.js`; channel contracts in `ipcContracts.js`). When restricting sender IDs, retain E2E QA entry points (`app.openSkinSelectorForQA`, `app.openSettingsForQA`).
 2. **Game Loop & Time Skew (`src/app.js`)**:
    - Must wrap step iterations in `try/catch` to prevent renderer crashes.
    - Synchronize sprite orientation on transition frame to avoid visual glitches.
    - Sleep/Resume Guard: Clamp or validate time deltas across sleep/wake (e.g., macOS Dark Wake) to prevent erroneous transitions.
-   - External API Metrics: Strictly validate numeric fields (e.g., weather coordinates/temperatures) with `firstFiniteNumber` to prevent implicit `Number(null)` -> `0` coercion.
+   - External API Metrics: Strictly validate numeric fields (e.g., weather coordinates/temperatures in the main-process `weatherSyncService.js`) with `firstFiniteNumber` to prevent implicit `Number(null)` -> `0` coercion.
 3. **Multi-Display & DPI**:
    - Coordinate conversion via `displayBounds.js`.
    - Window refit/debounce behavior via `displayFit.js`; keep Electron `screen` event coalescing and min/max constraint bridging together.
    - Send renderer `screen-info` only after the main transparent window has settled to the intended virtual desktop bounds.
    - Apply `scaleRatio` to `PetRenderer`, `ContextMenu`, and effects to maintain consistent physical sizing across screens.
 4. **macOS vs Windows Window Management & Sub-Window UI**:
-   - When modifying `alwaysOnTop` or visibility during fullscreen/space transitions in `main.js` or sub-windows (settings, skin selector, pomodoro), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen rearrangement to prevent trapped, hidden, or flickering windows.
-   - For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`npm run test:e2e` or Playwright measurement), not just fake-DOM unit tests.
+   - When modifying `alwaysOnTop` or visibility during fullscreen/space transitions in `src/main/windows/` (pet window and settings, skin selector, pomodoro sub-windows), account for macOS space isolation, `skipTransformProcessType: true` on `setVisibleOnAllWorkspaces`, guarded `app.focus({ steal: true })`, `alwaysOnTop` overlay stacking, and fullscreen rearrangement to prevent trapped, hidden, or flickering windows.
+   - For sub-window UI or layout changes, verify zero unintended scroll overflow/clipping across `zh`/`en`/`ja` in real Electron (`test/e2e/skinSelector.spec.js` and `test/e2e/settingsWindow.spec.js` cover the three locales; these specs open windows, so ask the user to run them), not just fake-DOM unit tests.
 5. **Input & Drag**:
    - Default: `setIgnoreMouseEvents(true, { forward: true })`. Toggle to `false` only on hover of interactive elements.
    - Set `isDragging = true` on drag, pausing `MovementSystem` and `InteractionSystem`.
 
-## Asset Pipeline & Skin System (`src/assets/`, `skinGallery.js`)
+## Asset Pipeline & Skin System (`src/assets/`, `SkinService.js`)
 
 1. **Pipeline Adherence**: Strictly follow `docs/skin-pipeline-guide.md` when modifying skins/sprites (`webp` format, `walk_left`/`walk_right` prefixes).
-2. **Sync Manifests & Readmes**: Synchronize skin entries across `skinGallery.js`, `protectedAssetLoader.js`, and all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`); when a sub-window loads `pet-asset://` resources, its HTML CSP must allow `pet-asset:`.
-3. **Skin Selector State Machine**: Support `isPreview` workflow (preview without committing; cancel safely restores previous skin).
+2. **Sync Manifests & Readmes**: Register skin IDs in the `SkinService.js` name/label/artist maps and `src/data/i18n.js`, adjust `SkinManager.SKIN_IMAGE_SCALES` if needed, rerun `npm run protect:assets`, and update all three language Readmes (`readme_zh.txt`, `readme_en.txt`, `readme_ja.txt`); review `skinGallery.js` / `protectedAssetLoader.js` only when file naming changes; when a sub-window loads `pet-asset://` resources, its HTML CSP must allow `pet-asset:`.
+3. **Skin Selector State Machine**: Keep the `isPreview` workflow in `SkinService.js`, `SkinSwitchController`, and the selector window/preload (preview without committing; cancel safely restores previous skin).
 
 ## Browser Support & Web Standards Policy
 
@@ -58,7 +58,7 @@ Adapted from Karpathy Guidelines & DeskPet architecture. ALWAYS follow when edit
 ## Git Workflow & Versioning
 
 Before commit/push:
-1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) without duplicate headings under the same version. Keep `Unreleased` entries in oldest-to-newest order, written in clear Chinese (except code terms/proper nouns), strictly beneath `## [Unreleased]`, and link ADRs when relevant.
+1. **Update CHANGELOG.md**: Group under exact headings (`Added`, `Changed`, `Fixed`, `Removed`, `Security`) without duplicate headings under the same version. Keep `Unreleased` entries in oldest-to-newest order (append to the end of each category), written in clear Chinese (except code terms/proper nouns), strictly beneath `## [Unreleased]`, and link ADRs when relevant.
 2. **Update docs when behavior changes**: Keep `docs/structure.md`, `docs/git-workflow.md`, `README.md`/`readme_*.txt`, relevant ADRs, and `package-lock.json` (when dependencies/`engines` change) in sync.
 3. **Atomic Commits**: Message format: `<type>: <short description>\n\n<body explaining why>`.
-4. **Pushing**: Run `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows) early to catch preflight format validation issues. Both reject unstaged untracked files, run `npm run sync:cp` on `main` only (the script is not present on `cp/crowley-aziraphale`), and accept `[skip-cp]` for `main`-only changes.
+4. **Pushing**: Use `./push.sh` (macOS/Linux) or `.\push.ps1` (Windows); they are not a dry-run preflight. Both check only that `CHANGELOG.md` is modified (no format validation), reject unstaged untracked files, `git add -u`, commit, run `npm run sync:cp` on `main` only (the script is not present on `cp/crowley-aziraphale`), push with `git push origin HEAD`, and accept `[skip-cp]` for `main`-only changes.

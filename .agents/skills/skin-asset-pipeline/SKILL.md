@@ -120,11 +120,12 @@ npm run protect:assets
 ```
 
 - **开发调试注意事项**：如果本地 `protected-assets/` 目录已存在旧密文，主进程会优先读取密文缓存；此时修改已有的 `.webp` 图片必须重新运行 `npm run protect:assets` 刷新密文，或者临时删除 `protected-assets/` 走明文回退加载。
-- **打包自动化**：`npm run build` 已配置 `prebuild` 钩子自动加密，打包时无需手动加密。
+- **打包自动化**：`npm run build` 已配置 `prebuild` 钩子自动加密；直接运行 `npx electron-builder` 不会触发 `prebuild`，需先手动执行 `npm run protect:assets`。
 
 ### 步骤 7：画廊与清单同步
 1. **画廊预览适配**：检查 `skinGallery.js`，预览图默认优先寻找 `kiss.webp` -> `right.webp` -> `left.webp` -> `cultivate.webp`。
-2. **多语言 Readme 同步**：在 `readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 中同步记录新增或修改的皮肤信息。
+2. **皮肤 ID 登记**：新增或删除皮肤 ID 时，在 `src/main/services/SkinService.js` 同步 `SKIN_NAME_KEYS`、`SKIN_LABEL_KEYS`、`SKIN_ARTIST_KEYS`，并在 `src/data/i18n.js` 补齐三语词条；未登记的 ID 在没有受保护清单时不会出现在画廊中，`switch-skin` 也会拒绝。
+3. **多语言 Readme 同步**：在 `readme_zh.txt`、`readme_en.txt`、`readme_ja.txt` 中同步记录新增或修改的皮肤信息。
 
 ---
 

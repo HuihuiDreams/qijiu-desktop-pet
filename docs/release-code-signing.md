@@ -36,7 +36,7 @@
 npm run build
 ```
 
-要在本地测试签名，请设置当前终端会话的环境变量，并在构建前启用签名：
+要在本地测试签名，请设置当前终端会话的环境变量，并在构建前启用签名（直接调用 `npx electron-builder` 不会触发 npm 的 `prebuild`，因此先运行 `npm run protect:assets`）：
 
 ```powershell
 $env:WIN_CSC_LINK = "C:\path\to\windows-code-signing.pfx"
