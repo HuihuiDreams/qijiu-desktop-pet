@@ -48,9 +48,10 @@ const MAIN_ONLY_WORKING_DOC_FILES = new Set([
   'docs/plan/audit-verification-remediation-plan.md',
 ]);
 
-// Conflicts in maintained Markdown docs are resolved in favour of the target branch instead of blocking.
+// Conflicts in maintained Markdown docs and the root agent guidance files (which describe each
+// branch's own scripts) are resolved in favour of the target branch instead of blocking.
 function isDocConflictSkippable(file) {
-  return /^docs\/.+\.md$/.test(file);
+  return /^docs\/.+\.md$/.test(file) || file === 'AGENTS.md' || file === '.geminirules';
 }
 
 function isMainOnlySyncPath(file) {

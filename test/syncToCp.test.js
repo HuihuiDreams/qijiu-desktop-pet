@@ -1308,6 +1308,66 @@ test('Sync Main to Good Omens workflow and script suite', async (t) => {
     }
   });
 
+  await t.test('keeps the target branch version of conflicting AGENTS.md and .geminirules', async () => {
+    const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-agentdoc-integ-'));
+    const bareRemote = path.join(tmpBase, 'remote.git');
+    const localRepo = path.join(tmpBase, 'local');
+    const agentFiles = ['AGENTS.md', '.geminirules'];
+
+    try {
+      git(tmpBase, ['init', '--bare', bareRemote]);
+      git(tmpBase, ['init', localRepo]);
+      git(localRepo, ['remote', 'add', 'origin', bareRemote]);
+
+      fs.mkdirSync(path.join(localRepo, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 1 };\n');
+      for (const file of agentFiles) fs.writeFileSync(path.join(localRepo, file), 'push: run sync:cp --verify\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'chore: base']);
+      git(localRepo, ['branch', '-M', 'main']);
+      git(localRepo, ['push', '-u', 'origin', 'main']);
+
+      // The CP branch has no sync script, so its agent guidance words the same line differently
+      git(localRepo, ['checkout', '-b', 'cp/crowley-aziraphale']);
+      for (const file of agentFiles) fs.writeFileSync(path.join(localRepo, file), 'push: sync:cp is main only\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'docs: cp agent guidance']);
+      git(localRepo, ['push', '-u', 'origin', 'cp/crowley-aziraphale']);
+
+      git(localRepo, ['checkout', 'main']);
+      for (const file of agentFiles) fs.writeFileSync(path.join(localRepo, file), 'push: run sync:cp --verify, then push origin main\n');
+      fs.writeFileSync(path.join(localRepo, 'src', 'shared.js'), 'module.exports = { v: 2 };\n');
+      git(localRepo, ['add', '.']);
+      git(localRepo, ['commit', '-m', 'fix: update shared and the agent guidance']);
+      const sha = git(localRepo, ['rev-parse', 'HEAD']);
+      git(localRepo, ['push', 'origin', 'main']);
+
+      const syncResult = await syncCommitsToCp({
+        repoRoot: localRepo,
+        targetBranch: 'cp/crowley-aziraphale',
+        manualCommitsArg: sha,
+        dryRun: false,
+        testRunner: () => {},
+        installRunner: () => {},
+      });
+
+      assert.equal(syncResult.syncedCount, 1);
+      assert.ok(!syncResult.results[0].blocked);
+      assert.match(syncResult.results[0].status, /✅ 已同步/);
+      assert.match(syncResult.results[0].reason, /文档冲突已跳过.*\.geminirules/);
+      assert.match(syncResult.results[0].reason, /文档冲突已跳过.*AGENTS\.md/);
+
+      git(localRepo, ['fetch', 'origin']);
+      const cpRef = 'origin/cp/crowley-aziraphale';
+      assert.match(git(localRepo, ['show', `${cpRef}:src/shared.js`]), /v: 2/);
+      for (const file of agentFiles) {
+        assert.equal(git(localRepo, ['show', `${cpRef}:${file}`]), 'push: sync:cp is main only');
+      }
+    } finally {
+      fs.rmSync(tmpBase, { recursive: true, force: true });
+    }
+  });
+
   await t.test('resolveSyncCliOptions enforces verifyOnly and protects against SYNC_PUSH env leakage', () => {
     // Defaults to dry-run
     assert.deepEqual(resolveSyncCliOptions([], {}), {
