@@ -45,3 +45,8 @@ Accepted
 - **Negative**:
   - **副作用管理要求严苛**：这种 Node 底层机制的修改是全局性的，如果忘记清理钩子或缓存刷新机制失败，极易造成后续测试诡异崩溃。需要严格遵守 `after`/`test.after` 的清理约定。
   - **时序依赖**：必须在 require 任何被测试的主进程模块之前，先 require 并初始化 `mockElectron.js`。
+
+## Amendments
+
+### 2026-11-27：实际实现与「集中化 Mock 对象」的差异
+`test/helpers/mockElectron.js` 并未定义集中的 `MockApp`、`MockTray` 或 `MockWebContents`。它只导出 `setupElectronMock(mockObj)`：临时改写 `Module.prototype.require`，让 `require('electron')` 返回调用方传入的对象，并返回用于恢复的函数，应在 require 被测模块后立即调用。各测试文件按需自建 Electron 替身；目前 9 个测试文件使用 `setupElectronMock`，另有 12 个直接改写 `Module._load`（如 `test/appLifecycle.behavior.test.js`）。「Consequences」中关于清理钩子与 require 顺序的约束对两种写法同样适用。

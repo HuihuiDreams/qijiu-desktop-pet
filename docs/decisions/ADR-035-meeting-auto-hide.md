@@ -48,3 +48,8 @@ Windows Teams 实测显示，同一环境中未开会时 `ms-teams.exe` 同名�
 - 检测失败或命令超时不会反转当前会议状态，避免子进程故障导致桌宠突然显示。
 - 隐私边界清晰：只读取进程名和 UDP 端点数量，不读取窗口标题、会议标题、URL、音视频内容或屏幕内容。
 
+
+## Amendments
+
+### 2026-11-27：运行时状态位置
+「Decision」中写在 `main.js` 的 `meetingHidden` 与 `petHidden` 状态，自主进程模块拆分（[ADR-042](./ADR-042-main-and-renderer-module-decomposition.md)）后由 `src/main/services/PetVisibilityService.js` 持有，会议检测生命周期位于 `src/main/services/MeetingDetectorController.js`。检测同样运行于 macOS（`pgrep` / `lsof`），已知进程除 Teams 外还包括 Zoom、Webex、Slack 与 Discord（`meetingDetector.js`）。
