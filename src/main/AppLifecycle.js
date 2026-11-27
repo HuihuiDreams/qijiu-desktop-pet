@@ -249,10 +249,12 @@ class AppLifecycle {
       refreshTrayMenu: () => trayManager.refreshTrayMenu(),
       keepPetWindowOnTop: petWindowModule.keepPetWindowOnTop,
       forgetFullscreenRdpRestore: petWindowModule.forgetFullscreenRdpRestore,
+      isFullscreenRdpSuppressed: petWindowModule.isFullscreenRdpSuppressed,
     });
     settingsWindowModule.init({
       flushPetScalePreview: PetScaleService.flushPreview,
       keepPetWindowOnTop: petWindowModule.keepPetWindowOnTop,
+      isFullscreenRdpSuppressed: petWindowModule.isFullscreenRdpSuppressed,
     });
     PetScaleService.init({
       windowManager,

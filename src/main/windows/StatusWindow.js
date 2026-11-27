@@ -10,6 +10,15 @@ let lastStatusWindowData = null;
 let isOpeningStatusWindow = false;
 
 function keepPetAboveStatusWindow() {
+  const win = windowManager.statusWindow;
+  if (
+    typeof deps.isFullscreenRdpSuppressed === 'function'
+    && deps.isFullscreenRdpSuppressed()
+    && typeof win?.isFocused === 'function'
+    && !win.isFocused()
+  ) {
+    return;
+  }
   if (typeof deps.keepPetWindowOnTop === 'function') {
     deps.keepPetWindowOnTop();
   }

@@ -465,6 +465,31 @@ test('StatusWindow: openStatusWindow focuses before re-asserting PetWindow even 
   });
 });
 
+test('StatusWindow: openStatusWindow skips keepPetWindowOnTop while unfocused under fullscreen RDP until focus arrives', () => {
+  withMockedModule('../src/main/windows/StatusWindow', ({ mod }) => {
+    let keepCalls = 0;
+    let rdpSuppressed = true;
+    mod.init({
+      refreshTrayMenu: () => {},
+      keepPetWindowOnTop: () => { keepCalls += 1; },
+      isFullscreenRdpSuppressed: () => rdpSuppressed,
+    });
+
+    const win = mod.createStatusWindow();
+    win.focus = () => {
+      // Simulate async/deferred Win32 SetForegroundWindow leaving isFocused() false synchronously.
+    };
+
+    mod.openStatusWindow();
+    assert.equal(win.isFocused(), false);
+    assert.equal(keepCalls, 0, 'must not trigger keepPetWindowOnTop while unfocused under fullscreen RDP');
+
+    win.focused = true;
+    win.emit('focus');
+    assert.equal(keepCalls, 1, 'focus landing must trigger keepPetWindowOnTop');
+  });
+});
+
 test('PomodoroWindow: activates with skipTransformProcessType and guarded focus steal', async () => {
   await withMockedModule('../src/main/windows/PomodoroWindow', async ({ mod, windowManager, focusCalls, ipcHandlers }) => {
     mod.init({

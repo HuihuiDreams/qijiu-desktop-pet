@@ -773,3 +773,148 @@ test('SettingsWindow: opening or re-focusing during fullscreen RDP focuses befor
     delete require.cache[PET_WINDOW_PATH];
   }
 });
+
+test('SettingsWindow: async or refused Win32 focus during fullscreen RDP does not self-hide the settings window', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const FakeBrowserWindow = createFakeBrowserWindowClass();
+  const windowManager = {
+    mainWindow: null,
+    statusWindow: null,
+    pomodoroWindow: null,
+    skinSelectorWindow: null,
+    settingsWindow: null,
+    updateProgressWindow: null,
+  };
+
+  // Model Win32 SetForegroundWindow delivering focus asynchronously (or being blocked by OS foreground lock).
+  class Win32AsyncFocusBrowserWindow extends FakeBrowserWindow {
+    show() {
+      this.visible = true;
+      this.emit('show');
+    }
+
+    restore() {
+      this.minimized = false;
+      this.emit('restore');
+    }
+
+    hide() {
+      this.visible = false;
+      this.focused = false;
+      this.emit('hide');
+    }
+
+    focus() {
+      // Intentionally leave this.focused untouched synchronously.
+    }
+  }
+
+  delete require.cache[SETTINGS_WINDOW_PATH];
+  delete require.cache[PET_WINDOW_PATH];
+  const originalLoad = Module._load;
+  Module._load = function mockLoader(request, parent, isMain) {
+    if (parent?.filename === SETTINGS_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { focus: () => {} },
+          BrowserWindow: Win32AsyncFocusBrowserWindow,
+          screen: {
+            getCursorScreenPoint: () => ({ x: 0, y: 0 }),
+            getDisplayNearestPoint: () => ({ workArea: { x: 0, y: 0, width: 1600, height: 900 } }),
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === '../services/PetScaleService') return { flushPreview: () => 100 };
+    }
+    if (parent?.filename === PET_WINDOW_PATH) {
+      if (request === 'electron') {
+        return {
+          app: { on: () => {} },
+          BrowserWindow: Win32AsyncFocusBrowserWindow,
+          ipcMain: { on: () => {} },
+          screen: {
+            getPrimaryDisplay: () => ({ id: 'primary' }),
+            on: () => {},
+            removeListener: () => {},
+          },
+        };
+      }
+      if (request === './WindowManager') return windowManager;
+      if (request === './UpdateProgressWindow') return { closeUpdateProgressWindow: () => {} };
+      if (request.includes('FinalSaveService')) return { installFinalSaveBeforeClose: () => {} };
+      if (request.includes('IpcSenderAuthorization')) return { isSenderMainWindow: () => true };
+      if (request.includes('StartupCachePolicy')) return { shouldClearStartupCache: () => false };
+    }
+    return originalLoad.call(this, request, parent, isMain);
+  };
+
+  const origPlatform = process.platform;
+  Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+  try {
+    const SettingsWindow = require(SETTINGS_WINDOW_PATH);
+    const PetWindow = require(PET_WINDOW_PATH);
+    SettingsWindow.init({
+      flushPetScalePreview: () => 100,
+      keepPetWindowOnTop: PetWindow.keepPetWindowOnTop,
+      isFullscreenRdpSuppressed: PetWindow.isFullscreenRdpSuppressed,
+    });
+    PetWindow.init({
+      DisplayService: {
+        setCurrentPetDisplay: () => {},
+        getDesktopWindowBounds: () => ({ x: 0, y: 0, width: 1600, height: 900 }),
+        lockPetWindowToBounds: () => {},
+        sendScreenInfo: () => {},
+        stopDragPoll: () => {},
+        displayFitScheduler: { schedule: () => {}, clear: () => {} },
+      },
+      WindowAwarenessService: {
+        sendActiveWindowInfo: () => {},
+        getLastPayload: () => ({ active: false, reason: 'disabled', window: null, platform: null }),
+        getNativePayload: () => ({
+          active: true,
+          window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false },
+        }),
+        stopActiveWindowAwareness: () => {},
+        startActiveWindowAwareness: () => {},
+      },
+      PetVisibilityService: { isPetCurrentlyHidden: () => false, sendPetVisibility: () => {} },
+      MeetingDetectorController: { startMeetingDetector: () => {} },
+      WeatherSyncController: { updateWeatherSyncSettings: () => {}, getWeatherSyncSettings: () => ({}) },
+      app: { isPackaged: true, getVersion: () => '1.0.0', commandLine: { hasSwitch: () => false } },
+      StoreManager: { getStore: () => ({ get: () => '1.0.0', set: () => {} }) },
+    });
+
+    PetWindow.createWindow();
+    windowManager.mainWindow.visible = true;
+    PetWindow.onActiveWindowChanged();
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), true);
+    assert.equal(windowManager.mainWindow.isVisible(), false);
+
+    // 1. Open while Win32 focus() has not yet landed synchronously: must not self-hide.
+    const settingsWin = SettingsWindow.openSettingsWindow('appearance');
+    assert.equal(settingsWin.isVisible(), true);
+    assert.equal(settingsWin.isFocused(), false);
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), true);
+
+    // 2. If OS keeps focus withheld past the 180ms pulse, drop alwaysOnTop without hiding the window.
+    t.mock.timers.tick(200);
+    assert.equal(settingsWin.isAlwaysOnTop(), false);
+    assert.equal(settingsWin.isVisible(), true);
+
+    // 3. Once focus lands asynchronously (or the user clicks the window), release RDP suppression and raise.
+    settingsWin.focused = true;
+    settingsWin.emit('focus');
+    assert.equal(settingsWin.isAlwaysOnTop(), true);
+    assert.equal(PetWindow.isFullscreenRdpSuppressed(), false);
+    assert.equal(windowManager.mainWindow.isVisible(), true);
+
+    settingsWin.emit('closed');
+    windowManager.mainWindow.emit('closed');
+  } finally {
+    Object.defineProperty(process, 'platform', { value: origPlatform, configurable: true });
+    Module._load = originalLoad;
+    delete require.cache[SETTINGS_WINDOW_PATH];
+    delete require.cache[PET_WINDOW_PATH];
+  }
+});
