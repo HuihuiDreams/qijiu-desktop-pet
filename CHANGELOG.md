@@ -69,6 +69,7 @@
 
 ### Security
 - **本机 IDE / Agent 工作目录不再进入安装包 (`Local IDE & Agent Directories Excluded From Package`)**：electron-builder 不读取 `.gitignore`，本机 2026-11-18 的 macOS 构建 `app.asar` 中实际混入了 `.kiro/`（Kiro steering 规则）、`.skillopt-sleep/`（Agent 任务记录）、`.vscode/` 与 Playwright 输出 `test-results/`，而 `verify:package` 只检查 `.codex` / `.agents` / `.claude` 等少数目录，未能拦截；同时 `release-and-packaging` 技能声称该检查会拦截 `security-scans/` 与明文 WebP，实际并不检查。现 `package.json` 的 `build.files` 新增 `!.kiro/**`、`!.skillopt-sleep/**`、`!.vscode/**`、`!test-results/**`，`scripts/verify-package-contents.js` 的禁止路径补齐上述目录与 `security-scans`，并拒绝皮肤目录下的明文 WebP（`src/assets/<skin>/**/*.webp`，根目录书法水印 WebP 按设计明文打包，[ADR-040](docs/decisions/ADR-040-encrypted-skin-assets.md)）；补充 `test/packageContentsSecurity.test.js`，以 `electron-builder --mac --dir --arm64` 重新构建确认 `app.asar` 已不含这些目录且校验通过，并同步 `docs/structure.md` 与 `.agents/skills/release-and-packaging/SKILL.md`。
+- **补齐环境变量、签名证书与本地临时目录的打包排除与校验 (`Exclude Local Env Files, Certificates & Temp Outputs From Package`)**：补齐 `.gitignore` 中其余未列入 `package.json` `build.files` 的本地敏感与临时项（`.env` / `.env.*`、代码签名证书与私钥 `*.pfx`/`*.p12`/`*.key`/`*.pem`/`*.cer`/`*.crt`/`*.der`、`dist-update-test/`、`output/` 与 `__pycache__/`），同步在 `scripts/verify-package-contents.js` 拦截上述路径及扩展名并修正校验报错/成功提示文案以涵盖非 Agent 禁止文件与皮肤明文 WebP，补充 `test/packageContentsSecurity.test.js` 覆盖（含 `src/data/keyboard.js` 等正常代码不被误伤的负向样本）并更新 `docs/structure.md` 与 `.agents/skills/release-and-packaging/SKILL.md`。
 
 ## [0.12.0] - 2026-11-16
 
