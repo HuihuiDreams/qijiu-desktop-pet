@@ -32,14 +32,14 @@ This app supports both Windows and macOS:
 After launch, both characters will appear on your desktop.
 
 - Drag a character: hold the left mouse button and drag them to your preferred position.
-- Open a character menu: right-click a character to use actions such as "🍎 Feed", "💤 Rest", "🧘🏻‍♂️ Cultivate", "🤚 QiGe Spoils", or "🤚 XiaoJiu Clings".
-- Open the tray menu: right-click the green tray icon in the lower-right system tray for more settings.
+- Open a character menu: right-click a character to use actions such as "🍎 Feed", "💤 Rest", "🧘🏻‍♂️ Cultivate", "🤚 QiGe Spoils", "🤚 XiaoJiu Clings", or "📊 Status" (opens the status panel).
+- Open the tray menu: on Windows, right-click the green "79" icon in the lower-right taskbar tray; on macOS, click the "79" icon on the right side of the top menu bar (shown in black and white to match the menu bar) for more settings.
 
 The tray menu lets you:
-- "📊 Show Status Panel"
+- "📊 Show Status Panel" / "📊 Hide Status Panel": open or close the status panel.
 - "🧘🏻‍♂️ Cang Qiong Seclusion" / "🧘🏻‍♂️ In Seclusion N min" / "🧘🏻‍♂️ Seclusion Complete": open the Pomodoro countdown window; the tray label reflects the current seclusion state.
 - "🎨 Choose Skin…": opens the visual skin selector gallery window where you can browse and switch built-in skins (Default Skin, Cute Birds, Cat & Bunny, and School AU). Each card cleanly separates the skin preview image, name, and artist credit onto different lines. Click a card to preview without saving, then click "Confirm" to save. Click "Cancel", press ESC, or close the window to restore the original skin. Switching to another window keeps the preview.
-- "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking"
+- "⏸️ Pause Walking" or "🚶🏻‍♂️ Resume Walking": unavailable while a seclusion session has hidden the pets (the same applies to Hide/Show Pets).
 - "👻 Hide Pets" or "👻 Show Pets": temporarily hide all pets (the screensaver and break reminders will also be disabled while hidden).
 - "🔄 Reset Position"
 - "🖥️ Switch Screen": move pets between displays (macOS multi-display only)
@@ -107,7 +107,7 @@ If the current system does not support it, the setting displays an unavailable n
 🌤️ Weather Awareness & Time Sync
 ========================================
 
-Pets will automatically transition into morning, daytime, evening, or late night based on your local time.
+Pets will automatically transition into morning (from 05:00), daytime (from 11:00), dusk (from 17:00), evening (from 20:00), or late night (from 00:00) based on your local time.
 During late night (00:00 - 04:59), they become quieter, more prone to sleeping, move less, and may refuse interactions. In this sleepy state, they may occasionally talk in their sleep, and if both pets are on screen with high affection, they might trigger a sweet linked dream dialogue.
 
 If you want them to sense real-world weather, turn on "Weather Sync" and save your city name under "⚙️ Settings… -> Companion" (you can also enter and validate your city before enabling Weather Sync).
@@ -131,7 +131,7 @@ Locking the screen, suspending the computer, or stepping away long enough resets
 After the system has been idle longer than the configured wait time, the screensaver starts:
 - Yueqi and Shenjiu play a CP combo at the center of the screen: share food -> hug -> kiss.
 - The combo loops until input is detected or it is silently canceled by a lock, fullscreen app, or similar interruption.
-- When they detect that you are back, each pet shows a dialogue bubble above its head (Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
+- When they detect that you are back, each pet shows a dialogue bubble above its head (each picks one of three lines at random, e.g. Yueqi: "So shy... 😳"; Shenjiu: "Busted! ❗️") and then runs back to its original spot.
 
 In the tray under "⚙️ Settings… -> Companion", you can:
 - Toggle the "Sweet Screensaver" switch.
@@ -148,7 +148,7 @@ Windows 11 defaults to about 5 minutes when plugged in; if you want a wait of 5 
 
 Meeting Auto-Hide automatically hides the pets when meeting activity is detected, so they do not cover a meeting window, appear in screen sharing, or distract from a call.
 
-- The current MVP is mainly calibrated against Windows Teams.
+- The current MVP is mainly calibrated against Windows Teams; Zoom, Webex, Slack, and Discord (on Windows and macOS) are detected with the same rule, but their thresholds have not been measured individually.
 - After the meeting ends, pets usually reappear within about 15 seconds.
 - If you manually hid the pets before the meeting, they will not be shown automatically afterward.
 - If you manually show the pets while they were hidden by meeting detection, that clears the current auto-hide state.
@@ -198,9 +198,9 @@ How to restore:
 - Right-click a character and choose "🍎 Feed" to restore 25 Satiety.
 
 Notes:
-- Choosing "💤 Rest" consumes 10 Satiety.
-- Below 30 Satiety, the character enters a hungry state and Mood drops faster.
-- Below 25 Satiety, an orange warning glow appears around the character.
+- Choosing "💤 Rest" consumes 10 Satiety and restores 15 Mood and 10 Qi.
+- Below 30 Satiety, Mood drops faster.
+- Below 25 Satiety, the character becomes hungry: it shows a hungry expression, occasionally complains in bubbles, and an orange warning glow appears around it.
 
 Small hidden interaction:
 When the two are close and trigger "Share Food", Yue Qi may give his food to Shen Jiu.

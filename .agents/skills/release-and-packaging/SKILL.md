@@ -8,7 +8,7 @@ description: >-
 
 # DeskPet 发布打包与签名合规流水线 (Release and Packaging Pipeline)
 
-本技能定义了《DeskPet 岳清&沈九修仙桌宠》从本地预检、安装包构建、ASAR 内容安全审计，到云端 GitHub Actions 双平台交叉验证与正式发布的完整端到端标准作业流程（SOP）。
+本技能定义了《DeskPet 岳七&沈九修仙桌宠》从本地预检、安装包构建、ASAR 内容安全审计，到云端 GitHub Actions 双平台交叉验证与正式发布的完整端到端标准作业流程（SOP）。
 
 ---
 
