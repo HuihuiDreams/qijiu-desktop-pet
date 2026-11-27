@@ -2,7 +2,7 @@
 
 本文档记录当前 DeskPet / qijiu-desktop-pet 的主要目录、运行时结构和关键机制，方便后续维护、调试和交接。领域模型与权威术语请参考 [docs/GLOSSARY.md](./GLOSSARY.md)，更细的设计取舍请参考 [docs/decisions](./decisions/) 下的 ADR。
 
-最后更新：2026-11-21
+最后更新：2026-11-27
 
 审查记录：[2026-10-06 全仓库代码审查复核报告](./archive/code-review-recheck-2026-10-06.md)，包含问题、修复状态、验证证据与测试范围。
 
@@ -37,6 +37,9 @@ graph TB
             SettingsService["SettingsService"]
             StartupCachePolicy["StartupCachePolicy"]
             FinalSaveService["FinalSaveService"]
+            ScreensaverController["ScreensaverController"]
+            InterruptionCoordinator["InterruptionCoordinator"]
+            AutoLaunchService["AutoLaunchService"]
         end
 
         WindowManager --> PetWindow["windows/PetWindow.js → Transparent Pet BrowserWindow"]
@@ -70,6 +73,7 @@ graph TB
         App --> Ambient["AmbientDialogueSystem"]
         App --> BreakPresenter["BreakReminderPresenter"]
         App --> Offline["OfflineReturnSystem"]
+        App --> Screensaver["ScreensaverSystem"]
         App --> I18N["i18nHelpers.js (Runtime i18n)"]
         Debug["src/debug.js"] --> App
     end
@@ -119,10 +123,11 @@ qijiu-desktop-pet/
 ├─ src/main/DisplayService.js           # 多屏几何服务 init(deps) 模块：虚拟桌面边界、屏幕信息广播、窗口锁定/适配/跨屏迁移、拖拽轮询、活动窗口 bounds/displays 查询（与 displayFitScheduler 同归本模块以消除循环依赖）
 ├─ src/main/TrayManager.js              # 系统托盘管理：精简托盘菜单（实时行为控制、状态/静修/选肤/统一设置入口、更新与退出）
 ├─ src/main/windows/WindowManager.js    # 窗口实例中心：统一持有和管理所有 BrowserWindow (主窗口、状态窗、番茄钟、选肤窗、统一设置窗、更新进度窗)
-├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口
+├─ src/main/windows/PetWindow.js        # 主宠物透明窗口 init(deps) 模块：createWindow/置顶守卫/鼠标穿透/二次启动唤回，deps 注入 app/StoreManager（调试参数与启动缓存清理）及 DisplayService/WindowAwarenessService/PetVisibilityService/MeetingDetectorController/WeatherSyncController；did-finish-load/closed 是全应用集成点；主窗口 `closed` 时一并关闭状态、番茄钟、选肤、统一设置与更新进度窗口；持有 Windows 全屏 RDP 抑制状态（由 `onActiveWindowChanged` 采样驱动，任一桌宠子窗口持有焦点时解除，导出 `isFullscreenRdpSuppressed` / `isHiddenForFullscreenRdp` / `forgetFullscreenRdpRestore` 供久坐提醒、屏保、托盘与状态窗使用）
 ├─ src/main/services/FinalSaveService.js # 退出前最终保存协议：requestRendererFinalSave/installFinalSaveBeforeClose，向渲染进程请求最后一次保存并等待 ack 或超时后放行窗口关闭
 ├─ src/main/windows/StatusWindow.js     # 独立状态窗口 init(deps) 模块：创建/显示/永久 pop-up-menu 置顶（低于主宠 screen-saver 层）与跨 Space 支持/打开、聚焦及 Windows 下移动/点击时重申主窗置顶/隐藏/更新/尺寸调整 + 对应 IPC，内部持有 lastStatusWindowData
 ├─ src/main/windows/SkinSelectorWindow.js # 选肤画廊窗口 init(deps) 模块：默认 800×520 并按 display.workArea 安全夹紧初始宽高与位置、普通层级与 180ms 置顶脉冲、预览/确认/取消会话状态机与关闭防重入回滚
+├─ src/main/windows/PomodoroWindow.js   # 番茄钟窗口 init(deps) 模块：在光标所在显示器 workArea 居中创建 336×360 窗口，注册 `pomodoro-open-window`（仅主窗口）及 `pomodoro-get-state` / `pomodoro-start` / `pomodoro-stop` / `pomodoro-close-window` / `pomodoro-set-always-on-top`（仅番茄钟窗口）IPC；默认 `screen-saver` 级置顶并经 `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true })` 跨 Space 显示，可切换为普通层级；会话状态由 PomodoroService 持有
 ├─ src/main/windows/SettingsWindow.js   # 统一设置窗口 init(deps) 模块：创建/显示 520×456 3-Tab 窗口/workArea 夹紧/聚焦期间保持 pop-up-menu 置顶（低于主宠 screen-saver 层，并重申主窗置顶）并在 blur/minimize/hide 或未聚焦 180ms 后回落/Tab 切换/关闭时刷盘未提交体型预览；`AppLifecycle.js` 暴露 `app.openSettingsForQA(initialTab?)` 供 E2E 绕过托盘直接唤起
 ├─ src/main/windows/UpdateProgressWindow.js # 更新进度窗口 init(deps) 模块：显示/更新进度/关闭，由 updateManager 的 updateProgressUi 接线调用；记录最新载荷并在页面加载完成后补发，`closed` 事件只清理仍指向自己的窗口引用
 ├─ src/main/services/SkinService.js     # 皮肤服务 init(deps) 模块：可用皮肤扫描与缓存、画廊数据、已确认与试穿皮肤状态分离、启动时 `restoreConfirmedSkinFromStore()` 用 store 中已保存的 `petState.skinId` 同步已确认皮肤（避免首次 `save-data` 把皮肤写回 `default`）、选肤器请求鉴权与加载仲裁、番茄钟素材解析、全部 9 个皮肤 IPC handler（确认换肤通知 `onSkinConfirmed`）
@@ -136,7 +141,7 @@ qijiu-desktop-pet/
 ├─ src/main/services/BreakReminderController.js # 久坐提醒控制器 init(deps) 模块：breakReminderService 生命周期、PresentationGuard 接线（复用 WindowAwarenessService 已归一化为 DIP 的前台窗口坐标；Windows 全屏 RDP 隐藏主窗口期间以 `fullscreen-rdp` 推迟提醒）、powerMonitor 四个事件、break-reminder-dismissed IPC，导出开关/间隔状态存取与 `updateBreakReminderSettings`
 ├─ src/main/services/SettingsService.js # 统一设置主进程聚合控制器 init(deps) 模块：快照聚合 (`getSnapshot()`)、全 `settings-*` IPC 注册、逐条 `isSenderWindow(settingsWindow)` 鉴权、参数校验、store 监听与 `settings-updated` 推送（同一 tick 内多源触发经 microtask 合并为一次最新快照；快照平台能力仅保留嵌套字段 `windowAwareness.supported` / `autoLaunch.pendingApproval`）
 ├─ src/main/services/InterruptionCoordinator.js # 原子仲裁久坐提醒 ('break-reminder') 与 CP 屏保 ('screensaver') 的互斥租约
-├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫：聚合久坐提醒与屏保模式。Windows 下校验活动窗口缓存（<=2s、兼容 sampledAt/timestamp 与 Number.isFinite 校验、非全屏、非演示）；直接将 WindowAwarenessService 已转换为 DIP 的 window.bounds 与完整 display.bounds/workArea 比较（适配混合 DPI 多屏且避免消费端重复除以 scaleFactor）；基于 activeWindowProvider 的 isFullScreen 拒绝真正全屏，最大化普通办公窗口允许触发，仅非最大化窗口覆盖完整 display.bounds 时按无边框演示拒绝；macOS 下久坐提醒放行，屏保始终返回 unsupported_platform
+├─ src/main/services/PresentationGuard.js # 统一前置打扰守卫，按模式（`break-reminder` / `screensaver`）判断能否打扰：采样返回 `disabled`（未启用窗口感知）时放行；`isFullScreen` 为真时以 `fullscreen` 拒绝；非最大化窗口覆盖显示器时以 `presentation` 拒绝（屏保比对完整 `display.bounds`，久坐提醒优先比对 `display.workArea`，容差 8px），直接使用 WindowAwarenessService 已归一化为 DIP 的 window.bounds（适配混合 DPI 多屏且不再重复除以 scaleFactor）；最大化的普通办公窗口允许触发。仅屏保模式校验采样缓存年龄（Windows ≤2s、macOS ≤60s，兼容 sampledAt/timestamp 与 Number.isFinite 校验，超时为 `stale_cache`）；采样缺失或 provider 异常时返回 `unknown-state` / `provider-error`，但 macOS 久坐提醒此时放行。macOS 采样来自 `pmset -g assertions`，`PreventUserIdleDisplaySleep` 断言视为全屏；Linux 等其他平台屏保返回 `unsupported_platform`、久坐提醒放行。Windows 全屏 RDP 的 `fullscreen-rdp` 推迟/拦截不在守卫内，由 BreakReminderController 与 AppLifecycle 的屏保 `eligibilityGuard` 在外层包装
 ├─ src/main/services/ScreensaverController.js # CP 屏保主进程控制器与会话状态机管理 (inactive -> eligible -> active(sessionId) -> exiting -> inactive / blocked；渲染进程发出 `screensaver-finished` 时经 finishSession 回到 inactive)、双频轮询、系统 lock/suspend 生命周期、start/stop/dispose 监听器解绑与 1s 轮询中主窗口/可见性/Guard 状态中途校验（Windows 全屏 RDP 隐藏主窗口期间经 `AppLifecycle` 包装的 `eligibilityGuard` 返回 `fullscreen-rdp` 拦截触发并纳入 `DEFINITIVE_ELIGIBILITY_LOSS_REASONS` 中途取消）；触发等待档位由共享 screensaverAllowedMinutes.js 白名单 [1,3,5,10,15,30] 校验，旧持久化值 60 在首次读取时迁移为 30 并回写 store
 ├─ src/main/services/screensaverAllowedMinutes.js # CP 屏保触发等待档位的唯一来源 [1,3,5,10,15,30] 分钟与 60→30 旧值迁移规则，供 ScreensaverController 与 SettingsService 共用
 ├─ src/main/services/StartupCachePolicy.js # 启动缓存清理策略：隔离开发模式、手动强制清理与版本升级判断纯函数（ADR-043）
@@ -144,12 +149,12 @@ qijiu-desktop-pet/
 ├─ src/main/services/AutoLaunchService.js # 开机自启服务：基于 electron.app.setLoginItemSettings 的状态读写（含 macOS 待批准状态 `getAutoLaunchState()`）与统一结果包装
 ├─ src/main/services/StoreManager.js    # electron-store 统一初始化与单例管理器
 ├─ src/main/services/IpcSenderAuthorization.js # IPC 调用方安全鉴权：严格校验 event.sender 是否匹配目标 BrowserWindow，防止跨窗口或伪造调用
-├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY）
+├─ src/main/constants.js                # 跨模块共享的 electron-store key 常量（LOCALE_KEY、BREAK_REMINDER_STORE_KEY、POMODORO_LAST_MINUTES_KEY、SCREENSAVER_STORE_KEY、PET_SCALE_STORE_KEY）
 
 ├─ preload.js                           # contextBridge 暴露主窗口专用 window.electronAPI，隔离渲染进程和主进程（不包含已迁入 statusPreload.js / pomodoroPreload.js 的子窗口专属方法）
 ├─ statusPreload.js                     # 状态窗最小 preload：语言、状态数据、尺寸调整与关闭
 ├─ pomodoroPreload.js                   # 番茄钟最小 preload：语言、会话状态与自身窗口控制
-├─ settingsPreload.js                   # 统一设置窗专用最小 preload：经 `window.electronAPI` 暴露的语义化窄接口（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），严禁暴露 `FORBIDDEN_SUBWINDOW_APIS`
+├─ settingsPreload.js                   # 统一设置窗专用最小 preload：经 `window.electronAPI` 暴露的语义化窄接口（快照读取/订阅、体型预览确认与复位、外观/陪伴/系统设置保存、唤起选肤窗、关闭及焦点恢复订阅），不暴露存档、自启、语言、换肤等主窗口能力（由 `test/settingsWindow.test.js` 的 `FORBIDDEN_SUBWINDOW_APIS` 清单断言）
 ├─ skinSelectorPreload.js               # 选肤窗专用最小 preload：画廊数据、预览/确定/取消、关闭与语言订阅
 ├─ skinGallery.js                        # 皮肤画廊纯数据构建：封面优先级(kiss.webp优先)、名称与画师字段解耦和当前项标记
 ├─ updateProgressPreload.js             # 更新进度窗口专用最小 preload，只暴露进度订阅 IPC
@@ -158,7 +163,7 @@ qijiu-desktop-pet/
 ├─ updateManager.js                     # GitHub Releases / electron-updater 更新检查、下载进度、错误分级和 macOS 手动更新流程
 ├─ displayBounds.js                     # 多显示器虚拟桌面边界和可行走区域计算，纯逻辑模块
 ├─ displayFit.js                        # 显示器变化事件合并、窗口 bounds 适配和 min/max 约束桥接
-├─ activeWindowProvider.js              # 活动窗口采样 provider 合同与 Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，通过 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 统一输出物理像素并避免重复 Add-Type 编译开销；过滤 DWM cloaked 窗口、副屏任务栏/IME/提示浮层，使用 QueryFullProcessImageName 读取进程名并回退 Get-Process，并将 BBarWindowClass 连接栏、GA_ROOTOWNER/同 PID 辅助窗口及前景句柄瞬时为空且 Z-order 顶层为全屏 RDP 的情形解析回全屏 RDP 窗口；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
+├─ activeWindowProvider.js              # 活动窗口采样 provider 合同：macOS 由 `createMacActiveWindowProvider` 读取 `pmset -g assertions`，以 `PreventUserIdleDisplaySleep` 断言上报 `isFullScreen`（不含窗口 bounds）；其他非 Windows 平台返回不可用兜底；Windows 前台窗口读取实现（Windows 下常驻 PowerShell 子进程与 stdin/stdout 循环采样，通过 SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2) 统一输出物理像素并避免重复 Add-Type 编译开销；过滤 DWM cloaked 窗口、副屏任务栏/IME/提示浮层，使用 QueryFullProcessImageName 读取进程名并回退 Get-Process，并将 BBarWindowClass 连接栏、GA_ROOTOWNER/同 PID 辅助窗口及前景句柄瞬时为空且 Z-order 顶层为全屏 RDP 的情形解析回全屏 RDP 窗口；监听子进程及输入流错误，清理后由后续采样重启；回调按进程身份隔离，忽略旧进程的延迟事件与输出）
 ├─ activeWindowAwareness.js             # 活动窗口 bounds（win32 经 screenToDipRect 单次归一化为 DIP）到渲染进程 surface platform payload 的转换、去重与续期
 ├─ ipcContracts.js                      # IPC 输入归一化、校验和统一结果对象 helper
 ├─ breakReminderService.js              # 久坐提醒主进程计时服务：空闲采样、连续活跃时间累计、提醒触发
@@ -225,7 +230,7 @@ qijiu-desktop-pet/
 │  │  ├─ MovementSystem.js              # 移动目标、跨屏行走区域、边界 clamp 和暂停控制；按目标区域 DPI 的视觉尺寸计算平台高度、边界与跨屏落点
 │  │  ├─ NurtureSystem.js               # 饥饿、灵力、心情、好感等养成数值变化
 │  │  ├─ OfflineReturnSystem.js         # 离线回归结算统一入口：属性衰减/时辰计算/回归气泡/存档，涵盖系统睡眠唤醒与存档加载三条路径（app.js 拆分 Phase R4，注入 now()/isDocumentVisible()/isScreensaverActive() 便于测试）；回归气泡经 scheduleReturnBubbles() 的 1.5s/3s 两条 setTimeout 在触发前重检屏保状态（屏保打断时保留 pendingReturnBubble 并递增 returnBubbleSequenceId 使旧回调失效，全部触发成功即释放），屏保结束（onScreensaverEnd → flushPendingReturnBubble）补发暂存气泡（并在补发前清除残留被抓包气泡以防叠加）；saveCurrentState()（自动保存/退出保存）在保存前刷新 lastVisibleTime，防止长时间使用后退出重开时时辰计算基于陈旧时间戳导致误报
-│  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间
+│  │  ├─ PomodoroSystem.js              # 轻量番茄钟倒计时状态机，基于 endAt 推导剩余时间；虽位于 `src/systems/`，只由主进程 `PomodoroService` 加载，任何 renderer 页面都不引入
 │  │  ├─ ScreensaverSystem.js           # CP 屏保渲染进程状态机与控制系统 (inactive | entering | performing | caught | runningBack)，复用 StageGeometry 的久坐提醒双宠居中布局并按其跨度扩展氛围层；连招采用固定顺序 shareFood → hug → kiss 过滤后循环播放：可用 Overlay >=2 时持续循环至用户输入或静默取消，零或一个时停在中心 idle_waiting；普通输入进入一次性 caught 展示至少 800ms CSS 文本 ! 并回位，caught/runningBack 对重复 input stop 幂等；提示与场景共同应用 DPI 缩放，支持皮肤 Overlay keys 校验跳过、runningBack 目标点 walkArea 夹紧与安全复位；CP 屏保 Overlay 使用 transform: translate(-50%, -50%) 将图片中心对齐场景中点，不依赖素材 intrinsic 宽高比；场景空间检查按体型与目标显示器倍率后的基准宽高适配并保留宽高各 40px 留白，场景缩放不足 0.65 时取消屏保；reset() 末尾触发 onScreensaverEnd（离线回归气泡的补发事件钩子，替代游戏循环 rAF 边沿检测）
 │  │  ├─ SkinManager.js                 # 皮肤扫描结果应用、路径注入、回退逻辑
 │  │  ├─ SkinSwitchController.js        # 皮肤切换编排：串行加载与最新待执行请求队列、过时加载回写抑制、default 回退、清除互动覆盖层、回写主进程当前皮肤并触发持久化（app.js 拆分 Phase R2）
@@ -260,6 +265,7 @@ qijiu-desktop-pet/
 │  │  └─ storage.integration.test.js    # 存储 IPC 白名单、持久化读写与 skinId 强制归一化安全集成测试
 │  ├─ e2e/                              # Playwright Electron E2E；共享隔离 userData 的 launchApp/closeApp，涵盖启动、右键菜单、久坐提醒（breakReminder.spec.js）、选肤画廊、统一设置窗口（settingsWindow.spec.js）、子窗 preload 隔离（ipcIsolation.spec.js）及日语字体验证（font.spec.js，可由 test:font 独立运行）
 │  ├─ helpers/                          # 测试辅助：sourceCorpus.js（统一的主进程源码读取入口）、mockElectron.js（拦截 require('electron') 的替身）、workflowScripts.js（按步骤提取 GitHub Actions 脚本并以共用版本输入用例实际执行，Windows 上经 `WSLENV` 透传变量并转换文件路径，供 `releasePreflightWorkflow.test.js` 与 `buildInstallerWorkflow.test.js` 使用）
+│  ├─ test_font.html                    # 手工验证 `html[lang]` 覆盖 CSS 字体变量的静态页面（`07a5927` 引入），不被任何自动化测试引用
 │  └─ 覆盖范围：多屏、移动、养成、皮肤、i18n、更新、状态保存、安全和打包校验
 ├─ tools/                               # 手动运行的本地工具：调试校准和素材处理，不属于打包自动流程
 │  ├─ crop_sprite.py                    # 精灵图裁切工具
@@ -353,7 +359,7 @@ qijiu-desktop-pet/
 
 Surface Awareness 的窗口平台设计背景记录在 [ADR-030](./decisions/ADR-030-window-awareness.md)。
 
-- `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过启用 `PER_MONITOR_AWARE_V2` 线程 DPI 上下文的 PowerShell/User32 辅助逻辑统一读取物理像素级前台窗口与显示器矩形；macOS 和暂不支持的平台返回不可用兜底。
+- `activeWindowProvider.js` 定义主进程的活动窗口采样接口。Windows 通过启用 `PER_MONITOR_AWARE_V2` 线程 DPI 上下文的 PowerShell/User32 辅助逻辑统一读取物理像素级前台窗口与显示器矩形；macOS 由 `createMacActiveWindowProvider` 运行 `pmset -g assertions`（仅在开启窗口感知时启用，`WindowAwarenessService` 每 30 秒采样一次），存在 `PreventUserIdleDisplaySleep` 断言（全屏视频、演示等）时上报 `isFullScreen: true`，不读取窗口 bounds；其他平台返回不可用兜底。
 - `activeWindowAwareness.js` 在 `win32` 采样时通过 `WindowAwarenessService` 注入的 `screen.screenToDipRect(null, rect)` 将物理像素 bounds 一次性转为 DIP 后再计算渲染进程相对坐标平台矩形，同时将该 DIP 坐标保留在共享 `lastPayload` 中供 `PresentationGuard` 直接比较，并在 IPC 发送前去重；主进程会按采样间隔刷新未变化 payload 的 `sampledAt`，避免 renderer 侧平台 TTL 在窗口长期不变时过期。
 - `displayBounds.js` 负责平台几何换算，并和多显示器 walk area 换算保持在同一边界模块中；它还会从 `display.bounds` 和 `display.workArea` 推导底部横向任务栏平台。
 - `preload.js` 只向渲染进程暴露安全的 `getActiveWindowInfo()` 和 `onActiveWindowInfo(callback)` API。
@@ -402,7 +408,7 @@ src/assets/{skinId}/
    └─ walk_left01.webp ... walk_right04.webp
 ```
 
-`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标，托盘菜单发出皮肤切换事件；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
+`services/SkinService.js` 扫描 `src/assets/` 下的皮肤目录并分别维护已确认皮肤与预览目标；托盘菜单只负责打开选肤窗，`switch-skin` 事件由 `SkinService` 在选肤窗预览、确认与取消时发往主窗口；`SkinManager`/`SkinSwitchController` 在渲染进程内应用皮肤路径并更新 `Pet`、`PetRenderer` 和 `SpriteView`；`SkinSwitchController` 维护串行切换队列，在慢加载或连续预览时丢弃过时请求的回写并保留最新待执行请求，且在试穿预览（`isPreview: true`）期间不回写 `setCurrentSkin` 也不触发写盘；主进程在 `StorageIpc.js` 的 `save-data` 边界对 `petState.skinId` 执行强制钳制，杜绝每分钟自动保存、离线衰减与退出保存泄漏未确认的试穿皮肤；确认提交时对加载状态作仲裁并完成正式持久化与托盘/番茄钟同步，取消操作可靠回滚至原皮肤。
 
 `SkinManager` 换肤时启用 `SpriteView.attach` 的 `validateRequired` 校验，区分必要立绘/走动帧与可选状态动作图片：必要资源加载失败时先恢复上一套成功应用的宠物立绘、走动帧、图片比例、状态图片和叠加层路径，并通过默认挂载重置动画缓存；`SkinManager.currentSkinId` 仅在加载成功后更新。原加载错误继续传递至 `SkinSwitchController` 和主进程，确认失败时保持已确认皮肤及存档不变；回选已确认皮肤也校验本次预览结果，可选动作图片缺失继续降级。应用初次挂载默认图片仍允许降级，避免图片损坏阻断启动。选肤器使用现有多语言错误提示显示确认失败。
 
@@ -446,9 +452,10 @@ src/assets/{skinId}/
 - 当连续活跃时间达到配置间隔（默认 60 分钟）时触发提醒。
 - 用户空闲超过 `idleResetMinutes`（默认 5 分钟）时自动重置计时器。
 - 系统锁屏/挂起/恢复事件也会重置计时器。
-- 提醒触发前经过 `PresentationGuard` 检查：
-  - macOS：始终允许提醒（不做全屏检测，避免请求辅助功能权限）。
-  - Windows：检查前台窗口是否全屏；非最大化窗口覆盖完整显示器时视为演示窗口，命中则延后 60 秒重试。活动窗口采样已在 `WindowAwarenessService` 中以 `screen.screenToDipRect(null, rect)` 将物理矩形一次性归一化为 DIP（首参 `null` 让 Electron 按窗口所在显示器换算），`PresentationGuard` 直接使用统一后的 DIP 坐标进行比较，不再对同一矩形二次缩放或转换。
+- 提醒触发前经过 `PresentationGuard`（`break-reminder` 模式）检查，命中则延后 60 秒重试：
+  - 未开启窗口感知时采样为 `disabled`，守卫放行；但 Windows 全屏 RDP 原生隐藏主窗口期间，`BreakReminderController` 先以 `fullscreen-rdp` 推迟，避免提醒发往不可见窗口。
+  - macOS：开启窗口感知时每 30 秒读取 `pmset -g assertions`，存在 `PreventUserIdleDisplaySleep` 断言（全屏视频、演示等）时按 `fullscreen` 推迟；provider 不可用或尚无采样时放行（不请求辅助功能权限）。
+  - Windows：检查前台窗口是否全屏；非最大化窗口覆盖显示器工作区（`display.workArea`）时视为演示窗口。活动窗口采样已在 `WindowAwarenessService` 中以 `screen.screenToDipRect(null, rect)` 将物理矩形一次性归一化为 DIP（首参 `null` 让 Electron 按窗口所在显示器换算），`PresentationGuard` 直接使用统一后的 DIP 坐标进行比较，不再对同一矩形二次缩放或转换。
   - 不保存窗口标题、进程名或 URL。
 - 渲染进程收到提醒后：两个小人瞬移到主显示器中心面对面站立，显示随机对话气泡，20 秒后自动消失或点击小人提前关闭。
 - 配置通过 `electron-store` 持久化，统一设置窗口的「陪伴与守护」标签页提供开关和间隔（30/45/60/90/120 分钟）选择。
@@ -469,7 +476,7 @@ src/assets/{skinId}/
 
 轻量番茄钟是本地陪伴型倒计时功能，不是监督型专注检测。设计计划记录在 [cangqiong-pomodoro-plan.md](./archive/cangqiong-pomodoro-plan.md)。
 
-- `src/systems/PomodoroSystem.js` 是纯倒计时状态机，使用 `startedAt`、`durationMs` 和 `endAt` 推导 `remainingMs` 与 `progress`，避免依赖 interval 累计。
+- `src/systems/PomodoroSystem.js` 是纯倒计时状态机（只由主进程 `PomodoroService` 加载），使用 `startedAt`、`durationMs` 和 `endAt` 推导 `remainingMs` 与 `progress`，避免依赖 interval 累计。
 - `windows/PomodoroWindow.js` 拥有番茄钟窗口生命周期、`services/PomodoroService.js` 拥有会话状态机：托盘入口打开/聚焦窗口，IPC 负责开始、停止、关闭、读取状态和切换置顶。
 - 窗口使用 `src/pomodoro.html`、`src/pomodoro.css` 和 `src/pomodoroWindow.js`，视觉上复用状态窗口和右键菜单的玉色玻璃系统。
 - 分钟输入默认使用 `electron-store` 中的 `lastPomodoroMinutes`，首次使用或非法输入时回退到 25 分钟，并将单次时长限制在安全范围内。
@@ -498,7 +505,7 @@ src/assets/{skinId}/
 当前安全边界以 Electron 推荐模式为基础：
 
 - 渲染进程通过 `preload.js` 暴露的有限 API 访问主进程能力。
-- 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟与统一设置窗（`settingsPreload.js` 严禁触及 `FORBIDDEN_SUBWINDOW_APIS`）分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
+- 所有 renderer 发起的存档、自动启动、语言、皮肤、窗口控制与设置 IPC 都通过 `IpcSenderAuthorization.js` 绑定到仍存活的窗口 `webContents`。主桌宠窗口拥有全局能力；状态窗、番茄钟与统一设置窗（`settingsPreload.js` 不暴露存档、自启、语言、换肤等主窗口能力，由 `test/settingsWindow.test.js` 的 `FORBIDDEN_SUBWINDOW_APIS` 清单断言）分别使用专用最小 preload，只能读取语言并操作自身业务；伪造、缺失或已销毁 sender 在输入校验和状态变更前即被拒绝。
 - 选肤窗不复用通用 `preload.js`；`skinSelectorPreload.js` 仅提供画廊数据、实时预览(`previewSkin`)、确定(`confirmSkin`)、取消(`cancelSkin`)、关闭和必要的语言订阅。主进程除校验皮肤 ID、维护预览期间的原皮肤快照并构造 `pet-asset:` 预览 URL 外，还会将所有选肤专属 IPC 的 `event.sender.id` 绑定到当前选肤窗口；其他 renderer 收到结构化 `FORBIDDEN` 结果。`SkinSelectorWindow.getInitialSkinSelectorWindowBounds()` 按 `display.workArea` 夹紧默认 `800×520` 初始宽高并居中钳制坐标，防止小尺寸或高 DPI 工作区下窗口溢出屏幕；`SkinSelectorWindow.closeSkinSelectorWindow()` 与原生 `close` 事件通过同一防重入状态处理取消回滚，并仅在 `closed` 后复位关闭状态；失焦不结束试穿会话。窗口配置 `minimizable: true` 并支持跨 Space 显示（`setVisibleOnAllWorkspaces` 带 `skipTransformProcessType: true`），唤起与聚焦时执行 180ms `screen-saver` 脉冲置顶以可靠浮出，超时后回落到普通层级避免持续遮挡；被其他窗口遮挡或最小化后可以继续选择，再次打开恢复原会话；保留 `hasShadow: false` 与 `resizable: false`，避免透明无边框窗口的阴影黑边。当通过统一设置窗口切换界面语言时，主进程透传 `{ resetSelection: false }`，使画廊刷新文案时可靠保留用户当前的试穿选中态。渲染层不接触文件系统路径（性能测评与多皮肤扩展优化储备见 `docs/decisions/ADR-041-skin-selector-performance-and-scaling.md`）。
 - 主窗口、状态窗口、番茄钟窗口、统一设置窗口和更新进度窗口均启用 renderer `sandbox`，并不直接使用 Node 全局能力；状态窗口配置为永久 `pop-up-menu` 置顶层级并支持跨 Space 展示，聚焦期间的统一设置窗口同样使用 `pop-up-menu` 级，两者均位于 `screen-saver` 级主宠物窗口之下（打开、聚焦及 Windows 下拖动结束/点击时重申主窗置顶），使桌宠与右键菜单始终显示在它们上方；应用级焦点事件即时记录高于宠物的置顶子窗口（番茄钟、选肤脉冲窗）顺序，主窗口 `keepPetWindowOnTop()` 在抬升自身后按最近焦点顺序重新抬升这类可见置顶子窗口（[ADR-018](./decisions/ADR-018-always-on-top-reliability.md)）；番茄钟窗口切换置顶与取消置顶均携带 `skipTransformProcessType: true` 防止 macOS Dock 闪烁。
 - HTML 注入相关逻辑有测试覆盖，更新进度窗口使用本地文件、严格 CSP、最小 preload IPC 和 `textContent` 渲染动态文案。
