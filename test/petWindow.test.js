@@ -617,6 +617,68 @@ test('PetWindow - Lifecycle and Methods', async (t) => {
     }
   });
 
+  await t.test('leaving fullscreen RDP clears pet restore flag before sub-window showInactive re-entrancy', () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    try {
+      const deps = createMockDeps();
+      let payload = { active: true, window: { ownerName: 'mstsc', isFullScreen: true, isMinimized: false } };
+      deps.WindowAwarenessService.getNativePayload = () => payload;
+      PetWindow.init(deps);
+      PetWindow.createWindow();
+      const win = windowManager.mainWindow;
+      win.visible = true;
+      const events = [];
+      const origMainShowInactive = win.showInactive.bind(win);
+      win.showInactive = () => {
+        events.push('main:showInactive');
+        origMainShowInactive();
+      };
+
+      const status = new MockBrowserWindow({});
+      status.visible = true;
+      status.alwaysOnTop = true;
+      const origStatusShowInactive = status.showInactive.bind(status);
+      status.showInactive = () => {
+        events.push('status:showInactive');
+        origStatusShowInactive();
+        // StatusWindow's 'show' listener synchronously calls keepPetWindowOnTop().
+        PetWindow.keepPetWindowOnTop();
+      };
+
+      const pomodoro = new MockBrowserWindow({});
+      pomodoro.visible = true;
+      pomodoro.alwaysOnTop = true;
+      const origPomodoroShowInactive = pomodoro.showInactive.bind(pomodoro);
+      pomodoro.showInactive = () => {
+        events.push('pomodoro:showInactive');
+        origPomodoroShowInactive();
+      };
+
+      windowManager.statusWindow = status;
+      windowManager.pomodoroWindow = pomodoro;
+
+      PetWindow.onActiveWindowChanged();
+      assert.equal(win.visible, false);
+      assert.equal(status.visible, false);
+      assert.equal(pomodoro.visible, false);
+
+      payload = { active: true, window: { ownerName: 'chrome', isFullScreen: false } };
+      PetWindow.onActiveWindowChanged();
+
+      assert.deepEqual(events, ['status:showInactive', 'pomodoro:showInactive', 'main:showInactive']);
+      assert.equal(win.visible, true);
+      assert.equal(status.visible, true);
+      assert.equal(pomodoro.visible, true);
+
+      windowManager.statusWindow = null;
+      windowManager.pomodoroWindow = null;
+      win.trigger('closed');
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    }
+  });
+
   await t.test('RDP suppression is Windows-only and excludes windowed/minimized RDP and other fullscreen apps', () => {
     const originalPlatform = process.platform;
     try {

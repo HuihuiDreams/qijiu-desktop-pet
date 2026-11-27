@@ -43,6 +43,9 @@ function loadWiredGuard(mode, screen, windowAwareness, extraInitDeps = {}) {
         return { start() {} };
       },
     },
+    './windows/PetWindow': extraInitDeps.isFullscreenRdpSuppressed
+      ? { isFullscreenRdpSuppressed: extraInitDeps.isFullscreenRdpSuppressed }
+      : {},
     '../../../breakReminderService': {
       normalizeSettings: () => ({ enabled: true, intervalMinutes: 60 }),
       createBreakReminderService: (deps) => {
@@ -76,22 +79,24 @@ function loadWiredGuard(mode, screen, windowAwareness, extraInitDeps = {}) {
   return guard;
 }
 
-test('break-reminder guard defers while fullscreen RDP hides the pet even with window awareness disabled', () => {
-  let rdpSuppressed = true;
-  // Windows keeps native RDP sampling, but break reminders read the renderer-facing disabled payload.
-  const windowAwareness = {
-    getLastPayload: () => ({ active: false, reason: 'disabled', window: null, platform: null }),
-  };
-  const guard = loadWiredGuard('break-reminder', { getAllDisplays: () => [] }, windowAwareness, {
-    isFullscreenRdpSuppressed: () => rdpSuppressed,
+for (const mode of ['break-reminder', 'screensaver']) {
+  test(`${mode} guard defers while fullscreen RDP hides the pet even with window awareness disabled`, () => {
+    let rdpSuppressed = true;
+    // Windows keeps native RDP sampling, but break reminders and screensaver read the renderer-facing disabled payload.
+    const windowAwareness = {
+      getLastPayload: () => ({ active: false, reason: 'disabled', window: null, platform: null }),
+    };
+    const guard = loadWiredGuard(mode, { getAllDisplays: () => [] }, windowAwareness, {
+      isFullscreenRdpSuppressed: () => rdpSuppressed,
+    });
+
+    // The controller runs in a vm realm, so compare a plain copy instead of cross-realm prototypes.
+    assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: false, reason: 'fullscreen-rdp' });
+
+    rdpSuppressed = false;
+    assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: true, reason: null });
   });
-
-  // The controller runs in a vm realm, so compare a plain copy instead of cross-realm prototypes.
-  assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: false, reason: 'fullscreen-rdp' });
-
-  rdpSuppressed = false;
-  assert.deepEqual({ ...guard.canInterrupt() }, { canInterrupt: true, reason: null });
-});
+}
 
 for (const mode of ['screensaver', 'break-reminder']) {
   test(`${mode} wiring converts physical bounds once in WindowAwarenessService without double conversion in guard`, async () => {

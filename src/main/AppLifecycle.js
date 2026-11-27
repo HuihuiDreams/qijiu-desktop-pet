@@ -93,7 +93,7 @@ class AppLifecycle {
 
   static initScreensaverSystem() {
     interruptionCoordinator = createInterruptionCoordinator();
-    const eligibilityGuard = createPresentationGuard(
+    const baseEligibilityGuard = createPresentationGuard(
       {
         platform: process.platform,
         getActiveWindowInfo: () => WindowAwarenessService.getLastPayload(),
@@ -102,6 +102,13 @@ class AppLifecycle {
       },
       { mode: 'screensaver' }
     );
+    const eligibilityGuard = {
+      // Windows 全屏 RDP 期间主窗口被原生隐藏；关闭窗口感知行走时采样返回 disabled 会直接放行，
+      // 这里按 fullscreen-rdp 拦截，避免屏保发往不可见窗口并占用中断租约。
+      canInterrupt: () => (petWindowModule.isFullscreenRdpSuppressed?.()
+        ? { canInterrupt: false, reason: 'fullscreen-rdp' }
+        : baseEligibilityGuard.canInterrupt()),
+    };
     screensaverController = createScreensaverController({
       powerMonitor,
       interruptionCoordinator,

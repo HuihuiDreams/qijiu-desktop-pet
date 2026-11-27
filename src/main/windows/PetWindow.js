@@ -105,13 +105,14 @@ function syncFullscreenRdpSuppression() {
   const currentSubWindows = getPetSubWindows();
   const subWindowsToRestore = [...restoreSubWindowsAfterRdp];
   restoreSubWindowsAfterRdp.clear();
+  const shouldRestorePetWindow = restorePetWindowAfterRdp;
+  restorePetWindowAfterRdp = false;
   for (const subWin of subWindowsToRestore) {
     if (currentSubWindows.includes(subWin) && !subWin.isDestroyed() && !subWin.isVisible() && !subWin.isMinimized()) {
       subWin.showInactive();
     }
   }
-  if (restorePetWindowAfterRdp) {
-    restorePetWindowAfterRdp = false;
+  if (shouldRestorePetWindow) {
     win.showInactive();
   }
   return false;

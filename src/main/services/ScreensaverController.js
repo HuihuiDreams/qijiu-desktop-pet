@@ -28,7 +28,7 @@ const ACTIVE_IDLE_THRESHOLD_SECONDS = 60;
  * validated at trigger time. Such transient results are ignored until the
  * next poll tick brings fresh data.
  */
-const DEFINITIVE_ELIGIBILITY_LOSS_REASONS = new Set(['fullscreen', 'presentation']);
+const DEFINITIVE_ELIGIBILITY_LOSS_REASONS = new Set(['fullscreen', 'fullscreen-rdp', 'presentation']);
 
 function normalizeScreensaverSettings(raw) {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_SETTINGS };
